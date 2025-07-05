@@ -1,33 +1,54 @@
+import requests
+from bs4 import BeautifulSoup
 import pandas as pd
 import json
-import random
+import re
 
-# Simulated data - in real version this would be scraped from Baseball Savant
-batters = [
-    {"batter": "Pete Alonso", "xwoba": 0.416, "barrel_rate": 20.1, "sweet_spot": 39.8},
-    {"batter": "Aaron Judge", "xwoba": 0.472, "barrel_rate": 26.2, "sweet_spot": 39.1},
-    {"batter": "Juan Soto", "xwoba": 0.458, "barrel_rate": 17.5, "sweet_spot": 34.3},
-    {"batter": "James Wood", "xwoba": 0.411, "barrel_rate": 19.2, "sweet_spot": 34.9},
-    {"batter": "Oneil Cruz", "xwoba": 0.358, "barrel_rate": 22.0, "sweet_spot": 35.6},
-    {"batter": "Kyle Stowers", "xwoba": 0.381, "barrel_rate": 19.5, "sweet_spot": 37.9},
-    {"batter": "Austin Riley", "xwoba": 0.343, "barrel_rate": 14.5, "sweet_spot": 37.1},
-    {"batter": "Rafael Devers", "xwoba": 0.386, "barrel_rate": 15.5, "sweet_spot": 36.1},
-    {"batter": "Matt Olson", "xwoba": 0.390, "barrel_rate": 17.0, "sweet_spot": 39.0},
-    {"batter": "Shohei Ohtani", "xwoba": 0.431, "barrel_rate": 22.0, "sweet_spot": 32.8}
-]
+# Baseball Savant Statcast batter leaderboard
+url = "https://baseballsavant.mlb.com/leaderboard/statcast"
 
-pitchers = ["Tylor Megill", "Kyle Freeland", "Quinn Priester", "Nick Lodolo", "MacKenzie Gore",
-            "Luis Severino", "Paul Skenes", "Chris Sale", "Shane Smith", "Grant Holmes"]
+# Send request
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
+response = requests.get(url, headers=headers)
+soup = BeautifulSoup(response.text, "html.parser")
 
-# Assign random pitcher to each batter and calculate edge score
-for b in batters:
-    b["pitcher"] = random.choice(pitchers)
-    b["edge_score"] = round(
-        (b["xwoba"] + (b["barrel_rate"] / 100) + (b["sweet_spot"] / 100)) * 10, 2
-    )
+# Find the embedded JS script that contains the leaderboard data
+script_tags = soup.find_all("script")
+data_script = None
+for s in script_tags:
+    if "var leaderboardData =" in s.text:
+        data_script = s.text
+        break
+
+if not data_script:
+    raise Exception("Could not find data in page source.")
+
+# Extract the JSON object from JS
+start = data_script.find("var leaderboardData = ") + len("var leaderboardData = ")
+end = data_script.find(";
+", start)
+json_str = data_script[start:end].strip()
+data = json.loads(json_str)
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+df = df[["player_name", "team", "xwOBA", "barrel_batted_rate", "sweet_spot_percent"]]
+df.columns = ["batter", "team", "xwoba", "barrel_rate", "sweet_spot"]
+df = df.dropna().head(10)
+
+# Assign fake opposing pitchers (upgrade later)
+pitchers = ["Gerrit Cole", "Chris Sale", "Yu Darvish", "Max Fried", "Zack Wheeler",
+            "Logan Webb", "Nick Lodolo", "Paul Skenes", "Tylor Megill", "Kyle Freeland"]
+df["pitcher"] = pitchers[:len(df)]
+
+# Calculate edge score
+df["edge_score"] = ((df["xwoba"].astype(float) + df["barrel_rate"] / 100 + df["sweet_spot"] / 100) * 10).round(2)
 
 # Output to JSON
+props = df.to_dict(orient="records")
 with open("top_props.json", "w") as f:
-    json.dump(batters, f, indent=2)
+    json.dump(props, f, indent=2)
 
-print("top_props.json generated.")
+print("✅ Scraped and generated top_props.json successfully.")
