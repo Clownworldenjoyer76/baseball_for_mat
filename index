@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Betting Tips</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Sports Betting Insights</h1>
+    </header>
+    <main>
+        <section id="tip-of-the-day">
+            <h2>Tip of the Day</h2>
+            <p id="daily-tip">Loading best bet...</p>
+        </section>
+        <section id="upcoming-matches">
+            <h2>Upcoming Matches</h2>
+            <div id="matches-list">Live data will appear here.</div>
+        </section>
+        <section id="calculator">
+            <h2>Betting Calculator</h2>
+            <form id="bet-calculator">
+                <label for="stake">Stake:</label>
+                <input type="number" id="stake" required>
+                <label for="odds">Odds (decimal):</label>
+                <input type="number" step="0.01" id="odds" required>
+                <button type="button" onclick="calculateReturn()">Calculate</button>
+            </form>
+            <p id="return">Potential return will show here.</p>
+        </section>
+    
+        <section id="best-bets">
+            <h2>Today's Best Bets</h2>
+            <ul>
+                <li>⚾ Yankees ML vs Red Sox (-120) — 64% win probability</li>
+                <li>🏀 Celtics vs Heat Over 210.5 — 58% edge based on pace</li>
+                <li>🎾 Alcaraz -1.5 sets vs Zverev — 70% model confidence</li>
+            </ul>
+        </section>
+
+    
+        <section id="mlb-bet-assistant">
+            <h2>MLB Bet Assistant</h2>
+            <ul>
+                <li>
+                    ⚾ <strong>Yankees ML vs Red Sox (-115)</strong><br>
+                    🔹 Edge: NYY avg .289 vs LHP, BOS starter has 5.40 ERA<br>
+                    🔹 Confidence: 68% (Model + Trend)<br>
+                    🔹 Suggested Bet: $20 (Flat or Kelly)
+                </li>
+                <li>
+                    ⚾ <strong>Dodgers vs Giants Over 8.5 (-110)</strong><br>
+                    🔹 Edge: Both teams rank top 5 in HRs, wind blowing out<br>
+                    🔹 Confidence: 63%<br>
+                    🔹 Suggested Bet: $15
+                </li>
+                <li>
+                    ⚾ <strong>Orioles -1.5 vs White Sox (+130)</strong><br>
+                    🔹 Edge: CHW 29th in run differential, BAL bullpen elite<br>
+                    🔹 Confidence: 70%<br>
+                    🔹 Suggested Bet: $10
+                </li>
+            </ul>
+        </section>
+
+    </main>
+    <script src="js/scripts.js"></script>
+</body>
+</html>
