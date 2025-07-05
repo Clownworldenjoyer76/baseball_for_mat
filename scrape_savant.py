@@ -3,29 +3,41 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import json
 
-# STEP 1: Get today's games and pitchers
+# Static park factor map (sample, not full)
+PARK_FACTORS = {
+    "Coors Field": 1.08,
+    "Fenway Park": 1.04,
+    "Yankee Stadium": 1.03,
+    "Dodger Stadium": 1.00,
+    "Tropicana Field": 0.95,
+    "Oracle Park": 0.92,
+    "Guaranteed Rate Field": 1.01,
+    "Wrigley Field": 1.02,
+    "T-Mobile Park": 0.96
+}
+
 def get_today_pitchers():
-    url = "https://www.espn.com/mlb/lines"  # ESPN shows daily matchups and probables
+    url = "https://www.espn.com/mlb/lines"
     headers = {"User-Agent": "Mozilla/5.0"}
     r = requests.get(url, headers=headers)
     soup = BeautifulSoup(r.text, "html.parser")
 
     matchups = []
-
     for row in soup.select("section.Table__TR"):
         teams = row.select("span.sb-team-short")
         pitchers = row.select("span.gamepitcher")
+        stadium = row.select_one("div.game-location")
         if len(teams) == 2 and len(pitchers) == 2:
             matchup = {
                 "home_team": teams[1].text.strip(),
                 "away_team": teams[0].text.strip(),
                 "home_pitcher": pitchers[1].text.strip(),
-                "away_pitcher": pitchers[0].text.strip()
+                "away_pitcher": pitchers[0].text.strip(),
+                "stadium": stadium.text.strip() if stadium else "Unknown"
             }
             matchups.append(matchup)
     return matchups
 
-# STEP 2: Scrape Baseball Savant hitter leaderboard
 def get_top_batters():
     url = "https://baseballsavant.mlb.com/leaderboard/statcast"
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -54,31 +66,45 @@ def get_top_batters():
     df = df.dropna().head(10)
     return df
 
-# STEP 3: Add fake park and weather boosts (to be replaced by real values)
-def apply_environmental_adjustments(df):
-    df["park_boost"] = 1.02  # Simulate Coors or hitter-friendly park
-    df["weather_boost"] = 1.03  # Simulate good hitting weather
+def apply_adjustments(df, park_multiplier=1.00, weather_boost=1.00):
     df["edge_score"] = (
         (df["xwoba"].astype(float) + df["barrel_rate"] / 100 + df["sweet_spot"] / 100)
-        * df["park_boost"] * df["weather_boost"] * 10
+        * park_multiplier * weather_boost * 10
     ).round(2)
     return df
 
-# STEP 4: Build final JSON
 def generate_props():
     batters = get_top_batters()
-    batters = apply_environmental_adjustments(batters)
-
-    # Assign placeholder pitchers for now
     matchups = get_today_pitchers()
-    pitchers = [m["home_pitcher"] for m in matchups] + [m["away_pitcher"] for m in matchups]
-    batters["pitcher"] = (pitchers * 10)[:len(batters)]
 
-    props = batters[["batter", "team", "pitcher", "xwoba", "barrel_rate", "sweet_spot", "edge_score"]].to_dict(orient="records")
+    props = []
+    i = 0
+    for b in batters.to_dict(orient="records"):
+        matchup = matchups[i % len(matchups)]
+        stadium = matchup["stadium"]
+        park_boost = PARK_FACTORS.get(stadium, 1.00)
+        weather_boost = 1.02  # placeholder for wind/temp logic
+
+        edge = (
+            (float(b["xwoba"]) + b["barrel_rate"] / 100 + b["sweet_spot"] / 100)
+            * park_boost * weather_boost * 10
+        )
+        props.append({
+            "batter": b["batter"],
+            "team": b["team"],
+            "pitcher": matchup["home_pitcher"],
+            "stadium": stadium,
+            "park_boost": park_boost,
+            "xwoba": b["xwoba"],
+            "barrel_rate": b["barrel_rate"],
+            "sweet_spot": b["sweet_spot"],
+            "edge_score": round(edge, 2)
+        })
+        i += 1
+
     with open("top_props.json", "w") as f:
         json.dump(props, f, indent=2)
 
-    print("✅ top_props.json created with real batter data and simulated matchup + weather boost.")
+    print("✅ top_props.json created with park-adjusted edge scores.")
 
-# Run the script
 generate_props()
