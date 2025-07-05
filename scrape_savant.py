@@ -3,7 +3,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 import json
 
-# Static park factor map (sample, not full)
 PARK_FACTORS = {
     "Coors Field": 1.08,
     "Fenway Park": 1.04,
@@ -15,6 +14,19 @@ PARK_FACTORS = {
     "Wrigley Field": 1.02,
     "T-Mobile Park": 0.96
 }
+
+# Weather modifier based on wind speed and direction
+def get_weather_boost(temp, wind_speed, wind_direction):
+    boost = 1.00
+    if temp >= 85:
+        boost += 0.02
+    elif temp <= 55:
+        boost -= 0.02
+    if wind_direction == "out" and wind_speed >= 10:
+        boost += 0.03
+    elif wind_direction == "in" and wind_speed >= 10:
+        boost -= 0.03
+    return round(boost, 3)
 
 def get_today_pitchers():
     url = "https://www.espn.com/mlb/lines"
@@ -66,13 +78,6 @@ def get_top_batters():
     df = df.dropna().head(10)
     return df
 
-def apply_adjustments(df, park_multiplier=1.00, weather_boost=1.00):
-    df["edge_score"] = (
-        (df["xwoba"].astype(float) + df["barrel_rate"] / 100 + df["sweet_spot"] / 100)
-        * park_multiplier * weather_boost * 10
-    ).round(2)
-    return df
-
 def generate_props():
     batters = get_top_batters()
     matchups = get_today_pitchers()
@@ -83,7 +88,13 @@ def generate_props():
         matchup = matchups[i % len(matchups)]
         stadium = matchup["stadium"]
         park_boost = PARK_FACTORS.get(stadium, 1.00)
-        weather_boost = 1.02  # placeholder for wind/temp logic
+
+        # Simulated weather data
+        temp = 87 if "Coors" in stadium else 72
+        wind_speed = 12 if "Wrigley" in stadium else 5
+        wind_direction = "out" if "Coors" in stadium else "neutral"
+
+        weather_boost = get_weather_boost(temp, wind_speed, wind_direction)
 
         edge = (
             (float(b["xwoba"]) + b["barrel_rate"] / 100 + b["sweet_spot"] / 100)
@@ -95,6 +106,7 @@ def generate_props():
             "pitcher": matchup["home_pitcher"],
             "stadium": stadium,
             "park_boost": park_boost,
+            "weather_boost": weather_boost,
             "xwoba": b["xwoba"],
             "barrel_rate": b["barrel_rate"],
             "sweet_spot": b["sweet_spot"],
@@ -105,6 +117,6 @@ def generate_props():
     with open("top_props.json", "w") as f:
         json.dump(props, f, indent=2)
 
-    print("✅ top_props.json created with park-adjusted edge scores.")
+    print("✅ top_props.json created with park and weather-adjusted edge scores.")
 
 generate_props()
