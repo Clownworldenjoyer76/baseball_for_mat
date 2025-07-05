@@ -2,69 +2,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sports Betting Tips</title>
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8">
+  <title>MLB Betting Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; font-size: 14px; }
+    th { background-color: #333; color: #fff; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Sports Betting Insights</h1>
-    </header>
-    <main>
-        <section id="tip-of-the-day">
-            <h2>Tip of the Day</h2>
-            <p id="daily-tip">Loading best bet...</p>
-        </section>
-        <section id="upcoming-matches">
-            <h2>Upcoming Matches</h2>
-            <div id="matches-list">Live data will appear here.</div>
-        </section>
-        <section id="calculator">
-            <h2>Betting Calculator</h2>
-            <form id="bet-calculator">
-                <label for="stake">Stake:</label>
-                <input type="number" id="stake" required>
-                <label for="odds">Odds (decimal):</label>
-                <input type="number" step="0.01" id="odds" required>
-                <button type="button" onclick="calculateReturn()">Calculate</button>
-            </form>
-            <p id="return">Potential return will show here.</p>
-        </section>
-    
-        <section id="best-bets">
-            <h2>Today's Best Bets</h2>
-            <ul>
-                <li>⚾ Yankees ML vs Red Sox (-120) — 64% win probability</li>
-                <li>🏀 Celtics vs Heat Over 210.5 — 58% edge based on pace</li>
-                <li>🎾 Alcaraz -1.5 sets vs Zverev — 70% model confidence</li>
-            </ul>
-        </section>
+  <h1>Top MLB Player Prop Edges</h1>
+  <table id="propTable">
+    <thead>
+      <tr>
+        <th>Batter</th>
+        <th>Pitcher</th>
+        <th>xwOBA</th>
+        <th>Barrel %</th>
+        <th>Sweet Spot %</th>
+        <th>Edge Score</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-    
-        <section id="mlb-bet-assistant" style="margin-bottom: 20px;">
-            <h2>MLB Bet Assistant</h2>
-            <div style="background:#fff;padding:15px;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,0.1);margin-bottom:10px;">
-                <strong>⚾ Yankees ML vs Red Sox (-115)</strong><br>
-                🔹 Edge: NYY avg .289 vs LHP, BOS starter has 5.40 ERA<br>
-                🔹 Confidence: 68% (Model + Trend)<br>
-                🔹 Suggested Bet: $20 (Flat or Kelly)
-            </div>
-            <div style="background:#fff;padding:15px;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,0.1);margin-bottom:10px;">
-                <strong>⚾ Dodgers vs Giants Over 8.5 (-110)</strong><br>
-                🔹 Edge: Both teams rank top 5 in HRs, wind blowing out<br>
-                🔹 Confidence: 63%<br>
-                🔹 Suggested Bet: $15
-            </div>
-            <div style="background:#fff;padding:15px;border-radius:8px;box-shadow:0 0 5px rgba(0,0,0,0.1);">
-                <strong>⚾ Orioles -1.5 vs White Sox (+130)</strong><br>
-                🔹 Edge: CHW 29th in run differential, BAL bullpen elite<br>
-                🔹 Confidence: 70%<br>
-                🔹 Suggested Bet: $10
-            </div>
-        </section>
-
-    </main>
-    <script src="js/scripts.js"></script>
+  <script>
+    fetch('top_props.json')
+      .then(res => res.json())
+      .then(data => {
+        const tbody = document.querySelector('#propTable tbody');
+        data.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.batter}</td>
+            <td>${row.pitcher}</td>
+            <td>${row.xwoba}</td>
+            <td>${row.barrel_rate}</td>
+            <td>${row.sweet_spot}</td>
+            <td><strong>${row.edge_score}</strong></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+  </script>
 </body>
 </html>
