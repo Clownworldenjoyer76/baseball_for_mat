@@ -1,0 +1,32 @@
+name: Generate Daily Bets
+
+on:
+  schedule:
+    - cron: "0 11 * * *"  # Runs daily at 11:00 UTC (7:00 AM ET)
+  workflow_dispatch:  # Manual trigger allowed
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Run generator
+        run: python generate_daily_bets.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add daily_bets.json
+          git commit -m "Auto-generate daily_bets.json"
+          git push
