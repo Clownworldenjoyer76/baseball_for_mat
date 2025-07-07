@@ -30,3 +30,36 @@ TEAM_NICKNAME_MAP = {
     "Toronto Blue Jays": "Blue Jays",
     "Washington Nationals": "Nationals"
 }
+
+TEAM_TO_VENUE_MAP = {
+    "Arizona Diamondbacks": "Chase Field",
+    "Atlanta Braves": "Truist Park",
+    "Baltimore Orioles": "Oriole Park at Camden Yards",
+    "Boston Red Sox": "Fenway Park",
+    "Chicago Cubs": "Wrigley Field",
+    "Chicago White Sox": "Guaranteed Rate Field",
+    "Cincinnati Reds": "Great American Ball Park",
+    "Cleveland Guardians": "Progressive Field",
+    "Colorado Rockies": "Coors Field",
+    "Detroit Tigers": "Comerica Park",
+    "Houston Astros": "Minute Maid Park",
+    "Kansas City Royals": "Kauffman Stadium",
+    "Los Angeles Angels": "Angel Stadium",
+    "Los Angeles Dodgers": "Dodger Stadium",
+    "Miami Marlins": "LoanDepot Park",
+    "Milwaukee Brewers": "American Family Field",
+    "Minnesota Twins": "Target Field",
+    "New York Mets": "Citi Field",
+    "New York Yankees": "Yankee Stadium",
+    "Oakland Athletics": "Oakland Coliseum",
+    "Philadelphia Phillies": "Citizens Bank Park",
+    "Pittsburgh Pirates": "PNC Park",
+    "San Diego Padres": "Petco Park",
+    "San Francisco Giants": "Oracle Park",
+    "Seattle Mariners": "T-Mobile Park",
+    "St. Louis Cardinals": "Busch Stadium",
+    "Tampa Bay Rays": "Tropicana Field",
+    "Texas Rangers": "Globe Life Field",
+    "Toronto Blue Jays": "Rogers Centre",
+    "Washington Nationals": "Nationals Park"
+}
