@@ -87,7 +87,20 @@ for date_data in data.get("dates", []):
         matchup = f"{home_team} vs {away_team}"
 
         park_data = get_park_factors(home_team)
-        venue = park_data.get("Venue", "")
+
+        # Use static map if park data lacks venue
+        venue = park_data.get("Venue") or TEAM_TO_VENUE_MAP.get(home_team, "")
+
+        # Ensure park_data is always filled
+        park_data = {
+            "HR": park_data.get("HR") if park_data else None,
+            "H": park_data.get("H") if park_data else None,
+            "HardHit": park_data.get("HardHit") if park_data else None,
+            "OBP": park_data.get("OBP") if park_data else None,
+            "wOBACon": park_data.get("wOBACon") if park_data else None,
+            "xwOBACon": park_data.get("xwOBACon") if park_data else None,
+        }
+
         weather = get_weather(venue)
 
         games_out.append({
@@ -99,12 +112,12 @@ for date_data in data.get("dates", []):
             },
             "park_factors": {
                 "venue": venue,
-                "HR": park_data.get("HR"),
-                "H": park_data.get("H"),
-                "HardHit": park_data.get("HardHit"),
-                "OBP": park_data.get("OBP"),
-                "wOBACon": park_data.get("wOBACon"),
-                "xwOBACon": park_data.get("xwOBACon")
+                "HR": park_data["HR"],
+                "H": park_data["H"],
+                "HardHit": park_data["HardHit"],
+                "OBP": park_data["OBP"],
+                "wOBACon": park_data["wOBACon"],
+                "xwOBACon": park_data["xwOBACon"]
             },
             "weather": weather
         })
