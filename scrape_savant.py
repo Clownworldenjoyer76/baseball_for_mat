@@ -1,8 +1,8 @@
-
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 import json
+from io import StringIO
 
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
 
@@ -85,7 +85,10 @@ def get_today_pitchers():
 
 def get_top_batters():
     url = "https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=batter&year=2025&position=&team=&min_abs=50"
-    df = pd.read_csv(url)
+    headers = {"User-Agent": "Mozilla/5.0"}
+    r = requests.get(url, headers=headers)
+    r.raise_for_status()
+    df = pd.read_csv(StringIO(r.text))
     df = df[["player_name", "team_name", "xwOBA", "brl_percent", "sweet_spot_percent"]]
     df.columns = ["batter", "team", "xwoba", "barrel_rate", "sweet_spot"]
     df = df.dropna().sort_values(by="xwoba", ascending=False).head(10)
