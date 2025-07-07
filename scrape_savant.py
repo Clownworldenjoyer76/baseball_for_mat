@@ -84,26 +84,11 @@ def get_today_pitchers():
     return matchups
 
 def get_top_batters():
-    url = "https://baseballsavant.mlb.com/leaderboard/statcast"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    r = requests.get(url, headers=headers)
-    soup = BeautifulSoup(r.text, "html.parser")
-    scripts = soup.find_all("script")
-    data_script = None
-    for s in scripts:
-        if "var leaderboardData =" in s.text:
-            data_script = s.text
-            break
-    if not data_script:
-        raise Exception("Could not find embedded statcast data.")
-    start = data_script.find("var leaderboardData = ") + len("var leaderboardData = ")
-    end = data_script.find(";", start)
-    json_str = data_script[start:end].strip()
-    data = json.loads(json_str)
-    df = pd.DataFrame(data)
-    df = df[["player_name", "team", "xwOBA", "barrel_batted_rate", "sweet_spot_percent"]]
+    url = "https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=batter&year=2025&position=&team=&min_abs=50"
+    df = pd.read_csv(url)
+    df = df[["player_name", "team_name", "xwOBA", "brl_percent", "sweet_spot_percent"]]
     df.columns = ["batter", "team", "xwoba", "barrel_rate", "sweet_spot"]
-    df = df.dropna().head(10)
+    df = df.dropna().sort_values(by="xwoba", ascending=False).head(10)
     return df
 
 def generate_props():
