@@ -95,8 +95,6 @@ def get_top_batters():
             data_script = s.text
             break
     if not data_script:
-        for s in scripts:
-            print("\n\nSCRIPT BLOCK:\n", s.text[:500])
         raise Exception("Could not find embedded statcast data.")
     start = data_script.find("var leaderboardData = ") + len("var leaderboardData = ")
     end = data_script.find(";
