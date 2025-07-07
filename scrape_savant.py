@@ -1,3 +1,4 @@
+
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
@@ -94,9 +95,12 @@ def get_top_batters():
             data_script = s.text
             break
     if not data_script:
+        for s in scripts:
+            print("\n\nSCRIPT BLOCK:\n", s.text[:500])
         raise Exception("Could not find embedded statcast data.")
     start = data_script.find("var leaderboardData = ") + len("var leaderboardData = ")
-    end = data_script.find(";\n", start)
+    end = data_script.find(";
+", start)
     json_str = data_script[start:end].strip()
     data = json.loads(json_str)
     df = pd.DataFrame(data)
