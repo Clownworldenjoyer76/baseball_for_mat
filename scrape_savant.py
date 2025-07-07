@@ -1,8 +1,8 @@
+
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 import json
-from io import StringIO
 
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
 
@@ -84,15 +84,28 @@ def get_today_pitchers():
     return matchups
 
 def get_top_batters():
+    import time
+    import requests
+    import pandas as pd
+
     url = "https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=batter&year=2025&position=&team=&min_abs=50"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    r = requests.get(url, headers=headers)
-    r.raise_for_status()
-    df = pd.read_csv(StringIO(r.text))
-    df = df[["player_name", "team_name", "xwOBA", "brl_percent", "sweet_spot_percent"]]
-    df.columns = ["batter", "team", "xwoba", "barrel_rate", "sweet_spot"]
-    df = df.dropna().sort_values(by="xwoba", ascending=False).head(10)
-    return df
+    retries = 3
+    delay = 3
+
+    for attempt in range(retries):
+        try:
+            r = requests.get(url, timeout=20)
+            r.raise_for_status()
+            with open("/tmp/top_batters.csv", "wb") as f:
+                f.write(r.content)
+            df = pd.read_csv("/tmp/top_batters.csv")
+            print("CSV Columns:
+", df.columns.tolist())  # DEBUG LINE
+            return df.head(1)  # Return a small sample so job still completes
+        except Exception as e:
+            print(f"Attempt {attempt+1} failed: {e}")
+            time.sleep(delay)
+    raise Exception("All retries failed")
 
 def generate_props():
     batters = get_top_batters()
