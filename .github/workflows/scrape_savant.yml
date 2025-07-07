@@ -1,0 +1,32 @@
+name: Scrape Savant Data
+
+on:
+  schedule:
+    - cron: "0 11 * * *"  # Runs daily at 7:00 AM ET
+  workflow_dispatch:
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install pandas requests beautifulsoup4 lxml
+
+      - name: Run scrape_savant.py
+        run: python scrape_savant.py
+
+      - name: Commit updated top_props.json
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add top_props.json
+          git commit -m "Auto-update top_props.json"
+          git push
