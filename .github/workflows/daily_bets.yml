@@ -3,7 +3,7 @@ name: Generate Daily Bets
 on:
   schedule:
     - cron: "0 11 * * *"  # Runs daily at 11:00 UTC (7:00 AM ET)
-  workflow_dispatch:  # Manual trigger allowed
+  workflow_dispatch:
 
 jobs:
   generate:
@@ -23,23 +23,10 @@ jobs:
       - name: Run generator
         run: python generate_daily_bets.py
 
-- name: Check for changes
-  run: |
-    git diff --quiet || echo "has_changes=true" >> $GITHUB_ENV
-
-- name: Commit and push
-  if: env.has_changes == 'true'
-  run: |
-    git config user.name "GitHub Actions"
-    git config user.email "actions@github.com"
-    git commit -am "Auto-update daily_bets.json"
-    git push
-
-    
- - name: Commit and push
+      - name: Commit and push
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add daily_bets.json
-          git commit -m "Auto-generate daily_bets.json"
+          git commit -m "Auto-generate daily_bets.json" || echo "No changes to commit"
           git push
