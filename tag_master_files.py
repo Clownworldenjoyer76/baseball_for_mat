@@ -1,60 +1,52 @@
+
+from pathlib import Path
 import pandas as pd
-import os
 
-def load_lookup_table(path):
-    df = pd.read_csv(path)
-    df["name"] = df["name"].str.strip().str.lower()
-    return df.set_index("name")[["team", "type"]]
+# Define file paths
+batters_file = Path("data/master/batters.csv")
+pitchers_file = Path("data/master/pitchers.csv")
+lookup_file = Path("data/processed/player_team_master.csv")
 
-def tag_file(input_path, output_path, unmatched_path, player_map, expected_type):
-    df = pd.read_csv(input_path)
-    df["lookup_name"] = df["last_name, first_name"].str.strip().str.lower()
-    df["team"] = df["lookup_name"].map(player_map["team"])
-    df["type"] = df["lookup_name"].map(player_map["type"])
-    matched = df[df["team"].notna() & (df["type"] == expected_type)].drop(columns=["lookup_name"])
-    unmatched = df[df["team"].isna() | (df["type"] != expected_type)].drop(columns=["lookup_name"])
-    matched.to_csv(output_path, index=False)
-    unmatched.to_csv(unmatched_path, index=False)
-    return len(df), len(matched), len(unmatched)
+tagged_batters_file = Path("data/tagged/batters_tagged.csv")
+tagged_pitchers_file = Path("data/tagged/pitchers_tagged.csv")
+unmatched_batters_file = Path("data/output/unmatched_batters.csv")
+unmatched_pitchers_file = Path("data/output/unmatched_pitchers.csv")
+player_totals_file = Path("data/output/player_totals.txt")
 
-def write_totals(total_batters, matched_batters, unmatched_batters, total_pitchers, matched_pitchers, unmatched_pitchers):
-    os.makedirs("data/output", exist_ok=True)
-    summary = f"""Total batters in CSV: {total_batters}
-✅ batters_tagged.csv created with {matched_batters} rows
-⚠️ Unmatched batters (missing team): {unmatched_batters} written to unmatched_batters.csv
+# Create output directories if they don't exist
+tagged_batters_file.parent.mkdir(parents=True, exist_ok=True)
+unmatched_batters_file.parent.mkdir(parents=True, exist_ok=True)
 
-Total pitchers in CSV: {total_pitchers}
-✅ pitchers_tagged.csv created with {matched_pitchers} rows
-⚠️ Unmatched pitchers (missing team): {unmatched_pitchers} written to unmatched_pitchers.csv
-"""
-    with open("data/output/player_totals.txt", "w") as f:
-        f.write(summary)
-    print(summary)
+# Load data
+batters_df = pd.read_csv(batters_file)
+pitchers_df = pd.read_csv(pitchers_file)
+lookup_df = pd.read_csv(lookup_file)
 
-def main():
-    os.makedirs("data/tagged", exist_ok=True)
-    os.makedirs("data/output", exist_ok=True)
+# Ensure consistent naming
+lookup_df = lookup_df.rename(columns={"name": "last_name, first_name"})
 
-    lookup_path = "data/processed/player_team_master.csv"
-    player_map = load_lookup_table(lookup_path)
+def tag_players(df, player_type):
+    df["type"] = player_type
+    merged = df.merge(lookup_df, on="last_name, first_name", how="left", suffixes=("", "_lookup"))
+    matched = merged[merged["team"].notna()].copy()
+    unmatched = merged[merged["team"].isna()][["last_name, first_name"]].copy()
+    return matched, unmatched
 
-    total_batters, matched_batters, unmatched_batters = tag_file(
-        "data/master/batters.csv",
-        "data/tagged/batters_tagged.csv",
-        "data/tagged/unmatched_batters.csv",
-        player_map,
-        "batter"
-    )
+# Tag batters and pitchers
+tagged_batters, unmatched_batters = tag_players(batters_df, "batter")
+tagged_pitchers, unmatched_pitchers = tag_players(pitchers_df, "pitcher")
 
-    total_pitchers, matched_pitchers, unmatched_pitchers = tag_file(
-        "data/master/pitchers.csv",
-        "data/tagged/pitchers_tagged.csv",
-        "data/tagged/unmatched_pitchers.csv",
-        player_map,
-        "pitcher"
-    )
+# Save outputs
+tagged_batters.to_csv(tagged_batters_file, index=False)
+tagged_pitchers.to_csv(tagged_pitchers_file, index=False)
+unmatched_batters.to_csv(unmatched_batters_file, index=False)
+unmatched_pitchers.to_csv(unmatched_pitchers_file, index=False)
 
-    write_totals(total_batters, matched_batters, unmatched_batters, total_pitchers, matched_pitchers, unmatched_pitchers)
-
-if __name__ == "__main__":
-    main()
+# Write totals
+with open(player_totals_file, "w") as f:
+    f.write(f"Total Batters: {len(batters_df)}\n")
+    f.write(f"Matched Batters: {len(tagged_batters)}\n")
+    f.write(f"Unmatched Batters: {len(unmatched_batters)}\n\n")
+    f.write(f"Total Pitchers: {len(pitchers_df)}\n")
+    f.write(f"Matched Pitchers: {len(tagged_pitchers)}\n")
+    f.write(f"Unmatched Pitchers: {len(unmatched_pitchers)}\n")
