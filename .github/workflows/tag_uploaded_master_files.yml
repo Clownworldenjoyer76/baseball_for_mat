@@ -8,18 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout main branch
+      - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          ref: main
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install pandas
+      - name: Install pandas and dependencies
         run: pip install pandas
 
       - name: Run tag_master_files.py with full traceback
@@ -27,18 +24,15 @@ jobs:
           set -e
           python tag_master_files.py || { echo "❌ Python crashed"; exit 1; }
 
-      - name: Show git diff
-        run: |
-          git status
-          git diff --stat
-
       - name: Commit and push tagged CSVs and totals
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
           git add data/tagged/*.csv || true
+          git add data/output/*.csv || true
           git add data/output/*.txt || true
 
-          git diff --cached --quiet || git commit -m "Tag files and write totals"
+          git status
+          git commit -am "🔁 Force update: tag files and write totals" || echo "No changes to commit"
           git push
