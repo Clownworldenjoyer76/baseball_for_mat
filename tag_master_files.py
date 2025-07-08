@@ -1,8 +1,6 @@
-
 import pandas as pd
 import os
 from difflib import get_close_matches
-import traceback
 
 def normalize_name(name):
     if not isinstance(name, str):
@@ -12,8 +10,9 @@ def normalize_name(name):
 def load_team_map(file_path):
     return pd.read_csv(file_path).set_index("name")["team"].to_dict()
 
-def tag_players(df, col_name, team_map, output_path, unmatched_path):
-    df["normalized_name"] = df[col_name].apply(normalize_name)
+def tag_players(df, team_map, output_path, unmatched_path):
+    df["name"] = df["first_name"].str.strip() + " " + df["last_name"].str.strip()
+    df["normalized_name"] = df["name"].apply(normalize_name)
     matched_teams = []
     unmatched_rows = []
 
@@ -57,37 +56,32 @@ Total pitchers in CSV: {total_pitchers}
         f.write(output)
 
 def main():
-    try:
-        os.makedirs("data/tagged", exist_ok=True)
-        os.makedirs("data/output", exist_ok=True)
+    os.makedirs("data/tagged", exist_ok=True)
+    os.makedirs("data/output", exist_ok=True)
 
-        team_map = load_team_map("data/Data/team_name_map.csv")
+    team_map = load_team_map("data/Data/team_name_map.csv")
 
-        batter_input = "data/master/batters.csv"
-        pitcher_input = "data/master/pitchers.csv"
+    batter_input = "data/master/batters.csv"
+    pitcher_input = "data/master/pitchers.csv"
 
-        bat_count = tag_players(
-            pd.read_csv(batter_input),
-            "name",
-            team_map,
-            "data/tagged/batters_tagged.csv",
-            "data/output/unmatched_batters.csv"
-        )
+    bat_df = pd.read_csv(batter_input)
+    pitch_df = pd.read_csv(pitcher_input)
 
-        pitch_count = tag_players(
-            pd.read_csv(pitcher_input),
-            "name",
-            team_map,
-            "data/tagged/pitchers_tagged.csv",
-            "data/output/unmatched_pitchers.csv"
-        )
+    bat_count = tag_players(
+        bat_df,
+        team_map,
+        "data/tagged/batters_tagged.csv",
+        "data/output/unmatched_batters.csv"
+    )
 
-        write_totals(batter_input, pitcher_input, bat_count, pitch_count)
+    pitch_count = tag_players(
+        pitch_df,
+        team_map,
+        "data/tagged/pitchers_tagged.csv",
+        "data/output/unmatched_pitchers.csv"
+    )
 
-    except Exception:
-        print("SCRIPT FAILURE:")
-        print(traceback.format_exc())
-        raise
+    write_totals(batter_input, pitcher_input, bat_count, pitch_count)
 
 if __name__ == "__main__":
     main()
