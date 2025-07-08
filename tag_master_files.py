@@ -1,4 +1,7 @@
-
+if col_name not in df.columns:
+    print(f"❌ ERROR: Column '{col_name}' not found in {file_path}")
+    return 0, df  # return 0 matches and original df
+    
 import os
 import pandas as pd
 import unicodedata
