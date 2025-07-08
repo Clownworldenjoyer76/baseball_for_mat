@@ -9,8 +9,8 @@ lookup_file = Path("data/processed/player_team_master.csv")
 
 tagged_batters_file = Path("data/tagged/batters_tagged.csv")
 tagged_pitchers_file = Path("data/tagged/pitchers_tagged.csv")
-unmatched_batters_file = Path("data/output/unmatched_batters.csv")
-unmatched_pitchers_file = Path("data/output/unmatched_pitchers.csv")
+unmatched_batters_file = Path("data/tagged/unmatched_batters.csv")
+unmatched_pitchers_file = Path("data/tagged/unmatched_pitchers.csv")
 player_totals_file = Path("data/output/player_totals.txt")
 
 # Create output directories if they don't exist
