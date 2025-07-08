@@ -1,0 +1,30 @@
+name: Build Player Team Master CSV (One-Time Run)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-csv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install pandas
+        run: pip install pandas
+
+      - name: Run script to generate player_team_master.csv
+        run: python build_player_team_master.py
+
+      - name: Commit and push updated master file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/processed/player_team_master.csv
+          git commit -m "Generate player_team_master.csv"
+          git push
