@@ -64,3 +64,8 @@ if os.path.exists(pitchers_file):
         print("❌ Missing 'last_name, first_name' column in pitchers.csv")
 else:
     print(f"⚠️ Missing file: {pitchers_file}")
+##
+# Find unmatched pitchers
+unmatched = pitchers_df[~pitchers_df["name"].isin(tagged_pitchers["name"])]
+unmatched.to_csv("data/tagged/unmatched_pitchers.csv", index=False)
+print(f"⚠️ Unmatched pitchers: {len(unmatched)} written to unmatched_pitchers.csv")
