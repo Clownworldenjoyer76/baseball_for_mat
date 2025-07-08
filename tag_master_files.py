@@ -18,7 +18,6 @@ if os.path.exists(batters_file):
     batters_df = pd.read_csv(batters_file)
     print("📋 Batters CSV columns:", batters_df.columns.tolist())
 
-    # Detect correct batter name column
     batter_name_col = None
     for col in batters_df.columns:
         normalized = col.strip().lower()
@@ -60,12 +59,12 @@ if os.path.exists(pitchers_file):
         )
         tagged_pitchers.to_csv(os.path.join(output_folder, "pitchers_tagged.csv"), index=False)
         print(f"✅ pitchers_tagged.csv created with {len(tagged_pitchers)} rows")
+
+        # NEW: detect unmatched pitchers by missing team
+        unmatched = tagged_pitchers[tagged_pitchers["team"].isna()]
+        unmatched.to_csv(os.path.join(output_folder, "unmatched_pitchers.csv"), index=False)
+        print(f"⚠️ Unmatched pitchers (missing team): {len(unmatched)} written to unmatched_pitchers.csv")
     else:
         print("❌ Missing 'last_name, first_name' column in pitchers.csv")
 else:
     print(f"⚠️ Missing file: {pitchers_file}")
-##
-# Find unmatched pitchers
-unmatched = pitchers_df[~pitchers_df["name"].isin(tagged_pitchers["name"])]
-unmatched.to_csv("data/tagged/unmatched_pitchers.csv", index=False)
-print(f"⚠️ Unmatched pitchers: {len(unmatched)} written to unmatched_pitchers.csv")
