@@ -1,87 +1,82 @@
+
 import pandas as pd
 import os
-from difflib import get_close_matches
 
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
-    return name.lower().replace(".", "").replace(",", "").replace("jr", "").replace("ii", "").replace("iii", "").strip()
+    return name.strip().lower().replace(".", "").replace(",", "").replace("jr", "").replace("ii", "").replace("iii", "")
 
-def load_team_map(file_path):
-    return pd.read_csv(file_path).set_index("name")["team"].to_dict()
+def tag_file(input_path, player_type, team_map, output_tagged, output_unmatched):
+    df = pd.read_csv(input_path)
+    df["normalized_name"] = df["last_name, first_name"].apply(normalize_name)
 
-def tag_players(df, team_map, output_path, unmatched_path):
-    df["name"] = df["first_name"].str.strip() + " " + df["last_name"].str.strip()
-    df["normalized_name"] = df["name"].apply(normalize_name)
-    matched_teams = []
-    unmatched_rows = []
+    matched = []
+    unmatched = []
 
     for _, row in df.iterrows():
         name = row["normalized_name"]
-        if name in team_map:
-            matched_teams.append(team_map[name])
+        match = team_map.get(name)
+        if match and match["type"] == player_type:
+            row["team"] = match["team"]
+            matched.append(row.drop(labels=["normalized_name"]))
         else:
-            matches = get_close_matches(name, team_map.keys(), n=1, cutoff=0.9)
-            if matches:
-                matched_teams.append(team_map[matches[0]])
-            else:
-                matched_teams.append(None)
-                unmatched_rows.append(row)
+            unmatched.append(row.drop(labels=["normalized_name"]))
 
-    df["team"] = matched_teams
-    matched_df = df[df["team"].notna()]
-    unmatched_df = pd.DataFrame(unmatched_rows)
+    tagged_df = pd.DataFrame(matched)
+    unmatched_df = pd.DataFrame(unmatched)
 
-    matched_df.drop(columns=["normalized_name"], inplace=True)
-    matched_df.to_csv(output_path, index=False)
-    unmatched_df.to_csv(unmatched_path, index=False)
+    tagged_df.to_csv(output_tagged, index=False)
+    unmatched_df.to_csv(output_unmatched, index=False)
 
-    return len(unmatched_df)
+    return len(df), len(tagged_df), len(unmatched_df)
 
-def write_totals(batter_input, pitcher_input, bat_count, pitch_count):
-    total_batters = len(pd.read_csv(batter_input))
-    total_pitchers = len(pd.read_csv(pitcher_input))
+def write_totals(bat_total, bat_tagged, bat_unmatched, pitch_total, pitch_tagged, pitch_unmatched, output_file):
+    output = f"""Total batters in CSV: {bat_total}
+Total pitchers in CSV: {pitch_total}
 
-    output = f"""Total batters in CSV: {total_batters}
-Total pitchers in CSV: {total_pitchers}
+✅ batters_tagged.csv created with {bat_tagged} rows
+⚠️ Unmatched batters (missing team): {bat_unmatched} written to unmatched_batters.csv
 
-✅ batters_tagged.csv created with {total_batters - bat_count} rows
-⚠️ Unmatched batters (missing team): {bat_count} written to unmatched_batters.csv
-
-✅ pitchers_tagged.csv created with {total_pitchers - pitch_count} rows
-⚠️ Unmatched pitchers (missing team): {pitch_count} written to unmatched_pitchers.csv
+✅ pitchers_tagged.csv created with {pitch_tagged} rows
+⚠️ Unmatched pitchers (missing team): {pitch_unmatched} written to unmatched_pitchers.csv
 """
     print(output)
-    with open("data/output/player_totals.txt", "w") as f:
+    with open(output_file, "w") as f:
         f.write(output)
 
 def main():
     os.makedirs("data/tagged", exist_ok=True)
     os.makedirs("data/output", exist_ok=True)
 
-    team_map = load_team_map("data/Data/team_name_map.csv")
+    master_df = pd.read_csv("data/processed/player_team_master.csv")
+    master_df["normalized_name"] = master_df["name"].apply(normalize_name)
+    team_map = {
+        row["normalized_name"]: {"team": row["team"], "type": row["type"]}
+        for _, row in master_df.iterrows()
+    }
 
-    batter_input = "data/master/batters.csv"
-    pitcher_input = "data/master/pitchers.csv"
-
-    bat_df = pd.read_csv(batter_input)
-    pitch_df = pd.read_csv(pitcher_input)
-
-    bat_count = tag_players(
-        bat_df,
+    bat_total, bat_tagged, bat_unmatched = tag_file(
+        "data/master/batters.csv",
+        "batter",
         team_map,
         "data/tagged/batters_tagged.csv",
         "data/output/unmatched_batters.csv"
     )
 
-    pitch_count = tag_players(
-        pitch_df,
+    pitch_total, pitch_tagged, pitch_unmatched = tag_file(
+        "data/master/pitchers.csv",
+        "pitcher",
         team_map,
         "data/tagged/pitchers_tagged.csv",
         "data/output/unmatched_pitchers.csv"
     )
 
-    write_totals(batter_input, pitcher_input, bat_count, pitch_count)
+    write_totals(
+        bat_total, bat_tagged, bat_unmatched,
+        pitch_total, pitch_tagged, pitch_unmatched,
+        "data/output/player_totals.txt"
+    )
 
 if __name__ == "__main__":
     main()
