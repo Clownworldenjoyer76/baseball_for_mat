@@ -24,8 +24,12 @@ jobs:
 
       - name: Commit and push tagged CSVs
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/tagged/batters_tagged.csv data/tagged/pitchers_tagged.csv
-          git commit -m "Tag master batter/pitcher files with team names"
-          git push
+    git config user.name "github-actions"
+    git config user.email "github-actions@github.com"
+    
+    # Add all .csv files under tagged (wildcard avoids hard fails)
+    git add data/tagged/*.csv || true
+
+    # Only commit if there are changes
+    git diff --cached --quiet || git commit -m "Tag master batter/pitcher files"
+    git push
