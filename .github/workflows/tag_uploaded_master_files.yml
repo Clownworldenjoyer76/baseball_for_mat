@@ -19,8 +19,22 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
+      - name: List repo structure before script
+        run: |
+          echo "🔍 Repo structure:"
+          ls -R
+
       - name: Run tag_master_files.py
-        run: python tag_master_files.py
+        run: |
+          echo "🚀 Running tag_master_files.py"
+          python tag_master_files.py
+
+      - name: List generated output
+        run: |
+          echo "📁 Tagged:"
+          ls -l data/tagged || echo "Tagged folder missing"
+          echo "📁 Output:"
+          ls -l data/output || echo "Output folder missing"
 
       - name: Commit and push tagged CSVs and totals
         run: |
