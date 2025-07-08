@@ -16,12 +16,19 @@ master_df = pd.read_csv(master_map_file)
 # -- TAG BATTERS --
 if os.path.exists(batters_file):
     batters_df = pd.read_csv(batters_file)
+    print("📋 Batters CSV columns:", batters_df.columns.tolist())
 
-    # Dynamically detect batter name column
+    # Detect correct batter name column
     batter_name_col = None
     for col in batters_df.columns:
         normalized = col.strip().lower()
-        if normalized in ["last name, first name", "last name,first name", "name"]:
+        if normalized in [
+            "last name, first name", 
+            "last name,first name", 
+            "last_name, first_name", 
+            "last_name,first_name",
+            "name"
+        ]:
             batter_name_col = col
             break
 
