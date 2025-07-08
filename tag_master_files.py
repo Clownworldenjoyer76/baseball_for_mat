@@ -1,5 +1,8 @@
+
 import pandas as pd
 import os
+from difflib import get_close_matches
+import traceback
 
 def normalize_name(name):
     if not isinstance(name, str):
@@ -19,9 +22,12 @@ def tag_players(df, col_name, team_map, output_path, unmatched_path):
         if name in team_map:
             matched_teams.append(team_map[name])
         else:
-            # Fuzzy matching removed for performance
-            matched_teams.append(None)
-            unmatched_rows.append(row)
+            matches = get_close_matches(name, team_map.keys(), n=1, cutoff=0.9)
+            if matches:
+                matched_teams.append(team_map[matches[0]])
+            else:
+                matched_teams.append(None)
+                unmatched_rows.append(row)
 
     df["team"] = matched_teams
     matched_df = df[df["team"].notna()]
@@ -77,8 +83,10 @@ def main():
         )
 
         write_totals(batter_input, pitcher_input, bat_count, pitch_count)
-    except Exception as e:
-        print("🔥 ERROR:", e)
+
+    except Exception:
+        print("SCRIPT FAILURE:")
+        print(traceback.format_exc())
         raise
 
 if __name__ == "__main__":
