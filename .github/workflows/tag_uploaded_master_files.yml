@@ -3,6 +3,9 @@ name: Tag Uploaded Master Files
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   tag-master-files:
     runs-on: ubuntu-latest
