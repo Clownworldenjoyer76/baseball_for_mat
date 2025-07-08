@@ -3,16 +3,16 @@ name: Tag Uploaded Master Files
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   tag-master-files:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout main branch
         uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -27,6 +27,11 @@ jobs:
           set -e
           python tag_master_files.py || { echo "❌ Python crashed"; exit 1; }
 
+      - name: Show git diff
+        run: |
+          git status
+          git diff --stat
+
       - name: Commit and push tagged CSVs and totals
         run: |
           git config user.name "github-actions"
@@ -35,5 +40,5 @@ jobs:
           git add data/tagged/*.csv || true
           git add data/output/*.txt || true
 
-          git commit -am "Force update of tagged files and totals" || echo "Nothing to commit"
+          git diff --cached --quiet || git commit -m "Tag files and write totals"
           git push
