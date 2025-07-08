@@ -16,26 +16,35 @@ master_df = pd.read_csv(master_map_file)
 # -- TAG BATTERS --
 if os.path.exists(batters_file):
     batters_df = pd.read_csv(batters_file)
-    batters_df["type"] = "batter"
-    tagged_batters = batters_df.merge(
-        master_df[master_df["type"] == "batter"],
-        on=["name", "type"],
-        how="left"
-    )
-    tagged_batters.to_csv(os.path.join(output_folder, "batters_tagged.csv"), index=False)
+    
+    # Rename column to match master format
+    if "last name, first name" in batters_df.columns:
+        batters_df = batters_df.rename(columns={"last name, first name": "name"})
+        batters_df["type"] = "batter"
+        tagged_batters = batters_df.merge(
+            master_df[master_df["type"] == "batter"],
+            on=["name", "type"],
+            how="left"
+        )
+        tagged_batters.to_csv(os.path.join(output_folder, "batters_tagged.csv"), index=False)
+    else:
+        print("Missing 'last name, first name' column in batters.csv")
 else:
     print(f"Missing file: {batters_file}")
 
 # -- TAG PITCHERS --
 if os.path.exists(pitchers_file):
     pitchers_df = pd.read_csv(pitchers_file)
-    pitchers_df = pitchers_df.rename(columns={"last_name, first_name": "name"})
-    pitchers_df["type"] = "pitcher"
-    tagged_pitchers = pitchers_df.merge(
-        master_df[master_df["type"] == "pitcher"],
-        on=["name", "type"],
-        how="left"
-    )
-    tagged_pitchers.to_csv(os.path.join(output_folder, "pitchers_tagged.csv"), index=False)
+    if "last_name, first_name" in pitchers_df.columns:
+        pitchers_df = pitchers_df.rename(columns={"last_name, first_name": "name"})
+        pitchers_df["type"] = "pitcher"
+        tagged_pitchers = pitchers_df.merge(
+            master_df[master_df["type"] == "pitcher"],
+            on=["name", "type"],
+            how="left"
+        )
+        tagged_pitchers.to_csv(os.path.join(output_folder, "pitchers_tagged.csv"), index=False)
+    else:
+        print("Missing 'last_name, first_name' column in pitchers.csv")
 else:
     print(f"Missing file: {pitchers_file}")
