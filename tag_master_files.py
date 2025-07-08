@@ -1,7 +1,7 @@
-
 from pathlib import Path
 import pandas as pd
 import unicodedata
+from datetime import datetime
 
 # Define file paths
 batters_file = Path("data/master/batters.csv")
@@ -63,8 +63,10 @@ tagged_pitchers.to_csv(tagged_pitchers_file, index=False)
 unmatched_batters.to_csv(unmatched_batters_file, index=False)
 unmatched_pitchers.to_csv(unmatched_pitchers_file, index=False)
 
-# Clear and refresh player_totals.txt
+# Write totals with timestamp
 with open(player_totals_file, "w") as f:
+    f.write(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+\n")
     f.write(f"Total Batters: {len(batters_df)}\n")
     f.write(f"Matched Batters: {len(tagged_batters)}\n")
     f.write(f"Unmatched Batters: {len(unmatched_batters)}\n\n")
