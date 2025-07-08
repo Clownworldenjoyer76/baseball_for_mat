@@ -16,10 +16,17 @@ master_df = pd.read_csv(master_map_file)
 # -- TAG BATTERS --
 if os.path.exists(batters_file):
     batters_df = pd.read_csv(batters_file)
-    
-    # Rename column to match master format
-    if "last name, first name" in batters_df.columns:
-        batters_df = batters_df.rename(columns={"last name, first name": "name"})
+
+    # Dynamically detect batter name column
+    batter_name_col = None
+    for col in batters_df.columns:
+        normalized = col.strip().lower()
+        if normalized in ["last name, first name", "last name,first name", "name"]:
+            batter_name_col = col
+            break
+
+    if batter_name_col:
+        batters_df = batters_df.rename(columns={batter_name_col: "name"})
         batters_df["type"] = "batter"
         tagged_batters = batters_df.merge(
             master_df[master_df["type"] == "batter"],
@@ -27,10 +34,11 @@ if os.path.exists(batters_file):
             how="left"
         )
         tagged_batters.to_csv(os.path.join(output_folder, "batters_tagged.csv"), index=False)
+        print(f"✅ batters_tagged.csv created with {len(tagged_batters)} rows")
     else:
-        print("Missing 'last name, first name' column in batters.csv")
+        print("❌ Could not find valid 'name' column in batters.csv")
 else:
-    print(f"Missing file: {batters_file}")
+    print(f"⚠️ Missing file: {batters_file}")
 
 # -- TAG PITCHERS --
 if os.path.exists(pitchers_file):
@@ -44,7 +52,8 @@ if os.path.exists(pitchers_file):
             how="left"
         )
         tagged_pitchers.to_csv(os.path.join(output_folder, "pitchers_tagged.csv"), index=False)
+        print(f"✅ pitchers_tagged.csv created with {len(tagged_pitchers)} rows")
     else:
-        print("Missing 'last_name, first_name' column in pitchers.csv")
+        print("❌ Missing 'last_name, first_name' column in pitchers.csv")
 else:
-    print(f"Missing file: {pitchers_file}")
+    print(f"⚠️ Missing file: {pitchers_file}")
