@@ -1,0 +1,41 @@
+import pandas as pd
+import os
+
+# Input files
+batters_file = "data/master/batters.csv"
+pitchers_file = "data/master/pitchers.csv"
+master_map_file = "data/processed/player_team_master.csv"
+
+# Output folder
+output_folder = "data/tagged"
+os.makedirs(output_folder, exist_ok=True)
+
+# Load player -> team map
+master_df = pd.read_csv(master_map_file)
+
+# -- TAG BATTERS --
+if os.path.exists(batters_file):
+    batters_df = pd.read_csv(batters_file)
+    batters_df["type"] = "batter"
+    tagged_batters = batters_df.merge(
+        master_df[master_df["type"] == "batter"],
+        on=["name", "type"],
+        how="left"
+    )
+    tagged_batters.to_csv(os.path.join(output_folder, "batters_tagged.csv"), index=False)
+else:
+    print(f"Missing file: {batters_file}")
+
+# -- TAG PITCHERS --
+if os.path.exists(pitchers_file):
+    pitchers_df = pd.read_csv(pitchers_file)
+    pitchers_df = pitchers_df.rename(columns={"last_name, first_name": "name"})
+    pitchers_df["type"] = "pitcher"
+    tagged_pitchers = pitchers_df.merge(
+        master_df[master_df["type"] == "pitcher"],
+        on=["name", "type"],
+        how="left"
+    )
+    tagged_pitchers.to_csv(os.path.join(output_folder, "pitchers_tagged.csv"), index=False)
+else:
+    print(f"Missing file: {pitchers_file}")
