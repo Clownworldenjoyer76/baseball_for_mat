@@ -1,82 +1,60 @@
-
 import pandas as pd
 import os
 
-def normalize_name(name):
-    if not isinstance(name, str):
-        return ""
-    return name.strip().lower().replace(".", "").replace(",", "").replace("jr", "").replace("ii", "").replace("iii", "")
+def load_lookup_table(path):
+    df = pd.read_csv(path)
+    df["name"] = df["name"].str.strip().str.lower()
+    return df.set_index("name")[["team", "type"]]
 
-def tag_file(input_path, player_type, team_map, output_tagged, output_unmatched):
+def tag_file(input_path, output_path, unmatched_path, player_map, expected_type):
     df = pd.read_csv(input_path)
-    df["normalized_name"] = df["last_name, first_name"].apply(normalize_name)
+    df["lookup_name"] = df["last_name, first_name"].str.strip().str.lower()
+    df["team"] = df["lookup_name"].map(player_map["team"])
+    df["type"] = df["lookup_name"].map(player_map["type"])
+    matched = df[df["team"].notna() & (df["type"] == expected_type)].drop(columns=["lookup_name"])
+    unmatched = df[df["team"].isna() | (df["type"] != expected_type)].drop(columns=["lookup_name"])
+    matched.to_csv(output_path, index=False)
+    unmatched.to_csv(unmatched_path, index=False)
+    return len(df), len(matched), len(unmatched)
 
-    matched = []
-    unmatched = []
+def write_totals(total_batters, matched_batters, unmatched_batters, total_pitchers, matched_pitchers, unmatched_pitchers):
+    os.makedirs("data/output", exist_ok=True)
+    summary = f"""Total batters in CSV: {total_batters}
+✅ batters_tagged.csv created with {matched_batters} rows
+⚠️ Unmatched batters (missing team): {unmatched_batters} written to unmatched_batters.csv
 
-    for _, row in df.iterrows():
-        name = row["normalized_name"]
-        match = team_map.get(name)
-        if match and match["type"] == player_type:
-            row["team"] = match["team"]
-            matched.append(row.drop(labels=["normalized_name"]))
-        else:
-            unmatched.append(row.drop(labels=["normalized_name"]))
-
-    tagged_df = pd.DataFrame(matched)
-    unmatched_df = pd.DataFrame(unmatched)
-
-    tagged_df.to_csv(output_tagged, index=False)
-    unmatched_df.to_csv(output_unmatched, index=False)
-
-    return len(df), len(tagged_df), len(unmatched_df)
-
-def write_totals(bat_total, bat_tagged, bat_unmatched, pitch_total, pitch_tagged, pitch_unmatched, output_file):
-    output = f"""Total batters in CSV: {bat_total}
-Total pitchers in CSV: {pitch_total}
-
-✅ batters_tagged.csv created with {bat_tagged} rows
-⚠️ Unmatched batters (missing team): {bat_unmatched} written to unmatched_batters.csv
-
-✅ pitchers_tagged.csv created with {pitch_tagged} rows
-⚠️ Unmatched pitchers (missing team): {pitch_unmatched} written to unmatched_pitchers.csv
+Total pitchers in CSV: {total_pitchers}
+✅ pitchers_tagged.csv created with {matched_pitchers} rows
+⚠️ Unmatched pitchers (missing team): {unmatched_pitchers} written to unmatched_pitchers.csv
 """
-    print(output)
-    with open(output_file, "w") as f:
-        f.write(output)
+    with open("data/output/player_totals.txt", "w") as f:
+        f.write(summary)
+    print(summary)
 
 def main():
     os.makedirs("data/tagged", exist_ok=True)
     os.makedirs("data/output", exist_ok=True)
 
-    master_df = pd.read_csv("data/processed/player_team_master.csv")
-    master_df["normalized_name"] = master_df["name"].apply(normalize_name)
-    team_map = {
-        row["normalized_name"]: {"team": row["team"], "type": row["type"]}
-        for _, row in master_df.iterrows()
-    }
+    lookup_path = "data/processed/player_team_master.csv"
+    player_map = load_lookup_table(lookup_path)
 
-    bat_total, bat_tagged, bat_unmatched = tag_file(
+    total_batters, matched_batters, unmatched_batters = tag_file(
         "data/master/batters.csv",
-        "batter",
-        team_map,
         "data/tagged/batters_tagged.csv",
-        "data/output/unmatched_batters.csv"
+        "data/tagged/unmatched_batters.csv",
+        player_map,
+        "batter"
     )
 
-    pitch_total, pitch_tagged, pitch_unmatched = tag_file(
+    total_pitchers, matched_pitchers, unmatched_pitchers = tag_file(
         "data/master/pitchers.csv",
-        "pitcher",
-        team_map,
         "data/tagged/pitchers_tagged.csv",
-        "data/output/unmatched_pitchers.csv"
+        "data/tagged/unmatched_pitchers.csv",
+        player_map,
+        "pitcher"
     )
 
-    write_totals(
-        bat_total, bat_tagged, bat_unmatched,
-        pitch_total, pitch_tagged, pitch_unmatched,
-        "data/output/player_totals.txt"
-    )
+    write_totals(total_batters, matched_batters, unmatched_batters, total_pitchers, matched_pitchers, unmatched_pitchers)
 
 if __name__ == "__main__":
     main()
