@@ -1,21 +1,22 @@
-
 import os
 import pandas as pd
 import unicodedata
-
-def strip_accents(text):
-    if not isinstance(text, str):
-        return ""
-    normalized = unicodedata.normalize("NFKD", text)
-    return ''.join([c for c in normalized if not unicodedata.combining(c)])
-
-def normalize_name(name):
-    return strip_accents(name).lower().strip()
+import re
 
 csv_folder = "data/team_csvs"
 output_file = "data/processed/player_team_master.csv"
 
 rows = []
+
+# Normalize and format names: strip accents, punctuation, then title case
+def normalize_name(name):
+    if not isinstance(name, str):
+        return ""
+    name = unicodedata.normalize("NFKD", name)
+    name = ''.join(c for c in name if not unicodedata.combining(c))
+    name = re.sub(r"[^\w\s,]", "", name)  # remove punctuation except comma
+    parts = [part.strip().capitalize() for part in name.split(",")]
+    return ", ".join(parts) if len(parts) == 2 else name.strip().title()
 
 for filename in os.listdir(csv_folder):
     file_path = os.path.join(csv_folder, filename)
