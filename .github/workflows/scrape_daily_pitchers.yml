@@ -1,0 +1,33 @@
+name: Scrape Daily Pitchers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 10 * * *'  # 10:00 AM UTC daily
+
+jobs:
+  scrape-pitchers:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 pandas
+
+      - name: Run scraper
+        run: python scrape_daily_pitchers.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/daily/todays_pitchers.csv
+          git commit -m "✅ Daily pitcher scrape"
+          git push
