@@ -1,4 +1,4 @@
-name: Normalize Player Names
+name: Normalize Batter and Pitcher Names
 
 on:
   workflow_dispatch:
@@ -22,10 +22,11 @@ jobs:
       - name: Run normalization script
         run: python normalize_names.py
 
-      - name: Commit normalized files
+      - name: Commit and push normalized files
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "🧼 Normalize player name columns" || echo "Nothing to commit"
-          git push || echo "Nothing to push"
+          git add data/Data/batters_normalized.csv
+          git add data/Data/pitchers_normalized.csv
+          git commit -m "Normalize batter and pitcher names"
+          git push
