@@ -27,7 +27,7 @@ def generate_weather_adjustments():
     rows = []
 
     for _, row in df.iterrows():
-        stadium = row['stadium']
+        stadium = row['venue']
         city = row['city']
         state = row['state']
         lat = row['latitude']
