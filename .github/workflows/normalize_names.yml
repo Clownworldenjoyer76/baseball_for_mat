@@ -19,14 +19,13 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
-      - name: Run normalization script
+      - name: Run normalize_names.py
         run: python normalize_names.py
 
-      - name: Commit and push normalized files
+      - name: Commit and push normalized CSVs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/Data/batters_normalized.csv
-          git add data/Data/pitchers_normalized.csv
+          git add data/normalized/*.csv
           git commit -m "Normalize batter and pitcher names"
           git push
