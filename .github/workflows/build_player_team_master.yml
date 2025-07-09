@@ -23,27 +23,10 @@ jobs:
       - name: Run script to generate player_team_master.csv
         run: python build_player_team_master.py
 
-      - name: Normalize names in player_team_master.csv
-        run: |
-          python -c "
-import pandas as pd
-import unicodedata
-
-def normalize(text):
-    if not isinstance(text, str):
-        return ''
-    text = unicodedata.normalize('NFKD', text)
-    return ''.join([c for c in text if not unicodedata.combining(c)]).lower().strip()
-
-df = pd.read_csv('data/processed/player_team_master.csv')
-df['last_name, first_name'] = df['last_name, first_name'].apply(normalize)
-df.to_csv('data/processed/player_team_master.csv', index=False)
-"
-
       - name: Commit and push updated master file
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add data/processed/player_team_master.csv
-          git commit -m "Normalize and update player_team_master.csv"
+          git commit -m "Generate player_team_master.csv"
           git push
