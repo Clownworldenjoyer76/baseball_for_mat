@@ -1,4 +1,3 @@
-
 import csv
 import requests
 import pandas as pd
@@ -6,7 +5,8 @@ from datetime import datetime
 import pytz
 
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
-INPUT_FILE = "data/Data/stadium_metadata.csv"
+STADIUM_FILE = "data/Data/stadium_metadata.csv"
+TODAYS_PITCHERS_FILE = "data/daily/todays_pitchers.csv"
 OUTPUT_FILE = "data/Data/weather_adjustments.csv"
 
 def get_weather(lat, lon):
@@ -23,22 +23,34 @@ def convert_to_localtime(game_time_str, tz_str):
     return game_datetime_utc.astimezone(local_tz).strftime("%I:%M %p")
 
 def generate_weather_adjustments():
-    df = pd.read_csv(INPUT_FILE)
-    rows = []
+    stadium_df = pd.read_csv(STADIUM_FILE)
+    pitchers_df = pd.read_csv(TODAYS_PITCHERS_FILE)
 
-    for _, row in df.iterrows():
+    merged_df = pd.merge(
+        pitchers_df[['home_team', 'game_time']],
+        stadium_df,
+        how='inner',
+        left_on='home_team',
+        right_on='home_team'
+    )
+
+    rows = []
+    for _, row in merged_df.iterrows():
         stadium = row['venue']
         city = row['city']
         state = row['state']
         lat = row['latitude']
         lon = row['longitude']
         timezone = row['timezone']
-        roof = row.get('is_dome', False)
+        roof = str(row.get('is_dome', False))
         game_time = row['game_time']
 
-        local_time = convert_to_localtime(game_time, timezone)
+        try:
+            local_time = convert_to_localtime(game_time, timezone)
+        except Exception as e:
+            local_time = f"Time Error: {str(e)}"
 
-        if roof.lower() in ['closed', 'dome']:
+        if roof.lower() in ['true', 'closed', 'dome']:
             weather = {
                 'temperature': 'N/A',
                 'wind_speed': 'N/A',
