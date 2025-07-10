@@ -1,0 +1,18 @@
+name: Create Weather Input
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-weather-input:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install pandas
+      - name: Run Script
+        run: python create_weather_input.py
