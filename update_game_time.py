@@ -21,3 +21,6 @@ if 'home_team' in pitchers_df.columns and 'game_time' in pitchers_df.columns:
     stadium_df['game_time'] = stadium_df['home_team'].map(time_map)
 
 stadium_df.to_csv(metadata_path, index=False)
+
+print("Updated stadium_metadata.csv:")
+print(df[['team', 'game_time']])
