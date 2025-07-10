@@ -33,7 +33,7 @@ def generate_weather_adjustments():
         lat = row['latitude']
         lon = row['longitude']
         timezone = row['timezone']
-        roof = row['roof']
+        roof = row.get('is_dome', False)
         game_time = row['game_time']
 
         local_time = convert_to_localtime(game_time, timezone)
