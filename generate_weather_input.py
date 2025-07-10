@@ -19,9 +19,6 @@ def main():
     tp = pd.read_csv(PITCHERS_FILE)
     sm = pd.read_csv(STADIUM_FILE)
 
-    print("📌 TP Columns:", tp.columns.tolist())
-    print("📌 SM Columns:", sm.columns.tolist())
-
     if "home_team" not in tp.columns or "home_team" not in sm.columns:
         print("Missing 'home_team' column in one of the input files.")
         return
@@ -30,8 +27,6 @@ def main():
     sm = standardize_team_names(sm, "home_team", team_map)
 
     merged = pd.merge(tp, sm, on="home_team", how="inner")
-
-    print("📌 Merged Columns:", merged.columns.tolist())
 
     output = merged[[
         "home_team", "game_time", "venue", "city", "state",
