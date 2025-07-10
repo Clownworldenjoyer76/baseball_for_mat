@@ -18,28 +18,23 @@ def main():
     tp = pd.read_csv(PITCHERS_FILE)
     sm = pd.read_csv(STADIUM_FILE)
 
-    if "home_team" not in tp.columns or "home_team" not in sm.columns:
-        print("Missing 'home_team' column in one of the input files.")
-        return
-
     tp = standardize_team_names(tp, "home_team", team_map)
     sm = standardize_team_names(sm, "home_team", team_map)
 
-    # Drop game_time from stadium metadata to avoid duplicate
-    sm = sm.drop(columns=[col for col in sm.columns if "game_time" in col], errors="ignore")
+    # Filter stadium metadata to only include teams present in todays_pitchers
+    sm_filtered = sm[sm["home_team"].isin(tp["home_team"])]
 
-    merged = pd.merge(tp, sm, on="home_team", how="inner")
+    # Join only needed columns, no merge of game_time
+    result = pd.DataFrame()
+    result["home_team"] = tp["home_team"]
+    result["game_time"] = tp["game_time"]
 
-    # Rename game_time_x to game_time (comes from tp)
-    if "game_time_x" in merged.columns:
-        merged = merged.rename(columns={"game_time_x": "game_time"})
+    sm_filtered = sm_filtered.set_index("home_team").reindex(tp["home_team"]).reset_index()
 
-    output = merged[[
-        "home_team", "game_time", "venue", "city", "state",
-        "timezone", "is_dome", "latitude", "longitude"
-    ]]
+    for col in ["venue", "city", "state", "timezone", "is_dome", "latitude", "longitude"]:
+        result[col] = sm_filtered[col]
 
-    output.to_csv(OUTPUT_FILE, index=False)
+    result.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
