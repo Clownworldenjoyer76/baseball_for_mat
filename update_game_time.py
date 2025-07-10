@@ -1,26 +1,31 @@
-
 import pandas as pd
 
-metadata_path = "data/Data/stadium_metadata.csv"
-pitchers_path = "data/daily/todays_pitchers.csv"
+def generate_game_time_updates():
+    stadium_df = pd.read_csv("data/Data/stadium_metadata.csv")
+    pitchers_df = pd.read_csv("data/daily/todays_pitchers.csv")
 
-stadium_df = pd.read_csv(metadata_path)
-pitchers_df = pd.read_csv(pitchers_path)
+    # Clear the game_time column
+    if "game_time" not in stadium_df.columns:
+        stadium_df["game_time"] = ""
+    else:
+        stadium_df["game_time"] = ""
 
-pitchers_df.rename(columns=lambda x: x.strip().lower(), inplace=True)
+    # Strip spaces to ensure proper matching
+    stadium_df["team"] = stadium_df["team"].str.strip()
+    pitchers_df["home_team"] = pitchers_df["home_team"].str.strip()
 
-# Clear all values in game_time column
-if 'game_time' not in stadium_df.columns:
-    stadium_df['game_time'] = ''
-else:
-    stadium_df['game_time'] = ''
+    # Map home_team game_time to matching team in stadium_df
+    for _, row in pitchers_df.iterrows():
+        home_team = row["home_team"]
+        game_time = row["game_time"]
 
-# Map home_team to game_time from today's pitchers
-if 'home_team' in pitchers_df.columns and 'game_time' in pitchers_df.columns:
-    time_map = pitchers_df.set_index('home_team')['game_time'].to_dict()
-    stadium_df['game_time'] = stadium_df['home_team'].map(time_map)
+        stadium_df.loc[stadium_df["team"] == home_team, "game_time"] = game_time
 
-stadium_df.to_csv(metadata_path, index=False)
+    # Print result for debugging
+    print("Updated stadium_metadata.csv:")
+    print(stadium_df[["team", "game_time"]])
 
-print("Updated stadium_metadata.csv:")
-print(df[['team', 'game_time']])
+    stadium_df.to_csv("data/Data/stadium_metadata.csv", index=False)
+
+if __name__ == "__main__":
+    generate_game_time_updates()
