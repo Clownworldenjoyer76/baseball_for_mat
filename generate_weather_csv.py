@@ -1,40 +1,35 @@
 import pandas as pd
 
-TEAM_MAP_FILE = "data/Data/team_name_map.csv"
+# File paths
 PITCHERS_FILE = "data/daily/todays_pitchers.csv"
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
 OUTPUT_FILE = "data/weather_input.csv"
 
-def load_team_map():
-    df = pd.read_csv(TEAM_MAP_FILE)
-    return dict(zip(df["name"].str.strip().str.lower(), df["team"].str.strip()))
-
-def standardize_team_names(df, column, team_dict):
-    df[column] = df[column].str.strip().str.lower().map(team_dict).fillna(df[column])
+def normalize(df, column):
+    df[column] = df[column].astype(str).str.strip().str.lower()
     return df
 
 def main():
-    team_map = load_team_map()
     tp = pd.read_csv(PITCHERS_FILE)
     sm = pd.read_csv(STADIUM_FILE)
 
-    tp = standardize_team_names(tp, "home_team", team_map)
-    sm = standardize_team_names(sm, "home_team", team_map)
+    tp = normalize(tp, "home_team")
+    sm = normalize(sm, "home_team")
 
-    # Filter stadium metadata to only include teams present in todays_pitchers
-    sm_filtered = sm[sm["home_team"].isin(tp["home_team"])]
+    if "game_time" not in tp.columns:
+        print("Missing 'game_time' in pitchers file.")
+        return
 
-    # Join only needed columns, no merge of game_time
-    result = pd.DataFrame()
-    result["home_team"] = tp["home_team"]
-    result["game_time"] = tp["game_time"]
+    # Select required columns
+    tp_trimmed = tp[["home_team", "game_time"]]
+    sm_trimmed = sm[[
+        "home_team", "venue", "city", "state", "timezone", "is_dome", "latitude", "longitude"
+    ]]
 
-    sm_filtered = sm_filtered.set_index("home_team").reindex(tp["home_team"]).reset_index()
+    # Merge only on home_team
+    combined = pd.merge(tp_trimmed, sm_trimmed, on="home_team", how="inner")
 
-    for col in ["venue", "city", "state", "timezone", "is_dome", "latitude", "longitude"]:
-        result[col] = sm_filtered[col]
-
-    result.to_csv(OUTPUT_FILE, index=False)
+    combined.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
