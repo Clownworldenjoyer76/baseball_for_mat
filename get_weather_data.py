@@ -7,7 +7,7 @@ import pytz
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
 TODAYS_PITCHERS_FILE = "data/daily/todays_pitchers.csv"
-OUTPUT_FILE = "data/Data/weather_adjustments.csv"
+OUTPUT_FILE = "data/weather_adjustments.csv"
 
 def get_weather(lat, lon):
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=imperial"
