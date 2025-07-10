@@ -20,8 +20,10 @@ jobs:
       - name: Run Weather Script
         run: python get_weather_data.py
 
-      - name: Upload weather CSV
-        uses: actions/upload-artifact@v4
-        with:
-          name: weather-adjustments
-          path: data/weather_adjustments.csv
+      - name: Commit and push output
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/weather_adjustments.csv
+          git commit -m "Update weather_adjustments.csv"
+          git push
