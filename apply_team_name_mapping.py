@@ -6,27 +6,29 @@ STADIUM_FILE = "data/Data/stadium_metadata.csv"
 
 def load_team_map():
     df = pd.read_csv(TEAM_MAP_FILE)
-    return dict(zip(df["team"].str.strip(), df["mapped"].str.strip()))
+    team_dict = dict(zip(df["name"].str.strip().str.lower(), df["team"].str.strip()))
+    return team_dict
 
-def standardize_names(df, column, team_map):
-    df[column] = df[column].str.strip().map(team_map).fillna(df[column])
+def apply_mapping(df, column, team_dict):
+    df[column] = df[column].str.strip().str.lower().map(team_dict).fillna(df[column])
     return df
 
 def main():
-    team_map = load_team_map()
+    team_dict = load_team_map()
 
-    # Standardize todays_pitchers.csv
-    pitchers_df = pd.read_csv(PITCHERS_FILE)
-    pitchers_df = standardize_names(pitchers_df, "home_team", team_map)
-    pitchers_df = standardize_names(pitchers_df, "away_team", team_map)
-    pitchers_df.to_csv(PITCHERS_FILE, index=False)
+    # Apply to todays_pitchers
+    tp_df = pd.read_csv(PITCHERS_FILE)
+    if 'home_team' in tp_df.columns:
+        tp_df = apply_mapping(tp_df, "home_team", team_dict)
+        tp_df.to_csv(PITCHERS_FILE, index=False)
+        print(f"✅ Updated: {PITCHERS_FILE}")
 
-    # Standardize stadium_metadata.csv
-    stadium_df = pd.read_csv(STADIUM_FILE)
-    stadium_df = standardize_names(stadium_df, "home_team", team_map)
-    stadium_df.to_csv(STADIUM_FILE, index=False)
-
-    print("✅ Team names standardized successfully.")
+    # Apply to stadium_metadata
+    sm_df = pd.read_csv(STADIUM_FILE)
+    if 'home_team' in sm_df.columns:
+        sm_df = apply_mapping(sm_df, "home_team", team_dict)
+        sm_df.to_csv(STADIUM_FILE, index=False)
+        print(f"✅ Updated: {STADIUM_FILE}")
 
 if __name__ == "__main__":
     main()
