@@ -1,3 +1,4 @@
+
 import csv
 import requests
 import pandas as pd
@@ -17,7 +18,7 @@ def get_weather(lat, lon):
 def convert_to_localtime(game_time_str, tz_str):
     utc = pytz.utc
     local_tz = pytz.timezone(tz_str)
-    game_time = datetime.strptime(game_time_str, "%H:%M")
+    game_time = datetime.strptime(game_time_str, "%I:%M %p")
     now = datetime.now().date()
     game_datetime_utc = utc.localize(datetime.combine(now, game_time.time()))
     return game_datetime_utc.astimezone(local_tz).strftime("%I:%M %p")
@@ -26,13 +27,24 @@ def generate_weather_adjustments():
     stadium_df = pd.read_csv(STADIUM_FILE)
     pitchers_df = pd.read_csv(TODAYS_PITCHERS_FILE)
 
+    # Normalize team names and trim spaces
+    stadium_df['home_team'] = stadium_df['home_team'].astype(str).str.strip()
+    pitchers_df['home_team'] = pitchers_df['home_team'].astype(str).str.strip()
+
+    # Remove bad rows with empty or bad game_time
+    pitchers_df = pitchers_df[pd.notnull(pitchers_df['game_time'])]
+    pitchers_df = pitchers_df[pitchers_df['game_time'].astype(str).str.strip() != ""]
+
     merged_df = pd.merge(
         pitchers_df[['home_team', 'game_time']],
         stadium_df,
         how='inner',
-        left_on='home_team',
-        right_on='home_team'
+        on='home_team'
     )
+
+    if merged_df.empty:
+        print("❌ No matching teams found between pitchers and stadium metadata.")
+        return
 
     rows = []
     for _, row in merged_df.iterrows():
@@ -43,7 +55,7 @@ def generate_weather_adjustments():
         lon = row['longitude']
         timezone = row['timezone']
         roof = str(row.get('is_dome', False))
-        game_time = row['game_time_x']  # <- Fixed here
+        game_time = row['game_time']
 
         try:
             local_time = convert_to_localtime(game_time, timezone)
@@ -89,6 +101,7 @@ def generate_weather_adjustments():
         })
 
     pd.DataFrame(rows).to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ Weather data saved to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     generate_weather_adjustments()
