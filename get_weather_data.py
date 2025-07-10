@@ -17,7 +17,7 @@ def get_weather(lat, lon):
 def convert_to_localtime(game_time_str, tz_str):
     utc = pytz.utc
     local_tz = pytz.timezone(tz_str)
-    game_time = datetime.strptime(game_time_str, "%H:%M")
+    game_time = datetime.strptime(game_time_str, "%I:%M %p")
     now = datetime.now().date()
     game_datetime_utc = utc.localize(datetime.combine(now, game_time.time()))
     return game_datetime_utc.astimezone(local_tz).strftime("%I:%M %p")
@@ -26,12 +26,15 @@ def generate_weather_adjustments():
     stadium_df = pd.read_csv(STADIUM_FILE)
     pitchers_df = pd.read_csv(TODAYS_PITCHERS_FILE)
 
+    # Normalize home_team names
+    stadium_df['home_team'] = stadium_df['home_team'].str.strip().str.lower()
+    pitchers_df['home_team'] = pitchers_df['home_team'].str.strip().str.lower()
+
     merged_df = pd.merge(
         pitchers_df[['home_team', 'game_time']],
         stadium_df,
         how='inner',
-        left_on='home_team',
-        right_on='home_team'
+        on='home_team'
     )
 
     rows = []
