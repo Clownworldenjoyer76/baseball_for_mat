@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 TEAM_MAP_FILE = "data/Data/team_name_map.csv"
@@ -26,7 +25,14 @@ def main():
     tp = standardize_team_names(tp, "home_team", team_map)
     sm = standardize_team_names(sm, "home_team", team_map)
 
+    # Drop game_time from stadium metadata to avoid duplicate
+    sm = sm.drop(columns=[col for col in sm.columns if "game_time" in col], errors="ignore")
+
     merged = pd.merge(tp, sm, on="home_team", how="inner")
+
+    # Rename game_time_x to game_time (comes from tp)
+    if "game_time_x" in merged.columns:
+        merged = merged.rename(columns={"game_time_x": "game_time"})
 
     output = merged[[
         "home_team", "game_time", "venue", "city", "state",
