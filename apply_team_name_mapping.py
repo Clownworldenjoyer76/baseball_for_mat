@@ -10,7 +10,9 @@ def load_team_map():
     return team_dict
 
 def apply_mapping(df, column, team_dict):
-    df[column] = df[column].str.strip().str.lower().map(team_dict).fillna(df[column])
+    df[column] = df[column].astype(str).str.strip().str.lower()
+    df[column] = df[column].map(team_dict).fillna(df[column])
+    df[column] = df[column].str.strip()  # Final cleanup in case mapping inserted space
     return df
 
 def main():
