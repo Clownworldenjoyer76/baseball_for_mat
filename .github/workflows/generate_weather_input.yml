@@ -1,0 +1,18 @@
+name: Generate Weather Input CSV
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-weather-input:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas
+      - name: Run script to generate weather input CSV
+        run: python scripts/generate_weather_input.py
