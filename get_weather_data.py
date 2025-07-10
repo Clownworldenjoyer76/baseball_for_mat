@@ -1,4 +1,3 @@
-
 import csv
 import requests
 import pandas as pd
@@ -6,8 +5,7 @@ from datetime import datetime
 import pytz
 
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
-STADIUM_FILE = "data/Data/stadium_metadata.csv"
-TODAYS_PITCHERS_FILE = "data/daily/todays_pitchers.csv"
+WEATHER_INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/Data/weather_adjustments.csv"
 
 def get_weather(lat, lon):
@@ -24,30 +22,14 @@ def convert_to_localtime(game_time_str, tz_str):
     return game_datetime_utc.astimezone(local_tz).strftime("%I:%M %p")
 
 def generate_weather_adjustments():
-    stadium_df = pd.read_csv(STADIUM_FILE)
-    pitchers_df = pd.read_csv(TODAYS_PITCHERS_FILE)
+    df = pd.read_csv(WEATHER_INPUT_FILE)
 
-    # Normalize team names and trim spaces
-    stadium_df['home_team'] = stadium_df['home_team'].astype(str).str.strip()
-    pitchers_df['home_team'] = pitchers_df['home_team'].astype(str).str.strip()
-
-    # Remove bad rows with empty or bad game_time
-    pitchers_df = pitchers_df[pd.notnull(pitchers_df['game_time'])]
-    pitchers_df = pitchers_df[pitchers_df['game_time'].astype(str).str.strip() != ""]
-
-    merged_df = pd.merge(
-        pitchers_df[['home_team', 'game_time']],
-        stadium_df,
-        how='inner',
-        on='home_team'
-    )
-
-    if merged_df.empty:
-        print("❌ No matching teams found between pitchers and stadium metadata.")
-        return
+    df['home_team'] = df['home_team'].astype(str).str.strip()
+    df = df[pd.notnull(df['game_time'])]
+    df = df[df['game_time'].astype(str).str.strip() != ""]
 
     rows = []
-    for _, row in merged_df.iterrows():
+    for _, row in df.iterrows():
         stadium = row['venue']
         city = row['city']
         state = row['state']
