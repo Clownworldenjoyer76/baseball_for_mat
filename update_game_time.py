@@ -1,3 +1,4 @@
+
 import pandas as pd
 
 metadata_path = "data/Data/stadium_metadata.csv"
