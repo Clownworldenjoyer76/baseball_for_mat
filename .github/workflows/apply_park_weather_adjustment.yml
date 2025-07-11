@@ -1,0 +1,29 @@
+name: Apply Park Weather Adjustment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-adjustment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy python-dateutil
+
+      - name: Run Adjustment Script
+        run: python apply_park_weather_adjustment.py
+
+      - name: Upload Adjusted File
+        uses: actions/upload-artifact@v4
+        with:
+          name: adjusted-batters
+          path: data/batters_adjusted.csv
