@@ -1,0 +1,33 @@
+
+name: Deduplicate Adjusted Batters
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dedupe-batters:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install pandas
+        run: pip install pandas
+
+      - name: Run deduplication script
+        run: python deduplicate_adjusted_batters.py
+
+      - name: Commit deduplicated file
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/adjusted/batters_deduped.csv
+          git add data/adjusted/deduplication_log.txt
+          git commit -m "Auto-commit: deduplicated adjusted batters"
+          git push
