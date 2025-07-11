@@ -1,29 +1,25 @@
+
 name: adjust-projections
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'apply_weather_park_adjustments.py'
-      - '.github/workflows/adjust-projections.yml'
+  schedule:
+    - cron: "0 11 * * *"
 
 jobs:
-  adjust-projections:
+  run-adjustment:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Set up job
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pandas
+      - name: Install dependencies
+        run: pip install pandas
 
-    - name: Run Adjustment Script
-      run: python apply_weather_park_adjustments.py
+      - name: Run Adjustment Script
+        run: python apply_weather_patch_create_dir.py
