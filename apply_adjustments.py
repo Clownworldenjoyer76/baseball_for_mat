@@ -27,7 +27,8 @@ def apply_adjustments(batters, weather, park_day, park_night):
         batters['adj_home_run'] = batters.get('home_run', 0)
 
     if 'hard_hit_percent' in batters.columns and 'HardHit' in batters.columns:
-        batters['adj_hard_hit_percent'] = batters['hard_hit_percent'] * batters['HardHit']
+        # Normalize hard_hit_percent from 0-100 to 0.0-1.0 before applying factor
+        batters['adj_hard_hit_percent'] = (batters['hard_hit_percent'] / 100.0) * batters['HardHit']
     else:
         batters['adj_hard_hit_percent'] = batters.get('hard_hit_percent', 0)
 
