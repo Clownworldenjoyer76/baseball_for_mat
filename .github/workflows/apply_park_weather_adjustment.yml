@@ -1,3 +1,4 @@
+
 name: Apply Park Weather Adjustment
 
 on:
@@ -20,10 +21,10 @@ jobs:
           pip install pandas numpy python-dateutil
 
       - name: Run Adjustment Script
-        run: python apply_park_weather_adjustment.py
+        run: python apply_park_weather_adjustment_modular.py
 
       - name: Upload Adjusted File
         uses: actions/upload-artifact@v4
         with:
           name: adjusted-batters
-          path: data/batters_adjusted.csv
+          path: data/adjusted/batters_adjusted_weather_park.csv
