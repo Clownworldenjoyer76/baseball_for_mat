@@ -23,7 +23,16 @@ jobs:
       - name: Run Adjustment Script
         run: python apply_park_weather_adjustment_modular.py
 
-      - name: Upload Adjusted File
+      - name: Commit adjusted files to repo
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/adjusted/batters_adjusted_weather_park.csv
+          git add data/adjusted/adjustment_log.txt
+          git commit -m "Auto-commit: adjusted batters + log" || echo "No changes to commit"
+          git push
+
+      - name: Upload Adjusted File as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: adjusted-batters
