@@ -1,16 +1,15 @@
+
 import pandas as pd
+import os
 
 def apply_adjustments(batters, weather, park_day, park_night):
-    park_day.rename(columns={"venue": "stadium"}, inplace=True)
-    park_night.rename(columns={"venue": "stadium"}, inplace=True)
-    weather = weather.drop_duplicates(subset='stadium')
-
-    df = pd.merge(weather, park_day, on="stadium", how="left", suffixes=("", "_day"))
+    print("Applying adjustments to batters...")
+    df = pd.merge(batters, weather, on="stadium", how="left")
+    df = pd.merge(df, park_day, on="stadium", how="left", suffixes=("", "_day"))
     df = pd.merge(df, park_night, on="stadium", how="left", suffixes=("", "_night"))
-
-    # Dummy adjustment logic for illustration
-    batters['adjusted_hits'] = batters['hit'] * 1.1  # Placeholder
-    return batters
+    # Dummy adjustment for demonstration
+    df['adjusted'] = df['avg_hit_speed'] * 1.02
+    return df
 
 def main():
     print("Loading data...")
@@ -21,10 +20,13 @@ def main():
     park_night = pd.read_csv("data/Data/park_factors_night.csv")
 
     print(f"Batters: {len(batters)}, Pitchers: {len(pitchers)}, Weather: {len(weather)}")
-    print("Applying adjustments to batters...")
+
     adjusted = apply_adjustments(batters, weather, park_day, park_night)
+
+    # Ensure output directory exists
+    os.makedirs("data/adjusted", exist_ok=True)
     adjusted.to_csv("data/adjusted/batters_adjusted.csv", index=False)
-    print("Adjustments complete.")
+    print("Saved adjusted batter projections.")
 
 if __name__ == "__main__":
     main()
