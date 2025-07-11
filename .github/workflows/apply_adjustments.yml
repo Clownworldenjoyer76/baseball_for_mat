@@ -1,0 +1,18 @@
+name: Apply Park and Weather Adjustments
+
+on:
+  workflow_dispatch:
+
+jobs:
+  adjust-projections:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas
+      - name: Run Adjustment Script
+        run: python apply_weather_park_adjustments.py
