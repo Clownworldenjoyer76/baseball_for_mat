@@ -8,10 +8,15 @@ def apply_adjustments(batters, weather, park_day, park_night):
     else:
         raise ValueError("Missing 'team' column in batters data. Tagging step may be incomplete.")
 
+    # Deduplicate join sources by home_team
+    weather = weather.drop_duplicates(subset='home_team')
+    park_day = park_day.drop_duplicates(subset='home_team')
+    park_night = park_night.drop_duplicates(subset='home_team')
+
     # Merge with weather data
     batters = pd.merge(batters, weather, on="home_team", how="left")
 
-    # Merge with park factors (day and night — favor day values for now)
+    # Merge with park factors
     batters = pd.merge(batters, park_day, on="home_team", how="left", suffixes=('', '_day'))
     batters = pd.merge(batters, park_night, on="home_team", how="left", suffixes=('', '_night'))
 
@@ -27,7 +32,6 @@ def apply_adjustments(batters, weather, park_day, park_night):
         batters['adj_home_run'] = batters.get('home_run', 0)
 
     if 'hard_hit_percent' in batters.columns and 'HardHit' in batters.columns:
-        # Normalize hard_hit_percent from 0-100 to 0.0-1.0 before applying factor
         batters['adj_hard_hit_percent'] = (batters['hard_hit_percent'] / 100.0) * batters['HardHit']
     else:
         batters['adj_hard_hit_percent'] = batters.get('hard_hit_percent', 0)
