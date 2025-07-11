@@ -1,0 +1,25 @@
+
+name: Apply Park Weather Adjustment
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 10 * * *'  # Every day at 6am ET
+
+jobs:
+  run-adjustment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run Adjustment Script
+        run: python apply_park_weather_adjustment.py
