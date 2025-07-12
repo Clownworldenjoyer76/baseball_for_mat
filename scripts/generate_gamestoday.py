@@ -35,8 +35,8 @@ games["away_team"] = games["away_team"].map(name_to_abbr)
 lineups["team"] = lineups["team code"].map(name_to_abbr)
 
 # === PLAYER NAME FORMATTING ===
-batters["name"] = batters["last"] + ", " + batters["first"]
-pitchers["name"] = pitchers["last"] + ", " + pitchers["first"]
+batters["name"] = batters["last_name"] + ", " + batters["first_name"]
+pitchers["name"] = pitchers["last_name"] + ", " + pitchers["first_name"]
 
 # === FINAL DATA AGGREGATION ===
 output_rows = []
@@ -44,11 +44,8 @@ for _, row in games.iterrows():
     home_team = row["home_team"]
     away_team = row["away_team"]
 
-    home_pitcher_row = pitchers[pitchers["team"] == home_team]
-    away_pitcher_row = pitchers[pitchers["team"] == away_team]
-
-    home_pitcher = home_pitcher_row["name"].iloc[0] if not home_pitcher_row.empty else ""
-    away_pitcher = away_pitcher_row["name"].iloc[0] if not away_pitcher_row.empty else ""
+    home_pitcher = pitchers.loc[pitchers["team"] == home_team, "name"].iloc[0]
+    away_pitcher = pitchers.loc[pitchers["team"] == away_team, "name"].iloc[0]
 
     home_lineup = lineups.loc[lineups["team"] == home_team, "player"].tolist()
     away_lineup = lineups.loc[lineups["team"] == away_team, "player"].tolist()
