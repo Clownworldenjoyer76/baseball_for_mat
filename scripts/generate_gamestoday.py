@@ -1,44 +1,23 @@
+
 import pandas as pd
-from utils import load_csv, normalize_name
 
-def main():
-    games_path = 'data/raw/todaysgames.csv'
-    lineups_path = 'data/raw/lineups.csv'
-    team_map_path = 'data/Data/team_name_map.csv'
-    stadiums_path = 'data/Data/stadium_metadata.csv'
+# Load CSVs
+games = pd.read_csv("data/raw/todaysgames.csv")
+lineups = pd.read_csv("data/raw/lineups.csv")
+stadiums = pd.read_csv("data/Data/stadium_metadata.csv")
+name_map = pd.read_csv("data/Data/team_name_map.csv")
 
-    games = load_csv(games_path)
-    lineups = load_csv(lineups_path)
-    team_map = load_csv(team_map_path)
-    stadiums = load_csv(stadiums_path)
+# Normalize team names in games and lineups using name_map
+name_dict = dict(zip(name_map["name"], name_map["team"]))
 
-    team_map['name'] = team_map['name'].apply(normalize_name)
-    team_map['team'] = team_map['team'].apply(normalize_name)
-    name_to_team = dict(zip(team_map['name'], team_map['team']))
-    standard_to_name = dict(zip(team_map['team'], team_map['name']))
+# Apply name normalization
+games["home_team_normalized"] = games["home_team"].map(name_dict)
+games["away_team_normalized"] = games["away_team"].map(name_dict)
+lineups["team_normalized"] = lineups["team code"].map(name_dict)
 
-    games['home_team'] = games['home_team'].apply(normalize_name)
-    games['away_team'] = games['away_team'].apply(normalize_name)
+# Merge stadium info using normalized home team
+merged = games.merge(stadiums, left_on="home_team_normalized", right_on="home_team", how="left")
 
-    games['home_team'] = games['home_team'].map(name_to_team)
-    games['away_team'] = games['away_team'].map(name_to_team)
-
-    results = []
-
-    for _, row in games.iterrows():
-        home_team = row['home_team']
-        away_team = row['away_team']
-
-        venue = stadiums[stadiums['home_team'] == home_team]['venue'].values[0] if home_team in stadiums['home_team'].values else None
-
-        results.append({
-            'home_team': home_team,
-            'away_team': away_team,
-            'venue': venue
-        })
-
-    output_df = pd.DataFrame(results)
-    output_df.to_csv('data/daily/games_today_output.csv', index=False)
-
-if __name__ == "__main__":
-    main()
+# Output merged data to file
+merged.to_csv("data/processed/games_today.csv", index=False)
+print("✅ games_today.csv created successfully.")
