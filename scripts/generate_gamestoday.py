@@ -6,57 +6,60 @@ def load_csv(path):
 
 def normalize_name(name):
     parts = name.strip().split()
-    if len(parts) < 2:
-        return name
-    return f"{parts[-1].capitalize()}, {' '.join(parts[:-1]).capitalize()}"
-
-def normalize_team(team, team_map):
-    return team_map.get(team.strip(), team.strip())
+    if len(parts) == 1:
+        return parts[0]
+    return f"{parts[-1]}, {' '.join(parts[:-1])}"
 
 def main():
-    # File paths
-    base_path = "data"
-    todaysgames_path = os.path.join(base_path, "daily", "todaysgames.csv")
-    lineups_path = os.path.join(base_path, "daily", "lineups.csv")
-    team_map_path = os.path.join(base_path, "Data", "team_name_map.csv")
-    stadium_path = os.path.join(base_path, "Data", "stadium_metadata.csv")
+    games_path = 'data/raw/todaysgames.csv'
+    lineups_path = 'data/raw/lineups.csv'
+    team_map_path = 'data/Data/team_name_map.csv'
+    batters_path = 'data/cleaned/batters_normalized_cleaned.csv'
+    pitchers_path = 'data/cleaned/pitchers_normalized_cleaned.csv'
+    stadiums_path = 'data/Data/stadium_metadata.csv'
 
-    # Load files
-    games = load_csv(todaysgames_path)
+    games = load_csv(games_path)
     lineups = load_csv(lineups_path)
-    team_map_df = load_csv(team_map_path)
-    stadium_df = load_csv(stadium_path)
+    team_map = load_csv(team_map_path)
+    batters = load_csv(batters_path)
+    pitchers = load_csv(pitchers_path)
+    stadiums = load_csv(stadiums_path)
 
-    # Create mapping dictionaries
-    team_map = dict(zip(team_map_df['input'], team_map_df['standard']))
-    venue_map = dict(zip(stadium_df['team'], stadium_df['stadium']))
+    # Normalize team names
+    team_map_dict = dict(zip(team_map['original'], team_map['standard']))
+    games['home_team'] = games['home_team'].map(team_map_dict).fillna(games['home_team'])
+    games['away_team'] = games['away_team'].map(team_map_dict).fillna(games['away_team'])
 
-    # Normalize teams
-    games['away_team'] = games['away_team'].apply(lambda x: normalize_team(x, team_map))
-    games['home_team'] = games['home_team'].apply(lambda x: normalize_team(x, team_map))
-    games['venue'] = games['home_team'].map(venue_map)
+    merged_data = []
 
-    # Normalize lineup
-    lineups['team'] = lineups['team'].apply(lambda x: normalize_team(x, team_map))
-    lineups['batter_name'] = lineups['batter_name'].apply(normalize_name)
+    for _, row in games.iterrows():
+        home = row['home_team']
+        away = row['away_team']
+        time = row['game_time']
 
-    # Merge lineups into one string per team
-    merged_lineups = (
-        lineups.groupby(['team', 'game_time'])['batter_name']
-        .apply(lambda x: ', '.join(x.head(9)))
-        .reset_index()
-        .rename(columns={'batter_name': 'starting_lineup'})
-    )
+        home_pitcher = pitchers[pitchers['team'] == home].head(1)['name'].values
+        away_pitcher = pitchers[pitchers['team'] == away].head(1)['name'].values
 
-    # Merge lineups with game data
-    full_df = pd.merge(games, merged_lineups, left_on=['home_team', 'game_time'], right_on=['team', 'game_time'], how='left')
-    full_df = full_df.rename(columns={'starting_lineup': 'home_lineup'}).drop(columns=['team'])
+        venue_row = stadiums[stadiums['team'] == home]
+        venue = venue_row['stadium'].values[0] if not venue_row.empty else 'Unknown'
 
-    full_df = pd.merge(full_df, merged_lineups, left_on=['away_team', 'game_time'], right_on=['team', 'game_time'], how='left')
-    full_df = full_df.rename(columns={'starting_lineup': 'away_lineup'}).drop(columns=['team'])
+        home_lineup = lineups[(lineups['team'] == home)].head(9)['player'].tolist()
+        away_lineup = lineups[(lineups['team'] == away)].head(9)['player'].tolist()
 
-    # Save to final file
-    full_df[['game_time', 'away_team', 'home_team', 'venue', 'home_lineup', 'away_lineup']].to_csv(os.path.join(base_path, "daily", "gamestoday.csv"), index=False)
+        merged_data.append({
+            'game_time': time,
+            'home_team': home,
+            'away_team': away,
+            'home_pitcher': normalize_name(home_pitcher[0]) if len(home_pitcher) > 0 else '',
+            'away_pitcher': normalize_name(away_pitcher[0]) if len(away_pitcher) > 0 else '',
+            'venue': venue,
+            'home_lineup': ';'.join([normalize_name(p) for p in home_lineup]),
+            'away_lineup': ';'.join([normalize_name(p) for p in away_lineup])
+        })
+
+    final_df = pd.DataFrame(merged_data)
+    os.makedirs('data/daily', exist_ok=True)
+    final_df.to_csv('data/daily/gamestoday.csv', index=False)
 
 if __name__ == "__main__":
     main()
