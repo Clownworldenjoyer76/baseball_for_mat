@@ -1,99 +1,88 @@
+
 from pathlib import Path
 import pandas as pd
-import sys
 
-# Required input files
+# Required file paths
 required_files = {
-    "todaysgames": "data/raw/todaysgames.csv",
+    "games": "data/raw/todaysgames.csv",
     "lineups": "data/raw/lineups.csv",
     "batters": "data/cleaned/batters_normalized_cleaned.csv",
     "pitchers": "data/cleaned/pitchers_normalized_cleaned.csv",
     "team_map": "data/Data/team_name_map.csv",
-    "stadiums": "data/Data/stadium_metadata.csv"
+    "stadium": "data/Data/stadium_metadata.csv"
 }
 
-# Validate files
-for name, path in required_files.items():
+# Validate all files exist and are non-empty
+for label, path in required_files.items():
     file_path = Path(path)
     if not file_path.exists():
-        raise FileNotFoundError(f"❌ Missing required file: {path}")
+        raise FileNotFoundError(f"❌ Required file not found: {path}")
     if file_path.stat().st_size == 0:
-        raise ValueError(f"❌ File is empty: {path}")
+        raise ValueError(f"❌ Required file is empty: {path}")
 
 # Load all files
-todaysgames = pd.read_csv(required_files["todaysgames"])
-lineups = pd.read_csv(required_files["lineups"])
-batters = pd.read_csv(required_files["batters"])
-pitchers = pd.read_csv(required_files["pitchers"])
-team_map = pd.read_csv(required_files["team_map"])
-stadiums = pd.read_csv(required_files["stadiums"])
+games_df = pd.read_csv(required_files["games"])
+lineups_df = pd.read_csv(required_files["lineups"])
+batters_df = pd.read_csv(required_files["batters"])
+pitchers_df = pd.read_csv(required_files["pitchers"])
+team_map_df = pd.read_csv(required_files["team_map"])
+stadium_df = pd.read_csv(required_files["stadium"])
 
-# Normalize team names
-team_abbrev_to_name = dict(zip(team_map["name"], team_map["team"]))
-todaysgames["home_team"] = todaysgames["home_team"].map(team_abbrev_to_name)
-todaysgames["away_team"] = todaysgames["away_team"].map(team_abbrev_to_name)
-lineups["team code"] = lineups["team code"].map(team_abbrev_to_name)
+# Build team map
+team_map = dict(zip(team_map_df["name"], team_map_df["team"]))
 
-# Format player names
-for df in [batters, pitchers]:
-    if "last_name" in df.columns and "first_name" in df.columns:
-        df["formatted_name"] = df["last_name"] + ", " + df["first_name"]
-    else:
-        raise KeyError("Missing 'last_name' or 'first_name' columns in player file.")
+# Normalize team names in games and lineups
+games_df["home_team"] = games_df["home_team"].map(team_map)
+games_df["away_team"] = games_df["away_team"].map(team_map)
+lineups_df["team code"] = lineups_df["team code"].map(team_map)
 
-# Merge game and stadium info
-merged = pd.merge(
-    todaysgames,
-    stadiums,
-    how="left",
-    on="home_team"
-)
+# Normalize player names
+def format_name(name):
+    parts = name.split()
+    return f"{parts[-1]}, {' '.join(parts[:-1])}" if len(parts) > 1 else name
 
-# Extract lineups
-def get_lineup(team_name):
-    players = lineups[lineups["team code"] == team_name].head(9)["name"].tolist()
-    return players if len(players) == 9 else [None]*9
+batters_df["name"] = batters_df["name"].apply(format_name)
+pitchers_df["name"] = pitchers_df["name"].apply(format_name)
+lineups_df["name"] = lineups_df["name"].apply(format_name)
 
-# Extract pitcher names
-def get_pitcher_name(team_name, role):
-    if role == "home":
-        pitcher_row = pitchers[pitchers["team"] == team_name]
-    else:
-        pitcher_row = pitchers[pitchers["team"] == team_name]
-    return pitcher_row["formatted_name"].values[0] if not pitcher_row.empty else None
-
-# Final output rows
+# Collect output rows
 output_rows = []
-for _, row in merged.iterrows():
+for _, row in games_df.iterrows():
     home = row["home_team"]
     away = row["away_team"]
-    game = {
+
+    home_pitcher = pitchers_df[pitchers_df["team"] == home]["name"].values[0] if not pitchers_df[pitchers_df["team"] == home].empty else "Unknown"
+    away_pitcher = pitchers_df[pitchers_df["team"] == away]["name"].values[0] if not pitchers_df[pitchers_df["team"] == away].empty else "Unknown"
+
+    home_lineup = lineups_df[lineups_df["team code"] == home]["name"].head(9).tolist()
+    away_lineup = lineups_df[lineups_df["team code"] == away]["name"].head(9).tolist()
+
+    venue_row = stadium_df[stadium_df["home_team"] == home]
+    if venue_row.empty:
+        continue
+
+    output_rows.append({
         "game_time": row["game_time"],
         "home_team": home,
-        "home_pitcher": get_pitcher_name(home, "home"),
+        "home_pitcher": home_pitcher,
+        "home_lineup": home_lineup,
         "away_team": away,
-        "away_pitcher": get_pitcher_name(away, "away"),
-        "venue": row["venue"],
-        "city": row["city"],
-        "state": row["state"],
-        "timezone": row["timezone"],
-        "is_dome": row["is_dome"]
-    }
+        "away_pitcher": away_pitcher,
+        "away_lineup": away_lineup,
+        "venue": venue_row["venue"].values[0],
+        "city": venue_row["city"].values[0],
+        "state": venue_row["state"].values[0],
+        "timezone": venue_row["timezone"].values[0],
+        "is_dome": venue_row["is_dome"].values[0],
+    })
 
-    # Add lineup fields
-    home_lineup = get_lineup(home)
-    away_lineup = get_lineup(away)
-    for i in range(9):
-        game[f"home_lineup_{i+1}"] = home_lineup[i]
-        game[f"away_lineup_{i+1}"] = away_lineup[i]
+# Create output DataFrame
+games_today_df = pd.DataFrame(output_rows)
 
-    output_rows.append(game)
-
-# Output CSV
-output_df = pd.DataFrame(output_rows)
+# Save to file
 output_path = Path("data/daily/games_today.csv")
 output_path.parent.mkdir(parents=True, exist_ok=True)
-output_df.to_csv(output_path, index=False)
+games_today_df.to_csv(output_path, index=False)
 
-print(f"✔ Loaded {len(output_df)} games")
+print(f"✔ Loaded {len(games_today_df)} games")
 print(f"✔ Saved to {output_path}")
