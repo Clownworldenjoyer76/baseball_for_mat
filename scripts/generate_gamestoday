@@ -1,0 +1,30 @@
+
+from pathlib import Path
+import pandas as pd
+
+# Define file paths
+input_file = Path("data/daily/todays_pitchers.csv")
+output_file = Path("data/daily/games_today.csv")
+
+# Check if input file exists
+if not input_file.exists():
+    raise FileNotFoundError(f"❌ Input file not found: {input_file}")
+
+# Read input file
+df = pd.read_csv(input_file)
+
+# Check if file is empty
+if df.empty:
+    raise ValueError(f"❌ Input file is empty: {input_file}")
+
+# Confirm number of games
+print(f"✔ Loaded {len(df)} games")
+
+# Ensure the output directory exists
+output_file.parent.mkdir(parents=True, exist_ok=True)
+
+# Save to output file
+df.to_csv(output_file, index=False)
+
+# Confirm save
+print(f"✔ Saved to {output_file}")
