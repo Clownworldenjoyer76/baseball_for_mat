@@ -32,11 +32,7 @@ stadiums = pd.read_csv(input_paths["stadiums"])
 name_to_abbr = dict(zip(team_map["name"], team_map["team"]))
 games["home_team"] = games["home_team"].map(name_to_abbr)
 games["away_team"] = games["away_team"].map(name_to_abbr)
-lineups["team code"] = lineups["team code"].map(name_to_abbr)
-
-# === PLAYER NAME FORMATTING ===
-batters["name"] = batters["last_name"] + ", " + batters["first_name"]
-pitchers["name"] = pitchers["last_name"] + ", " + pitchers["first_name"]
+lineups["team"] = lineups["team code"].map(name_to_abbr)
 
 # === FINAL DATA AGGREGATION ===
 output_rows = []
@@ -47,8 +43,8 @@ for _, row in games.iterrows():
     home_pitcher = pitchers.loc[pitchers["team"] == home_team, "name"].iloc[0]
     away_pitcher = pitchers.loc[pitchers["team"] == away_team, "name"].iloc[0]
 
-    home_lineup = lineups.loc[lineups["team code"] == home_team, "player"].tolist()
-    away_lineup = lineups.loc[lineups["team code"] == away_team, "player"].tolist()
+    home_lineup = lineups.loc[lineups["team"] == home_team, "player"].tolist()
+    away_lineup = lineups.loc[lineups["team"] == away_team, "player"].tolist()
 
     stadium = stadiums.loc[stadiums["home_team"] == home_team].iloc[0]
 
