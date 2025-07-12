@@ -1,13 +1,14 @@
+
 name: Generate Games Today
 
 on:
   workflow_dispatch:
 
 jobs:
-  generate-games-today:
+  run-script:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout repo
+      - name: ⬇️ Checkout repo
         uses: actions/checkout@v3
 
       - name: 🐍 Set up Python
@@ -18,5 +19,5 @@ jobs:
       - name: 📦 Install dependencies
         run: pip install pandas
 
-      - name: ▶️ Run generate_gamestoday
+      - name: 🏃 Run generate_gamestoday.py
         run: python scripts/generate_gamestoday.py
