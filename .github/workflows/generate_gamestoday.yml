@@ -6,7 +6,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -14,12 +13,16 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: 3.11
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas
+        run: pip install pandas
 
-      - name: Run script
+      - name: Run generate_gamestoday script
         run: python scripts/generate_gamestoday.py
+
+      - name: Upload games_today.csv
+        uses: actions/upload-artifact@v3
+        with:
+          name: games_today
+          path: data/daily/gamestoday.csv
