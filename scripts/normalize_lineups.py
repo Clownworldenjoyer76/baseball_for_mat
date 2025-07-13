@@ -7,7 +7,8 @@ team_map = pd.read_csv('data/Data/team_name_map.csv')
 batters_cleaned = pd.read_csv('data/cleaned/batters_normalized_cleaned.csv')
 
 # --- Normalize team name ---
-team_map_dict = dict(zip(team_map['team'], team_map['name']))
+lineups['name'] = lineups['name'].str.strip().str.upper()
+team_map_dict = dict(zip(team_map['team'].str.strip().str.upper(), team_map['name']))
 lineups['name'] = lineups['name'].map(team_map_dict).fillna(lineups['name'])
 
 # --- Normalize player names ---
