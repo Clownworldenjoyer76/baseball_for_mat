@@ -21,11 +21,11 @@ def normalize_name(name):
 games['pitcher_home'] = games['pitcher_home'].apply(normalize_name)
 games['pitcher_away'] = games['pitcher_away'].apply(normalize_name)
 
-# Filter to only pitchers that exist in the cleaned pitcher file
+# Allow pitchers to be in valid list OR equal to 'Undecided'
 valid_pitchers = set(pitchers['last_name, first_name'])
 games = games[
-    games['pitcher_home'].isin(valid_pitchers) &
-    games['pitcher_away'].isin(valid_pitchers)
+    (games['pitcher_home'].isin(valid_pitchers) | (games['pitcher_home'] == 'Undecided')) &
+    (games['pitcher_away'].isin(valid_pitchers) | (games['pitcher_away'] == 'Undecided'))
 ]
 
 # Save normalized file
