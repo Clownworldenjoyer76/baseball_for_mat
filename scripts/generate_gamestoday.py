@@ -1,4 +1,3 @@
-
 from pathlib import Path
 import pandas as pd
 
@@ -32,9 +31,13 @@ stadiums = pd.read_csv(input_paths["stadiums"])
 name_to_abbr = dict(zip(team_map["name"], team_map["team"]))
 games["home_team"] = games["home_team"].map(name_to_abbr)
 games["away_team"] = games["away_team"].map(name_to_abbr)
-lineups["team"] = lineups["team code"].map(team_name_map)
-    
-    # === FINAL DATA AGGREGATION ===
+lineups["team"] = lineups["team code"].map(name_to_abbr)
+
+# === PLAYER NAME FORMATTING ===
+batters["name"] = batters["last_name"] + ", " + batters["first_name"]
+pitchers["name"] = pitchers["last_name"] + ", " + pitchers["first_name"]
+
+# === FINAL DATA AGGREGATION ===
 output_rows = []
 for _, row in games.iterrows():
     home_team = row["home_team"]
