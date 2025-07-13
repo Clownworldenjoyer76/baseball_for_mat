@@ -6,9 +6,9 @@ lineups = pd.read_csv('data/raw/lineups.csv')
 team_map = pd.read_csv('data/Data/team_name_map.csv')
 batters_cleaned = pd.read_csv('data/cleaned/batters_normalized_cleaned.csv')
 
-# --- Normalize team name ---
+# --- Normalize team name (update 'name' using 'team' → 'name' map) ---
 lineups['name'] = lineups['name'].str.strip().str.upper()
-team_map_dict = dict(zip(team_map['team'].str.strip().str.upper(), team_map['name']))
+team_map_dict = dict(zip(team_map['team'].str.strip().str.upper(), team_map['name'].str.strip()))
 lineups['name'] = lineups['name'].map(team_map_dict).fillna(lineups['name'])
 
 # --- Normalize player names ---
@@ -20,7 +20,7 @@ def format_name(full_name):
 
 lineups['last_name, first_name'] = lineups['last_name, first_name'].apply(format_name)
 
-# Match only names that exist in cleaned batters list
+# Filter to only valid names
 valid_names = set(batters_cleaned['last_name, first_name'])
 lineups = lineups[lineups['last_name, first_name'].isin(valid_names)]
 
