@@ -1,3 +1,4 @@
+
 name: Normalize Todays Lineups
 
 on:
@@ -21,3 +22,11 @@ jobs:
 
     - name: Normalize today's lineups
       run: python scripts/normalize_lineups.py
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "actions@github.com"
+        git add data/raw/lineups_normalized.csv
+        git commit -m "Normalize lineups and save output" || echo "No changes to commit"
+        git push
