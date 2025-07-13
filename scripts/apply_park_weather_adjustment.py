@@ -4,7 +4,7 @@ from apply_adjustments import apply_adjustments
 
 def main():
     print("Loading data...", flush=True)
-    batters = pd.read_csv("data/adjusted/batters_today.csv")
+    batters = pd.read_csv("data/raw/batters_today.csv")
     weather = pd.read_csv("data/weather_adjustments.csv")
     park_day = pd.read_csv("data/Data/park_factors_day.csv")
     park_night = pd.read_csv("data/Data/park_factors_night.csv")
