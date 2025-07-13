@@ -1,3 +1,4 @@
+
 import pandas as pd
 
 # Load files
@@ -10,7 +11,6 @@ team_map_dict = dict(zip(team_map['team'], team_map['name']))
 lineups['name'] = lineups['name'].map(team_map_dict).fillna(lineups['name'])
 
 # --- Normalize player names ---
-# Helper to reformat names to "Last, First"
 def format_name(full_name):
     parts = full_name.strip().split()
     if len(parts) >= 2:
