@@ -11,6 +11,10 @@ lineups['name'] = lineups['name'].str.strip().str.upper()
 team_map_dict = dict(zip(team_map['team'].str.strip().str.upper(), team_map['name'].str.strip()))
 lineups['name'] = lineups['name'].map(team_map_dict).fillna(lineups['name'])
 
+# DEBUG: Print a few rows of mapped names to confirm mapping worked
+print("TEAM MAPPING SAMPLE:")
+print(lineups[['name']].drop_duplicates().head(10))
+
 # --- Normalize player names ---
 def format_name(full_name):
     parts = full_name.strip().split()
