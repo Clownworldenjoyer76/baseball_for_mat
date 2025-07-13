@@ -1,8 +1,9 @@
+
 import pandas as pd
 
 # Load files
 lineups = pd.read_csv('data/raw/lineups.csv')
-team_map = pd.read_csv('data/Data/team_name_map.csv')
+team_map = pd.read_csv('data/Data/team_abv_map.csv')
 batters_cleaned = pd.read_csv('data/cleaned/batters_normalized_cleaned.csv')
 
 # --- Map team_code to full team_name ---
