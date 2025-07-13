@@ -8,7 +8,7 @@ batters_cleaned = pd.read_csv('data/cleaned/batters_normalized_cleaned.csv')
 
 # --- Map team_code to full team_name ---
 lineups['team_code'] = lineups['team_code'].str.strip().str.upper()
-team_map_dict = dict(zip(team_map['team'].str.strip().str.upper(), team_map['name'].str.strip()))
+team_map_dict = dict(zip(team_map['code'].str.strip().str.upper(), team_map['name'].str.strip()))
 lineups['team_name'] = lineups['team_code'].map(team_map_dict).fillna(lineups['team_code'])
 
 # DEBUG: Print a few rows of mapped names to confirm mapping worked
