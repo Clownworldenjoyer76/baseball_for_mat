@@ -6,14 +6,14 @@ lineups = pd.read_csv('data/raw/lineups.csv')
 team_map = pd.read_csv('data/Data/team_name_map.csv')
 batters_cleaned = pd.read_csv('data/cleaned/batters_normalized_cleaned.csv')
 
-# --- Normalize team name (update 'name' using 'team' → 'name' map) ---
-lineups['name'] = lineups['name'].str.strip().str.upper()
+# --- Map team_code to full team_name ---
+lineups['team_code'] = lineups['team_code'].str.strip().str.upper()
 team_map_dict = dict(zip(team_map['team'].str.strip().str.upper(), team_map['name'].str.strip()))
-lineups['name'] = lineups['name'].map(team_map_dict).fillna(lineups['name'])
+lineups['team_name'] = lineups['team_code'].map(team_map_dict).fillna(lineups['team_code'])
 
 # DEBUG: Print a few rows of mapped names to confirm mapping worked
 print("TEAM MAPPING SAMPLE:")
-print(lineups[['name']].drop_duplicates().head(10))
+print(lineups[['team_code', 'team_name']].drop_duplicates().head(10))
 
 # --- Normalize player names ---
 def format_name(full_name):
