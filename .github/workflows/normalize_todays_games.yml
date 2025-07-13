@@ -1,0 +1,24 @@
+
+name: Normalize Todays Games
+
+on:
+  workflow_dispatch:
+
+jobs:
+  normalize-todays-games:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install pandas
+
+    - name: Normalize todaysgames.csv
+      run: python scripts/normalize_todays_games.py
