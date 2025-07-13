@@ -32,7 +32,7 @@ stadiums = pd.read_csv(input_paths["stadiums"])
 name_to_abbr = dict(zip(team_map["name"], team_map["team"]))
 games["home_team"] = games["home_team"].map(name_to_abbr)
 games["away_team"] = games["away_team"].map(name_to_abbr)
-lineups["team"] = lineups["team code"].map(
+lineups["team"] = lineups["team code"].map(team_name_map)
     
     # === FINAL DATA AGGREGATION ===
 output_rows = []
