@@ -22,3 +22,11 @@ jobs:
 
     - name: Normalize todaysgames.csv
       run: python scripts/normalize_todays_games.py
+
+    - name: Commit and push normalized file
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "actions@github.com"
+        git add data/raw/todaysgames_normalized.csv
+        git commit -m "Add normalized todaysgames file" || echo "No changes to commit"
+        git push
