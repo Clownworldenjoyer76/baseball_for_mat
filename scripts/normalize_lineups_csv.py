@@ -17,14 +17,20 @@ for path in [input_path, team_map_path]:
 lineups = pd.read_csv(input_path)
 team_map = pd.read_csv(team_map_path)
 
+# === DEFINE NORMALIZE NAME FUNCTION ===
+def normalize_name(name):
+    parts = name.strip().split()
+    if len(parts) == 0:
+        return ""
+    elif len(parts) == 1:
+        return parts[0]
+    else:
+        return f"{parts[-1]}, {' '.join(parts[:-1])}"
+
 # Step 1: Rename the column
-lineups.rename(columns={"player name": "last_name, first_name"}, inplace=True)
+lineups.rename(columns={"player name": "last_name, first_name", "team code": "team"}, inplace=True)
 
 # Step 2: Normalize the name format
-lineups["last_name, first_name"] = lineups["last_name, first_name"].apply(
-    lambda x: ", ".join(x.strip().split(" ")[-1:] + x.strip().split(" ")[:-1])
-)
-
 lineups["last_name, first_name"] = lineups["last_name, first_name"].apply(normalize_name)
 
 # === MAP TEAM TO STANDARD ABBREVIATION ===
