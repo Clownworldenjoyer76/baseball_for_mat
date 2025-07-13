@@ -16,7 +16,7 @@ lineups.rename(columns={
     "player name": "last_name, first_name"
 }, inplace=True)
 
-# === MAP TEAM TO STANDARD ABBREVIATION ===
+# === MAP TEAM TO STANDARD ABBREVIATION (MATCHING ON team -> name) ===
 name_to_abbr = dict(zip(team_map["name"], team_map["team"]))
 lineups["team"] = lineups["team"].map(name_to_abbr)
 
