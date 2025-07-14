@@ -43,16 +43,16 @@ def commit_outputs():
         print(f"⚠️ Git commit failed: {e}")
 
 def main():
-    park_factors_day = pd.read_csv("data/Data/park_factors_day.csv")
-    park_factors_night = pd.read_csv("data/Data/park_factors_night.csv")
-    park_factors = pd.concat([park_factors_day, park_factors_night]).drop_duplicates(subset='team')
+    import datetime
+    hour = datetime.datetime.now().hour
+    park_file = "data/Data/park_factors_day.csv" if 7 <= hour < 19 else "data/Data/park_factors_night.csv"
+    park_factors = pd.read_csv(park_file)
 
     for label in ['home', 'away']:
         infile = f"data/adjusted/batters_{label}_adjusted.csv"
         batters = pd.read_csv(infile)
         adjusted = apply_park_adjustments(batters, park_factors)
         save_outputs(adjusted, label)
-
     commit_outputs()
 
 if __name__ == "__main__":
