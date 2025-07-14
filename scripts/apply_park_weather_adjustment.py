@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 from apply_adjustments import apply_adjustments
 import subprocess
+import os
 
 def save_with_logging(batters, label):
     output_path = Path("data/adjusted")
@@ -37,7 +38,7 @@ def commit_outputs():
     try:
         subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "actions@github.com"], check=True)
-        subprocess.run(["git", "add", "data/adjusted/batters_*.csv", "data/adjusted/adjustment_log_*.txt"], check=True)
+        subprocess.run(["git", "add", "data/adjusted/*.csv", "data/adjusted/*.txt"], check=True)
         subprocess.run(["git", "commit", "-m", "Add adjusted batter files and logs"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Committed and pushed adjusted files.")
@@ -53,6 +54,10 @@ def main():
 
     for label in ["home", "away"]:
         path = f"data/adjusted/batters_{label}.csv"
+        if not os.path.exists(path):
+            print(f"❌ Missing input file: {path}")
+            continue
+
         print(f"\n📥 Loading {label} batters from: {path}", flush=True)
         batters = pd.read_csv(path)
         print(f"{label.capitalize()}: {len(batters)}, ParkDay: {len(park_day)}, Weather: {len(weather)}", flush=True)
