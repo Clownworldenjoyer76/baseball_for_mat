@@ -18,13 +18,5 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
 
-      - name: Run Park Adjustment Script
+      - name: Run Park Adjustment
         run: python scripts/apply_park_adjustment.py
-
-      - name: Commit and Push Adjusted Files
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add data/adjusted/*.csv data/adjusted/*.txt
-          git commit -m "Auto-commit: park-adjusted batters + log"
-          git push
