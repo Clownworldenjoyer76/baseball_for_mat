@@ -1,49 +1,43 @@
 import pandas as pd
-import os
 from datetime import datetime
 
-# Load inputs
-batters = pd.read_csv('data/batters_normalized_cleaned.csv')
-games = pd.read_csv('data/raw/todaysgames_normalized.csv')
-day_factors = pd.read_csv('data/Data/park_factors_day.csv')
-night_factors = pd.read_csv('data/Data/park_factors_night.csv')
+def load_games():
+    games = pd.read_csv("data/raw/todaysgames_normalized.csv")
+    games["hour"] = pd.to_datetime(games["game_time"]).dt.hour
+    games["time_of_day"] = games["hour"].apply(lambda x: "day" if x < 18 else "night")
+    return games[["home_team", "time_of_day"]]
 
-# Determine game time (hour)
-games["hour"] = pd.to_datetime(games["game_time"]).dt.hour
-games["time_of_day"] = games["hour"].apply(lambda x: "day" if x < 18 else "night")
+def load_park_factors(time_of_day):
+    if time_of_day == "day":
+        df = pd.read_csv("data/Data/park_factors_day.csv")
+    else:
+        df = pd.read_csv("data/Data/park_factors_night.csv")
+    return df[["home_team", "Park Factor"]]
 
-# Create park factor mapping
-day_map = day_factors.set_index("home_team")["Park Factor"].to_dict()
-night_map = night_factors.set_index("home_team")["Park Factor"].to_dict()
+def apply_adjustment(batters_file, games, label):
+    batters = pd.read_csv(batters_file)
+    opponent_map = games.set_index("home_team").to_dict()["time_of_day"]
 
-# Merge park factor into games
-games["park_factor"] = games.apply(lambda row: day_map.get(row["home_team"]) if row["time_of_day"] == "day" else night_map.get(row["home_team"]), axis=1)
+    batters["opponent"] = batters["team"].map(opponent_map)
+    adjustments = []
 
-# Create output directories if not exist
-os.makedirs("data/adjusted", exist_ok=True)
+    for time in ["day", "night"]:
+        park_factors = load_park_factors(time)
+        merged = batters[batters["opponent"] == time].merge(park_factors, how="left", left_on="opponent", right_on="home_team")
+        merged["adj_woba_park"] = merged["woba"] * merged["Park Factor"]
+        adjustments.append(merged.drop(columns=["Park Factor", "home_team"]))
 
-# Apply park factor to batters based on opponent stadium
-home_batters = batters[batters["team"] == "home"].copy()
-away_batters = batters[batters["team"] == "away"].copy()
+    result = pd.concat(adjustments)
+    log_file = f"data/adjusted/log_park_{label}.txt"
+    output_file = f"data/adjusted/batters_{label}_park.csv"
+    result.to_csv(output_file, index=False)
+    with open(log_file, "w") as log:
+        log.write(f"Applied park factor adjustment to {len(result)} rows.\n")
 
-home_batters = home_batters.merge(games[["home_team", "park_factor"]], left_on="opponent", right_on="home_team", how="left")
-away_batters = away_batters.merge(games[["home_team", "park_factor"]], left_on="opponent", right_on="home_team", how="left")
+def main():
+    games = load_games()
+    apply_adjustment("data/cleaned/batters_normalized_cleaned.csv", games, "home")
+    apply_adjustment("data/cleaned/batters_normalized_cleaned.csv", games, "away")
 
-cols = ['last_name, first_name', 'team', 'adj_woba_park']
-for col in cols:
-    if col not in batters.columns:
-        batters[col] = 'UNKNOWN' if 'name' in col else 0.320
-
-home_batters["adj_woba_park"] = home_batters["woba"] * home_batters["park_factor"]
-away_batters["adj_woba_park"] = away_batters["woba"] * away_batters["park_factor"]
-
-if 'adj_woba_park' not in batters.columns:
-    batters['adj_woba_park'] = 0.320  # Or any default fallback
-home_batters.to_csv("data/adjusted/batters_home_park.csv", index=False)
-away_batters.to_csv("data/adjusted/batters_away_park.csv", index=False)
-
-with open("log_park_home.txt", "w") as f:
-    f.write("Home park factor applied to {} batters.\n".format(len(home_batters)))
-
-with open("log_park_away.txt", "w") as f:
-    f.write("Away park factor applied to {} batters.\n".format(len(away_batters)))
+if __name__ == "__main__":
+    main()
