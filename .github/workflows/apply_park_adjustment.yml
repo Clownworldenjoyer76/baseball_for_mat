@@ -1,0 +1,29 @@
+
+name: Apply Park Adjustment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  park-adjustment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run Park Adjustment
+        run: python scripts/apply_park_adjustment.py
+
+      - name: Upload Outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: park-adjusted-batters
+          path: data/park_adjusted/
