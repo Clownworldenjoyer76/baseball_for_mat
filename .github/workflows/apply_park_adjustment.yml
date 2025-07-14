@@ -1,34 +1,32 @@
-
-name: Apply Park Adjustment
+name: Apply Park Weather Adjustment
 
 on:
   workflow_dispatch:
 
 jobs:
-  apply-park-adjustment:
+  apply-park-weather-adjustment:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: 3.10
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
 
-      - name: Run park adjustment
-        run: python apply_park_adjustment.py
+      - name: Run Park Factor Adjustment Script
+        run: python scripts/apply_park_adjustment.py
 
-      - name: Commit adjusted files to repo
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/adjusted/*
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "Apply park factor adjustment"
-            git push
+      - name: Upload Adjusted Batters
+        uses: actions/upload-artifact@v4
+        with:
+          name: adjusted-batters-park
+          path: |
+            data/adjusted/batters_home_park.csv
+            data/adjusted/batters_away_park.csv
+            data/adjusted/log_park_home.txt
+            data/adjusted/log_park_away.txt
