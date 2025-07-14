@@ -54,6 +54,9 @@ def main():
     for label in ["home", "away"]:
         path = f"data/adjusted/batters_{label}.csv"
         print(f"\n📥 Loading {label} batters from: {path}", flush=True)
+        if not Path(path).exists():
+            print(f"⚠️ File not found: {path}, skipping...")
+            continue
         batters = pd.read_csv(path)
         print(f"{label.capitalize()}: {len(batters)}, ParkDay: {len(park_day)}, Weather: {len(weather)}", flush=True)
         print(f"⚙️ Applying adjustments to {label} batters...", flush=True)
