@@ -1,8 +1,8 @@
-
 import pandas as pd
-from datetime import datetime
+from pathlib import Path
+import subprocess
 
-def load_games():
+def load_game_times():
     games = pd.read_csv("data/raw/todaysgames_normalized.csv")
     games["hour"] = pd.to_datetime(games["game_time"]).dt.hour
     games["time_of_day"] = games["hour"].apply(lambda x: "day" if x < 18 else "night")
@@ -15,37 +15,75 @@ def load_park_factors(time_of_day):
         df = pd.read_csv("data/Data/park_factors_night.csv")
     return df[["home_team", "Park Factor"]]
 
-def apply_adjustment(batters_file, games, label):
-    batters = pd.read_csv(batters_file)
-    opponent_map = games.set_index("home_team").to_dict()["time_of_day"]
+def apply_park_adjustments_home(batters, games):
+    batters['home_team'] = batters['team']
+    merged = pd.merge(batters, games, on='home_team', how='left')
+    merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")  # Assume default to day, overridden below
+    merged.loc[merged['time_of_day'] == 'night', 'Park Factor'] = pd.merge(
+        merged.loc[merged['time_of_day'] == 'night'],
+        load_park_factors("night"),
+        on="home_team",
+        how="left"
+    )["Park Factor_y"].values
 
-    batters["opponent"] = batters["team"].map(opponent_map)
-    adjustments = []
+    if 'woba' not in merged.columns:
+        merged['woba'] = 0.320
 
-    for time in ["day", "night"]:
-        park_factors = load_park_factors(time)
-        merged = batters[batters["opponent"] == time].merge(park_factors, how="left", left_on="opponent", right_on="home_team")
-        merged["adj_woba_park"] = merged["woba"] * merged["Park Factor"]
-        merged["adj_woba_park"] = merged["adj_woba_park"].fillna(merged["woba"])  # fallback
-        adjustments.append(merged.drop(columns=["Park Factor", "home_team"]))
+    merged["adj_woba_park"] = merged["woba"] * merged["Park Factor"]
+    merged["adj_woba_park"] = merged["adj_woba_park"].fillna(merged["woba"])
+    return merged
 
-    result = pd.concat(adjustments)
-    result["adj_woba_park"] = result["adj_woba_park"].fillna(0.320)
+def apply_park_adjustments_away(batters, games):
+    away_team_to_home_team = pd.read_csv("data/raw/todaysgames_normalized.csv").set_index("away_team")["home_team"].to_dict()
+    batters['home_team'] = batters['team'].map(away_team_to_home_team)
+    merged = pd.merge(batters, games, on='home_team', how='left')
+    merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
+    merged.loc[merged['time_of_day'] == 'night', 'Park Factor'] = pd.merge(
+        merged.loc[merged['time_of_day'] == 'night'],
+        load_park_factors("night"),
+        on="home_team",
+        how="left"
+    )["Park Factor_y"].values
 
-    for col in ["last_name, first_name", "team"]:
-        if col not in result.columns:
-            result[col] = "UNKNOWN"
+    if 'woba' not in merged.columns:
+        merged['woba'] = 0.320
 
-    log_file = f"data/adjusted/log_park_{label}.txt"
-    output_file = f"data/adjusted/batters_{label}_park.csv"
-    result.to_csv(output_file, index=False)
-    with open(log_file, "w") as log:
-        log.write(f"Applied park factor adjustment to {len(result)} rows.\n")
+    merged["adj_woba_park"] = merged["woba"] * merged["Park Factor"]
+    merged["adj_woba_park"] = merged["adj_woba_park"].fillna(merged["woba"])
+    return merged
+
+def save_outputs(batters, label):
+    out_path = Path("data/adjusted")
+    out_path.mkdir(parents=True, exist_ok=True)
+    outfile = out_path / f"batters_{label}_park.csv"
+    logfile = out_path / f"log_park_{label}.txt"
+    batters.to_csv(outfile, index=False)
+    with open(logfile, 'w') as f:
+        f.write(str(batters[['last_name, first_name', 'team', 'adj_woba_park']].head()))
+
+def commit_outputs():
+    try:
+        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
+        subprocess.run(["git", "add", "data/adjusted/*.csv", "data/adjusted/*.txt"], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-commit: adjusted park batters + log"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("✅ Committed and pushed adjusted park files.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git commit failed: {e}")
 
 def main():
-    games = load_games()
-    apply_adjustment("data/cleaned/batters_normalized_cleaned.csv", games, "home")
-    apply_adjustment("data/cleaned/batters_normalized_cleaned.csv", games, "away")
+    games = load_game_times()
+
+    batters_home = pd.read_csv("data/adjusted/batters_home.csv")
+    adjusted_home = apply_park_adjustments_home(batters_home, games)
+    save_outputs(adjusted_home, "home")
+
+    batters_away = pd.read_csv("data/adjusted/batters_away.csv")
+    adjusted_away = apply_park_adjustments_away(batters_away, games)
+    save_outputs(adjusted_away, "away")
+
+    commit_outputs()
 
 if __name__ == "__main__":
     main()
