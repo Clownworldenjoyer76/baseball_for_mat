@@ -26,13 +26,19 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add data/adjusted/batters_adjusted_weather_park.csv
-          git add data/adjusted/adjustment_log.txt
-          git commit -m "Auto-commit: adjusted batters + log" || echo "No changes to commit"
+          git add data/adjusted/batters_home_adjusted.csv
+          git add data/adjusted/batters_away_adjusted.csv
+          git add data/adjusted/adjustment_log_home.txt
+          git add data/adjusted/adjustment_log_away.txt
+          git commit -m "Auto-commit: adjusted batters + logs" || echo "No changes to commit"
           git push
 
-      - name: Upload Adjusted File as Artifact
+      - name: Upload Adjusted Files as Artifact
         uses: actions/upload-artifact@v4
         with:
           name: adjusted-batters
-          path: data/adjusted/batters_adjusted_weather_park.csv
+          path: |
+            data/adjusted/batters_home_adjusted.csv
+            data/adjusted/batters_away_adjusted.csv
+            data/adjusted/adjustment_log_home.txt
+            data/adjusted/adjustment_log_away.txt
