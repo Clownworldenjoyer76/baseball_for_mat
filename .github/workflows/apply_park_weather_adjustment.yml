@@ -8,29 +8,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up job
-        run: echo "Setting up job..."
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      - name: Checkout
-        uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.10
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas numpy python-dateutil
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas numpy python-dateutil
+    - name: Run Park Adjustment
+      run: |
+        python scripts/apply_park_adjustment.py
 
-      - name: Run Park Adjustment
-        run: python scripts/apply_park_adjustment.py
-
-      - name: Commit adjusted files to repo
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/adjusted/*.csv || echo "No files to add"
-          git commit -m "Update adjusted park factor files" || echo "Nothing to commit"
-          git push || echo "Nothing to push"
+    - name: Commit adjusted files to repo
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add -A
+        git diff --cached --quiet || (git commit -m "Apply park/weather adjustment" && git push)
