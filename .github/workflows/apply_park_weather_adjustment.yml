@@ -2,6 +2,10 @@ name: Apply Park Weather Adjustment
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/apply_park_adjustment.py'
+      - '.github/workflows/apply_park_weather_adjustment.yml'
 
 jobs:
   park-adjustment:
@@ -22,12 +26,18 @@ jobs:
         pip install pandas numpy python-dateutil
 
     - name: Run Park Adjustment
-      run: |
-        python scripts/apply_park_adjustment.py
+      run: python scripts/apply_park_adjustment.py
 
     - name: Commit adjusted files to repo
       run: |
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
-        git add -A
-        git diff --cached --quiet || (git commit -m "Apply park/weather adjustment" && git push)
+        git add data/adjusted/*.csv || true
+        git add data/adjusted/*.txt || true
+
+        if git diff --cached --quiet; then
+          echo "Nothing to commit."
+        else
+          git commit -m "Add adjusted CSVs and logs"
+          git push
+        fi
