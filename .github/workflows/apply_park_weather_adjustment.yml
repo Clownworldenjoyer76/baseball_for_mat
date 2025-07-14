@@ -2,42 +2,31 @@ name: Apply Park Weather Adjustment
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'scripts/apply_park_adjustment.py'
-      - '.github/workflows/apply_park_weather_adjustment.yml'
 
 jobs:
-  park-adjustment:
+  apply-park-weather-adjustment:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pandas numpy python-dateutil
+      - name: Install Dependencies
+        run: pip install pandas
 
-    - name: Run Park Adjustment
-      run: python scripts/apply_park_adjustment.py
+      - name: Run Park Factor Adjustment Script
+        run: python scripts/apply_park_adjustment.py
 
-    - name: Commit adjusted files to repo
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git add data/adjusted/*.csv || true
-        git add data/adjusted/*.txt || true
-
-        if git diff --cached --quiet; then
-          echo "Nothing to commit."
-        else
-          git commit -m "Add adjusted CSVs and logs"
-          git push
-        fi
+      - name: Upload Adjusted Batters
+        uses: actions/upload-artifact@v4
+        with:
+          name: adjusted-batters-park
+          path: |
+            data/adjusted/batters_home_park.csv
+            data/adjusted/batters_away_park.csv
+            data/adjusted/log_park_home.txt
+            data/adjusted/log_park_away.txt
