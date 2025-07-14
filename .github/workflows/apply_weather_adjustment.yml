@@ -18,11 +18,11 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
 
-      - name: Run Weather Adjustment Script
+      - name: Run Weather Adjustment
         run: python scripts/apply_weather_adjustment.py
 
-      - name: Upload Adjusted Weather Files
+      - name: Upload Outputs
         uses: actions/upload-artifact@v4
         with:
           name: weather-adjusted-batters
-          path: data/weather_adjusted/
+          path: data/adjusted/
