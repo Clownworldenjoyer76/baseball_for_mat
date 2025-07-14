@@ -22,3 +22,11 @@ jobs:
 
       - name: Run Park Adjustment
         run: python scripts/apply_park_adjustment.py
+
+      - name: Commit adjusted files to repo
+        run: |
+           git config user.name "github-actions"
+           git config user.email "github-actions@github.com"
+           git add data/adjusted/*.csv data/adjusted/*.txt
+           git commit -m "Add park-adjusted files"
+           git push
