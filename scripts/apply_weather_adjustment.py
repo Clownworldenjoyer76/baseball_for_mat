@@ -22,7 +22,7 @@ def apply_weather_adjustments(batters, weather):
     return batters
 
 def save_outputs(batters, label):
-    out_path = Path("data/weather_adjusted")
+    out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
     outfile = out_path / f"batters_{label}_weather.csv"
     logfile = out_path / f"log_weather_{label}.txt"
