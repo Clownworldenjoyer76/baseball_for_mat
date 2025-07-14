@@ -29,9 +29,16 @@ away_batters = batters[batters["team"] == "away"].copy()
 home_batters = home_batters.merge(games[["home_team", "park_factor"]], left_on="opponent", right_on="home_team", how="left")
 away_batters = away_batters.merge(games[["home_team", "park_factor"]], left_on="opponent", right_on="home_team", how="left")
 
+cols = ['last_name, first_name', 'team', 'adj_woba_park']
+for col in cols:
+    if col not in batters.columns:
+        batters[col] = 'UNKNOWN' if 'name' in col else 0.320
+
 home_batters["adj_woba_park"] = home_batters["woba"] * home_batters["park_factor"]
 away_batters["adj_woba_park"] = away_batters["woba"] * away_batters["park_factor"]
 
+if 'adj_woba_park' not in batters.columns:
+    batters['adj_woba_park'] = 0.320  # Or any default fallback
 home_batters.to_csv("data/adjusted/batters_home_park.csv", index=False)
 away_batters.to_csv("data/adjusted/batters_away_park.csv", index=False)
 
