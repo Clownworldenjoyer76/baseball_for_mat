@@ -9,12 +9,19 @@ import sys
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
+LOG_FILE = "data/weather_api_log.txt"
 
 def get_weather(lat, lon):
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=imperial"
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"❌ API error for lat={lat}, lon={lon}: {e}")
+        with open(LOG_FILE, "a") as log:
+            log.write(f"API ERROR: lat={lat}, lon={lon}, error={e}\n")
+        return None
 
 def convert_to_localtime(game_time_str, tz_str):
     eastern = pytz.timezone("US/Eastern")
@@ -35,6 +42,9 @@ def generate_weather_adjustments():
         sys.exit(1)
 
     print(f"🔍 Loaded {len(df)} rows from {INPUT_FILE}")
+
+    if os.path.exists(LOG_FILE):
+        os.remove(LOG_FILE)
 
     rows = []
     for _, row in df.iterrows():
@@ -64,24 +74,24 @@ def generate_weather_adjustments():
                     'notes': 'Roof closed'
                 }
             else:
-                try:
-                    data = get_weather(lat, lon)
+                data = get_weather(lat, lon)
+                if data:
                     weather = {
-                        'temperature': data['main']['temp'],
-                        'wind_speed': data['wind']['speed'],
-                        'wind_direction': data['wind']['deg'],
-                        'humidity': data['main']['humidity'],
+                        'temperature': data.get('main', {}).get('temp', 'Missing'),
+                        'wind_speed': data.get('wind', {}).get('speed', 'Missing'),
+                        'wind_direction': data.get('wind', {}).get('deg', 'Missing'),
+                        'humidity': data.get('main', {}).get('humidity', 'Missing'),
                         'precipitation': data.get('rain', {}).get('1h', 0),
                         'notes': 'Roof open'
                     }
-                except Exception as e:
+                else:
                     weather = {
                         'temperature': 'Error',
                         'wind_speed': 'Error',
                         'wind_direction': 'Error',
                         'humidity': 'Error',
                         'precipitation': 'Error',
-                        'notes': str(e)
+                        'notes': 'API Failed'
                     }
 
             rows.append({
