@@ -1,0 +1,32 @@
+name: Split Batters by Home/Away
+
+on:
+  workflow_dispatch:
+
+jobs:
+  split-batters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas
+
+      - name: Run split script
+        run: python scripts/split_batters_by_home_away.py
+
+      - name: Commit and push output
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/adjusted/batters_home.csv
+          git add data/adjusted/batters_away.csv
+          git commit -m "Auto-commit: split batters into home/away" || echo "No changes"
+          git push
