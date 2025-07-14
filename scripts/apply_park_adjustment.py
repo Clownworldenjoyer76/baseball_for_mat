@@ -41,19 +41,6 @@ def apply_adjustment(batters_file, games, label):
     result.to_csv(output_file, index=False)
     with open(log_file, "w") as log:
         log.write(f"Applied park factor adjustment to {len(result)} rows.\n")
-    
-    # Ensure adj_woba_park column exists
-if "adj_woba_park" not in result.columns:
-    result["adj_woba_park"] = 0.320
-
-# Ensure required columns exist for log file
-for col in ["last_name, first_name", "team"]:
-    if col not in result.columns:
-        result[col] = "UNKNOWN"
-    
-    result.to_csv(output_file, index=False)
-    with open(log_file, "w") as log:
-        log.write(f"Applied park factor adjustment to {len(result)} rows.\n")
 
 def main():
     games = load_games()
