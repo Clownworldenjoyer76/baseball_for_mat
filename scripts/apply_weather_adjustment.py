@@ -2,10 +2,11 @@ import pandas as pd
 from pathlib import Path
 
 def apply_weather_adjustments(batters, weather):
-    if 'team' not in batters.columns:
+    if 'team' in batters.columns:
+        batters['home_team'] = batters['team']
+    else:
         raise ValueError("Missing 'team' column in batters file.")
 
-    batters['home_team'] = batters['team']
     weather = weather.drop_duplicates(subset='home_team')
     batters = pd.merge(batters, weather, on='home_team', how='left')
 
@@ -20,28 +21,21 @@ def apply_weather_adjustments(batters, weather):
     return batters
 
 def save_outputs(batters, label):
-    output_dir = Path("data/weather_adjusted")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    out_path = Path("data/adjusted")
+    out_path.mkdir(parents=True, exist_ok=True)
+    outfile = out_path / f"batters_{label}_weather.csv"
+    logfile = out_path / f"log_weather_{label}.txt"
 
-    output_file = output_dir / f"batters_{label}_weather.csv"
-    log_file = output_dir / f"log_weather_{label}.txt"
+    batters.to_csv(outfile, index=False)
 
-    batters.to_csv(output_file, index=False)
-
-    with open(log_file, "w") as f:
-        f.write("✅ Weather Adjustment Output Sample:\n\n")
-        f.write(batters[['last_name, first_name', 'team', 'adj_woba_weather']].head().to_string(index=False))
-        f.write("\n\n✅ Adjustment complete.\n")
-
-    print(f"📁 Saved: {output_file}")
-    print(f"📝 Log: {log_file}")
+    with open(logfile, 'w') as f:
+        f.write(str(batters[['last_name, first_name', 'team', 'adj_woba_weather']].head()))
 
 def main():
     weather = pd.read_csv("data/weather_adjustments.csv")
-    for label in ["home", "away"]:
-        input_file = f"data/adjusted/batters_{label}.csv"
-        print(f"\n📥 Loading: {input_file}")
-        batters = pd.read_csv(input_file)
+    for label in ['home', 'away']:
+        infile = f"data/adjusted/batters_{label}.csv"
+        batters = pd.read_csv(infile)
         adjusted = apply_weather_adjustments(batters, weather)
         save_outputs(adjusted, label)
 
