@@ -1,4 +1,4 @@
-name: Apply Park Adjustment
+name: Apply Park Weather Adjustment
 
 on:
   workflow_dispatch:
@@ -7,7 +7,8 @@ jobs:
   park-adjustment:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -16,7 +17,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pandas python-dateutil
+          python -m pip install --upgrade pip
+          pip install pandas
 
       - name: Run Park Adjustment
         run: python scripts/apply_park_adjustment.py
