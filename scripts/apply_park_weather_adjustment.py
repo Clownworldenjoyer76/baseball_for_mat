@@ -1,9 +1,7 @@
-
 import pandas as pd
 from pathlib import Path
 from apply_adjustments import apply_adjustments
 import subprocess
-import os
 
 def save_with_logging(batters, label):
     output_path = Path("data/adjusted")
@@ -12,6 +10,7 @@ def save_with_logging(batters, label):
     log_file = output_path / f"adjustment_log_{label}.txt"
 
     batters.to_csv(out_file, index=False)
+    print(f"📁 Saved: {out_file}", flush=True)
 
     print(f"\n✅ {label.capitalize()} Columns after adjustment:", flush=True)
     print(batters.columns.tolist(), flush=True)
@@ -31,6 +30,7 @@ def save_with_logging(batters, label):
             f.write(f"Mean adj_home_run: {batters['adj_home_run'].mean():.4f}\n")
         if 'adj_hard_hit_percent' in batters.columns:
             f.write(f"Mean adj_hard_hit_percent: {batters['adj_hard_hit_percent'].mean():.4f}\n")
+        f.write("✅ Adjustment complete.\n")
 
     print(f"✅ {label.capitalize()} file + log written to data/adjusted/", flush=True)
 
@@ -54,12 +54,15 @@ def main():
 
     for label in ["home", "away"]:
         path = f"data/adjusted/batters_{label}.csv"
-        if not os.path.exists(path):
-            print(f"❌ Missing input file: {path}")
-            continue
-
         print(f"\n📥 Loading {label} batters from: {path}", flush=True)
+
+        if not Path(path).exists():
+            raise FileNotFoundError(f"❌ File not found: {path}")
+
         batters = pd.read_csv(path)
+        if 'team' not in batters.columns:
+            raise ValueError(f"❌ Required column 'team' missing in {label} batter file")
+
         print(f"{label.capitalize()}: {len(batters)}, ParkDay: {len(park_day)}, Weather: {len(weather)}", flush=True)
         print(f"⚙️ Applying adjustments to {label} batters...", flush=True)
 
