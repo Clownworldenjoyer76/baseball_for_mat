@@ -42,3 +42,8 @@ def apply_adjustment(batters_file, games, label):
     result.to_csv(output_file, index=False)
     with open(log_file, "w") as log:
         log.write(f"Applied park factor adjustment to {len(result)} rows.\n")
+
+if __name__ == "__main__":
+    games = load_games()
+    apply_adjustment("data/cleaned/batters_normalized_cleaned.csv", games, "home")
+    apply_adjustment("data/cleaned/batters_normalized_cleaned.csv", games, "away")
