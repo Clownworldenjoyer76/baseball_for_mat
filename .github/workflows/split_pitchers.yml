@@ -1,0 +1,31 @@
+name: Split Pitchers Into Home and Away
+
+on:
+  workflow_dispatch:
+
+jobs:
+  split-pitchers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run Split Script
+        run: python scripts/split_pitchers.py
+
+      - name: Commit pitcher files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/adjusted/pitchers_home.csv
+          git add data/adjusted/pitchers_away.csv
+          git commit -m "Auto-commit: split pitchers into home and away" || echo "No changes to commit"
+          git push
