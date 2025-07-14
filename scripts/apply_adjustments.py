@@ -1,32 +1,38 @@
 
 import pandas as pd
 
-def apply_adjustments(batters, weather, park_day, park_night, is_home=True):
-    # Determine which column to use as the join key for park/weather data
-    if is_home:
-        join_key = 'home_team'
-        batters[join_key] = batters['team']
+def apply_adjustments(batters, weather, park_day, park_night):
+    # Copy 'team' to 'home_team' so we can join on park and weather
+    if 'team' in batters.columns:
+        batters['home_team'] = batters['team']
     else:
-        join_key = 'home_team'
-        batters[join_key] = batters['opponent_team']
+        raise ValueError("Missing 'team' column in batters data. Tagging step may be incomplete.")
 
-    # Deduplicate join sources
+    # Deduplicate join sources by home_team
     weather = weather.drop_duplicates(subset='home_team')
     park_day = park_day.drop_duplicates(subset='home_team')
     park_night = park_night.drop_duplicates(subset='home_team')
 
     # Merge with weather data
-    batters = pd.merge(batters, weather, on=join_key, how="left")
+    batters = pd.merge(batters, weather, on="home_team", how="left")
 
     # Merge with park factors
-    batters = pd.merge(batters, park_day, on=join_key, how="left", suffixes=('', '_day'))
-    batters = pd.merge(batters, park_night, on=join_key, how="left", suffixes=('', '_night'))
+    batters = pd.merge(batters, park_day, on="home_team", how="left", suffixes=('', '_day'))
+    batters = pd.merge(batters, park_night, on="home_team", how="left", suffixes=('', '_night'))
 
-    # Adjustments — only if required columns exist
-    if 'woba' in batters.columns and 'temperature' in batters.columns:
+    # Fill missing woba with league average
+    if 'woba' in batters.columns:
+        missing_woba_count = batters['woba'].isna().sum()
+        print(f"ℹ️ Filling {missing_woba_count} missing wOBA values with league average (0.320)")
+        batters['woba'] = batters['woba'].fillna(0.320)
+    else:
+        print("⚠️ Column 'woba' missing entirely. Creating with default 0.320")
+        batters['woba'] = 0.320
+
+    if 'temperature' in batters.columns:
         batters['adj_woba'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     else:
-        batters['adj_woba'] = batters.get('woba', 0)
+        batters['adj_woba'] = batters['woba']
 
     if 'home_run' in batters.columns and 'HR' in batters.columns:
         batters['adj_home_run'] = batters['home_run'] * batters['HR']
