@@ -1,6 +1,6 @@
-
 import pandas as pd
 from pathlib import Path
+import subprocess
 
 def apply_weather_adjustments(batters, weather):
     if 'team' in batters.columns:
@@ -32,6 +32,17 @@ def save_outputs(batters, label):
     with open(logfile, 'w') as f:
         f.write(str(batters[['last_name, first_name', 'team', 'adj_woba_weather']].head()))
 
+def commit_outputs():
+    try:
+        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
+        subprocess.run(["git", "add", "data/adjusted/*.csv", "data/adjusted/*.txt"], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-commit: adjusted batters + log"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("✅ Committed and pushed adjusted files.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git commit failed: {e}")
+
 def main():
     weather = pd.read_csv("data/weather_adjustments.csv")
     for label in ['home', 'away']:
@@ -39,6 +50,7 @@ def main():
         batters = pd.read_csv(infile)
         adjusted = apply_weather_adjustments(batters, weather)
         save_outputs(adjusted, label)
+    commit_outputs()
 
 if __name__ == "__main__":
     main()
