@@ -28,7 +28,7 @@ def apply_park_adjustments_home(batters, games):
     if 'woba' not in merged.columns:
         merged['woba'] = 0.320
 
-    merged["adj_woba_park"] = merged["woba"] * merged["Park Factor"]
+    merged["adj_woba_park"] = merged["woba"] * (merged["Park Factor"] / 100)
     merged["adj_woba_park"] = merged["adj_woba_park"].fillna(merged["woba"])
     return merged
 
@@ -49,7 +49,7 @@ def apply_park_adjustments_away(batters, games):
     if 'woba' not in merged.columns:
         merged['woba'] = 0.320
 
-    merged["adj_woba_park"] = merged["woba"] * merged["Park Factor"]
+    merged["adj_woba_park"] = merged["woba"] * (merged["Park Factor"] / 100)
     merged["adj_woba_park"] = merged["adj_woba_park"].fillna(merged["woba"])
     return merged
 
