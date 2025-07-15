@@ -26,7 +26,7 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add data/Data/stadium_metadata.csv
-          git add game_time_update_log.csv
+          git add data/logs/game_time_update_log.csv
           git commit -m "Update game_time in stadium_metadata" || echo "No changes to commit"
           git pull --rebase origin main
           git push origin main
