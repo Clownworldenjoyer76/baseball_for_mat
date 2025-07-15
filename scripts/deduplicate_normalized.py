@@ -15,14 +15,13 @@ for label, path in files.items():
         df = df.drop_duplicates(subset=["last_name, first_name", "team", "type"])
         after = len(df)
 
-        # Standardize team names using team_name_master.csv
         if label == "batters":
-            print("🔗 Mapping team codes to standard team names...")
+            print("🔗 Mapping team to clean team names using team_name_master.csv...")
             try:
                 team_map = pd.read_csv("data/Data/team_name_master.csv")
-                team_map = team_map[['team_code', 'team_name']].dropna()
-                team_map_dict = dict(zip(team_map['team_code'].str.strip(), team_map['team_name'].str.strip()))
-                df['team'] = df['team'].astype(str).str.strip().map(team_map_dict)
+                team_map = team_map[['team', 'clean_team_name']].dropna()
+                map_dict = dict(zip(team_map['team'].str.strip(), team_map['clean_team_name'].str.strip()))
+                df['team'] = df['team'].astype(str).str.strip().map(map_dict)
             except Exception as e:
                 print(f"⚠️ Failed to map team names: {e}")
 
