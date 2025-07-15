@@ -1,18 +1,45 @@
 import pandas as pd
+from pathlib import Path
+import re
 
-LINEUPS_FILE = "data/raw/lineups_normalized.csv"
-BATTERS_FILE = "data/cleaned/batters_normalized_cleaned.csv"
-OUTPUT_FILE = "data/cleaned/batters_today.csv"
+BATTERS_FILE = "data/cleaned/batters_today.csv"
+GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+OUTPUT_DIR = "data/adjusted"
+
+def fix_team_name(name):
+    """Fix camel case like 'RedSox' → 'Red Sox' and remove extra whitespace."""
+    name = str(name).strip()
+    name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+    return name.strip()
 
 def main():
-    lineups = pd.read_csv(LINEUPS_FILE)
+    print("📥 Loading input files...")
     batters = pd.read_csv(BATTERS_FILE)
+    games = pd.read_csv(GAMES_FILE)
 
-    playing_names = set(lineups['last_name, first_name'].str.strip())
-    batters_today = batters[batters['last_name, first_name'].str.strip().isin(playing_names)]
+    print("🔍 Validating required columns...")
+    if 'team' not in batters.columns:
+        raise ValueError("Missing 'team' column in batters_today.csv.")
+    if 'home_team' not in games.columns or 'away_team' not in games.columns:
+        raise ValueError("Missing 'home_team' or 'away_team' in games file.")
 
-    batters_today.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Filtered batters written to {OUTPUT_FILE} ({len(batters_today)} rows)")
+    print("🧹 Cleaning and formatting team names...")
+    batters['team'] = batters['team'].apply(fix_team_name)
+    games['home_team'] = games['home_team'].apply(fix_team_name)
+    games['away_team'] = games['away_team'].apply(fix_team_name)
+
+    print("⚙️ Splitting batters into home and away...")
+    home_teams = games['home_team'].unique()
+    away_teams = games['away_team'].unique()
+
+    home_batters = batters[batters['team'].isin(home_teams)]
+    away_batters = batters[batters['team'].isin(away_teams)]
+
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+    home_batters.to_csv(f"{OUTPUT_DIR}/batters_home.csv", index=False)
+    away_batters.to_csv(f"{OUTPUT_DIR}/batters_away.csv", index=False)
+
+    print(f"✅ Saved {len(home_batters)} home batters and {len(away_batters)} away batters")
 
 if __name__ == "__main__":
     main()
