@@ -1,10 +1,15 @@
 import pandas as pd
 from pathlib import Path
+import re
 
 BATTERS_FILE = "data/cleaned/batters_today.csv"
 TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 OUTPUT_DIR = "data/adjusted"
+
+def fix_team_name(name):
+    # Fix camel case like 'RedSox' → 'Red Sox'
+    return re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
 
 def main():
     print("📥 Loading input files...")
@@ -20,13 +25,15 @@ def main():
     if 'home_team' not in games.columns or 'away_team' not in games.columns:
         raise ValueError("Missing 'home_team' or 'away_team' in games file.")
 
-    print(f"✅ team_name_master.csv loaded with columns: {team_map.columns.tolist()}")
-
-    print("🧹 Removing duplicate team names...")
-    team_map = team_map.drop_duplicates(subset='team_name')
+    print("🧹 Cleaning and formatting team names...")
+    batters['team'] = batters['team'].astype(str).str.strip().apply(fix_team_name)
+    team_map['team_name'] = team_map['team_name'].astype(str).str.strip()
+    team_map['team_code'] = team_map['team_code'].astype(str).str.strip()
+    games['home_team'] = games['home_team'].astype(str).str.strip()
+    games['away_team'] = games['away_team'].astype(str).str.strip()
 
     print("🔗 Merging team names to codes...")
-    batters = batters.merge(team_map, how='left', left_on='team', right_on='team_name')
+    batters = batters.merge(team_map[['team_name', 'team_code']], how='left', left_on='team', right_on='team_name')
     batters.drop(columns=['team_name'], inplace=True)
 
     home_teams = games['home_team'].unique()
