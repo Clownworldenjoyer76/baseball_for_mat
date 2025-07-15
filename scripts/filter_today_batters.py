@@ -13,26 +13,32 @@ def main():
     except Exception as e:
         raise RuntimeError(f"Failed to load input files: {e}")
 
-    print("📊 Lineups columns:", lineups_df.columns.tolist())
-    print("📊 Batters columns:", batters_df.columns.tolist())
+    print(f"📊 Lineups columns: {list(lineups_df.columns)}")
+    print(f"📊 Batters columns: {list(batters_df.columns)}")
 
-    if 'last_name, first_name' not in lineups_df.columns or 'last_name, first_name' not in batters_df.columns:
-        raise ValueError("Missing required 'last_name, first_name' column in lineups or batters.")
+    if 'last_name, first_name' not in lineups_df.columns or 'name' not in batters_df.columns:
+        raise ValueError("Missing required columns in either lineups or batters file.")
 
     print("🔍 Sample values from lineups:")
-    print(lineups_df['last_name, first_name'].dropna().head(5))
+    print(lineups_df['last_name, first_name'].dropna().head())
 
     print("🔍 Sample values from batters:")
-    print(batters_df['last_name, first_name'].dropna().head(5))
+    print(batters_df['name'].dropna().head())
 
-    print("🔍 Stripping and matching names...")
-    expected_names = lineups_df['last_name, first_name'].astype(str).str.strip().unique()
-    batters_df['last_name, first_name'] = batters_df['last_name, first_name'].astype(str).str.strip()
+    print("📐 Formatting names to match...")
+    # Convert "First Last" → "Last, First" to match batter file format
+    lineups_df['last_name, first_name'] = lineups_df['last_name, first_name'].astype(str).str.strip()
+    formatted_names = lineups_df['last_name, first_name'].apply(
+        lambda name: ", ".join(name.split()[::-1]) if len(name.split()) == 2 else name
+    )
+    expected_names = formatted_names.unique()
 
     print(f"🔢 {len(expected_names)} unique names in today's lineups")
     print(f"🔢 {len(batters_df)} total batters in cleaned file")
 
-    filtered = batters_df[batters_df['last_name, first_name'].isin(expected_names)]
+    print("🔎 Filtering batters based on formatted names...")
+    filtered = batters_df[batters_df['name'].astype(str).str.strip().isin(expected_names)]
+
     print(f"✅ Filtered down to {len(filtered)} batters")
 
     if filtered.empty:
