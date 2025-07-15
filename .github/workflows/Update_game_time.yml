@@ -28,4 +28,8 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git add data/Data/stadium_metadata.csv
           git commit -m "Update game_time in stadium_metadata" || echo "No changes to commit"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git pull --rebase origin main  # 🔧 This is the key fix
+          git push origin main
           git push
