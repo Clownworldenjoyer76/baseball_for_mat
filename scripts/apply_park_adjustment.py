@@ -9,20 +9,14 @@ def load_game_times():
     return games[["home_team", "time_of_day"]]
 
 def load_park_factors(time_of_day):
-    if time_of_day == "day":
-        df = pd.read_csv("data/Data/park_factors_day.csv")
-    else:
-        df = pd.read_csv("data/Data/park_factors_night.csv")
-    return df[["home_team", "Park Factor"]]
+    path = f"data/Data/park_factors_{time_of_day}.csv"
+    return pd.read_csv(path)[["home_team", "Park Factor"]]
 
 def apply_park_adjustments_home(batters, games):
     batters['home_team'] = batters['team']
     merged = pd.merge(batters, games, on='home_team', how='left')
 
-    # Default to day factors
     merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
-    
-    # Override for night games
     night_games = merged['time_of_day'] == 'night'
     merged.loc[night_games, 'Park Factor'] = pd.merge(
         merged.loc[night_games],
@@ -43,10 +37,7 @@ def apply_park_adjustments_away(batters, games):
     batters['home_team'] = batters['team'].map(away_team_to_home_team)
     merged = pd.merge(batters, games, on='home_team', how='left')
 
-    # Default to day factors
     merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
-
-    # Override for night games
     night_games = merged['time_of_day'] == 'night'
     merged.loc[night_games, 'Park Factor'] = pd.merge(
         merged.loc[night_games],
@@ -65,13 +56,15 @@ def apply_park_adjustments_away(batters, games):
 def save_outputs(batters, label):
     out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
+
     outfile = out_path / f"batters_{label}_park.csv"
     logfile = out_path / f"log_park_{label}.txt"
 
     batters.to_csv(outfile, index=False)
 
-    top5 = batters[['last_name, first_name', 'team', 'adj_woba_park']].sort_values(by='adj_woba_park', ascending=False).head(5)
-    with open(logfile, 'w') as f:
+    # Proper bracket syntax for column with comma in name
+    top5 = batters[["last_name, first_name", "team", "adj_woba_park"]].sort_values(by="adj_woba_park", ascending=False).head(5)
+    with open(logfile, "w") as f:
         f.write(f"Top 5 adjusted batters ({label}):\n")
         f.write(top5.to_string(index=False))
 
