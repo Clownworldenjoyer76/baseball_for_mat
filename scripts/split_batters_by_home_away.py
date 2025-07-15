@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 BATTERS_FILE = "data/cleaned/batters_today.csv"
-TEAM_MAP_FILE = "data/Data/team_code_map.csv"
+TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 OUTPUT_DIR = "data/adjusted"
 
@@ -15,17 +15,17 @@ def main():
     print("🔍 Validating required columns...")
     if 'team' not in batters.columns:
         raise ValueError("Missing 'team' column in batters_today.csv.")
-    if 'name' not in team_map.columns or 'code' not in team_map.columns:
-        raise ValueError("team_name_map.csv missing required columns.")
+    if 'team_name' not in team_map.columns or 'abbreviation' not in team_map.columns:
+        raise ValueError("team_name_master.csv missing required columns.")
     if 'home_team' not in games.columns or 'away_team' not in games.columns:
         raise ValueError("Missing 'home_team' or 'away_team' in games file.")
 
-    print(f"✅ team_name_map.csv loaded with columns: {team_map.columns.tolist()}")
+    print(f"✅ team_name_master.csv loaded with columns: {team_map.columns.tolist()}")
 
     print("🔗 Merging team names to codes...")
-    batters = batters.merge(team_map, how='left', left_on='team', right_on='name')
-    batters.drop(columns=['name'], inplace=True)
-    batters.rename(columns={'code': 'team_code'}, inplace=True)
+    batters = batters.merge(team_map, how='left', left_on='team', right_on='team_name')
+    batters.drop(columns=['team_name'], inplace=True)
+    batters.rename(columns={'abbreviation': 'team_code'}, inplace=True)
 
     home_teams = games['home_team'].unique()
     away_teams = games['away_team'].unique()
