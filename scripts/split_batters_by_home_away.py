@@ -27,10 +27,22 @@ def main():
     games['home_team'] = games['home_team'].astype(str).str.strip()
     games['away_team'] = games['away_team'].astype(str).str.strip()
 
-    print("⚙️ Splitting batters into home and away...")
     home_teams = games['home_team'].unique()
     away_teams = games['away_team'].unique()
 
+    print(f"🏠 Home teams: {sorted(home_teams)}")
+    print(f"🛫 Away teams: {sorted(away_teams)}")
+
+    batter_teams = sorted(batters['team'].unique())
+    print(f"👕 Batter teams: {batter_teams}")
+
+    unmatched_teams = [team for team in batter_teams if team not in home_teams and team not in away_teams]
+    if unmatched_teams:
+        print(f"⚠️ Unmatched batter teams (not in today's games): {unmatched_teams}")
+    else:
+        print("✅ All batter teams matched to today's games.")
+
+    print("⚙️ Splitting batters into home and away...")
     home_batters = batters[batters['team'].isin(home_teams)]
     away_batters = batters[batters['team'].isin(away_teams)]
 
@@ -38,7 +50,4 @@ def main():
     home_batters.to_csv(f"{OUTPUT_DIR}/batters_home.csv", index=False)
     away_batters.to_csv(f"{OUTPUT_DIR}/batters_away.csv", index=False)
 
-    print(f"✅ Saved {len(home_batters)} home batters and {len(away_batters)} away batters")
-
-if __name__ == "__main__":
-    main()
+    print(f"✅ Saved {len(home_batters)} home
