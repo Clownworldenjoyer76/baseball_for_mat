@@ -1,7 +1,9 @@
 import pandas as pd
+import os
 
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+LOG_FILE = "data/logs/game_time_update_log.csv"
 
 def update_game_time():
     stadium_df = pd.read_csv(STADIUM_FILE)
@@ -30,8 +32,11 @@ def update_game_time():
         else:
             print(f"⚠️ No match found for home_team: {home_team}")
 
+    # Ensure log directory exists
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+
     stadium_df.to_csv(STADIUM_FILE, index=False)
-    pd.DataFrame(updated_rows, columns=["home_team", "game_time"]).to_csv("game_time_update_log.csv", index=False)
+    pd.DataFrame(updated_rows, columns=["home_team", "game_time"]).to_csv(LOG_FILE, index=False)
 
     print(f"✅ Updated game_time for {len(updated_rows)} teams:")
     for team, time in updated_rows:
