@@ -50,4 +50,4 @@ def main():
     home_batters.to_csv(f"{OUTPUT_DIR}/batters_home.csv", index=False)
     away_batters.to_csv(f"{OUTPUT_DIR}/batters_away.csv", index=False)
 
-    print(f"✅ Saved {len(home_batters)} home
+    print(f"✅ Saved {len(home_batters)} home batters and {len(away_batters)} away batters")
