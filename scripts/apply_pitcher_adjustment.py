@@ -57,8 +57,8 @@ def apply_park_adjustment(pitchers, games, label):
 def combine_adjustments(weather_df, park_df):
     return pd.merge(
         weather_df,
-        park_df[["last_name, first_name", "team", "adj_xwoba_park"]],
-        on=["last_name, first_name", "team"],
+        park_df[["name", "team", "adj_xwoba_park"]],
+        on=["name", "team"],
         how="inner"
     ).assign(adj_xwoba_combined=lambda df: (df["adj_xwoba_weather"] + df["adj_xwoba_park"]) / 2)
 
@@ -67,7 +67,7 @@ def save_outputs(df, label):
     out_path.mkdir(parents=True, exist_ok=True)
     df.to_csv(out_path / f"pitchers_{label}_adjusted.csv", index=False)
 
-    top5 = df[["last_name, first_name", "team", "adj_xwoba_weather", "adj_xwoba_park", "adj_xwoba_combined"]] \
+    top5 = df[["name", "team", "adj_xwoba_weather", "adj_xwoba_park", "adj_xwoba_combined"]] \
         .sort_values(by="adj_xwoba_combined").head(5)
 
     with open(out_path / f"log_combined_pitchers_{label}.txt", "w") as f:
