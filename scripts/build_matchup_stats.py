@@ -2,80 +2,70 @@ import pandas as pd
 from pathlib import Path
 import subprocess
 
-def load_data():
-    # Load inputs
-    batters_home = pd.read_csv("data/adjusted/batters_home_adjusted.csv")
-    batters_away = pd.read_csv("data/adjusted/batters_away_adjusted.csv")
-    pitchers_home = pd.read_csv("data/adjusted/pitchers_home_adjusted.csv")
-    pitchers_away = pd.read_csv("data/adjusted/pitchers_away_adjusted.csv")
-    lineups = pd.read_csv("data/raw/lineups.csv")
-    games = pd.read_csv("data/raw/todaysgames_normalized.csv")
-    return batters_home, batters_away, pitchers_home, pitchers_away, lineups, games
-
-def clean_lineups(lineups):
-    lineups["last_name, first_name"] = lineups["last_name, first_name"].str.strip()
-    lineups["team_code"] = lineups["team_code"].str.strip()
-    return lineups
-
-def filter_batters(batters, lineups):
-    return pd.merge(batters, lineups, left_on=["last_name, first_name", "team"], right_on=["last_name, first_name", "team_code"])
-
 def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games):
-    games["matchup"] = games["away_team"] + " @ " + games["home_team"]
-
-    batters_home["side"] = "home"
-    batters_away["side"] = "away"
-    all_batters = pd.concat([batters_home, batters_away], ignore_index=True)
+    batters_home = batters_home.rename(columns={"team_code": "home_team"}).assign(side="home")
+    batters_away = batters_away.rename(columns={"team_code": "away_team"}).assign(side="away")
 
     pitchers_home = pitchers_home.rename(columns={"team": "home_team"}).assign(side="home")
     pitchers_away = pitchers_away.rename(columns={"team": "away_team"}).assign(side="away")
 
-    matchup_data = []
+    # Deduplicate pitchers
+    pitchers_home = pitchers_home.drop_duplicates(subset="home_team")
+    pitchers_away = pitchers_away.drop_duplicates(subset="away_team")
+
+    matchups = []
+
     for _, game in games.iterrows():
         home_team = game["home_team"]
         away_team = game["away_team"]
-        game_matchup = f"{away_team} @ {home_team}"
 
         home_pitcher = pitchers_home[pitchers_home["home_team"] == home_team]
         away_pitcher = pitchers_away[pitchers_away["away_team"] == away_team]
 
-        batters_in_game = all_batters[(all_batters["team"] == home_team) | (all_batters["team"] == away_team)].copy()
-        batters_in_game["matchup"] = game_matchup
+        home_batters = batters_home[batters_home["home_team"] == home_team]
+        away_batters = batters_away[batters_away["away_team"] == away_team]
 
-        if not home_pitcher.empty:
-            batters_in_game["opposing_pitcher"] = home_pitcher.iloc[0]["pitcher"] if home_pitcher.iloc[0]["side"] == "away" else away_pitcher.iloc[0]["pitcher"]
-            batters_in_game["pitcher_adj_woba"] = home_pitcher.iloc[0]["adj_woba_combined"]
+        for batter in home_batters.itertuples():
+            matchup = {
+                "team": home_team,
+                "batter": batter.name,
+                "vs_pitcher": away_pitcher["pitcher"].values[0] if not away_pitcher.empty else "N/A",
+                "adj_woba_batter": getattr(batter, "adj_woba_weather_park", None),
+                "adj_woba_pitcher": away_pitcher["adj_woba_weather_park"].values[0] if not away_pitcher.empty else None
+            }
+            matchups.append(matchup)
 
-        matchup_data.append(batters_in_game)
+        for batter in away_batters.itertuples():
+            matchup = {
+                "team": away_team,
+                "batter": batter.name,
+                "vs_pitcher": home_pitcher["pitcher"].values[0] if not home_pitcher.empty else "N/A",
+                "adj_woba_batter": getattr(batter, "adj_woba_weather_park", None),
+                "adj_woba_pitcher": home_pitcher["adj_woba_weather_park"].values[0] if not home_pitcher.empty else None
+            }
+            matchups.append(matchup)
 
-    return pd.concat(matchup_data, ignore_index=True)
-
-def save_output(df):
-    out_path = Path("data/final")
-    out_path.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_path / "matchup_stats.csv", index=False)
-
-def commit_outputs():
-    try:
-        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
-        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add", "data/final/matchup_stats.csv"], check=True)
-        subprocess.run(["git", "commit", "--allow-empty", "-m", "Auto-commit: matchup stats built"], check=True)
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Matchup stats committed.")
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit failed: {e}")
+    return pd.DataFrame(matchups)
 
 def main():
-    batters_home, batters_away, pitchers_home, pitchers_away, lineups, games = load_data()
-    lineups = clean_lineups(lineups)
-
-    batters_home = filter_batters(batters_home, lineups)
-    batters_away = filter_batters(batters_away, lineups)
+    batters_home = pd.read_csv("data/final/batters_home_adjusted.csv")
+    batters_away = pd.read_csv("data/final/batters_away_adjusted.csv")
+    pitchers_home = pd.read_csv("data/final/pitchers_home_adjusted.csv")
+    pitchers_away = pd.read_csv("data/final/pitchers_away_adjusted.csv")
+    games = pd.read_csv("data/raw/todaysgames_normalized.csv")
 
     matchup_stats = build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games)
-    save_output(matchup_stats)
-    commit_outputs()
+
+    output_path = Path("data/final")
+    output_path.mkdir(parents=True, exist_ok=True)
+    matchup_stats.to_csv(output_path / "matchup_stats.csv", index=False)
+
+    try:
+        subprocess.run(["git", "add", "data/final/matchup_stats.csv"], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-commit: matchup stats built"], check=True)
+        subprocess.run(["git", "push"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git commit failed: {e}")
 
 if __name__ == "__main__":
     main()
