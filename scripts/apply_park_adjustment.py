@@ -18,9 +18,14 @@ def load_park_factors(time_of_day):
 def apply_park_adjustments_home(batters, games):
     batters['home_team'] = batters['team']
     merged = pd.merge(batters, games, on='home_team', how='left')
-    merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")  # Assume default to day, overridden below
-    merged.loc[merged['time_of_day'] == 'night', 'Park Factor'] = pd.merge(
-        merged.loc[merged['time_of_day'] == 'night'],
+
+    # Default to day factors
+    merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
+    
+    # Override for night games
+    night_games = merged['time_of_day'] == 'night'
+    merged.loc[night_games, 'Park Factor'] = pd.merge(
+        merged.loc[night_games],
         load_park_factors("night"),
         on="home_team",
         how="left"
@@ -37,9 +42,14 @@ def apply_park_adjustments_away(batters, games):
     away_team_to_home_team = pd.read_csv("data/raw/todaysgames_normalized.csv").set_index("away_team")["home_team"].to_dict()
     batters['home_team'] = batters['team'].map(away_team_to_home_team)
     merged = pd.merge(batters, games, on='home_team', how='left')
+
+    # Default to day factors
     merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
-    merged.loc[merged['time_of_day'] == 'night', 'Park Factor'] = pd.merge(
-        merged.loc[merged['time_of_day'] == 'night'],
+
+    # Override for night games
+    night_games = merged['time_of_day'] == 'night'
+    merged.loc[night_games, 'Park Factor'] = pd.merge(
+        merged.loc[night_games],
         load_park_factors("night"),
         on="home_team",
         how="left"
@@ -57,16 +67,20 @@ def save_outputs(batters, label):
     out_path.mkdir(parents=True, exist_ok=True)
     outfile = out_path / f"batters_{label}_park.csv"
     logfile = out_path / f"log_park_{label}.txt"
+
     batters.to_csv(outfile, index=False)
+
+    top5 = batters[['last_name, first_name', 'team', 'adj_woba_park']].sort_values(by='adj_woba_park', ascending=False).head(5)
     with open(logfile, 'w') as f:
-        f.write(str(batters[['last_name, first_name', 'team', 'adj_woba_park']].head()))
+        f.write(f"Top 5 adjusted batters ({label}):\n")
+        f.write(top5.to_string(index=False))
 
 def commit_outputs():
     try:
         subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
         subprocess.run(["git", "add", "data/adjusted/*.csv", "data/adjusted/*.txt"], check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-commit: adjusted park batters + log"], check=True)
+        subprocess.run(["git", "commit", "--allow-empty", "-m", "Force commit: adjusted park batters + log"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Committed and pushed adjusted park files.")
     except subprocess.CalledProcessError as e:
@@ -77,10 +91,12 @@ def main():
 
     batters_home = pd.read_csv("data/adjusted/batters_home.csv")
     adjusted_home = apply_park_adjustments_home(batters_home, games)
+    print("Home batters adjusted:", len(adjusted_home))
     save_outputs(adjusted_home, "home")
 
     batters_away = pd.read_csv("data/adjusted/batters_away.csv")
     adjusted_away = apply_park_adjustments_away(batters_away, games)
+    print("Away batters adjusted:", len(adjusted_away))
     save_outputs(adjusted_away, "away")
 
     commit_outputs()
