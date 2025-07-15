@@ -15,17 +15,19 @@ def main():
     print("🔍 Validating required columns...")
     if 'team' not in batters.columns:
         raise ValueError("Missing 'team' column in batters_today.csv.")
-    if 'team_name' not in team_map.columns or 'abbreviation' not in team_map.columns:
+    if 'team_name' not in team_map.columns or 'team_code' not in team_map.columns:
         raise ValueError("team_name_master.csv missing required columns.")
     if 'home_team' not in games.columns or 'away_team' not in games.columns:
         raise ValueError("Missing 'home_team' or 'away_team' in games file.")
 
     print(f"✅ team_name_master.csv loaded with columns: {team_map.columns.tolist()}")
 
+    print("🧹 Removing duplicate team names...")
+    team_map = team_map.drop_duplicates(subset='team_name')
+
     print("🔗 Merging team names to codes...")
     batters = batters.merge(team_map, how='left', left_on='team', right_on='team_name')
     batters.drop(columns=['team_name'], inplace=True)
-    batters.rename(columns={'abbreviation': 'team_code'}, inplace=True)
 
     home_teams = games['home_team'].unique()
     away_teams = games['away_team'].unique()
