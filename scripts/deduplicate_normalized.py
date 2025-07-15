@@ -16,12 +16,12 @@ for label, path in files.items():
         after = len(df)
 
         if label == "batters":
-            print("🔗 Mapping team to clean team names using team_name_master.csv...")
+            print("🔗 Mapping clean_team_name to official team_name using team_name_master.csv...")
             try:
                 team_map = pd.read_csv("data/Data/team_name_master.csv")
-                team_map = team_map[['team', 'clean_team_name']].dropna()
-                map_dict = dict(zip(team_map['team'].str.strip(), team_map['clean_team_name'].str.strip()))
-                df['team'] = df['team'].astype(str).str.strip().map(map_dict)
+                team_map = team_map[['team_name', 'clean_team_name']].dropna()
+                reverse_map = dict(zip(team_map['clean_team_name'].str.strip(), team_map['team_name'].str.strip()))
+                df['team'] = df['team'].astype(str).str.strip().map(reverse_map)
             except Exception as e:
                 print(f"⚠️ Failed to map team names: {e}")
 
