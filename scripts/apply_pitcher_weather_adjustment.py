@@ -28,7 +28,7 @@ def save_outputs(pitchers, label):
     logfile = out_path / f"log_pitchers_weather_{label}.txt"
     pitchers.to_csv(outfile, index=False)
     with open(logfile, 'w') as f:
-        f.write(str(pitchers[['last_name, first_name', 'team', 'adj_woba_weather']].head()))
+        f.write(str(pitchers[['pitcher', 'team', 'adj_woba_weather']].head()))
 
 def commit_outputs():
     try:
