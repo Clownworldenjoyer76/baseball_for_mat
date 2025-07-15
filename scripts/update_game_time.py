@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
