@@ -4,7 +4,14 @@ from pathlib import Path
 import subprocess
 
 def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games):
-    # Remove duplicate labels
+    # Normalize team casing
+    batters_home['team'] = batters_home['team'].str.upper()
+    batters_away['team'] = batters_away['team'].str.upper()
+    pitchers_home['home_team'] = pitchers_home['home_team'].str.upper()
+    pitchers_away['team'] = pitchers_away['team'].str.upper()
+    games['home_team'] = games['home_team'].str.upper()
+    games['away_team'] = games['away_team'].str.upper()
+
     pitchers_home = pitchers_home.drop_duplicates(subset=['home_team'], keep='first')
     pitchers_away = pitchers_away.drop_duplicates(subset=['team'], keep='first')
 
