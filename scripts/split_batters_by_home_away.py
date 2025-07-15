@@ -9,7 +9,8 @@ OUTPUT_DIR = "data/adjusted"
 def fix_team_name(name):
     """Fix camel case like 'RedSox' → 'Red Sox' and remove extra whitespace."""
     name = str(name).strip()
-    return re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+    name = re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
+    return name.strip()
 
 def main():
     print("📥 Loading input files...")
@@ -24,8 +25,8 @@ def main():
 
     print("🧹 Cleaning and formatting team names...")
     batters['team'] = batters['team'].apply(fix_team_name)
-    games['home_team'] = games['home_team'].astype(str).str.strip()
-    games['away_team'] = games['away_team'].astype(str).str.strip()
+    games['home_team'] = games['home_team'].apply(fix_team_name)
+    games['away_team'] = games['away_team'].apply(fix_team_name)
 
     print("⚙️ Splitting batters into home and away...")
     home_teams = games['home_team'].unique()
