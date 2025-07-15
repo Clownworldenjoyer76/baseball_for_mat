@@ -12,24 +12,20 @@ def main():
     games = pd.read_csv(GAMES_FILE)
     team_map = pd.read_csv(TEAM_MAP_FILE)
 
-    # Confirm required columns
-    if 'home_team' not in games.columns or 'away_team' not in games.columns:
-        raise ValueError("Missing 'home_team' or 'away_team' in games file.")
-    if 'Abbreviation' not in team_map.columns or 'Team' not in team_map.columns:
+    if 'team_code' not in team_map.columns:
         raise ValueError("team_abv_map.csv missing required columns.")
 
-    # Map abbreviation → full name
-    abv_to_name = dict(zip(team_map['Abbreviation'], team_map['Team']))
-    batters['full_team_name'] = batters['team'].map(abv_to_name)
+    print("✅ team_abv_map.csv loaded with columns:", team_map.columns.tolist())
 
-    # Filter based on full team names
+    if 'home_team' not in games.columns or 'away_team' not in games.columns:
+        raise ValueError("Missing 'home_team' or 'away_team' in games file.")
+
     home_teams = games['home_team'].unique()
     away_teams = games['away_team'].unique()
 
-    home_batters = batters[batters['full_team_name'].isin(home_teams)].drop(columns=['full_team_name'])
-    away_batters = batters[batters['full_team_name'].isin(away_teams)].drop(columns=['full_team_name'])
+    home_batters = batters[batters['team'].isin(home_teams)]
+    away_batters = batters[batters['team'].isin(away_teams)]
 
-    # Output
     Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
     home_batters.to_csv(f"{OUTPUT_DIR}/batters_home.csv", index=False)
     away_batters.to_csv(f"{OUTPUT_DIR}/batters_away.csv", index=False)
