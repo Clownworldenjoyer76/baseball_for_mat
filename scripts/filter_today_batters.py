@@ -13,12 +13,12 @@ def main():
     except Exception as e:
         raise RuntimeError(f"Failed to load input files: {e}")
 
-    if 'last_name, first_name' not in lineups_df.columns or 'name' not in batters_df.columns:
+    if 'last_name, first_name' not in lineups_df.columns or 'last_name, first_name' not in batters_df.columns:
         raise ValueError("Missing required columns in either lineups or batters file.")
 
     print("🔍 Filtering batters based on today's confirmed lineups...")
     expected_names = lineups_df['last_name, first_name'].astype(str).str.strip().unique()
-    filtered = batters_df[batters_df['name'].astype(str).str.strip().isin(expected_names)]
+    filtered = batters_df[batters_df['last_name, first_name'].astype(str).str.strip().isin(expected_names)]
 
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     filtered.to_csv(OUTPUT_FILE, index=False)
