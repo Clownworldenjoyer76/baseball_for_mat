@@ -4,7 +4,7 @@ import subprocess
 
 def load_game_times():
     games = pd.read_csv("data/raw/todaysgames_normalized.csv")
-    games["hour"] = pd.to_datetime(games["game_time"]).dt.hour
+    games["hour"] = pd.to_datetime(games["game_time"], format="%I:%M %p").dt.hour
     games["time_of_day"] = games["hour"].apply(lambda x: "day" if x < 18 else "night")
     return games[["home_team", "time_of_day"]]
 
