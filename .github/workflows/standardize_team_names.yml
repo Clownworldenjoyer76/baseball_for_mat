@@ -21,3 +21,13 @@ jobs:
 
       - name: Run team name standardizer
         run: python scripts/apply_team_name_mapping.py
+
+      - name: Commit and push standardized files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/raw/todaysgames_normalized.csv
+          git add data/Data/stadium_metadata.csv
+          git commit -m "Standardized team names" || echo "No changes to commit"
+          git pull --rebase origin main
+          git push origin main
