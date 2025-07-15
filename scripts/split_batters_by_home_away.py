@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 BATTERS_FILE = "data/cleaned/batters_today.csv"
-TEAM_MAP_FILE = "data/Data/team_name_map.csv"
+TEAM_MAP_FILE = "data/Data/team_code_map.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 OUTPUT_DIR = "data/adjusted"
 
