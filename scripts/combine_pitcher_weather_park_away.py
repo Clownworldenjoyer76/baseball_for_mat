@@ -15,6 +15,11 @@ def merge_and_combine(weather, park):
         how="inner"
     )
     merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
+    merged["adj_woba_weather"] = merged["adj_woba_weather"].fillna(merged["woba"])
+    merged["adj_woba_combined"] = merged.apply(
+        lambda row: row["adj_woba_park"] if pd.isna(row["adj_woba_weather"]) else row["adj_woba_combined"],
+        axis=1
+)
     return merged
 
 def save_output(df):
