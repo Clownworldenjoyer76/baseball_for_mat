@@ -1,0 +1,31 @@
+name: Combine Weather + Park (Away)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  combine-weather-park-away:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install Dependencies
+        run: pip install pandas
+
+      - name: Run Combine Script
+        run: python scripts/combine_weather_park_away.py
+
+      - name: Upload Combined Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: batters-away-adjusted
+          path: |
+            data/adjusted/batters_away_adjusted.csv
+            data/adjusted/log_combined_away.txt
