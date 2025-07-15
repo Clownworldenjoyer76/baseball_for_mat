@@ -1,0 +1,22 @@
+name: Build Matchup Stats
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-matchup-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: pip install pandas
+
+      - name: Run Matchup Builder
+        run: python scripts/build_matchup_stats.py
