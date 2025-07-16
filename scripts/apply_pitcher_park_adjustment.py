@@ -16,11 +16,8 @@ LOG_AWAY = "log_pitchers_away_park.txt"
 STATS_TO_ADJUST = ['home_run', 'slug_percent', 'xslg', 'woba', 'xwoba', 'barrel_batted_rate', 'hard_hit_percent']
 
 def load_park_factors(game_time):
-    try:
-        hour = int(str(game_time).split(':')[0])
-        return pd.read_csv(PARK_DAY_FILE) if hour < 18 else pd.read_csv(PARK_NIGHT_FILE)
-    except Exception as e:
-        raise ValueError(f"Invalid game_time format: {game_time}") from e
+    hour = int(str(game_time).split(':')[0])
+    return pd.read_csv(PARK_DAY_FILE) if hour < 18 else pd.read_csv(PARK_NIGHT_FILE)
 
 def normalize_columns(df):
     df.columns = df.columns.str.strip()
@@ -38,7 +35,7 @@ def apply_adjustments(pitchers_df, games_df, side):
             home_team = str(row['home_team']).strip()
             game_time = str(row['game_time']).strip()
 
-            if home_team in ["", "undecided", "nan"] or game_time.lower() in ["", "nan"]:
+            if home_team.lower() in ["", "undecided", "nan"] or game_time.lower() in ["", "nan"]:
                 log_entries.append(
                     f"Skipping row due to invalid values — home_team: '{home_team}', game_time: '{game_time}'"
                 )
@@ -50,8 +47,8 @@ def apply_adjustments(pitchers_df, games_df, side):
                 log_entries.append("Park factors file is missing required columns.")
                 continue
 
-            park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip()
-            park_row = park_factors[park_factors['home_team'] == home_team]
+            park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip().str.lower()
+            park_row = park_factors[park_factors['home_team'] == home_team.lower()]
 
             if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
                 log_entries.append(f"No park factor found for {home_team} at time {game_time}")
@@ -59,7 +56,8 @@ def apply_adjustments(pitchers_df, games_df, side):
 
             park_factor = float(park_row['Park Factor'].values[0])
 
-            team_pitchers = pitchers_df[pitchers_df['home_team'] == home_team].copy()
+            pitchers_df['home_team'] = pitchers_df['home_team'].astype(str).str.strip().str.lower()
+            team_pitchers = pitchers_df[pitchers_df['home_team'] == home_team.lower()].copy()
 
             if team_pitchers.empty:
                 log_entries.append(f"No pitcher data found for team: {home_team}")
@@ -67,7 +65,7 @@ def apply_adjustments(pitchers_df, games_df, side):
 
             for stat in STATS_TO_ADJUST:
                 if stat in team_pitchers.columns:
-                    team_pitchers[stat] = team_pitchers[stat] * (park_factor / 100)
+                    team_pitchers[stat] *= park_factor / 100
                 else:
                     log_entries.append(f"Stat '{stat}' not found in pitcher data for {home_team}")
 
