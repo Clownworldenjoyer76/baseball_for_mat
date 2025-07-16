@@ -19,14 +19,23 @@ jobs:
         run: pip install pandas
 
       - name: Run pitcher park adjustment
-        run: python scripts/apply_pitcher_park_adjustment.py
+        run: |
+          echo "===== Running Python Script ====="
+          python scripts/apply_pitcher_park_adjustment.py
+          echo "===== Script Execution Complete ====="
+          echo "===== Listing Adjusted Files ====="
+          ls -lh data/adjusted/
+          echo "===== Log File Preview ====="
+          head -n 20 log_pitchers_home_park.txt || echo "log_pitchers_home_park.txt missing"
+          head -n 20 log_pitchers_away_park.txt || echo "log_pitchers_away_park.txt missing"
 
       - name: Commit adjusted files to repo
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add data/adjusted/pitchers_*_park.csv log_pitchers_*_park.txt
-          git commit -m "Auto-commit: pitcher park adjustments"
+          git status
+          git add data/adjusted/pitchers_*_park.csv log_pitchers_*_park.txt || true
+          git commit --allow-empty -m "Auto-commit: pitcher park adjustments"
           git push
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
