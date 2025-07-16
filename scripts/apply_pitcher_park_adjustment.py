@@ -42,20 +42,15 @@ def apply_adjustments(pitchers_df, games_df, team_name_map, side):
     adjusted = []
     log_entries = []
 
-    # Normalize column names
     pitchers_df = normalize_columns(pitchers_df)
     games_df = normalize_columns(games_df)
     team_name_map = normalize_columns(team_name_map)
 
-    # Standardize names
-    games_df = standardize_team_names(games_df, 'home_team', team_name_map)
-    if side == 'away':
-        games_df = standardize_team_names(games_df, 'away_team', team_name_map)
+    # Only standardize pitcher team names — game teams are already clean
     pitchers_df = standardize_team_names(pitchers_df, 'team', team_name_map)
 
     for _, row in games_df.iterrows():
         try:
-            # Defensive extraction
             home_team = str(row['home_team']).strip()
             game_time = str(row['game_time']).strip()
 
