@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 # File paths
@@ -24,7 +23,7 @@ def load_park_factors(game_time):
         raise ValueError(f"Invalid game_time format: {game_time}") from e
 
 def normalize_columns(df):
-    df.columns = df.columns.str.strip().str.lower()
+    df.columns = df.columns.str.strip()
     return df
 
 def apply_adjustments(pitchers_df, games_df, side):
