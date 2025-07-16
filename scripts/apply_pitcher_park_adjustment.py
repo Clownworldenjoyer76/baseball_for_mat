@@ -54,56 +54,55 @@ def apply_adjustments(pitchers_df, games_df, team_name_map, side):
     pitchers_df = standardize_team_names(pitchers_df, 'team', team_name_map)
 
     for _, row in games_df.iterrows():
-        home_team = row.get('home_team')
-        game_time = row.get('game_time')
-
-        if pd.isna(home_team) or pd.isna(game_time):
-            log_entries.append(f"Skipping row with missing data: {row}")
-            continue
-
         try:
+            # Defensive extraction
+            home_team = str(row['home_team']).strip()
+            game_time = str(row['game_time']).strip()
+
+            if home_team.lower() in ["", "undecided", "nan"] or game_time.lower() in ["", "nan"]:
+                log_entries.append(
+                    f"Skipping row due to invalid values — home_team: '{home_team}', game_time: '{game_time}'"
+                )
+                continue
+
             park_factors = load_park_factors(game_time)
-        except Exception as e:
-            log_entries.append(str(e))
-            continue
 
-        if 'home_team' not in park_factors.columns or 'Park Factor' not in park_factors.columns:
-            log_entries.append("Park factors file is missing required columns.")
-            continue
+            if 'home_team' not in park_factors.columns or 'Park Factor' not in park_factors.columns:
+                log_entries.append("Park factors file is missing required columns.")
+                continue
 
-        park_factors['home_team'] = park_factors['home_team'].astype(str).str.lower().str.strip()
-        home_team = str(home_team).lower().strip()
-        park_row = park_factors[park_factors['home_team'] == home_team]
+            park_factors['home_team'] = park_factors['home_team'].astype(str).str.lower().str.strip()
+            park_row = park_factors[park_factors['home_team'] == home_team.lower()]
 
-        if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
-            log_entries.append(f"No park factor found for {home_team} at time {game_time}")
-            continue
+            if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
+                log_entries.append(f"No park factor found for {home_team} at time {game_time}")
+                continue
 
-        try:
             park_factor = float(park_row['Park Factor'].values[0])
-        except:
-            log_entries.append(f"Non-numeric park factor for {home_team} at {game_time}")
+
+            team = row['home_team'] if side == 'home' else row.get('away_team', '')
+            if pd.isna(team):
+                log_entries.append(f"Missing {side} team name")
+                continue
+
+            team = str(team).strip()
+            team_pitchers = pitchers_df[pitchers_df['team'].str.lower() == team.lower()].copy()
+
+            if team_pitchers.empty:
+                log_entries.append(f"No pitcher data found for team: {team}")
+                continue
+
+            for stat in STATS_TO_ADJUST:
+                if stat in team_pitchers.columns:
+                    team_pitchers[stat] = team_pitchers[stat] * (park_factor / 100)
+                else:
+                    log_entries.append(f"Stat '{stat}' not found in pitcher data for {team}")
+
+            adjusted.append(team_pitchers)
+            log_entries.append(f"Adjusted {team} pitchers using park factor {park_factor} at {home_team}")
+        except Exception as e:
+            log_entries.append(f"Error processing row: {e}")
             continue
-
-        team = row['home_team'] if side == 'home' else row.get('away_team', '')
-        if pd.isna(team):
-            log_entries.append(f"Missing {side} team name")
-            continue
-
-        team = team.strip()
-        team_pitchers = pitchers_df[pitchers_df['team'].str.lower() == team.lower()].copy()
-        if team_pitchers.empty:
-            log_entries.append(f"No pitcher data found for team: {team}")
-            continue
-
-        for stat in STATS_TO_ADJUST:
-            if stat in team_pitchers.columns:
-                team_pitchers[stat] = team_pitchers[stat] * (park_factor / 100)
-            else:
-                log_entries.append(f"Stat '{stat}' not found in pitcher data for {team}")
-
-        adjusted.append(team_pitchers)
-        log_entries.append(f"Adjusted {team} pitchers using park factor {park_factor} at {home_team}")
 
     if adjusted:
         result = pd.concat(adjusted)
