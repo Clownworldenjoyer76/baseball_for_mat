@@ -1,76 +1,100 @@
+
 import pandas as pd
-from pathlib import Path
-import subprocess
 
-def load_game_times():
-    games = pd.read_csv("data/raw/todaysgames_normalized.csv")
-    games["hour"] = pd.to_datetime(games["game_time"], format="%I:%M %p").dt.hour
-    games["time_of_day"] = games["hour"].apply(lambda x: "day" if x < 18 else "night")
-    return games[["home_team", "time_of_day"]]
+# File paths
+GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
+PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
+PARK_DAY_FILE = "data/Data/park_factors_day.csv"
+PARK_NIGHT_FILE = "data/Data/park_factors_night.csv"
+TEAM_NAME_MAP_FILE = "data/Data/team_name_master.csv"
 
-def load_park_factors(time_of_day):
-    path = f"data/Data/park_factors_{time_of_day}.csv"
-    return pd.read_csv(path)[["home_team", "Park Factor"]]
+# Output files
+OUTPUT_HOME_FILE = "data/adjusted/pitchers_home_park.csv"
+OUTPUT_AWAY_FILE = "data/adjusted/pitchers_away_park.csv"
+LOG_HOME = "log_pitchers_home_park.txt"
+LOG_AWAY = "log_pitchers_away_park.txt"
 
-def apply_park_adjustments(pitchers, games, is_home):
-    if is_home:
-        pitchers['home_team'] = pitchers['team']
+STATS_TO_ADJUST = ['home_run', 'slug_percent', 'xslg', 'woba', 'xwoba', 'barrel_batted_rate', 'hard_hit_percent']
+
+def load_park_factors(game_time):
+    hour = int(game_time.split(':')[0])
+    return pd.read_csv(PARK_DAY_FILE) if hour < 18 else pd.read_csv(PARK_NIGHT_FILE)
+
+def standardize_team_names(df, column, team_map):
+    df = df.copy()
+    df[column] = df[column].str.lower()
+    team_map = team_map.copy()
+    team_map['team_code'] = team_map['team_code'].str.lower()
+    team_map['team_name'] = team_map['team_name'].str.strip()
+    df = df.merge(team_map[['team_code', 'team_name']], how='left', left_on=column, right_on='team_code')
+    df[column] = df['team_name']
+    df.drop(columns=['team_code', 'team_name'], inplace=True)
+    return df
+
+def apply_adjustments(pitchers_df, games_df, team_name_map, side):
+    adjusted = []
+    log_entries = []
+
+    games_df = standardize_team_names(games_df, 'home_team', team_name_map)
+    if side == 'away':
+        games_df = standardize_team_names(games_df, 'away_team', team_name_map)
+    pitchers_df = standardize_team_names(pitchers_df, 'team', team_name_map)
+
+    for _, row in games_df.iterrows():
+        home_team = row['home_team']
+        game_time = row['game_time']
+        park_factors = load_park_factors(game_time)
+
+        park_row = park_factors[park_factors['home_team'].str.lower() == home_team.lower()]
+        if park_row.empty:
+            continue
+
+        park_factor = float(park_row['Park Factor'].values[0])
+        team = row['home_team'] if side == 'home' else row['away_team']
+        team_pitchers = pitchers_df[pitchers_df['team'] == team].copy()
+        if team_pitchers.empty:
+            continue
+
+        for stat in STATS_TO_ADJUST:
+            if stat in team_pitchers.columns:
+                team_pitchers[stat] = team_pitchers[stat] * (park_factor / 100)
+
+        adjusted.append(team_pitchers)
+        log_entries.append(f"Adjusted {team} pitchers using park factor {park_factor} at {home_team}")
+
+    if adjusted:
+        result = pd.concat(adjusted)
+        try:
+            top5 = result[['name', 'team', STATS_TO_ADJUST[0]]].sort_values(by=STATS_TO_ADJUST[0], ascending=False).head(5)
+            log_entries.append('\nTop 5 affected pitchers:')
+            log_entries.append(top5.to_string(index=False))
+        except Exception as e:
+            log_entries.append(f"Failed to log top 5 pitchers: {e}")
     else:
-        away_team_to_home_team = pd.read_csv("data/raw/todaysgames_normalized.csv").set_index("away_team")["home_team"].to_dict()
-        pitchers['home_team'] = pitchers['team'].map(away_team_to_home_team)
+        result = pd.DataFrame()
 
-    merged = pd.merge(pitchers, games, on='home_team', how='left')
-
-    merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
-    night_games = merged['time_of_day'] == 'night'
-    merged.loc[night_games, 'Park Factor'] = pd.merge(
-        merged.loc[night_games],
-        load_park_factors("night"),
-        on="home_team",
-        how="left"
-    )["Park Factor_y"].values
-
-    if 'woba' not in merged.columns:
-        merged['woba'] = 0.320
-
-    merged["adj_woba_park"] = merged["woba"] * (merged["Park Factor"] / 100)
-    merged["adj_woba_park"] = merged["adj_woba_park"].fillna(merged["woba"])
-    return merged
-
-def save_outputs(pitchers, label):
-    out_path = Path("data/adjusted")
-    out_path.mkdir(parents=True, exist_ok=True)
-    outfile = out_path / f"pitchers_{label}_park.csv"
-    logfile = out_path / f"log_pitchers_park_{label}.txt"
-    pitchers.to_csv(outfile, index=False)
-    top5 = pitchers[["pitcher", "team", "adj_woba_park"]].sort_values(by="adj_woba_park", ascending=False).head(5)
-    with open(logfile, "w") as f:
-        f.write(f"Top 5 {label} pitchers (park adjusted):\n")
-        f.write(top5.to_string(index=False))
-
-def commit_outputs():
-    try:
-        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
-        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add", "data/adjusted/*.csv", "data/adjusted/*.txt"], check=True)
-        subprocess.run(["git", "commit", "--allow-empty", "-m", "Auto-commit: pitcher park adjustments"], check=True)
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Committed and pushed pitcher park adjustment files.")
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit failed: {e}")
+    return result, log_entries
 
 def main():
-    games = load_game_times()
-    home = pd.read_csv("data/adjusted/pitchers_home.csv")
-    away = pd.read_csv("data/adjusted/pitchers_away.csv")
+    games_df = pd.read_csv(GAMES_FILE)
+    pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
+    pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
+    team_name_map = pd.read_csv(TEAM_NAME_MAP_FILE)
 
-    adjusted_home = apply_park_adjustments(home, games, True)
-    save_outputs(adjusted_home, "home")
+    adj_home, log_home = apply_adjustments(pitchers_home, games_df, team_name_map, side="home")
+    adj_away, log_away = apply_adjustments(pitchers_away, games_df, team_name_map, side="away")
 
-    adjusted_away = apply_park_adjustments(away, games, False)
-    save_outputs(adjusted_away, "away")
+    adj_home.to_csv(OUTPUT_HOME_FILE, index=False)
+    adj_away.to_csv(OUTPUT_AWAY_FILE, index=False)
 
-    commit_outputs()
+    with open(LOG_HOME, 'w') as f:
+        for line in log_home:
+            f.write(line + '\n')
+
+    with open(LOG_AWAY, 'w') as f:
+        for line in log_away:
+            f.write(line + '\n')
 
 if __name__ == "__main__":
     main()
