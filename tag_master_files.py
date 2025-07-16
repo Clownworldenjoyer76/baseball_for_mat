@@ -32,6 +32,11 @@ def tag_players(file_path, player_type):
     )
 
     output_file = os.path.join(output_folder, os.path.basename(file_path))
+
+    # ⬇️ Normalize pitcher names to 'Last, First'
+    if player_type == "pitchers":
+        merged['name'] = merged['last_name, first_name'].astype(str).str.strip()
+
     merged.to_csv(output_file, index=False)
     print(f"✅ Tagged {player_type}: {output_file}")
 
