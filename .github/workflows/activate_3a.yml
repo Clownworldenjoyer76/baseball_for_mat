@@ -1,0 +1,71 @@
+name: Activate 3a
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  step04:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run update_game_time.py
+        run: python scripts/update_game_time.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Step 04: Ran update_game_time.py"
+          git push || echo "No changes to commit or push"
+
+  step05:
+    needs: step04
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run generate_weather_csv.py
+        run: python scripts/generate_weather_csv.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Step 05: Ran generate_weather_csv.py"
+          git push || echo "No changes to commit or push"
+
+  step06:
+    needs: step05
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run get_weather_data.py
+        run: python scripts/get_weather_data.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Step 06: Ran get_weather_data.py"
+          git push || echo "No changes to commit or push"
