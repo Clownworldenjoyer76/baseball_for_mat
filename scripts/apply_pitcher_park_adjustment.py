@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 # File paths
@@ -24,7 +23,7 @@ def load_park_factors(game_time):
         raise ValueError(f"Invalid game_time format: {game_time}") from e
 
 def normalize_columns(df):
-    df.columns = df.columns.str.strip().str.lower()
+    df.columns = df.columns.str.strip()
     return df
 
 def apply_adjustments(pitchers_df, games_df, side):
@@ -52,7 +51,7 @@ def apply_adjustments(pitchers_df, games_df, side):
                 continue
 
             park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip()
-            park_row = park_factors[park_factors['home_team'].str.lower() == home_team.lower()]
+            park_row = park_factors[park_factors['home_team'] == home_team]
 
             if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
                 log_entries.append(f"No park factor found for {home_team} at time {game_time}")
@@ -60,26 +59,20 @@ def apply_adjustments(pitchers_df, games_df, side):
 
             park_factor = float(park_row['Park Factor'].values[0])
 
-            team = row['home_team'] if side == 'home' else row.get('away_team', '')
-            if pd.isna(team):
-                log_entries.append(f"Missing {side} team name")
-                continue
-
-            team = str(team).strip()
-            team_pitchers = pitchers_df[pitchers_df['team'] == team].copy()
+            team_pitchers = pitchers_df[pitchers_df['home_team'] == home_team].copy()
 
             if team_pitchers.empty:
-                log_entries.append(f"No pitcher data found for team: {team}")
+                log_entries.append(f"No pitcher data found for team: {home_team}")
                 continue
 
             for stat in STATS_TO_ADJUST:
                 if stat in team_pitchers.columns:
                     team_pitchers[stat] = team_pitchers[stat] * (park_factor / 100)
                 else:
-                    log_entries.append(f"Stat '{stat}' not found in pitcher data for {team}")
+                    log_entries.append(f"Stat '{stat}' not found in pitcher data for {home_team}")
 
             adjusted.append(team_pitchers)
-            log_entries.append(f"Adjusted {team} pitchers using park factor {park_factor} at {home_team}")
+            log_entries.append(f"Adjusted {home_team} pitchers using park factor {park_factor}")
         except Exception as e:
             log_entries.append(f"Error processing row: {e}")
             continue
@@ -87,7 +80,7 @@ def apply_adjustments(pitchers_df, games_df, side):
     if adjusted:
         result = pd.concat(adjusted)
         try:
-            top5 = result[['name', 'team', STATS_TO_ADJUST[0]]].sort_values(by=STATS_TO_ADJUST[0], ascending=False).head(5)
+            top5 = result[['name', 'home_team', STATS_TO_ADJUST[0]]].sort_values(by=STATS_TO_ADJUST[0], ascending=False).head(5)
             log_entries.append('\nTop 5 affected pitchers:')
             log_entries.append(top5.to_string(index=False))
         except Exception as e:
