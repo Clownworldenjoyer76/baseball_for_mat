@@ -23,9 +23,9 @@ def main():
         raise ValueError("Missing 'home_team' or 'away_team' in games file.")
 
     print("🧹 Cleaning and formatting team names...")
-    batters['team'] = batters['team'].apply(fix_team_name)
-    games['home_team'] = games['home_team'].astype(str).str.strip()
-    games['away_team'] = games['away_team'].astype(str).str.strip()
+    batters['team'] = batters['team'].apply(fix_team_name).str.lower()
+    games['home_team'] = games['home_team'].astype(str).str.strip().str.lower()
+    games['away_team'] = games['away_team'].astype(str).str.strip().str.lower()
 
     home_teams = games['home_team'].unique()
     away_teams = games['away_team'].unique()
@@ -51,3 +51,6 @@ def main():
     away_batters.to_csv(f"{OUTPUT_DIR}/batters_away.csv", index=False)
 
     print(f"✅ Saved {len(home_batters)} home batters and {len(away_batters)} away batters")
+
+if __name__ == "__main__":
+    main()
