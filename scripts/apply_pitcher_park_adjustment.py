@@ -51,6 +51,7 @@ def apply_adjustments(pitchers_df, games_df, team_name_map, side):
         park_row = park_factors[park_factors['home_team'].str.lower() == home_team.lower()]
         if park_row.empty:
     log_entries.append(f"No park factor found for {home_team} at time {game_time}")
+    continue
 
             continue
 
