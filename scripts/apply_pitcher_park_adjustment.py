@@ -1,3 +1,4 @@
+
 import pandas as pd
 
 # File paths
@@ -38,7 +39,7 @@ def apply_adjustments(pitchers_df, games_df, side):
             home_team = str(row['home_team']).strip()
             game_time = str(row['game_time']).strip()
 
-            if home_team.lower() in ["", "undecided", "nan"] or game_time.lower() in ["", "nan"]:
+            if home_team in ["", "undecided", "nan"] or game_time.lower() in ["", "nan"]:
                 log_entries.append(
                     f"Skipping row due to invalid values — home_team: '{home_team}', game_time: '{game_time}'"
                 )
@@ -50,8 +51,8 @@ def apply_adjustments(pitchers_df, games_df, side):
                 log_entries.append("Park factors file is missing required columns.")
                 continue
 
-            park_factors['home_team'] = park_factors['home_team'].astype(str).str.lower().str.strip()
-            park_row = park_factors[park_factors['home_team'] == home_team.lower()]
+            park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip()
+            park_row = park_factors[park_factors['home_team'] == home_team]
 
             if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
                 log_entries.append(f"No park factor found for {home_team} at time {game_time}")
@@ -65,7 +66,7 @@ def apply_adjustments(pitchers_df, games_df, side):
                 continue
 
             team = str(team).strip()
-            team_pitchers = pitchers_df[pitchers_df['team'].str.lower() == team.lower()].copy()
+            team_pitchers = pitchers_df[pitchers_df['team'] == team].copy()
 
             if team_pitchers.empty:
                 log_entries.append(f"No pitcher data found for team: {team}")
