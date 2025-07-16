@@ -6,7 +6,6 @@ PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
 PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
 PARK_DAY_FILE = "data/Data/park_factors_day.csv"
 PARK_NIGHT_FILE = "data/Data/park_factors_night.csv"
-TEAM_NAME_MAP_FILE = "data/Data/team_name_master.csv"
 
 # Output files
 OUTPUT_HOME_FILE = "data/adjusted/pitchers_home_park.csv"
@@ -27,27 +26,12 @@ def normalize_columns(df):
     df.columns = df.columns.str.strip().str.lower()
     return df
 
-def standardize_team_names(df, column, team_map):
-    df = df.copy()
-    df[column] = df[column].str.lower().str.strip()
-    team_map = team_map.copy()
-    team_map['team_code'] = team_map['team_code'].str.lower().str.strip()
-    team_map['team_name'] = team_map['team_name'].str.strip()
-    df = df.merge(team_map[['team_code', 'team_name']], how='left', left_on=column, right_on='team_code')
-    df[column] = df['team_name']
-    df.drop(columns=['team_code', 'team_name'], inplace=True)
-    return df
-
-def apply_adjustments(pitchers_df, games_df, team_name_map, side):
+def apply_adjustments(pitchers_df, games_df, side):
     adjusted = []
     log_entries = []
 
     pitchers_df = normalize_columns(pitchers_df)
     games_df = normalize_columns(games_df)
-    team_name_map = normalize_columns(team_name_map)
-
-    # Only standardize pitcher team names — game teams are already clean
-    pitchers_df = standardize_team_names(pitchers_df, 'team', team_name_map)
 
     for _, row in games_df.iterrows():
         try:
@@ -117,10 +101,9 @@ def main():
     games_df = pd.read_csv(GAMES_FILE)
     pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
     pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
-    team_name_map = pd.read_csv(TEAM_NAME_MAP_FILE)
 
-    adj_home, log_home = apply_adjustments(pitchers_home, games_df, team_name_map, side="home")
-    adj_away, log_away = apply_adjustments(pitchers_away, games_df, team_name_map, side="away")
+    adj_home, log_home = apply_adjustments(pitchers_home, games_df, side="home")
+    adj_away, log_away = apply_adjustments(pitchers_away, games_df, side="away")
 
     adj_home.to_csv(OUTPUT_HOME_FILE, index=False)
     adj_away.to_csv(OUTPUT_AWAY_FILE, index=False)
