@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
+# Input files
 PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 OUTPUT_DIR = "data/adjusted"
