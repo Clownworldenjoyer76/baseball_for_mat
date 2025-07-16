@@ -13,6 +13,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas
+
       - name: Enable Debug for Normalize
         run: echo "Running normalize_names.py with debug..."
 
@@ -25,6 +33,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas
+
       - name: Enable Debug for Tag
         run: echo "Running tag_master_files.py with debug..."
 
@@ -36,6 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas
 
       - name: Enable Debug for Dedupe
         run: echo "Running deduplicate_normalized.py with debug..."
