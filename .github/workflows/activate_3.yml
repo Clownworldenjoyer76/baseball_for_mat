@@ -9,22 +9,125 @@ env:
 
 jobs:
   step04:
-    needs: step03
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
       - name: Install dependencies
         run: pip install pandas requests pytz
+
       - name: Run update_game_time.py
         run: python scripts/update_game_time.py
+
       - name: Commit and Push Changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
           git commit -m "Step 04: Ran update_game_time.py"
+          git push || echo "No changes to commit"
+
+  step05:
+    needs: step04
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+
+      - name: Run generate_weather_csv.py
+        run: python scripts/generate_weather_csv.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 05: Ran generate_weather_csv.py"
+          git push || echo "No changes to commit"
+
+  step06:
+    needs: step05
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+
+      - name: Run get_weather_data.py
+        run: python scripts/get_weather_data.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 06: Ran get_weather_data.py"
+          git push || echo "No changes to commit"
+
+  step07:
+    needs: step06
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+
+      - name: Run filter_today_batters.py
+        run: python scripts/filter_today_batters.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 07: Ran filter_today_batters.py"
+          git push || echo "No changes to commit"
+
+  step08:
+    needs: step07
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+
+      - name: Run split_batters_by_home_away.py
+        run: python scripts/split_batters_by_home_away.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 08: Ran split_batters_by_home_away.py"
           git push || echo "No changes to commit"
