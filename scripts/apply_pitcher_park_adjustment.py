@@ -1,3 +1,4 @@
+
 import pandas as pd
 
 # File paths
@@ -23,7 +24,7 @@ def load_park_factors(game_time):
         raise ValueError(f"Invalid game_time format: {game_time}") from e
 
 def normalize_columns(df):
-    df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.strip().str.lower()
     return df
 
 def apply_adjustments(pitchers_df, games_df, side):
@@ -51,7 +52,7 @@ def apply_adjustments(pitchers_df, games_df, side):
                 continue
 
             park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip()
-            park_row = park_factors[park_factors['home_team'] == home_team]
+            park_row = park_factors[park_factors['home_team'].str.lower() == home_team.lower()]
 
             if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
                 log_entries.append(f"No park factor found for {home_team} at time {game_time}")
