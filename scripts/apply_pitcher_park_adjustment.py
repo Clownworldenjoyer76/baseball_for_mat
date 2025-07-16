@@ -46,6 +46,8 @@ def apply_adjustments(pitchers_df, games_df, team_name_map, side):
         game_time = row['game_time']
         park_factors = load_park_factors(game_time)
 
+        park_factors['home_team'] = park_factors['home_team'].astype(str)
+        home_team = str(home_team)
         park_row = park_factors[park_factors['home_team'].str.lower() == home_team.lower()]
         if park_row.empty:
             continue
