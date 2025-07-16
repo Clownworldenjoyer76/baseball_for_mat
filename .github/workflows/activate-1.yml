@@ -1,0 +1,44 @@
+name: Activate 1
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Debug for Normalize
+        run: echo "Running normalize_names.py with debug..."
+
+      - name: Run Normalize Names
+        run: python scripts/normalize_names.py
+
+  tag:
+    needs: normalize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Debug for Tag
+        run: echo "Running tag_master_files.py with debug..."
+
+      - name: Tag Uploaded Master Files
+        run: python scripts/tag_master_files.py
+
+  dedupe:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Debug for Dedupe
+        run: echo "Running deduplicate_normalized.py with debug..."
+
+      - name: Duplicate Check After Normalization
+        run: python scripts/deduplicate_normalized.py
