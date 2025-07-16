@@ -9,6 +9,7 @@ env:
 
 jobs:
   step01:
+    
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,12 +17,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Normalize Today's Lineups
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run normalize_todays_lineups.py
         run: |
           echo "🔧 Starting normalize_todays_lineups.py..."
-          python scripts/normalize_lineups.py
+          python scripts/normalize_todays_lineups.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 01: Ran normalize_todays_lineups.py"
+          git push || echo "No changes to commit"
 
   step02:
     needs: step01
@@ -32,12 +40,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Normalize Today's Games
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run normalize_todays_games.py
         run: |
           echo "🔧 Starting normalize_todays_games.py..."
           python scripts/normalize_todays_games.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 02: Ran normalize_todays_games.py"
+          git push || echo "No changes to commit"
 
   step03:
     needs: step02
@@ -48,12 +63,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Standardize Team Names
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run standardize_team_names.py
         run: |
           echo "🔧 Starting standardize_team_names.py..."
-          python scripts/apply_team_name_mapping.py
+          python scripts/standardize_team_names.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 03: Ran standardize_team_names.py"
+          git push || echo "No changes to commit"
 
   step04:
     needs: step03
@@ -64,12 +86,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Update Game Time
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run update_game_time.py
         run: |
           echo "🔧 Starting update_game_time.py..."
           python scripts/update_game_time.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 04: Ran update_game_time.py"
+          git push || echo "No changes to commit"
 
   step05:
     needs: step04
@@ -80,12 +109,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Generate Weather CSV
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run generate_weather_csv.py
         run: |
           echo "🔧 Starting generate_weather_csv.py..."
           python scripts/generate_weather_csv.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 05: Ran generate_weather_csv.py"
+          git push || echo "No changes to commit"
 
   step06:
     needs: step05
@@ -96,12 +132,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Fetch Weather Data
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run get_weather_data.py
         run: |
           echo "🔧 Starting get_weather_data.py..."
           python scripts/get_weather_data.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 06: Ran get_weather_data.py"
+          git push || echo "No changes to commit"
 
   step07:
     needs: step06
@@ -112,12 +155,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Filter Today Batters
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run filter_today_batters.py
         run: |
           echo "🔧 Starting filter_today_batters.py..."
           python scripts/filter_today_batters.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 07: Ran filter_today_batters.py"
+          git push || echo "No changes to commit"
 
   step08:
     needs: step07
@@ -128,12 +178,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Split Batters Home/Away
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run split_batters_home_away.py
         run: |
           echo "🔧 Starting split_batters_home_away.py..."
           python scripts/split_batters_home_away.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 08: Ran split_batters_home_away.py"
+          git push || echo "No changes to commit"
 
   step09:
     needs: step08
@@ -144,12 +201,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Split Pitchers
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run split_pitchers.py
         run: |
           echo "🔧 Starting split_pitchers.py..."
           python scripts/split_pitchers.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 09: Ran split_pitchers.py"
+          git push || echo "No changes to commit"
 
   step10:
     needs: step09
@@ -160,12 +224,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Apply Weather Adjustment
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run apply_weather_adjustment.py
         run: |
           echo "🔧 Starting apply_weather_adjustment.py..."
           python scripts/apply_weather_adjustment.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 10: Ran apply_weather_adjustment.py"
+          git push || echo "No changes to commit"
 
   step11:
     needs: step10
@@ -176,12 +247,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Apply Park Adjustment
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run apply_park_weather_adjustment_modular.py
         run: |
           echo "🔧 Starting apply_park_weather_adjustment_modular.py..."
           python scripts/apply_park_weather_adjustment_modular.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 11: Ran apply_park_weather_adjustment_modular.py"
+          git push || echo "No changes to commit"
 
   step12:
     needs: step11
@@ -192,12 +270,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Combine Weather + Park Away
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run combine_weather_park_away.py
         run: |
           echo "🔧 Starting combine_weather_park_away.py..."
           python scripts/combine_weather_park_away.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 12: Ran combine_weather_park_away.py"
+          git push || echo "No changes to commit"
 
   step13:
     needs: step12
@@ -208,12 +293,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Combine Weather + Park Home
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run combine_weather_park_home.py
         run: |
           echo "🔧 Starting combine_weather_park_home.py..."
           python scripts/combine_weather_park_home.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 13: Ran combine_weather_park_home.py"
+          git push || echo "No changes to commit"
 
   step14:
     needs: step13
@@ -224,12 +316,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Apply Pitcher Weather Adjustment
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run apply_pitcher_weather_adjustment.py
         run: |
           echo "🔧 Starting apply_pitcher_weather_adjustment.py..."
           python scripts/apply_pitcher_weather_adjustment.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 14: Ran apply_pitcher_weather_adjustment.py"
+          git push || echo "No changes to commit"
 
   step15:
     needs: step14
@@ -240,12 +339,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Apply Pitcher Park Adjustment
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run apply_pitcher_park_adjustment.py
         run: |
           echo "🔧 Starting apply_pitcher_park_adjustment.py..."
           python scripts/apply_pitcher_park_adjustment.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 15: Ran apply_pitcher_park_adjustment.py"
+          git push || echo "No changes to commit"
 
   step16:
     needs: step15
@@ -256,12 +362,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Combine Pitcher Weather + Park Home
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run combine_pitcher_weather_park_home.py
         run: |
           echo "🔧 Starting combine_pitcher_weather_park_home.py..."
           python scripts/combine_pitcher_weather_park_home.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 16: Ran combine_pitcher_weather_park_home.py"
+          git push || echo "No changes to commit"
 
   step17:
     needs: step16
@@ -272,12 +385,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Combine Pitcher Weather + Park Away
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run combine_pitcher_weather_park_away.py
         run: |
           echo "🔧 Starting combine_pitcher_weather_park_away.py..."
           python scripts/combine_pitcher_weather_park_away.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 17: Ran combine_pitcher_weather_park_away.py"
+          git push || echo "No changes to commit"
 
   step18:
     needs: step17
@@ -288,9 +408,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install pandas
-        run: pip install pandas
-      - name: Build Matchup Stats
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run build_matchup_stats.py
         run: |
           echo "🔧 Starting build_matchup_stats.py..."
           python scripts/build_matchup_stats.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 18: Ran build_matchup_stats.py"
+          git push || echo "No changes to commit"
+
