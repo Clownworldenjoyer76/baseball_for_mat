@@ -51,12 +51,12 @@ jobs:
 
       - name: Commit and Push Changes
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git commit -m "Step 07: Ran filter_today_batters.py"
-          git push || echo "No changes to commit"
-
+         git config user.name "github-actions"
+         git config user.email "github-actions@github.com"
+         git add .
+         git diff --cached --quiet || git commit -m "Step 07: Ran filter_today_batters.py"
+         git push || echo "No changes to commit or push"
+    
   step08:
     needs: step07
     runs-on: ubuntu-latest
