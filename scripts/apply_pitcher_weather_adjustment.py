@@ -3,32 +3,50 @@ from pathlib import Path
 import subprocess
 
 def apply_weather_adjustments_home(pitchers, weather):
+    print("🔄 Applying weather adjustments to HOME pitchers...")
     pitchers['home_team'] = pitchers['team']
     weather = weather.drop_duplicates(subset='home_team')
     pitchers = pd.merge(pitchers, weather, on='home_team', how='left')
+
     if 'woba' not in pitchers.columns:
+        print("⚠️ 'woba' column missing in pitchers. Defaulting to 0.320.")
         pitchers['woba'] = 0.320
+
     pitchers['adj_woba_weather'] = pitchers['woba'] + ((pitchers['temperature'] - 70) * 0.001)
-    return pitchers
+    return pitchers.drop_duplicates()
 
 def apply_weather_adjustments_away(pitchers, weather, todaysgames):
+    print("🔄 Applying weather adjustments to AWAY pitchers...")
     away_team_to_home_team = todaysgames.set_index('away_team')['home_team'].to_dict()
     pitchers['home_team'] = pitchers['team'].map(away_team_to_home_team)
     weather = weather.drop_duplicates(subset='home_team')
     pitchers = pd.merge(pitchers, weather, on='home_team', how='left')
+
     if 'woba' not in pitchers.columns:
+        print("⚠️ 'woba' column missing in pitchers. Defaulting to 0.320.")
         pitchers['woba'] = 0.320
+
     pitchers['adj_woba_weather'] = pitchers['woba'] + ((pitchers['temperature'] - 70) * 0.001)
-    return pitchers
+    return pitchers.drop_duplicates()
 
 def save_outputs(pitchers, label):
+    print(f"💾 Saving adjusted pitchers: {label}")
     out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
+
     outfile = out_path / f"pitchers_{label}_weather.csv"
     logfile = out_path / f"log_pitchers_weather_{label}.txt"
+
     pitchers.to_csv(outfile, index=False)
+
+    try:
+        top = pitchers[['last_name, first_name', 'team', 'adj_woba_weather']].head()
+    except KeyError:
+        print("❌ Column 'last_name, first_name' not found in pitcher DataFrame.")
+        top = pitchers.head()
+
     with open(logfile, 'w') as f:
-        f.write(str(pitchers[['pitcher', 'team', 'adj_woba_weather']].head()))
+        f.write(str(top))
 
 def commit_outputs():
     try:
@@ -42,6 +60,7 @@ def commit_outputs():
         print(f"⚠️ Git commit failed: {e}")
 
 def main():
+    print("📂 Loading inputs...")
     weather = pd.read_csv("data/weather_adjustments.csv")
     todaysgames = pd.read_csv("data/raw/todaysgames_normalized.csv")
 
