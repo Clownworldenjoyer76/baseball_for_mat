@@ -53,7 +53,7 @@ jobs:
       - name: Standardize Team Names
         run: |
           echo "🔧 Starting standardize_team_names.py..."
-          python scripts/standardize_team_names.py
+          python scripts/apply_team_name_mapping.py
 
   step04:
     needs: step03
