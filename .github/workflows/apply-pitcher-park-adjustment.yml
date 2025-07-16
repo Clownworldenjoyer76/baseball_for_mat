@@ -21,10 +21,12 @@ jobs:
       - name: Run pitcher park adjustment
         run: python scripts/apply_pitcher_park_adjustment.py
 
-      - name: Upload adjusted pitcher files
-        uses: actions/upload-artifact@v4
-        with:
-          name: adjusted-pitchers
-          path: |
-            data/adjusted/pitchers_*_park.csv
-            log_pitchers_*_park.txt
+      - name: Commit adjusted files to repo
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/adjusted/pitchers_*_park.csv log_pitchers_*_park.txt
+          git commit -m "Auto-commit: pitcher park adjustments"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
