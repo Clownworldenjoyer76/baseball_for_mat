@@ -1,0 +1,71 @@
+name: Activate 2
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  step01:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run normalize_lineups.py
+        run: python scripts/normalize_lineups.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 01: Ran normalize_lineups.py"
+          git push || echo "No changes to commit"
+
+  step02:
+    needs: step01
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run normalize_todays_games.py
+        run: python scripts/normalize_todays_games.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 02: Ran normalize_todays_games.py"
+          git push || echo "No changes to commit"
+
+  step03:
+    needs: step02
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas requests pytz
+      - name: Run apply_team_name_mapping.py
+        run: python scripts/apply_team_name_mapping.py
+      - name: Commit and Push Changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 03: Ran apply_team_name_mapping.py"
+          git push || echo "No changes to commit"
