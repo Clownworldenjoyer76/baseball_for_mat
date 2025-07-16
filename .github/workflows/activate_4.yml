@@ -27,8 +27,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 13: Ran combine_weather_park_home.py"
-          git push || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Step 13: Ran combine_weather_park_home.py"
+          git push || echo "No changes to commit or push"
 
   step14:
     needs: step13
@@ -50,8 +50,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 14: Ran apply_pitcher_weather_adjustment.py"
-          git push || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Step 14: Ran apply_pitcher_weather_adjustment.py"
+          git push || echo "No changes to commit or push"
 
   step15:
     needs: step14
@@ -73,8 +73,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 15: Ran apply_pitcher_park_adjustment.py"
-          git push || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Step 15: Ran apply_pitcher_park_adjustment.py"
+          git push || echo "No changes to commit or push"
 
   step16:
     needs: step15
@@ -96,8 +96,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 16: Ran combine_pitcher_weather_park_home.py"
-          git push || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Step 16: Ran combine_pitcher_weather_park_home.py"
+          git push || echo "No changes to commit or push"
 
   step17:
     needs: step16
@@ -119,8 +119,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 17: Ran combine_pitcher_weather_park_away.py"
-          git push || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Step 17: Ran combine_pitcher_weather_park_away.py"
+          git push || echo "No changes to commit or push"
 
   step18:
     needs: step17
@@ -142,5 +142,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 18: Ran build_matchup_stats.py"
-          git push || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Step 18: Ran build_matchup_stats.py"
+          git push || echo "No changes to commit or push"
