@@ -50,12 +50,16 @@ def apply_adjustments(pitchers_df, games_df, team_name_map, side):
         home_team = str(home_team)
         park_row = park_factors[park_factors['home_team'].str.lower() == home_team.lower()]
         if park_row.empty:
+    log_entries.append(f"No park factor found for {home_team} at time {game_time}")
+
             continue
 
         park_factor = float(park_row['Park Factor'].values[0])
         team = row['home_team'] if side == 'home' else row['away_team']
         team_pitchers = pitchers_df[pitchers_df['team'] == team].copy()
         if team_pitchers.empty:
+    log_entries.append(f"No pitcher data found for team: {team}")
+
             continue
 
         for stat in STATS_TO_ADJUST:
@@ -76,7 +80,9 @@ def apply_adjustments(pitchers_df, games_df, team_name_map, side):
     else:
         result = pd.DataFrame()
 
-    return result, log_entries
+    if not adjusted:
+    log_entries.append("No teams matched. No adjustments applied.")
+return result, log_entries
 
 def main():
     games_df = pd.read_csv(GAMES_FILE)
