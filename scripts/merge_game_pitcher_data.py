@@ -1,4 +1,5 @@
 import pandas as pd
+import subprocess
 
 # Input paths
 BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
@@ -21,7 +22,6 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    # Merge home batters with pitcher info
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
@@ -29,10 +29,8 @@ def main():
         right_on="home_team"
     )
 
-    # Adjust team column casing to match
     ba["team"] = ba["team"].str.title()
 
-    # Merge away batters with pitcher info
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
@@ -61,6 +59,10 @@ def main():
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
+
+    subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY])
+    subprocess.run(["git", "commit", "-m", "Add merged batter and pitcher matchup stats"])
+    subprocess.run(["git", "push"])
 
 if __name__ == "__main__":
     main()
