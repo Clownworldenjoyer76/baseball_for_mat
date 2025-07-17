@@ -25,6 +25,9 @@ def generate_weather_csv():
     team_map_df['uppercase'] = team_map_df['team_name'].str.strip().str.upper()
     team_map_df = team_map_df.drop_duplicates(subset='uppercase')
 
+    # Drop game_time from games_df to avoid _x/_y column clash
+    games_df = games_df.drop(columns=['game_time'], errors='ignore')
+
     # Merge stadium + game data
     merged = pd.merge(games_df, stadium_df, on='home_team', how='left')
     if merged.empty:
