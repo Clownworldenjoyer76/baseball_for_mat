@@ -21,6 +21,7 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
+    # Merge home batters with pitcher info
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
@@ -28,6 +29,10 @@ def main():
         right_on="home_team"
     )
 
+    # Adjust team column casing to match
+    ba["team"] = ba["team"].str.title()
+
+    # Merge away batters with pitcher info
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
