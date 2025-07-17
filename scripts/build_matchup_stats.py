@@ -10,8 +10,10 @@ GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 # Output path
 OUTPUT_FILE = "data/final/matchup_stats.csv"
 
+# Column names from your real CSVs
 REQUIRED_GAME_COLUMNS = ["home_team", "away_team", "pitcher_home", "pitcher_away"]
-REQUIRED_PITCHER_COLUMNS = ["adj_woba_combined", "name", "home_team", "away_team"]
+REQUIRED_BATTER_COLUMNS = ["name", "adj_woba_combined", "home_team_weather", "away_team_weather"]
+REQUIRED_PITCHER_COLUMNS = ["name", "adj_woba_combined", "home_team", "away_team"]
 
 def validate_required_columns(df, required_cols, filename):
     missing = [col for col in required_cols if col not in df.columns]
@@ -19,31 +21,33 @@ def validate_required_columns(df, required_cols, filename):
         raise ValueError(f"Missing columns in {filename}: {missing}")
 
 def get_pitcher_woba(df, team_col, name_col):
-    validate_required_columns(df, [team_col, name_col, "adj_woba_combined"], "pitcher file")
     return df[[team_col, name_col, "adj_woba_combined"]].drop_duplicates(subset=[team_col, name_col])
 
-def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games):
-    validate_required_columns(games, REQUIRED_GAME_COLUMNS, "todaysgames_normalized.csv")
+def build_matchup_df(bh, ba, ph, pa, games):
+    validate_required_columns(games, REQUIRED_GAME_COLUMNS, "games")
+    validate_required_columns(bh, ["name", "adj_woba_combined", "home_team_weather"], "batters_home")
+    validate_required_columns(ba, ["name", "adj_woba_combined", "away_team_weather"], "batters_away")
+    validate_required_columns(ph, ["name", "adj_woba_combined", "home_team"], "pitchers_home")
+    validate_required_columns(pa, ["name", "adj_woba_combined", "away_team"], "pitchers_away")
 
-    # Join pitcher names into batter files
-    batters_home = batters_home.merge(
+    bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        left_on="home_team_weather",  # match actual column name
+        left_on="home_team_weather",
         right_on="home_team"
     )
 
-    batters_away = batters_away.merge(
+    ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
-        left_on="away_team_weather",  # match actual column name
+        left_on="away_team_weather",
         right_on="away_team"
     )
 
-    home_pitcher_stats = get_pitcher_woba(pitchers_home, "home_team", "name")
-    away_pitcher_stats = get_pitcher_woba(pitchers_away, "away_team", "name")
+    home_pitcher_stats = get_pitcher_woba(ph, "home_team", "name")
+    away_pitcher_stats = get_pitcher_woba(pa, "away_team", "name")
 
-    batters_home = batters_home.merge(
+    bh = bh.merge(
         home_pitcher_stats,
         how="left",
         left_on=["home_team", "pitcher_home"],
@@ -51,7 +55,7 @@ def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, g
         suffixes=("", "_pitcher")
     )
 
-    batters_away = batters_away.merge(
+    ba = ba.merge(
         away_pitcher_stats,
         how="left",
         left_on=["away_team", "pitcher_away"],
@@ -59,20 +63,19 @@ def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, g
         suffixes=("", "_pitcher")
     )
 
-    batters_home["side"] = "home"
-    batters_away["side"] = "away"
+    bh["side"] = "home"
+    ba["side"] = "away"
 
-    combined = pd.concat([batters_home, batters_away], ignore_index=True)
-    return combined
+    return pd.concat([bh, ba], ignore_index=True)
 
 def main():
-    batters_home = pd.read_csv(BATTERS_HOME_FILE)
-    batters_away = pd.read_csv(BATTERS_AWAY_FILE)
-    pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
-    pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
+    bh = pd.read_csv(BATTERS_HOME_FILE)
+    ba = pd.read_csv(BATTERS_AWAY_FILE)
+    ph = pd.read_csv(PITCHERS_HOME_FILE)
+    pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    matchup_stats = build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games)
+    matchup_stats = build_matchup_df(bh, ba, ph, pa, games)
     matchup_stats.to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
