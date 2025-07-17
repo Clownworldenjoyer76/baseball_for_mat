@@ -1,3 +1,4 @@
+
 import pandas as pd
 import os
 
@@ -9,15 +10,15 @@ def update_game_time():
     stadium_df = pd.read_csv(STADIUM_FILE)
     games_df = pd.read_csv(GAMES_FILE)
 
-    # Normalize whitespace and case
-    stadium_df['home_team'] = stadium_df['home_team'].str.strip().str.upper()
-    games_df['home_team'] = games_df['home_team'].str.strip().str.upper()
+    # Normalize whitespace and case to Title Case
+    stadium_df['home_team'] = stadium_df['home_team'].str.strip().str.title()
+    games_df['home_team'] = games_df['home_team'].str.strip().str.title()
     games_df['game_time'] = games_df['game_time'].astype(str).str.strip()
 
     # Ensure 'game_time' column exists
     if 'game_time' not in stadium_df.columns:
         stadium_df['game_time'] = ''
-    
+
     updated_rows = []
 
     for idx, row in stadium_df.iterrows():
