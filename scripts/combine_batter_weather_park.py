@@ -2,42 +2,37 @@ import pandas as pd
 from pathlib import Path
 import subprocess
 
-def combine_adjustments(weather_path, park_path, output_path):
-    weather_df = pd.read_csv(weather_path)
-    park_df = pd.read_csv(park_path)
-    merged = pd.merge(weather_df, park_df, on=["name", "team"], how="inner", suffixes=("_weather", "_park"))
-    merged.to_csv(output_path, index=False)
-    return len(merged)
+def combine_adjustments(label):
+    weather_file = f"data/adjusted/batters_{label}_weather.csv"
+    park_file = f"data/adjusted/batters_{label}_park.csv"
+    output_file = f"data/adjusted/batters_{label}_weather_park.csv"
 
-def commit_file(path):
+    df_weather = pd.read_csv(weather_file)
+    df_park = pd.read_csv(park_file)
+
+    merged = pd.merge(df_weather, df_park, on=["last_name, first_name", "team"], how="inner")
+    merged.to_csv(output_file, index=False)
+
+    print(f"✅ Merged {label} batter data written to {output_file}")
+    return output_file
+
+def commit_outputs(files):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add", str(path)], check=True)
-        subprocess.run(["git", "commit", "-m", f"Auto-commit: created {path.name}"], check=True)
+        subprocess.run(["git", "add", *files], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-commit: combined batter weather+park files"], check=True)
         subprocess.run(["git", "push"], check=True)
-        print(f"✅ Committed {path.name}")
+        print("✅ Committed and pushed merged files.")
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit failed for {path.name}: {e}")
+        print(f"⚠️ Git commit failed: {e}")
 
 def main():
-    Path("data/adjusted").mkdir(parents=True, exist_ok=True)
-
-    count_home = combine_adjustments(
-        "data/adjusted/batters_home_weather.csv",
-        "data/adjusted/batters_home_park.csv",
-        "data/adjusted/batters_home_weather_park.csv"
-    )
-    commit_file(Path("data/adjusted/batters_home_weather_park.csv"))
-
-    count_away = combine_adjustments(
-        "data/adjusted/batters_away_weather.csv",
-        "data/adjusted/batters_away_park.csv",
-        "data/adjusted/batters_away_weather_park.csv"
-    )
-    commit_file(Path("data/adjusted/batters_away_weather_park.csv"))
-
-    print(f"✅ Merged and saved: {count_home} home batters, {count_away} away batters")
+    files = []
+    for label in ["home", "away"]:
+        output_file = combine_adjustments(label)
+        files.append(output_file)
+    commit_outputs(files)
 
 if __name__ == "__main__":
     main()
