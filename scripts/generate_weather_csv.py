@@ -1,44 +1,44 @@
-
 import pandas as pd
-import os
+from pathlib import Path
 
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
 OUTPUT_FILE = "data/weather_input.csv"
 SUMMARY_FILE = "data/weather_summary.txt"
 
-def main():
-    games = pd.read_csv(GAMES_FILE)
-    stadium = pd.read_csv(STADIUM_FILE)
+def generate_weather_csv():
+    try:
+        games_df = pd.read_csv(GAMES_FILE)
+        stadium_df = pd.read_csv(STADIUM_FILE)
+    except FileNotFoundError as e:
+        print(f"❌ File not found: {e}")
+        return
+    except Exception as e:
+        print(f"❌ Error reading input files: {e}")
+        return
 
-    # Ensure clean strings for joining
-    games['home_team'] = games['home_team'].str.strip()
-    stadium['home_team'] = stadium['home_team'].str.strip()
+    # Normalize team name casing for matching
+    games_df['home_team'] = games_df['home_team'].str.upper()
+    stadium_df['home_team'] = stadium_df['home_team'].str.upper()
 
-    # Columns to keep from stadium file
-    stadium = stadium[[
-        "home_team", "venue", "city", "state", "timezone", "is_dome", "latitude", "longitude"
-    ]]
+    merged = pd.merge(games_df, stadium_df, on='home_team', how='left')
 
-    # Merge game data with stadium metadata
-    merged = games.merge(stadium, on="home_team", how="inner")
+    if merged.empty:
+        print("❌ Merge failed: No matching rows.")
+        return
 
-    # Select columns for output
-    output = merged[[
-        "home_team", "game_time", "venue", "city", "state", "timezone", "is_dome", "latitude", "longitude"
-    ]]
+    merged.to_csv(OUTPUT_FILE, index=False)
 
-    os.makedirs("data", exist_ok=True)
-    output.to_csv(OUTPUT_FILE, index=False)
+    summary = (
+        f"✅ Weather input file generated\n"
+        f"🔢 Rows: {len(merged)}\n"
+        f"📁 Output: {OUTPUT_FILE}\n"
+        f"📄 Games file: {GAMES_FILE}\n"
+        f"🏟️ Stadium file: {STADIUM_FILE}"
+    )
 
-    # Write summary
-    with open(SUMMARY_FILE, "w") as f:
-        f.write(f"✅ Created: {OUTPUT_FILE}\n")
-        f.write(f"✅ Summary written to: {SUMMARY_FILE}\n")
-        f.write(f"✅ Total records written: {len(output)}\n")
-
-    print(f"✅ Created: {OUTPUT_FILE}")
-    print(f"✅ Summary written to: {SUMMARY_FILE}")
+    print(summary)
+    Path(SUMMARY_FILE).write_text(summary)
 
 if __name__ == "__main__":
-    main()
+    generate_weather_csv()
