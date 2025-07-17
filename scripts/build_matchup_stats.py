@@ -10,7 +10,7 @@ GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 # Output path
 OUTPUT_FILE = "data/final/matchup_stats.csv"
 
-REQUIRED_GAME_COLUMNS = ["home_team", "away_team", "home_pitcher", "away_pitcher"]
+REQUIRED_GAME_COLUMNS = ["home_team", "away_team"]
 
 def validate_required_columns(df, required_cols, filename):
     missing = [col for col in required_cols if col not in df.columns]
@@ -25,12 +25,12 @@ def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, g
     validate_required_columns(games, REQUIRED_GAME_COLUMNS, "todaysgames_normalized.csv")
 
     batters_home = batters_home.merge(
-        games[["home_team", "home_pitcher"]],
+        games[["home_team"]],
         how="left",
         on="home_team"
     )
     batters_away = batters_away.merge(
-        games[["away_team", "away_pitcher"]],
+        games[["away_team"]],
         how="left",
         on="away_team"
     )
@@ -41,15 +41,15 @@ def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, g
     batters_home = batters_home.merge(
         home_pitcher_stats,
         how="left",
-        left_on=["home_team", "home_pitcher"],
-        right_on=["home_team", "name"],
+        left_on=["home_team"],
+        right_on=["home_team"],
         suffixes=("", "_pitcher")
     )
     batters_away = batters_away.merge(
         away_pitcher_stats,
         how="left",
-        left_on=["away_team", "away_pitcher"],
-        right_on=["away_team", "name"],
+        left_on=["away_team"],
+        right_on=["away_team"],
         suffixes=("", "_pitcher")
     )
 
