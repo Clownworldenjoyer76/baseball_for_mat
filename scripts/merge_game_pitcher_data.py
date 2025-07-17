@@ -1,0 +1,59 @@
+import pandas as pd
+
+# Input paths
+BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
+BATTERS_AWAY_FILE = "data/adjusted/batters_away_weather_park.csv"
+PITCHERS_HOME_FILE = "data/adjusted/pitchers_home_weather_park.csv"
+PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away_weather_park.csv"
+GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+
+# Output paths
+OUTPUT_HOME = "data/processed/batters_home_with_pitcher.csv"
+OUTPUT_AWAY = "data/processed/batters_away_with_pitcher.csv"
+
+def get_pitcher_woba(df, team_col, name_col):
+    return df[[team_col, name_col, "adj_woba_combined"]].drop_duplicates(subset=[team_col, name_col])
+
+def main():
+    bh = pd.read_csv(BATTERS_HOME_FILE)
+    ba = pd.read_csv(BATTERS_AWAY_FILE)
+    ph = pd.read_csv(PITCHERS_HOME_FILE)
+    pa = pd.read_csv(PITCHERS_AWAY_FILE)
+    games = pd.read_csv(GAMES_FILE)
+
+    bh = bh.merge(
+        games[["home_team", "pitcher_home"]],
+        how="left",
+        left_on="home_team_park",
+        right_on="home_team"
+    )
+    ba = ba.merge(
+        games[["away_team", "pitcher_away"]],
+        how="left",
+        left_on="away_team",
+        right_on="away_team"
+    )
+
+    home_pitcher_stats = get_pitcher_woba(ph, "home_team", "name")
+    away_pitcher_stats = get_pitcher_woba(pa, "away_team", "name")
+
+    bh = bh.merge(
+        home_pitcher_stats,
+        how="left",
+        left_on=["home_team", "pitcher_home"],
+        right_on=["home_team", "name"],
+        suffixes=("", "_pitcher")
+    )
+    ba = ba.merge(
+        away_pitcher_stats,
+        how="left",
+        left_on=["away_team", "pitcher_away"],
+        right_on=["away_team", "name"],
+        suffixes=("", "_pitcher")
+    )
+
+    bh.to_csv(OUTPUT_HOME, index=False)
+    ba.to_csv(OUTPUT_AWAY, index=False)
+
+if __name__ == "__main__":
+    main()
