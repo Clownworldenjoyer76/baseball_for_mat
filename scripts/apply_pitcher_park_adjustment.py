@@ -22,15 +22,15 @@ STATS_TO_ADJUST = [
     'hard_hit_percent'
 ]
 
-def load_park_factors(game_time):
+def load_park_factors(game_time, day_factors, night_factors):
     hour = int(str(game_time).split(":")[0])
-    return pd.read_csv(PARK_DAY_FILE) if hour < 18 else pd.read_csv(PARK_NIGHT_FILE)
+    return day_factors if hour < 18 else night_factors
 
 def normalize_columns(df):
     df.columns = df.columns.str.strip()
     return df
 
-def apply_adjustments(pitchers_df, games_df, side):
+def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     adjusted = []
     log_entries = []
 
@@ -49,7 +49,7 @@ def apply_adjustments(pitchers_df, games_df, side):
                 log_entries.append(f"Skipping row with invalid values — home_team: '{home_team}', game_time: '{game_time}'")
                 continue
 
-            park_factors = load_park_factors(game_time)
+            park_factors = load_park_factors(game_time, park_day, park_night)
             park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip().str.lower()
 
             if 'home_team' not in park_factors.columns or 'Park Factor' not in park_factors.columns:
@@ -75,6 +75,12 @@ def apply_adjustments(pitchers_df, games_df, side):
                 else:
                     log_entries.append(f"Missing stat '{stat}' in pitcher data for {team_name}")
 
+            if 'woba' in team_pitchers.columns:
+                team_pitchers["adj_woba_park"] = team_pitchers["woba"] * park_factor / 100
+            else:
+                team_pitchers["adj_woba_park"] = None
+                log_entries.append(f"Missing 'woba' column for {team_name}, cannot compute adj_woba_park.")
+
             adjusted.append(team_pitchers)
             log_entries.append(f"Adjusted {team_name} ({side}) using park factor {park_factor:.2f}")
         except Exception as e:
@@ -84,7 +90,7 @@ def apply_adjustments(pitchers_df, games_df, side):
     if adjusted:
         result = pd.concat(adjusted, ignore_index=True)
         try:
-            top5 = result[['name', team_key, STATS_TO_ADJUST[0]]].sort_values(by=STATS_TO_ADJUST[0], ascending=False).head(5)
+            top5 = result[['name', team_key, 'adj_woba_park']].sort_values(by='adj_woba_park', ascending=False).head(5)
             log_entries.append("\nTop 5 affected pitchers:")
             log_entries.append(top5.to_string(index=False))
         except Exception as e:
@@ -99,9 +105,11 @@ def main():
     games_df = pd.read_csv(GAMES_FILE)
     pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
     pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
+    park_day = pd.read_csv(PARK_DAY_FILE)
+    park_night = pd.read_csv(PARK_NIGHT_FILE)
 
-    adj_home, log_home = apply_adjustments(pitchers_home, games_df, side="home")
-    adj_away, log_away = apply_adjustments(pitchers_away, games_df, side="away")
+    adj_home, log_home = apply_adjustments(pitchers_home, games_df, side="home", park_day=park_day, park_night=park_night)
+    adj_away, log_away = apply_adjustments(pitchers_away, games_df, side="away", park_day=park_day, park_night=park_night)
 
     adj_home.to_csv(OUTPUT_HOME_FILE, index=False)
     adj_away.to_csv(OUTPUT_AWAY_FILE, index=False)
