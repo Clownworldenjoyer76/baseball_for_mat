@@ -6,6 +6,7 @@ on:
 jobs:
   combine-batter-weather-park:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -13,10 +14,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install Dependencies
         run: pip install pandas
 
-      - name: Run Combine Script
+      - name: Run Merger
         run: python scripts/combine_batter_weather_park.py
