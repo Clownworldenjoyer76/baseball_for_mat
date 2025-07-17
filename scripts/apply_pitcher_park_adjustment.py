@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 # File paths
@@ -24,21 +23,14 @@ STATS_TO_ADJUST = [
 ]
 
 def load_park_factors():
-    # Load and normalize park factor files for day and night games
     park_day = pd.read_csv(PARK_DAY_FILE)
     park_night = pd.read_csv(PARK_NIGHT_FILE)
     park_day['home_team'] = park_day['home_team'].astype(str).str.strip().str.lower()
     park_night['home_team'] = park_night['home_team'].astype(str).str.strip().str.lower()
     return park_day, park_night
 
-def get_park_factor(park_day, park_night, home_team, game_time, log_entries):
-    # Return park factor based on game time and home team
-    try:
-        hour = pd.to_datetime(game_time, errors='coerce').hour
-    except Exception:
-        log_entries.append(f"Invalid game_time format: {game_time}")
-        return None
-
+def get_park_factor(park_day, park_night, home_team, game_time):
+    hour = int(str(game_time).split(":")[0])
     park_df = park_day if hour < 18 else park_night
     row = park_df[park_df['home_team'] == home_team.lower()]
     if not row.empty and not pd.isna(row['Park Factor'].values[0]):
@@ -46,12 +38,10 @@ def get_park_factor(park_day, park_night, home_team, game_time, log_entries):
     return None
 
 def normalize_columns(df):
-    # Strip whitespace from all column headers
     df.columns = df.columns.str.strip()
     return df
 
 def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
-    # Apply park factor adjustments to pitcher stats
     adjusted = []
     log_entries = []
 
@@ -72,7 +62,7 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
                 continue
 
             team_name = home_team if side == 'home' else away_team
-            park_factor = get_park_factor(park_day, park_night, home_team, game_time, log_entries)
+            park_factor = get_park_factor(park_day, park_night, home_team, game_time)
 
             if park_factor is None:
                 log_entries.append(f"No park factor found for {home_team} at {game_time}")
@@ -104,7 +94,7 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     if adjusted:
         result = pd.concat(adjusted, ignore_index=True)
         try:
-            top5 = result[['name', team_key, 'adj_woba_park']].sort_values(by='adj_woba_park', ascending=False).head(5)
+            top5 = result[['name', team_key, 'adj_woba_park']]                 .sort_values(by='adj_woba_park', ascending=False).head(5)
             log_entries.append("\nTop 5 affected pitchers:")
             log_entries.append(top5.to_string(index=False))
         except Exception as e:
@@ -116,10 +106,17 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     return result, log_entries
 
 def main():
-    # Main execution function
-    games_df = pd.read_csv(GAMES_FILE)
-    pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
-    pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
+    try:
+        games_df = pd.read_csv(GAMES_FILE)
+        pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
+        pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
+    except Exception as e:
+        with open(LOG_HOME, "w") as f:
+            f.write(f"❌ Error loading files: {e}\n")
+        with open(LOG_AWAY, "w") as f:
+            f.write(f"❌ Error loading files: {e}\n")
+        return
+
     park_day, park_night = load_park_factors()
 
     adj_home, log_home = apply_adjustments(pitchers_home, games_df, "home", park_day, park_night)
