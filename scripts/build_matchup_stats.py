@@ -57,7 +57,7 @@ def main():
     batters_home = pd.read_csv("data/adjusted/batters_home_weather_park.csv")
     batters_away = pd.read_csv("data/adjusted/batters_away_weather_park.csv")
     pitchers_home = pd.read_csv("data/adjusted/pitchers_home_weather_park.csv")
-    pitchers_away = pd.read_csv("data/adjusted/pitchers_away_park.csv")
+    pitchers_away = pd.read_csv("data/adjusted/pitchers_away_weather_park.csv")  # <-- fixed here
     games = pd.read_csv("data/raw/todaysgames_normalized.csv")
 
     matchup_stats = build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games)
