@@ -29,7 +29,7 @@ def convert_to_localtime(game_time_str, tz_str):
     game_time = datetime.strptime(game_time_str, "%I:%M %p")
     now = datetime.now().date()
     game_datetime_eastern = eastern.localize(datetime.combine(now, game_time.time()))
-    return game_datetime_eastern.astimezone(local_tz).strftime("%I:%M %p")
+    return game_datetime_eastern.astimezone(local_tz).strftime("%-I:%M %p")
 
 def generate_weather_adjustments():
     if not os.path.exists(INPUT_FILE):
