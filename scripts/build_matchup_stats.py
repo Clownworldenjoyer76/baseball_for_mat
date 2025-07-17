@@ -7,44 +7,48 @@ PITCHERS_HOME_FILE = "data/adjusted/pitchers_home_weather_park.csv"
 PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away_weather_park.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 
-# Output
+# Output path
 OUTPUT_FILE = "data/final/matchup_stats.csv"
 
+REQUIRED_GAME_COLUMNS = ["home_team", "away_team", "home_pitcher", "away_pitcher"]
+
+def validate_required_columns(df, required_cols, filename):
+    missing = [col for col in required_cols if col not in df.columns]
+    if missing:
+        raise ValueError(f"Missing columns in {filename}: {missing}")
+
 def get_pitcher_woba(df, team_col, name_col):
+    validate_required_columns(df, [team_col, name_col, "adj_woba_combined"], "pitcher file")
     return df[[team_col, name_col, "adj_woba_combined"]].drop_duplicates(subset=[team_col, name_col])
 
 def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games):
-    if not all(col in games.columns for col in ["home_team", "away_team", "pitcher_home", "pitcher_away"]):
-        raise ValueError("Missing one or more required columns in todaysgames_normalized.csv")
+    validate_required_columns(games, REQUIRED_GAME_COLUMNS, "todaysgames_normalized.csv")
 
-    # Merge team and pitcher name from games into batter files
     batters_home = batters_home.merge(
-        games[["home_team", "pitcher_home"]],
+        games[["home_team", "home_pitcher"]],
         how="left",
         on="home_team"
     )
     batters_away = batters_away.merge(
-        games[["away_team", "pitcher_away"]],
+        games[["away_team", "away_pitcher"]],
         how="left",
         on="away_team"
     )
 
-    # Pull pitcher stats
     home_pitcher_stats = get_pitcher_woba(pitchers_home, "home_team", "name")
     away_pitcher_stats = get_pitcher_woba(pitchers_away, "away_team", "name")
 
-    # Merge pitcher stats into batter files
     batters_home = batters_home.merge(
         home_pitcher_stats,
         how="left",
-        left_on=["home_team", "pitcher_home"],
+        left_on=["home_team", "home_pitcher"],
         right_on=["home_team", "name"],
         suffixes=("", "_pitcher")
     )
     batters_away = batters_away.merge(
         away_pitcher_stats,
         how="left",
-        left_on=["away_team", "pitcher_away"],
+        left_on=["away_team", "away_pitcher"],
         right_on=["away_team", "name"],
         suffixes=("", "_pitcher")
     )
