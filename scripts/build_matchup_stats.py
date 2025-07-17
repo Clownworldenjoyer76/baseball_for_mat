@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pathlib import Path
 import subprocess
@@ -55,10 +54,10 @@ def save_output(df):
         print(f"⚠️ Git commit failed: {e}")
 
 def main():
-    batters_home = pd.read_csv("data/adjusted/batters_home_adjusted.csv")
-    batters_away = pd.read_csv("data/adjusted/batters_away_adjusted.csv")
-    pitchers_home = pd.read_csv("data/adjusted/pitchers_home_adjusted.csv")
-    pitchers_away = pd.read_csv("data/adjusted/pitchers_away_adjusted.csv")
+    batters_home = pd.read_csv("data/adjusted/batters_home_weather_park.csv")
+    batters_away = pd.read_csv("data/adjusted/batters_away_weather_park.csv")
+    pitchers_home = pd.read_csv("data/adjusted/pitchers_home_weather_park.csv")
+    pitchers_away = pd.read_csv("data/adjusted/pitchers_away_park.csv")
     games = pd.read_csv("data/raw/todaysgames_normalized.csv")
 
     matchup_stats = build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games)
