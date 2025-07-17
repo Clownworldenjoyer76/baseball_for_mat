@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pathlib import Path
 import subprocess
@@ -14,8 +13,6 @@ def load_park_factors(time_of_day):
     return pd.read_csv(path)[["home_team", "Park Factor"]]
 
 def apply_park_adjustments(batters, games, label):
-    # For home batters: team == home_team
-    # For away batters: team maps to home_team via today's games
     if label == "away":
         away_map = pd.read_csv("data/raw/todaysgames_normalized.csv").set_index("away_team")["home_team"].to_dict()
         batters['home_team'] = batters['team'].map(away_map)
@@ -23,11 +20,8 @@ def apply_park_adjustments(batters, games, label):
         batters['home_team'] = batters['team']
 
     merged = pd.merge(batters, games, on='home_team', how='left')
-
-    # Load day factors and merge
     merged = pd.merge(merged, load_park_factors("day"), on="home_team", how="left")
 
-    # Overwrite Park Factor for night games
     night_games = merged['time_of_day'] == 'night'
     merged.loc[night_games, 'Park Factor'] = pd.merge(
         merged.loc[night_games],
@@ -54,8 +48,7 @@ def save_outputs(batters, label):
 
     top5 = batters[["last_name, first_name", "team", "adj_woba_park"]].sort_values(by="adj_woba_park", ascending=False).head(5)
     with open(logfile, "w") as f:
-        f.write(f"Top 5 adjusted batters ({label}):
-")
+        f.write(f"Top 5 adjusted batters ({label}):\n")
         f.write(top5.to_string(index=False))
 
 def commit_outputs():
