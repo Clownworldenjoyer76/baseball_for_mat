@@ -51,12 +51,12 @@ jobs:
 
       - name: Commit and Push Changes
         run: |
-         git config user.name "github-actions"
-         git config user.email "github-actions@github.com"
-         git add .
-         git diff --cached --quiet || git commit -m "Step 07: Ran filter_today_batters.py"
-         git push || echo "No changes to commit or push"
-    
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Step 07: Ran filter_today_batters.py"
+          git push || echo "No changes to commit or push"
+
   step08:
     needs: step07
     runs-on: ubuntu-latest
@@ -79,5 +79,32 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 07: Ran filter_today_batters.py"
+          git diff --cached --quiet || git commit -m "Step 08: Ran split_batters_by_home_away.py"
           git push || echo "No changes to commit or push"
+
+  step09:
+    needs: step08
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run Split Pitchers Script
+        run: python scripts/split_pitchers.py
+
+      - name: Commit pitcher files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/adjusted/pitchers_home.csv
+          git add data/adjusted/pitchers_away.csv
+          git commit -m "Step 09: Ran split_pitchers.py" || echo "No changes to commit"
+          git push
