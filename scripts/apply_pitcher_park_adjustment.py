@@ -1,3 +1,4 @@
+
 import pandas as pd
 
 # File paths
@@ -22,15 +23,35 @@ STATS_TO_ADJUST = [
     'hard_hit_percent'
 ]
 
-def load_park_factors(game_time, day_factors, night_factors):
-    hour = int(str(game_time).split(":")[0])
-    return day_factors if hour < 18 else night_factors
+def load_park_factors():
+    # Load and normalize park factor files for day and night games
+    park_day = pd.read_csv(PARK_DAY_FILE)
+    park_night = pd.read_csv(PARK_NIGHT_FILE)
+    park_day['home_team'] = park_day['home_team'].astype(str).str.strip().str.lower()
+    park_night['home_team'] = park_night['home_team'].astype(str).str.strip().str.lower()
+    return park_day, park_night
+
+def get_park_factor(park_day, park_night, home_team, game_time, log_entries):
+    # Return park factor based on game time and home team
+    try:
+        hour = pd.to_datetime(game_time, errors='coerce').hour
+    except Exception:
+        log_entries.append(f"Invalid game_time format: {game_time}")
+        return None
+
+    park_df = park_day if hour < 18 else park_night
+    row = park_df[park_df['home_team'] == home_team.lower()]
+    if not row.empty and not pd.isna(row['Park Factor'].values[0]):
+        return float(row['Park Factor'].values[0])
+    return None
 
 def normalize_columns(df):
+    # Strip whitespace from all column headers
     df.columns = df.columns.str.strip()
     return df
 
 def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
+    # Apply park factor adjustments to pitcher stats
     adjusted = []
     log_entries = []
 
@@ -42,49 +63,42 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
 
     for _, row in games_df.iterrows():
         try:
-            home_team = str(row['home_team']).strip()
+            home_team = str(row['home_team']).strip().lower()
+            away_team = str(row['away_team']).strip().lower()
             game_time = str(row['game_time']).strip()
 
-            if not home_team or not game_time or home_team.lower() in ["undecided", "nan"] or game_time.lower() in ["nan"]:
-                log_entries.append(f"Skipping row with invalid values — home_team: '{home_team}', game_time: '{game_time}'")
+            if home_team in ["", "undecided", "nan"] or game_time in ["", "nan"]:
+                log_entries.append(f"Skipping invalid game row — home_team: '{home_team}', game_time: '{game_time}'")
                 continue
 
-            park_factors = load_park_factors(game_time, park_day, park_night)
-            park_factors['home_team'] = park_factors['home_team'].astype(str).str.strip().str.lower()
+            team_name = home_team if side == 'home' else away_team
+            park_factor = get_park_factor(park_day, park_night, home_team, game_time, log_entries)
 
-            if 'home_team' not in park_factors.columns or 'Park Factor' not in park_factors.columns:
-                log_entries.append("Missing required columns in park factors file.")
-                continue
-
-            park_row = park_factors[park_factors['home_team'] == home_team.lower()]
-            if park_row.empty or pd.isna(park_row['Park Factor'].values[0]):
+            if park_factor is None:
                 log_entries.append(f"No park factor found for {home_team} at {game_time}")
                 continue
 
-            park_factor = float(park_row['Park Factor'].values[0])
-            team_name = home_team.lower() if side == "home" else str(row['away_team']).strip().lower()
             team_pitchers = pitchers_df[pitchers_df[team_key] == team_name].copy()
-
             if team_pitchers.empty:
-                log_entries.append(f"No pitchers found for {team_name} ({side})")
+                log_entries.append(f"No pitcher data for {team_name} ({side})")
                 continue
 
             for stat in STATS_TO_ADJUST:
                 if stat in team_pitchers.columns:
                     team_pitchers[stat] *= park_factor / 100
                 else:
-                    log_entries.append(f"Missing stat '{stat}' in pitcher data for {team_name}")
+                    log_entries.append(f"Missing '{stat}' for {team_name}")
 
             if 'woba' in team_pitchers.columns:
-                team_pitchers["adj_woba_park"] = team_pitchers["woba"] * park_factor / 100
+                team_pitchers['adj_woba_park'] = team_pitchers['woba'] * park_factor / 100
             else:
-                team_pitchers["adj_woba_park"] = None
-                log_entries.append(f"Missing 'woba' column for {team_name}, cannot compute adj_woba_park.")
+                team_pitchers['adj_woba_park'] = None
+                log_entries.append(f"Missing 'woba' — could not calculate adj_woba_park for {team_name}")
 
             adjusted.append(team_pitchers)
-            log_entries.append(f"Adjusted {team_name} ({side}) using park factor {park_factor:.2f}")
+            log_entries.append(f"Adjusted {team_name} ({side}) with park factor {park_factor:.2f}")
         except Exception as e:
-            log_entries.append(f"Error processing row: {e}")
+            log_entries.append(f"Error processing game row: {e}")
             continue
 
     if adjusted:
@@ -94,7 +108,7 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
             log_entries.append("\nTop 5 affected pitchers:")
             log_entries.append(top5.to_string(index=False))
         except Exception as e:
-            log_entries.append(f"Could not generate top 5 log: {e}")
+            log_entries.append(f"Could not compute Top 5: {e}")
     else:
         result = pd.DataFrame()
         log_entries.append("No pitchers adjusted.")
@@ -102,14 +116,14 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     return result, log_entries
 
 def main():
+    # Main execution function
     games_df = pd.read_csv(GAMES_FILE)
     pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
     pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
-    park_day = pd.read_csv(PARK_DAY_FILE)
-    park_night = pd.read_csv(PARK_NIGHT_FILE)
+    park_day, park_night = load_park_factors()
 
-    adj_home, log_home = apply_adjustments(pitchers_home, games_df, side="home", park_day=park_day, park_night=park_night)
-    adj_away, log_away = apply_adjustments(pitchers_away, games_df, side="away", park_day=park_day, park_night=park_night)
+    adj_home, log_home = apply_adjustments(pitchers_home, games_df, "home", park_day, park_night)
+    adj_away, log_away = apply_adjustments(pitchers_away, games_df, "away", park_day, park_night)
 
     adj_home.to_csv(OUTPUT_HOME_FILE, index=False)
     adj_away.to_csv(OUTPUT_AWAY_FILE, index=False)
