@@ -10,16 +10,16 @@ def load_data():
 def merge_and_combine(weather, park):
     merged = pd.merge(
         weather,
-        park[["pitcher", "team", "adj_woba_park"]],
-        on=["pitcher", "team"],
+        park[["name", "team", "adj_woba_park"]],
+        on=["name", "team"],
         how="inner"
     )
-    merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
     merged["adj_woba_weather"] = merged["adj_woba_weather"].fillna(merged["woba"])
+    merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
     merged["adj_woba_combined"] = merged.apply(
         lambda row: row["adj_woba_park"] if pd.isna(row["adj_woba_weather"]) else row["adj_woba_combined"],
         axis=1
-)  
+    )
     return merged
 
 def save_output(df):
@@ -29,8 +29,7 @@ def save_output(df):
     df.to_csv(output_file, index=False)
 
     log_file = out_path / "log_pitchers_combined_home.txt"
-    top5 = df[["pitcher", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]] \
-        .sort_values(by="adj_woba_combined", ascending=False).head(5)
+    top5 = df[["name", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]]         .sort_values(by="adj_woba_combined", ascending=False).head(5)
     with open(log_file, "w") as f:
         f.write("Top 5 home pitchers (combined adjustment):\n")
         f.write(top5.to_string(index=False))
