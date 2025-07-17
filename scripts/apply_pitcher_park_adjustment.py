@@ -31,7 +31,10 @@ def load_park_factors():
     return park_day, park_night
 
 def get_park_factor(park_day, park_night, home_team, game_time):
-    hour = int(str(game_time).split(":")[0])
+    try:
+        hour = int(str(game_time).split(":")[0])
+    except:
+        return None
     park_df = park_day if hour < 18 else park_night
     row = park_df[park_df['home_team'] == home_team.lower()]
     if not row.empty and not pd.isna(row['Park Factor'].values[0]):
@@ -62,12 +65,12 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
         park_factor = get_park_factor(park_day, park_night, home_team, game_time)
 
         if park_factor is None:
-            logs.append(f"No park factor found for {home_team} at {game_time}")
+            logs.append(f"❌ No park factor found for {home_team} at {game_time}")
             continue
 
         team_pitchers = pitchers_df[pitchers_df[team_key] == team_name].copy()
         if team_pitchers.empty:
-            logs.append(f"No pitcher data for {team_name} ({side})")
+            logs.append(f"⚠️ No pitcher data for {team_name} ({side}) — key: {team_key}")
             continue
 
         for stat in STATS_TO_ADJUST:
@@ -94,7 +97,7 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
         except Exception as e:
             logs.append(f"⚠️ Could not generate top 5 log: {e}")
     else:
-        df_result = pd.DataFrame()
+        df_result = pd.DataFrame(columns=list(pitchers_df.columns) + ['adj_woba_park'])  # Force columns
         logs.append("⚠️ No pitchers adjusted.")
 
     return df_result, logs
@@ -103,6 +106,8 @@ def save_output(df, log, file_path, log_path):
     df.to_csv(file_path, index=False)
     with open(log_path, "w") as f:
         f.write("\n".join(log))
+    print(f"✅ Wrote {file_path} with {len(df)} rows.")
+    print(f"📝 Log written to {log_path}")
 
 def main():
     games_df = normalize(pd.read_csv(GAMES_FILE))
