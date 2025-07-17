@@ -39,14 +39,14 @@ jobs:
           python-version: "3.10"
       - name: Install dependencies
         run: pip install pandas
-      - name: Run apply_park_weather_adjustment_modular.py
-        run: python scripts/apply_park_weather_adjustment_modular.py
+      - name: Run apply_park_adjustment.py
+        run: python scripts/apply_park_adjustment.py
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 11: Ran apply_park_weather_adjustment_modular.py"
+          git diff --cached --quiet || git commit -m "Step 11: Ran apply_park_adjustment.py"
           git push || echo "No changes to commit or push"
 
   step12:
@@ -60,18 +60,39 @@ jobs:
           python-version: "3.10"
       - name: Install dependencies
         run: pip install pandas
-      - name: Run combine_batter_weather_park.py
-        run: python scripts/combine_batter_weather_park.py
+      - name: Run combine_weather_park_home.py
+        run: python scripts/combine_weather_park_home.py
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 12: Ran combine_batter_weather_park.py"
+          git diff --cached --quiet || git commit -m "Step 12: Ran combine_weather_park_home.py"
           git push || echo "No changes to commit or push"
 
   step13:
     needs: step12
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: pip install pandas
+      - name: Run combine_weather_park_away.py
+        run: python scripts/combine_weather_park_away.py
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Step 13: Ran combine_weather_park_away.py"
+          git push || echo "No changes to commit or push"
+
+  step14:
+    needs: step13
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,11 +109,11 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 13: Ran apply_pitcher_weather_adjustment.py"
+          git diff --cached --quiet || git commit -m "Step 14: Ran apply_pitcher_weather_adjustment.py"
           git push || echo "No changes to commit or push"
 
-  step14:
-    needs: step13
+  step15:
+    needs: step14
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -109,11 +130,11 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 14: Ran apply_pitcher_park_adjustment.py"
+          git diff --cached --quiet || git commit -m "Step 15: Ran apply_pitcher_park_adjustment.py"
           git push || echo "No changes to commit or push"
 
-  step15:
-    needs: step14
+  step16:
+    needs: step15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,11 +151,11 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 15: Ran combine_pitcher_weather_park_home.py"
+          git diff --cached --quiet || git commit -m "Step 16: Ran combine_pitcher_weather_park_home.py"
           git push || echo "No changes to commit or push"
 
-  step16:
-    needs: step15
+  step17:
+    needs: step16
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -151,5 +172,5 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add .
-          git diff --cached --quiet || git commit -m "Step 16: Ran combine_pitcher_weather_park_away.py"
+          git diff --cached --quiet || git commit -m "Step 17: Ran combine_pitcher_weather_park_away.py"
           git push || echo "No changes to commit or push"
