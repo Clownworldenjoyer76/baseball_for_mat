@@ -4,16 +4,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  combine_pitcher_weather_park_away:
+  combine-away:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
         run: pip install pandas
@@ -21,10 +21,10 @@ jobs:
       - name: Run combine_pitcher_weather_park_away.py
         run: python scripts/combine_pitcher_weather_park_away.py
 
-      - name: Upload result artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Combined Away Pitcher File
+        uses: actions/upload-artifact@v3
         with:
-          name: combined-pitchers-away
+          name: combined-away-pitchers
           path: |
             data/adjusted/pitchers_away_adjusted.csv
-            data/adjusted/log_combined_pitchers_away.txt
+            data/adjusted/log_pitchers_combined_away.txt

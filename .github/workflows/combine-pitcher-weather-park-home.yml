@@ -1,22 +1,30 @@
-name: Combine Pitcher Weather + Park Home
+name: Combine Pitcher Weather Park Home
 
 on:
   workflow_dispatch:
 
 jobs:
-  combine_pitcher_home:
+  combine-home:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.x
+          python-version: '3.11'
 
-      - name: Install pandas
+      - name: Install dependencies
         run: pip install pandas
 
-      - name: Run Combine Pitcher Weather + Park (Home)
+      - name: Run combine_pitcher_weather_park_home.py
         run: python scripts/combine_pitcher_weather_park_home.py
+
+      - name: Upload Combined Home Pitcher File
+        uses: actions/upload-artifact@v3
+        with:
+          name: combined-home-pitchers
+          path: |
+            data/adjusted/pitchers_home_adjusted.csv
+            data/adjusted/log_pitchers_combined_home.txt
