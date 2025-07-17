@@ -1,0 +1,18 @@
+name: Combine Batters Final Output
+
+on:
+  workflow_dispatch:
+
+jobs:
+  combine-batters-final:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install pandas
+      - name: Run combine_batters_final.py
+        run: python scripts/combine_batters_final.py
