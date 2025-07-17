@@ -4,38 +4,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  adjust-pitchers:
+  run-adjustment:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11'
 
       - name: Install dependencies
         run: pip install pandas
 
-      - name: Run pitcher park adjustment
-        run: |
-          echo "===== RUNNING SCRIPT ====="
-          python scripts/apply_pitcher_park_adjustment.py
-          echo "===== SCRIPT COMPLETE ====="
-          echo "===== ADJUSTED FILES ====="
-          ls -lh data/adjusted/ || echo "No adjusted files found"
-          echo "===== LOG PREVIEW ====="
-          head -n 20 log_pitchers_home_park.txt || echo "Missing home log"
-          head -n 20 log_pitchers_away_park.txt || echo "Missing away log"
+      - name: Run Pitcher Park Adjustment
+        run: python scripts/apply_pitcher_park_adjustment.py
 
-      - name: Commit results to repo
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add data/adjusted/pitchers_*_park.csv log_pitchers_*_park.txt || true
-          git commit --allow-empty -m "Auto-commit: pitcher park adjustment"
-          git push
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Adjusted Files
+        uses: actions/upload-artifact@v3
+        with:
+          name: adjusted-pitchers-park
+          path: |
+            data/adjusted/pitchers_home_park.csv
+            data/adjusted/pitchers_away_park.csv
+            log_pitchers_home_park.txt
+            log_pitchers_away_park.txt
