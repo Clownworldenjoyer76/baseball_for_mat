@@ -20,7 +20,7 @@ def get_pitcher_woba(df, team_col, name_col):
 
 def build_matchup_df(bh, ba, ph, pa, games):
     validate_required_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
-    validate_required_columns(bh, ["name", "adj_woba_combined", "home_team"], "batters_home")
+    validate_required_columns(bh, ["name", "adj_woba_combined", "home_team_park"], "batters_home")
     validate_required_columns(ba, ["name", "adj_woba_combined", "away_team"], "batters_away")
     validate_required_columns(ph, ["name", "adj_woba_combined", "home_team"], "pitchers_home")
     validate_required_columns(pa, ["name", "adj_woba_combined", "away_team"], "pitchers_away")
@@ -28,7 +28,8 @@ def build_matchup_df(bh, ba, ph, pa, games):
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        on="home_team"
+        left_on="home_team_park",
+        right_on="home_team"
     )
 
     ba = ba.merge(
