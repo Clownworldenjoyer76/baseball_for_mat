@@ -27,6 +27,7 @@ def main():
         left_on="home_team_park",
         right_on="home_team"
     )
+
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
@@ -44,6 +45,7 @@ def main():
         right_on=["home_team", "name"],
         suffixes=("", "_pitcher")
     )
+
     ba = ba.merge(
         away_pitcher_stats,
         how="left",
