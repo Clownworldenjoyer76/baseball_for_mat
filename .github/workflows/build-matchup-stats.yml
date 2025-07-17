@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-matchup-stats:
+  build_matchup_stats:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repo
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -15,8 +16,8 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: pip install pandas
 
-      - name: Run Matchup Builder
+      - name: Run matchup stats builder
         run: python scripts/build_matchup_stats.py
