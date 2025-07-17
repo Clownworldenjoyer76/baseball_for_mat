@@ -16,28 +16,25 @@ def validate_required_columns(df, required_cols, filename):
         raise ValueError(f"Missing columns in {filename}: {missing}")
 
 def get_pitcher_woba(df, team_col, name_col):
-    validate_required_columns(df, [team_col, name_col, "adj_woba_weather"], "pitcher file")
-    return df[[team_col, name_col, "adj_woba_weather"]].drop_duplicates(subset=[team_col, name_col])
+    return df[[team_col, name_col, "adj_woba_combined"]].drop_duplicates(subset=[team_col, name_col])
 
 def build_matchup_df(bh, ba, ph, pa, games):
     validate_required_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
-    validate_required_columns(bh, ["name", "adj_woba_weather", "home_team_weather"], "batters_home")
-    validate_required_columns(ba, ["name", "adj_woba_weather", "away_team_weather"], "batters_away")
-    validate_required_columns(ph, ["name", "adj_woba_weather", "home_team"], "pitchers_home")
-    validate_required_columns(pa, ["name", "adj_woba_weather", "away_team"], "pitchers_away")
+    validate_required_columns(bh, ["name", "adj_woba_combined", "home_team"], "batters_home")
+    validate_required_columns(ba, ["name", "adj_woba_combined", "away_team"], "batters_away")
+    validate_required_columns(ph, ["name", "adj_woba_combined", "home_team"], "pitchers_home")
+    validate_required_columns(pa, ["name", "adj_woba_combined", "away_team"], "pitchers_away")
 
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        left_on="home_team_weather",
-        right_on="home_team"
+        on="home_team"
     )
 
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
-        left_on="away_team_weather",
-        right_on="away_team"
+        on="away_team"
     )
 
     home_pitcher_stats = get_pitcher_woba(ph, "home_team", "name")
