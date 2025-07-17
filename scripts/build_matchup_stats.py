@@ -10,7 +10,8 @@ GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 # Output path
 OUTPUT_FILE = "data/final/matchup_stats.csv"
 
-REQUIRED_GAME_COLUMNS = ["home_team", "away_team"]
+REQUIRED_GAME_COLUMNS = ["home_team", "away_team", "pitcher_home", "pitcher_away"]
+REQUIRED_PITCHER_COLUMNS = ["adj_woba_combined", "name", "home_team", "away_team"]
 
 def validate_required_columns(df, required_cols, filename):
     missing = [col for col in required_cols if col not in df.columns]
@@ -24,15 +25,19 @@ def get_pitcher_woba(df, team_col, name_col):
 def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, games):
     validate_required_columns(games, REQUIRED_GAME_COLUMNS, "todaysgames_normalized.csv")
 
+    # Join pitcher names into batter files
     batters_home = batters_home.merge(
-        games[["home_team"]],
+        games[["home_team", "pitcher_home"]],
         how="left",
-        on="home_team"
+        left_on="home_team_weather",  # match actual column name
+        right_on="home_team"
     )
+
     batters_away = batters_away.merge(
-        games[["away_team"]],
+        games[["away_team", "pitcher_away"]],
         how="left",
-        on="away_team"
+        left_on="away_team_weather",  # match actual column name
+        right_on="away_team"
     )
 
     home_pitcher_stats = get_pitcher_woba(pitchers_home, "home_team", "name")
@@ -41,15 +46,16 @@ def build_matchup_df(batters_home, batters_away, pitchers_home, pitchers_away, g
     batters_home = batters_home.merge(
         home_pitcher_stats,
         how="left",
-        left_on=["home_team"],
-        right_on=["home_team"],
+        left_on=["home_team", "pitcher_home"],
+        right_on=["home_team", "name"],
         suffixes=("", "_pitcher")
     )
+
     batters_away = batters_away.merge(
         away_pitcher_stats,
         how="left",
-        left_on=["away_team"],
-        right_on=["away_team"],
+        left_on=["away_team", "pitcher_away"],
+        right_on=["away_team", "name"],
         suffixes=("", "_pitcher")
     )
 
