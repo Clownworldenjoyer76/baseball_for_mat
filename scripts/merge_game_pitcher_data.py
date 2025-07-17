@@ -30,7 +30,7 @@ def main():
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
-        left_on="away_team",
+        left_on="team",
         right_on="away_team"
     )
 
