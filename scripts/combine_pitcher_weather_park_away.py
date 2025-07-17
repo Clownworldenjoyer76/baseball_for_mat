@@ -25,7 +25,7 @@ def merge_and_combine(weather, park):
 def save_output(df):
     out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
-    output_file = out_path / "pitchers_away_adjusted.csv"
+    output_file = out_path / "pitchers_away_weather_park.csv"  # ✅ updated file name
     df.to_csv(output_file, index=False)
 
     log_file = out_path / "log_pitchers_combined_away.txt"
@@ -38,7 +38,11 @@ def commit_outputs():
     try:
         subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add", "data/adjusted/pitchers_away_adjusted.csv", "data/adjusted/log_pitchers_combined_away.txt"], check=True)
+        subprocess.run([
+            "git", "add",
+            "data/adjusted/pitchers_away_weather_park.csv",
+            "data/adjusted/log_pitchers_combined_away.txt"
+        ], check=True)
         subprocess.run(["git", "commit", "--allow-empty", "-m", "Auto-commit: Combined away pitcher adjustments"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Forced commit and push to repo.")
