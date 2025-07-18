@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+import subprocess
 
 # File paths
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
@@ -120,6 +121,11 @@ def main():
 
     save_output(adj_home, log_home, OUTPUT_HOME_FILE, LOG_HOME)
     save_output(adj_away, log_away, OUTPUT_AWAY_FILE, LOG_AWAY)
+
+    # 🔁 Commit to repo
+    subprocess.run(["git", "add", OUTPUT_HOME_FILE, OUTPUT_AWAY_FILE, LOG_HOME, LOG_AWAY])
+    subprocess.run(["git", "commit", "-m", "Apply park factor adjustment to home and away pitchers"])
+    subprocess.run(["git", "push"])
 
 if __name__ == "__main__":
     main()
