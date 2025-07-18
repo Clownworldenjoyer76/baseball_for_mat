@@ -1,0 +1,38 @@
+name: Build JSON Outputs
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  build_jsons:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run build_top_picks_json.py
+        run: python scripts/build_top_picks_json.py
+
+      - name: Run build_top_props_json.py
+        run: python scripts/build_top_props_json.py
+
+      - name: Commit and Push JSON Outputs
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add top_picks.json top_props.json
+          git diff --cached --quiet || git commit -m "📦 Generated top_picks.json and top_props.json"
+          git pull --rebase
+          git push || echo "No changes to commit or push"
