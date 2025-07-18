@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import subprocess
 from pathlib import Path
 
 INPUT_CSV = "data/final/best_picks_raw.csv"
@@ -16,7 +17,6 @@ def main():
 
     df["game_id"] = df["away_team"] + "_at_" + df["home_team"]
 
-    # Group picks by game
     games = {}
     for _, row in df.iterrows():
         gid = row["game_id"]
@@ -43,6 +43,10 @@ def main():
         json.dump(output, f, indent=2)
 
     print(f"✅ top_picks.json saved to {OUTPUT_JSON}")
+
+    subprocess.run(["git", "add", OUTPUT_JSON])
+    subprocess.run(["git", "commit", "-m", "📦 Add top_picks.json"])
+    subprocess.run(["git", "push"])
 
 if __name__ == "__main__":
     main()
