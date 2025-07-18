@@ -1,6 +1,10 @@
 import pandas as pd
 from pathlib import Path
+import os
 import subprocess
+
+# Change working directory to repo root
+os.chdir(Path(__file__).resolve().parents[1])
 
 # File paths
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
@@ -15,13 +19,7 @@ LOG_HOME = "log_pitchers_home_park.txt"
 LOG_AWAY = "log_pitchers_away_park.txt"
 
 STATS_TO_ADJUST = [
-    'home_run',
-    'slg_percent',
-    'xslg',
-    'woba',
-    'xwoba',
-    'barrel_batted_rate',
-    'hard_hit_percent'
+    'home_run', 'slg_percent', 'xslg', 'woba', 'xwoba', 'barrel_batted_rate', 'hard_hit_percent'
 ]
 
 def load_park_factors():
@@ -98,7 +96,7 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
         except Exception as e:
             logs.append(f"⚠️ Could not generate top 5 log: {e}")
     else:
-        df_result = pd.DataFrame(columns=list(pitchers_df.columns) + ['adj_woba_park'])  # Force columns
+        df_result = pd.DataFrame(columns=list(pitchers_df.columns) + ['adj_woba_park'])
         logs.append("⚠️ No pitchers adjusted.")
 
     return df_result, logs
@@ -109,6 +107,14 @@ def save_output(df, log, file_path, log_path):
         f.write("\n".join(log))
     print(f"✅ Wrote {file_path} with {len(df)} rows.")
     print(f"📝 Log written to {log_path}")
+
+def git_commit_and_push(files):
+    try:
+        subprocess.run(["git", "add"] + files, check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-update pitcher park adjustment"], check=True)
+        subprocess.run(["git", "push"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git push failed: {e}")
 
 def main():
     games_df = normalize(pd.read_csv(GAMES_FILE))
@@ -122,10 +128,7 @@ def main():
     save_output(adj_home, log_home, OUTPUT_HOME_FILE, LOG_HOME)
     save_output(adj_away, log_away, OUTPUT_AWAY_FILE, LOG_AWAY)
 
-    # 🔁 Commit to repo
-    subprocess.run(["git", "add", OUTPUT_HOME_FILE, OUTPUT_AWAY_FILE, LOG_HOME, LOG_AWAY])
-    subprocess.run(["git", "commit", "-m", "Apply park factor adjustment to home and away pitchers"])
-    subprocess.run(["git", "push"])
+    git_commit_and_push([OUTPUT_HOME_FILE, OUTPUT_AWAY_FILE, LOG_HOME, LOG_AWAY])
 
 if __name__ == "__main__":
     main()
