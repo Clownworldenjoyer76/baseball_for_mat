@@ -2,8 +2,8 @@ import pandas as pd
 import subprocess
 
 # Input paths
-BATTERS_HOME_FILE = "data/adjusted/batters_home_park_weather.csv"
-BATTERS_AWAY_FILE = "data/adjusted/batters_away_park_weather.csv"
+BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
+BATTERS_AWAY_FILE = "data/adjusted/batters_away_weather_park.csv"
 PITCHERS_HOME_FILE = "data/adjusted/pitchers_home_weather_park.csv"
 PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away_weather_park.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
@@ -26,12 +26,9 @@ def main():
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        left_on="home_team_park",
+        left_on="home_team_weather",
         right_on="home_team"
     )
-
-    # Normalize away team name casing
-    ba["team"] = ba["team"].str.title()
 
     # Merge away batters with game data
     ba = ba.merge(
