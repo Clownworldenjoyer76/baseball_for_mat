@@ -9,25 +9,27 @@ jobs:
 
     steps:
       - name: Checkout repo with full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install pandas
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas
 
       - name: Run Top Picks Builder
         run: python scripts/build_top_picks_json.py
 
       - name: Commit and push top picks JSON
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/json/top_picks.json
-          git commit -m "Add top picks JSON"
+          git config --global user.email "you@example.com"
+          git config --global user.name "GitHub Actions"
+          git add data/output/top_picks.json
+          git commit -m "Add top picks JSON" || echo "No changes to commit"
           git push
