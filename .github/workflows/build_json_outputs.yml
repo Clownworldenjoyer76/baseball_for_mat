@@ -26,16 +26,17 @@ jobs:
         run: python scripts/build_top_picks_json.py
 
       - name: Run build_top_props_json.py
-        run: python scripts/build_top_props_json.py || true  # prevents job failure on 'no props'
+        run: python scripts/build_top_props_json.py || true
+
+      - name: Force repo change
+        run: |
+          echo "Updated: $(date)" > last_json_run.txt
 
       - name: Commit and Push JSON Outputs
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-
-          git add data/output/top_picks.json || true
-          git add data/final/top_props.json || true
-
-          git diff --cached --quiet || git commit -m "📦 Updated JSON outputs"
+          git add data/output/top_picks.json data/final/top_props.json last_json_run.txt || true
+          git commit --allow-empty -m "📦 Updated JSON outputs (forced commit)"
           git pull --rebase
           git push || echo "Nothing to push"
