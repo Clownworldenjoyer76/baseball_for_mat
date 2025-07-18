@@ -11,8 +11,11 @@ def combine_adjustments(label):
     df_park = pd.read_csv(park_file)
 
     merged = pd.merge(df_weather, df_park, on=["last_name, first_name", "team"], how="inner")
-    merged.to_csv(output_file, index=False)
 
+    # Calculate adj_woba_combined from confirmed columns
+    merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
+
+    merged.to_csv(output_file, index=False)
     print(f"✅ Merged {label} batter data written to {output_file}")
     return output_file
 
