@@ -1,0 +1,23 @@
+name: Auto Push JSON and HTML
+
+on:
+  push:
+    paths:
+      - index.html
+      - data/output/top_picks.json
+
+jobs:
+  push-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Commit JSON and HTML if changed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add index.html data/output/top_picks.json || true
+          git diff --staged --quiet || git commit -m "Auto-update index.html and top_picks.json"
+          git push
