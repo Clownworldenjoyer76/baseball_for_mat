@@ -1,35 +1,45 @@
-import pandas as pd
-from pathlib import Path
+name: Build JSON Outputs
 
-INPUT_FILE = "data/final/matchup_stats.csv"
-OUTPUT_FILE = "data/final/prop_candidates.csv"
+on:
+  workflow_dispatch:
 
-def main():
-    df = pd.read_csv(INPUT_FILE)
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
 
-    # Keep only rows where any version of player name is populated
-    name_cols = [col for col in df.columns if "name" in col.lower()]
-    df["has_name"] = df[name_cols].notna().any(axis=1)
+jobs:
+  build_jsons:
+    runs-on: ubuntu-latest
 
-    # Only include rows that have a name and a valid adj_woba_combined
-    props = df[df["has_name"] & df["adj_woba_combined"].notna()].copy()
+    steps:
+      - uses: actions/checkout@v4
 
-    # Add prop-specific tag
-    props["type"] = "prop"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-    # Normalize one name column for consistency
-    if "last_name, first_name_weather" in props.columns:
-        props.rename(columns={"last_name, first_name_weather": "name"}, inplace=True)
-    elif "name" not in props.columns:
-        props["name"] = "unknown"
+      - name: Install dependencies
+        run: pip install pandas
 
-    # Normalize team casing
-    if "team" in props.columns:
-        props["team"] = props["team"].str.title()
+      - name: Run build_top_picks_json.py
+        run: python scripts/build_top_picks_json.py
 
-    # Output
-    props.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Saved prop candidates to {OUTPUT_FILE}")
+      - name: Run build_prop_candidates.py
+        run: python scripts/build_prop_candidates.py
 
-if __name__ == "__main__":
-    main()
+      - name: Run build_top_props_json.py
+        run: python scripts/build_top_props_json.py
+
+      - name: Force repo change
+        run: |
+          echo "Updated: $(date)" > last_json_run.txt
+
+      - name: Commit and Push JSON Outputs
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/output/top_picks.json data/final/top_props.json last_json_run.txt || true
+          git commit --allow-empty -m "📦 Updated JSON outputs (forced commit)"
+          git pull --rebase
+          git push || echo "Nothing to push"
