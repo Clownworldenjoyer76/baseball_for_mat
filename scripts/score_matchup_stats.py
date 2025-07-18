@@ -15,7 +15,7 @@ def main():
         print("❌ No valid rows after filtering required fields.")
         return
 
-    # Assign default prop type
+    # Assign default prop type (must exist for downstream scripts)
     df["prop_type"] = "total bases"
 
     # Build pick and tag as prop
