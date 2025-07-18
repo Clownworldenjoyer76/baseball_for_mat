@@ -1,6 +1,5 @@
 import pandas as pd
 import json
-import subprocess
 from pathlib import Path
 
 INPUT_CSV = "data/final/best_picks_raw.csv"
@@ -10,7 +9,6 @@ REQUIRED_COLUMNS = ["home_team", "away_team", "type", "pick"]
 def main():
     df = pd.read_csv(INPUT_CSV)
 
-    # Validate required columns
     for col in REQUIRED_COLUMNS:
         if col not in df.columns:
             raise ValueError(f"Missing required column: {col}")
@@ -39,14 +37,11 @@ def main():
     }
 
     Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
+
     with open(OUTPUT_JSON, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"✅ top_picks.json saved to {OUTPUT_JSON}")
-
-    subprocess.run(["git", "add", OUTPUT_JSON])
-    subprocess.run(["git", "commit", "-m", "📦 Add top_picks.json"])
-    subprocess.run(["git", "push"])
+    print(f"✅ Saved top picks to {OUTPUT_JSON}")
 
 if __name__ == "__main__":
     main()
