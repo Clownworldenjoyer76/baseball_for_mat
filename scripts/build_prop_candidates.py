@@ -5,28 +5,45 @@ INPUT_FILE = "data/final/best_picks_raw.csv"
 OUTPUT_FILE = "data/final/prop_candidates.csv"
 
 def extract_prop_candidates(df):
-    # Only keep rows with a name and a valid adj_woba_combined value
-    df = df[df["name"].notnull() & df["adj_woba_combined"].notnull()]
+    # Use last_name, first_name_weather as the player name
+    if "last_name, first_name_weather" not in df.columns:
+        raise ValueError("Missing column: 'last_name, first_name_weather'")
 
-    # Rename "team" to title case to match existing convention
+    df = df[df["last_name, first_name_weather"].notnull()]
+    df = df[df["adj_woba_combined"].notnull()]
+
+    df["name"] = df["last_name, first_name_weather"]
     df["team"] = df["team"].str.title()
 
-    # Basic keyword match on the 'pick' or 'stat' column
-    keyword_cols = [col for col in df.columns if "stat" in col or "pick" in col or "description" in col]
+    # Match against relevant prop keywords
     prop_keywords = ["total bases", "hits", "singles", "home runs", "strikeouts"]
+    def is_prop(val):
+        val = str(val).lower()
+        return any(kw in val for kw in prop_keywords)
 
-    def is_candidate(row):
-        for col in keyword_cols:
-            val = str(row.get(col, "")).lower()
-            if any(kw in val for kw in prop_keywords):
-                return True
-        return False
+    df = df[df["pick"].apply(is_prop)]
 
-    return df[df.apply(is_candidate, axis=1)]
+    # Infer stat from pick
+    def infer_stat(pick):
+        pick = str(pick).lower()
+        for kw in prop_keywords:
+            if kw in pick:
+                return kw
+        return "other"
+
+    df["stat"] = df["pick"].apply(infer_stat)
+    df["type"] = "prop"
+
+    # Final columns for output
+    output_cols = ["name", "team", "pick", "stat", "score", "type"]
+    df = df[output_cols]
+
+    return df
 
 def main():
     df = pd.read_csv(INPUT_FILE)
     props = extract_prop_candidates(df)
+    Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     props.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Saved prop candidates to {OUTPUT_FILE}")
 
