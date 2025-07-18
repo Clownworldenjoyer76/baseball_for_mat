@@ -3,7 +3,7 @@ import pandas as pd
 INPUT_FILE = "data/final/matchup_stats.csv"
 OUTPUT_FILE = "data/final/best_picks_raw.csv"
 
-# Required columns that actually exist
+# Required columns (confirmed to exist)
 REQUIRED_COLUMNS = [
     "type",
     "pick",
@@ -17,26 +17,29 @@ REQUIRED_COLUMNS = [
 def inject_missing_columns(df, required_columns):
     for col in required_columns:
         if col not in df.columns:
-            print(f"Skipping missing column: {col}")
-            df[col] = pd.NA
+            print(f"Injecting missing column: {col}")
+            if col == "type":
+                df[col] = "undecided"
+            elif col == "pick":
+                df[col] = "TBD"
+            elif col == "adj_woba_combined":
+                df[col] = None
+            else:
+                df[col] = "unknown"
     return df
 
 def filter_and_score_props(df):
-    props = df[df["name"].notnull() & df["team"].notnull() & df["adj_woba_combined"].notnull()].copy()
-    props["type"] = "prop"
-    props["pick"] = props["name"] + " over"
-    return props
+    df = df[df["name"].notnull() & df["team"].notnull()].copy()
+    df["type"] = "prop"
+    df["pick"] = df["name"] + " over TBD"
+    return df
 
 def main():
     df = pd.read_csv(INPUT_FILE)
     df = inject_missing_columns(df, REQUIRED_COLUMNS)
-
-    # Only output valid props
     prop_picks = filter_and_score_props(df)
-
-    # Output only valid prop rows
     prop_picks.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Output written to {OUTPUT_FILE} with {len(prop_picks)} valid props")
+    print(f"✅ Output written to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
