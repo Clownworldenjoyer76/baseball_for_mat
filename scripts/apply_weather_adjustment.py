@@ -7,13 +7,12 @@ def apply_weather_adjustments_home(batters, weather):
     weather = weather.drop_duplicates(subset='home_team')
     batters = pd.merge(batters, weather, on='home_team', how='left')
 
-    # Assign real woba source if available
-    if 'woba_weather' in batters.columns:
-        batters['woba'] = batters['woba_weather']
+    # Use confirmed existing column
+    if 'woba' in batters.columns:
+        batters['adj_woba_weather'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     else:
-        batters['woba'] = 0.320
+        batters['adj_woba_weather'] = None
 
-    batters['adj_woba_weather'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     return batters
 
 def apply_weather_adjustments_away(batters, weather, todaysgames):
@@ -22,12 +21,11 @@ def apply_weather_adjustments_away(batters, weather, todaysgames):
     weather = weather.drop_duplicates(subset='home_team')
     batters = pd.merge(batters, weather, on='home_team', how='left')
 
-    if 'woba_weather' in batters.columns:
-        batters['woba'] = batters['woba_weather']
+    if 'woba' in batters.columns:
+        batters['adj_woba_weather'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     else:
-        batters['woba'] = 0.320
+        batters['adj_woba_weather'] = None
 
-    batters['adj_woba_weather'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     return batters
 
 def save_outputs(batters, label):
