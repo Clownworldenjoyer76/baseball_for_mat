@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pathlib import Path
 import subprocess
@@ -7,8 +6,13 @@ def apply_weather_adjustments_home(batters, weather):
     batters['home_team'] = batters['team']
     weather = weather.drop_duplicates(subset='home_team')
     batters = pd.merge(batters, weather, on='home_team', how='left')
-    if 'woba' not in batters.columns:
+
+    # Assign real woba source if available
+    if 'woba_weather' in batters.columns:
+        batters['woba'] = batters['woba_weather']
+    else:
         batters['woba'] = 0.320
+
     batters['adj_woba_weather'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     return batters
 
@@ -17,8 +21,12 @@ def apply_weather_adjustments_away(batters, weather, todaysgames):
     batters['home_team'] = batters['team'].map(away_team_to_home_team)
     weather = weather.drop_duplicates(subset='home_team')
     batters = pd.merge(batters, weather, on='home_team', how='left')
-    if 'woba' not in batters.columns:
+
+    if 'woba_weather' in batters.columns:
+        batters['woba'] = batters['woba_weather']
+    else:
         batters['woba'] = 0.320
+
     batters['adj_woba_weather'] = batters['woba'] + ((batters['temperature'] - 70) * 0.001)
     return batters
 
