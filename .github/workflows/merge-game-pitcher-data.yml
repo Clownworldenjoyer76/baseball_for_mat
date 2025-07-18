@@ -16,3 +16,12 @@ jobs:
         run: pip install pandas
       - name: Run merge_game_pitcher_data.py
         run: python scripts/merge_game_pitcher_data.py
+
+      - name: Commit pitcher files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git commit -m "Auto-commit pitcher files" || echo "No changes to commit"
+          git pull --rebase --autostash
+          git push
