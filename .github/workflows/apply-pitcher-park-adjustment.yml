@@ -6,12 +6,21 @@ on:
 jobs:
   run-adjustment:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -20,13 +29,3 @@ jobs:
 
       - name: Run Pitcher Park Adjustment
         run: python scripts/apply_pitcher_park_adjustment.py
-
-      - name: Upload Adjusted Files
-        uses: actions/upload-artifact@v4
-        with:
-          name: adjusted-pitchers-park
-          path: |
-            data/adjusted/pitchers_home_park.csv
-            data/adjusted/pitchers_away_park.csv
-            log_pitchers_home_park.txt
-            log_pitchers_away_park.txt
