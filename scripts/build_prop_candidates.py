@@ -5,40 +5,35 @@ INPUT_FILE = "data/final/best_picks_raw.csv"
 OUTPUT_FILE = "data/final/prop_candidates.csv"
 
 def extract_prop_candidates(df):
-    # Use last_name, first_name_weather as the player name
-    if "last_name, first_name_weather" not in df.columns:
-        raise ValueError("Missing column: 'last_name, first_name_weather'")
-
+    # Confirm name and wOBA column
     df = df[df["last_name, first_name_weather"].notnull()]
     df = df[df["adj_woba_combined"].notnull()]
 
+    # Build "name" and format team title-case
     df["name"] = df["last_name, first_name_weather"]
     df["team"] = df["team"].str.title()
 
-    # Match against relevant prop keywords
+    # Columns to scan
+    search_columns = [col for col in df.columns if any(x in col.lower() for x in ["description", "type", "line", "detail"])]
+
     prop_keywords = ["total bases", "hits", "singles", "home runs", "strikeouts"]
-    def is_prop(val):
-        val = str(val).lower()
-        return any(kw in val for kw in prop_keywords)
 
-    df = df[df["pick"].apply(is_prop)]
+    def extract_pick_stat(row):
+        for col in search_columns:
+            val = str(row.get(col, "")).lower()
+            for kw in prop_keywords:
+                if kw in val:
+                    return (val.strip(), kw)
+        return (None, None)
 
-    # Infer stat from pick
-    def infer_stat(pick):
-        pick = str(pick).lower()
-        for kw in prop_keywords:
-            if kw in pick:
-                return kw
-        return "other"
+    picks = df.apply(extract_pick_stat, axis=1)
+    df["pick"] = picks.apply(lambda x: x[0])
+    df["stat"] = picks.apply(lambda x: x[1])
 
-    df["stat"] = df["pick"].apply(infer_stat)
+    df = df[df["pick"].notnull()]
     df["type"] = "prop"
 
-    # Final columns for output
-    output_cols = ["name", "team", "pick", "stat", "score", "type"]
-    df = df[output_cols]
-
-    return df
+    return df[["name", "team", "pick", "stat", "score", "type"]]
 
 def main():
     df = pd.read_csv(INPUT_FILE)
