@@ -16,7 +16,11 @@ def main():
     matchup_stats = pd.concat([bh, ba], ignore_index=True)
     matchup_stats.to_csv(OUTPUT_FILE, index=False)
 
-    # Git commit + push
+    # Fix Git identity before commit
+    subprocess.run(["git", "config", "--global", "user.email", "runner@example.com"])
+    subprocess.run(["git", "config", "--global", "user.name", "github-actions[bot]"])
+
+    # Commit + push
     subprocess.run(["git", "add", OUTPUT_FILE])
     subprocess.run(["git", "commit", "-m", "Add final combined matchup stats"])
     subprocess.run(["git", "push"])
