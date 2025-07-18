@@ -22,7 +22,6 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    # Merge home batters with game data
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
@@ -30,7 +29,6 @@ def main():
         right_on="home_team"
     )
 
-    # Merge away batters with game data
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
@@ -56,6 +54,14 @@ def main():
         right_on=["away_team", "name"],
         suffixes=("", "_pitcher")
     )
+
+    # Debug output
+    print("✅ Rows in HOME batters dataframe:", len(bh))
+    print("✅ Rows in AWAY batters dataframe:", len(ba))
+    print("🔎 Sample rows from HOME:")
+    print(bh[["name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
+    print("🔎 Sample rows from AWAY:")
+    print(ba[["name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
