@@ -25,8 +25,11 @@ jobs:
       - name: Run build_top_picks_json.py
         run: python scripts/build_top_picks_json.py
 
+      - name: Run build_prop_candidates.py
+        run: python scripts/build_prop_candidates.py
+
       - name: Run build_top_props_json.py
-        run: python scripts/build_top_props_json.py || true
+        run: python scripts/build_top_props_json.py
 
       - name: Force repo change
         run: |
