@@ -128,10 +128,9 @@ jobs:
         run: python scripts/split_pitchers.py
       - name: Commit pitcher files
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git pull --rebase
-          git add data/adjusted/pitchers_home.csv
-          git add data/adjusted/pitchers_away.csv
-          git commit -m "Auto-commit: split pitchers into home and away" || echo "No changes to commit"
-          git push
+         git config --global user.name "github-actions"
+         git config --global user.email "github-actions@github.com"
+         git add .
+         git commit -m "Auto-commit pitcher files" || echo "No changes to commit"
+         git pull --rebase --autostash
+         git push
