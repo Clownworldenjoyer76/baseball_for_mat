@@ -22,6 +22,13 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
+    # Normalize casing for join keys
+    bh["home_team_weather"] = bh["home_team_weather"].str.title()
+    ba["team"] = ba["team"].str.title()
+    ph["name"] = ph["name"].str.title()
+    pa["name"] = pa["name"].str.title()
+
+    # Merge home batters with game data
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
@@ -29,6 +36,7 @@ def main():
         right_on="home_team"
     )
 
+    # Merge away batters with game data
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
@@ -55,7 +63,7 @@ def main():
         suffixes=("", "_pitcher")
     )
 
-    # Debug output
+    # Debug print
     print("✅ Rows in HOME batters dataframe:", len(bh))
     print("✅ Rows in AWAY batters dataframe:", len(ba))
     print("🔎 Sample rows from HOME:")
