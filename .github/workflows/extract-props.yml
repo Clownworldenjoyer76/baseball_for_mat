@@ -1,0 +1,31 @@
+name: Extract Prop Candidates
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract-props:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run extract_props.py
+        run: python scripts/extract_props.py
+
+      - name: Commit and push prop_candidates.csv
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add data/final/prop_candidates.csv || exit 0
+          git commit -m "📦 Extracted prop candidates" || echo "No changes to commit"
+          git push
