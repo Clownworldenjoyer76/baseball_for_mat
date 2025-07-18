@@ -2,26 +2,30 @@ import pandas as pd
 import json
 from pathlib import Path
 
-INPUT_FILE = "data/final/best_picks_raw.csv"
+INPUT_FILE = "data/final/prop_candidates.csv"
 OUTPUT_FILE = "data/final/top_props.json"
 
 def main():
     df = pd.read_csv(INPUT_FILE)
-    props = df[df["type"] == "prop"].copy()
 
-    if props.empty:
-        print("❌ No props found in input.")
+    if df.empty:
+        print("❌ prop_candidates.csv is empty.")
         return
 
-    top_props = props.sort_values(by="score", ascending=False).head(5)
+    # Sort by wOBA descending (higher is better)
+    if "adj_woba_combined" not in df.columns:
+        print("❌ Missing adj_woba_combined column.")
+        return
+
+    props = df.sort_values(by="adj_woba_combined", ascending=False).head(5)
 
     result = []
-    for _, row in top_props.iterrows():
+    for _, row in props.iterrows():
         result.append({
             "name": row.get("name", ""),
             "team": row.get("team", ""),
-            "stat": row.get("stat", ""),
-            "score": round(row.get("score", 0), 2)
+            "stat": "adj_woba_combined",
+            "score": round(row.get("adj_woba_combined", 0), 2)
         })
 
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
