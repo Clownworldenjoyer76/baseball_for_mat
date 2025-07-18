@@ -21,7 +21,10 @@ def main():
 
     print(f"✅ Saved: {OUTPUT_FILE} with {len(df_sorted)} rows")
 
-    # Commit and push the file
+    # Set Git identity before committing
+    subprocess.run(["git", "config", "--global", "user.email", "runner@example.com"])
+    subprocess.run(["git", "config", "--global", "user.name", "GitHub Actions"])
+
     subprocess.run(["git", "add", OUTPUT_FILE])
     subprocess.run(["git", "commit", "-m", "Add best_picks_raw.csv scored output"])
     subprocess.run(["git", "push"])
