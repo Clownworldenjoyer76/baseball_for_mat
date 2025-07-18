@@ -1,33 +1,46 @@
 import pandas as pd
-import subprocess
+import os
 
-# Input file
-MATCHUP_FILE = "data/final/matchup_stats.csv"
-
-# Output file
+INPUT_FILE = "data/final/matchup_stats.csv"
 OUTPUT_FILE = "data/final/best_picks_raw.csv"
 
-def score(row):
-    score = 0
-    if "adj_woba_combined" in row and not pd.isna(row["adj_woba_combined"]):
-        score += row["adj_woba_combined"] * 100
-    return round(score, 1)
+def determine_type(pick):
+    if "ML" in pick:
+        return "moneyline"
+    elif " O" in pick or " U" in pick:
+        return "total"
+    elif "Over" in pick or "Under" in pick:
+        return "prop"
+    else:
+        return "spread"
 
 def main():
-    df = pd.read_csv(MATCHUP_FILE)
-    df["score"] = df.apply(score, axis=1)
-    df_sorted = df.sort_values(by="score", ascending=False)
-    df_sorted.to_csv(OUTPUT_FILE, index=False)
+    df = pd.read_csv(INPUT_FILE)
 
-    print(f"✅ Saved: {OUTPUT_FILE} with {len(df_sorted)} rows")
+    best_picks = []
 
-    # Set Git identity before committing
-    subprocess.run(["git", "config", "--global", "user.email", "runner@example.com"])
-    subprocess.run(["git", "config", "--global", "user.name", "GitHub Actions"])
+    for _, row in df.iterrows():
+        try:
+            pick = row["pick"]
+            score = row.get("score", 0)
+            tag = row.get("tag", "")
+            game_id = f"{row['away_team']}@{row['home_team']}".replace(" ", "")
 
-    subprocess.run(["git", "add", OUTPUT_FILE])
-    subprocess.run(["git", "commit", "-m", "Add best_picks_raw.csv scored output"])
-    subprocess.run(["git", "push"])
+            best_picks.append({
+                "game_id": game_id,
+                "pick": pick,
+                "score": score,
+                "tag": tag,
+                "type": determine_type(pick)
+            })
+
+        except KeyError as e:
+            continue
+
+    out_df = pd.DataFrame(best_picks)
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    out_df.to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ Saved: {OUTPUT_FILE} with {len(out_df)} rows")
 
 if __name__ == "__main__":
     main()
