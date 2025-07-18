@@ -1,55 +1,46 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Daily MLB Betting Picks</title>
+  <title>MLB Top Picks</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    h1, h2 { color: #333; }
+    .game-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #fff; }
+    .pick { margin-left: 15px; }
+  </style>
 </head>
 <body>
-  <h1>🔥 Daily MLB Betting Picks 🔥</h1>
-  <h2>Top 10 HR Hitters</h2>
-  <ul id="hr-list"></ul>
+  <h1>Top 3 Picks of the Day</h1>
+  <ul id="top-picks"></ul>
 
-  <h2>Top 10 Hit Props</h2>
-  <ul id="hit-list"></ul>
-
-  <h2>5-Leg Parlays (One Per Game)</h2>
-  <div id="parlay-section"></div>
+  <h2>All Games</h2>
+  <div id="games"></div>
 
   <script>
-    fetch('daily_bets.json')
+    fetch('data/output/top_picks.json')
       .then(res => res.json())
       .then(data => {
-        const hrList = document.getElementById('hr-list');
-        const hitList = document.getElementById('hit-list');
-        const parlays = document.getElementById('parlay-section');
-
-        data.top_hr_hitters.forEach(player => {
+        const topList = document.getElementById('top-picks');
+        data.best_overall_picks.forEach(p => {
           const li = document.createElement('li');
-          li.textContent = player;
-          hrList.appendChild(li);
+          li.textContent = `${p.type}: ${p.pick} (${p.score})`;
+          topList.appendChild(li);
         });
 
-        data.top_hit_props.forEach(player => {
-          const li = document.createElement('li');
-          li.textContent = player;
-          hitList.appendChild(li);
-        });
-
-        data.games.forEach(game => {
+        const games = document.getElementById('games');
+        data.top_picks.forEach(game => {
           const div = document.createElement('div');
-          div.innerHTML = `<h3>${game.matchup}</h3>
-            <p><strong>Moneyline/Spread:</strong> ${game.parlay.moneyline_or_spread}</p>
-            <p><strong>Total:</strong> ${game.parlay.total}</p>
-            <p><strong>Player Props:</strong></p>
-            <ul>${game.parlay.player_props.map(p => `<li>${p}</li>`).join('')}</ul>
-            <hr>`;
-          parlays.appendChild(div);
+          div.className = 'game-box';
+          div.innerHTML = `<h3>${game.game_id}</h3>`;
+          game.picks.forEach(p => {
+            const para = document.createElement('div');
+            para.className = 'pick';
+            para.textContent = `${p.type}: ${p.pick} (${p.score})`;
+            div.appendChild(para);
+          });
+          games.appendChild(div);
         });
-      })
-      .catch(err => {
-        document.body.innerHTML += "<p style='color:red;'>Failed to load betting data.</p>";
-        console.error(err);
       });
   </script>
 </body>
