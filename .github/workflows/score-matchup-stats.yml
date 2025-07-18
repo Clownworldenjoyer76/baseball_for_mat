@@ -8,13 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Set up job
+      - name: Checkout repo with full history
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: pip install pandas
@@ -25,7 +27,7 @@ jobs:
       - name: Commit and push best picks CSV
         run: |
           git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
-          git add data/final/best_picks_raw.csv
-          git commit -m "Update best_picks_raw.csv"
+          git config --global user.name "GitHub Actions"
+          git add data/final/best_picks_raw.csv || exit 0
+          git commit -m "Update best picks CSV" || echo "No changes to commit"
           git push
