@@ -11,8 +11,8 @@ def extract_prop_candidates(df):
     # Normalize team case
     df["team"] = df["team"].str.title()
 
-    # Only keep columns we know are present
-    return df[["name", "team", "pick", "stat", "type"]]
+    # Only keep valid columns (replacing 'stat' with 'prop_type')
+    return df[["name", "team", "pick", "prop_type", "type"]]
 
 def main():
     df = pd.read_csv(INPUT_FILE)
