@@ -7,18 +7,16 @@ OUTPUT_JSON = "data/output/top_picks.json"
 REQUIRED_COLUMNS = ["home_team", "away_team", "type", "pick"]
 
 def main():
-    # Load data
     df = pd.read_csv(INPUT_CSV)
-    
+
     # Validate required columns
     for col in REQUIRED_COLUMNS:
         if col not in df.columns:
             raise ValueError(f"Missing required column: {col}")
-    
-    # Derive game_id
+
     df["game_id"] = df["away_team"] + "_at_" + df["home_team"]
 
-    # Build picks per game
+    # Group picks by game
     games = {}
     for _, row in df.iterrows():
         gid = row["game_id"]
@@ -33,21 +31,18 @@ def main():
             "pick": row["pick"]
         })
 
-    # Determine top 3 overall picks
     top_3 = df.head(3).to_dict(orient="records")
 
-    # Final structure
     output = {
         "top_3_picks": top_3,
         "games": list(games.values())
     }
 
-    # Ensure directory exists
     Path(OUTPUT_JSON).parent.mkdir(parents=True, exist_ok=True)
-
-    # Write JSON
     with open(OUTPUT_JSON, "w") as f:
         json.dump(output, f, indent=2)
+
+    print(f"✅ top_picks.json saved to {OUTPUT_JSON}")
 
 if __name__ == "__main__":
     main()
