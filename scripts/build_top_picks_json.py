@@ -50,3 +50,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+import subprocess
+
+subprocess.run(["git", "add", OUTPUT_FILE])
+subprocess.run(["git", "commit", "-m", "Add top picks JSON output"])
+subprocess.run(["git", "push"])
