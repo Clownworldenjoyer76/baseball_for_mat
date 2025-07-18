@@ -15,6 +15,15 @@ OUTPUT_AWAY = "data/processed/batters_away_with_pitcher.csv"
 def get_pitcher_woba(df, team_col, name_col):
     return df[[team_col, name_col, "adj_woba_combined"]].drop_duplicates(subset=[team_col, name_col])
 
+# Normalize to 'Last, First' format for joins
+def standardize_name(full_name):
+    if pd.isna(full_name) or full_name.strip().lower() == "undecided":
+        return full_name
+    parts = full_name.strip().split()
+    if len(parts) >= 2:
+        return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
+    return full_name.title()
+
 def main():
     bh = pd.read_csv(BATTERS_HOME_FILE)
     ba = pd.read_csv(BATTERS_AWAY_FILE)
@@ -27,6 +36,13 @@ def main():
     ba["team"] = ba["team"].str.title()
     ph["name"] = ph["name"].str.title()
     pa["name"] = pa["name"].str.title()
+
+    games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip()
+    games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip()
+
+    # Format pitcher names to match 'Last, First'
+    games["pitcher_home"] = games["pitcher_home"].apply(standardize_name)
+    games["pitcher_away"] = games["pitcher_away"].apply(standardize_name)
 
     # Merge home batters with game data
     bh = bh.merge(
