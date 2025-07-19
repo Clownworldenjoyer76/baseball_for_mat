@@ -10,6 +10,8 @@ env:
 jobs:
   step01:
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.lineups.outputs.status }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +24,14 @@ jobs:
         run: pip install pandas requests pytz
 
       - name: Run normalize_lineups.py
-        run: python scripts/normalize_lineups.py
+        id: lineups
+        run: |
+          mkdir -p summaries
+          if python scripts/normalize_lineups.py > summaries/normalize_lineups.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
 
       - name: Force Commit normalize_lineups.py Output
         run: |
@@ -35,6 +44,8 @@ jobs:
   step02:
     needs: step01
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.games.outputs.status }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +58,14 @@ jobs:
         run: pip install pandas requests pytz
 
       - name: Run normalize_todays_games.py
-        run: python scripts/normalize_todays_games.py
+        id: games
+        run: |
+          mkdir -p summaries
+          if python scripts/normalize_todays_games.py > summaries/normalize_todays_games.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
 
       - name: Force Commit normalize_todays_games.py Output
         run: |
@@ -72,7 +90,14 @@ jobs:
         run: pip install pandas requests pytz
 
       - name: Run apply_team_name_mapping.py
-        run: python scripts/apply_team_name_mapping.py
+        id: mapping
+        run: |
+          mkdir -p summaries
+          if python scripts/apply_team_name_mapping.py > summaries/apply_team_name_mapping.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
 
       - name: Force Commit apply_team_name_mapping.py Output
         run: |
@@ -85,13 +110,15 @@ jobs:
       - name: Write and Commit Summary
         run: |
           mkdir -p summaries
-          {
-            echo "✅ Activate 2 Summary — $(date -u)"
-            echo "normalize_lineups.py completed ✅"
-            echo "normalize_todays_games.py completed ✅"
-            echo "apply_team_name_mapping.py completed ✅"
-          } > summaries/activate_2_summary.txt
+          ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
-          git add summaries/activate_2_summary.txt
+          {
+            echo "✅ Activate 2 Summary — $ET_TIMESTAMP"
+            echo "scripts/normalize_lineups.py — ${{ needs.step01.outputs.status || 'unknown' }} (see summaries/normalize_lineups.log)"
+            echo "scripts/normalize_todays_games.py — ${{ needs.step02.outputs.status || 'unknown' }} (see summaries/normalize_todays_games.log)"
+            echo "scripts/apply_team_name_mapping.py — ${{ steps.mapping.outputs.status || 'unknown' }} (see summaries/apply_team_name_mapping.log)"
+          } > summaries/activate_2.txt
+
+          git add summaries/activate_2.txt summaries/*.log
           git commit -m "Force summary update for Activate 2" || echo "No summary changes to commit"
           git push || echo "Nothing to push"
