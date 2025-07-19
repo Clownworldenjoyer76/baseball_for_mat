@@ -9,263 +9,196 @@ env:
 
 jobs:
   step10:
+    name: Apply Weather Adjustment
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s10.outputs.status }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+
+      - name: Install Dependencies
         run: pip install pandas
+
       - name: Run apply_weather_adjustment.py
-        id: s10
         run: |
-          mkdir -p summaries
-          if python scripts/apply_weather_adjustment.py > summaries/apply_weather_adjustment.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/apply_weather_adjustment.py > summaries/Activate4/apply_weather_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_weather_adjustment.log
+          echo "$(date) ET - Apply Weather Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
+
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 10: Ran apply_weather_adjustment.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step10: Apply Weather Adjustment log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step11:
-    needs: step10
+    name: Apply Park Adjustment
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s11.outputs.status }}
+    needs: step10
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run apply_park_adjustment.py
-        id: s11
         run: |
-          mkdir -p summaries
-          if python scripts/apply_park_adjustment.py > summaries/apply_park_adjustment.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/apply_park_adjustment.py > summaries/Activate4/apply_park_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_park_adjustment.log
+          echo "$(date) ET - Apply Park Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 11: Ran apply_park_adjustment.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step11: Apply Park Adjustment log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step12:
-    needs: step11
+    name: Combine Weather + Park (Home)
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s12.outputs.status }}
+    needs: step11
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run combine_weather_park_home.py
-        id: s12
         run: |
-          mkdir -p summaries
-          if python scripts/combine_weather_park_home.py > summaries/combine_weather_park_home.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/combine_weather_park_home.py > summaries/Activate4/combine_weather_park_home.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_weather_park_home.log
+          echo "$(date) ET - Combine Weather + Park Home: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 12: Ran combine_weather_park_home.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step12: Combine Weather + Park (Home) log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step13:
-    needs: step12
+    name: Combine Weather + Park (Away)
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s13.outputs.status }}
+    needs: step12
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run combine_weather_park_away.py
-        id: s13
         run: |
-          mkdir -p summaries
-          if python scripts/combine_weather_park_away.py > summaries/combine_weather_park_away.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/combine_weather_park_away.py > summaries/Activate4/combine_weather_park_away.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_weather_park_away.log
+          echo "$(date) ET - Combine Weather + Park Away: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 13: Ran combine_weather_park_away.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step13: Combine Weather + Park (Away) log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step14:
-    needs: step13
+    name: Apply Pitcher Weather Adjustment
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s14.outputs.status }}
+    needs: step13
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run apply_pitcher_weather_adjustment.py
-        id: s14
         run: |
-          mkdir -p summaries
-          if python scripts/apply_pitcher_weather_adjustment.py > summaries/apply_pitcher_weather_adjustment.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/apply_pitcher_weather_adjustment.py > summaries/Activate4/apply_pitcher_weather_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_pitcher_weather_adjustment.log
+          echo "$(date) ET - Apply Pitcher Weather Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 14: Ran apply_pitcher_weather_adjustment.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step14: Apply Pitcher Weather Adjustment log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step15:
-    needs: step14
+    name: Apply Pitcher Park Adjustment
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s15.outputs.status }}
+    needs: step14
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run apply_pitcher_park_adjustment.py
-        id: s15
         run: |
-          mkdir -p summaries
-          if python scripts/apply_pitcher_park_adjustment.py > summaries/apply_pitcher_park_adjustment.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/apply_pitcher_park_adjustment.py > summaries/Activate4/apply_pitcher_park_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_pitcher_park_adjustment.log
+          echo "$(date) ET - Apply Pitcher Park Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 15: Ran apply_pitcher_park_adjustment.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step15: Apply Pitcher Park Adjustment log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step16:
-    needs: step15
+    name: Combine Pitcher Weather + Park Home
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s16.outputs.status }}
+    needs: step15
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run combine_pitcher_weather_park_home.py
-        id: s16
         run: |
-          mkdir -p summaries
-          if python scripts/combine_pitcher_weather_park_home.py > summaries/combine_pitcher_weather_park_home.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
+          python scripts/combine_pitcher_weather_park_home.py > summaries/Activate4/combine_pitcher_weather_park_home.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_pitcher_weather_park_home.log
+          echo "$(date) ET - Combine Pitcher Weather + Park Home: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 16: Ran combine_pitcher_weather_park_home.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step16: Combine Pitcher Weather + Park Home log + summary" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   step17:
-    needs: [step10, step11, step12, step13, step14, step15, step16]
+    name: Combine Pitcher Weather + Park Away
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.s17.outputs.status }}
+    needs: step16
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pip install pandas
       - name: Run combine_pitcher_weather_park_away.py
-        id: s17
         run: |
-          mkdir -p summaries
-          if python scripts/combine_pitcher_weather_park_away.py > summaries/combine_pitcher_weather_park_away.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Write and Commit Summary
+          python scripts/combine_pitcher_weather_park_away.py > summaries/Activate4/combine_pitcher_weather_park_away.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_pitcher_weather_park_away.log
+          echo "$(date) ET - Combine Pitcher Weather + Park Away: SUCCESS" >> summaries/Activate4/summary.txt
+      - name: Commit Summary and Log
         run: |
-          mkdir -p summaries
-          ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
-
-          {
-            echo "✅ Activate 4 Summary — $ET_TIMESTAMP"
-            echo "scripts/apply_weather_adjustment.py — ${{ needs.step10.outputs.status || '❓' }} (see summaries/apply_weather_adjustment.log)"
-            echo "scripts/apply_park_adjustment.py — ${{ needs.step11.outputs.status || '❓' }} (see summaries/apply_park_adjustment.log)"
-            echo "scripts/combine_weather_park_home.py — ${{ needs.step12.outputs.status || '❓' }} (see summaries/combine_weather_park_home.log)"
-            echo "scripts/combine_weather_park_away.py — ${{ needs.step13.outputs.status || '❓' }} (see summaries/combine_weather_park_away.log)"
-            echo "scripts/apply_pitcher_weather_adjustment.py — ${{ needs.step14.outputs.status || '❓' }} (see summaries/apply_pitcher_weather_adjustment.log)"
-            echo "scripts/apply_pitcher_park_adjustment.py — ${{ needs.step15.outputs.status || '❓' }} (see summaries/apply_pitcher_park_adjustment.log)"
-            echo "scripts/combine_pitcher_weather_park_home.py — ${{ needs.step16.outputs.status || '❓' }} (see summaries/combine_pitcher_weather_park_home.log)"
-            echo "scripts/combine_pitcher_weather_park_away.py — ${{ steps.s17.outputs.status || '❓' }} (see summaries/combine_pitcher_weather_park_away.log)"
-          } > summaries/activate_4.txt
-
-          cat summaries/activate_4.txt
-
-          git add summaries/activate_4.txt summaries/*.log
-          git commit -m "Force summary update for Activate 4" || echo "No summary changes to commit"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate4/
+          git commit -m "Step17: Combine Pitcher Weather + Park Away log + summary" || echo "No changes to commit"
           git push || echo "Nothing to push"
