@@ -25,13 +25,13 @@ jobs:
       - name: Run All Scripts + Generate Logs
         run: |
           mkdir -p summaries/Activate4
-          TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
           run_step() {
             SCRIPT="$1"
             STEP_NAME=$(basename "$SCRIPT" .py)
             LOG="summaries/Activate4/${STEP_NAME}.log"
             TXT="summaries/Activate4/${STEP_NAME}.txt"
+            TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
             if python "scripts/${SCRIPT}" > "$LOG" 2>&1; then
               echo "✅ ${STEP_NAME} ran successfully." > "$TXT"
@@ -52,8 +52,9 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
 
+          FINAL_TS=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
           {
-            echo "✅ Activate 4 Summary — $TIMESTAMP"
+            echo "✅ Activate 4 Summary — $FINAL_TS"
             for FILE in summaries/Activate4/*.txt; do
               echo "$(basename "$FILE")"
             done
