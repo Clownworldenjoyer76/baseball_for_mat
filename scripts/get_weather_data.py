@@ -42,7 +42,6 @@ def main():
             failed_rows.append((lat, lon))
             continue
 
-        # Extract weather data
         row["temperature"] = weather.get("main", {}).get("temp")
         row["wind_speed"] = weather.get("wind", {}).get("speed")
         row["humidity"] = weather.get("main", {}).get("humidity")
@@ -60,10 +59,12 @@ def main():
 
         print(f"❌ {len(failed_rows)} rows failed after 5 retries — committing log and exiting")
 
-        # Commit and push the error log before failing
-        subprocess.run(["git", "add", ERROR_LOG], check=True)
-        subprocess.run(["git", "commit", "-m", "🚨 Logged weather scrape failures"], check=True)
-        subprocess.run(["git", "push"], check=True)
+        try:
+            subprocess.run(["git", "add", ERROR_LOG], check=True)
+            subprocess.run(["git", "commit", "-m", "🚨 Logged weather scrape failures"], check=True)
+            subprocess.run(["git", "push"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Git commit/push failed: {e}")
 
         raise RuntimeError("Weather scrape failed for some rows — see weather_error_log.txt")
 
