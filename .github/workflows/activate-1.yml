@@ -66,3 +66,16 @@ jobs:
 
       - name: Duplicate Check After Normalization
         run: python scripts/deduplicate_normalized.py
+
+      - name: Write summary to summaries/activate_1_summary.txt
+        run: |
+          mkdir -p summaries
+          echo "✅ Activate 1 completed on $(date -u +"%Y-%m-%d %H:%M:%S UTC")" > summaries/activate_1_summary.txt
+
+      - name: Commit summary file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/activate_1_summary.txt
+          git diff --cached --quiet || git commit -m "Summary: Activate 1 step complete"
+          git push || echo "Nothing to push"
