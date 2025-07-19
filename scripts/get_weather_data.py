@@ -1,71 +1,68 @@
 import pandas as pd
 import requests
-from pathlib import Path
-import subprocess
+import time
 
+INPUT_CSV = "data/weather_input.csv"
+OUTPUT_CSV = "data/weather_adjustments.csv"
+ERROR_LOG = "weather_error_log.txt"
 API_KEY = "b55200ce76260b2adb442b2f17b896c0"
-INPUT_FILE = "data/weather_input.csv"
-OUTPUT_FILE = "data/weather_adjustments.csv"
+API_URL = "https://api.openweathermap.org/data/2.5/weather"
 
-def fetch_weather(lat, lon):
-    try:
-        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=imperial"
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+def fetch_weather(lat, lon, retries=5):
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.get(API_URL, params={
+                "lat": lat,
+                "lon": lon,
+                "appid": API_KEY,
+                "units": "imperial"
+            }, timeout=10)
 
-        return {
-            "temperature": data["main"]["temp"],
-            "humidity": data["main"]["humidity"],
-            "wind_speed": data["wind"]["speed"],
-            "wind_direction": data["wind"]["deg"],
-            "condition": data["weather"][0]["main"]
-        }
-    except Exception as e:
-        print(f"❌ API error for lat={lat}, lon={lon}: {e}")
-        return {
-            "temperature": None,
-            "humidity": None,
-            "wind_speed": None,
-            "wind_direction": None,
-            "condition": None
-        }
+            response.raise_for_status()
+            return response.json()
+
+        except Exception as e:
+            print(f"⚠️ Attempt {attempt} failed for lat={lat}, lon={lon}: {e}")
+            time.sleep(2 ** (attempt - 1))
+
+    return None
 
 def main():
-    df = pd.read_csv(INPUT_FILE)
+    df = pd.read_csv(INPUT_CSV)
+    results = []
+    failed_rows = []
 
-    # 🔧 Rename columns to match expected format
-    df = df.rename(columns={
-        "latitude": "lat",
-        "longitude": "lon"
-    })
-
-    print(f"✅ Loaded {len(df)} rows from {INPUT_FILE}")
-
-    weather_data = []
-    for _, row in df.iterrows():
-        lat = row["lat"]
-        lon = row["lon"]
+    print(f"✅ Loaded {len(df)} rows from {INPUT_CSV}")
+    for i, row in df.iterrows():
+        lat, lon = row["lat"], row["lon"]
         weather = fetch_weather(lat, lon)
-        row_data = row.to_dict()
-        row_data.update(weather)
-        weather_data.append(row_data)
 
-    out_df = pd.DataFrame(weather_data)
-    out_df.to_csv(OUTPUT_FILE, index=False)
+        if weather is None:
+            failed_rows.append((lat, lon))
+            continue
 
-    print(f"✅ Processed {len(out_df)} rows")
-    print(f"📁 Weather data saved to {OUTPUT_FILE}")
+        # Extract and assign weather data
+        temp = weather.get("main", {}).get("temp")
+        wind = weather.get("wind", {}).get("speed")
+        humidity = weather.get("main", {}).get("humidity")
+        row["temperature"] = temp
+        row["wind_speed"] = wind
+        row["humidity"] = humidity
+        results.append(row)
 
-    # Git commit
-    try:
-        subprocess.run(["git", "config", "--global", "user.name", "github-actions[bot]"], check=True)
-        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add", OUTPUT_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-commit: updated weather data"], check=True)
-        subprocess.run(["git", "push"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit failed: {e}")
+    # Write successful results
+    if results:
+        pd.DataFrame(results).to_csv(OUTPUT_CSV, index=False)
+        print(f"📁 Weather data saved to {OUTPUT_CSV}")
+        print(f"✅ Processed {len(results)} rows")
+
+    # Log failures
+    if failed_rows:
+        with open(ERROR_LOG, "w") as f:
+            for lat, lon in failed_rows:
+                f.write(f"{lat},{lon}\n")
+        print(f"❌ {len(failed_rows)} rows failed after 5 retries")
+        raise RuntimeError("Weather scrape failed for some rows — check weather_error_log.txt")
 
 if __name__ == "__main__":
     main()
