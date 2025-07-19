@@ -8,10 +8,8 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  normalize:
+  activate_1:
     runs-on: ubuntu-latest
-    outputs:
-      summary_path: ${{ steps.write_summary.outputs.summary_path }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,65 +22,33 @@ jobs:
         run: pip install pandas
 
       - name: Create Summary File
-        id: write_summary
         run: |
           mkdir -p summaries
           echo "✅ normalize_names.py ran successfully." > summaries/activate_1_summary.txt
           echo "🔄 Modified: data/normalized/batters_normalized.csv" >> summaries/activate_1_summary.txt
           echo "🔄 Modified: data/normalized/pitchers_normalized.csv" >> summaries/activate_1_summary.txt
-          echo "summary_path=summaries/activate_1_summary.txt" >> $GITHUB_OUTPUT
 
-      - name: Run Normalize Names
+      - name: Run normalize_names.py
         run: python scripts/normalize_names.py
 
-  tag:
-    needs: normalize
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install pandas
-        run: pip install pandas
-
-      - name: Append to Summary
+      - name: Run tag_master_files.py
         run: |
+          python scripts/tag_master_files.py
           echo "✅ tag_master_files.py ran successfully." >> summaries/activate_1_summary.txt
           echo "🔄 Modified: data/tagged/batters_normalized.csv" >> summaries/activate_1_summary.txt
           echo "🔄 Modified: data/tagged/pitchers_normalized.csv" >> summaries/activate_1_summary.txt
 
-      - name: Tag Uploaded Master Files
-        run: python scripts/tag_master_files.py
-
-  dedupe:
-    needs: tag
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install pandas
-        run: pip install pandas
-
-      - name: Append Final Summary Entry
+      - name: Run deduplicate_normalized.py
         run: |
+          python scripts/deduplicate_normalized.py
           echo "✅ deduplicate_normalized.py ran successfully." >> summaries/activate_1_summary.txt
           echo "🔄 Modified: data/cleaned/batters_normalized_cleaned.csv" >> summaries/activate_1_summary.txt
           echo "🔄 Modified: data/cleaned/pitchers_normalized_cleaned.csv" >> summaries/activate_1_summary.txt
 
-      - name: Run Dedupe
-        run: python scripts/deduplicate_normalized.py
-
-      - name: Upload Summary (Final Step)
-        uses: actions/upload-artifact@v4
-        with:
-          name: activate_1_summary
-          path: summaries/activate_1_summary.txt
+      - name: Commit & Push Summary
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/activate_1_summary.txt
+          git commit -m "📄 activate_1_summary.txt written" || echo "No changes to commit"
+          git push || echo "Nothing to push"
