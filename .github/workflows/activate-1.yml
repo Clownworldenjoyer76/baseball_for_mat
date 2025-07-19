@@ -85,8 +85,13 @@ jobs:
       - name: Write and Commit Summary
         run: |
           mkdir -p summaries
-          echo "✅ Activate 1 Summary — $(date)" > summaries/activate_1_summary.txt
-          echo "normalize_names.py, tag_master_files.py, deduplicate_normalized.py ran successfully." >> summaries/activate_1_summary.txt
+          {
+            echo "✅ Activate 1 Summary — $(date -u)"
+            echo "normalize_names.py completed ✅"
+            echo "tag_master_files.py completed ✅"
+            echo "deduplicate_normalized.py completed ✅"
+          } > summaries/activate_1_summary.txt
+
           git add summaries/activate_1_summary.txt
-          git commit -m "Forced summary update for Activate 1" || echo "No summary changes to commit"
+          git commit -m "Force summary update for Activate 1" || echo "No summary changes to commit"
           git push || echo "Nothing to push"
