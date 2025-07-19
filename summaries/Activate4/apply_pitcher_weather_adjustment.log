@@ -3,11 +3,15 @@ Traceback (most recent call last):
     main()
   File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 56, in main
     adjusted_home = apply_weather_adjustments_home(pitchers_home, weather)
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 7, in apply_weather_adjustments_home
-    weather = weather.drop_duplicates(subset='home_team')
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 6825, in drop_duplicates
-    result = self[-self.duplicated(subset, keep=keep)]
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 6957, in duplicated
-    raise KeyError(Index(diff))
-KeyError: Index(['home_team'], dtype='object')
-🕒 Timestamp: 2025-07-19 05:05:14 PM EDT
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 8, in apply_weather_adjustments_home
+    merged = pd.merge(pitchers, weather, on='home_team', how='left')
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
+    op = _MergeOperation(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
+    ) = self._get_merge_keys()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1298, in _get_merge_keys
+    right_keys.append(right._get_label_or_level_values(rk))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
+    raise KeyError(key)
+KeyError: 'home_team'
+🕒 Timestamp: 2025-07-19 05:12:00 PM EDT
