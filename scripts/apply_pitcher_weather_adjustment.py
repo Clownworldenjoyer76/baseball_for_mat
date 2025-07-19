@@ -1,46 +1,63 @@
 import pandas as pd
 
-PITCHERS_HOME = "data/adjusted/pitchers_home.csv"
-PITCHERS_AWAY = "data/adjusted/pitchers_away.csv"
-STADIUM_FILE = "data/Data/stadium_metadata.csv"
+PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
+PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
+STADIUM_METADATA_FILE = "data/Data/stadium_metadata.csv"
 WEATHER_FILE = "data/weather_adjustments.csv"
-OUT_HOME = "data/adjusted/pitchers_home_weather.csv"
-OUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
-LOG_HOME = "log_pitchers_home_weather.txt"
-LOG_AWAY = "log_pitchers_away_weather.txt"
 
-def apply_weather_adjustments(df, weather):
-    # Use temp-based adjustment as example
-    df["adj_woba"] = df["woba"]
-    df.loc[weather["temperature"] > 85, "adj_woba"] *= 1.02
-    df.loc[weather["temperature"] < 60, "adj_woba"] *= 0.98
-    return df
+OUTPUT_HOME_FILE = "data/adjusted/pitchers_home_weather.csv"
+OUTPUT_AWAY_FILE = "data/adjusted/pitchers_away_weather.csv"
+
+LOG_FILE = "log_pitchers_weather.txt"
+
+def apply_weather_adjustments(pitchers_df, weather_df, side="home"):
+    col_team = f"{side}_team"
+    weather_df = weather_df.rename(columns={"stadium": "venue"})
+    weather_df = weather_df.drop_duplicates(subset=["venue"])
+
+    merged = pd.merge(pitchers_df, weather_df, left_on=col_team, right_on="venue", how="left")
+    
+    if "temperature" in merged.columns:
+        merged["adj_woba_weather"] = merged["woba"] * (
+            1 + ((merged["temperature"] - 70) * 0.002).fillna(0)
+        )
+    else:
+        merged["adj_woba_weather"] = merged["woba"]
+
+    return merged
 
 def main():
-    pitchers_home = pd.read_csv(PITCHERS_HOME)
-    pitchers_away = pd.read_csv(PITCHERS_AWAY)
-    stadiums = pd.read_csv(STADIUM_FILE)
-    weather = pd.read_csv(WEATHER_FILE)
+    try:
+        pitchers_home = pd.read_csv(PITCHERS_HOME_FILE)
+        pitchers_away = pd.read_csv(PITCHERS_AWAY_FILE)
+        stadiums = pd.read_csv(STADIUM_METADATA_FILE)
+        weather = pd.read_csv(WEATHER_FILE)
+    except Exception as e:
+        with open(LOG_FILE, "w") as log:
+            log.write(f"❌ Failed to read input files: {e}\n")
+        return
 
-    # Merge home team with stadium file to get stadium name
-    stadiums = stadiums[["team", "stadium"]]
+    try:
+        stadiums = stadiums[["team_name", "venue"]]
+        stadiums = stadiums.rename(columns={"team_name": "team", "venue": "stadium"})
+    except Exception as e:
+        with open(LOG_FILE, "w") as log:
+            log.write(f"❌ Failed to process stadiums file: {e}\n")
+        return
 
-    home_merged = pd.merge(pitchers_home, stadiums, left_on="home_team", right_on="team", how="left")
-    away_merged = pd.merge(pitchers_away, stadiums, left_on="home_team", right_on="team", how="left")
+    try:
+        adjusted_home = apply_weather_adjustments(pitchers_home, weather, side="home")
+        adjusted_away = apply_weather_adjustments(pitchers_away, weather, side="away")
 
-    home_final = pd.merge(home_merged, weather, on="stadium", how="left")
-    away_final = pd.merge(away_merged, weather, on="stadium", how="left")
+        adjusted_home.to_csv(OUTPUT_HOME_FILE, index=False)
+        adjusted_away.to_csv(OUTPUT_AWAY_FILE, index=False)
 
-    adjusted_home = apply_weather_adjustments(home_final, home_final)
-    adjusted_away = apply_weather_adjustments(away_final, away_final)
-
-    adjusted_home.to_csv(OUT_HOME, index=False)
-    adjusted_away.to_csv(OUT_AWAY, index=False)
-
-    with open(LOG_HOME, "w") as f:
-        f.write(f"✅ Wrote {OUT_HOME} with {len(adjusted_home)} rows.\n")
-    with open(LOG_AWAY, "w") as f:
-        f.write(f"✅ Wrote {OUT_AWAY} with {len(adjusted_away)} rows.\n")
+        with open(LOG_FILE, "w") as log:
+            log.write(f"✅ Wrote {OUTPUT_HOME_FILE} with {len(adjusted_home)} rows.\n")
+            log.write(f"✅ Wrote {OUTPUT_AWAY_FILE} with {len(adjusted_away)} rows.\n")
+    except Exception as e:
+        with open(LOG_FILE, "w") as log:
+            log.write(f"❌ Error during processing: {e}\n")
 
 if __name__ == "__main__":
     main()
