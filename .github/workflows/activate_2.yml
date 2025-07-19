@@ -8,10 +8,8 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  step01:
+  activate_2:
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.lineups.outputs.status }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,119 +21,48 @@ jobs:
       - name: Install dependencies
         run: pip install pandas requests pytz
 
-      - name: Run normalize_lineups.py
-        id: lineups
+      - name: Run All Scripts + Generate Logs
         run: |
-          mkdir -p summaries
-          if python scripts/normalize_lineups.py > summaries/normalize_lineups.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          mkdir -p summaries/Activate2
+
+          # normalize_lineups.py
+          if python scripts/normalize_lineups.py > summaries/Activate2/normalize_lineups.log 2>&1; then
+            echo "✅ normalize_lineups.py ran successfully." > summaries/Activate2/normalize_lineups.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ normalize_lineups.py encountered an error." > summaries/Activate2/normalize_lineups.txt
           fi
+          touch summaries/Activate2/normalize_lineups.txt
 
-      - name: Force Commit normalize_lineups.py Output
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Force update: normalize_lineups.py output" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step02:
-    needs: step01
-    runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.games.outputs.status }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-
-      - name: Run normalize_todays_games.py
-        id: games
-        run: |
-          mkdir -p summaries
-          if python scripts/normalize_todays_games.py > summaries/normalize_todays_games.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          # normalize_todays_games.py
+          if python scripts/normalize_todays_games.py > summaries/Activate2/normalize_todays_games.log 2>&1; then
+            echo "✅ normalize_todays_games.py ran successfully." > summaries/Activate2/normalize_todays_games.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ normalize_todays_games.py encountered an error." > summaries/Activate2/normalize_todays_games.txt
           fi
+          touch summaries/Activate2/normalize_todays_games.txt
 
-      - name: Force Commit normalize_todays_games.py Output
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Force update: normalize_todays_games.py output" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step03:
-    needs: [step01, step02]
-    runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.mapping.outputs.status }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-
-      - name: Run apply_team_name_mapping.py
-        id: mapping
-        run: |
-          mkdir -p summaries
-          if python scripts/apply_team_name_mapping.py > summaries/apply_team_name_mapping.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          # apply_team_name_mapping.py
+          if python scripts/apply_team_name_mapping.py > summaries/Activate2/apply_team_name_mapping.log 2>&1; then
+            echo "✅ apply_team_name_mapping.py ran successfully." > summaries/Activate2/apply_team_name_mapping.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ apply_team_name_mapping.py encountered an error." > summaries/Activate2/apply_team_name_mapping.txt
           fi
+          touch summaries/Activate2/apply_team_name_mapping.txt
 
-      - name: Force Commit apply_team_name_mapping.py Output
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Force update: apply_team_name_mapping.py output" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-      - name: Write and Commit Summary
-        run: |
-          mkdir -p summaries
-
-          echo "DEBUG: step01 status = ${{ needs.step01.outputs.status }}"
-          echo "DEBUG: step02 status = ${{ needs.step02.outputs.status }}"
-          echo "DEBUG: mapping status = ${{ steps.mapping.outputs.status }}"
-
+          # Final Summary
           ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
-
-          LINEUPS_STATUS="${{ needs.step01.outputs.status }}"
-          GAMES_STATUS="${{ needs.step02.outputs.status }}"
-          MAPPING_STATUS="${{ steps.mapping.outputs.status }}"
-
-          [ -z "$LINEUPS_STATUS" ] && LINEUPS_STATUS="❓"
-          [ -z "$GAMES_STATUS" ] && GAMES_STATUS="❓"
-          [ -z "$MAPPING_STATUS" ] && MAPPING_STATUS="❓"
-
           {
             echo "✅ Activate 2 Summary — $ET_TIMESTAMP"
-            echo "scripts/normalize_lineups.py — $LINEUPS_STATUS (see summaries/normalize_lineups.log)"
-            echo "scripts/normalize_todays_games.py — $GAMES_STATUS (see summaries/normalize_todays_games.log)"
-            echo "scripts/apply_team_name_mapping.py — $MAPPING_STATUS (see summaries/apply_team_name_mapping.log)"
-          } > summaries/activate_2.txt
+            echo "normalize_lineups.py (summaries/Activate2/normalize_lineups.txt)"
+            echo "normalize_todays_games.py (summaries/Activate2/normalize_todays_games.txt)"
+            echo "apply_team_name_mapping.py (summaries/Activate2/apply_team_name_mapping.txt)"
+          } > summaries/Activate2/activate_2.txt
+          touch summaries/Activate2/activate_2.txt
 
-          cat summaries/activate_2.txt
-
-          git add summaries/activate_2.txt summaries/*.log
-          git commit -m "Force summary update for Activate 2" || echo "No summary changes to commit"
+      - name: Commit Summary Logs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate2/*.txt summaries/Activate2/*.log
+          git commit -m "✅ Activate 2: full summary logs committed" || echo "No changes to commit"
           git push || echo "Nothing to push"
