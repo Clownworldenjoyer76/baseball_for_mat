@@ -65,7 +65,7 @@ def main():
                 "humidity": current.get("humidity", ""),
                 "precipitation": current.get("precip_in", 0.0),
                 "condition": condition,
-                "notes": "Roof closed" if is_dome.lower() == "yes" else "Roof open",
+                "notes": "Roof closed" if is_dome is True else "Roof open",
                 "game_time": game_time
             })
 
