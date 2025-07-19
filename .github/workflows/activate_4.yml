@@ -10,9 +10,9 @@ env:
 jobs:
   activate_4:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
 
-      - name: Run All Activate 4 Scripts + Generate Logs
+      - name: Run All Scripts + Generate Logs
         run: |
           mkdir -p summaries/Activate4
 
@@ -33,9 +33,9 @@ jobs:
             TXT="summaries/Activate4/${STEP_NAME}.txt"
 
             if python "scripts/${SCRIPT}" > "$LOG" 2>&1; then
-              echo "✅ ${SCRIPT} ran successfully." > "$TXT"
+              echo "✅ ${STEP_NAME} ran successfully." > "$TXT"
             else
-              echo "❌ ${SCRIPT} encountered an error." > "$TXT"
+              echo "❌ ${STEP_NAME} encountered an error." > "$TXT"
             fi
           }
 
@@ -60,6 +60,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -f summaries/Activate4/*.log summaries/Activate4/*.txt
+          git add summaries/Activate4/*.log summaries/Activate4/*.txt summaries/Activate4/activate_4.txt
           git diff --cached --quiet || git commit -m "Activate 4: full summary logs committed"
           git push || echo "Nothing to push"
