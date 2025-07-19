@@ -25,6 +25,7 @@ jobs:
       - name: Run All Scripts + Generate Logs
         run: |
           mkdir -p summaries/Activate4
+          TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
           run_step() {
             SCRIPT="$1"
@@ -37,6 +38,9 @@ jobs:
             else
               echo "❌ ${STEP_NAME} encountered an error." > "$TXT"
             fi
+
+            echo "🕒 Timestamp: $TIMESTAMP" >> "$LOG"
+            echo "🕒 Timestamp: $TIMESTAMP" >> "$TXT"
           }
 
           run_step apply_weather_adjustment.py
@@ -48,9 +52,8 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
 
-          TS=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
           {
-            echo "✅ Activate 4 Summary — $TS"
+            echo "✅ Activate 4 Summary — $TIMESTAMP"
             for FILE in summaries/Activate4/*.txt; do
               echo "$(basename "$FILE")"
             done
@@ -60,6 +63,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/Activate4/*.log summaries/Activate4/*.txt summaries/Activate4/activate_4.txt
+          git add summaries/Activate4/
           git diff --cached --quiet || git commit -m "Activate 4: full summary logs committed"
           git push || echo "Nothing to push"
