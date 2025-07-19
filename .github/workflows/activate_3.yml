@@ -41,12 +41,10 @@ jobs:
           fi
           touch summaries/Activate3/generate_weather_csv.txt
 
-          # Step 06: get_weather_data.py
-          if python scripts/get_weather_data.py > summaries/Activate3/get_weather_data.log 2>&1; then
-            echo "✅ get_weather_data.py ran successfully." > summaries/Activate3/get_weather_data.txt
-          else
-            echo "❌ get_weather_data.py encountered an error." > summaries/Activate3/get_weather_data.txt
-          fi
+          # Step 06: get_weather_data.py (HARD FAIL ON ERROR)
+          mkdir -p summaries/Activate3
+          python scripts/get_weather_data.py > summaries/Activate3/get_weather_data.log 2>&1
+          echo "✅ get_weather_data.py ran successfully." > summaries/Activate3/get_weather_data.txt
           touch summaries/Activate3/get_weather_data.txt
 
           # Step 07: filter_today_batters.py
