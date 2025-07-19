@@ -225,7 +225,7 @@ jobs:
           git push || echo "No changes to commit or push"
 
   step17:
-    needs: step16
+    needs: [step10, step11, step12, step13, step14, step15, step16]
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.s17.outputs.status }}
@@ -263,6 +263,8 @@ jobs:
             echo "scripts/combine_pitcher_weather_park_home.py — ${{ needs.step16.outputs.status || '❓' }} (see summaries/combine_pitcher_weather_park_home.log)"
             echo "scripts/combine_pitcher_weather_park_away.py — ${{ steps.s17.outputs.status || '❓' }} (see summaries/combine_pitcher_weather_park_away.log)"
           } > summaries/activate_4.txt
+
+          cat summaries/activate_4.txt
 
           git add summaries/activate_4.txt summaries/*.log
           git commit -m "Force summary update for Activate 4" || echo "No summary changes to commit"
