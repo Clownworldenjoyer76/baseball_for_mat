@@ -1,5 +1,3 @@
-🔄 Reading input file...
-🌍 Fetching weather for 14 stadiums...
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -7,19 +5,19 @@ Traceback (most recent call last):
   File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
   File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
   File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
-KeyError: 'location'
+KeyError: 'roof'
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/get_weather_data.py", line 72, in <module>
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/get_weather_data.py", line 84, in <module>
     main()
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/get_weather_data.py", line 36, in main
-    location = row["location"]
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/get_weather_data.py", line 41, in main
+    roof = row["roof"]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/series.py", line 1130, in __getitem__
     return self._get_value(key)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/series.py", line 1246, in _get_value
     loc = self.index.get_loc(label)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
     raise KeyError(key) from err
-KeyError: 'location'
+KeyError: 'roof'
