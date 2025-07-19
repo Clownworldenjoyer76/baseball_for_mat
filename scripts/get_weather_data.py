@@ -15,7 +15,7 @@ def fetch_weather(lat, lon):
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
             return response.json()
-    except Exception as e:
+    except Exception:
         return None
     return None
 
@@ -38,7 +38,7 @@ def main():
             location = f"{venue}, {city}"
             lat = row["latitude"]
             lon = row["longitude"]
-            roof = row["roof"]
+            is_dome = row["is_dome"]
             game_time = row["game_time"]
 
             attempts = 0
@@ -65,7 +65,7 @@ def main():
                 "humidity": current.get("humidity", ""),
                 "precipitation": current.get("precip_in", 0.0),
                 "condition": condition,
-                "notes": "Roof closed" if roof.lower() == "closed" else "Roof open",
+                "notes": "Roof closed" if is_dome.lower() == "yes" else "Roof open",
                 "game_time": game_time
             })
 
