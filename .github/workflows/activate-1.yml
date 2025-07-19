@@ -27,14 +27,6 @@ jobs:
       - name: Run Normalize Names
         run: python scripts/normalize_names.py
 
-      - name: Commit Normalize Output
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 01: Ran normalize_names.py"
-          git push || echo "✅ Nothing to push"
-
   tag:
     needs: normalize
     runs-on: ubuntu-latest
@@ -54,14 +46,6 @@ jobs:
 
       - name: Tag Uploaded Master Files
         run: python scripts/tag_master_files.py
-
-      - name: Commit Tag Output
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 02: Ran tag_master_files.py"
-          git push || echo "✅ Nothing to push"
 
   dedupe:
     needs: tag
@@ -85,14 +69,15 @@ jobs:
 
       - name: Write and Commit Summary File
         run: |
-          echo "Activate 1 Summary - $(date)" > activate_1_summary.txt
-          echo "- ✅ normalize_names.py ran" >> activate_1_summary.txt
-          echo "- ✅ tag_master_files.py ran" >> activate_1_summary.txt
-          echo "- ✅ deduplicate_normalized.py ran" >> activate_1_summary.txt
-          echo "- 🔁 Forced commit/push attempted after each step" >> activate_1_summary.txt
+          mkdir -p summaries
+          echo "✅ Activate 1 Summary - $(date)" > summaries/activate_1_summary.txt
+          echo "- normalize_names.py ran" >> summaries/activate_1_summary.txt
+          echo "- tag_master_files.py ran" >> summaries/activate_1_summary.txt
+          echo "- deduplicate_normalized.py ran" >> summaries/activate_1_summary.txt
+          echo "- Summary written even if no file changes" >> summaries/activate_1_summary.txt
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add activate_1_summary.txt
+          git add summaries/activate_1_summary.txt
           git commit -m "Forced summary update for Activate 1"
-          git push
+          git push --force
