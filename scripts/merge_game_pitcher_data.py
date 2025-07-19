@@ -1,5 +1,6 @@
 import pandas as pd
 import subprocess
+import sys
 
 # Input paths
 BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
@@ -27,6 +28,11 @@ def standardize_name(full_name):
         return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
     return full_name.title()
 
+def verify_columns(df, required, label):
+    for col in required:
+        if col not in df.columns:
+            raise ValueError(f"Missing column '{col}' in {label} file")
+
 def main():
     bh = pd.read_csv(BATTERS_HOME_FILE)
     ba = pd.read_csv(BATTERS_AWAY_FILE)
@@ -34,49 +40,36 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    # Validate required columns
-    for col in ["home_team"]:
-        if col not in bh.columns:
-            raise ValueError(f"Missing column '{col}' in batters_home file")
-    for col in ["team"]:
-        if col not in ba.columns:
-            raise ValueError(f"Missing column '{col}' in batters_away file")
-    for col in ["pitcher_home", "pitcher_away"]:
-        if col not in games.columns:
-            raise ValueError(f"Missing column '{col}' in games file")
+    verify_columns(bh, ["home_team_weather", "name"], "batters_home")
+    verify_columns(ba, ["team", "name"], "batters_away")
+    verify_columns(ph, ["name", "adj_woba_combined"], "pitchers_home")
+    verify_columns(pa, ["name", "adj_woba_combined"], "pitchers_away")
+    verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
-    bh["home_team"] = bh["home_team"].str.title()
-    ba["team"] = ba["team"].str.title()
+    # Normalize names
+    bh["name"] = bh["name"].str.title()
+    ba["name"] = ba["name"].str.title()
     ph["name"] = ph["name"].str.title()
     pa["name"] = pa["name"].str.title()
-
     games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip()
     games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip()
-
     games["pitcher_home"] = games["pitcher_home"].apply(standardize_name)
     games["pitcher_away"] = games["pitcher_away"].apply(standardize_name)
 
-    # Merge home batters with pitcher_home
-    if "home_team" in games.columns:
-        bh = bh.merge(
-            games[["home_team", "pitcher_home"]],
-            how="left",
-            left_on="home_team",
-            right_on="home_team"
-        )
-    else:
-        raise ValueError("Missing 'home_team' in games file")
+    # Merge game pitchers into batter files
+    bh = bh.merge(
+        games[["home_team", "pitcher_home"]],
+        how="left",
+        left_on="home_team_weather",
+        right_on="home_team"
+    )
 
-    # Merge away batters with pitcher_away
-    if "away_team" in games.columns:
-        ba = ba.merge(
-            games[["away_team", "pitcher_away"]],
-            how="left",
-            left_on="team",
-            right_on="away_team"
-        )
-    else:
-        raise ValueError("Missing 'away_team' in games file")
+    ba = ba.merge(
+        games[["away_team", "pitcher_away"]],
+        how="left",
+        left_on="team",
+        right_on="away_team"
+    )
 
     home_pitcher_stats = get_pitcher_woba(ph, "home_team", "name")
     away_pitcher_stats = get_pitcher_woba(pa, "away_team", "name")
@@ -97,13 +90,10 @@ def main():
         suffixes=("", "_pitcher")
     )
 
-    # Debug prints
-    print("✅ Rows in HOME batters dataframe:", len(bh))
-    print("✅ Rows in AWAY batters dataframe:", len(ba))
-    print("🔎 Sample rows from HOME:")
-    print(bh[["name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔎 Sample rows from AWAY:")
-    print(ba[["name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
+    print("✅ HOME batters rows:", len(bh))
+    print("✅ AWAY batters rows:", len(ba))
+    print("🔍 HOME sample:", bh[["name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
@@ -113,4 +103,8 @@ def main():
     subprocess.run(["git", "push"])
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"❌ Script failed: {e}")
+        sys.exit(1)
