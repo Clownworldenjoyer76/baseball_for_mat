@@ -8,200 +8,88 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  step04:
+  activate_3:
     runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.step04script.outputs.status }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
       - name: Install dependencies
         run: pip install pandas requests pytz
-      - name: Run update_game_time.py
-        id: step04script
-        run: |
-          mkdir -p summaries
-          if python scripts/update_game_time.py > summaries/update_game_time.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 04: Ran update_game_time.py"
-          git push || echo "No changes to commit or push"
 
-  step05:
-    needs: step04
-    runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.step05script.outputs.status }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-      - name: Run generate_weather_csv.py
-        id: step05script
+      - name: Run All Scripts + Generate Logs
         run: |
-          mkdir -p summaries
-          if python scripts/generate_weather_csv.py > summaries/generate_weather_csv.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
-          else
-            echo "status=❌" >> $GITHUB_OUTPUT
-          fi
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 05: Ran generate_weather_csv.py"
-          git push || echo "No changes to commit or push"
+          mkdir -p summaries/Activate3
 
-  step06:
-    needs: step05
-    runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.step06script.outputs.status }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-      - name: Run get_weather_data.py
-        id: step06script
-        run: |
-          mkdir -p summaries
-          if python scripts/get_weather_data.py > summaries/get_weather_data.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          # Step 04: update_game_time.py
+          if python scripts/update_game_time.py > summaries/Activate3/update_game_time.log 2>&1; then
+            echo "✅ update_game_time.py ran successfully." > summaries/Activate3/update_game_time.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ update_game_time.py encountered an error." > summaries/Activate3/update_game_time.txt
           fi
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 06: Ran get_weather_data.py"
-          git push || echo "No changes to commit or push"
+          touch summaries/Activate3/update_game_time.txt
 
-  step07:
-    needs: step06
-    runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.step07script.outputs.status }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-      - name: Run filter_today_batters.py
-        id: step07script
-        run: |
-          mkdir -p summaries
-          if python scripts/filter_today_batters.py > summaries/filter_today_batters.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          # Step 05: generate_weather_csv.py
+          if python scripts/generate_weather_csv.py > summaries/Activate3/generate_weather_csv.log 2>&1; then
+            echo "✅ generate_weather_csv.py ran successfully." > summaries/Activate3/generate_weather_csv.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ generate_weather_csv.py encountered an error." > summaries/Activate3/generate_weather_csv.txt
           fi
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 07: Ran filter_today_batters.py"
-          git push || echo "No changes to commit or push"
+          touch summaries/Activate3/generate_weather_csv.txt
 
-  step08:
-    needs: step07
-    runs-on: ubuntu-latest
-    outputs:
-      status: ${{ steps.step08script.outputs.status }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-      - name: Run split_batters_by_home_away.py
-        id: step08script
-        run: |
-          mkdir -p summaries
-          if python scripts/split_batters_by_home_away.py > summaries/split_batters_by_home_away.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          # Step 06: get_weather_data.py
+          if python scripts/get_weather_data.py > summaries/Activate3/get_weather_data.log 2>&1; then
+            echo "✅ get_weather_data.py ran successfully." > summaries/Activate3/get_weather_data.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ get_weather_data.py encountered an error." > summaries/Activate3/get_weather_data.txt
           fi
-      - name: Commit and Push Changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 08: Ran split_batters_by_home_away.py"
-          git push || echo "No changes to commit or push"
+          touch summaries/Activate3/get_weather_data.txt
 
-  step09:
-    needs: step08
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install dependencies
-        run: pip install pandas
-      - name: Run Split Pitchers Script
-        id: step09script
-        run: |
-          mkdir -p summaries
-          if python scripts/split_pitchers.py > summaries/split_pitchers.log 2>&1; then
-            echo "status=✅" >> $GITHUB_OUTPUT
+          # Step 07: filter_today_batters.py
+          if python scripts/filter_today_batters.py > summaries/Activate3/filter_today_batters.log 2>&1; then
+            echo "✅ filter_today_batters.py ran successfully." > summaries/Activate3/filter_today_batters.txt
           else
-            echo "status=❌" >> $GITHUB_OUTPUT
+            echo "❌ filter_today_batters.py encountered an error." > summaries/Activate3/filter_today_batters.txt
           fi
-      - name: Commit pitcher files
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git commit -m "Auto-commit pitcher files" || echo "No changes to commit"
-          git pull --rebase --autostash
-          git push
+          touch summaries/Activate3/filter_today_batters.txt
 
-      - name: Write and Commit Summary
-        run: |
-          mkdir -p summaries
+          # Step 08: split_batters_by_home_away.py
+          if python scripts/split_batters_by_home_away.py > summaries/Activate3/split_batters_by_home_away.log 2>&1; then
+            echo "✅ split_batters_by_home_away.py ran successfully." > summaries/Activate3/split_batters_by_home_away.txt
+          else
+            echo "❌ split_batters_by_home_away.py encountered an error." > summaries/Activate3/split_batters_by_home_away.txt
+          fi
+          touch summaries/Activate3/split_batters_by_home_away.txt
+
+          # Step 09: split_pitchers.py
+          if python scripts/split_pitchers.py > summaries/Activate3/split_pitchers.log 2>&1; then
+            echo "✅ split_pitchers.py ran successfully." > summaries/Activate3/split_pitchers.txt
+          else
+            echo "❌ split_pitchers.py encountered an error." > summaries/Activate3/split_pitchers.txt
+          fi
+          touch summaries/Activate3/split_pitchers.txt
+
+          # Final Summary
           ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
-
           {
             echo "✅ Activate 3 Summary — $ET_TIMESTAMP"
-            echo "scripts/update_game_time.py — ${{ needs.step04.outputs.status || 'unknown' }} (see summaries/update_game_time.log)"
-            echo "scripts/generate_weather_csv.py — ${{ needs.step05.outputs.status || 'unknown' }} (see summaries/generate_weather_csv.log)"
-            echo "scripts/get_weather_data.py — ${{ needs.step06.outputs.status || 'unknown' }} (see summaries/get_weather_data.log)"
-            echo "scripts/filter_today_batters.py — ${{ needs.step07.outputs.status || 'unknown' }} (see summaries/filter_today_batters.log)"
-            echo "scripts/split_batters_by_home_away.py — ${{ needs.step08.outputs.status || 'unknown' }} (see summaries/split_batters_by_home_away.log)"
-            echo "scripts/split_pitchers.py — ${{ steps.step09script.outputs.status || 'unknown' }} (see summaries/split_pitchers.log)"
-          } > summaries/activate_3.txt
+            echo "update_game_time.py (summaries/Activate3/update_game_time.txt)"
+            echo "generate_weather_csv.py (summaries/Activate3/generate_weather_csv.txt)"
+            echo "get_weather_data.py (summaries/Activate3/get_weather_data.txt)"
+            echo "filter_today_batters.py (summaries/Activate3/filter_today_batters.txt)"
+            echo "split_batters_by_home_away.py (summaries/Activate3/split_batters_by_home_away.txt)"
+            echo "split_pitchers.py (summaries/Activate3/split_pitchers.txt)"
+          } > summaries/Activate3/activate_3.txt
+          touch summaries/Activate3/activate_3.txt
 
-          git add summaries/activate_3.txt summaries/*.log
-          git commit -m "Force summary update for Activate 3" || echo "No summary changes to commit"
+      - name: Commit Summary Logs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/Activate3/*.txt summaries/Activate3/*.log
+          git commit -m "✅ Activate 3: full summary logs committed" || echo "No changes to commit"
           git push || echo "Nothing to push"
