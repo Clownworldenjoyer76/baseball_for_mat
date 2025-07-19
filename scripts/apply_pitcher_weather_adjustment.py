@@ -4,7 +4,7 @@ import subprocess
 
 def apply_weather_adjustments_home(pitchers, weather):
     pitchers['home_team'] = pitchers['team']
-    weather = weather.drop_duplicates(subset='home_team')
+    weather = weather.drop_duplicates(subset='stadium')
     merged = pd.merge(pitchers, weather, on='home_team', how='left')
     if 'woba' not in merged.columns:
         merged['woba'] = 0.320
@@ -14,7 +14,7 @@ def apply_weather_adjustments_home(pitchers, weather):
 def apply_weather_adjustments_away(pitchers, weather, todaysgames):
     away_to_home = todaysgames.set_index('away_team')['home_team'].to_dict()
     pitchers['home_team'] = pitchers['team'].map(away_to_home)
-    weather = weather.drop_duplicates(subset='home_team')
+    weather = weather.drop_duplicates(subset='stadium')
     merged = pd.merge(pitchers, weather, on='home_team', how='left')
     if 'woba' not in merged.columns:
         merged['woba'] = 0.320
