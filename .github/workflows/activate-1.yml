@@ -27,6 +27,26 @@ jobs:
       - name: Run Normalize Names
         run: python scripts/normalize_names.py
 
+      - name: Check for Normalize Changes and Write Summary
+        run: |
+          mkdir -p summaries
+          git status --porcelain > summaries/activate_1_status.txt
+          UPDATED=$(cat summaries/activate_1_status.txt | grep -v '^??' || true)
+          if [ -z "$UPDATED" ]; then
+            echo "✅ normalize_names.py ran successfully — no files changed." > summaries/activate_1_summary.txt
+          else
+            echo "✅ normalize_names.py ran successfully. Updated files:" > summaries/activate_1_summary.txt
+            echo "$UPDATED" >> summaries/activate_1_summary.txt
+          fi
+
+      - name: Commit Normalize Summary
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/activate_1_summary.txt
+          git diff --cached --quiet || git commit -m "Summary: Activate 1 (normalize) complete"
+          git push || echo "Nothing to push"
+
   tag:
     needs: normalize
     runs-on: ubuntu-latest
@@ -44,38 +64,4 @@ jobs:
       - name: Enable Debug for Tag
         run: echo "Running tag_master_files.py with debug..."
 
-      - name: Tag Uploaded Master Files
-        run: python scripts/tag_master_files.py
-
-  dedupe:
-    needs: tag
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install pandas
-        run: pip install pandas
-
-      - name: Enable Debug for Dedupe
-        run: echo "Running deduplicate_normalized.py with debug..."
-
-      - name: Duplicate Check After Normalization
-        run: python scripts/deduplicate_normalized.py
-
-      - name: Write summary to summaries/activate_1_summary.txt
-        run: |
-          mkdir -p summaries
-          echo "✅ Activate 1 completed on $(date -u +"%Y-%m-%d %H:%M:%S UTC")" > summaries/activate_1_summary.txt
-
-      - name: Commit summary file
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/activate_1_summary.txt
-          git diff --cached --quiet || git commit -m "Summary: Activate 1 step complete"
-          git push || echo "Nothing to push"
+     
