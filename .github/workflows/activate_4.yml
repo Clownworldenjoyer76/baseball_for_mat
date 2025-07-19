@@ -10,6 +10,8 @@ env:
 jobs:
   step10:
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s10.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -19,7 +21,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run apply_weather_adjustment.py
-        run: python scripts/apply_weather_adjustment.py
+        id: s10
+        run: |
+          mkdir -p summaries
+          if python scripts/apply_weather_adjustment.py > summaries/apply_weather_adjustment.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -32,6 +41,8 @@ jobs:
   step11:
     needs: step10
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s11.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -41,7 +52,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run apply_park_adjustment.py
-        run: python scripts/apply_park_adjustment.py
+        id: s11
+        run: |
+          mkdir -p summaries
+          if python scripts/apply_park_adjustment.py > summaries/apply_park_adjustment.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -54,6 +72,8 @@ jobs:
   step12:
     needs: step11
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s12.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -63,7 +83,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run combine_weather_park_home.py
-        run: python scripts/combine_weather_park_home.py
+        id: s12
+        run: |
+          mkdir -p summaries
+          if python scripts/combine_weather_park_home.py > summaries/combine_weather_park_home.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -76,6 +103,8 @@ jobs:
   step13:
     needs: step12
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s13.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -85,7 +114,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run combine_weather_park_away.py
-        run: python scripts/combine_weather_park_away.py
+        id: s13
+        run: |
+          mkdir -p summaries
+          if python scripts/combine_weather_park_away.py > summaries/combine_weather_park_away.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -98,6 +134,8 @@ jobs:
   step14:
     needs: step13
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s14.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -107,7 +145,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run apply_pitcher_weather_adjustment.py
-        run: python scripts/apply_pitcher_weather_adjustment.py
+        id: s14
+        run: |
+          mkdir -p summaries
+          if python scripts/apply_pitcher_weather_adjustment.py > summaries/apply_pitcher_weather_adjustment.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -120,6 +165,8 @@ jobs:
   step15:
     needs: step14
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s15.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -129,7 +176,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run apply_pitcher_park_adjustment.py
-        run: python scripts/apply_pitcher_park_adjustment.py
+        id: s15
+        run: |
+          mkdir -p summaries
+          if python scripts/apply_pitcher_park_adjustment.py > summaries/apply_pitcher_park_adjustment.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -142,6 +196,8 @@ jobs:
   step16:
     needs: step15
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s16.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -151,7 +207,14 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run combine_pitcher_weather_park_home.py
-        run: python scripts/combine_pitcher_weather_park_home.py
+        id: s16
+        run: |
+          mkdir -p summaries
+          if python scripts/combine_pitcher_weather_park_home.py > summaries/combine_pitcher_weather_park_home.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
@@ -164,6 +227,8 @@ jobs:
   step17:
     needs: step16
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.s17.outputs.status }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -173,12 +238,32 @@ jobs:
       - name: Install dependencies
         run: pip install pandas
       - name: Run combine_pitcher_weather_park_away.py
-        run: python scripts/combine_pitcher_weather_park_away.py
-      - name: Commit and Push Changes
+        id: s17
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 17: Ran combine_pitcher_weather_park_away.py"
-          git pull --rebase
-          git push || echo "No changes to commit or push"
+          mkdir -p summaries
+          if python scripts/combine_pitcher_weather_park_away.py > summaries/combine_pitcher_weather_park_away.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Write and Commit Summary
+        run: |
+          mkdir -p summaries
+          ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+
+          {
+            echo "✅ Activate 4 Summary — $ET_TIMESTAMP"
+            echo "scripts/apply_weather_adjustment.py — ${{ needs.step10.outputs.status || '❓' }} (see summaries/apply_weather_adjustment.log)"
+            echo "scripts/apply_park_adjustment.py — ${{ needs.step11.outputs.status || '❓' }} (see summaries/apply_park_adjustment.log)"
+            echo "scripts/combine_weather_park_home.py — ${{ needs.step12.outputs.status || '❓' }} (see summaries/combine_weather_park_home.log)"
+            echo "scripts/combine_weather_park_away.py — ${{ needs.step13.outputs.status || '❓' }} (see summaries/combine_weather_park_away.log)"
+            echo "scripts/apply_pitcher_weather_adjustment.py — ${{ needs.step14.outputs.status || '❓' }} (see summaries/apply_pitcher_weather_adjustment.log)"
+            echo "scripts/apply_pitcher_park_adjustment.py — ${{ needs.step15.outputs.status || '❓' }} (see summaries/apply_pitcher_park_adjustment.log)"
+            echo "scripts/combine_pitcher_weather_park_home.py — ${{ needs.step16.outputs.status || '❓' }} (see summaries/combine_pitcher_weather_park_home.log)"
+            echo "scripts/combine_pitcher_weather_park_away.py — ${{ steps.s17.outputs.status || '❓' }} (see summaries/combine_pitcher_weather_park_away.log)"
+          } > summaries/activate_4.txt
+
+          git add summaries/activate_4.txt summaries/*.log
+          git commit -m "Force summary update for Activate 4" || echo "No summary changes to commit"
+          git push || echo "Nothing to push"
