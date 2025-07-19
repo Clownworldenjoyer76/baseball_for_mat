@@ -8,7 +8,7 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  activate1:
+  normalize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,46 +21,77 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
-      - name: Run normalize_names.py
-        run: |
-          echo "✅ Starting normalize_names.py"
-          python scripts/normalize_names.py
+      - name: Enable Debug for Normalize
+        run: echo "Running normalize_names.py with debug..."
+
+      - name: Run Normalize Names
+        run: python scripts/normalize_names.py
 
       - name: Commit Normalize Output
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 01: Ran normalize_names.py (forced commit)" || echo "✅ Nothing to commit"
+          git diff --cached --quiet || git commit -m "Step 01: Ran normalize_names.py"
           git push || echo "✅ Nothing to push"
 
-      - name: Run tag_master_files.py
-        run: |
-          echo "✅ Starting tag_master_files.py"
-          python scripts/tag_master_files.py
+  tag:
+    needs: normalize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas
+
+      - name: Enable Debug for Tag
+        run: echo "Running tag_master_files.py with debug..."
+
+      - name: Tag Uploaded Master Files
+        run: python scripts/tag_master_files.py
 
       - name: Commit Tag Output
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 02: Ran tag_master_files.py (forced commit)" || echo "✅ Nothing to commit"
+          git diff --cached --quiet || git commit -m "Step 02: Ran tag_master_files.py"
           git push || echo "✅ Nothing to push"
 
-      - name: Run deduplicate_normalized.py
-        run: |
-          echo "✅ Starting deduplicate_normalized.py"
-          python scripts/deduplicate_normalized.py
+  dedupe:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas
+
+      - name: Enable Debug for Dedupe
+        run: echo "Running deduplicate_normalized.py with debug..."
+
+      - name: Duplicate Check After Normalization
+        run: python scripts/deduplicate_normalized.py
 
       - name: Commit Dedupe Output
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add .
-          git commit -m "Step 03: Ran deduplicate_normalized.py (forced commit)" || echo "✅ Nothing to commit"
+          git diff --cached --quiet || git commit -m "Step 03: Ran deduplicate_normalized.py"
           git push || echo "✅ Nothing to push"
 
-      - name: Write Summary File
+      - name: Write and Commit Summary File
         run: |
           echo "Activate 1 Summary" > activate_1_summary.txt
           echo "- ✅ normalize_names.py ran" >> activate_1_summary.txt
@@ -68,10 +99,8 @@ jobs:
           echo "- ✅ deduplicate_normalized.py ran" >> activate_1_summary.txt
           echo "- 🔁 Forced commit/push attempted after each step" >> activate_1_summary.txt
 
-      - name: Commit and Push Summary
-        run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add activate_1_summary.txt
-          git commit -m "Added summary for Activate 1" || echo "✅ Nothing to commit"
+          git commit -m "Add activate_1_summary.txt" || echo "✅ Nothing to commit"
           git push || echo "✅ Nothing to push"
