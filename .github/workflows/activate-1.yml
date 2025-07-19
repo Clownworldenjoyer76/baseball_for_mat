@@ -83,17 +83,9 @@ jobs:
       - name: Duplicate Check After Normalization
         run: python scripts/deduplicate_normalized.py
 
-      - name: Commit Dedupe Output
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 03: Ran deduplicate_normalized.py"
-          git push || echo "✅ Nothing to push"
-
       - name: Write and Commit Summary File
         run: |
-          echo "Activate 1 Summary" > activate_1_summary.txt
+          echo "Activate 1 Summary - $(date)" > activate_1_summary.txt
           echo "- ✅ normalize_names.py ran" >> activate_1_summary.txt
           echo "- ✅ tag_master_files.py ran" >> activate_1_summary.txt
           echo "- ✅ deduplicate_normalized.py ran" >> activate_1_summary.txt
@@ -102,5 +94,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add activate_1_summary.txt
-          git commit -m "Add activate_1_summary.txt" || echo "✅ Nothing to commit"
-          git push || echo "✅ Nothing to push"
+          git commit -m "Forced summary update for Activate 1"
+          git push
