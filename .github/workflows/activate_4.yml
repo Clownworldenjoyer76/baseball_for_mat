@@ -8,197 +8,58 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  step10:
-    name: Apply Weather Adjustment
+  activate_4:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: pip install pandas
 
-      - name: Run apply_weather_adjustment.py
+      - name: Run All Activate 4 Scripts + Generate Logs
         run: |
-          python scripts/apply_weather_adjustment.py > summaries/Activate4/apply_weather_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_weather_adjustment.log
-          echo "$(date) ET - Apply Weather Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
+          mkdir -p summaries/Activate4
 
-      - name: Commit Summary and Log
+          run_step() {
+            SCRIPT="$1"
+            STEP_NAME=$(basename "$SCRIPT" .py)
+            LOG="summaries/Activate4/${STEP_NAME}.log"
+            TXT="summaries/Activate4/${STEP_NAME}.txt"
+
+            if python "scripts/${SCRIPT}" > "$LOG" 2>&1; then
+              echo "✅ ${SCRIPT} ran successfully." > "$TXT"
+            else
+              echo "❌ ${SCRIPT} encountered an error." > "$TXT"
+            fi
+          }
+
+          run_step apply_weather_adjustment.py
+          run_step apply_park_adjustment.py
+          run_step combine_weather_park_home.py
+          run_step combine_weather_park_away.py
+          run_step apply_pitcher_weather_adjustment.py
+          run_step apply_pitcher_park_adjustment.py
+          run_step combine_pitcher_weather_park_home.py
+          run_step combine_pitcher_weather_park_away.py
+
+          TS=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+          {
+            echo "✅ Activate 4 Summary — $TS"
+            for FILE in summaries/Activate4/*.txt; do
+              echo "$(basename "$FILE")"
+            done
+          } > summaries/Activate4/activate_4.txt
+
+      - name: Commit Summary Logs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step10: Apply Weather Adjustment log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step11:
-    name: Apply Park Adjustment
-    runs-on: ubuntu-latest
-    needs: step10
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run apply_park_adjustment.py
-        run: |
-          python scripts/apply_park_adjustment.py > summaries/Activate4/apply_park_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_park_adjustment.log
-          echo "$(date) ET - Apply Park Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step11: Apply Park Adjustment log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step12:
-    name: Combine Weather + Park (Home)
-    runs-on: ubuntu-latest
-    needs: step11
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run combine_weather_park_home.py
-        run: |
-          python scripts/combine_weather_park_home.py > summaries/Activate4/combine_weather_park_home.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_weather_park_home.log
-          echo "$(date) ET - Combine Weather + Park Home: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step12: Combine Weather + Park (Home) log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step13:
-    name: Combine Weather + Park (Away)
-    runs-on: ubuntu-latest
-    needs: step12
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run combine_weather_park_away.py
-        run: |
-          python scripts/combine_weather_park_away.py > summaries/Activate4/combine_weather_park_away.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_weather_park_away.log
-          echo "$(date) ET - Combine Weather + Park Away: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step13: Combine Weather + Park (Away) log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step14:
-    name: Apply Pitcher Weather Adjustment
-    runs-on: ubuntu-latest
-    needs: step13
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run apply_pitcher_weather_adjustment.py
-        run: |
-          python scripts/apply_pitcher_weather_adjustment.py > summaries/Activate4/apply_pitcher_weather_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_pitcher_weather_adjustment.log
-          echo "$(date) ET - Apply Pitcher Weather Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step14: Apply Pitcher Weather Adjustment log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step15:
-    name: Apply Pitcher Park Adjustment
-    runs-on: ubuntu-latest
-    needs: step14
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run apply_pitcher_park_adjustment.py
-        run: |
-          python scripts/apply_pitcher_park_adjustment.py > summaries/Activate4/apply_pitcher_park_adjustment.log 2>&1 || echo "FAILED" >> summaries/Activate4/apply_pitcher_park_adjustment.log
-          echo "$(date) ET - Apply Pitcher Park Adjustment: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step15: Apply Pitcher Park Adjustment log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step16:
-    name: Combine Pitcher Weather + Park Home
-    runs-on: ubuntu-latest
-    needs: step15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run combine_pitcher_weather_park_home.py
-        run: |
-          python scripts/combine_pitcher_weather_park_home.py > summaries/Activate4/combine_pitcher_weather_park_home.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_pitcher_weather_park_home.log
-          echo "$(date) ET - Combine Pitcher Weather + Park Home: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step16: Combine Pitcher Weather + Park Home log + summary" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-  step17:
-    name: Combine Pitcher Weather + Park Away
-    runs-on: ubuntu-latest
-    needs: step16
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-      - name: Install Dependencies
-        run: pip install pandas
-      - name: Run combine_pitcher_weather_park_away.py
-        run: |
-          python scripts/combine_pitcher_weather_park_away.py > summaries/Activate4/combine_pitcher_weather_park_away.log 2>&1 || echo "FAILED" >> summaries/Activate4/combine_pitcher_weather_park_away.log
-          echo "$(date) ET - Combine Pitcher Weather + Park Away: SUCCESS" >> summaries/Activate4/summary.txt
-      - name: Commit Summary and Log
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/Activate4/
-          git commit -m "Step17: Combine Pitcher Weather + Park Away log + summary" || echo "No changes to commit"
+          git add -f summaries/Activate4/*.log summaries/Activate4/*.txt
+          git diff --cached --quiet || git commit -m "Activate 4: full summary logs committed"
           git push || echo "Nothing to push"
