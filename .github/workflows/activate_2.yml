@@ -112,14 +112,29 @@ jobs:
       - name: Write and Commit Summary
         run: |
           mkdir -p summaries
+
+          echo "DEBUG: step01 status = ${{ needs.step01.outputs.status }}"
+          echo "DEBUG: step02 status = ${{ needs.step02.outputs.status }}"
+          echo "DEBUG: mapping status = ${{ steps.mapping.outputs.status }}"
+
           ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+
+          LINEUPS_STATUS="${{ needs.step01.outputs.status }}"
+          GAMES_STATUS="${{ needs.step02.outputs.status }}"
+          MAPPING_STATUS="${{ steps.mapping.outputs.status }}"
+
+          [ -z "$LINEUPS_STATUS" ] && LINEUPS_STATUS="❓"
+          [ -z "$GAMES_STATUS" ] && GAMES_STATUS="❓"
+          [ -z "$MAPPING_STATUS" ] && MAPPING_STATUS="❓"
 
           {
             echo "✅ Activate 2 Summary — $ET_TIMESTAMP"
-            echo "scripts/normalize_lineups.py — ${{ needs.step01.outputs.status || 'unknown' }} (see summaries/normalize_lineups.log)"
-            echo "scripts/normalize_todays_games.py — ${{ needs.step02.outputs.status || 'unknown' }} (see summaries/normalize_todays_games.log)"
-            echo "scripts/apply_team_name_mapping.py — ${{ steps.mapping.outputs.status || 'unknown' }} (see summaries/apply_team_name_mapping.log)"
+            echo "scripts/normalize_lineups.py — $LINEUPS_STATUS (see summaries/normalize_lineups.log)"
+            echo "scripts/normalize_todays_games.py — $GAMES_STATUS (see summaries/normalize_todays_games.log)"
+            echo "scripts/apply_team_name_mapping.py — $MAPPING_STATUS (see summaries/apply_team_name_mapping.log)"
           } > summaries/activate_2.txt
+
+          cat summaries/activate_2.txt
 
           git add summaries/activate_2.txt summaries/*.log
           git commit -m "Force summary update for Activate 2" || echo "No summary changes to commit"
