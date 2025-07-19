@@ -1,10 +1,10 @@
 Traceback (most recent call last):
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 44, in <module>
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 53, in <module>
     main()
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 26, in main
-    adjusted_home = apply_weather_adjustments_home(batters_home, weather)
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 12, in apply_weather_adjustments_home
-    merged = pd.merge(batters, weather, left_on='home_team', right_on='stadium', how='left')
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 33, in main
+    adjusted_home = apply_weather_adjustments(batters_home, weather)
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 14, in apply_weather_adjustments
+    merged = pd.merge(
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
     op = _MergeOperation(
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
@@ -14,4 +14,4 @@ Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
     raise KeyError(key)
 KeyError: 'home_team'
-🕒 Timestamp: 2025-07-19 05:31:54 PM EDT
+🕒 Timestamp: 2025-07-19 05:35:54 PM EDT
