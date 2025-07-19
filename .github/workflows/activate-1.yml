@@ -10,6 +10,8 @@ env:
 jobs:
   normalize:
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.normalize.outputs.status }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +24,14 @@ jobs:
         run: pip install pandas
 
       - name: Run Normalize Names
-        run: python scripts/normalize_names.py
+        id: normalize
+        run: |
+          mkdir -p summaries
+          if python scripts/normalize_names.py > summaries/normalize_names.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
 
       - name: Force Add Normalized Files
         run: |
@@ -35,6 +44,8 @@ jobs:
   tag:
     needs: normalize
     runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.tag.outputs.status }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +58,14 @@ jobs:
         run: pip install pandas
 
       - name: Run Tag Master Files
-        run: python scripts/tag_master_files.py
+        id: tag
+        run: |
+          mkdir -p summaries
+          if python scripts/tag_master_files.py > summaries/tag_master_files.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
 
       - name: Force Add Tagged Files
         run: |
@@ -72,7 +90,14 @@ jobs:
         run: pip install pandas
 
       - name: Run Deduplicate Normalized
-        run: python scripts/deduplicate_normalized.py
+        id: dedupe
+        run: |
+          mkdir -p summaries
+          if python scripts/deduplicate_normalized.py > summaries/deduplicate_normalized.log 2>&1; then
+            echo "status=✅" >> $GITHUB_OUTPUT
+          else
+            echo "status=❌" >> $GITHUB_OUTPUT
+          fi
 
       - name: Force Add Deduplicated Files
         run: |
@@ -85,13 +110,15 @@ jobs:
       - name: Write and Commit Summary
         run: |
           mkdir -p summaries
-          {
-            echo "✅ Activate 1 Summary — $(date -u)"
-            echo "normalize_names.py completed ✅"
-            echo "tag_master_files.py completed ✅"
-            echo "deduplicate_normalized.py completed ✅"
-          } > summaries/activate_1_summary.txt
+          ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
-          git add summaries/activate_1_summary.txt
+          {
+            echo "✅ Activate 1 Summary — $ET_TIMESTAMP"
+            echo "scripts/normalize_names.py — ${{ needs.normalize.outputs.status || 'unknown' }} (see summaries/normalize_names.log)"
+            echo "scripts/tag_master_files.py — ${{ needs.tag.outputs.status || 'unknown' }} (see summaries/tag_master_files.log)"
+            echo "scripts/deduplicate_normalized.py — ${{ steps.dedupe.outputs.status || 'unknown' }} (see summaries/deduplicate_normalized.log)"
+          } > summaries/activate_1.txt
+
+          git add summaries/activate_1.txt summaries/*.log
           git commit -m "Force summary update for Activate 1" || echo "No summary changes to commit"
           git push || echo "Nothing to push"
