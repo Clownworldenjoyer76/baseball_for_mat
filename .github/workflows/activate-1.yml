@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.normalize.outputs.status }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -35,19 +36,12 @@ jobs:
             echo "❌ normalize_names.py encountered an error." > summaries/normalize_names.txt
           fi
 
-      - name: Force Add Normalized Files
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Force update: normalize_names.py output" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
   tag:
     needs: normalize
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.tag.outputs.status }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -71,19 +65,12 @@ jobs:
             echo "❌ tag_master_files.py encountered an error." > summaries/tag_master_files.txt
           fi
 
-      - name: Force Add Tagged Files
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Force update: tag_master_files.py output" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
   dedupe:
     needs: [normalize, tag]
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.dedupe.outputs.status }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -107,15 +94,7 @@ jobs:
             echo "❌ deduplicate_normalized.py encountered an error." > summaries/deduplicate_normalized.txt
           fi
 
-      - name: Force Add Deduplicated Files
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "Force update: deduplicate_normalized.py output" || echo "No changes to commit"
-          git push || echo "Nothing to push"
-
-      - name: Write and Commit Summary
+      - name: Final Summary and Commit
         run: |
           mkdir -p summaries
           ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
@@ -127,6 +106,8 @@ jobs:
             echo "deduplicate_normalized.py — ${{ steps.dedupe.outputs.status || 'unknown' }} (summaries/deduplicate_normalized.txt)"
           } > summaries/activate_1.txt
 
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
           git add summaries/activate_1.txt summaries/*.txt summaries/*.log
-          git commit -m "Force summary update for Activate 1" || echo "No summary changes to commit"
+          git commit -m "✅ Full summary output for Activate 1" || echo "No summary changes to commit"
           git push || echo "Nothing to push"
