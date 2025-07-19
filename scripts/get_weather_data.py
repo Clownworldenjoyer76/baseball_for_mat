@@ -1,85 +1,72 @@
 import pandas as pd
 import requests
 import time
-import os
+from datetime import datetime
 
+API_KEY = "45d9502513854b489c3162411251907"
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
-API_KEY = "45d9502513854b489c3162411251907"
-BASE_URL = "http://api.weatherapi.com/v1/current.json"
+
+DEFAULT_PRECIPITATION = 0.0
 
 def fetch_weather(lat, lon):
-    try:
-        params = {"key": API_KEY, "q": f"{lat},{lon}", "aqi": "no"}
-        response = requests.get(BASE_URL, params=params, timeout=10)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            print(f"Warning: Received status code {response.status_code} for lat {lat}, lon {lon}")
-            return None
-    except Exception as e:
-        print(f"Error fetching weather for lat {lat}, lon {lon}: {e}")
-        return None
+    url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+
+def get_roof_note(roof_type):
+    if pd.isna(roof_type):
+        return ""
+    if roof_type.strip().lower() == "open":
+        return "Roof open"
+    elif roof_type.strip().lower() == "closed":
+        return "Roof closed"
+    return f"Roof {roof_type}"
 
 def main():
     print("🔄 Reading input file...")
-    try:
-        df = pd.read_csv(INPUT_FILE)
-    except Exception as e:
-        print(f"❌ Failed to read {INPUT_FILE}: {e}")
-        return
-
+    df = pd.read_csv(INPUT_FILE)
     results = []
+
     print(f"🌍 Fetching weather for {len(df)} stadiums...")
+    for _, row in df.iterrows():
+        home_team = row["home_team"]
+        location = row["location"]
+        game_time = row["game_time"]
+        latitude = row["latitude"]
+        longitude = row["longitude"]
+        roof_type = row["roof"]
+        
+        retries = 5
+        weather = None
+        for _ in range(retries):
+            weather = fetch_weather(latitude, longitude)
+            if weather:
+                break
+            time.sleep(2)
+        
+        if not weather:
+            raise Exception(f"❌ Failed to fetch weather for {home_team} after {retries} attempts.")
 
-    for i, row in df.iterrows():
-        team = row["home_team"]
-        lat = row["lat"]
-        lon = row["lon"]
-        roof = row["roof"]
-
-        print(f"➡️ {i+1}/{len(df)}: Getting weather for {team} at ({lat}, {lon})")
-
-        data = fetch_weather(lat, lon)
-        if data:
-            current = data.get("current", {})
-            condition = current.get("condition", {}).get("text", "")
-            temperature = current.get("temp_f", "")
-            wind_speed = current.get("wind_mph", "")
-            wind_direction = current.get("wind_dir", "")
-            humidity = current.get("humidity", "")
-        else:
-            condition = ""
-            temperature = ""
-            wind_speed = ""
-            wind_direction = ""
-            humidity = ""
-
-        roof_status = "Roof closed" if roof.lower() == "closed" else "Roof open"
+        current = weather["current"]
 
         results.append({
-            "home_team": team,
-            "temperature": temperature,
-            "wind_speed": wind_speed,
-            "wind_direction": wind_direction,
-            "humidity": humidity,
-            "precipitation": 0.0,
-            "condition": condition,
-            "notes": roof_status
+            "home_team": home_team,
+            "location": location,
+            "game_time": game_time,
+            "temperature": current["temp_f"],
+            "humidity": current["humidity"],
+            "wind_speed": current["wind_mph"],
+            "wind_direction": current["wind_dir"],
+            "precipitation": current.get("precip_in", DEFAULT_PRECIPITATION),
+            "notes": get_roof_note(roof_type)
         })
 
-        time.sleep(1.1)  # avoid rate limiting
-
-    print("🧪 Creating DataFrame...")
     output_df = pd.DataFrame(results)
-
-    try:
-        print(f"💾 Writing to {OUTPUT_FILE}...")
-        os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
-        output_df.to_csv(OUTPUT_FILE, index=False)
-        print("✅ Weather data saved successfully.")
-    except Exception as e:
-        print(f"❌ Failed to write weather data: {e}")
+    output_df.to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ Weather data saved to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
