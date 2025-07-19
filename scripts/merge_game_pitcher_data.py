@@ -32,11 +32,10 @@ def main():
     games = pd.read_csv(GAMES_FILE)
 
     # Normalize casing for join keys
-    bh["home_team_weather"] = bh["home_team_weather"].str.title()
+    bh["home_team"] = bh["home_team"].str.title()
     ba["team"] = ba["team"].str.title()
     ph["name"] = ph["name"].str.title()
     pa["name"] = pa["name"].str.title()
-
     games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip()
     games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip()
 
@@ -48,8 +47,7 @@ def main():
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        left_on="home_team_weather",
-        right_on="home_team"
+        on="home_team"
     )
 
     # Merge away batters with game data
