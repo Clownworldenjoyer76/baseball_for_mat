@@ -26,14 +26,37 @@ jobs:
       - name: Run All Scripts + Generate Logs
         run: |
           mkdir -p summaries/Activate3
-          python scripts/update_game_time.py
-          python scripts/split_batters_by_home_away.py
-          python scripts/split_pitchers.py
-          python scripts/generate_weather_csv.py
-          python scripts/filter_today_batters.py
-          python scripts/get_weather_data.py
 
-      - name: Commit Summary Logs
+          run_step() {
+            SCRIPT="$1"
+            STEP_NAME=$(basename "$SCRIPT" .py)
+            LOG="summaries/Activate3/${STEP_NAME}.log"
+            TXT="summaries/Activate3/${STEP_NAME}.txt"
+
+            if python "scripts/${SCRIPT}" > "$LOG" 2>&1; then
+              echo "✅ ${SCRIPT} ran successfully." > "$TXT"
+            else
+              echo "❌ ${SCRIPT} encountered an error." > "$TXT"
+            fi
+          }
+
+          run_step update_game_time.py
+          run_step split_batters_by_home_away.py
+          run_step split_pitchers.py
+          run_step generate_weather_csv.py
+          run_step filter_today_batters.py
+          run_step get_weather_data.py
+
+          # Final summary
+          TS=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+          {
+            echo "✅ Activate 3 Summary — $TS"
+            for FILE in summaries/Activate3/*.txt; do
+              echo "$(basename "$FILE")"
+            done
+          } > summaries/Activate3/activate_3.txt
+
+      - name: Commit Summary Logs + Weather Output
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
