@@ -80,7 +80,7 @@ jobs:
           git push || echo "Nothing to push"
 
   dedupe:
-    needs: tag
+    needs: [normalize, tag]
     runs-on: ubuntu-latest
     outputs:
       status: ${{ steps.dedupe.outputs.status }}
