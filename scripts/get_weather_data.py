@@ -1,72 +1,66 @@
+
 import pandas as pd
 import requests
 import time
-import subprocess
 
 INPUT_CSV = "data/weather_input.csv"
 OUTPUT_CSV = "data/weather_adjustments.csv"
-ERROR_LOG = "weather_error_log.txt"
-API_KEY = "b55200ce76260b2adb442b2f17b896c0"
-API_URL = "https://api.openweathermap.org/data/2.5/weather"
+LOG_FILE = "summaries/Activate3/get_weather_data.log"
+API_KEY = "45d9502513854b489c3162411251907"
+BASE_URL = "http://api.weatherapi.com/v1/current.json"
 
-def fetch_weather(lat, lon, retries=5):
-    for attempt in range(1, retries + 1):
+MAX_RETRIES = 5
+RETRY_DELAY = 2  # seconds
+
+def fetch_weather(lat, lon):
+    params = {
+        "key": API_KEY,
+        "q": f"{lat},{lon}"
+    }
+    for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = requests.get(API_URL, params={
-                "lat": lat,
-                "lon": lon,
-                "appid": API_KEY,
-                "units": "imperial"
-            }, timeout=10)
-
+            response = requests.get(BASE_URL, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
-
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed for lat={lat}, lon={lon}: {e}")
-            time.sleep(2 ** (attempt - 1))
-
+            with open(LOG_FILE, "a") as log:
+                log.write(f"[Retry {attempt}] Error fetching weather for {lat}, {lon}: {e}\n")
+            time.sleep(RETRY_DELAY)
     return None
 
 def main():
-    df = pd.read_csv(INPUT_CSV)
-    results = []
-    failed_rows = []
+    try:
+        df = pd.read_csv(INPUT_CSV)
+        results = []
+        for _, row in df.iterrows():
+            lat = row["latitude"]
+            lon = row["longitude"]
+            team = row["home_team"]
+            weather_data = fetch_weather(lat, lon)
+            if weather_data:
+                current = weather_data.get("current", {})
+                results.append({
+                    "home_team": team,
+                    "temp_f": current.get("temp_f"),
+                    "humidity": current.get("humidity"),
+                    "wind_mph": current.get("wind_mph"),
+                    "wind_dir": current.get("wind_dir")
+                })
+            else:
+                results.append({
+                    "home_team": team,
+                    "temp_f": None,
+                    "humidity": None,
+                    "wind_mph": None,
+                    "wind_dir": None
+                })
 
-    print(f"✅ Loaded {len(df)} rows from {INPUT_CSV}")
-    for i, row in df.iterrows():
-        lat, lon = row["lat"], row["lon"]
-        weather = fetch_weather(lat, lon)
-
-        if weather is None:
-            failed_rows.append((lat, lon))
-            continue
-
-        row["temperature"] = weather.get("main", {}).get("temp")
-        row["wind_speed"] = weather.get("wind", {}).get("speed")
-        row["humidity"] = weather.get("main", {}).get("humidity")
-        results.append(row)
-
-    if results:
         pd.DataFrame(results).to_csv(OUTPUT_CSV, index=False)
-        print(f"📁 Weather data saved to {OUTPUT_CSV}")
-        print(f"✅ Processed {len(results)} rows")
-
-    if failed_rows:
-        with open(ERROR_LOG, "w") as f:
-            for lat, lon in failed_rows:
-                f.write(f"{lat},{lon}\n")
-
-        print(f"❌ {len(failed_rows)} rows failed after 5 retries — committing log and exiting")
-
-        try:
-            subprocess.run(["git", "add", ERROR_LOG], check=True)
-            subprocess.run(["git", "commit", "-m", "🚨 Logged weather scrape failures"], check=True)
-            subprocess.run(["git", "push"], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️ Git commit/push failed: {e}")
-
-        raise RuntimeError("Weather scrape failed for some rows — see weather_error_log.txt")
+        with open(LOG_FILE, "a") as log:
+            log.write("✅ Weather data collection complete.\n")
+    except Exception as e:
+        with open(LOG_FILE, "a") as log:
+            log.write(f"❌ Script failed: {e}\n")
 
 if __name__ == "__main__":
     main()
