@@ -14,7 +14,7 @@ def apply_weather_adjustments(batters_df, weather_df):
     merged = pd.merge(
         batters_df,
         weather_df,
-        left_on="home_team",
+        left_on="team",
         right_on="stadium",
         how="left"
     )
