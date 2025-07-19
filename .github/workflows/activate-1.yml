@@ -35,6 +35,7 @@ jobs:
             echo "status=❌" >> $GITHUB_OUTPUT
             echo "❌ normalize_names.py encountered an error." > summaries/Activate1/normalize_names.txt
           fi
+          touch summaries/Activate1/normalize_names.txt
 
   tag:
     needs: normalize
@@ -64,6 +65,7 @@ jobs:
             echo "status=❌" >> $GITHUB_OUTPUT
             echo "❌ tag_master_files.py encountered an error." > summaries/Activate1/tag_master_files.txt
           fi
+          touch summaries/Activate1/tag_master_files.txt
 
   dedupe:
     needs: [normalize, tag]
@@ -93,6 +95,7 @@ jobs:
             echo "status=❌" >> $GITHUB_OUTPUT
             echo "❌ deduplicate_normalized.py encountered an error." > summaries/Activate1/deduplicate_normalized.txt
           fi
+          touch summaries/Activate1/deduplicate_normalized.txt
 
       - name: Final Summary and Commit
         run: |
@@ -106,8 +109,10 @@ jobs:
             echo "deduplicate_normalized.py — ${{ steps.dedupe.outputs.status || 'unknown' }} (summaries/Activate1/deduplicate_normalized.txt)"
           } > summaries/Activate1/activate_1.txt
 
+          touch summaries/Activate1/activate_1.txt
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add summaries/Activate1/*.txt summaries/Activate1/*.log
-          git commit -m "✅ Activate1 output summaries with ET timestamp" || echo "No summary changes to commit"
+          git commit -m "✅ Activate1: Forced commit of all logs and summaries" || echo "No summary changes to commit"
           git push || echo "Nothing to push"
