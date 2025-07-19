@@ -1,66 +1,69 @@
-
 import pandas as pd
 import requests
 import time
 
-INPUT_CSV = "data/weather_input.csv"
-OUTPUT_CSV = "data/weather_adjustments.csv"
-LOG_FILE = "summaries/Activate3/get_weather_data.log"
 API_KEY = "45d9502513854b489c3162411251907"
-BASE_URL = "http://api.weatherapi.com/v1/current.json"
-
+INPUT_FILE = "data/weather_input.csv"
+OUTPUT_FILE = "data/weather_adjustments.csv"
 MAX_RETRIES = 5
-RETRY_DELAY = 2  # seconds
 
 def fetch_weather(lat, lon):
-    params = {
-        "key": API_KEY,
-        "q": f"{lat},{lon}"
-    }
-    for attempt in range(1, MAX_RETRIES + 1):
+    url = f"https://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}"
+    for attempt in range(MAX_RETRIES):
         try:
-            response = requests.get(BASE_URL, params=params, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            with open(LOG_FILE, "a") as log:
-                log.write(f"[Retry {attempt}] Error fetching weather for {lat}, {lon}: {e}\n")
-            time.sleep(RETRY_DELAY)
+            response = requests.get(url, timeout=10)
+            if response.status_code == 200:
+                return response.json()
+        except Exception:
+            pass
+        time.sleep(2)
     return None
 
 def main():
-    try:
-        df = pd.read_csv(INPUT_CSV)
-        results = []
-        for _, row in df.iterrows():
-            lat = row["latitude"]
-            lon = row["longitude"]
-            team = row["home_team"]
-            weather_data = fetch_weather(lat, lon)
-            if weather_data:
-                current = weather_data.get("current", {})
-                results.append({
-                    "home_team": team,
-                    "temp_f": current.get("temp_f"),
-                    "humidity": current.get("humidity"),
-                    "wind_mph": current.get("wind_mph"),
-                    "wind_dir": current.get("wind_dir")
-                })
-            else:
-                results.append({
-                    "home_team": team,
-                    "temp_f": None,
-                    "humidity": None,
-                    "wind_mph": None,
-                    "wind_dir": None
-                })
+    df = pd.read_csv(INPUT_FILE)
+    results = []
 
-        pd.DataFrame(results).to_csv(OUTPUT_CSV, index=False)
-        with open(LOG_FILE, "a") as log:
-            log.write("✅ Weather data collection complete.\n")
-    except Exception as e:
-        with open(LOG_FILE, "a") as log:
-            log.write(f"❌ Script failed: {e}\n")
+    for _, row in df.iterrows():
+        lat = row["latitude"]
+        lon = row["longitude"]
+        is_dome = row["is_dome"]
+        venue = row["venue"]
+        home_team = row["home_team"]
+        away_team = row["away_team"]
+
+        weather_data = fetch_weather(lat, lon)
+
+        if weather_data:
+            current = weather_data.get("current", {})
+            result = {
+                "home_team": home_team,
+                "away_team": away_team,
+                "venue": venue,
+                "temperature": current.get("temp_f", ""),
+                "wind_speed": current.get("wind_mph", ""),
+                "wind_direction": current.get("wind_dir", ""),
+                "humidity": current.get("humidity", ""),
+                "precipitation": 0.0,
+                "notes": "Roof closed" if is_dome else "Roof open"
+            }
+        else:
+            result = {
+                "home_team": home_team,
+                "away_team": away_team,
+                "venue": venue,
+                "temperature": "",
+                "wind_speed": "",
+                "wind_direction": "",
+                "humidity": "",
+                "precipitation": 0.0,
+                "notes": "Roof closed" if is_dome else "Roof open"
+            }
+
+        results.append(result)
+
+    output_df = pd.DataFrame(results)
+    os.makedirs(os.path.dirname(OUTPUT_FILE), exist_ok=True)
+    output_df.to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
     main()
