@@ -30,3 +30,5 @@ games = games[
 
 # Save normalized file
 games.to_csv('data/raw/todaysgames_normalized.csv', index=False)
+
+print("normalize_todays_games.py completed successfully. Output saved to data/raw/todaysgames_normalized.csv")
