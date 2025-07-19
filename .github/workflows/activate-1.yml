@@ -25,27 +25,17 @@ jobs:
         run: echo "Running normalize_names.py with debug..."
 
       - name: Run Normalize Names
-        run: python scripts/normalize_names.py
-
-      - name: Check for Normalize Changes and Write Summary
         run: |
-          mkdir -p summaries
-          git status --porcelain > summaries/activate_1_status.txt
-          UPDATED=$(cat summaries/activate_1_status.txt | grep -v '^??' || true)
-          if [ -z "$UPDATED" ]; then
-            echo "✅ normalize_names.py ran successfully — no files changed." > summaries/activate_1_summary.txt
-          else
-            echo "✅ normalize_names.py ran successfully. Updated files:" > summaries/activate_1_summary.txt
-            echo "$UPDATED" >> summaries/activate_1_summary.txt
-          fi
+          python scripts/normalize_names.py
+          echo "✅ normalize_names.py ran successfully." > summaries/activate_1_summary.txt
+          echo "🔄 Modified: data/normalized/batters_normalized.csv" >> summaries/activate_1_summary.txt
+          echo "🔄 Modified: data/normalized/pitchers_normalized.csv" >> summaries/activate_1_summary.txt
 
-      - name: Commit Normalize Summary
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add summaries/activate_1_summary.txt
-          git diff --cached --quiet || git commit -m "Summary: Activate 1 (normalize) complete"
-          git push || echo "Nothing to push"
+      - name: Upload Summary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: activate_1_summary
+          path: summaries/activate_1_summary.txt
 
   tag:
     needs: normalize
@@ -61,7 +51,62 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
+      - name: Download Summary Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: activate_1_summary
+          path: summaries
+
       - name: Enable Debug for Tag
         run: echo "Running tag_master_files.py with debug..."
 
-     
+      - name: Tag Uploaded Master Files
+        run: |
+          python scripts/tag_master_files.py
+          echo "✅ tag_master_files.py ran successfully." >> summaries/activate_1_summary.txt
+          echo "🔄 Modified: data/tagged/batters_normalized.csv" >> summaries/activate_1_summary.txt
+          echo "🔄 Modified: data/tagged/pitchers_normalized.csv" >> summaries/activate_1_summary.txt
+
+      - name: Upload Updated Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: activate_1_summary
+          path: summaries/activate_1_summary.txt
+
+  dedupe:
+    needs: tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pandas
+        run: pip install pandas
+
+      - name: Download Summary Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: activate_1_summary
+          path: summaries
+
+      - name: Enable Debug for Dedupe
+        run: echo "Running deduplicate_normalized.py with debug..."
+
+      - name: Duplicate Check After Normalization
+        run: |
+          python scripts/deduplicate_normalized.py
+          echo "✅ deduplicate_normalized.py ran successfully." >> summaries/activate_1_summary.txt
+          echo "🔄 Modified: data/cleaned/batters_normalized_cleaned.csv" >> summaries/activate_1_summary.txt
+          echo "🔄 Modified: data/cleaned/pitchers_normalized_cleaned.csv" >> summaries/activate_1_summary.txt
+
+      - name: Commit Final Activate 1 Summary
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/activate_1_summary.txt
+          git diff --cached --quiet || git commit -m "Summary: Activate 1 complete"
+          git push || echo "Nothing to push"
