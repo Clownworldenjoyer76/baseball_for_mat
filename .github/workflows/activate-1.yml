@@ -21,11 +21,16 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
-      - name: Enable Debug for Normalize
-        run: echo "Running normalize_names.py with debug..."
-
       - name: Run Normalize Names
         run: python scripts/normalize_names.py
+
+      - name: Force Add Normalized Files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -A
+          git commit -m "Force update: normalize_names.py output" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   tag:
     needs: normalize
@@ -41,11 +46,16 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
-      - name: Enable Debug for Tag
-        run: echo "Running tag_master_files.py with debug..."
-
-      - name: Tag Uploaded Master Files
+      - name: Run Tag Master Files
         run: python scripts/tag_master_files.py
+
+      - name: Force Add Tagged Files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -A
+          git commit -m "Force update: tag_master_files.py output" || echo "No changes to commit"
+          git push || echo "Nothing to push"
 
   dedupe:
     needs: tag
@@ -61,23 +71,22 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
-      - name: Enable Debug for Dedupe
-        run: echo "Running deduplicate_normalized.py with debug..."
-
-      - name: Duplicate Check After Normalization
+      - name: Run Deduplicate Normalized
         run: python scripts/deduplicate_normalized.py
 
-      - name: Write and Commit Summary File
+      - name: Force Add Deduplicated Files
         run: |
-          mkdir -p summaries
-          echo "✅ Activate 1 Summary - $(date)" > summaries/activate_1_summary.txt
-          echo "- normalize_names.py ran" >> summaries/activate_1_summary.txt
-          echo "- tag_master_files.py ran" >> summaries/activate_1_summary.txt
-          echo "- deduplicate_normalized.py ran" >> summaries/activate_1_summary.txt
-          echo "- Summary written even if no file changes" >> summaries/activate_1_summary.txt
-
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git add -A
+          git commit -m "Force update: deduplicate_normalized.py output" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+
+      - name: Write and Commit Summary
+        run: |
+          mkdir -p summaries
+          echo "✅ Activate 1 Summary — $(date)" > summaries/activate_1_summary.txt
+          echo "normalize_names.py, tag_master_files.py, deduplicate_normalized.py ran successfully." >> summaries/activate_1_summary.txt
           git add summaries/activate_1_summary.txt
-          git commit -m "Forced summary update for Activate 1"
-          git push --force
+          git commit -m "Forced summary update for Activate 1" || echo "No summary changes to commit"
+          git push || echo "Nothing to push"
