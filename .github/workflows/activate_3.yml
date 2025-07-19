@@ -25,69 +25,47 @@ jobs:
         run: |
           mkdir -p summaries/Activate3
 
-          # Step 04: update_game_time.py
-          if python scripts/update_game_time.py > summaries/Activate3/update_game_time.log 2>&1; then
-            echo "✅ update_game_time.py ran successfully." > summaries/Activate3/update_game_time.txt
-          else
-            echo "❌ update_game_time.py encountered an error." > summaries/Activate3/update_game_time.txt
-          fi
-          touch summaries/Activate3/update_game_time.txt
+          declare -A scripts=(
+            ["update_game_time"]="scripts/update_game_time.py"
+            ["generate_weather_csv"]="scripts/generate_weather_csv.py"
+            ["get_weather_data"]="scripts/get_weather_data.py"
+            ["filter_today_batters"]="scripts/filter_today_batters.py"
+            ["split_batters_by_home_away"]="scripts/split_batters_by_home_away.py"
+            ["split_pitchers"]="scripts/split_pitchers.py"
+          )
 
-          # Step 05: generate_weather_csv.py
-          if python scripts/generate_weather_csv.py > summaries/Activate3/generate_weather_csv.log 2>&1; then
-            echo "✅ generate_weather_csv.py ran successfully." > summaries/Activate3/generate_weather_csv.txt
-          else
-            echo "❌ generate_weather_csv.py encountered an error." > summaries/Activate3/generate_weather_csv.txt
-          fi
-          touch summaries/Activate3/generate_weather_csv.txt
+          for key in "${!scripts[@]}"; do
+            LOG="summaries/Activate3/${key}.log"
+            TXT="summaries/Activate3/${key}.txt"
+            PY=${scripts[$key]}
 
-          # Step 06: get_weather_data.py (HARD FAIL ON ERROR)
-          mkdir -p summaries/Activate3
-          python scripts/get_weather_data.py > summaries/Activate3/get_weather_data.log 2>&1
-          echo "✅ get_weather_data.py ran successfully." > summaries/Activate3/get_weather_data.txt
-          touch summaries/Activate3/get_weather_data.txt
+            echo "▶ Running $PY"
+            if python "$PY" > "$LOG" 2>&1; then
+              echo "✅ $PY ran successfully." > "$TXT"
+            else
+              echo "❌ $PY encountered an error." > "$TXT"
+            fi
 
-          # Step 07: filter_today_batters.py
-          if python scripts/filter_today_batters.py > summaries/Activate3/filter_today_batters.log 2>&1; then
-            echo "✅ filter_today_batters.py ran successfully." > summaries/Activate3/filter_today_batters.txt
-          else
-            echo "❌ filter_today_batters.py encountered an error." > summaries/Activate3/filter_today_batters.txt
-          fi
-          touch summaries/Activate3/filter_today_batters.txt
-
-          # Step 08: split_batters_by_home_away.py
-          if python scripts/split_batters_by_home_away.py > summaries/Activate3/split_batters_by_home_away.log 2>&1; then
-            echo "✅ split_batters_by_home_away.py ran successfully." > summaries/Activate3/split_batters_by_home_away.txt
-          else
-            echo "❌ split_batters_by_home_away.py encountered an error." > summaries/Activate3/split_batters_by_home_away.txt
-          fi
-          touch summaries/Activate3/split_batters_by_home_away.txt
-
-          # Step 09: split_pitchers.py
-          if python scripts/split_pitchers.py > summaries/Activate3/split_pitchers.log 2>&1; then
-            echo "✅ split_pitchers.py ran successfully." > summaries/Activate3/split_pitchers.txt
-          else
-            echo "❌ split_pitchers.py encountered an error." > summaries/Activate3/split_pitchers.txt
-          fi
-          touch summaries/Activate3/split_pitchers.txt
+            # Always touch to ensure git sees the file
+            touch "$LOG"
+            touch "$TXT"
+          done
 
           # Final Summary
           ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
           {
             echo "✅ Activate 3 Summary — $ET_TIMESTAMP"
-            echo "update_game_time.py (summaries/Activate3/update_game_time.txt)"
-            echo "generate_weather_csv.py (summaries/Activate3/generate_weather_csv.txt)"
-            echo "get_weather_data.py (summaries/Activate3/get_weather_data.txt)"
-            echo "filter_today_batters.py (summaries/Activate3/filter_today_batters.txt)"
-            echo "split_batters_by_home_away.py (summaries/Activate3/split_batters_by_home_away.txt)"
-            echo "split_pitchers.py (summaries/Activate3/split_pitchers.txt)"
+            for key in "${!scripts[@]}"; do
+              echo "${scripts[$key]} (summaries/Activate3/${key}.txt)"
+            done
           } > summaries/Activate3/activate_3.txt
+
           touch summaries/Activate3/activate_3.txt
 
       - name: Commit Summary Logs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/Activate3/*.txt summaries/Activate3/*.log
+          git add summaries/Activate3/*.txt summaries/Activate3/*.log || true
           git commit -m "✅ Activate 3: full summary logs committed" || echo "No changes to commit"
           git push || echo "Nothing to push"
