@@ -60,6 +60,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/Activate4/*.log summaries/Activate4/*.txt summaries/Activate4/activate_4.txt
+          git add -f summaries/Activate4/*.log summaries/Activate4/*.txt summaries/Activate4/activate_4.txt
           git diff --cached --quiet || git commit -m "Activate 4: full summary logs committed"
           git push || echo "Nothing to push"
