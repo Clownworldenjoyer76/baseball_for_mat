@@ -27,13 +27,13 @@ jobs:
       - name: Run Normalize Names
         id: normalize
         run: |
-          mkdir -p summaries
-          if python scripts/normalize_names.py > summaries/normalize_names.log 2>&1; then
+          mkdir -p summaries/Activate1
+          if python scripts/normalize_names.py > summaries/Activate1/normalize_names.log 2>&1; then
             echo "status=✅" >> $GITHUB_OUTPUT
-            echo "✅ normalize_names.py ran successfully." > summaries/normalize_names.txt
+            echo "✅ normalize_names.py ran successfully." > summaries/Activate1/normalize_names.txt
           else
             echo "status=❌" >> $GITHUB_OUTPUT
-            echo "❌ normalize_names.py encountered an error." > summaries/normalize_names.txt
+            echo "❌ normalize_names.py encountered an error." > summaries/Activate1/normalize_names.txt
           fi
 
   tag:
@@ -56,13 +56,13 @@ jobs:
       - name: Run Tag Master Files
         id: tag
         run: |
-          mkdir -p summaries
-          if python scripts/tag_master_files.py > summaries/tag_master_files.log 2>&1; then
+          mkdir -p summaries/Activate1
+          if python scripts/tag_master_files.py > summaries/Activate1/tag_master_files.log 2>&1; then
             echo "status=✅" >> $GITHUB_OUTPUT
-            echo "✅ tag_master_files.py ran successfully." > summaries/tag_master_files.txt
+            echo "✅ tag_master_files.py ran successfully." > summaries/Activate1/tag_master_files.txt
           else
             echo "status=❌" >> $GITHUB_OUTPUT
-            echo "❌ tag_master_files.py encountered an error." > summaries/tag_master_files.txt
+            echo "❌ tag_master_files.py encountered an error." > summaries/Activate1/tag_master_files.txt
           fi
 
   dedupe:
@@ -85,29 +85,29 @@ jobs:
       - name: Run Deduplicate Normalized
         id: dedupe
         run: |
-          mkdir -p summaries
-          if python scripts/deduplicate_normalized.py > summaries/deduplicate_normalized.log 2>&1; then
+          mkdir -p summaries/Activate1
+          if python scripts/deduplicate_normalized.py > summaries/Activate1/deduplicate_normalized.log 2>&1; then
             echo "status=✅" >> $GITHUB_OUTPUT
-            echo "✅ deduplicate_normalized.py ran successfully." > summaries/deduplicate_normalized.txt
+            echo "✅ deduplicate_normalized.py ran successfully." > summaries/Activate1/deduplicate_normalized.txt
           else
             echo "status=❌" >> $GITHUB_OUTPUT
-            echo "❌ deduplicate_normalized.py encountered an error." > summaries/deduplicate_normalized.txt
+            echo "❌ deduplicate_normalized.py encountered an error." > summaries/Activate1/deduplicate_normalized.txt
           fi
 
       - name: Final Summary and Commit
         run: |
-          mkdir -p summaries
+          mkdir -p summaries/Activate1
           ET_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
           {
             echo "✅ Activate 1 Summary — $ET_TIMESTAMP"
-            echo "normalize_names.py — ${{ needs.normalize.outputs.status || 'unknown' }} (summaries/normalize_names.txt)"
-            echo "tag_master_files.py — ${{ needs.tag.outputs.status || 'unknown' }} (summaries/tag_master_files.txt)"
-            echo "deduplicate_normalized.py — ${{ steps.dedupe.outputs.status || 'unknown' }} (summaries/deduplicate_normalized.txt)"
-          } > summaries/activate_1.txt
+            echo "normalize_names.py — ${{ needs.normalize.outputs.status || 'unknown' }} (summaries/Activate1/normalize_names.txt)"
+            echo "tag_master_files.py — ${{ needs.tag.outputs.status || 'unknown' }} (summaries/Activate1/tag_master_files.txt)"
+            echo "deduplicate_normalized.py — ${{ steps.dedupe.outputs.status || 'unknown' }} (summaries/Activate1/deduplicate_normalized.txt)"
+          } > summaries/Activate1/activate_1.txt
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/activate_1.txt summaries/*.txt summaries/*.log
-          git commit -m "✅ Full summary output for Activate 1" || echo "No summary changes to commit"
+          git add summaries/Activate1/*.txt summaries/Activate1/*.log
+          git commit -m "✅ Activate1 output summaries with ET timestamp" || echo "No summary changes to commit"
           git push || echo "Nothing to push"
