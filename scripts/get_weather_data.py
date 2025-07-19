@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import time
+import subprocess
 
 INPUT_CSV = "data/weather_input.csv"
 OUTPUT_CSV = "data/weather_adjustments.csv"
@@ -41,28 +42,30 @@ def main():
             failed_rows.append((lat, lon))
             continue
 
-        # Extract and assign weather data
-        temp = weather.get("main", {}).get("temp")
-        wind = weather.get("wind", {}).get("speed")
-        humidity = weather.get("main", {}).get("humidity")
-        row["temperature"] = temp
-        row["wind_speed"] = wind
-        row["humidity"] = humidity
+        # Extract weather data
+        row["temperature"] = weather.get("main", {}).get("temp")
+        row["wind_speed"] = weather.get("wind", {}).get("speed")
+        row["humidity"] = weather.get("main", {}).get("humidity")
         results.append(row)
 
-    # Write successful results
     if results:
         pd.DataFrame(results).to_csv(OUTPUT_CSV, index=False)
         print(f"📁 Weather data saved to {OUTPUT_CSV}")
         print(f"✅ Processed {len(results)} rows")
 
-    # Log failures
     if failed_rows:
         with open(ERROR_LOG, "w") as f:
             for lat, lon in failed_rows:
                 f.write(f"{lat},{lon}\n")
-        print(f"❌ {len(failed_rows)} rows failed after 5 retries")
-        raise RuntimeError("Weather scrape failed for some rows — check weather_error_log.txt")
+
+        print(f"❌ {len(failed_rows)} rows failed after 5 retries — committing log and exiting")
+
+        # Commit and push the error log before failing
+        subprocess.run(["git", "add", ERROR_LOG], check=True)
+        subprocess.run(["git", "commit", "-m", "🚨 Logged weather scrape failures"], check=True)
+        subprocess.run(["git", "push"], check=True)
+
+        raise RuntimeError("Weather scrape failed for some rows — see weather_error_log.txt")
 
 if __name__ == "__main__":
     main()
