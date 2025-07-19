@@ -8,7 +8,7 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
-  activate_1:
+  activate1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,34 +21,57 @@ jobs:
       - name: Install pandas
         run: pip install pandas
 
-      - name: Create Summary File
-        run: |
-          mkdir -p summaries
-          echo "✅ normalize_names.py ran successfully." > summaries/activate_1_summary.txt
-          echo "🔄 Modified: data/normalized/batters_normalized.csv" >> summaries/activate_1_summary.txt
-          echo "🔄 Modified: data/normalized/pitchers_normalized.csv" >> summaries/activate_1_summary.txt
-
       - name: Run normalize_names.py
-        run: python scripts/normalize_names.py
-
-      - name: Run tag_master_files.py
         run: |
-          python scripts/tag_master_files.py
-          echo "✅ tag_master_files.py ran successfully." >> summaries/activate_1_summary.txt
-          echo "🔄 Modified: data/tagged/batters_normalized.csv" >> summaries/activate_1_summary.txt
-          echo "🔄 Modified: data/tagged/pitchers_normalized.csv" >> summaries/activate_1_summary.txt
+          echo "✅ Starting normalize_names.py"
+          python scripts/normalize_names.py
 
-      - name: Run deduplicate_normalized.py
-        run: |
-          python scripts/deduplicate_normalized.py
-          echo "✅ deduplicate_normalized.py ran successfully." >> summaries/activate_1_summary.txt
-          echo "🔄 Modified: data/cleaned/batters_normalized_cleaned.csv" >> summaries/activate_1_summary.txt
-          echo "🔄 Modified: data/cleaned/pitchers_normalized_cleaned.csv" >> summaries/activate_1_summary.txt
-
-      - name: Commit & Push Summary
+      - name: Commit Normalize Output
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/activate_1_summary.txt
-          git commit -m "📄 activate_1_summary.txt written" || echo "No changes to commit"
-          git push || echo "Nothing to push"
+          git add .
+          git commit -m "Step 01: Ran normalize_names.py (forced commit)" || echo "✅ Nothing to commit"
+          git push || echo "✅ Nothing to push"
+
+      - name: Run tag_master_files.py
+        run: |
+          echo "✅ Starting tag_master_files.py"
+          python scripts/tag_master_files.py
+
+      - name: Commit Tag Output
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 02: Ran tag_master_files.py (forced commit)" || echo "✅ Nothing to commit"
+          git push || echo "✅ Nothing to push"
+
+      - name: Run deduplicate_normalized.py
+        run: |
+          echo "✅ Starting deduplicate_normalized.py"
+          python scripts/deduplicate_normalized.py
+
+      - name: Commit Dedupe Output
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "Step 03: Ran deduplicate_normalized.py (forced commit)" || echo "✅ Nothing to commit"
+          git push || echo "✅ Nothing to push"
+
+      - name: Write Summary File
+        run: |
+          echo "Activate 1 Summary" > activate_1_summary.txt
+          echo "- ✅ normalize_names.py ran" >> activate_1_summary.txt
+          echo "- ✅ tag_master_files.py ran" >> activate_1_summary.txt
+          echo "- ✅ deduplicate_normalized.py ran" >> activate_1_summary.txt
+          echo "- 🔁 Forced commit/push attempted after each step" >> activate_1_summary.txt
+
+      - name: Commit and Push Summary
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add activate_1_summary.txt
+          git commit -m "Added summary for Activate 1" || echo "✅ Nothing to commit"
+          git push || echo "✅ Nothing to push"
