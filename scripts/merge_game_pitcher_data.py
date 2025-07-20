@@ -1,3 +1,4 @@
+
 import pandas as pd
 import subprocess
 import sys
@@ -13,12 +14,12 @@ GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 OUTPUT_HOME = "data/processed/batters_home_with_pitcher.csv"
 OUTPUT_AWAY = "data/processed/batters_away_with_pitcher.csv"
 
-def get_pitcher_woba(df, team_col, name_col):
-    required = [team_col, name_col, "adj_woba_combined"]
+def get_pitcher_woba(df, name_col):
+    required = [name_col, "adj_woba_combined"]
     for col in required:
         if col not in df.columns:
             raise ValueError(f"Missing column '{col}' in pitcher file")
-    return df[required].drop_duplicates(subset=[team_col, name_col])
+    return df[required].drop_duplicates(subset=[name_col])
 
 def standardize_name(full_name):
     if pd.isna(full_name) or full_name.strip().lower() == "undecided":
@@ -42,8 +43,8 @@ def main():
 
     verify_columns(bh, ["team", "name"], "batters_home")
     verify_columns(ba, ["team", "name"], "batters_away")
-    verify_columns(ph, ["name", "adj_woba_combined"], "pitchers_home")
-    verify_columns(pa, ["name", "adj_woba_combined"], "pitchers_away")
+    verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
+    verify_columns(pa, ["away_team_y", "name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
     # Normalize names
@@ -71,22 +72,22 @@ def main():
         right_on="away_team"
     )
 
-    home_pitcher_stats = get_pitcher_woba(ph, "home_team", "name")
-    away_pitcher_stats = get_pitcher_woba(pa, "away_team", "name")
+    home_pitcher_stats = get_pitcher_woba(ph, "name")
+    away_pitcher_stats = get_pitcher_woba(pa.rename(columns={"away_team_y": "away_team"}), "name")
 
     bh = bh.merge(
         home_pitcher_stats,
         how="left",
-        left_on=["home_team", "pitcher_home"],
-        right_on=["home_team", "name"],
+        left_on="pitcher_home",
+        right_on="name",
         suffixes=("", "_pitcher")
     )
 
     ba = ba.merge(
         away_pitcher_stats,
         how="left",
-        left_on=["away_team", "pitcher_away"],
-        right_on=["away_team", "name"],
+        left_on="pitcher_away",
+        right_on="name",
         suffixes=("", "_pitcher")
     )
 
