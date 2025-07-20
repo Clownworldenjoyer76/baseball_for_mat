@@ -40,7 +40,7 @@ merged["matchup"] = merged["team_code"].apply(lambda t: resolve_matchup(t, today
 # Ensure output directory exists
 os.makedirs("data/final", exist_ok=True)
 
-# Write guaranteed CSV
+# Write guaranteed CSV with all useful scoring fields
 merged.to_csv(OUTPUT_PATH, index=False)
 
 # Write guaranteed debug file
@@ -51,7 +51,7 @@ with open(DEBUG_PATH, "w") as f:
     f.write(f"Unmatched teams (max 10): {unmatched[:10]}\n")
 
 # Failsafe: print to console so user sees proof
-print("[MATCHUP SCRIPT COMPLETE]")
+print("[MATCHUP SCRIPT COMPLETE]") in
 print(f"CSV saved to: {OUTPUT_PATH}")
 print(f"Debug saved to: {DEBUG_PATH}")
 print(f"Total rows: {len(merged)}")
