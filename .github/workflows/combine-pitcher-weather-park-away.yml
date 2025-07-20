@@ -10,21 +10,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pandas
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas unidecode
 
       - name: Run combine_pitcher_weather_park_away.py
         run: python scripts/combine_pitcher_weather_park_away.py
 
       - name: Upload Combined Away Pitcher File
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: combined-away-pitchers
           path: |
-            data/adjusted/pitchers_away_adjusted.csv
+            data/adjusted/pitchers_away_weather_park.csv
             data/adjusted/log_pitchers_combined_away.txt
