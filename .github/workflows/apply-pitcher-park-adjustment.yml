@@ -28,7 +28,7 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install Unidecode
+          pip install unidecode
 
       - name: Run Pitcher Park Adjustment Script
         run: python scripts/apply_pitcher_park_adjustment.py
@@ -41,9 +41,3 @@ jobs:
           git add log_pitchers_away_park.txt
           git commit -m "Auto-update pitcher park adjustment"
           git push
-
-      - name: Check Git status
-        run: |
-          git status
-          git branch
-          git remote -v
