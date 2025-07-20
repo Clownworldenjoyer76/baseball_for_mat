@@ -1,36 +1,42 @@
 import pandas as pd
 
-# Input file paths
-matchup_stats_path = "data/final/matchup_stats.csv"
-team_name_master_path = "data/Data/team_name_master.csv"
-todaysgames_path = "data/raw/todaysgames_normalized.csv"
+# Input paths
+MATCHUP_STATS_PATH = "data/final/matchup_stats.csv"
+TEAM_NAME_MASTER_PATH = "data/Data/team_name_master.csv"
+TODAYSGAMES_PATH = "data/raw/todaysgames_normalized.csv"
+OUTPUT_PATH = "data/final/matchup.csv"
 
-# Output file path
-output_path = "data/final/matchup.csv"
+# Load data
+matchup_stats = pd.read_csv(MATCHUP_STATS_PATH)
+team_master = pd.read_csv(TEAM_NAME_MASTER_PATH)
+todays_games = pd.read_csv(TODAYSGAMES_PATH)
 
-# Load input files
-matchup_stats = pd.read_csv(matchup_stats_path)
-team_name_master = pd.read_csv(team_name_master_path)
-todaysgames = pd.read_csv(todaysgames_path)
+# Normalize 'name' and 'team' columns
+matchup_stats["name_normalized"] = matchup_stats["name"].str.lower().str.strip()
+team_master["team_normalized"] = team_master["team_name"].str.lower().str.strip()
 
-# Map team name to team code
-name_map = dict(zip(team_name_master['team_name'], team_name_master['team_code']))
-matchup_stats['normalized_team'] = matchup_stats['team'].map(name_map)
+# Merge to attach correct team identity
+merged = pd.merge(
+    matchup_stats,
+    team_master[["team_normalized", "team_code"]],
+    left_on="name_normalized",
+    right_on="team_normalized",
+    how="left"
+)
 
-# Define function to get matchup string
-def get_matchup(team, todaysgames_df):
-    for _, row in todaysgames_df.iterrows():
-        if team == row['away_team']:
+# Generate matchup column
+def resolve_matchup(team_code, games_df):
+    for _, row in games_df.iterrows():
+        if team_code == row["home_team"]:
             return f"{row['away_team']} vs {row['home_team']}"
-        if team == row['home_team']:
+        elif team_code == row["away_team"]:
             return f"{row['away_team']} vs {row['home_team']}"
     return ""
 
-# Apply matchup
-matchup_stats['matchup'] = matchup_stats['normalized_team'].apply(lambda t: get_matchup(t, todaysgames))
+merged["matchup"] = merged["team_code"].apply(lambda t: resolve_matchup(t, todays_games))
 
-# Drop temp column
-matchup_stats.drop(columns=['normalized_team'], inplace=True)
+# Drop temp columns
+merged.drop(columns=["name_normalized", "team_normalized"], inplace=True)
 
-# Save to output
-matchup_stats.to_csv(output_path, index=False)
+# Save output
+merged.to_csv(OUTPUT_PATH, index=False)
