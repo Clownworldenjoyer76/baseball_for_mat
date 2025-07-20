@@ -40,7 +40,7 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    verify_columns(bh, ["home_team_weather", "name"], "batters_home")
+    verify_columns(bh, ["team", "name"], "batters_home")
     verify_columns(ba, ["team", "name"], "batters_away")
     verify_columns(ph, ["name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["name", "adj_woba_combined"], "pitchers_away")
@@ -60,7 +60,7 @@ def main():
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        left_on="home_team_weather",
+        left_on="team",
         right_on="home_team"
     )
 
