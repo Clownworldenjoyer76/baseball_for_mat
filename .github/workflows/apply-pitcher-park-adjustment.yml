@@ -26,16 +26,18 @@ jobs:
           python-version: 3.11
 
       - name: Install Dependencies
-        run: pip install pandas unidecode
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas unidecode
 
       - name: Run Pitcher Park Adjustment Script
         run: python scripts/apply_pitcher_park_adjustment.py
 
       - name: Commit and Push Output Files
         run: |
-          git add data/adjusted/pitchers_home_park.csv
-          git add data/adjusted/pitchers_away_park.csv
-          git add log_pitchers_home_park.txt
-          git add log_pitchers_away_park.txt
-          git commit -m "Auto-update pitcher park adjustment"
-          git push
+          git add data/adjusted/pitchers_home_park.csv || echo "No home file to add"
+          git add data/adjusted/pitchers_away_park.csv || echo "No away file to add"
+          git add log_pitchers_home_park.txt || echo "No home log to add"
+          git add log_pitchers_away_park.txt || echo "No away log to add"
+          git commit -m "Auto-update pitcher park adjustment" || echo "Nothing to commit"
+          git push || echo "Nothing to push"
