@@ -4,7 +4,7 @@ import pandas as pd
 BATTERS_HOME_FILE = "data/adjusted/batters_home.csv"
 BATTERS_AWAY_FILE = "data/adjusted/batters_away.csv"
 WEATHER_FILE = "data/weather_adjustments.csv"
-OUTPUT_HOME = "data/adjusted/batters_home_weather_park.csv"
+OUTPUT_HOME = "data/adjusted/batters_home_weather.csv"
 OUTPUT_AWAY = "data/adjusted/batters_away_weather.csv"
 LOG_HOME = "log_weather_home.txt"
 LOG_AWAY = "log_weather_away.txt"
