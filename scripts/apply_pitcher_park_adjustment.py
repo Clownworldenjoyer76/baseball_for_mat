@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from unidecode import unidecode
+
 
 def normalize_name(name):
     if pd.isna(name): return name
