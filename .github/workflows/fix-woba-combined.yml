@@ -1,0 +1,31 @@
+name: Fix WOBA Combined
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-woba-combined:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Run WOBA Fix Script
+        run: python scripts/fix_woba_combined.py > data/logs/fix_woba_combined.log 2>&1 || true
+
+      - name: Commit and Push
+        run: |
+          git config --global user.email "you@example.com"
+          git config --global user.name "GitHub Actions"
+          git add data/final/matchup_stats_woba.csv data/logs/fix_woba_combined.log || exit 0
+          git commit -m "✅ Added adj_woba_combined to matchup_stats_woba.csv" || echo "No changes to commit"
+          git push
