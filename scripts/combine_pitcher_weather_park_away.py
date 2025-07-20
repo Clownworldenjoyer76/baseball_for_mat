@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from unidecode import unidecode
+import subprocess
 
 def normalize_name(name):
     if pd.isna(name): return name
@@ -9,9 +10,6 @@ def normalize_name(name):
     name = ' '.join(name.split())
     name = ','.join(part.strip() for part in name.split(','))
     return name.title()
-
-import Path
-import subprocess
 
 def load_data():
     weather = pd.read_csv("data/adjusted/pitchers_away_weather.csv")
@@ -36,12 +34,13 @@ def merge_and_combine(weather, park):
 def save_output(df):
     out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
-    output_file = out_path / "pitchers_away_weather_park.csv"  # ✅ updated file name
+    output_file = out_path / "pitchers_away_weather_park.csv"
     df["name"] = df["name"].apply(normalize_name)
-df.to_csv(output_file, index=False)
+    df.to_csv(output_file, index=False)
 
     log_file = out_path / "log_pitchers_combined_away.txt"
-    top5 = df[["name", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]]         .sort_values(by="adj_woba_combined", ascending=False).head(5)
+    top5 = df[["name", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]] \
+        .sort_values(by="adj_woba_combined", ascending=False).head(5)
     with open(log_file, "w") as f:
         f.write("Top 5 away pitchers (combined adjustment):\n")
         f.write(top5.to_string(index=False))
