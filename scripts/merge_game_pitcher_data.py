@@ -42,14 +42,14 @@ def main():
     games = pd.read_csv(GAMES_FILE)
 
     verify_columns(bh, ["team", "name"], "batters_home")
-    verify_columns(ba, ["team", "name"], "batters_away")
+    verify_columns(ba, ["team", "name_x"], "batters_away")
     verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["away_team_y", "name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
     # Normalize names
     bh["name"] = bh["name"].str.title()
-    ba["name"] = ba["name"].str.title()
+    ba["name_x"] = ba["name_x"].str.title()
     ph["name"] = ph["name"].str.title()
     pa["name"] = pa["name"].str.title()
     games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip()
@@ -94,7 +94,7 @@ def main():
     print("✅ HOME batters rows:", len(bh))
     print("✅ AWAY batters rows:", len(ba))
     print("🔍 HOME sample:", bh[["name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[["name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["name_x", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
