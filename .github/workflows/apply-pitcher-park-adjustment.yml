@@ -25,10 +25,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
-        run: |
-          pip install --upgrade pip
-          pip install unidecode
+      - name: Install only required package
+        run: pip install unidecode
 
       - name: Run Pitcher Park Adjustment Script
         run: python scripts/apply_pitcher_park_adjustment.py
