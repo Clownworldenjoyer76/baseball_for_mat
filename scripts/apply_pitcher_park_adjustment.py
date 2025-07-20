@@ -1,7 +1,10 @@
 import pandas as pd
 from pathlib import Path
 from unidecode import unidecode
+import os
+import subprocess
 
+# Normalize pitcher names to match data/Data/pitchers.csv style
 def normalize_name(name):
     if pd.isna(name): return name
     name = unidecode(name)
@@ -9,10 +12,6 @@ def normalize_name(name):
     name = ' '.join(name.split())
     name = ','.join(part.strip() for part in name.split(','))
     return name.title()
-
-import Path
-import os
-import subprocess
 
 # Change working directory to repo root
 os.chdir(Path(__file__).resolve().parents[1])
@@ -53,6 +52,8 @@ def get_park_factor(park_day, park_night, home_team, game_time):
 
 def normalize(df):
     df.columns = df.columns.str.strip()
+    if 'name' in df.columns:
+        df['name'] = df['name'].apply(normalize_name)
     return df
 
 def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
