@@ -20,7 +20,7 @@ jobs:
         run: pip install pandas
 
       - name: Run WOBA Fix Script
-        run: python scripts/fix_woba_combined.py > data/logs/fix_woba_combined.log 2>&1 || true
+        run: python scripts/adj_woba_combined.py > data/logs/fix_woba_combined.log 2>&1 || true
 
       - name: Commit and Push
         run: |
