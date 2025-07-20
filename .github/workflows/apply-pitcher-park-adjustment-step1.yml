@@ -1,31 +1,43 @@
-name: step16a
+name: Apply Pitcher Park Adjustment
 
 on:
   workflow_dispatch:
 
 jobs:
-  step16a:
+  run-adjustment:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+          persist-credentials: true
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install pandas requests pytz
-
-      - name: Run apply_pitcher_park_adjustment_step1.py
+      - name: Install Dependencies
         run: |
-          echo "🔧 Starting apply_pitcher_park_adjustment_step1.py..."
-          python scripts/apply_pitcher_park_adjustment_step1.py
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install Unidecode
 
-      - name: Commit and Push Changes
+      - name: Run Pitcher Park Adjustment Script
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Step 16a: Ran apply_pitcher_park_adjustment_step1.py"
-          git push || echo "No changes to commit or push"
+          python scripts/apply_pitcher_park_adjustment.py
+
+      - name: Commit and Push Output Files
+        run: |
+          git add data/adjusted/pitchers_home_park.csv data/adjusted/pitchers_away_park.csv
+          git add log_pitchers_home_park.txt log_pitchers_away_park.txt
+          git commit -m "✅ Auto-update pitcher park adjustment"
+          git push
