@@ -1,5 +1,5 @@
 import pandas as pd
-from pathlib 
+from pathlib import Path
 from unidecode import unidecode
 
 def normalize_name(name):
@@ -10,7 +10,7 @@ def normalize_name(name):
     name = ','.join(part.strip() for part in name.split(','))
     return name.title()
 
-import Path
+
 import os
 import subprocess
 
