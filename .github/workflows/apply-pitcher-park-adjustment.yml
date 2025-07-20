@@ -6,27 +6,27 @@ on:
 jobs:
   run-adjustment:
     runs-on: ubuntu-latest
-
     steps:
+      - name: Set up job
+        run: echo "Starting Apply Pitcher Park Adjustment"
+
       - name: Checkout repo with full history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: main
-          persist-credentials: true
 
       - name: Set up Git identity
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: 3.11
 
-      - name: Install only required package
-        run: pip install unidecode
+      - name: Install Dependencies (manual only)
+        run: pip install pandas unidecode
 
       - name: Run Pitcher Park Adjustment Script
         run: python scripts/apply_pitcher_park_adjustment.py
