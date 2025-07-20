@@ -1,5 +1,5 @@
 import pandas as pd
-from pathlib 
+from pathlib import Path
 from unidecode import unidecode
 
 def normalize_name(name):
