@@ -7,16 +7,28 @@ jobs:
   combine-home:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up job
+        run: echo "Running Combine Pitcher Weather Park Home"
+
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: 3.11
 
-      - name: Install dependencies
-        run: pip install pandas
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas unidecode
 
       - name: Run combine_pitcher_weather_park_home.py
         run: python scripts/combine_pitcher_weather_park_home.py
@@ -24,7 +36,5 @@ jobs:
       - name: Upload Combined Home Pitcher File
         uses: actions/upload-artifact@v4
         with:
-          name: combined-home-pitchers
-          path: |
-            data/adjusted/pitchers_home_adjusted.csv
-            data/adjusted/log_pitchers_combined_home.txt
+          name: pitchers_home_weather_park
+          path: data/adjusted/pitchers_home_weather_park.csv
