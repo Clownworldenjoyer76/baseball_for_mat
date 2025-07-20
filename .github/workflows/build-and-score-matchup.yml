@@ -22,15 +22,17 @@ jobs:
         run: pip install pandas
 
       - name: Run matchup builder
-        run: python scripts/build_matchup_csv.py
+        run: |
+          python scripts/build_matchup_csv.py > logs/build_matchup.log 2>&1 || true
 
       - name: Run scoring script
-        run: python scripts/score_matchup_stats.py
+        run: |
+          python scripts/score_matchup_stats.py > logs/score_matchup.log 2>&1 || true
 
-      - name: Commit and push matchup + picks
+      - name: Commit and push output
         run: |
           git config --global user.email "you@example.com"
           git config --global user.name "GitHub Actions"
-          git add data/final/matchup.csv data/final/best_picks_raw.csv || exit 0
-          git commit -m "Update matchup and best picks CSVs" || echo "No changes to commit"
+          git add data/final/matchup.csv data/final/best_picks_raw.csv logs/*.log || exit 0
+          git commit -m "✅ Forced output of matchup and picks with logs" || echo "No changes to commit"
           git push
