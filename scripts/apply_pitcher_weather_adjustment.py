@@ -61,7 +61,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-from unidecode import unidecode
+
 
 def normalize_name(name):
     if pd.isna(name): return name
