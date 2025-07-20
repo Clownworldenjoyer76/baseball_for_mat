@@ -28,13 +28,22 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --upgrade pip
-          pip install pandas Unidecode
+          pip install Unidecode
 
-      - name: Run Pitcher Park Adjustment
+      - name: Run Pitcher Park Adjustment Script
         run: python scripts/apply_pitcher_park_adjustment.py
 
-      - name: Commit and Push Adjusted Files
+      - name: Commit and Push Output Files
         run: |
-          git add data/adjusted/pitchers_home_park.csv data/adjusted/pitchers_away_park.csv summaries/*.log || true
-          git commit -m "✅ Apply pitcher park adjustment" || echo "No changes to commit"
+          git add data/adjusted/pitchers_home_park.csv
+          git add data/adjusted/pitchers_away_park.csv
+          git add log_pitchers_home_park.txt
+          git add log_pitchers_away_park.txt
+          git commit -m "Auto-update pitcher park adjustment"
           git push
+
+      - name: Check Git status
+        run: |
+          git status
+          git branch
+          git remote -v
