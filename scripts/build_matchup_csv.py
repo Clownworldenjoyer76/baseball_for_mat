@@ -12,11 +12,11 @@ matchup_stats = pd.read_csv(MATCHUP_STATS_PATH)
 team_master = pd.read_csv(TEAM_NAME_MASTER_PATH)
 todays_games = pd.read_csv(TODAYSGAMES_PATH)
 
-# Normalize case
+# Normalize fields
 matchup_stats["team_normalized"] = matchup_stats["team"].str.lower().str.strip()
 team_master["team_name_normalized"] = team_master["team_name"].str.lower().str.strip()
 
-# Merge to get team_code
+# Merge to attach team_code
 merged = pd.merge(
     matchup_stats,
     team_master[["team_name_normalized", "team_code"]],
@@ -25,7 +25,7 @@ merged = pd.merge(
     how="left"
 )
 
-# Build matchup
+# Build matchup string
 def resolve_matchup(team_code, games_df):
     for _, row in games_df.iterrows():
         if team_code == row["home_team"]:
@@ -36,17 +36,13 @@ def resolve_matchup(team_code, games_df):
 
 merged["matchup"] = merged["team_code"].apply(lambda t: resolve_matchup(t, todays_games))
 
-# Save debug output
-with open(DEBUG_LOG_PATH, "w") as log:
-    total = len(merged)
-    matched = merged["team_code"].notna().sum()
-    unmatched = merged[merged["team_code"].isna()]["team"].unique().tolist()
-    log.write(f"Total rows: {total}\n")
-    log.write(f"Matched rows: {matched}\n")
-    log.write(f"Unmatched team samples: {unmatched[:10]}\n")
-
-# Cleanup temp columns
+# Write final output
 merged.drop(columns=["team_normalized", "team_name_normalized"], inplace=True)
-
-# Save final CSV on
 merged.to_csv(OUTPUT_PATH, index=False)
+
+# Write debug log
+with open(DEBUG_LOG_PATH, "w") as log:
+    log.write(f"Total rows: {len(merged)}\n")
+    log.write(f"Matched team_code: {merged['team_code'].notna().sum()}\n")
+    unmatched = merged[merged['team_code'].isna()]["team"].unique().tolist()
+    log.write(f"Unmatched teams (max 10): {unmatched[:10]}\n")
