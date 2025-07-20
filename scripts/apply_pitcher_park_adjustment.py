@@ -1,5 +1,16 @@
 import pandas as pd
-from pathlib import Path
+from pathlib 
+from unidecode import unidecode
+
+def normalize_name(name):
+    if pd.isna(name): return name
+    name = unidecode(name)
+    name = name.lower().strip()
+    name = ' '.join(name.split())
+    name = ','.join(part.strip() for part in name.split(','))
+    return name.title()
+
+import Path
 import os
 import subprocess
 

@@ -1,5 +1,16 @@
 import pandas as pd
-from pathlib import Path
+from pathlib 
+from unidecode import unidecode
+
+def normalize_name(name):
+    if pd.isna(name): return name
+    name = unidecode(name)
+    name = name.lower().strip()
+    name = ' '.join(name.split())
+    name = ','.join(part.strip() for part in name.split(','))
+    return name.title()
+
+import Path
 import subprocess
 
 def load_data():
@@ -26,7 +37,8 @@ def save_output(df):
     out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
     output_file = out_path / "pitchers_away_weather_park.csv"  # ✅ updated file name
-    df.to_csv(output_file, index=False)
+    df["name"] = df["name"].apply(normalize_name)
+df.to_csv(output_file, index=False)
 
     log_file = out_path / "log_pitchers_combined_away.txt"
     top5 = df[["name", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]]         .sort_values(by="adj_woba_combined", ascending=False).head(5)
