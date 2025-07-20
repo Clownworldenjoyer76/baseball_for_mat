@@ -13,11 +13,11 @@ matchup_stats = pd.read_csv(MATCHUP_STATS_PATH)
 team_master = pd.read_csv(TEAM_NAME_MASTER_PATH)
 todays_games = pd.read_csv(TODAYSGAMES_PATH)
 
-# Normalize values
+# Normalize team names for merge
 matchup_stats["team_normalized"] = matchup_stats["team"].str.lower().str.strip()
 team_master["team_name_normalized"] = team_master["team_name"].str.lower().str.strip()
 
-# Merge on normalized team
+# Merge to get team_code
 merged = pd.merge(
     matchup_stats,
     team_master[["team_name_normalized", "team_code"]],
@@ -26,7 +26,7 @@ merged = pd.merge(
     how="left"
 )
 
-# Generate 'matchup' column
+# Add matchup column
 def resolve_matchup(team_code, games_df):
     for _, row in games_df.iterrows():
         if team_code == row["home_team"]:
@@ -37,23 +37,29 @@ def resolve_matchup(team_code, games_df):
 
 merged["matchup"] = merged["team_code"].apply(lambda t: resolve_matchup(t, todays_games))
 
-# Ensure output directory exists
+# Final columns for output — ensure 'type' survives
+output_cols = [
+    "name", "team", "adj_woba_combined", "type", "team_code", "matchup"
+]
+final_output = merged[output_cols].copy()
+
+# Ensure output dir exists
 os.makedirs("data/final", exist_ok=True)
 
-# Write guaranteed CSV with all useful scoring fields
-merged.to_csv(OUTPUT_PATH, index=False)
+# Save main output
+final_output.to_csv(OUTPUT_PATH, index=False)
 
-# Write guaranteed debug file
+# Save debug info
 with open(DEBUG_PATH, "w") as f:
     f.write(f"Total rows: {len(merged)}\n")
     f.write(f"Matched team_code: {merged['team_code'].notna().sum()}\n")
     unmatched = merged[merged['team_code'].isna()]["team"].dropna().unique().tolist()
     f.write(f"Unmatched teams (max 10): {unmatched[:10]}\n")
 
-# Failsafe: print to console so user sees proof
+# Console confirmation
 print("[MATCHUP SCRIPT COMPLETE]")
 print(f"CSV saved to: {OUTPUT_PATH}")
 print(f"Debug saved to: {DEBUG_PATH}")
-print(f"Total rows: {len(merged)}")
+print(f"Total rows: {len(final_output)}")
 print(f"Matched: {merged['team_code'].notna().sum()}")
 print(f"Unmatched teams (sample): {unmatched[:10]}")
