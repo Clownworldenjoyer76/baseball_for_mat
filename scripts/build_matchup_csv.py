@@ -2,45 +2,46 @@ import pandas as pd
 import subprocess
 
 # File paths
-MATCHUP_STATS_FILE = "data/final/matchup_stats.csv"
-TEAM_MAP_FILE = "data/Data/team_name_master.csv"
-GAMES_FILE = "data/raw/todaysgames_normalized.csv"
-OUTPUT_FILE = "data/final/matchup.csv"
+MATCHUP_STATS_PATH = "data/final/matchup_stats.csv"
+TEAM_MAP_PATH = "data/Data/team_name_master.csv"
+GAMES_PATH = "data/raw/todaysgames_normalized.csv"
+OUTPUT_PATH = "data/final/matchup.csv"
 
 def main():
-    # Load data
-    df = pd.read_csv(MATCHUP_STATS_FILE)
-    team_map = pd.read_csv(TEAM_MAP_FILE)
-    games = pd.read_csv(GAMES_FILE)
+    # Load and confirm required files
+    matchup_df = pd.read_csv(MATCHUP_STATS_PATH)
+    team_map_df = pd.read_csv(TEAM_MAP_PATH)
+    games_df = pd.read_csv(GAMES_PATH)
 
-    # Verify required columns
-    if "team_name" not in team_map.columns or "map_to" not in team_map.columns:
-        raise ValueError("team_name_master.csv must include 'team_name' and 'map_to' columns")
+    if 'team_name' not in team_map_df.columns or 'standard_name' not in team_map_df.columns:
+        raise ValueError("team_name_master.csv must include 'team_name' and 'standard_name' columns")
+    if 'team' not in matchup_df.columns or 'name' not in matchup_df.columns or 'type' not in matchup_df.columns:
+        raise ValueError("matchup_stats.csv missing required columns")
+    if 'home_team' not in games_df.columns or 'away_team' not in games_df.columns:
+        raise ValueError("todaysgames_normalized.csv missing required columns")
 
-    # Normalize names using team_name map
-    name_map = dict(zip(team_map["team_name"], team_map["map_to"]))
-    df["team_normalized"] = df["team"].map(name_map)
-    df["name_normalized"] = df["name"].map(name_map)
+    # Normalize team names in matchup_df
+    name_map = dict(zip(team_map_df["team_name"], team_map_df["standard_name"]))
+    matchup_df["team"] = matchup_df["team"].map(name_map).fillna(matchup_df["team"])
 
-    # Merge matchup based on normalized team and game list
-    def get_matchup(row):
-        for _, game in games.iterrows():
-            if row["team_normalized"] == game["home_team"]:
-                return f"{game['away_team']} vs {game['home_team']}"
-            if row["team_normalized"] == game["away_team"]:
-                return f"{game['away_team']} vs {game['home_team']}"
-        return "UNKNOWN"
+    # Assign matchup field
+    def assign_matchup(row):
+        team = row["team"]
+        match = games_df[(games_df["home_team"] == team) | (games_df["away_team"] == team)]
+        if match.empty:
+            return ""
+        return f"{match.iloc[0]['away_team']} vs {match.iloc[0]['home_team']}"
 
-    df["matchup"] = df.apply(get_matchup, axis=1)
+    matchup_df["matchup"] = matchup_df.apply(assign_matchup, axis=1)
 
-    # Save output
-    df.to_csv(OUTPUT_FILE, index=False)
+    # Output final matchup CSV
+    matchup_df.to_csv(OUTPUT_PATH, index=False)
 
-    # Git identity and push
+    # Commit and push
     subprocess.run(["git", "config", "--global", "user.email", "runner@example.com"])
     subprocess.run(["git", "config", "--global", "user.name", "github-actions[bot]"])
-    subprocess.run(["git", "add", OUTPUT_FILE])
-    subprocess.run(["git", "commit", "-m", "Build matchup.csv from normalized data"])
+    subprocess.run(["git", "add", OUTPUT_PATH])
+    subprocess.run(["git", "commit", "-m", "Add final matchup.csv"])
     subprocess.run(["git", "push"])
 
 if __name__ == "__main__":
