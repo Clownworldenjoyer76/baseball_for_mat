@@ -1,5 +1,6 @@
 import pandas as pd
 from unidecode import unidecode
+import subprocess
 
 WEATHER_FILE = "data/adjusted/pitchers_away_weather.csv"
 PARK_FILE = "data/adjusted/pitchers_away_park.csv"
@@ -66,11 +67,9 @@ def main():
         for entry in log_entries:
             log.write(entry + "\n")
 
+    subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
+    subprocess.run(["git", "commit", "-m", "Auto-commit: Combined away pitcher weather + park adjustments"], check=True)
+    subprocess.run(["git", "push"], check=True)
+
 if __name__ == "__main__":
     main()
-
-import subprocess
-
-subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
-subprocess.run(["git", "commit", "-m", "Auto-commit: Combined pitcher weather + park adjustments"], check=True)
-subprocess.run(["git", "push"], check=True)
