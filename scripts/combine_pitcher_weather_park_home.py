@@ -10,11 +10,8 @@ LOG_FILE = "log_pitchers_home_weather_park.txt"
 
 def normalize_name(name):
     if pd.isna(name): return name
-    name = unidecode(name).strip().lower()
-    parts = name.split()
-    if len(parts) >= 2:
-        return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
-    return name.title()
+    name = unidecode(name).strip()
+    return name
 
 def normalize_team(team, valid_teams):
     team = unidecode(str(team)).strip()
@@ -22,6 +19,9 @@ def normalize_team(team, valid_teams):
     return matches[0] if matches else team
 
 def merge_and_combine(weather_df, park_df, valid_teams):
+    weather_df = weather_df.rename(columns={"last_name, first_name": "name"})
+    park_df = park_df.rename(columns={"last_name, first_name": "name"})
+
     weather_df["name"] = weather_df["name"].apply(normalize_name)
     weather_df["home_team"] = weather_df["home_team"].apply(lambda x: normalize_team(x, valid_teams))
     park_df["name"] = park_df["name"].apply(normalize_name)
@@ -31,8 +31,7 @@ def merge_and_combine(weather_df, park_df, valid_teams):
         weather_df,
         park_df,
         on=["name", "home_team"],
-        how="inner",
-        suffixes=("", "")
+        how="inner"
     )
 
     if "adj_woba_weather" in merged.columns and "adj_woba_park" in merged.columns:
@@ -88,6 +87,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
