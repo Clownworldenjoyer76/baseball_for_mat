@@ -1,6 +1,7 @@
 import pandas as pd
 from unidecode import unidecode
 import subprocess
+import os
 
 WEATHER_FILE = "data/adjusted/pitchers_home_weather.csv"
 PARK_FILE = "data/adjusted/pitchers_home_park.csv"
@@ -15,8 +16,10 @@ def normalize_name(name):
     name = ' '.join(name.split())
     parts = name.split()
     if len(parts) >= 2:
-        return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
-    return name.title()
+        normalized = f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
+    else:
+        normalized = name.title()
+    return normalized
 
 def normalize_team(team, valid_teams):
     team = unidecode(str(team)).strip()
@@ -38,6 +41,7 @@ def merge_and_combine(weather_df, park_df, valid_teams):
 
 def main():
     log_entries = []
+
     try:
         weather = pd.read_csv(WEATHER_FILE)
         park = pd.read_csv(PARK_FILE)
@@ -52,7 +56,7 @@ def main():
         combined.to_csv(OUTPUT_FILE, index=False)
 
         if combined.empty:
-            log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check name/team mismatches.")
+            log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check for mismatched names or teams.")
         else:
             top5 = combined[["name", "home_team", "adj_woba_combined"]].sort_values(by="adj_woba_combined", ascending=False).head(5)
             log_entries.append("Top 5 Combined Pitchers by adj_woba_combined:")
@@ -64,8 +68,14 @@ def main():
         for entry in log_entries:
             log.write(entry + "\n")
 
+    # Force Git to detect file change
+    with open(OUTPUT_FILE, "a") as f:
+        f.write(" ")
+        f.flush()
+        os.fsync(f.fileno())
+
     subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
-    subprocess.run(["git", "commit", "-m", "Auto-commit: Combined pitcher home weather + park"], check=True)
+    subprocess.run(["git", "commit", "-m", "Auto-commit: Combined pitcher weather + park (home)"], check=True)
     subprocess.run(["git", "push"], check=True)
 
 if __name__ == "__main__":
