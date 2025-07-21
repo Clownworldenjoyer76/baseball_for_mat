@@ -60,10 +60,10 @@ jobs:
             done
           } > summaries/Activate4/activate_4.txt
 
-      - name: Commit Summary Logs
+      - name: Commit All Logs and Outputs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add -A
-          git diff --cached --quiet || git commit -m "Activate 4: full summary logs committed"
+          git commit -m "Activate 4: full summary logs committed" || echo "Nothing to commit"
           git push || echo "Nothing to push"
