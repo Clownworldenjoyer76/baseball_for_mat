@@ -25,6 +25,7 @@ jobs:
       - name: Run All Scripts + Generate Logs
         run: |
           mkdir -p summaries/Activate4
+          > summaries/Activate4/errors.txt
 
           run_step() {
             SCRIPT="$1"
@@ -33,10 +34,13 @@ jobs:
             TXT="summaries/Activate4/${STEP_NAME}.txt"
             TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
-            if python "scripts/${SCRIPT}" > "$LOG" 2>&1; then
+            if python "scripts/${SCRIPT}" > "$LOG" 2> temp_error.log; then
               echo "✅ ${STEP_NAME} ran successfully." > "$TXT"
             else
               echo "❌ ${STEP_NAME} encountered an error." > "$TXT"
+              echo "❌ ${STEP_NAME} ERROR:" >> summaries/Activate4/errors.txt
+              cat temp_error.log >> summaries/Activate4/errors.txt
+              echo -e "\n---\n" >> summaries/Activate4/errors.txt
             fi
 
             echo "🕒 Timestamp: $TIMESTAMP" >> "$LOG"
