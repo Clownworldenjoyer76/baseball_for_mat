@@ -11,9 +11,17 @@ def normalize_name(name):
     name = ','.join(part.strip() for part in name.split(','))
     return name.title()
 
+def normalize_df(df, cols):
+    for col in cols:
+        if col in df.columns:
+            df[col] = df[col].apply(normalize_name)
+    return df
+
 def load_data():
     weather = pd.read_csv("data/adjusted/pitchers_away_weather.csv")
     park = pd.read_csv("data/adjusted/pitchers_away_park.csv")
+    weather = normalize_df(weather, ["name", "team"])
+    park = normalize_df(park, ["name", "team"])
     return weather, park
 
 def merge_and_combine(weather, park):
@@ -35,7 +43,6 @@ def save_output(df):
     out_path = Path("data/adjusted")
     out_path.mkdir(parents=True, exist_ok=True)
     output_file = out_path / "pitchers_away_weather_park.csv"
-    df["name"] = df["name"].apply(normalize_name)
     df.to_csv(output_file, index=False)
 
     log_file = out_path / "log_pitchers_combined_away.txt"
