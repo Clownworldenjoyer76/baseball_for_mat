@@ -40,27 +40,22 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    # Normalize column names
-    if "last_name, first_name" in bh.columns:
-        bh = bh.rename(columns={"last_name, first_name": "name"})
-    if "last_name, first_name" in ba.columns:
-        ba = ba.rename(columns={"last_name, first_name": "name_x"})
-
-    verify_columns(bh, ["team", "name"], "batters_home")
-    verify_columns(ba, ["team", "name_x"], "batters_away")
+    # Validate columns
+    verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
+    verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
     verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["away_team_y", "name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
-    # Normalize names
-    bh["name"] = bh["name"].str.title()
-    ba["name_x"] = ba["name_x"].str.title()
-    ph["name"] = ph["name"].str.title()
-    pa["name"] = pa["name"].str.title()
-    games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip()
-    games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip()
-    games["pitcher_home"] = games["pitcher_home"].apply(standardize_name)
-    games["pitcher_away"] = games["pitcher_away"].apply(standardize_name)
+    # Normalize batter and pitcher names
+    bh["last_name, first_name"] = bh["last_name, first_name"].astype(str).str.title()
+    ba["last_name, first_name"] = ba["last_name, first_name"].astype(str).str.title()
+    ph["name"] = ph["name"].astype(str).str.title()
+    pa["name"] = pa["name"].astype(str).str.title()
+
+    # Normalize pitcher names in games file
+    games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip().apply(standardize_name)
+    games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip().apply(standardize_name)
 
     # Merge pitcher names into batter files
     bh = bh.merge(
@@ -76,6 +71,7 @@ def main():
         right_on="away_team"
     )
 
+    # Merge pitcher stats
     home_pitcher_stats = get_pitcher_woba(ph, "name")
     away_pitcher_stats = get_pitcher_woba(pa.rename(columns={"away_team_y": "away_team"}), "name")
 
@@ -97,8 +93,8 @@ def main():
 
     print("✅ HOME batters rows:", len(bh))
     print("✅ AWAY batters rows:", len(ba))
-    print("🔍 HOME sample:", bh[["name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[["name_x", "away_team", "pitcher_away", "adj_woba_combined"]].head())
+    print("🔍 HOME sample:", bh[["last_name, first_name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["last_name, first_name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
