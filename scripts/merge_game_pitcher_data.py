@@ -1,4 +1,3 @@
-
 import pandas as pd
 import subprocess
 import sys
@@ -41,13 +40,19 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
+    # Normalize name columns
+    if "last_name, first_name" in bh.columns:
+        bh.rename(columns={"last_name, first_name": "name"}, inplace=True)
+    if "last_name, first_name" in ba.columns:
+        ba.rename(columns={"last_name, first_name": "name_x"}, inplace=True)
+
     verify_columns(bh, ["team", "name"], "batters_home")
     verify_columns(ba, ["team", "name_x"], "batters_away")
     verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["away_team_y", "name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
-    # Normalize names
+    # Normalize casing and strip whitespace
     bh["name"] = bh["name"].str.title()
     ba["name_x"] = ba["name_x"].str.title()
     ph["name"] = ph["name"].str.title()
