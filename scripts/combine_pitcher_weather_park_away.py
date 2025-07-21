@@ -11,17 +11,16 @@ def normalize_name(name):
     name = ','.join(part.strip() for part in name.split(','))
     return name.title()
 
-def normalize_df(df, cols):
-    for col in cols:
-        if col in df.columns:
-            df[col] = df[col].apply(normalize_name)
-    return df
-
 def load_data():
     weather = pd.read_csv("data/adjusted/pitchers_away_weather.csv")
     park = pd.read_csv("data/adjusted/pitchers_away_park.csv")
-    weather = normalize_df(weather, ["name", "team"])
-    park = normalize_df(park, ["name", "team"])
+
+    # Normalize 'name' and 'team' in both files before merging
+    weather["name"] = weather["name"].apply(normalize_name)
+    park["name"] = park["name"].apply(normalize_name)
+    weather["team"] = weather["team"].astype(str).str.strip().str.upper()
+    park["team"] = park["team"].astype(str).str.strip().str.upper()
+
     return weather, park
 
 def merge_and_combine(weather, park):
