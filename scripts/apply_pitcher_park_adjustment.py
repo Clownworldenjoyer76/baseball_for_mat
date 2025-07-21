@@ -14,8 +14,6 @@ def normalize_name(name):
 import os
 import subprocess
 
-# Change working directory to repo root
-os.chdir(Path(__file__).resolve().parents[1])
 
 # File paths
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
