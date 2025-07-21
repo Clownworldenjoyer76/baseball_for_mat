@@ -1,0 +1,85 @@
+name: A_Run_All
+
+on:
+  workflow_dispatch:
+
+env:
+  ACTIONS_STEP_DEBUG: true
+  ACTIONS_RUNNER_DEBUG: true
+
+jobs:
+  A_Run_All:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install pandas unidecode
+
+      - name: Run All Scripts + Generate Logs
+        run: |
+          mkdir -p summaries/A_Run_All
+          > summaries/A_Run_All/errors.txt
+
+          run_step() {
+            SCRIPT="$1"
+            STEP_NAME=$(basename "$SCRIPT" .py)
+            LOG="summaries/A_Run_All/${STEP_NAME}.log"
+            TXT="summaries/A_Run_All/${STEP_NAME}.txt"
+            TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+
+            if python "scripts/${SCRIPT}" > "$LOG" 2> temp_error.log; then
+              echo "✅ ${STEP_NAME} ran successfully." > "$TXT"
+            else
+              echo "❌ ${STEP_NAME} encountered an error." > "$TXT"
+              echo "❌ ${STEP_NAME} ERROR:" >> summaries/A_Run_All/errors.txt
+              cat temp_error.log >> summaries/A_Run_All/errors.txt
+              echo -e "\n---\n" >> summaries/A_Run_All/errors.txt
+            fi
+
+            echo "🕒 Timestamp: $TIMESTAMP" >> "$LOG"
+            echo "🕒 Timestamp: $TIMESTAMP" >> "$TXT"
+          }
+
+          run_step normalize_names.py
+          run_step tag_master_files.py
+          run_step deduplicate_normalized.py
+          run_step normalize_lineups.py
+          run_step normalize_todays_games.py
+          run_step apply_team_name_mapping.py
+          run_step update_game_time.py
+          run_step split_batters_by_home_away.py
+          run_step split_pitchers.py
+          run_step generate_weather_csv.py
+          run_step filter_today_batters.py
+          run_step get_weather_data.py
+          run_step apply_weather_adjustment.py
+          run_step apply_park_adjustment.py
+          run_step combine_weather_park_home.py
+          run_step combine_weather_park_away.py
+          run_step apply_pitcher_weather_adjustment.py
+          run_step apply_pitcher_park_adjustment.py
+          run_step combine_pitcher_weather_park_home.py
+          run_step combine_pitcher_weather_park_away.py
+
+          FINAL_TS=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+          {
+            echo "✅ A_Run_All Summary — $FINAL_TS"
+            for FILE in summaries/A_Run_All/*.txt; do
+              echo "$(basename "$FILE")"
+            done
+          } > summaries/A_Run_All/a_run_all.txt
+
+      - name: Commit All Logs and Outputs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -A
+          git commit -m "A_Run_All: full summary logs committed" || echo "Nothing to commit"
+          git push || echo "Nothing to push"
