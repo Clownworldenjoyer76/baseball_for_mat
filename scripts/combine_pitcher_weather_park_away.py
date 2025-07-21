@@ -1,7 +1,6 @@
 import pandas as pd
 from unidecode import unidecode
 import subprocess
-import os
 
 WEATHER_FILE = "data/adjusted/pitchers_away_weather.csv"
 PARK_FILE = "data/adjusted/pitchers_away_park.csv"
@@ -11,15 +10,11 @@ LOG_FILE = "log_pitchers_away_weather_park.txt"
 
 def normalize_name(name):
     if pd.isna(name): return name
-    name = unidecode(name)
-    name = name.lower().strip()
-    name = ' '.join(name.split())
+    name = unidecode(name).strip().lower()
     parts = name.split()
     if len(parts) >= 2:
-        normalized = f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
-    else:
-        normalized = name.title()
-    return normalized
+        return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
+    return name.title()
 
 def normalize_team(team, valid_teams):
     team = unidecode(str(team)).strip()
@@ -32,12 +27,26 @@ def merge_and_combine(weather_df, park_df, valid_teams):
     park_df["name"] = park_df["name"].apply(normalize_name)
     park_df["away_team"] = park_df["away_team"].apply(lambda x: normalize_team(x, valid_teams))
 
-    merged = pd.merge(weather_df, park_df, on=["name", "away_team"], how="inner", suffixes=("_weather", "_park"))
+    merged = pd.merge(
+        weather_df,
+        park_df,
+        on=["name", "away_team"],
+        how="inner",
+        suffixes=("", "")
+    )
 
     if "adj_woba_weather" in merged.columns and "adj_woba_park" in merged.columns:
         merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
 
     return merged
+
+def reduce_columns(df):
+    keep_cols = ["name", "away_team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
+    for col in df.columns:
+        if col.lower().startswith("adj_") or col in ["name", "away_team"]:
+            if col not in keep_cols:
+                keep_cols.append(col)
+    return df[keep_cols]
 
 def main():
     log_entries = []
@@ -53,14 +62,16 @@ def main():
 
     try:
         combined = merge_and_combine(weather, park, teams)
-        combined.to_csv(OUTPUT_FILE, index=False)
+        cleaned = reduce_columns(combined)
+        cleaned.to_csv(OUTPUT_FILE, index=False)
 
-        if combined.empty:
+        if cleaned.empty:
             log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check for mismatched names or teams.")
         else:
-            top5 = combined[["name", "away_team", "adj_woba_combined"]].sort_values(by="adj_woba_combined", ascending=False).head(5)
+            top5 = cleaned[["name", "away_team", "adj_woba_combined"]].sort_values(by="adj_woba_combined", ascending=False).head(5)
             log_entries.append("Top 5 Combined Pitchers by adj_woba_combined:")
             log_entries.append(top5.to_string(index=False))
+
     except Exception as e:
         log_entries.append(f"❌ Error during processing: {str(e)}")
 
@@ -68,15 +79,12 @@ def main():
         for entry in log_entries:
             log.write(entry + "\n")
 
-    # Force Git to detect file change
-    with open(OUTPUT_FILE, "a") as f:
-        f.write(" ")
-        f.flush()
-        os.fsync(f.fileno())
-
-    subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
-    subprocess.run(["git", "commit", "-m", "Auto-commit: Combined pitcher weather + park (away)"], check=True)
-    subprocess.run(["git", "push"], check=True)
+    try:
+        subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-commit: Cleaned combine pitcher weather + park (away)"], check=True)
+        subprocess.run(["git", "push"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git commit/push skipped or failed: {e}")
 
 if __name__ == "__main__":
     main()
