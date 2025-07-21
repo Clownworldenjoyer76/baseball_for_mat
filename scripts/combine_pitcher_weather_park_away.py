@@ -1,6 +1,5 @@
 import pandas as pd
 from unidecode import unidecode
-import subprocess
 
 WEATHER_FILE = "data/adjusted/pitchers_away_weather.csv"
 PARK_FILE = "data/adjusted/pitchers_away_park.csv"
@@ -10,8 +9,7 @@ LOG_FILE = "log_pitchers_away_weather_park.txt"
 
 def normalize_name(name):
     if pd.isna(name): return name
-    name = unidecode(name).strip()
-    return name
+    return unidecode(name).strip()
 
 def normalize_team(team, valid_teams):
     team = unidecode(str(team)).strip()
@@ -77,13 +75,6 @@ def main():
     with open(LOG_FILE, "w") as log:
         for entry in log_entries:
             log.write(entry + "\n")
-
-    try:
-        subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-commit: Cleaned combine pitcher weather + park (away)"], check=True)
-        subprocess.run(["git", "push"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit/push skipped or failed: {e}")
 
 if __name__ == "__main__":
     main()
