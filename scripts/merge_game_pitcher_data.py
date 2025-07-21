@@ -28,11 +28,6 @@ def standardize_name(full_name):
         return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
     return full_name.title()
 
-def normalize_name_column(df, col):
-    if col in df.columns:
-        df[col] = df[col].astype(str).str.strip().str.title()
-    return df
-
 def verify_columns(df, required, label):
     for col in required:
         if col not in df.columns:
@@ -45,21 +40,27 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    # Auto-detect name column in away batters file
-    name_col_ba = "name_x" if "name_x" in ba.columns else "name"
+    # Normalize column names
+    if "last_name, first_name" in bh.columns:
+        bh = bh.rename(columns={"last_name, first_name": "name"})
+    if "last_name, first_name" in ba.columns:
+        ba = ba.rename(columns={"last_name, first_name": "name_x"})
 
     verify_columns(bh, ["team", "name"], "batters_home")
-    verify_columns(ba, ["team", name_col_ba], "batters_away")
+    verify_columns(ba, ["team", "name_x"], "batters_away")
     verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["away_team_y", "name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
-    bh = normalize_name_column(bh, "name")
-    ba = normalize_name_column(ba, name_col_ba)
-    ph = normalize_name_column(ph, "name")
-    pa = normalize_name_column(pa, "name")
-    games["pitcher_home"] = games["pitcher_home"].astype(str).str.strip().apply(standardize_name)
-    games["pitcher_away"] = games["pitcher_away"].astype(str).str.strip().apply(standardize_name)
+    # Normalize names
+    bh["name"] = bh["name"].str.title()
+    ba["name_x"] = ba["name_x"].str.title()
+    ph["name"] = ph["name"].str.title()
+    pa["name"] = pa["name"].str.title()
+    games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip()
+    games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip()
+    games["pitcher_home"] = games["pitcher_home"].apply(standardize_name)
+    games["pitcher_away"] = games["pitcher_away"].apply(standardize_name)
 
     # Merge pitcher names into batter files
     bh = bh.merge(
@@ -68,7 +69,6 @@ def main():
         left_on="team",
         right_on="home_team"
     )
-
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
@@ -98,7 +98,7 @@ def main():
     print("✅ HOME batters rows:", len(bh))
     print("✅ AWAY batters rows:", len(ba))
     print("🔍 HOME sample:", bh[["name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[[name_col_ba, "away_team", "pitcher_away", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["name_x", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
