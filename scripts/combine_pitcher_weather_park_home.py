@@ -15,10 +15,8 @@ def normalize_name(name):
     name = ' '.join(name.split())
     parts = name.split()
     if len(parts) >= 2:
-        normalized = f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
-    else:
-        normalized = name.title()
-    return normalized
+        return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
+    return name.title()
 
 def normalize_team(team, valid_teams):
     team = unidecode(str(team)).strip()
@@ -40,7 +38,6 @@ def merge_and_combine(weather_df, park_df, valid_teams):
 
 def main():
     log_entries = []
-
     try:
         weather = pd.read_csv(WEATHER_FILE)
         park = pd.read_csv(PARK_FILE)
@@ -55,7 +52,7 @@ def main():
         combined.to_csv(OUTPUT_FILE, index=False)
 
         if combined.empty:
-            log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check for mismatched names or teams.")
+            log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check name/team mismatches.")
         else:
             top5 = combined[["name", "home_team", "adj_woba_combined"]].sort_values(by="adj_woba_combined", ascending=False).head(5)
             log_entries.append("Top 5 Combined Pitchers by adj_woba_combined:")
@@ -68,7 +65,7 @@ def main():
             log.write(entry + "\n")
 
     subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
-    subprocess.run(["git", "commit", "-m", "Auto-commit: Combined home pitcher weather + park adjustments"], check=True)
+    subprocess.run(["git", "commit", "-m", "Auto-commit: Combined pitcher home weather + park"], check=True)
     subprocess.run(["git", "push"], check=True)
 
 if __name__ == "__main__":
