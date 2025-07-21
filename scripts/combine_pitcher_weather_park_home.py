@@ -68,3 +68,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+import subprocess
+
+subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
+subprocess.run(["git", "commit", "-m", "Auto-commit: Combined pitcher weather + park adjustments"], check=True)
+subprocess.run(["git", "push"], check=True)
