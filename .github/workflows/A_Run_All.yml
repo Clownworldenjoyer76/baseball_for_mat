@@ -72,6 +72,8 @@ jobs:
           # 🧱 APPLY PARK ADJUSTMENTS
           run_step apply_pitcher_weather_adjustment.py
           run_step apply_pitcher_park_adjustment.py
+         
+          # 🧼 CLEAN + NORMALIZE BEFORE FINAL COMBINE
           run_step normalize_pitcher_merge_inputs.py
 
           # 🔀 FINAL COMBINE
