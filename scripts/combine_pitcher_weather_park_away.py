@@ -1,5 +1,6 @@
 import pandas as pd
 from unidecode import unidecode
+import subprocess
 
 WEATHER_FILE = "data/adjusted/pitchers_away_weather.csv"
 PARK_FILE = "data/adjusted/pitchers_away_park.csv"
@@ -17,64 +18,13 @@ def normalize_team(team, valid_teams):
     return matches[0] if matches else team
 
 def merge_and_combine(weather_df, park_df, valid_teams):
-    weather_df = weather_df.rename(columns={"last_name, first_name": "name"})
-    park_df = park_df.rename(columns={"last_name, first_name": "name"})
+    weather_df["last_name, first_name"] = weather_df["last_name, first_name"].apply(normalize_name)
+    park_df["last_name, first_name"] = park_df["last_name, first_name"].apply(normalize_name)
 
-    weather_df["name"] = weather_df["name"].apply(normalize_name)
-    weather_df["away_team"] = weather_df["away_team"].apply(lambda x: normalize_team(x, valid_teams))
-    park_df["name"] = park_df["name"].apply(normalize_name)
+    weather_df["away_team"] = weather_df["away_team_x"].apply(lambda x: normalize_team(x, valid_teams))
     park_df["away_team"] = park_df["away_team"].apply(lambda x: normalize_team(x, valid_teams))
 
     merged = pd.merge(
         weather_df,
         park_df,
-        on=["name", "away_team"],
-        how="inner"
-    )
-
-    if "adj_woba_weather" in merged.columns and "adj_woba_park" in merged.columns:
-        merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
-
-    return merged
-
-def reduce_columns(df):
-    keep_cols = ["name", "away_team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
-    for col in df.columns:
-        if col.lower().startswith("adj_") or col in ["name", "away_team"]:
-            if col not in keep_cols:
-                keep_cols.append(col)
-    return df[keep_cols]
-
-def main():
-    log_entries = []
-
-    try:
-        weather = pd.read_csv(WEATHER_FILE)
-        park = pd.read_csv(PARK_FILE)
-        teams = pd.read_csv(TEAM_MASTER)["team_name"].dropna().unique().tolist()
-    except Exception as e:
-        with open(LOG_FILE, "w") as log:
-            log.write(f"❌ Failed to read input files: {e}\n")
-        return
-
-    try:
-        combined = merge_and_combine(weather, park, teams)
-        cleaned = reduce_columns(combined)
-        cleaned.to_csv(OUTPUT_FILE, index=False)
-
-        if cleaned.empty:
-            log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check for mismatched names or teams.")
-        else:
-            top5 = cleaned[["name", "away_team", "adj_woba_combined"]].sort_values(by="adj_woba_combined", ascending=False).head(5)
-            log_entries.append("Top 5 Combined Pitchers by adj_woba_combined:")
-            log_entries.append(top5.to_string(index=False))
-
-    except Exception as e:
-        log_entries.append(f"❌ Error during processing: {str(e)}")
-
-    with open(LOG_FILE, "w") as log:
-        for entry in log_entries:
-            log.write(entry + "\n")
-
-if __name__ == "__main__":
-    main()
+        on=["last_name, first_name", "away_team
