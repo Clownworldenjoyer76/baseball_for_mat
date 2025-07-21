@@ -40,20 +40,18 @@ def main():
     pa = pd.read_csv(PITCHERS_AWAY_FILE)
     games = pd.read_csv(GAMES_FILE)
 
-    # Validate columns
+    # Validate required columns
     verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
     verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
     verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
-    verify_columns(pa, ["away_team_y", "name", "adj_woba_combined"], "pitchers_away")
+    verify_columns(pa, ["away_team", "name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
-    # Normalize batter and pitcher names
+    # Normalize names for merging
     bh["last_name, first_name"] = bh["last_name, first_name"].astype(str).str.title()
     ba["last_name, first_name"] = ba["last_name, first_name"].astype(str).str.title()
-    ph["name"] = ph["name"].astype(str).str.title()
-    pa["name"] = pa["name"].astype(str).str.title()
-
-    # Normalize pitcher names in games file
+    ph["name"] = ph["name"].apply(standardize_name)
+    pa["name"] = pa["name"].apply(standardize_name)
     games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip().apply(standardize_name)
     games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip().apply(standardize_name)
 
@@ -73,7 +71,7 @@ def main():
 
     # Merge pitcher stats
     home_pitcher_stats = get_pitcher_woba(ph, "name")
-    away_pitcher_stats = get_pitcher_woba(pa.rename(columns={"away_team_y": "away_team"}), "name")
+    away_pitcher_stats = get_pitcher_woba(pa, "name")
 
     bh = bh.merge(
         home_pitcher_stats,
@@ -99,9 +97,9 @@ def main():
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
 
-    subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY])
-    subprocess.run(["git", "commit", "-m", "Add merged batter and pitcher matchup stats"])
-    subprocess.run(["git", "push"])
+    subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY], check=True)
+    subprocess.run(["git", "commit", "-m", "Add merged batter and pitcher matchup stats"], check=True)
+    subprocess.run(["git", "push"], check=True)
 
 if __name__ == "__main__":
     try:
