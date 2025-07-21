@@ -49,16 +49,19 @@ def main():
             if "name" in df.columns:
                 df = df.drop(columns=["name"])
 
-            # Normalize pitcher names
+            # Normalize and validate pitcher name fields
             if "last_name, first_name" in df.columns:
                 df["last_name, first_name"] = df["last_name, first_name"].apply(normalize_name)
                 df = df[df["last_name, first_name"].isin(ref_set)]
 
-            # Normalize team names if applicable
+            for col in ["pitcher_away", "pitcher_home"]:
+                if col in df.columns:
+                    df[col] = df[col].apply(normalize_name)
+                    df = df[df[col].isin(ref_set)]
+
+            # Normalize team names
             if team_col in df.columns:
                 df[team_col] = df[team_col].apply(lambda x: normalize_team(x, team_map))
-
-            # Normalize 'team' column if it exists
             if "team" in df.columns:
                 df["team"] = df["team"].apply(lambda x: normalize_team(x, team_map))
 
