@@ -1,0 +1,94 @@
+
+▶️ START: normalize_names (2025-07-22 01:55:35 PM EDT)
+📥 Processing data/Data/batters.csv...
+✅ Saved normalized file to data/normalized/batters_normalized.csv
+📥 Processing data/Data/pitchers.csv...
+✅ Saved normalized file to data/normalized/pitchers_normalized.csv
+⏹️ END: normalize_names (2025-07-22 01:55:35 PM EDT)
+
+▶️ START: tag_master_files (2025-07-22 01:55:36 PM EDT)
+✅ Tagged batters: data/tagged/batters_normalized.csv
+✅ Tagged pitchers: data/tagged/pitchers_normalized.csv
+⏹️ END: tag_master_files (2025-07-22 01:55:36 PM EDT)
+
+▶️ START: deduplicate_normalized (2025-07-22 01:55:36 PM EDT)
+🔗 Mapping clean_team_name to official team_name using team_name_master.csv...
+🧼 Batters deduplicated: 626 → 624
+🧼 Pitchers deduplicated: 699 → 699
+⏹️ END: deduplicate_normalized (2025-07-22 01:55:36 PM EDT)
+
+▶️ START: normalize_lineups (2025-07-22 01:55:37 PM EDT)
+✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
+⏹️ END: normalize_lineups (2025-07-22 01:55:37 PM EDT)
+
+▶️ START: normalize_todays_games (2025-07-22 01:55:37 PM EDT)
+📥 Loading input files...
+🧼 Normalizing pitcher names...
+✅ All pitchers recognized.
+🔁 Mapping team abbreviations to full names...
+✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
+⏹️ END: normalize_todays_games (2025-07-22 01:55:37 PM EDT)
+
+▶️ START: apply_team_name_mapping (2025-07-22 01:55:37 PM EDT)
+✅ Updated: data/raw/todaysgames_normalized.csv
+✅ Updated: data/Data/stadium_metadata.csv
+⏹️ END: apply_team_name_mapping (2025-07-22 01:55:37 PM EDT)
+
+▶️ START: update_game_time (2025-07-22 01:55:38 PM EDT)
+✅ Game times updated for 30 teams:
+ - Yankees vs : [no game]
+ - Red Sox vs : [no game]
+ - Blue Jays vs Giants: 3:07 PM
+ - Orioles vs : [no game]
+ - Rays vs Orioles: 7:05 PM
+ - Guardians vs Athletics: 7:10 PM
+ - White Sox vs : [no game]
+ - Tigers vs : [no game]
+ - Royals vs : [no game]
+ - Twins vs : [no game]
+ - Astros vs : [no game]
+ - Athletics vs : [no game]
+ - Angels vs : [no game]
+ - Mariners vs Astros: 9:40 PM
+ - Rangers vs Tigers: 7:05 PM
+ - Braves vs Yankees: 7:15 PM
+ - Phillies vs Angels: 6:05 PM
+ - Nationals vs Padres: 6:45 PM
+ - Mets vs Reds: 4:10 PM
+ - Marlins vs Royals: 4:10 PM
+ - Cubs vs Red Sox: 7:15 PM
+ - Reds vs : [no game]
+ - Brewers vs : [no game]
+ - Pirates vs White Sox: 6:40 PM
+ - Cardinals vs : [no game]
+ - Dodgers vs Brewers: 9:10 PM
+ - Giants vs : [no game]
+ - Padres vs : [no game]
+ - Rockies vs Twins: 8:10 PM
+ - Diamondbacks vs Cardinals: 7:15 PM
+⏹️ END: update_game_time (2025-07-22 01:55:38 PM EDT)
+
+▶️ START: filter_stadium_metadata (2025-07-22 01:55:38 PM EDT)
+Nothing to commit
+Nothing to commit
+⏹️ END: filter_stadium_metadata (2025-07-22 01:55:38 PM EDT)
+
+▶️ START: normalize_batter_team_names (2025-07-22 01:55:39 PM EDT)
+📥 Loading batters_today and team_name_master...
+🔁 Replacing team codes with official team names...
+✅ Normalized teams in 242 rows. Saving to data/cleaned/batters_today.csv...
+⏹️ END: normalize_batter_team_names (2025-07-22 01:55:39 PM EDT)
+
+▶️ START: split_batters_by_home_away (2025-07-22 01:55:39 PM EDT)
+📥 Loading input files...
+🔍 Validating required columns...
+🧹 Cleaning and formatting team names...
+🏠 Home teams: ['Blue Jays', 'Braves', 'Cubs', 'Diamondbacks', 'Dodgers', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Rockies']
+🛫 Away teams: ['Angels', 'Astros', 'Athletics', 'Brewers', 'Cardinals', 'Giants', 'Orioles', 'Padres', 'Red Sox', 'Reds', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+👕 Batter teams: ['Angels', 'Astros', 'Athletics', 'Blue Jays', 'Braves', 'Brewers', 'Cardinals', 'Cubs', 'Diamondbacks', 'Dodgers', 'Giants', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Orioles', 'Padres', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Red Sox', 'Reds', 'Rockies', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+✅ All batter teams matched to today's games.
+⚙️ Splitting batters into home and away...
+✅ Saved 118 home batters and 124 away batters
+⏹️ END: split_batters_by_home_away (2025-07-22 01:55:39 PM EDT)
+
+▶️ START: commit_split_batters (2025-07-22 01:55:39 PM EDT)
