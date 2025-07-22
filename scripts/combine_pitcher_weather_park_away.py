@@ -27,4 +27,4 @@ def merge_and_combine(weather_df, park_df, valid_teams):
     merged = pd.merge(
         weather_df,
         park_df,
-        on=["last_name, first_name", "away_team
+        on=["last_name, first_name", "away_team"]
