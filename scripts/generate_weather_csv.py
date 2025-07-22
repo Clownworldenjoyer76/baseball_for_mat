@@ -21,6 +21,7 @@ def generate_weather_csv():
 
     # Normalize casing for merge
     games_df['home_team'] = games_df['home_team'].str.strip().str.upper()
+    games_df['away_team'] = games_df['away_team'].str.strip().str.upper()
     stadium_df['home_team'] = stadium_df['home_team'].str.strip().str.upper()
     team_map_df['uppercase'] = team_map_df['team_name'].str.strip().str.upper()
     team_map_df = team_map_df.drop_duplicates(subset='uppercase')
@@ -34,7 +35,7 @@ def generate_weather_csv():
         print("❌ Merge failed: No matching rows.")
         return
 
-    # Map proper casing from team_name_master
+    # Merge proper casing for home_team
     merged = pd.merge(
         merged,
         team_map_df[['uppercase', 'team_name']],
@@ -44,6 +45,11 @@ def generate_weather_csv():
     )
     merged.drop(columns=['home_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'home_team'}, inplace=True)
+
+    # Collapse duplicate away_team columns if they exist
+    if 'away_team_x' in merged.columns and 'away_team_y' in merged.columns:
+        merged['away_team'] = merged['away_team_x'].combine_first(merged['away_team_y'])
+        merged.drop(columns=['away_team_x', 'away_team_y'], inplace=True)
 
     merged.to_csv(OUTPUT_FILE, index=False)
 
