@@ -15,7 +15,7 @@ def apply_weather(df, weather_df, team_col, log_path):
     merged.to_csv(log_path.replace(".txt", ".csv"), index=False)
 
     # Minimal logging
-    top5 = merged[["last_name, first_name", team_col, "temperature", "humidity", "adj_woba_weather"]].head(5)
+    top5 = merged[["last_name, first_name", team_col, "temperature", "humidity"]].head(5)
     with open(log_path, "w") as f:
         f.write("Top 5 pitcher weather-adjusted rows:\n")
         f.write(top5.to_string(index=False))
