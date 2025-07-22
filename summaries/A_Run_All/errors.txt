@@ -1,3 +1,19 @@
+❌ apply_weather_adjustment ERROR:
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 53, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_weather_adjustment.py", line 29, in main
+    home_stadium_map = stadiums[['home_team', 'stadium']].rename(columns={'home_team': 'team'})
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['stadium'] not in index"
+
+---
+
 ❌ combine_pitcher_weather_park_away ERROR:
   File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/combine_pitcher_weather_park_away.py", line 30
     on=["last_name, first_name", "away_team
