@@ -47,7 +47,3 @@ def main():
 
     with open(LOG_AWAY, "w") as f:
         f.write("Top 5 Away Batters by adj_woba_weather:\n")
-        f.write(top5_away[["name", "team", "woba", "temperature", "adj_woba_weather"]].to_string(index=False))
-
-if __name__ == "__main__":
-    main()
