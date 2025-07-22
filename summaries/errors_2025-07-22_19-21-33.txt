@@ -1,1 +1,27 @@
 
+❌ add_team_columns_to_weather ERROR (2025-07-22 07:21:46 PM EDT):
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/add_team_columns_to_weather.py", line 23, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/add_team_columns_to_weather.py", line 15, in main
+    input_df = input_df[["stadium", "away_team"]]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['stadium'] not in index"
+
+---
+
+❌ apply_pitcher_weather_adjustment ERROR (2025-07-22 07:21:46 PM EDT):
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 42, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 31, in main
+    raise ValueError("weather_adjustments.csv missing home_team or away_team column")
+ValueError: weather_adjustments.csv missing home_team or away_team column
+
+---
+
