@@ -1,27 +1,64 @@
 import pandas as pd
 import os
+import unicodedata
+import re
 from datetime import datetime
 
-# Load the player-team master file
-master_df = pd.read_csv("data/processed/player_team_master.csv")
+# ─── Normalization Utilities ─────────────────────────────
 
-# Input normalized batter and pitcher files
+def strip_accents(text):
+    if not isinstance(text, str):
+        return ""
+    text = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+
+def normalize_name(name):
+    if not isinstance(name, str):
+        return ""
+
+    name = strip_accents(name)
+    name = re.sub(r"[^\w\s,\.]", "", name)  # Keep alphanumerics, comma, period
+    name = re.sub(r"\s+", " ", name).strip()
+
+    # Handle names in "First Middle Last" or "First Last Suffix" formats
+    if "," not in name:
+        tokens = name.split()
+        if len(tokens) >= 2:
+            first = tokens[0]
+            last = " ".join(tokens[1:])
+            return f"{last}, {first}"
+        return name.title()
+
+    # Handle names already in "Last, First Suffix" format
+    parts = name.split(",")
+    if len(parts) == 2:
+        last = parts[0].strip().title()
+        first = parts[1].strip().title()
+        return f"{last}, {first}"
+
+    return name.title()
+
+# ─── File Paths ───────────────────────────────────────────
+
+master_df = pd.read_csv("data/processed/player_team_master.csv")
 batter_file = "data/normalized/batters_normalized.csv"
 pitcher_file = "data/normalized/pitchers_normalized.csv"
-
-# Output folders
 output_folder = "data/tagged"
 output_totals_file = "data/output/player_totals.txt"
 
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs("data/output", exist_ok=True)
 
-# Load and tag each file
+# ─── Tagging Logic ───────────────────────────────────────
+
 def tag_players(file_path, player_type):
     df = pd.read_csv(file_path)
     if "last_name, first_name" not in df.columns:
         print(f"❌ Column 'last_name, first_name' not found in {file_path}")
         return pd.DataFrame()
+
+    df["last_name, first_name"] = df["last_name, first_name"].apply(normalize_name)
+    master_df["name"] = master_df["name"].apply(normalize_name)
 
     merged = df.merge(
         master_df,
@@ -32,20 +69,16 @@ def tag_players(file_path, player_type):
     )
 
     output_file = os.path.join(output_folder, os.path.basename(file_path))
-
-    # ⬇️ Normalize pitcher names to 'Last, First'
-    if player_type == "pitchers":
-        merged['name'] = merged['last_name, first_name'].astype(str).str.strip()
-
     merged.to_csv(output_file, index=False)
     print(f"✅ Tagged {player_type}: {output_file}")
 
     return merged
 
+# ─── Execution ────────────────────────────────────────────
+
 batters_tagged = tag_players(batter_file, "batters")
 pitchers_tagged = tag_players(pitcher_file, "pitchers")
 
-# Output totals
 with open(output_totals_file, "w") as f:
     f.write(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     f.write(f"Tagged Batters: {len(batters_tagged)}\n")
