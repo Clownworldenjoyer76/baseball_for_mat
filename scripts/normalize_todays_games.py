@@ -1,5 +1,5 @@
 import pandas as pd
-import re
+import subprocess
 
 # Load files
 games = pd.read_csv('data/raw/todaysgames.csv')
@@ -13,14 +13,14 @@ games['away_team'] = games['away_team'].str.strip().str.upper().map(team_dict).f
 
 # Normalize pitcher names
 def normalize_name(name):
-    name = re.sub(r"[^\w\s]", "", name).strip()  # Removes all punctuation
+    name = str(name).strip().replace(".", "")
     parts = name.split()
     if len(parts) >= 2:
         return f"{parts[-1]}, {' '.join(parts[:-1])}"
     return name
 
-games['pitcher_home'] = games['pitcher_home'].astype(str).apply(normalize_name)
-games['pitcher_away'] = games['pitcher_away'].astype(str).apply(normalize_name)
+games['pitcher_home'] = games['pitcher_home'].apply(normalize_name)
+games['pitcher_away'] = games['pitcher_away'].apply(normalize_name)
 
 # Allow pitchers to be in valid list OR equal to 'Undecided'
 valid_pitchers = set(pitchers['last_name, first_name'])
@@ -30,6 +30,15 @@ games = games[
 ]
 
 # Save normalized file
-games.to_csv('data/raw/todaysgames_normalized.csv', index=False)
+output_file = 'data/raw/todaysgames_normalized.csv'
+games.to_csv(output_file, index=False)
+print(f"✅ normalize_todays_games.py completed. Output saved to {output_file}")
 
-print("normalize_todays_games.py completed successfully. Output saved to data/raw/todaysgames_normalized.csv")
+# Git commit + push
+try:
+    subprocess.run(["git", "add", output_file], check=True)
+    subprocess.run(["git", "commit", "-m", "🔄 Update todaysgames_normalized.csv after normalization"], check=True)
+    subprocess.run(["git", "push"], check=True)
+    print("✅ Git commit and push complete.")
+except subprocess.CalledProcessError as e:
+    print(f"⚠️ Git commit/push failed: {e}")
