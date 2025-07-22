@@ -68,7 +68,7 @@ def main():
 
     # Rename "team" to "home_team" for home_df only
     home_df = home_df[["last_name, first_name", "team", "type"]].rename(columns={"team": "home_team"})
-    away_df = away_df[["last_name, first_name", "team", "type"}]  # leave column name as "team"
+    away_df = away_df[["last_name, first_name", "team", "type"]]  # leave column name as "team"
 
     os.makedirs("data/adjusted", exist_ok=True)
 
