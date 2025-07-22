@@ -58,7 +58,7 @@ def main():
         condition = current.get("condition", {}).get("text", "Unknown")
 
         results.append({
-            "stadium": row["home_team"],
+            "stadium": row["team_name_x"],
             "location": location,
             "temperature": current.get("temp_f", ""),
             "wind_speed": current.get("wind_mph", ""),
