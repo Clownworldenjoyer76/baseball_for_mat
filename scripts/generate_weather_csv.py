@@ -20,23 +20,19 @@ def generate_weather_csv():
         print(f"❌ Error reading input files: {e}")
         return
 
-    # Normalize casing
     games_df['home_team'] = games_df['home_team'].str.strip().str.upper()
     games_df['away_team'] = games_df['away_team'].str.strip().str.upper()
     stadium_df['home_team'] = stadium_df['home_team'].str.strip().str.upper()
     team_map_df['uppercase'] = team_map_df['team_name'].str.strip().str.upper()
     team_map_df = team_map_df.drop_duplicates(subset='uppercase')
 
-    # Drop game_time to avoid column clash
     games_df = games_df.drop(columns=['game_time'], errors='ignore')
 
-    # Merge stadium metadata
     merged = pd.merge(games_df, stadium_df, on='home_team', how='left')
     if merged.empty:
         print("❌ Merge failed: No matching rows.")
         return
 
-    # Apply proper casing for home_team
     merged = pd.merge(
         merged,
         team_map_df[['uppercase', 'team_name']],
@@ -47,7 +43,6 @@ def generate_weather_csv():
     merged.drop(columns=['home_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'home_team'}, inplace=True)
 
-    # Collapse away_team_x and away_team_y
     if 'away_team_x' in merged.columns and 'away_team_y' in merged.columns:
         merged['away_team'] = merged['away_team_x'].combine_first(merged['away_team_y'])
         merged.drop(columns=['away_team_x', 'away_team_y'], inplace=True)
@@ -55,7 +50,6 @@ def generate_weather_csv():
         print("❌ 'away_team' column not found in merged dataframe.")
         return
 
-    # Apply proper casing for away_team
     merged['away_team'] = merged['away_team'].str.strip().str.upper()
     merged = pd.merge(
         merged,
