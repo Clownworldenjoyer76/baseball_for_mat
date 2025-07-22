@@ -25,28 +25,32 @@ jobs:
       - name: Run All Scripts + Unified Logs
         run: |
           mkdir -p summaries
-          > summaries/status.txt
-          > summaries/log.txt
-          > summaries/errors.txt
+          TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d_%H-%M-%S")
+          STATUS_FILE="summaries/status_${TIMESTAMP}.txt"
+          LOG_FILE="summaries/log_${TIMESTAMP}.txt"
+          ERRORS_FILE="summaries/errors_${TIMESTAMP}.txt"
+          echo "" > "$STATUS_FILE"
+          echo "" > "$LOG_FILE"
+          echo "" > "$ERRORS_FILE"
 
           run_step() {
             SCRIPT="$1"
             STEP_NAME=$(basename "$SCRIPT" .py)
-            TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+            STEP_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
-            echo "▶️ START: $STEP_NAME ($TIMESTAMP)" >> summaries/log.txt
+            echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
 
-            if python "scripts/${SCRIPT}" >> summaries/log.txt 2> temp_error.log; then
-              echo "✅ $STEP_NAME succeeded [$TIMESTAMP]" >> summaries/status.txt
+            if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
+              echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
             else
-              echo "❌ $STEP_NAME failed [$TIMESTAMP]" >> summaries/status.txt
-              echo "❌ $STEP_NAME ERROR ($TIMESTAMP):" >> summaries/errors.txt
-              cat temp_error.log >> summaries/errors.txt
-              echo -e "\n---\n" >> summaries/errors.txt
+              echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+              echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
+              cat temp_error.log >> "$ERRORS_FILE"
+              echo -e "\n---\n" >> "$ERRORS_FILE"
             fi
 
-            echo "⏹️ END: $STEP_NAME ($TIMESTAMP)" >> summaries/log.txt
-            echo "" >> summaries/log.txt
+            echo "⏹️ END: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
+            echo "" >> "$LOG_FILE"
           }
 
           run_step normalize_names.py
@@ -89,5 +93,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add -A
-          git commit -m "A_Run_All: unified summary, log, errors, and data updates" || echo "Nothing to commit"
+          git commit -m "A_Run_All: summary, logs, errors, and data update at $(TZ='America/New_York' date)" || echo "Nothing to commit"
           git push || echo "Nothing to push"
