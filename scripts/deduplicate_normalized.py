@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import unicodedata
 import re
+import subprocess
 
 # --- Normalization Functions ---
 def strip_accents(text):
@@ -49,19 +50,30 @@ for label, path in files.items():
 
         # Normalize names before deduplication
         df["last_name, first_name"] = df["last_name, first_name"].apply(normalize_name)
-
         df = df.drop_duplicates(subset=["last_name, first_name", "team", "type"])
         after = len(df)
 
-        if label == "batters":
-            print("🔗 Mapping clean_team_name to official team_name using team_name_master.csv...")
-            try:
-                team_map = pd.read_csv("data/Data/team_name_master.csv")
-                team_map = team_map[['team_name', 'clean_team_name']].dropna()
-                reverse_map = dict(zip(team_map['clean_team_name'].str.strip(), team_map['team_name'].str.strip()))
-                df['team'] = df['team'].astype(str).str.strip().map(reverse_map)
-            except Exception as e:
-                print(f"⚠️ Failed to map team names: {e}")
-
-        df.to_csv(f"{output_dir}/{label}_normalized_cleaned.csv", index=False)
         print(f"🧼 {label.capitalize()} deduplicated: {before} → {after}")
+
+        # Map team names to official casing using team_name_master
+        try:
+            team_map = pd.read_csv("data/Data/team_name_master.csv")
+            team_map = team_map[['team_name', 'clean_team_name']].dropna()
+            reverse_map = dict(zip(team_map['clean_team_name'].str.strip(), team_map['team_name'].str.strip()))
+            df['team'] = df['team'].astype(str).str.strip().map(reverse_map)
+            print(f"🔗 {label.capitalize()} team names mapped using team_name_master.csv")
+        except Exception as e:
+            print(f"⚠️ Failed to map team names for {label}: {e}")
+
+        output_path = f"{output_dir}/{label}_normalized_cleaned.csv"
+        df.to_csv(output_path, index=False)
+        print(f"✅ Wrote cleaned {label} data to {output_path}")
+
+        # Git commit for output file
+        try:
+            subprocess.run(["git", "add", output_path], check=True)
+            subprocess.run(["git", "commit", "-m", f"🧹 Auto-cleaned and deduplicated {label}"], check=True)
+            subprocess.run(["git", "push"], check=True)
+            print(f"✅ Git commit and push completed for {output_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Git commit/push failed for {output_path}: {e}")
