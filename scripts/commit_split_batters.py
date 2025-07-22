@@ -9,7 +9,7 @@ files_to_commit = [
 ]
 
 try:
-    subprocess.run(["git", "add", "-A"], check=True)
+    subprocess.run(["git", "add"] + files_to_commit, check=True)
     commit_msg = f"🔄 Split batters home/away @ {timestamp}"
     subprocess.run(["git", "commit", "-m", commit_msg], check=True)
     subprocess.run(["git", "push"], check=True)
