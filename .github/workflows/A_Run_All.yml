@@ -22,29 +22,31 @@ jobs:
       - name: Install dependencies
         run: pip install pandas unidecode requests
 
-      - name: Run All Scripts + Generate Logs
+      - name: Run All Scripts + Unified Logs
         run: |
-          mkdir -p summaries/A_Run_All
-          > summaries/A_Run_All/errors.txt
+          mkdir -p summaries
+          > summaries/status.txt
+          > summaries/log.txt
+          > summaries/errors.txt
 
           run_step() {
             SCRIPT="$1"
             STEP_NAME=$(basename "$SCRIPT" .py)
-            LOG="summaries/A_Run_All/${STEP_NAME}.log"
-            TXT="summaries/A_Run_All/${STEP_NAME}.txt"
             TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
-            if python "scripts/${SCRIPT}" > "$LOG" 2> temp_error.log; then
-              echo "✅ ${STEP_NAME} ran successfully." > "$TXT"
+            echo "▶️ START: $STEP_NAME ($TIMESTAMP)" >> summaries/log.txt
+
+            if python "scripts/${SCRIPT}" >> summaries/log.txt 2> temp_error.log; then
+              echo "✅ $STEP_NAME succeeded [$TIMESTAMP]" >> summaries/status.txt
             else
-              echo "❌ ${STEP_NAME} encountered an error." > "$TXT"
-              echo "❌ ${STEP_NAME} ERROR:" >> summaries/A_Run_All/errors.txt
-              cat temp_error.log >> summaries/A_Run_All/errors.txt
-              echo -e "\n---\n" >> summaries/A_Run_All/errors.txt
+              echo "❌ $STEP_NAME failed [$TIMESTAMP]" >> summaries/status.txt
+              echo "❌ $STEP_NAME ERROR ($TIMESTAMP):" >> summaries/errors.txt
+              cat temp_error.log >> summaries/errors.txt
+              echo -e "\n---\n" >> summaries/errors.txt
             fi
 
-            echo "🕒 Timestamp: $TIMESTAMP" >> "$LOG"
-            echo "🕒 Timestamp: $TIMESTAMP" >> "$TXT"
+            echo "⏹️ END: $STEP_NAME ($TIMESTAMP)" >> summaries/log.txt
+            echo "" >> summaries/log.txt
           }
 
           run_step normalize_names.py
@@ -79,18 +81,10 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
 
-          FINAL_TS=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
-          {
-            echo "✅ A_Run_All Summary — $FINAL_TS"
-            for FILE in summaries/A_Run_All/*.txt; do
-              echo "$(basename "$FILE")"
-            done
-          } > summaries/A_Run_All/a_run_all.txt
-
-      - name: Commit All Logs and Outputs
+      - name: Commit All Logs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "A_Run_All: full summary logs committed" || echo "Nothing to commit"
+          git add summaries/*
+          git commit -m "A_Run_All: unified summary, log, and errors"
           git push || echo "Nothing to push"
