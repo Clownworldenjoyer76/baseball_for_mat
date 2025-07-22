@@ -5,6 +5,7 @@ import re
 
 INPUT_FILE = "data/raw/todaysgames.csv"
 PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
+TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 OUTPUT_FILE = "data/raw/todaysgames_normalized.csv"
 
 def normalize_name(name):
@@ -34,7 +35,9 @@ def normalize_todays_games():
     print("📥 Loading input files...")
     games = pd.read_csv(INPUT_FILE)
     pitchers = pd.read_csv(PITCHERS_FILE)
+    team_map = pd.read_csv(TEAM_MAP_FILE)
 
+    # Normalize pitcher names
     print("🧼 Normalizing pitcher names...")
     games["pitcher_home_normalized"] = games["pitcher_home"].apply(normalize_name).str.lower()
     games["pitcher_away_normalized"] = games["pitcher_away"].apply(normalize_name).str.lower()
@@ -42,6 +45,7 @@ def normalize_todays_games():
 
     valid_names = set(pitchers["name_normalized"])
 
+    # Check for unrecognized pitchers
     missing = games[
         (~games["pitcher_home_normalized"].isin(valid_names)) |
         (~games["pitcher_away_normalized"].isin(valid_names))
@@ -50,10 +54,21 @@ def normalize_todays_games():
     if not missing.empty:
         raise ValueError(f"❌ Unrecognized pitcher(s) found:\n{missing[['home_team', 'away_team', 'pitcher_home', 'pitcher_away']]}")
 
-    print("✅ All pitchers recognized. Cleaning and saving...")
+    print("✅ All pitchers recognized.")
+
+    # Normalize team names from abbreviations
+    print("🔁 Mapping team abbreviations to full names...")
+    team_map["team_code"] = team_map["team_code"].astype(str).str.strip().str.upper()
+    team_map["team_name"] = team_map["team_name"].astype(str).str.strip()
+
+    code_to_name = dict(zip(team_map["team_code"], team_map["team_name"]))
+
+    games["home_team"] = games["home_team"].astype(str).str.strip().str.upper().map(code_to_name).fillna(games["home_team"])
+    games["away_team"] = games["away_team"].astype(str).str.strip().str.upper().map(code_to_name).fillna(games["away_team"])
+
+    # Finalize and save
     games.drop(columns=["pitcher_home_normalized", "pitcher_away_normalized"], inplace=True)
     games.to_csv(OUTPUT_FILE, index=False)
-
     print(f"✅ normalize_todays_games completed: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
