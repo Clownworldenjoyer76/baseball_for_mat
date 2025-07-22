@@ -2,53 +2,62 @@ import pandas as pd
 from unidecode import unidecode
 import os
 
-PITCHER_REF_FILE = "data/Data/pitchers.csv"
-
-FILES = {
-    "data/adjusted/pitchers_home.csv": "pitcher_home",
-    "data/adjusted/pitchers_away.csv": "pitcher_away",
-}
+# Paths
+TODAY_GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+PITCHER_REF_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
+OUTPUT_HOME = "data/adjusted/pitchers_home.csv"
+OUTPUT_AWAY = "data/adjusted/pitchers_away.csv"
 
 def normalize_name(name):
-    if pd.isna(name): return name
-    name = unidecode(name).lower().strip()
-    parts = name.split()
-    if len(parts) >= 2:
-        return f"{parts[-1].title()}, {' '.join(parts[:-1]).title()}"
+    if pd.isna(name):
+        return ""
+    name = unidecode(name).strip()
+    name = name.replace(" ,", ",").replace(", ", ",").replace(",", ", ")
+    name = " ".join(name.split())
+    # Ensure format: Last, First Suffix (if any)
+    tokens = name.split()
+    if len(tokens) >= 2:
+        first = tokens[0]
+        last = " ".join(tokens[1:])
+        return f"{last}, {first}".title()
     return name.title()
 
 def main():
-    try:
-        ref_pitchers = pd.read_csv(PITCHER_REF_FILE)
-        ref_pitchers["normalized_name"] = ref_pitchers["last_name, first_name"].apply(normalize_name)
-        ref_set = set(ref_pitchers["normalized_name"])
+    if not os.path.exists(TODAY_GAMES_FILE):
+        print(f"❌ Missing file: {TODAY_GAMES_FILE}")
+        return
 
-        for path, pitcher_col in FILES.items():
-            if not os.path.exists(path):
-                print(f"❌ Missing file: {path}")
-                continue
+    if not os.path.exists(PITCHER_REF_FILE):
+        print(f"❌ Missing file: {PITCHER_REF_FILE}")
+        return
 
-            df = pd.read_csv(path)
+    # Load data
+    games = pd.read_csv(TODAY_GAMES_FILE)
+    ref = pd.read_csv(PITCHER_REF_FILE)
+    ref_names = set(ref["last_name, first_name"].apply(normalize_name))
 
-            # Drop old 'name' column if exists
-            if "name" in df.columns:
-                df = df.drop(columns=["name"])
+    # Normalize and filter
+    games["pitcher_home"] = games["pitcher_home"].apply(normalize_name)
+    games["pitcher_away"] = games["pitcher_away"].apply(normalize_name)
 
-            # Normalize 'last_name, first_name' if present
-            if "last_name, first_name" in df.columns:
-                df["last_name, first_name"] = df["last_name, first_name"].apply(normalize_name)
-                df = df[df["last_name, first_name"].isin(ref_set)]
+    home_df = games[games["pitcher_home"].isin(ref_names)].copy()
+    away_df = games[games["pitcher_away"].isin(ref_names)].copy()
 
-            # Normalize pitcher_* if present
-            if pitcher_col in df.columns:
-                df[pitcher_col] = df[pitcher_col].apply(normalize_name)
-                df = df[df[pitcher_col].isin(ref_set)]
+    home_df = home_df.rename(columns={"pitcher_home": "last_name, first_name", "home_team": "team"})
+    away_df = away_df.rename(columns={"pitcher_away": "last_name, first_name", "away_team": "team"})
 
-            df.to_csv(path, index=False)
-            print(f"✅ Normalized and saved: {path}")
+    home_df["type"] = "pitcher"
+    away_df["type"] = "pitcher"
 
-    except Exception as e:
-        print(f"❌ Error: {e}")
+    home_df = home_df[["last_name, first_name", "team", "type"]]
+    away_df = away_df[["last_name, first_name", "team", "type"]]
+
+    os.makedirs("data/adjusted", exist_ok=True)
+    home_df.to_csv(OUTPUT_HOME, index=False)
+    away_df.to_csv(OUTPUT_AWAY, index=False)
+
+    print(f"✅ Wrote {len(home_df)} rows to {OUTPUT_HOME}")
+    print(f"✅ Wrote {len(away_df)} rows to {OUTPUT_AWAY}")
 
 if __name__ == "__main__":
     main()
