@@ -1,1 +1,15 @@
 
+❌ combine_pitcher_weather_park_away ERROR (2025-07-22 03:53:49 PM EDT):
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/combine_pitcher_weather_park_away.py", line 52, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/combine_pitcher_weather_park_away.py", line 43, in main
+    top_5 = merged_df.sort_values(by="adj_woba_combined", ascending=False).head(5)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 7196, in sort_values
+    k = self._get_label_or_level_values(by[0], axis=axis)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
+    raise KeyError(key)
+KeyError: 'adj_woba_combined'
+
+---
+
