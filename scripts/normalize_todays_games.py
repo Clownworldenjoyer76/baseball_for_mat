@@ -1,5 +1,5 @@
-
 import pandas as pd
+import re
 
 # Load files
 games = pd.read_csv('data/raw/todaysgames.csv')
@@ -13,13 +13,14 @@ games['away_team'] = games['away_team'].str.strip().str.upper().map(team_dict).f
 
 # Normalize pitcher names
 def normalize_name(name):
-    parts = name.strip().split()
+    name = re.sub(r"[^\w\s]", "", name).strip()  # Removes all punctuation
+    parts = name.split()
     if len(parts) >= 2:
         return f"{parts[-1]}, {' '.join(parts[:-1])}"
-    return name.strip()
+    return name
 
-games['pitcher_home'] = games['pitcher_home'].apply(normalize_name)
-games['pitcher_away'] = games['pitcher_away'].apply(normalize_name)
+games['pitcher_home'] = games['pitcher_home'].astype(str).apply(normalize_name)
+games['pitcher_away'] = games['pitcher_away'].astype(str).apply(normalize_name)
 
 # Allow pitchers to be in valid list OR equal to 'Undecided'
 valid_pitchers = set(pitchers['last_name, first_name'])
