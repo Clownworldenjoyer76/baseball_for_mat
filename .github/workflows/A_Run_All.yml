@@ -25,29 +25,27 @@ jobs:
       - name: Run All Scripts + Unified Logs
         run: |
           mkdir -p summaries
-          TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
-
-          echo "🟢 Run Timestamp: $TIMESTAMP" > summaries/status.txt
-          echo "🟢 Run Timestamp: $TIMESTAMP" > summaries/log.txt
-          echo "🟢 Run Timestamp: $TIMESTAMP" > summaries/errors.txt
+          > summaries/status.txt
+          > summaries/log.txt
+          > summaries/errors.txt
 
           run_step() {
             SCRIPT="$1"
             STEP_NAME=$(basename "$SCRIPT" .py)
-            STEP_TIME=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+            TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
 
-            echo "▶️ START: $STEP_NAME ($STEP_TIME)" >> summaries/log.txt
+            echo "▶️ START: $STEP_NAME ($TIMESTAMP)" >> summaries/log.txt
 
             if python "scripts/${SCRIPT}" >> summaries/log.txt 2> temp_error.log; then
-              echo "✅ $STEP_NAME succeeded [$STEP_TIME]" >> summaries/status.txt
+              echo "✅ $STEP_NAME succeeded [$TIMESTAMP]" >> summaries/status.txt
             else
-              echo "❌ $STEP_NAME failed [$STEP_TIME]" >> summaries/status.txt
-              echo "❌ $STEP_NAME ERROR ($STEP_TIME):" >> summaries/errors.txt
+              echo "❌ $STEP_NAME failed [$TIMESTAMP]" >> summaries/status.txt
+              echo "❌ $STEP_NAME ERROR ($TIMESTAMP):" >> summaries/errors.txt
               cat temp_error.log >> summaries/errors.txt
               echo -e "\n---\n" >> summaries/errors.txt
             fi
 
-            echo "⏹️ END: $STEP_NAME ($STEP_TIME)" >> summaries/log.txt
+            echo "⏹️ END: $STEP_NAME ($TIMESTAMP)" >> summaries/log.txt
             echo "" >> summaries/log.txt
           }
 
@@ -60,7 +58,7 @@ jobs:
           run_step update_game_time.py
           run_step split_batters_by_home_away.py
           run_step normalize_pitcher_home_away.py
-          run_step split_pitchers.py
+          # run_step split_pitchers.py  <-- intentionally skipped
           run_step generate_weather_csv.py
           run_step filter_today_batters.py
           run_step get_weather_data.py
@@ -83,11 +81,10 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
 
-      - name: Force Commit Logs and Outputs
+      - name: Commit All Logs and Outputs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/* || true
-          git add data/* || true
-          git commit -m "✅ A_Run_All auto-commit — $(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")" || echo "No file changes to commit"
-          git push || echo "Push skipped"
+          git add -A
+          git commit -m "A_Run_All: unified summary, log, errors, and data updates" || echo "Nothing to commit"
+          git push || echo "Nothing to push"
