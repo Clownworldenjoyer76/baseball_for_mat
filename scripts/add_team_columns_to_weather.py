@@ -1,27 +1,23 @@
 import pandas as pd
 
-WEATHER_FILE = "data/weather_adjustments.csv"
-WEATHER_INPUT_FILE = "data/weather_input.csv"
-OUTPUT_FILE = "data/weather_adjustments.csv"
-
 def main():
-    weather_df = pd.read_csv(WEATHER_FILE)
-    input_df = pd.read_csv(WEATHER_INPUT_FILE)
+    weather_path = "data/weather_adjustments.csv"
+    input_path = "data/weather_input.csv"
 
-    # Confirm required columns exist
-    if "stadium" not in weather_df.columns or "away_team" not in input_df.columns:
-        raise ValueError("Missing required columns in one of the input files.")
+    # Load files
+    weather_df = pd.read_csv(weather_path)
+    input_df = pd.read_csv(input_path)
 
-    # Copy stadium as home_team
+    # Add home_team column (mirror 'stadium')
     weather_df["home_team"] = weather_df["stadium"]
 
-    # Map away_team using the stadium (which is also home_team)
-    away_team_map = dict(zip(input_df["home_team"], input_df["away_team"]))
-    weather_df["away_team"] = weather_df["stadium"].map(away_team_map)
+    # Merge to get away_team from input file
+    input_df = input_df[["stadium", "away_team"]]
+    merged = weather_df.merge(input_df, on="stadium", how="left")
 
-    weather_df.to_csv(OUTPUT_FILE, index=False)
-
-    print(f"✅ Added home_team and away_team columns to {OUTPUT_FILE}")
+    # Save updated weather_adjustments.csv
+    merged.to_csv(weather_path, index=False)
+    print(f"✅ Updated file: {weather_path} with home_team and away_team")
 
 if __name__ == "__main__":
     main()
