@@ -1,45 +1,46 @@
-▶️ START: normalize_names (2025-07-22 12:43:15 PM EDT)
+▶️ START: normalize_names (2025-07-22 12:53:05 PM EDT)
 📥 Processing data/Data/batters.csv...
 ✅ Saved normalized file to data/normalized/batters_normalized.csv
 📥 Processing data/Data/pitchers.csv...
 ✅ Saved normalized file to data/normalized/pitchers_normalized.csv
-⏹️ END: normalize_names (2025-07-22 12:43:15 PM EDT)
+⏹️ END: normalize_names (2025-07-22 12:53:05 PM EDT)
 
-▶️ START: tag_master_files (2025-07-22 12:43:16 PM EDT)
+▶️ START: tag_master_files (2025-07-22 12:53:06 PM EDT)
 ✅ Tagged batters: data/tagged/batters_normalized.csv
 ✅ Tagged pitchers: data/tagged/pitchers_normalized.csv
-⏹️ END: tag_master_files (2025-07-22 12:43:16 PM EDT)
+⏹️ END: tag_master_files (2025-07-22 12:53:06 PM EDT)
 
-▶️ START: deduplicate_normalized (2025-07-22 12:43:16 PM EDT)
+▶️ START: deduplicate_normalized (2025-07-22 12:53:06 PM EDT)
 🔗 Mapping clean_team_name to official team_name using team_name_master.csv...
 🧼 Batters deduplicated: 626 → 624
 🧼 Pitchers deduplicated: 699 → 699
-⏹️ END: deduplicate_normalized (2025-07-22 12:43:16 PM EDT)
+⏹️ END: deduplicate_normalized (2025-07-22 12:53:06 PM EDT)
 
-▶️ START: normalize_lineups (2025-07-22 12:43:17 PM EDT)
+▶️ START: normalize_lineups (2025-07-22 12:53:07 PM EDT)
 ✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups (2025-07-22 12:43:17 PM EDT)
+⏹️ END: normalize_lineups (2025-07-22 12:53:07 PM EDT)
 
-▶️ START: normalize_todays_games (2025-07-22 12:43:17 PM EDT)
+▶️ START: normalize_todays_games (2025-07-22 12:53:07 PM EDT)
 📥 Loading input files...
 🧼 Normalizing pitcher names...
-✅ All pitchers recognized. Cleaning and saving...
+✅ All pitchers recognized.
+🔁 Mapping team abbreviations to full names...
 ✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games (2025-07-22 12:43:17 PM EDT)
+⏹️ END: normalize_todays_games (2025-07-22 12:53:07 PM EDT)
 
-▶️ START: apply_team_name_mapping (2025-07-22 12:43:17 PM EDT)
+▶️ START: apply_team_name_mapping (2025-07-22 12:53:08 PM EDT)
 ✅ Updated: data/raw/todaysgames_normalized.csv
 ✅ Updated: data/Data/stadium_metadata.csv
-⏹️ END: apply_team_name_mapping (2025-07-22 12:43:17 PM EDT)
+⏹️ END: apply_team_name_mapping (2025-07-22 12:53:08 PM EDT)
 
-▶️ START: update_game_time (2025-07-22 12:43:18 PM EDT)
+▶️ START: update_game_time (2025-07-22 12:53:08 PM EDT)
 ✅ Game times updated for 30 teams:
  - Yankees vs : [no game]
  - Red Sox vs : [no game]
- - Blue Jays vs : [no game]
+ - Blue Jays vs Giants: 3:07 PM
  - Orioles vs : [no game]
- - Rays vs : [no game]
- - Guardians vs : [no game]
+ - Rays vs Orioles: 7:05 PM
+ - Guardians vs Athletics: 7:10 PM
  - White Sox vs : [no game]
  - Tigers vs : [no game]
  - Royals vs : [no game]
@@ -47,183 +48,41 @@
  - Astros vs : [no game]
  - Athletics vs : [no game]
  - Angels vs : [no game]
- - Mariners vs : [no game]
- - Rangers vs : [no game]
- - Braves vs : [no game]
- - Phillies vs : [no game]
- - Nationals vs : [no game]
- - Mets vs : [no game]
- - Marlins vs : [no game]
- - Cubs vs : [no game]
+ - Mariners vs Astros: 9:40 PM
+ - Rangers vs Tigers: 7:05 PM
+ - Braves vs Yankees: 7:15 PM
+ - Phillies vs Angels: 6:05 PM
+ - Nationals vs Padres: 6:45 PM
+ - Mets vs Reds: 4:10 PM
+ - Marlins vs Royals: 4:10 PM
+ - Cubs vs Red Sox: 7:15 PM
  - Reds vs : [no game]
  - Brewers vs : [no game]
- - Pirates vs : [no game]
+ - Pirates vs White Sox: 6:40 PM
  - Cardinals vs : [no game]
- - Dodgers vs : [no game]
+ - Dodgers vs Brewers: 9:10 PM
  - Giants vs : [no game]
  - Padres vs : [no game]
- - Rockies vs : [no game]
- - Diamondbacks vs : [no game]
-⏹️ END: update_game_time (2025-07-22 12:43:18 PM EDT)
+ - Rockies vs Twins: 8:10 PM
+ - Diamondbacks vs Cardinals: 7:15 PM
+⏹️ END: update_game_time (2025-07-22 12:53:08 PM EDT)
 
-▶️ START: normalize_batter_team_names (2025-07-22 12:43:18 PM EDT)
+▶️ START: normalize_batter_team_names (2025-07-22 12:53:08 PM EDT)
 📥 Loading batters_today and team_name_master...
 🔁 Replacing team codes with official team names...
 ✅ Normalized teams in 242 rows. Saving to data/cleaned/batters_today.csv...
-⏹️ END: normalize_batter_team_names (2025-07-22 12:43:18 PM EDT)
+⏹️ END: normalize_batter_team_names (2025-07-22 12:53:08 PM EDT)
 
-▶️ START: split_batters_by_home_away (2025-07-22 12:43:18 PM EDT)
+▶️ START: split_batters_by_home_away (2025-07-22 12:53:09 PM EDT)
 📥 Loading input files...
 🔍 Validating required columns...
 🧹 Cleaning and formatting team names...
-🏠 Home teams: ['Ari', 'Atl', 'Chc', 'Cle', 'Col', 'Lad', 'Mia', 'Nym', 'Phi', 'Pit', 'Sea', 'Tb', 'Tex', 'Tor', 'Wsh']
-🛫 Away teams: ['Ath', 'Bal', 'Bos', 'Chw', 'Cin', 'Det', 'Hou', 'Kc', 'Laa', 'Mil', 'Min', 'Nyy', 'Sd', 'Sf', 'Stl']
+🏠 Home teams: ['Blue Jays', 'Braves', 'Cubs', 'Diamondbacks', 'Dodgers', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Rockies']
+🛫 Away teams: ['Angels', 'Astros', 'Athletics', 'Brewers', 'Cardinals', 'Giants', 'Orioles', 'Padres', 'Red Sox', 'Reds', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
 👕 Batter teams: ['Angels', 'Astros', 'Athletics', 'Blue Jays', 'Braves', 'Brewers', 'Cardinals', 'Cubs', 'Diamondbacks', 'Dodgers', 'Giants', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Orioles', 'Padres', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Red Sox', 'Reds', 'Rockies', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
-⚠️ Unmatched batter teams (not in today's games): ['Angels', 'Astros', 'Athletics', 'Blue Jays', 'Braves', 'Brewers', 'Cardinals', 'Cubs', 'Diamondbacks', 'Dodgers', 'Giants', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Orioles', 'Padres', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Red Sox', 'Reds', 'Rockies', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+✅ All batter teams matched to today's games.
 ⚙️ Splitting batters into home and away...
-✅ Saved 0 home batters and 0 away batters
-⏹️ END: split_batters_by_home_away (2025-07-22 12:43:18 PM EDT)
+✅ Saved 118 home batters and 124 away batters
+⏹️ END: split_batters_by_home_away (2025-07-22 12:53:09 PM EDT)
 
-▶️ START: commit_split_batters (2025-07-22 12:43:19 PM EDT)
-❌ Git commit/push failed: Command '['git', 'commit', '-m', '🔄 Split batters home/away @ 2025-07-22 04:43:19 PM ']' returned non-zero exit status 128.
-⏹️ END: commit_split_batters (2025-07-22 12:43:19 PM EDT)
-
-▶️ START: normalize_pitcher_home_away (2025-07-22 12:43:19 PM EDT)
-✅ Wrote 15 rows to data/adjusted/pitchers_home.csv
-✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
-⏹️ END: normalize_pitcher_home_away (2025-07-22 12:43:19 PM EDT)
-
-▶️ START: update_pitcher_team_names (2025-07-22 12:43:19 PM EDT)
-⏹️ END: update_pitcher_team_names (2025-07-22 12:43:19 PM EDT)
-
-▶️ START: generate_weather_csv (2025-07-22 12:43:20 PM EDT)
-✅ Weather input file generated
-🔢 Rows: 15
-📁 Output: data/weather_input.csv
-📄 Games file: data/raw/todaysgames_normalized.csv
-🏟️ Stadium file: data/Data/stadium_metadata.csv
-⚠️ Git commit/push failed: Command '['git', 'commit', '-m', '🔁 Normalize away_team casing in weather_input.csv']' returned non-zero exit status 128.
-⏹️ END: generate_weather_csv (2025-07-22 12:43:20 PM EDT)
-
-▶️ START: filter_today_batters (2025-07-22 12:43:20 PM EDT)
-📥 Loading lineups and batters...
-📊 Lineups columns: ['team_code', 'last_name, first_name']
-📊 Batters columns: ['last_name, first_name', 'player_id', 'year', 'player_age', 'ab', 'pa', 'hit', 'single', 'double', 'triple', 'home_run', 'strikeout', 'walk', 'k_percent', 'bb_percent', 'batting_avg', 'slg_percent', 'on_base_percent', 'on_base_plus_slg', 'xba', 'xslg', 'woba', 'xwoba', 'xobp', 'xiso', 'avg_swing_speed', 'fast_swing_rate', 'blasts_contact', 'blasts_swing', 'squared_up_contact', 'squared_up_swing', 'avg_swing_length', 'swords', 'attack_angle', 'attack_direction', 'ideal_angle_rate', 'vertical_swing_path', 'exit_velocity_avg', 'launch_angle_avg', 'sweet_spot_percent', 'barrel_batted_rate', 'hard_hit_percent', 'avg_best_speed', 'avg_hyper_speed', 'whiff_percent', 'swing_percent', 'name', 'team', 'type']
-🔍 Sample values from lineups:
-0      Heliot Ramos
-1      Willy Adames
-2     Rafael Devers
-3     Wilmer Flores
-4    Christian Koss
-Name: last_name, first_name, dtype: object
-🔍 Sample values from batters:
-0           Neto, Zach
-1    Goldschmidt, Paul
-2         Amaya, Jacob
-3      Tromp, Chadwick
-4      Tromp, Chadwick
-Name: name, dtype: object
-📐 Formatting names to match...
-🔢 300 unique names in today's lineups
-🔢 624 total batters in cleaned file
-🔎 Filtering batters based on formatted names...
-✅ Filtered down to 242 batters
-💾 Saved to data/cleaned/batters_today.csv
-⏹️ END: filter_today_batters (2025-07-22 12:43:20 PM EDT)
-
-▶️ START: get_weather_data (2025-07-22 12:43:20 PM EDT)
-2025-07-22 04:43:21 PM  🔄 Reading input file...
-2025-07-22 04:43:21 PM  🌍 Fetching weather for 15 stadiums...
-2025-07-22 04:43:26 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:43:32 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:43:37 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:43:42 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:43:48 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:43:53 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:43:59 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:04 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:10 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:15 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:20 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:26 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:31 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:37 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:42 PM  ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-07-22 04:44:42 PM  ⚠️ No weather data collected. Exiting.
-⏹️ END: get_weather_data (2025-07-22 12:43:20 PM EDT)
-
-▶️ START: apply_weather_adjustment (2025-07-22 12:44:43 PM EDT)
-⏹️ END: apply_weather_adjustment (2025-07-22 12:44:43 PM EDT)
-
-▶️ START: apply_park_adjustment (2025-07-22 12:44:43 PM EDT)
-[main 9503742] Force commit: adjusted park batters + log
- 5 files changed, 29 insertions(+), 224 deletions(-)
-Home batters adjusted: 0
-Away batters adjusted: 0
-✅ Committed and pushed adjusted park files.
-⏹️ END: apply_park_adjustment (2025-07-22 12:44:43 PM EDT)
-
-▶️ START: combine_weather_park_home (2025-07-22 12:44:44 PM EDT)
-[main 9fa126f] Auto-commit: Combined home batter adjustments
-✅ Merged rows: 0
-✅ Forced commit and push to repo.
-⏹️ END: combine_weather_park_home (2025-07-22 12:44:44 PM EDT)
-
-▶️ START: combine_weather_park_away (2025-07-22 12:44:45 PM EDT)
-[main 2a35adf] Auto-commit: Combined away batter adjustments
-📥 Loading input CSVs...
-🔹 Weather rows: 116
-🔹 Park rows: 0
-🔀 Merging weather and park adjustment files...
-✅ Merged rows: 0
-📊 Columns in merged data: ['last_name, first_name', 'player_id', 'year', 'player_age', 'ab', 'pa', 'hit', 'single', 'double', 'triple', 'home_run', 'strikeout', 'walk', 'k_percent', 'bb_percent', 'batting_avg', 'slg_percent', 'on_base_percent', 'on_base_plus_slg', 'xba', 'xslg', 'woba', 'xwoba', 'xobp', 'xiso', 'avg_swing_speed', 'fast_swing_rate', 'blasts_contact', 'blasts_swing', 'squared_up_contact', 'squared_up_swing', 'avg_swing_length', 'swords', 'attack_angle', 'attack_direction', 'ideal_angle_rate', 'vertical_swing_path', 'exit_velocity_avg', 'launch_angle_avg', 'sweet_spot_percent', 'barrel_batted_rate', 'hard_hit_percent', 'avg_best_speed', 'avg_hyper_speed', 'whiff_percent', 'swing_percent', 'name', 'team', 'type', 'stadium', 'location', 'temperature', 'wind_speed', 'wind_direction', 'humidity', 'precipitation', 'condition', 'notes', 'game_time', 'adj_woba_weather', 'adj_woba_park']
-⚠️ No rows matched between weather and park files. Check name/team formatting.
-💾 Saved combined file to: data/adjusted/batters_away_adjusted.csv
-📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
-📤 Committing and pushing results...
-✅ Git commit & push successful.
-⏹️ END: combine_weather_park_away (2025-07-22 12:44:45 PM EDT)
-
-▶️ START: normalize_pitcher_weather_outputs (2025-07-22 12:44:46 PM EDT)
-[main 3cfce0a] Normalize pitchers before weather adjustment
-✅ Forced commit and push to repo.
-⏹️ END: normalize_pitcher_weather_outputs (2025-07-22 12:44:46 PM EDT)
-
-▶️ START: fix_away_team_column (2025-07-22 12:44:46 PM EDT)
-ℹ️ Column 'away_team_y' not found. No changes made.
-⏹️ END: fix_away_team_column (2025-07-22 12:44:46 PM EDT)
-
-▶️ START: preprocess_pitcher_weather_park_away (2025-07-22 12:44:47 PM EDT)
-⏹️ END: preprocess_pitcher_weather_park_away (2025-07-22 12:44:47 PM EDT)
-
-▶️ START: apply_pitcher_weather_adjustment (2025-07-22 12:44:47 PM EDT)
-⏹️ END: apply_pitcher_weather_adjustment (2025-07-22 12:44:47 PM EDT)
-
-▶️ START: apply_pitcher_park_adjustment (2025-07-22 12:44:47 PM EDT)
-⏹️ END: apply_pitcher_park_adjustment (2025-07-22 12:44:47 PM EDT)
-
-▶️ START: normalize_pitcher_merge_inputs (2025-07-22 12:44:48 PM EDT)
-✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
-✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
-✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
-✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
-⏹️ END: normalize_pitcher_merge_inputs (2025-07-22 12:44:48 PM EDT)
-
-▶️ START: combine_pitcher_weather_park_home (2025-07-22 12:44:48 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   summaries/errors.txt
-	modified:   summaries/log.txt
-	modified:   summaries/status.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
-⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'Auto-commit: Cleaned combine pitcher weather + park (home)']' returned non-zero exit status 1.
-⏹️ END: combine_pitcher_weather_park_home (2025-07-22 12:44:48 PM EDT)
-
-▶️ START: combine_pitcher_weather_park_away (2025-07-22 12:44:49 PM EDT)
-⏹️ END: combine_pitcher_weather_park_away (2025-07-22 12:44:49 PM EDT)
-
+▶️ START: commit_split_batters (2025-07-22 12:53:09 PM EDT)
