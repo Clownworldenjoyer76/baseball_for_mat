@@ -1,19 +1,8 @@
 import pandas as pd
 from pathlib import Path
-
-
-def normalize_name(name):
-    if pd.isna(name): return name
-    name = unidecode(name)
-    name = name.lower().strip()
-    name = ' '.join(name.split())
-    name = ','.join(part.strip() for part in name.split(','))
-    return name.title()
-
-
+from unidecode import unidecode
 import os
 import subprocess
-
 
 # File paths
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
@@ -30,6 +19,14 @@ LOG_AWAY = "log_pitchers_away_park.txt"
 STATS_TO_ADJUST = [
     'home_run', 'slg_percent', 'xslg', 'woba', 'xwoba', 'barrel_batted_rate', 'hard_hit_percent'
 ]
+
+def normalize_name(name):
+    if pd.isna(name): return name
+    name = unidecode(name)
+    name = name.lower().strip()
+    name = ' '.join(name.split())
+    name = ','.join(part.strip() for part in name.split(','))
+    return name.title()
 
 def load_park_factors():
     park_day = pd.read_csv(PARK_DAY_FILE)
@@ -57,7 +54,7 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     adjusted = []
     logs = []
 
-    team_key = 'home_team' if side == 'home' else 'away_team'
+    team_key = "team"  # FIXED: consistent with input pitcher files
     pitchers_df[team_key] = pitchers_df[team_key].astype(str).str.strip().str.lower()
 
     for _, row in games_df.iterrows():
