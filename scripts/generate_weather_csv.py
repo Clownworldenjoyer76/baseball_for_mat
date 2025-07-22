@@ -26,16 +26,16 @@ def generate_weather_csv():
     team_map_df['uppercase'] = team_map_df['team_name'].str.strip().str.upper()
     team_map_df = team_map_df.drop_duplicates(subset='uppercase')
 
-    # Drop game_time from games_df to avoid _x/_y column clash
+    # Drop game_time to avoid column clash
     games_df = games_df.drop(columns=['game_time'], errors='ignore')
 
-    # Merge stadium + game data
+    # Merge stadium + game data on home_team
     merged = pd.merge(games_df, stadium_df, on='home_team', how='left')
     if merged.empty:
         print("❌ Merge failed: No matching rows.")
         return
 
-    # Merge proper casing for home_team
+    # Format home_team using team map
     merged = pd.merge(
         merged,
         team_map_df[['uppercase', 'team_name']],
@@ -46,11 +46,19 @@ def generate_weather_csv():
     merged.drop(columns=['home_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'home_team'}, inplace=True)
 
-    # Collapse duplicate away_team columns if they exist
-    if 'away_team_x' in merged.columns and 'away_team_y' in merged.columns:
-        merged['away_team'] = merged['away_team_x'].combine_first(merged['away_team_y'])
-        merged.drop(columns=['away_team_x', 'away_team_y'], inplace=True)
+    # Normalize away_team using team map
+    merged['away_team'] = merged['away_team'].str.strip().str.upper()
+    merged = pd.merge(
+        merged,
+        team_map_df[['uppercase', 'team_name']],
+        left_on='away_team',
+        right_on='uppercase',
+        how='left'
+    )
+    merged.drop(columns=['away_team', 'uppercase'], inplace=True)
+    merged.rename(columns={'team_name': 'away_team'}, inplace=True)
 
+    # Final write
     merged.to_csv(OUTPUT_FILE, index=False)
 
     summary = (
