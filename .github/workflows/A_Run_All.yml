@@ -81,10 +81,10 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
 
-      - name: Commit All Logs
+      - name: Commit All Logs and Outputs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/*
-          git commit -m "A_Run_All: unified summary, log, and errors"
+          git add -A
+          git commit -m "A_Run_All: unified summary, log, errors, and data updates" || echo "Nothing to commit"
           git push || echo "Nothing to push"
