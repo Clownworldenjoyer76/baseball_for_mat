@@ -1,28 +1,3 @@
-❌ generate_weather_csv ERROR:
-Traceback (most recent call last):
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
-    return self._engine.get_loc(casted_key)
-  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
-KeyError: 'away_team'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/generate_weather_csv.py", line 64, in <module>
-    generate_weather_csv()
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/generate_weather_csv.py", line 40, in generate_weather_csv
-    merged["away_team"] = merged["away_team"].map(team_map).fillna(merged["away_team"])
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
-    indexer = self.columns.get_loc(key)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
-    raise KeyError(key) from err
-KeyError: 'away_team'
-
----
-
 ❌ combine_pitcher_weather_park_away ERROR:
   File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/combine_pitcher_weather_park_away.py", line 30
     on=["last_name, first_name", "away_team
