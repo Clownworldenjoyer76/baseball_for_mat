@@ -1,32 +1,46 @@
-
 import pandas as pd
+import os
+import unicodedata
+import re
 
-# Load files
-lineups = pd.read_csv('data/raw/lineups.csv')
-team_map = pd.read_csv('data/Data/team_abv_map.csv')
-batters_cleaned = pd.read_csv('data/cleaned/batters_normalized_cleaned.csv')
+# Normalization helpers
+def strip_accents(text):
+    if not isinstance(text, str):
+        return ""
+    text = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
 
-# --- Map team_code to full team_name ---
-lineups['team_code'] = lineups['team_code'].str.strip().str.upper()
-team_map_dict = dict(zip(team_map['code'].str.strip().str.upper(), team_map['name'].str.strip()))
-lineups['team_name'] = lineups['team_code'].map(team_map_dict).fillna(lineups['team_code'])
+def normalize_name(name):
+    if not isinstance(name, str):
+        return ""
+    name = strip_accents(name)
+    name = re.sub(r"[^a-zA-Z.,' ]", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    suffixes = ["Jr", "Sr", "II", "III", "IV", "Jr.", "Sr."]
 
-# DEBUG: Print a few rows of mapped names to confirm mapping worked
-print("TEAM MAPPING SAMPLE:")
-print(lineups[['team_code', 'team_name']].drop_duplicates().head(10))
+    tokens = name.replace(",", "").split()
+    if len(tokens) >= 2:
+        last_parts = [tokens[-1]]
+        if tokens[-1].replace(".", "") in suffixes and len(tokens) >= 3:
+            last_parts = [tokens[-2], tokens[-1]]
+        last = " ".join(last_parts)
+        first = " ".join(tokens[:-len(last_parts)])
+        return f"{last.strip()}, {first.strip()}"
+    return name.title()
 
-# --- Normalize player names ---
-def format_name(full_name):
-    parts = full_name.strip().split()
-    if len(parts) >= 2:
-        return f"{parts[-1]}, {' '.join(parts[:-1])}"
-    return full_name.strip()
+def normalize_lineups():
+    INPUT_FILE = "data/raw/lineups.csv"
+    OUTPUT_FILE = "data/raw/lineups_normalized.csv"
 
-lineups['last_name, first_name'] = lineups['last_name, first_name'].apply(format_name)
+    df = pd.read_csv(INPUT_FILE)
+    df.columns = [col.strip().lower() for col in df.columns]
 
-# Filter to only valid names
-valid_names = set(batters_cleaned['last_name, first_name'])
-lineups = lineups[lineups['last_name, first_name'].isin(valid_names)]
+    if 'last_name, first_name' not in df.columns and 'name' in df.columns:
+        df = df.rename(columns={'name': 'last_name, first_name'})
 
-# Save result
-lineups.to_csv('data/raw/lineups_normalized.csv', index=False)
+    df['last_name, first_name'] = df['last_name, first_name'].apply(normalize_name)
+    df.to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ normalize_lineups.py completed: {len(df)} rows written to {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    normalize_lineups()
