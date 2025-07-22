@@ -13,33 +13,60 @@ def generate_weather_csv():
         games_df = pd.read_csv(GAMES_FILE)
         stadium_df = pd.read_csv(STADIUM_FILE)
         team_map_df = pd.read_csv(TEAM_MAP_FILE)
+    except FileNotFoundError as e:
+        print(f"❌ File not found: {e}")
+        return
     except Exception as e:
         print(f"❌ Error reading input files: {e}")
         return
 
-    # Build uppercase lookup map
-    team_map_df["uppercase"] = team_map_df["team_name"].str.strip().str.upper()
-    team_map = dict(zip(team_map_df["uppercase"], team_map_df["team_name"]))
+    # Normalize casing
+    games_df['home_team'] = games_df['home_team'].str.strip().str.upper()
+    games_df['away_team'] = games_df['away_team'].str.strip().str.upper()
+    stadium_df['home_team'] = stadium_df['home_team'].str.strip().str.upper()
+    team_map_df['uppercase'] = team_map_df['team_name'].str.strip().str.upper()
+    team_map_df = team_map_df.drop_duplicates(subset='uppercase')
 
-    # Normalize all team names in games + stadium to uppercase for join
-    games_df["home_team"] = games_df["home_team"].str.strip().str.upper()
-    games_df["away_team"] = games_df["away_team"].str.strip().str.upper()
-    stadium_df["home_team"] = stadium_df["home_team"].str.strip().str.upper()
+    # Drop game_time to avoid column clash
+    games_df = games_df.drop(columns=['game_time'], errors='ignore')
 
-    # Drop conflicting column
-    games_df = games_df.drop(columns=["game_time"], errors="ignore")
-
-    # Merge stadium and game data
-    merged = pd.merge(games_df, stadium_df, on="home_team", how="left")
+    # Merge stadium metadata
+    merged = pd.merge(games_df, stadium_df, on='home_team', how='left')
     if merged.empty:
-        print("❌ Merge failed: no matching home_team.")
+        print("❌ Merge failed: No matching rows.")
         return
 
-    # Replace home_team and away_team with proper casing
-    merged["home_team"] = merged["home_team"].map(team_map).fillna(merged["home_team"])
-    merged["away_team"] = merged["away_team"].map(team_map).fillna(merged["away_team"])
+    # Apply proper casing for home_team
+    merged = pd.merge(
+        merged,
+        team_map_df[['uppercase', 'team_name']],
+        left_on='home_team',
+        right_on='uppercase',
+        how='left'
+    )
+    merged.drop(columns=['home_team', 'uppercase'], inplace=True)
+    merged.rename(columns={'team_name': 'home_team'}, inplace=True)
 
-    # Save to file
+    # Collapse away_team_x and away_team_y
+    if 'away_team_x' in merged.columns and 'away_team_y' in merged.columns:
+        merged['away_team'] = merged['away_team_x'].combine_first(merged['away_team_y'])
+        merged.drop(columns=['away_team_x', 'away_team_y'], inplace=True)
+    elif 'away_team' not in merged.columns:
+        print("❌ 'away_team' column not found in merged dataframe.")
+        return
+
+    # Apply proper casing for away_team
+    merged['away_team'] = merged['away_team'].str.strip().str.upper()
+    merged = pd.merge(
+        merged,
+        team_map_df[['uppercase', 'team_name']],
+        left_on='away_team',
+        right_on='uppercase',
+        how='left'
+    )
+    merged.drop(columns=['away_team', 'uppercase'], inplace=True)
+    merged.rename(columns={'team_name': 'away_team'}, inplace=True)
+
     merged.to_csv(OUTPUT_FILE, index=False)
 
     summary = (
@@ -54,7 +81,7 @@ def generate_weather_csv():
 
     try:
         subprocess.run(["git", "add", OUTPUT_FILE, SUMMARY_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", "🔁 Fix team name casing in weather_input.csv"], check=True)
+        subprocess.run(["git", "commit", "-m", "🔁 Normalize away_team casing in weather_input.csv"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Git commit and push complete.")
     except subprocess.CalledProcessError as e:
