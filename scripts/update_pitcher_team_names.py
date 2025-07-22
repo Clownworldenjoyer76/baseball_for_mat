@@ -1,23 +1,41 @@
+# scripts/update_pitcher_team_names.py
+
 import pandas as pd
+import os
 
-HOME_FILE = "data/adjusted/pitchers_home.csv"
-AWAY_FILE = "data/adjusted/pitchers_away.csv"
 TEAM_MAP_FILE = "data/Data/team_name_master.csv"
+PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
+PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
 
-def update_team_names(pitcher_file):
-    df = pd.read_csv(pitcher_file)
-    team_map = pd.read_csv(TEAM_MAP_FILE)[["team_code", "team_name"]]
+def update_team_names(pitchers_file):
+    if not os.path.exists(pitchers_file):
+        print(f"⚠️ File not found: {pitchers_file}")
+        return
 
-    df = df.merge(team_map, how="left", left_on="team", right_on="team_code")
-    if "team_name" in df.columns:
-        df["team"] = df["team_name"]
-        df = df.drop(columns=["team_code", "team_name"], errors="ignore")
+    df = pd.read_csv(pitchers_file)
+    team_map_df = pd.read_csv(TEAM_MAP_FILE)
 
-    df.to_csv(pitcher_file, index=False)
+    if "team_code" not in team_map_df.columns or "team_name" not in team_map_df.columns:
+        raise ValueError("❌ team_name_master.csv must contain 'team_code' and 'team_name' columns.")
+
+    team_map = dict(zip(team_map_df["team_code"], team_map_df["team_name"]))
+
+    if "team" not in df.columns:
+        raise ValueError(f"❌ Missing 'team' column in {pitchers_file}.")
+
+    original_team_values = df["team"].unique()
+    df["team"] = df["team"].map(team_map).fillna(df["team"])
+
+    updated_team_values = df["team"].unique()
+    print(f"🔁 Updated team names in {pitchers_file}")
+    print(f"🔎 Original teams: {original_team_values}")
+    print(f"✅ New teams: {updated_team_values}")
+
+    df.to_csv(pitchers_file, index=False)
 
 def main():
-    update_team_names(HOME_FILE)
-    update_team_names(AWAY_FILE)
+    update_team_names(PITCHERS_HOME_FILE)
+    update_team_names(PITCHERS_AWAY_FILE)
 
 if __name__ == "__main__":
     main()
