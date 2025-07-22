@@ -1,6 +1,8 @@
 import pandas as pd
 from pathlib import Path
 import subprocess
+import time
+import os
 
 # File paths
 INPUT_FILE = "data/raw/todaysgames.csv"
@@ -37,16 +39,17 @@ def main():
         (games['pitcher_away'].isin(valid_pitchers) | (games['pitcher_away'] == 'Undecided'))
     ]
 
-    # Save normalized file
+    # Save file
     games.to_csv(OUTPUT_FILE, index=False)
+    Path(OUTPUT_FILE).touch()  # Force filesystem update
     print(f"✅ normalize_todays_games.py completed: {len(games)} rows written to {OUTPUT_FILE}")
 
-    # Git commit and push
+    # Git force commit
     try:
         subprocess.run(["git", "config", "--global", "user.name", "Auto Commit Bot"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "actions@github.com"], check=True)
         subprocess.run(["git", "add", OUTPUT_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", "🔄 Update todaysgames_normalized.csv after name fix"], check=True)
+        subprocess.run(["git", "commit", "-m", "🔄 Force update to todaysgames_normalized.csv"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Git commit and push complete.")
     except subprocess.CalledProcessError as e:
