@@ -34,3 +34,4 @@ def fix_pitcher_names_strict():
     if "pitcher_away" in games.columns:
         games["pitcher_away"] = games["pitcher_away"].apply(map_name)
     games.to_csv(games_path, index=False)
+
