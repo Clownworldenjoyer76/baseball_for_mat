@@ -47,8 +47,8 @@ def main():
     stadiums = pd.read_csv(STADIUM_FILE)
     weather = pd.read_csv(WEATHER_FILE)
 
-    home_map = stadiums[['home_team', 'stadium']].rename(columns={'home_team': 'team'})
-    away_map = stadiums[['away_team', 'stadium']].rename(columns={'away_team': 'team'})
+    home_map = stadiums[['home_team', 'venue']].rename(columns={'home_team': 'team'})
+    away_map = stadiums[['away_team', 'venue']].rename(columns={'away_team': 'team'})
 
     adj_home = apply_adjustment(pitchers_home, 'team', home_map, weather)
     adj_away = apply_adjustment(pitchers_away, 'team', away_map, weather)
