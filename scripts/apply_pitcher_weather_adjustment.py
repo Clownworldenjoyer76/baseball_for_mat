@@ -27,7 +27,7 @@ def main():
         raise ValueError("weather_teams.csv missing home_team or away_team column")
 
     # Merge team info into weather dataframe
-    weather_df = pd.merge(weather_df, team_df, on='stadium', how='left')
+weather_df = pd.merge(weather_df, team_df, left_on='stadium', right_on='team_name_x', how='left')
 
     home_pitchers = pd.read_csv(PITCHERS_HOME_FILE)
     away_pitchers = pd.read_csv(PITCHERS_AWAY_FILE)
