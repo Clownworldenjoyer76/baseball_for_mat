@@ -2,46 +2,25 @@ import pandas as pd
 import subprocess
 import sys
 from datetime import datetime
-import os
 from pathlib import Path
+import os
+import logging
+import traceback
 
-# Begin debug logging
-log_dir = "summaries"
-os.makedirs(log_dir, exist_ok=True)
+# Setup logging
+log_dir = Path("summaries")
+log_dir.mkdir(parents=True, exist_ok=True)
 timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_path = os.path.join(log_dir, f"{Path(sys.argv[0]).stem}_{timestamp}.log")
-sys.stdout = open(log_path, "w")
-sys.stderr = sys.stdout
+log_path = log_dir / f"merge_game_pitcher_data_{timestamp}.log"
 
-# Input paths
-BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
-BATTERS_AWAY_FILE = "data/adjusted/batters_away_weather_park.csv"
-PITCHERS_HOME_FILE = "data/adjusted/pitchers_home_weather_park.csv"
-PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away_weather_park.csv"
-GAMES_FILE = "data/raw/todaysgames_normalized.csv"
-
-# Output paths
-OUTPUT_HOME = "data/processed/batters_home_with_pitcher.csv"
-OUTPUT_AWAY = "data/processed/batters_away_with_pitcher.csv"
-
-def write_debug_log(log_name="merge_game_pitcher_data"):
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_dir = Path("summaries")
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / f"{log_name}_{timestamp}.log"
-
-    with open(log_path, "w") as log:
-        log.write(f"Debug log started: {timestamp}\n")
-        log.write("✅ Script reached this point successfully.\n")
-
-    print(f"📝 Debug log written to: {log_path}")
-
-def get_pitcher_woba(df, name_col):
-    required = [name_col, "adj_woba_combined"]
-    for col in required:
-        if col not in df.columns:
-            raise ValueError(f"Missing column '{col}' in pitcher file")
-    return df[required].drop_duplicates(subset=[name_col])
+logging.basicConfig(
+    filename=log_path,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger().addHandler(console)
 
 def standardize_name(full_name):
     if pd.isna(full_name) or full_name.strip().lower() == "undecided":
@@ -56,79 +35,72 @@ def verify_columns(df, required, label):
         if col not in df.columns:
             raise ValueError(f"Missing column '{col}' in {label} file")
 
+def get_pitcher_woba(df, name_col):
+    required = [name_col, "adj_woba_combined"]
+    verify_columns(df, required, "pitcher")
+    return df[required].drop_duplicates(subset=[name_col])
+
+def safe_read_csv(filepath, label):
+    if not Path(filepath).is_file():
+        raise FileNotFoundError(f"{filepath} ({label}) does not exist")
+    df = pd.read_csv(filepath)
+    logging.info(f"✅ Loaded {label}: {len(df)} rows")
+    return df
+
 def main():
-    write_debug_log("merge_game_pitcher_data")
+    # File paths
+    BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
+    BATTERS_AWAY_FILE = "data/adjusted/batters_away_weather_park.csv"
+    PITCHERS_HOME_FILE = "data/adjusted/pitchers_home_weather_park.csv"
+    PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away_weather_park.csv"
+    GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 
-    bh = pd.read_csv(BATTERS_HOME_FILE)
-    ba = pd.read_csv(BATTERS_AWAY_FILE)
-    ph = pd.read_csv(PITCHERS_HOME_FILE)
-    pa = pd.read_csv(PITCHERS_AWAY_FILE)
-    games = pd.read_csv(GAMES_FILE)
+    OUTPUT_HOME = "data/processed/batters_home_with_pitcher.csv"
+    OUTPUT_AWAY = "data/processed/batters_away_with_pitcher.csv"
 
-    # Validate required columns
+    bh = safe_read_csv(BATTERS_HOME_FILE, "batters_home")
+    ba = safe_read_csv(BATTERS_AWAY_FILE, "batters_away")
+    ph = safe_read_csv(PITCHERS_HOME_FILE, "pitchers_home")
+    pa = safe_read_csv(PITCHERS_AWAY_FILE, "pitchers_away")
+    games = safe_read_csv(GAMES_FILE, "games")
+
+    # Validation
     verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
     verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
-    verify_columns(ph, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
-    verify_columns(pa, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
-    # Normalize names for merging
-    bh["last_name, first_name"] = bh["last_name, first_name"].astype(str).str.title()
-    ba["last_name, first_name"] = ba["last_name, first_name"].astype(str).str.title()
-    ph["last_name, first_name"] = ph["last_name, first_name"].apply(standardize_name)
-    pa["last_name, first_name"] = pa["last_name, first_name"].apply(standardize_name)
-    games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip().apply(standardize_name)
-    games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip().apply(standardize_name)
+    # Standardize names
+    for df in [bh, ba, ph, pa]:
+        df["last_name, first_name"] = df["last_name, first_name"].apply(standardize_name)
+    games["pitcher_home"] = games["pitcher_home"].fillna("").apply(standardize_name)
+    games["pitcher_away"] = games["pitcher_away"].fillna("").apply(standardize_name)
 
-    # Merge pitcher names into batter files
-    bh = bh.merge(
-        games[["home_team", "pitcher_home"]],
-        how="left",
-        left_on="team",
-        right_on="home_team"
-    )
-    ba = ba.merge(
-        games[["away_team", "pitcher_away"]],
-        how="left",
-        left_on="team",
-        right_on="away_team"
-    )
+    # Merge pitcher names
+    bh = bh.merge(games[["home_team", "pitcher_home"]], how="left", left_on="team", right_on="home_team")
+    ba = ba.merge(games[["away_team", "pitcher_away"]], how="left", left_on="team", right_on="away_team")
 
-    # Merge pitcher stats
-    home_pitcher_stats = get_pitcher_woba(ph, "last_name, first_name")
-    away_pitcher_stats = get_pitcher_woba(pa, "last_name, first_name")
+    bh = bh.merge(get_pitcher_woba(ph, "last_name, first_name"), how="left",
+                  left_on="pitcher_home", right_on="last_name, first_name", suffixes=("", "_pitcher"))
+    ba = ba.merge(get_pitcher_woba(pa, "last_name, first_name"), how="left",
+                  left_on="pitcher_away", right_on="last_name, first_name", suffixes=("", "_pitcher"))
 
-    bh = bh.merge(
-        home_pitcher_stats,
-        how="left",
-        left_on="pitcher_home",
-        right_on="last_name, first_name",
-        suffixes=("", "_pitcher")
-    )
-
-    ba = ba.merge(
-        away_pitcher_stats,
-        how="left",
-        left_on="pitcher_away",
-        right_on="last_name, first_name",
-        suffixes=("", "_pitcher")
-    )
-
-    print("✅ HOME batters rows:", len(bh))
-    print("✅ AWAY batters rows:", len(ba))
-    print("🔍 HOME sample:", bh[["last_name, first_name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[["last_name, first_name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
+    logging.info(f"✅ HOME batters final rows: {len(bh)}")
+    logging.info(f"✅ AWAY batters final rows: {len(ba)}")
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
+    logging.info(f"📁 Files saved: {OUTPUT_HOME}, {OUTPUT_AWAY}")
 
     subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY], check=True)
     subprocess.run(["git", "commit", "-m", "Add merged batter and pitcher matchup stats"], check=True)
     subprocess.run(["git", "push"], check=True)
+    logging.info("🚀 Git changes pushed")
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        print(f"❌ Script failed: {e}")
-        sys.exit(1)
+        logging.error(f"❌ Script failed: {e}")
+        traceback.print_exc()
+    finally:
+        logging.info("📝 Final debug log completed")
