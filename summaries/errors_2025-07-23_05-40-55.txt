@@ -1,1 +1,28 @@
 
+❌ apply_pitcher_weather_adjustment ERROR (2025-07-23 05:41:15 AM EDT):
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'temperature'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 38, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 23, in main
+    home_weather = apply_weather_adjustment(home_pitchers, weather_df, "home_team")
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/apply_pitcher_weather_adjustment.py", line 15, in apply_weather_adjustment
+    merged["adj_woba_weather"] = merged["woba"] * (merged["temperature"] / 75)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'temperature'
+
+---
+
