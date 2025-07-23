@@ -1,39 +1,38 @@
 
 import pandas as pd
 
-WEATHER_FILE = "data/weather_adjustments.csv"
-TEAM_FILE = "data/weather_teams.csv"
 PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
 PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
-OUTPUT_HOME_FILE = "data/adjusted/pitchers_home_weather.csv"
-OUTPUT_AWAY_FILE = "data/adjusted/pitchers_away_weather.csv"
+WEATHER_TEAMS_FILE = "data/weather_teams.csv"
 
-def apply_weather_adjustment(pitchers_df, weather_df, team_col, output_file):
-    merged_df = pd.merge(pitchers_df, weather_df, left_on=team_col, right_on=team_col, how='left')
-    if 'temperature' in merged_df.columns:
-        merged_df['adj_woba_weather'] = merged_df['woba'] * (1 + (merged_df['temperature'] - 70) * 0.005)
-    else:
-        merged_df['adj_woba_weather'] = merged_df['woba']
-    merged_df.to_csv(output_file, index=False)
+OUTPUT_HOME = "data/adjusted/pitchers_home_weather.csv"
+OUTPUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
+LOG_HOME = "data/adjusted/log_pitchers_home_weather.txt"
+LOG_AWAY = "data/adjusted/log_pitchers_away_weather.txt"
+
+def apply_weather_adjustment(pitchers_df, weather_df, team_col):
+    merged = pd.merge(pitchers_df, weather_df, left_on=team_col, right_on=team_col, how="left")
+    merged["adj_woba_weather"] = merged["woba"] * (merged["temperature"] / 75)
+    return merged
 
 def main():
-    weather_df = pd.read_csv(WEATHER_FILE)
-    team_df = pd.read_csv(TEAM_FILE)
-
-    if 'stadium' not in weather_df.columns:
-        raise ValueError("Missing 'stadium' column in weather_adjustments.csv")
-
-    if 'home_team' not in team_df.columns or 'away_team' not in team_df.columns:
-        raise ValueError("weather_teams.csv missing home_team or away_team column")
-
-    # Merge team info into weather dataframe
-weather_df = pd.merge(weather_df, team_df, left_on='stadium', right_on='team_name_x', how='left')
-
     home_pitchers = pd.read_csv(PITCHERS_HOME_FILE)
     away_pitchers = pd.read_csv(PITCHERS_AWAY_FILE)
+    weather_df = pd.read_csv(WEATHER_TEAMS_FILE)
 
-    apply_weather_adjustment(home_pitchers, weather_df, 'home_team', OUTPUT_HOME_FILE)
-    apply_weather_adjustment(away_pitchers, weather_df, 'away_team', OUTPUT_AWAY_FILE)
+    home_weather = apply_weather_adjustment(home_pitchers, weather_df, "home_team")
+    away_weather = apply_weather_adjustment(away_pitchers, weather_df, "away_team")
+
+    home_weather.to_csv(OUTPUT_HOME, index=False)
+    away_weather.to_csv(OUTPUT_AWAY, index=False)
+
+    with open(LOG_HOME, "w") as f:
+        f.write(home_weather[["last_name, first_name", "team", "woba", "temperature", "adj_woba_weather"]]
+                .sort_values("adj_woba_weather", ascending=False).head(5).to_string(index=False))
+
+    with open(LOG_AWAY, "w") as f:
+        f.write(away_weather[["last_name, first_name", "team", "woba", "temperature", "adj_woba_weather"]]
+                .sort_values("adj_woba_weather", ascending=False).head(5).to_string(index=False))
 
 if __name__ == "__main__":
     main()
