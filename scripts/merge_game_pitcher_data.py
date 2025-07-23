@@ -1,6 +1,8 @@
 import pandas as pd
 import subprocess
 import sys
+from pathlib import Path
+from datetime import datetime
 
 # Input paths
 BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
@@ -12,6 +14,18 @@ GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 # Output paths
 OUTPUT_HOME = "data/processed/batters_home_with_pitcher.csv"
 OUTPUT_AWAY = "data/processed/batters_away_with_pitcher.csv"
+
+def write_debug_log(log_name="merge_game_pitcher_data"):
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_dir = Path("summaries")
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / f"{log_name}_{timestamp}.log"
+
+    with open(log_path, "w") as log:
+        log.write(f"Debug log started: {timestamp}\n")
+        log.write("✅ Script reached this point successfully.\n")
+
+    print(f"📝 Debug log written to: {log_path}")
 
 def get_pitcher_woba(df, name_col):
     required = [name_col, "adj_woba_combined"]
@@ -34,6 +48,8 @@ def verify_columns(df, required, label):
             raise ValueError(f"Missing column '{col}' in {label} file")
 
 def main():
+    write_debug_log("merge_game_pitcher_data")
+
     bh = pd.read_csv(BATTERS_HOME_FILE)
     ba = pd.read_csv(BATTERS_AWAY_FILE)
     ph = pd.read_csv(PITCHERS_HOME_FILE)
