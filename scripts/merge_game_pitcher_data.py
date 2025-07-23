@@ -91,8 +91,8 @@ def main():
 
     print("✅ HOME batters rows:", len(bh))
     print("✅ AWAY batters rows:", len(ba))
-    print("🔍 HOME sample:", bh[["last_name, first_name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[["last_name, first_name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
+    print("🔍 HOME sample:", bh[["last_name, first_name", "team", "pitcher_home", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["last_name, first_name", "team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
