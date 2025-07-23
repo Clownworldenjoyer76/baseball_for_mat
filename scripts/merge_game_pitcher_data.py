@@ -41,10 +41,10 @@ def main():
     games = pd.read_csv(GAMES_FILE)
 
     # Validate required columns
-    verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
-    verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
-    verify_columns(ph, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
-    verify_columns(pa, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
+    verify_columns(bh, ["home_team", "last_name, first_name"], "batters_home")
+    verify_columns(ba, ["away_team", "last_name, first_name"], "batters_away")
+    verify_columns(ph, ["home_team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
+    verify_columns(pa, ["away_team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
     # Normalize names for merging
@@ -59,14 +59,12 @@ def main():
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        left_on="team",
-        right_on="home_team"
+        on="home_team"
     )
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
         how="left",
-        left_on="team",
-        right_on="away_team"
+        on="away_team"
     )
 
     # Merge pitcher stats
@@ -91,8 +89,8 @@ def main():
 
     print("✅ HOME batters rows:", len(bh))
     print("✅ AWAY batters rows:", len(ba))
-    print("🔍 HOME sample:", bh[["last_name, first_name", "team", "pitcher_home", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[["last_name, first_name", "team", "pitcher_away", "adj_woba_combined"]].head())
+    print("🔍 HOME sample:", bh[["last_name, first_name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["last_name, first_name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
