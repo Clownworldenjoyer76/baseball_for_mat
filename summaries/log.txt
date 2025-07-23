@@ -1,17 +1,17 @@
 
-▶️ START: normalize_names (2025-07-23 06:42:06 AM EDT)
+▶️ START: normalize_names (2025-07-23 06:50:18 AM EDT)
 📥 Processing data/Data/batters.csv...
 ✅ Saved normalized file to data/normalized/batters_normalized.csv
 📥 Processing data/Data/pitchers.csv...
 ✅ Saved normalized file to data/normalized/pitchers_normalized.csv
-⏹️ END: normalize_names (2025-07-23 06:42:06 AM EDT)
+⏹️ END: normalize_names (2025-07-23 06:50:18 AM EDT)
 
-▶️ START: tag_master_files (2025-07-23 06:42:06 AM EDT)
+▶️ START: tag_master_files (2025-07-23 06:50:19 AM EDT)
 ✅ Tagged batters: data/tagged/batters_normalized.csv
 ✅ Tagged pitchers: data/tagged/pitchers_normalized.csv
-⏹️ END: tag_master_files (2025-07-23 06:42:06 AM EDT)
+⏹️ END: tag_master_files (2025-07-23 06:50:19 AM EDT)
 
-▶️ START: deduplicate_normalized (2025-07-23 06:42:07 AM EDT)
+▶️ START: deduplicate_normalized (2025-07-23 06:50:19 AM EDT)
 🧼 Batters deduplicated: 626 → 624
 🔗 Batters team names mapped using team_name_master.csv
 ✅ Wrote cleaned batters data to data/cleaned/batters_normalized_cleaned.csv
@@ -20,30 +20,30 @@
 🔗 Pitchers team names mapped using team_name_master.csv
 ✅ Wrote cleaned pitchers data to data/cleaned/pitchers_normalized_cleaned.csv
 ⚠️ Git commit/push failed for data/cleaned/pitchers_normalized_cleaned.csv: Command '['git', 'commit', '-m', '🧹 Auto-cleaned and deduplicated pitchers']' returned non-zero exit status 128.
-⏹️ END: deduplicate_normalized (2025-07-23 06:42:07 AM EDT)
+⏹️ END: deduplicate_normalized (2025-07-23 06:50:19 AM EDT)
 
-▶️ START: normalize_lineups (2025-07-23 06:42:07 AM EDT)
+▶️ START: normalize_lineups (2025-07-23 06:50:20 AM EDT)
 ✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups (2025-07-23 06:42:07 AM EDT)
+⏹️ END: normalize_lineups (2025-07-23 06:50:20 AM EDT)
 
-▶️ START: normalize_todays_games (2025-07-23 06:42:08 AM EDT)
+▶️ START: normalize_todays_games (2025-07-23 06:50:20 AM EDT)
 📥 Loading input files...
 🧼 Normalizing pitcher names...
 ✅ All pitchers recognized.
 🔁 Mapping team abbreviations to full names...
 ✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games (2025-07-23 06:42:08 AM EDT)
+⏹️ END: normalize_todays_games (2025-07-23 06:50:20 AM EDT)
 
-▶️ START: refresh_stadium_metadata (2025-07-23 06:42:08 AM EDT)
+▶️ START: refresh_stadium_metadata (2025-07-23 06:50:20 AM EDT)
 ✅ Saved updated stadium metadata for 15 home teams to data/Data/stadium_metadata.csv
-⏹️ END: refresh_stadium_metadata (2025-07-23 06:42:08 AM EDT)
+⏹️ END: refresh_stadium_metadata (2025-07-23 06:50:20 AM EDT)
 
-▶️ START: apply_team_name_mapping (2025-07-23 06:42:08 AM EDT)
+▶️ START: apply_team_name_mapping (2025-07-23 06:50:21 AM EDT)
 ✅ Updated: data/raw/todaysgames_normalized.csv
 ✅ Updated: data/Data/stadium_metadata.csv
-⏹️ END: apply_team_name_mapping (2025-07-23 06:42:08 AM EDT)
+⏹️ END: apply_team_name_mapping (2025-07-23 06:50:21 AM EDT)
 
-▶️ START: update_game_time (2025-07-23 06:42:09 AM EDT)
+▶️ START: update_game_time (2025-07-23 06:50:21 AM EDT)
 ✅ Game times updated for 15 teams:
  - Blue Jays vs Giants: 3:07 PM
  - Rays vs Orioles: 7:05 PM
@@ -60,7 +60,7 @@
  - Dodgers vs Brewers: 9:10 PM
  - Rockies vs Twins: 8:10 PM
  - Diamondbacks vs Cardinals: 7:15 PM
-⏹️ END: update_game_time (2025-07-23 06:42:09 AM EDT)
+⏹️ END: update_game_time (2025-07-23 06:50:21 AM EDT)
 
-▶️ START: filter_stadium_metadata (2025-07-23 06:42:09 AM EDT)
+▶️ START: filter_stadium_metadata (2025-07-23 06:50:21 AM EDT)
 Nothing to commit
