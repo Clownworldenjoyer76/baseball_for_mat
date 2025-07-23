@@ -2,42 +2,53 @@ import pandas as pd
 from pathlib import Path
 import subprocess
 
-def combine_adjustments(weather_path, park_path, output_path):
-    weather_df = pd.read_csv(weather_path)
-    park_df = pd.read_csv(park_path)
-    merged = pd.merge(weather_df, park_df, on=["name", "home_team"], how="inner", suffixes=("_weather", "_park"))
-    merged.to_csv(output_path, index=False)
+# File paths
+WEATHER_PATH = "data/adjusted/pitchers_away_weather.csv"
+PARK_PATH = "data/adjusted/pitchers_away_park.csv"
+OUTPUT_PATH = "data/adjusted/pitchers_away_weather_park.csv"
+LOG_PATH = "summaries/combine_pitcher_weather_park_away.log"
+
+def combine_adjustments():
+    weather_df = pd.read_csv(WEATHER_PATH)
+    park_df = pd.read_csv(PARK_PATH)
+
+    # Merge on verified keys
+    merged = pd.merge(
+        weather_df,
+        park_df,
+        on=["name", "home_team"],
+        how="inner",
+        suffixes=("_weather", "_park")
+    )
+
+    # Output merged CSV
+    Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(OUTPUT_PATH, index=False)
+
+    # Write top 5 log
+    top5 = merged.sort_values("adj_woba_park", ascending=False).head(5)
+    with open(LOG_PATH, "w") as f:
+        for _, row in top5.iterrows():
+            f.write(f"{row['last_name, first_name']} - {row['away_team']} - {row['adj_woba_park']:.3f}\n")
+
     return len(merged)
 
-def commit_file(path):
+def commit_output():
     try:
         subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
         subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add", str(path)], check=True)
-        subprocess.run(["git", "commit", "-m", f"Auto-commit: created {path.name}"], check=True)
+        subprocess.run(["git", "add", OUTPUT_PATH], check=True)
+        subprocess.run(["git", "add", LOG_PATH], check=True)
+        subprocess.run(["git", "commit", "-m", f"Auto-commit: created pitchers_away_weather_park.csv and log"], check=True)
         subprocess.run(["git", "push"], check=True)
-        print(f"✅ Committed {path.name}")
+        print("✅ Git commit pushed.")
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit failed for {path.name}: {e}")
+        print(f"⚠️ Git commit failed: {e}")
 
 def main():
-    Path("data/adjusted").mkdir(parents=True, exist_ok=True)
-
-    count_home = combine_adjustments(
-        "data/adjusted/pitchers_home_weather.csv",
-        "data/adjusted/pitchers_home_park.csv",
-        "data/adjusted/pitchers_home_weather_park.csv"
-    )
-    commit_file(Path("data/adjusted/pitchers_home_weather_park.csv"))
-
-    count_away = combine_adjustments(
-        "data/adjusted/pitchers_away_weather.csv",
-        "data/adjusted/pitchers_away_park.csv",
-        "data/adjusted/pitchers_away_weather_park.csv"
-    )
-    commit_file(Path("data/adjusted/pitchers_away_weather_park.csv"))
-
-    print(f"✅ Merged and saved: {count_home} home pitchers, {count_away} away pitchers")
+    count = combine_adjustments()
+    commit_output()
+    print(f"✅ Combined {count} rows to {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     main()
