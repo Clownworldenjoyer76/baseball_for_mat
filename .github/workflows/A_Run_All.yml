@@ -25,11 +25,10 @@ jobs:
       - name: Run All Scripts + Unified Logs
         run: |
           mkdir -p summaries
-          TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d_%H-%M-%S")
-          STATUS_FILE="summaries/status_${TIMESTAMP}.txt"
-          LOG_FILE="summaries/log_${TIMESTAMP}.txt"
-          ERRORS_FILE="summaries/errors_${TIMESTAMP}.txt"
-          SUMMARY_FILE="summaries/summary_${TIMESTAMP}.txt"
+          STATUS_FILE="summaries/status.txt"
+          LOG_FILE="summaries/log.txt"
+          ERRORS_FILE="summaries/errors.txt"
+          SUMMARY_FILE="summaries/summary.txt"
           echo "" > "$STATUS_FILE"
           echo "" > "$LOG_FILE"
           echo "" > "$ERRORS_FILE"
@@ -55,6 +54,7 @@ jobs:
             echo "" >> "$LOG_FILE"
           }
 
+          # 🔁 Run all steps (unchanged)
           run_step normalize_names.py
           run_step tag_master_files.py
           run_step deduplicate_normalized.py
@@ -95,8 +95,10 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
 
-          # 📄 Combine summaries
+          # 📄 Combine single summary
           {
+            echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
+            echo ""
             echo "===== STATUS ====="
             cat "$STATUS_FILE"
             echo ""
@@ -111,6 +113,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "A_Run_All: summary, logs, errors, and data update at $(TZ='America/New_York' date)" || echo "Nothing to commit"
+          git add summaries/summary.txt
+          git commit -m "A_Run_All: summary update at $(TZ='America/New_York' date)" || echo "Nothing to commit"
           git push || echo "Nothing to push"
