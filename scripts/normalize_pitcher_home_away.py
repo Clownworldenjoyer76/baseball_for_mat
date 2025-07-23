@@ -14,6 +14,24 @@ def strip_accents(text):
     text = unicodedata.normalize('NFD', text)
     return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
 
+def _capitalize_mc_names_in_string(text):
+    """
+    Specifically targets words starting with 'Mc' or 'mc' and
+    ensures the letter immediately following 'Mc' is capitalized.
+    E.g., 'mccullers' -> 'McCullers', 'Mcgregor' -> 'McGregor'.
+    """
+    def replacer(match):
+        prefix = match.group(1) # 'Mc' or 'mc'
+        char_to_capitalize = match.group(2).upper() # The letter after 'Mc'
+        rest_of_name = match.group(3).lower() # The rest of the word in lowercase
+        return prefix.capitalize() + char_to_capitalize + rest_of_name
+
+    # This regex looks for 'Mc' (case-insensitive) at the start of a word boundary (\b),
+    # followed by a letter, and then any remaining letters.
+    # It then applies the replacer function to capitalize the correct character.
+    text = re.sub(r"\b(mc)([a-z])([a-z]*)\b", replacer, text, flags=re.IGNORECASE)
+    return text
+
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
@@ -22,16 +40,22 @@ def normalize_name(name):
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
 
+    # Apply specific capitalization rules for 'Mc' names after general cleanup
+    # This ensures consistency before the name is split/rejoined for "Last, First" format
+    name = _capitalize_mc_names_in_string(name)
+
     if "," in name:
+        # For names already in "Last, First" format
         parts = [p.strip().title() for p in name.split(",")]
-        return f"{parts[0]}, {parts[1]}" if len(parts) == 2 else name.title()
+        return f"{parts[0]}, {parts[1]}" if len(parts) == 2 else ' '.join(parts).title()
     else:
-        tokens = name.split()
+        # For names in "First Last" format
+        tokens = [t.title() for t in name.split()]
         if len(tokens) >= 2:
-            first = tokens[0].title()
-            last = " ".join(tokens[1:]).title()
+            first = tokens[0]
+            last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return name.title()
+        return ' '.join(tokens).title() # Handle single-word names
 
 # --- Main Logic ---
 def load_games():
@@ -51,13 +75,31 @@ def filter_and_tag(pitchers_df, games_df, side):
     tagged = []
     missing = []
 
+    # Get all normalized pitcher names from the pitchers_df for easy lookup
+    normalized_pitcher_names_set = set(pitchers_df["name"])
+
     for _, row in games_df.iterrows():
-        pitcher_name = row[key]
-        team_name = row[team_key]
-        matched = pitchers_df[pitchers_df["name"] == pitcher_name].copy()
+        pitcher_name_from_games_df = row[key] # This name is already normalized by load_games()
+
+        # --- DEBUG PRINT STATEMENTS START ---
+        if "mccullers" in pitcher_name_from_games_df.lower(): # Focus on the problematic name
+            print(f"DEBUG: Game Pitcher ({side}): '{pitcher_name_from_games_df}' (Type: {type(pitcher_name_from_games_df)}, Len: {len(pitcher_name_from_games_df)})")
+            found_in_pitchers_df = pitcher_name_from_games_df in normalized_pitcher_names_set
+            print(f"DEBUG: Is Game Pitcher found in Pitchers DataFrame? {found_in_pitchers_df}")
+            if not found_in_pitchers_df:
+                print(f"DEBUG: Available Pitchers (first 5, and then look for McCullers variations):")
+                print(list(normalized_pitcher_names_set)[:5]) # Print a few to see the format
+                for p_name in sorted(list(normalized_pitcher_names_set)):
+                    if "mccullers" in p_name.lower():
+                        print(f"  - Found in pitchers_df: '{p_name}' (Type: {type(p_name)}, Len: {len(p_name)})")
+                        if pitcher_name_from_games_df == p_name:
+                             print("  --- ERROR: They appear identical but aren't matching! Check invisible chars. ---")
+        # --- DEBUG PRINT STATEMENTS END ---
+
+        matched = pitchers_df[pitchers_df["name"] == pitcher_name_from_games_df].copy()
 
         if matched.empty:
-            missing.append(pitcher_name)
+            missing.append(pitcher_name_from_games_df)
         else:
             matched[team_key] = team_name
             tagged.append(matched)
