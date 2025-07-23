@@ -41,7 +41,7 @@ def main():
     games = pd.read_csv(GAMES_FILE)
 
     # Validate required columns
-    verify_columns(bh, ["home_team", "last_name, first_name"], "batters_home")
+    verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
     verify_columns(ba, ["away_team", "last_name, first_name"], "batters_away")
     verify_columns(ph, ["home_team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["away_team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
@@ -59,7 +59,8 @@ def main():
     bh = bh.merge(
         games[["home_team", "pitcher_home"]],
         how="left",
-        on="home_team"
+        left_on="team",
+        right_on="home_team"
     )
     ba = ba.merge(
         games[["away_team", "pitcher_away"]],
