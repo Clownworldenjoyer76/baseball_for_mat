@@ -5,15 +5,15 @@ import subprocess
 import logging
 
 # --- Logging Setup ---
+# Configure logging to output to stdout/stderr so it gets captured by the YAML's &>> redirection.
+# Set level to INFO for general messages, DEBUG for more verbose Git command outputs.
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
-LOG_DIR = "summaries"
-os.makedirs(LOG_DIR, exist_ok=True)
-timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_file_path = os.path.join(LOG_DIR, f"log_filter_stadium_metadata_{timestamp}.txt")
+LOG_DIR = "summaries" # Still needed for other summaries, but not for this specific log file anymore
+os.makedirs(LOG_DIR, exist_ok=True) # Ensure summaries directory exists
 
 # --- Helper function for running Git commands (re-using the robust version) ---
 def run_git_command(command_parts, success_message, error_prefix, log_output=False):
@@ -57,59 +57,52 @@ def filter_stadium_metadata():
     df_cleaned.to_csv(STADIUM_FILE, index=False)
     logger.info(f"✅ Cleaned stadium metadata written to {STADIUM_FILE}")
 
-    # Log results to the specific log file for this script
-    with open(log_file_path, "w") as f:
-        f.write(f"✅ filter_stadium_metadata.py executed at {timestamp}\n")
-        f.write(f"Original rows: {original_rows}\n")
-        f.write(f"Removed rows: {removed}\n")
-        f.write(f"Remaining rows: {cleaned_rows}\n")
-    logger.info(f"📝 Run log written to {log_file_path}")
+    # Log results using Python's logging, which will go to summaries/log.txt
+    logger.info(f"Summary for filter_stadium_metadata.py:")
+    logger.info(f"Original rows: {original_rows}")
+    logger.info(f"Removed rows: {removed}")
+    logger.info(f"Remaining rows: {cleaned_rows}")
 
     # --- Git commit and push logic ---
     
     # 1. Handle stadium_metadata.csv
-    stadium_commit_needed = False
+    stadium_commit_made = False # Flag to track if this specific commit happened
+    
     if run_git_command(["git", "add", STADIUM_FILE], f"Git add successful for {STADIUM_FILE}", f"Git add failed for {STADIUM_FILE}"):
         diff_check = subprocess.run(["git", "diff", "--cached", "--exit-code", STADIUM_FILE], capture_output=True)
         if diff_check.returncode == 0:
             logger.warning(f"⚠️ No changes detected for {STADIUM_FILE} to commit. Skipping commit.")
+            if diff_check.stdout: logger.debug(f"Git diff stdout (no changes): {diff_check.stdout.decode().strip()}")
+            if diff_check.stderr: logger.debug(f"Git diff stderr (no changes): {diff_check.stderr.decode().strip()}")
         elif diff_check.returncode == 1:
-            stadium_commit_needed = True
             commit_message = f"🧹 Removed empty away_team rows from stadium_metadata.csv ({removed} rows removed)"
-            if not run_git_command(["git", "commit", "-m", commit_message], f"Git commit successful for {STADIUM_FILE}", f"Git commit failed for {STADIUM_FILE}", log_output=True):
+            if run_git_command(["git", "commit", "-m", commit_message], f"Git commit successful for {STADIUM_FILE}", f"Git commit failed for {STADIUM_FILE}", log_output=True):
+                stadium_commit_made = True
+                logger.info(f"✅ Committed changes to {STADIUM_FILE}.")
+            else:
                 logger.error(f"❌ Failed to commit {STADIUM_FILE}. See previous error.")
         else:
             logger.error(f"❌ Unexpected return code from git diff for {STADIUM_FILE}: {diff_check.returncode}.")
+            if diff_check.stdout: logger.error(f"Git diff stdout:\n{diff_check.stdout.decode().strip()}")
+            if diff_check.stderr: logger.error(f"Git diff stderr:\n{diff_check.stderr.decode().strip()}")
     else:
         logger.error(f"❌ Could not add {STADIUM_FILE} to staging.")
 
-    # 2. Handle the specific log file created by this script
-    log_file_commit_needed = False
-    if run_git_command(["git", "add", log_file_path], f"Git add successful for {log_file_path}", f"Git add failed for {log_file_path}"):
-        diff_check_log = subprocess.run(["git", "diff", "--cached", "--exit-code", log_file_path], capture_output=True)
-        if diff_check_log.returncode == 0:
-            logger.warning(f"⚠️ No changes detected for {log_file_path} to commit. Skipping commit.")
-        elif diff_check_log.returncode == 1:
-            log_file_commit_needed = True
-            commit_message = f"📝 Log: filter_stadium_metadata.py at {timestamp}"
-            if not run_git_command(["git", "commit", "-m", commit_message], f"Git commit successful for {log_file_path}", f"Git commit failed for {log_file_path}", log_output=True):
-                logger.error(f"❌ Failed to commit {log_file_path}. See previous error.")
-        else:
-            logger.error(f"❌ Unexpected return code from git diff for {log_file_path}: {diff_check_log.returncode}.")
-    else:
-        logger.error(f"❌ Could not add {log_file_path} to staging.")
+    # 2. Removed logic for generating and committing a separate log file.
+    #    All relevant log output is now handled by the Python logging module,
+    #    which goes to the unified summaries/log.txt via the YAML redirection.
 
-    # 3. Final Push (only if at least one of the commits happened)
+    # 3. Final Push (only if the stadium_metadata.csv commit happened)
     # IMPORTANT: If you want all commits from all scripts to be pushed ONLY by the final YAML step,
     # then COMMENT OUT THIS git push call.
-    # Otherwise, it will push immediately after this script.
-    if stadium_commit_needed or log_file_commit_needed:
+    # Otherwise, it will push immediately after this script if changes were committed.
+    if stadium_commit_made:
         if run_git_command(["git", "push"], "Git push successful", "Git push failed"):
-            logger.info("✅ All changes committed and pushed from filter_stadium_metadata.py.")
+            logger.info("✅ Committed changes to stadium_metadata.csv pushed.")
         else:
-            logger.error("❌ Final Git push failed from filter_stadium_metadata.py. Check previous errors.")
+            logger.error("❌ Git push failed from filter_stadium_metadata.py. Check previous errors.")
     else:
-        logger.info("ℹ️ No new commits were made by filter_stadium_metadata.py to push.")
+        logger.info("ℹ️ No new stadium_metadata.csv commits were made by filter_stadium_metadata.py to push.")
 
 
 if __name__ == "__main__":
