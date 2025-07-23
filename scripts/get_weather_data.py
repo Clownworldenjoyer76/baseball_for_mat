@@ -42,6 +42,7 @@ def main():
         lon = row.get("longitude", "")
         is_dome = row.get("is_dome", False)
         game_time = row.get("game_time", "")
+        team_name = row.get("team_name", "UNKNOWN")  # this is your 'stadium' value
 
         attempts = 0
         data = None
@@ -59,7 +60,7 @@ def main():
         condition = current.get("condition", {}).get("text", "Unknown")
 
         results.append({
-            "stadium": row.get("team_name_x", "UNKNOWN"),
+            "stadium": team_name,
             "location": location,
             "temperature": current.get("temp_f", ""),
             "wind_speed": current.get("wind_mph", ""),
@@ -79,27 +80,29 @@ def main():
     out_df.to_csv(OUTPUT_FILE, index=False)
     print(f"{timestamp()} ✅ Weather data written to {OUTPUT_FILE}")
 
-    # === FORCE insert of home_team and away_team ===
+    # === FORCE INSERT HOME_TEAM AND AWAY_TEAM ===
     try:
         weather_df = pd.read_csv(OUTPUT_FILE)
+        stadium_df = pd.read_csv(STADIUM_FILE)
 
-        if "stadium" not in weather_df.columns:
-            weather_df["stadium"] = "UNKNOWN"
+        # Strip whitespace and normalize
+        weather_df["stadium"] = weather_df["stadium"].astype(str).str.strip()
+        stadium_df["team_name"] = stadium_df["team_name"].astype(str).str.strip()
 
-        weather_df["home_team"] = weather_df["stadium"]
+        # Merge to get away_team using stadium → team_name match
+        merged = weather_df.merge(
+            stadium_df[["team_name", "away_team"]],
+            left_on="stadium",
+            right_on="team_name",
+            how="left"
+        )
 
-        try:
-            stadium_df = pd.read_csv(STADIUM_FILE)
-            if "venue" in stadium_df.columns and "away_team" in stadium_df.columns:
-                stadium_map = stadium_df.set_index("venue")["away_team"].to_dict()
-                weather_df["away_team"] = weather_df["stadium"].map(stadium_map).fillna("UNKNOWN")
-            else:
-                weather_df["away_team"] = "UNKNOWN"
-        except Exception as e:
-            print(f"{timestamp()} ❌ Could not read stadium file: {e}")
-            weather_df["away_team"] = "UNKNOWN"
+        merged["home_team"] = merged["stadium"]
+        merged["away_team"] = merged["away_team"].fillna("UNKNOWN")
 
-        weather_df.to_csv(OUTPUT_FILE, index=False)
+        merged.drop(columns=["team_name"], inplace=True)
+        merged.to_csv(OUTPUT_FILE, index=False)
+
         print(f"{timestamp()} ✅ Forced insert of home_team and away_team into {OUTPUT_FILE}")
 
     except Exception as e:
