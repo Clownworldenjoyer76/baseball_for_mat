@@ -29,7 +29,6 @@ def _capitalize_mc_names_in_string(text):
     # This regex looks for 'Mc' (case-insensitive) at the start of a word boundary (\b),
     # followed by a letter, and then any remaining letters.
     # It then applies the replacer function to capitalize the correct character.
-    # We apply this to the whole string, letting it target words within.
     text = re.sub(r"\b(mc)([a-z])([a-z]*)\b", replacer, text, flags=re.IGNORECASE)
     return text
 
@@ -67,7 +66,7 @@ def normalize_name(name):
             return f"{last}, {first}"
         return ' '.join(tokens) # Handle single-word names
 
-# --- Main Logic (Rest of your script remains the same) ---
+# --- Main Logic ---
 def load_games():
     df = pd.read_csv(GAMES_FILE)
     df["pitcher_home"] = df["pitcher_home"].astype(str).apply(normalize_name)
@@ -76,7 +75,33 @@ def load_games():
 
 def load_pitchers():
     df = pd.read_csv(PITCHERS_FILE)
+    
+    # --- ADDED DEBUG PRINTS BEFORE NORMALIZATION ---
+    print("DEBUG: Raw Pitchers DataFrame (first 10 names from PITCHERS_FILE) BEFORE normalization:")
+    print(df["name"].head(10).tolist())
+    # Check for McCullers in raw data (case-insensitive)
+    mccullers_raw = df[df["name"].astype(str).str.contains("mccullers", case=False, na=False)]
+    if not mccullers_raw.empty:
+        print("DEBUG: 'Mccullers' (case-insensitive) found in RAW pitchers_df:")
+        print(mccullers_raw["name"].tolist())
+    else:
+        print("DEBUG: No 'Mccullers' (case-insensitive) found in RAW pitchers_df.")
+    # --- END DEBUG PRINTS BEFORE NORMALIZATION ---
+
     df["name"] = df["name"].astype(str).apply(normalize_name)
+    
+    # --- ADDED DEBUG PRINTS AFTER NORMALIZATION ---
+    print("DEBUG: Pitchers DataFrame (first 10 names) AFTER normalization:")
+    print(df["name"].head(10).tolist())
+    
+    mccullers_in_pitchers_df_normalized = df[df["name"].str.contains("mccullers", case=False, na=False)]
+    if not mccullers_in_pitchers_df_normalized.empty:
+        print("DEBUG: 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df:")
+        print(mccullers_in_pitchers_df_normalized["name"].tolist())
+    else:
+        print("DEBUG: No 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df.")
+    # --- END ADDED DEBUG PRINTS ---
+    
     return df
 
 def filter_and_tag(pitchers_df, games_df, side):
@@ -99,13 +124,14 @@ def filter_and_tag(pitchers_df, games_df, side):
             
             # Check if the name from games_df exists in the set of normalized pitcher names
             found_in_pitchers_df = pitcher_name_from_games_df in normalized_pitcher_names_set
-            print(f"DEBUG: Is Game Pitcher found in Pitchers DataFrame? {found_in_pitchers_df}")
+            print(f"DEBUG: Is Game Pitcher found in Pitchers DataFrame? {found_in_pitcher_names_set}")
             
             if not found_in_pitchers_df:
                 print(f"DEBUG: Available Pitchers (first 5 for context, then specific McCullers variations):")
                 # Print the first few entries to see the general format of names in the set
                 print(list(normalized_pitcher_names_set)[:5]) 
                 # Iterate through sorted pitcher names to find and print McCullers variations
+                import difflib # Import difflib here for local scope if not already at top
                 for p_name in sorted(list(normalized_pitcher_names_set)):
                     if "mccullers" in p_name.lower():
                         print(f"  - Found in pitchers_df: '{p_name}' (Type: {type(p_name)}, Len: {len(p_name)})")
@@ -114,7 +140,6 @@ def filter_and_tag(pitchers_df, games_df, side):
                              print("  --- ERROR: They appear identical but aren't matching! Check invisible chars. ---")
                              print(f"  repr(Game): {repr(pitcher_name_from_games_df)}")
                              print(f"  repr(Pitcher): {repr(p_name)}")
-                             import difflib
                              diff = list(difflib.ndiff(pitcher_name_from_games_df, p_name))
                              if any(d.startswith('+') or d.startswith('-') for d in diff):
                                  print("  Differences found (difflib):")
