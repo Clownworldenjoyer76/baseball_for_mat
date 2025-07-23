@@ -1,52 +1,53 @@
 import pandas as pd
-import os
+from pathlib import Path
+import subprocess
 
-WEATHER_FILE = "data/adjusted/pitchers_away_weather.csv"
-PARK_FILE = "data/adjusted/pitchers_away_park.csv"
-OUTPUT_FILE = "data/adjusted/pitchers_away_adjusted.csv"
-LOG_FILE = "data/adjusted/log_combined_pitchers_away.txt"
+# Verified input/output paths
+WEATHER_PATH = "data/adjusted/pitchers_away_weather.csv"
+PARK_PATH = "data/adjusted/pitchers_away_park.csv"
+OUTPUT_PATH = "data/adjusted/pitchers_away_weather_park.csv"
+LOG_PATH = "summaries/combine_pitcher_weather_park_away.log"
 
-def normalize_team(name, valid_teams):
-    name = str(name).strip().title()
-    if name in valid_teams:
-        return name
-    for team in valid_teams:
-        if name.lower() in team.lower() or team.lower() in name.lower():
-            return team
-    return name
+def combine_adjustments():
+    weather_df = pd.read_csv(WEATHER_PATH)
+    park_df = pd.read_csv(PARK_PATH)
 
-def merge_and_combine(weather_df, park_df, valid_teams):
-    # Handle team normalization fallback
-    if "away_team_x" in weather_df.columns:
-        weather_df["away_team"] = weather_df["away_team_x"].apply(lambda x: normalize_team(x, valid_teams))
-    elif "away_team" in weather_df.columns:
-        weather_df["away_team"] = weather_df["away_team"].apply(lambda x: normalize_team(x, valid_teams))
+    # ✅ Merge ONLY on confirmed keys
+    merged = pd.merge(
+        weather_df,
+        park_df,
+        on=["name", "home_team"],
+        how="inner",
+        suffixes=("_weather", "_park")
+    )
 
-    park_df["away_team"] = park_df["away_team"].apply(lambda x: normalize_team(x, valid_teams))
+    Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(OUTPUT_PATH, index=False)
 
-    # Merge on normalized away_team and player name
-    merged_df = pd.merge(weather_df, park_df, on=["last_name, first_name", "away_team"], suffixes=("_weather", "_park"))
+    # ✅ Write top 5 rows by real columns
+    top5 = merged.sort_values("adj_woba_park", ascending=False).head(5)
+    with open(LOG_PATH, "w") as f:
+        for _, row in top5.iterrows():
+            f.write(f"{row['last_name, first_name']} - {row['away_team']} - {row['adj_woba_park']:.3f}\n")
 
-    return merged_df
+    return len(merged)
 
-def write_log(df, log_path):
-    top = df.sort_values(by="adj_woba_park", ascending=False).head(5)
-    with open(log_path, "w") as f:
-        f.write("Top 5 Away Pitchers by Park-Adjusted wOBA:\n")
-        for _, row in top.iterrows():
-            f.write(f"{row['last_name, first_name']} - {row['team']} - {row['adj_woba_park']:.3f}\n")
+def commit_output():
+    try:
+        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
+        subprocess.run(["git", "add", OUTPUT_PATH], check=True)
+        subprocess.run(["git", "add", LOG_PATH], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-commit: combine_pitcher_weather_park_away outputs"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("✅ Git commit pushed.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git commit failed: {e}")
 
 def main():
-    weather_df = pd.read_csv(WEATHER_FILE)
-    park_df = pd.read_csv(PARK_FILE)
-
-    valid_teams = sorted(set(park_df["away_team"].dropna().unique()) | set(weather_df.get("away_team", pd.Series()).dropna().unique()))
-
-    merged_df = merge_and_combine(weather_df, park_df, valid_teams)
-    merged_df.to_csv(OUTPUT_FILE, index=False)
-    write_log(merged_df, LOG_FILE)
-    print(f"✅ Saved combined file to: {OUTPUT_FILE}")
-    print(f"📝 Log written to: {LOG_FILE}")
+    count = combine_adjustments()
+    commit_output()
+    print(f"✅ Combined {count} rows to {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     main()
