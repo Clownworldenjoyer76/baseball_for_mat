@@ -43,15 +43,15 @@ def main():
     # Validate required columns
     verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
     verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
-    verify_columns(ph, ["home_team", "name", "adj_woba_combined"], "pitchers_home")
-    verify_columns(pa, ["away_team", "name", "adj_woba_combined"], "pitchers_away")
+    verify_columns(ph, ["home_team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
+    verify_columns(pa, ["away_team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
     # Normalize names for merging
     bh["last_name, first_name"] = bh["last_name, first_name"].astype(str).str.title()
     ba["last_name, first_name"] = ba["last_name, first_name"].astype(str).str.title()
-    ph["name"] = ph["name"].apply(standardize_name)
-    pa["name"] = pa["name"].apply(standardize_name)
+    ph["last_name, first_name"] = ph["last_name, first_name"].astype(str).str.title()
+    pa["last_name, first_name"] = pa["last_name, first_name"].astype(str).str.title()
     games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip().apply(standardize_name)
     games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip().apply(standardize_name)
 
@@ -70,14 +70,14 @@ def main():
     )
 
     # Merge pitcher stats
-    home_pitcher_stats = get_pitcher_woba(ph, "name")
-    away_pitcher_stats = get_pitcher_woba(pa, "name")
+    home_pitcher_stats = get_pitcher_woba(ph, "last_name, first_name")
+    away_pitcher_stats = get_pitcher_woba(pa, "last_name, first_name")
 
     bh = bh.merge(
         home_pitcher_stats,
         how="left",
         left_on="pitcher_home",
-        right_on="name",
+        right_on="last_name, first_name",
         suffixes=("", "_pitcher")
     )
 
@@ -85,7 +85,7 @@ def main():
         away_pitcher_stats,
         how="left",
         left_on="pitcher_away",
-        right_on="name",
+        right_on="last_name, first_name",
         suffixes=("", "_pitcher")
     )
 
