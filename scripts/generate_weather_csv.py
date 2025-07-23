@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import subprocess
-import os # Import os for path checking
+import os
 
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
@@ -10,30 +10,16 @@ OUTPUT_FILE = "data/weather_input.csv"
 SUMMARY_FILE = "data/weather_summary.txt"
 
 def generate_weather_csv():
-    print("DEBUG: Starting generate_weather_csv.py script.")
-
-    # --- Debug: Check if input files exist ---
-    for f_path in [GAMES_FILE, STADIUM_FILE, TEAM_MAP_FILE]:
-        if not os.path.exists(f_path):
-            print(f"ERROR: Required input file not found: {f_path}")
-            return # Exit if a required file is missing
-
     try:
         games_df = pd.read_csv(GAMES_FILE)
         stadium_df = pd.read_csv(STADIUM_FILE)
         team_map_df = pd.read_csv(TEAM_MAP_FILE)
-        print(f"DEBUG: Successfully loaded {len(games_df)} games, {len(stadium_df)} stadiums, and {len(team_map_df)} team mappings.")
     except FileNotFoundError as e:
-        print(f"❌ File not found during loading: {e}")
+        print(f"❌ File not found: {e}")
         return
     except Exception as e:
         print(f"❌ Error reading input files: {e}")
         return
-
-    # Debug print for initial dataframe states
-    print(f"DEBUG: games_df columns: {games_df.columns.tolist()}")
-    print(f"DEBUG: stadium_df columns: {stadium_df.columns.tolist()}")
-    print(f"DEBUG: team_map_df columns: {team_map_df.columns.tolist()}")
 
     games_df['home_team'] = games_df['home_team'].str.strip().str.upper()
     games_df['away_team'] = games_df['away_team'].str.strip().str.upper()
@@ -43,18 +29,11 @@ def generate_weather_csv():
 
     games_df = games_df.drop(columns=['game_time'], errors='ignore')
 
-    # --- Debug: First Merge ---
-    print(f"DEBUG: Merging games_df ({len(games_df)} rows) with stadium_df ({len(stadium_df)} rows) on 'home_team'.")
     merged = pd.merge(games_df, stadium_df, on='home_team', how='left')
-    print(f"DEBUG: After first merge (games + stadium), merged rows: {len(merged)}")
     if merged.empty:
-        print("❌ Merge failed: No matching rows after games + stadium merge. Check 'home_team' column data in both DFs.")
-        print(f"DEBUG: games_df home_team unique: {games_df['home_team'].unique().tolist()}")
-        print(f"DEBUG: stadium_df home_team unique: {stadium_df['home_team'].unique().tolist()}")
+        print("❌ Merge failed: No matching rows after games + stadium merge.")
         return
 
-    # --- Debug: Second Merge (home_team mapping) ---
-    print(f"DEBUG: Merging with team_map_df for home_team. Merged rows before: {len(merged)}")
     merged = pd.merge(
         merged,
         team_map_df[['uppercase', 'team_name']],
@@ -62,28 +41,22 @@ def generate_weather_csv():
         right_on='uppercase',
         how='left'
     )
-    print(f"DEBUG: After second merge (home_team map), merged rows: {len(merged)}")
-    merged.drop(columns=['home_team', 'uppercase'], inplace=True)
+    # The 'home_team' column (original) is dropped and then 'team_name' from team_map_df is renamed to 'home_team'
+    # Ensure correct columns exist before dropping/renaming
+    if 'home_team' in merged.columns and 'uppercase' in merged.columns:
+        merged.drop(columns=['home_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'home_team'}, inplace=True)
-    print(f"DEBUG: Columns after home_team rename: {merged.columns.tolist()}")
 
 
-    # --- Debug: away_team column handling ---
-    print(f"DEBUG: Checking for away_team column handling.")
     if 'away_team_x' in merged.columns and 'away_team_y' in merged.columns:
         merged['away_team'] = merged['away_team_x'].combine_first(merged['away_team_y'])
         merged.drop(columns=['away_team_x', 'away_team_y'], inplace=True)
-        print("DEBUG: Handled away_team_x/away_team_y columns.")
     elif 'away_team' not in merged.columns:
-        print("❌ 'away_team' column not found in merged dataframe after initial merges. Check preceding merges.")
-        print(f"DEBUG: Current merged columns: {merged.columns.tolist()}")
+        print("❌ 'away_team' column not found in merged dataframe.")
         return
-    else:
-        print("DEBUG: 'away_team' column already in expected format.")
 
-    # --- Debug: Third Merge (away_team mapping) ---
+
     merged['away_team'] = merged['away_team'].str.strip().str.upper()
-    print(f"DEBUG: Merging with team_map_df for away_team. Merged rows before: {len(merged)}")
     merged = pd.merge(
         merged,
         team_map_df[['uppercase', 'team_name']],
@@ -91,16 +64,15 @@ def generate_weather_csv():
         right_on='uppercase',
         how='left'
     )
-    print(f"DEBUG: After third merge (away_team map), merged rows: {len(merged)}")
-    merged.drop(columns=['away_team', 'uppercase'], inplace=True)
+    # The 'away_team' column (original) is dropped and then 'team_name' from team_map_df is renamed to 'away_team'
+    # Ensure correct columns exist before dropping/renaming
+    if 'away_team' in merged.columns and 'uppercase' in merged.columns:
+        merged.drop(columns=['away_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'away_team'}, inplace=True)
-    print(f"DEBUG: Columns after away_team rename: {merged.columns.tolist()}")
-
 
     # Ensure output directory exists
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     merged.to_csv(OUTPUT_FILE, index=False)
-    print(f"DEBUG: Wrote {len(merged)} rows to {OUTPUT_FILE}")
 
 
     summary = (
@@ -112,25 +84,16 @@ def generate_weather_csv():
     )
     print(summary)
     Path(SUMMARY_FILE).write_text(summary)
-    print(f"DEBUG: Wrote summary to {SUMMARY_FILE}")
 
-    # --- UPDATED GIT OPERATIONS BLOCK (Option 1) ---
+    # --- Git Operations ---
     try:
-        # Add ALL newly generated or modified files in the current directory for the upcoming commit
-        print(f"DEBUG: Attempting to git add all modified files (git add .).")
         subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        print("DEBUG: Git add . successful. All changes staged.")
-
-        # Check for changes before committing
+        
         status_output = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if not status_output.strip():
-            print("DEBUG: No changes to commit (this might indicate an issue if files were expected to be changed).")
+            print("✅ No changes to commit.") # Adjusted for cleaner output if nothing was actually changed
         else:
-            print("DEBUG: Changes detected, attempting to commit.")
-            # Use a more general commit message since we are adding all changes
             subprocess.run(["git", "commit", "-m", "🔁 Update data files and weather input/summary"], check=True, capture_output=True, text=True)
-            print("DEBUG: Git commit successful.")
-            print("DEBUG: Attempting to git push.")
             subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
             print("✅ Git commit and push complete.")
 
