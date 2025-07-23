@@ -1,22 +1,41 @@
 import pandas as pd
+from pathlib import Path
+import subprocess
 
-# Input/Output file paths (same files)
-HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
-AWAY_FILE = "data/adjusted/batters_away_weather_park.csv"
+# File paths
+home_path = "data/adjusted/batters_home_weather_park.csv"
+away_path = "data/adjusted/batters_away_weather_park.csv"
+master_path = "data/Data/team_name_master.csv"
 
-def normalize_team_column(file_path):
-    df = pd.read_csv(file_path)
+def normalize_team_column(df, team_map):
+    df["team"] = df["team"].astype(str).str.strip().str.lower().map(team_map)
+    return df
 
-    if "team" in df.columns:
-        df["team"] = df["team"].astype(str).str.title()
-        df.to_csv(file_path, index=False)
-        print(f"✅ Normalized 'team' column in {file_path}")
-    else:
-        print(f"⚠️ 'team' column not found in {file_path}")
+def normalize_and_write(path, team_map):
+    df = pd.read_csv(path)
+    df = normalize_team_column(df, team_map)
+    df.to_csv(path, index=False)
+
+def commit_files(paths):
+    try:
+        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
+        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
+        subprocess.run(["git", "add"] + paths, check=True)
+        subprocess.run(["git", "commit", "-m", "prep_merge: normalize team casing"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("✅ Git commit and push complete.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git operation failed: {e}")
 
 def main():
-    normalize_team_column(HOME_FILE)
-    normalize_team_column(AWAY_FILE)
+    master = pd.read_csv(master_path)
+    team_map = {team.lower(): team for team in master["team_name"]}
+
+    normalize_and_write(home_path, team_map)
+    normalize_and_write(away_path, team_map)
+
+    commit_files([home_path, away_path])
+    print("✅ Team column normalized and updated.")
 
 if __name__ == "__main__":
     main()
