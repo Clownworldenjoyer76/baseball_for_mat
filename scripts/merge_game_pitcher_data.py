@@ -45,25 +45,25 @@ def main():
     verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
     verify_columns(ph, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
     verify_columns(pa, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
-    verify_columns(games, ["home_team", "away_team", "home_pitcher", "away_pitcher"], "games")
+    verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
     # Normalize names for merging
     bh["last_name, first_name"] = bh["last_name, first_name"].astype(str).str.title()
     ba["last_name, first_name"] = ba["last_name, first_name"].astype(str).str.title()
     ph["last_name, first_name"] = ph["last_name, first_name"].apply(standardize_name)
     pa["last_name, first_name"] = pa["last_name, first_name"].apply(standardize_name)
-    games["home_pitcher"] = games["home_pitcher"].fillna("").astype(str).str.strip().apply(standardize_name)
-    games["away_pitcher"] = games["away_pitcher"].fillna("").astype(str).str.strip().apply(standardize_name)
+    games["pitcher_home"] = games["pitcher_home"].fillna("").astype(str).str.strip().apply(standardize_name)
+    games["pitcher_away"] = games["pitcher_away"].fillna("").astype(str).str.strip().apply(standardize_name)
 
     # Merge pitcher names into batter files
     bh = bh.merge(
-        games[["home_team", "home_pitcher"]],
+        games[["home_team", "pitcher_home"]],
         how="left",
         left_on="team",
         right_on="home_team"
     )
     ba = ba.merge(
-        games[["away_team", "away_pitcher"]],
+        games[["away_team", "pitcher_away"]],
         how="left",
         left_on="team",
         right_on="away_team"
@@ -76,7 +76,7 @@ def main():
     bh = bh.merge(
         home_pitcher_stats,
         how="left",
-        left_on="home_pitcher",
+        left_on="pitcher_home",
         right_on="last_name, first_name",
         suffixes=("", "_pitcher")
     )
@@ -84,15 +84,15 @@ def main():
     ba = ba.merge(
         away_pitcher_stats,
         how="left",
-        left_on="away_pitcher",
+        left_on="pitcher_away",
         right_on="last_name, first_name",
         suffixes=("", "_pitcher")
     )
 
     print("✅ HOME batters rows:", len(bh))
     print("✅ AWAY batters rows:", len(ba))
-    print("🔍 HOME sample:", bh[["last_name, first_name", "home_team", "home_pitcher", "adj_woba_combined"]].head())
-    print("🔍 AWAY sample:", ba[["last_name, first_name", "away_team", "away_pitcher", "adj_woba_combined"]].head())
+    print("🔍 HOME sample:", bh[["last_name, first_name", "home_team", "pitcher_home", "adj_woba_combined"]].head())
+    print("🔍 AWAY sample:", ba[["last_name, first_name", "away_team", "pitcher_away", "adj_woba_combined"]].head())
 
     bh.to_csv(OUTPUT_HOME, index=False)
     ba.to_csv(OUTPUT_AWAY, index=False)
