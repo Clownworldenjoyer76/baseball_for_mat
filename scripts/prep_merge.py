@@ -14,7 +14,7 @@ games_path = "data/raw/todaysgames_normalized.csv"
 normalized_pitchers_path = "data/cleaned/pitchers_normalized_cleaned.csv"
 
 def normalize_team_column(df, team_map):
-    df["team"] = df["team"].astype(str).strip().str.lower().map(team_map)
+    df["team"] = df["team"].astype(str).str.strip().str.lower().map(team_map)
     return df
 
 def normalize_and_write(path, team_map):
