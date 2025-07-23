@@ -80,6 +80,29 @@ def main():
         print(f"{timestamp()} ✅ Weather data written to {OUTPUT_FILE}")
     except Exception as e:
         print(f"{timestamp()} ❌ Failed to write output: {e}")
+        return
+
+    # === FORCE INSERT HOME_TEAM AND AWAY_TEAM ===
+    try:
+        weather_df = pd.read_csv(OUTPUT_FILE)
+        stadium_df = pd.read_csv("data/Data/stadium_metadata.csv")
+
+        if "stadium" in weather_df.columns:
+            weather_df["home_team"] = weather_df["stadium"]
+        else:
+            weather_df["home_team"] = "UNKNOWN"
+
+        if "venue" in stadium_df.columns and "away_team" in stadium_df.columns:
+            stadium_map = stadium_df.set_index("venue")["away_team"].to_dict()
+            weather_df["away_team"] = weather_df.get("stadium", "").map(stadium_map).fillna("UNKNOWN")
+        else:
+            weather_df["away_team"] = "UNKNOWN"
+
+        weather_df.to_csv(OUTPUT_FILE, index=False)
+        print(f"{timestamp()} ✅ Forced insert of home_team and away_team into {OUTPUT_FILE}")
+
+    except Exception as e:
+        print(f"{timestamp()} ❌ Failed to insert home/away team columns: {e}")
 
 if __name__ == "__main__":
     main()
