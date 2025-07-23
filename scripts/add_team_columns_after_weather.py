@@ -9,7 +9,7 @@ weather_df = pd.read_csv(weather_file)
 stadium_df = pd.read_csv(stadium_file)
 
 # Map stadium to away team from metadata
-stadium_map = stadium_df.set_index("stadium")["away_team"].to_dict()
+stadium_map = stadium_df.set_index("venue")["away_team"].to_dict()
 
 # Add columns
 weather_df["home_team"] = weather_df["stadium"]
