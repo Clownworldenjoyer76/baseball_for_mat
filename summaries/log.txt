@@ -1,51 +1,61 @@
 
-▶️ START: normalize_names (2025-07-23 04:33:01 PM EDT)
-📥 Processing data/Data/batters.csv...
-✅ Saved normalized file to data/normalized/batters_normalized.csv
-📥 Processing data/Data/pitchers.csv...
-✅ Saved normalized file to data/normalized/pitchers_normalized.csv
-⏹️ END: normalize_names (2025-07-23 04:33:01 PM EDT)
+▶️ START: normalize_names (2025-07-23 07:54:16 PM EDT)
+DEBUG: Checking PITCHERS_FILE path: data/cleaned/pitchers_normalized_cleaned.csv
+DEBUG: PITCHERS_FILE exists.
+DEBUG: Raw Pitchers DataFrame (first 10 names from PITCHERS_FILE) BEFORE normalization:
+['Freeland, Kyle', 'Walker, Ryan', 'Thomas, Connor', 'Kolek, Stephen', 'De Los Santos, Yerry', 'Sands, Cole', 'Schultz, Paxton', 'Matsui, Yuki', 'Abbott, Andrew', 'Kelly, Zack']
+DEBUG: 'Mccullers' (case-insensitive) found in RAW pitchers_df. All found names (repr):
+  - 'Mccullers Jr., Lance'
+DEBUG: Pitchers DataFrame (first 10 names) AFTER normalization:
+['Freeland, Kyle', 'Walker, Ryan', 'Thomas, Connor', 'Kolek, Stephen', 'De Los Santos, Yerry', 'Sands, Cole', 'Schultz, Paxton', 'Matsui, Yuki', 'Abbott, Andrew', 'Kelly, Zack']
+DEBUG: 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df. All found names (repr):
+  - 'McCullers Jr., Lance'
+DEBUG: Game Pitcher (away): 'McCullers Jr., Lance' (Type: <class 'str'>, Len: 20)
+DEBUG: Is Game Pitcher found in Pitchers DataFrame? True
+✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
+✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
+⏹️ END: normalize_names (2025-07-23 07:54:16 PM EDT)
 
-▶️ START: tag_master_files (2025-07-23 04:33:02 PM EDT)
+▶️ START: tag_master_files (2025-07-23 07:54:16 PM EDT)
 ✅ Tagged batters: data/tagged/batters_normalized.csv
 ✅ Tagged pitchers: data/tagged/pitchers_normalized.csv
-⏹️ END: tag_master_files (2025-07-23 04:33:02 PM EDT)
+⏹️ END: tag_master_files (2025-07-23 07:54:16 PM EDT)
 
-▶️ START: deduplicate_normalized (2025-07-23 04:33:02 PM EDT)
-2025-07-23 20:33:02,971 - INFO - Processing batters from data/tagged/batters_normalized.csv
-2025-07-23 20:33:02,982 - INFO - 🧼 Batters deduplicated: 626 → 624
-2025-07-23 20:33:02,985 - INFO - 🔗 Batters team names mapped using team_name_master.csv
-2025-07-23 20:33:03,000 - INFO - ✅ Wrote cleaned batters data to data/cleaned/batters_normalized_cleaned.csv
-2025-07-23 20:33:03,015 - WARNING - ⚠️ No changes detected for data/cleaned/batters_normalized_cleaned.csv to commit after deduplication. Skipping commit/push.
-2025-07-23 20:33:03,015 - INFO - Processing pitchers from data/tagged/pitchers_normalized.csv
-2025-07-23 20:33:03,025 - INFO - 🧼 Pitchers deduplicated: 699 → 699
-2025-07-23 20:33:03,028 - INFO - 🔗 Pitchers team names mapped using team_name_master.csv
-2025-07-23 20:33:03,044 - INFO - ✅ Wrote cleaned pitchers data to data/cleaned/pitchers_normalized_cleaned.csv
-2025-07-23 20:33:03,048 - WARNING - ⚠️ No changes detected for data/cleaned/pitchers_normalized_cleaned.csv to commit after deduplication. Skipping commit/push.
-⏹️ END: deduplicate_normalized (2025-07-23 04:33:02 PM EDT)
+▶️ START: deduplicate_normalized (2025-07-23 07:54:16 PM EDT)
+2025-07-23 23:54:17,277 - INFO - Processing batters from data/tagged/batters_normalized.csv
+2025-07-23 23:54:17,288 - INFO - 🧼 Batters deduplicated: 627 → 625
+2025-07-23 23:54:17,291 - INFO - 🔗 Batters team names mapped using team_name_master.csv
+2025-07-23 23:54:17,307 - INFO - ✅ Wrote cleaned batters data to data/cleaned/batters_normalized_cleaned.csv
+2025-07-23 23:54:17,322 - WARNING - ⚠️ No changes detected for data/cleaned/batters_normalized_cleaned.csv to commit after deduplication. Skipping commit/push.
+2025-07-23 23:54:17,322 - INFO - Processing pitchers from data/tagged/pitchers_normalized.csv
+2025-07-23 23:54:17,332 - INFO - 🧼 Pitchers deduplicated: 699 → 699
+2025-07-23 23:54:17,335 - INFO - 🔗 Pitchers team names mapped using team_name_master.csv
+2025-07-23 23:54:17,352 - INFO - ✅ Wrote cleaned pitchers data to data/cleaned/pitchers_normalized_cleaned.csv
+2025-07-23 23:54:17,357 - WARNING - ⚠️ No changes detected for data/cleaned/pitchers_normalized_cleaned.csv to commit after deduplication. Skipping commit/push.
+⏹️ END: deduplicate_normalized (2025-07-23 07:54:16 PM EDT)
 
-▶️ START: normalize_lineups (2025-07-23 04:33:03 PM EDT)
+▶️ START: normalize_lineups (2025-07-23 07:54:17 PM EDT)
 ✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups (2025-07-23 04:33:03 PM EDT)
+⏹️ END: normalize_lineups (2025-07-23 07:54:17 PM EDT)
 
-▶️ START: normalize_todays_games (2025-07-23 04:33:03 PM EDT)
+▶️ START: normalize_todays_games (2025-07-23 07:54:17 PM EDT)
 📥 Loading input files...
 🧼 Normalizing pitcher names...
 ✅ All pitchers recognized.
 🔁 Mapping team abbreviations to full names...
 ✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games (2025-07-23 04:33:03 PM EDT)
+⏹️ END: normalize_todays_games (2025-07-23 07:54:17 PM EDT)
 
-▶️ START: refresh_stadium_metadata (2025-07-23 04:33:03 PM EDT)
+▶️ START: refresh_stadium_metadata (2025-07-23 07:54:18 PM EDT)
 ✅ Saved updated stadium metadata for 15 home teams to data/Data/stadium_metadata.csv
-⏹️ END: refresh_stadium_metadata (2025-07-23 04:33:03 PM EDT)
+⏹️ END: refresh_stadium_metadata (2025-07-23 07:54:18 PM EDT)
 
-▶️ START: apply_team_name_mapping (2025-07-23 04:33:04 PM EDT)
+▶️ START: apply_team_name_mapping (2025-07-23 07:54:18 PM EDT)
 ✅ Updated: data/raw/todaysgames_normalized.csv
 ✅ Updated: data/Data/stadium_metadata.csv
-⏹️ END: apply_team_name_mapping (2025-07-23 04:33:04 PM EDT)
+⏹️ END: apply_team_name_mapping (2025-07-23 07:54:18 PM EDT)
 
-▶️ START: update_game_time (2025-07-23 04:33:04 PM EDT)
+▶️ START: update_game_time (2025-07-23 07:54:18 PM EDT)
 ✅ Game times updated for 15 teams:
  - Blue Jays vs Giants: 3:07 PM
  - Rays vs Orioles: 7:05 PM
@@ -62,23 +72,61 @@
  - Dodgers vs Brewers: 9:10 PM
  - Rockies vs Twins: 8:10 PM
  - Diamondbacks vs Cardinals: 7:15 PM
-⏹️ END: update_game_time (2025-07-23 04:33:04 PM EDT)
+⏹️ END: update_game_time (2025-07-23 07:54:18 PM EDT)
 
-▶️ START: filter_stadium_metadata (2025-07-23 04:33:04 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
+▶️ START: filter_stadium_metadata (2025-07-23 07:54:19 PM EDT)
+2025-07-23 23:54:19,335 - INFO - ✅ Cleaned stadium metadata written to data/Data/stadium_metadata.csv
+2025-07-23 23:54:19,335 - INFO - Summary for filter_stadium_metadata.py:
+2025-07-23 23:54:19,335 - INFO - Original rows: 15
+2025-07-23 23:54:19,335 - INFO - Removed rows: 0
+2025-07-23 23:54:19,335 - INFO - Remaining rows: 15
+2025-07-23 23:54:19,341 - WARNING - ⚠️ No changes detected for data/Data/stadium_metadata.csv to commit. Skipping commit.
+2025-07-23 23:54:19,341 - INFO - ℹ️ No new stadium_metadata.csv commits were made by filter_stadium_metadata.py to push.
+⏹️ END: filter_stadium_metadata (2025-07-23 07:54:19 PM EDT)
 
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/output/player_totals.txt
-	modified:   summaries/log.txt
-	modified:   summaries/status.txt
-	modified:   summaries/summary.txt
+▶️ START: normalize_batter_team_names (2025-07-23 07:54:19 PM EDT)
+📥 Loading batters_today and team_name_master...
+🔁 Replacing team codes with official team names...
+✅ Normalized teams in 242 rows. Saving to data/cleaned/batters_today.csv...
+⏹️ END: normalize_batter_team_names (2025-07-23 07:54:19 PM EDT)
 
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	summaries/log_filter_stadium_metadata_2025-07-23_20-33-05.txt
+▶️ START: split_batters_by_home_away (2025-07-23 07:54:19 PM EDT)
+📥 Loading input files...
+🔍 Validating required columns...
+🧹 Cleaning and formatting team names...
+🏠 Home teams: ['Blue Jays', 'Braves', 'Cubs', 'Diamondbacks', 'Dodgers', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Rockies']
+🛫 Away teams: ['Angels', 'Astros', 'Athletics', 'Brewers', 'Cardinals', 'Giants', 'Orioles', 'Padres', 'Red Sox', 'Reds', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+👕 Batter teams: ['Angels', 'Astros', 'Athletics', 'Blue Jays', 'Braves', 'Brewers', 'Cardinals', 'Cubs', 'Diamondbacks', 'Dodgers', 'Giants', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Orioles', 'Padres', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Red Sox', 'Reds', 'Rockies', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+✅ All batter teams matched to today's games.
+⚙️ Splitting batters into home and away...
+✅ Saved 118 home batters and 124 away batters
+⏹️ END: split_batters_by_home_away (2025-07-23 07:54:19 PM EDT)
 
-no changes added to commit (use "git add" and/or "git commit -a")
-Nothing to commit
+▶️ START: commit_split_batters (2025-07-23 07:54:20 PM EDT)
+2025-07-23 23:54:20,073 - INFO - Attempting to add files to Git staging: data/adjusted/batters_home.csv, data/adjusted/batters_away.csv
+2025-07-23 23:54:20,078 - WARNING - ⚠️ No changes detected for split batters files to commit. Skipping commit/push.
+⏹️ END: commit_split_batters (2025-07-23 07:54:20 PM EDT)
+
+▶️ START: normalize_pitcher_home_away (2025-07-23 07:54:20 PM EDT)
+DEBUG: Game Pitcher (away): 'Mccullers Jr., Lance' (Type: <class 'str'>, Len: 20)
+DEBUG: Is Game Pitcher found in Pitchers DataFrame? True
+✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
+✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
+⏹️ END: normalize_pitcher_home_away (2025-07-23 07:54:20 PM EDT)
+
+▶️ START: update_pitcher_team_names (2025-07-23 07:54:20 PM EDT)
+🔁 Updated team names in data/adjusted/pitchers_home.csv
+🔎 Original teams: ['Blue Jays' 'Mets' 'Marlins' 'Phillies' 'Pirates' 'Nationals' 'Rays'
+ 'Rangers' 'Guardians' 'Twins' 'Cubs' 'Diamondbacks' 'Rockies' 'Dodgers'
+ 'Mariners']
+✅ New teams: ['Blue Jays' 'Mets' 'Marlins' 'Phillies' 'Pirates' 'Nationals' 'Rays'
+ 'Rangers' 'Guardians' 'Twins' 'Cubs' 'Diamondbacks' 'Rockies' 'Dodgers'
+ 'Mariners']
+🔁 Updated team names in data/adjusted/pitchers_away.csv
+🔎 Original teams: ['Giants' 'Reds' 'Royals' 'Angels' 'White Sox' 'Padres' 'Orioles' 'Tigers'
+ 'Athletics' 'Yankees' 'Red Sox' 'Cardinals' 'Twins' 'Brewers' 'Astros']
+✅ New teams: ['Giants' 'Reds' 'Royals' 'Angels' 'White Sox' 'Padres' 'Orioles' 'Tigers'
+ 'Athletics' 'Yankees' 'Red Sox' 'Cardinals' 'Twins' 'Brewers' 'Astros']
+⏹️ END: update_pitcher_team_names (2025-07-23 07:54:20 PM EDT)
+
+▶️ START: generate_weather_csv (2025-07-23 07:54:20 PM EDT)
