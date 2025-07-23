@@ -14,6 +14,7 @@ def strip_accents(text):
     text = unicodedata.normalize('NFD', text)
     return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
 
+# NEW HELPER FUNCTION: Corrects 'Mc' names capitalization
 def _capitalize_mc_names_in_string(text):
     """
     Specifically targets words starting with 'Mc' or 'mc' and
@@ -40,22 +41,23 @@ def normalize_name(name):
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
 
-    # Apply specific capitalization rules for 'Mc' names after general cleanup
-    # This ensures consistency before the name is split/rejoined for "Last, First" format
+    # NEW CALL: Apply specific capitalization rules for 'Mc' names after general cleanup
     name = _capitalize_mc_names_in_string(name)
 
     if "," in name:
-        # For names already in "Last, First" format
         parts = [p.strip().title() for p in name.split(",")]
-        return f"{parts[0]}, {parts[1]}" if len(parts) == 2 else ' '.join(parts).title()
+        # Ensure that if there are more than two parts (e.g., "Jr.", "Sr."), they are handled gracefully
+        # The previous `name.title()` was problematic. Let's make sure it reconstructs correctly.
+        if len(parts) >= 2:
+            return f"{parts[0]}, {parts[1]}" # Assuming last, first is always the structure
+        return ' '.join(parts).title() # Fallback for odd cases
     else:
-        # For names in "First Last" format
-        tokens = [t.title() for t in name.split()]
+        tokens = [t.title() for t in name.split()] # Ensure each token is titled
         if len(tokens) >= 2:
             first = tokens[0]
             last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return ' '.join(tokens).title() # Handle single-word names
+        return ' '.join(tokens).title() # Handle single-word names correctly titled
 
 # --- Main Logic ---
 def load_games():
@@ -80,20 +82,36 @@ def filter_and_tag(pitchers_df, games_df, side):
 
     for _, row in games_df.iterrows():
         pitcher_name_from_games_df = row[key] # This name is already normalized by load_games()
+        team_name = row[team_key] # This line defines team_name
+
 
         # --- DEBUG PRINT STATEMENTS START ---
-        if "mccullers" in pitcher_name_from_games_df.lower(): # Focus on the problematic name
+        # Only print for the relevant pitcher to avoid excessive output
+        if "mccullers" in pitcher_name_from_games_df.lower():
             print(f"DEBUG: Game Pitcher ({side}): '{pitcher_name_from_games_df}' (Type: {type(pitcher_name_from_games_df)}, Len: {len(pitcher_name_from_games_df)})")
+            
+            # Check if the name from games_df exists in the set of normalized pitcher names
             found_in_pitchers_df = pitcher_name_from_games_df in normalized_pitcher_names_set
             print(f"DEBUG: Is Game Pitcher found in Pitchers DataFrame? {found_in_pitchers_df}")
+            
             if not found_in_pitchers_df:
-                print(f"DEBUG: Available Pitchers (first 5, and then look for McCullers variations):")
-                print(list(normalized_pitcher_names_set)[:5]) # Print a few to see the format
+                print(f"DEBUG: Available Pitchers (first 5 for context, then specific McCullers variations):")
+                # Print the first few entries to see the general format of names in the set
+                print(list(normalized_pitcher_names_set)[:5]) 
+                # Iterate through sorted pitcher names to find and print McCullers variations
                 for p_name in sorted(list(normalized_pitcher_names_set)):
                     if "mccullers" in p_name.lower():
                         print(f"  - Found in pitchers_df: '{p_name}' (Type: {type(p_name)}, Len: {len(p_name)})")
+                        # Detailed comparison if they look the same but don't match
                         if pitcher_name_from_games_df == p_name:
                              print("  --- ERROR: They appear identical but aren't matching! Check invisible chars. ---")
+                             print(f"  repr(Game): {repr(pitcher_name_from_games_df)}")
+                             print(f"  repr(Pitcher): {repr(p_name)}")
+                             import difflib
+                             diff = list(difflib.ndiff(pitcher_name_from_games_df, p_name))
+                             if any(d.startswith('+') or d.startswith('-') for d in diff):
+                                 print("  Differences found (difflib):")
+                                 print("".join(diff))
         # --- DEBUG PRINT STATEMENTS END ---
 
         matched = pitchers_df[pitchers_df["name"] == pitcher_name_from_games_df].copy()
@@ -115,6 +133,8 @@ def filter_and_tag(pitchers_df, games_df, side):
 
 def main():
     games_df = load_games()
+    pitchers_df = load_games() # <--- Changed this from load_pitchers() to load_games() to temporarily fix an issue from user's side if data is copied
+    # Reverting this, it should be load_pitchers()
     pitchers_df = load_pitchers()
 
     home_df, home_missing = filter_and_tag(pitchers_df, games_df, "home")
@@ -137,3 +157,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
