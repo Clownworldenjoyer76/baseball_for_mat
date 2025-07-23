@@ -13,7 +13,7 @@ LOG_AWAY = "log_pitchers_away_weather.txt"
 
 def apply_adjustment(df, team_col, stadium_map, weather_df):
     df = df.merge(stadium_map, on=team_col, how='left')
-    df = df.merge(weather_df, on='stadium', how='left')
+    df = df.merge(weather_df, on='venue', how='left')
 
     if 'woba' in df.columns and 'temperature' in df.columns:
         df['adj_woba_weather'] = df['woba'] * df['temperature'].apply(
