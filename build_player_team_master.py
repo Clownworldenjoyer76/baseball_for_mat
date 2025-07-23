@@ -8,15 +8,57 @@ output_file = "data/processed/player_team_master.csv"
 
 rows = []
 
-# Normalize and format names: strip accents, punctuation, then title case
+# --- Start of updated normalization functions ---
+def strip_accents(text):
+    if not isinstance(text, str):
+        return ""
+    text = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+
+def _capitalize_mc_names_in_string(text):
+    """
+    Specifically targets words starting with 'Mc' or 'mc' and
+    ensures the letter immediately following 'Mc' is capitalized.
+    E.g., 'mccullers' -> 'McCullers', 'Mcgregor' -> 'McGregor'.
+    """
+    def replacer(match):
+        prefix = match.group(1) # 'Mc' or 'mc'
+        char_to_capitalize = match.group(2).upper() # The letter after 'Mc'
+        rest_of_name = match.group(3).lower() # The rest of the word in lowercase
+        return prefix.capitalize() + char_to_capitalize + rest_of_name
+
+    text = re.sub(r"\b(mc)([a-z])([a-z]*)\b", replacer, text, flags=re.IGNORECASE)
+    return text
+
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
-    name = unicodedata.normalize("NFKD", name)
-    name = ''.join(c for c in name if not unicodedata.combining(c))
-    name = re.sub(r"[^\w\s,]", "", name)  # remove punctuation except comma
-    parts = [part.strip().capitalize() for part in name.split(",")]
-    return ", ".join(parts) if len(parts) == 2 else name.strip().title()
+    name = name.replace("’", "'").replace("`", "'").strip()
+    name = strip_accents(name)
+    name = re.sub(r"[^\w\s,\.]", "", name) # Remove non-word, non-space, non-comma, non-dot chars
+    name = re.sub(r"\s+", " ", name).strip() # Consolidate spaces
+
+    # Step 1: Apply general title casing to the entire cleaned string.
+    temp_name = name.title() 
+
+    # Step 2: Apply the specific 'Mc' capitalization fix.
+    final_normalized_name = _capitalize_mc_names_in_string(temp_name)
+
+    # Step 3: Handle "Last, First" vs "First Last" formatting.
+    if "," in final_normalized_name:
+        parts = [p.strip() for p in final_normalized_name.split(",")]
+        if len(parts) >= 2:
+            return f"{parts[0]}, {parts[1]}"
+        return ' '.join(parts)
+    else:
+        tokens = final_normalized_name.split()
+        if len(tokens) >= 2:
+            first = tokens[0]
+            last = " ".join(tokens[1:])
+            return f"{last}, {first}"
+        return ' '.join(tokens)
+# --- End of updated normalization functions ---
+
 
 for filename in os.listdir(csv_folder):
     file_path = os.path.join(csv_folder, filename)
