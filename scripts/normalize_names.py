@@ -1,6 +1,7 @@
 import pandas as pd
 import unicodedata
 import re
+import os # Import os for path checking
 
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
@@ -26,9 +27,6 @@ def _capitalize_mc_names_in_string(text):
         rest_of_name = match.group(3).lower() # The rest of the word in lowercase
         return prefix.capitalize() + char_to_capitalize + rest_of_name
 
-    # This regex looks for 'Mc' (case-insensitive) at the start of a word boundary (\b),
-    # followed by a letter, and then any remaining letters.
-    # It then applies the replacer function to capitalize the correct character.
     text = re.sub(r"\b(mc)([a-z])([a-z]*)\b", replacer, text, flags=re.IGNORECASE)
     return text
 
@@ -41,30 +39,24 @@ def normalize_name(name):
     name = re.sub(r"\s+", " ", name).strip() # Consolidate spaces
 
     # Step 1: Apply general title casing to the entire cleaned string.
-    # This will handle "lance" -> "Lance", "jr" -> "Jr", etc.
-    # It will turn "mccullers" into "Mccullers".
     temp_name = name.title() 
 
     # Step 2: Apply the specific 'Mc' capitalization fix.
-    # This MUST happen *after* the general title casing, as it correctly handles the 'C' in 'McCullers'.
-    # This result will be the final correctly capitalized name.
     final_normalized_name = _capitalize_mc_names_in_string(temp_name)
 
     # Step 3: Handle "Last, First" vs "First Last" formatting.
-    # The 'final_normalized_name' string already has the correct capitalization.
-    # We just need to ensure the correct Last, First order without re-applying .title().
     if "," in final_normalized_name:
         parts = [p.strip() for p in final_normalized_name.split(",")]
         if len(parts) >= 2:
             return f"{parts[0]}, {parts[1]}"
-        return ' '.join(parts) # Fallback for odd cases where a comma was present but split yields one part
+        return ' '.join(parts)
     else:
         tokens = final_normalized_name.split()
         if len(tokens) >= 2:
             first = tokens[0]
             last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return ' '.join(tokens) # Handle single-word names
+        return ' '.join(tokens)
 
 # --- Main Logic ---
 def load_games():
@@ -74,6 +66,16 @@ def load_games():
     return df
 
 def load_pitchers():
+    # --- ADDED DEBUG PRINTS FOR FILE PATH ---
+    print(f"DEBUG: Checking PITCHERS_FILE path: {PITCHERS_FILE}")
+    if not os.path.exists(PITCHERS_FILE):
+        print(f"ERROR: PITCHERS_FILE does not exist at: {PITCHERS_FILE}")
+        # Optionally, raise an error or return an empty DataFrame
+        return pd.DataFrame(columns=['name'])
+    else:
+        print(f"DEBUG: PITCHERS_FILE exists.")
+    # --- END DEBUG PRINTS FOR FILE PATH ---
+
     df = pd.read_csv(PITCHERS_FILE)
     
     # --- ADDED DEBUG PRINTS BEFORE NORMALIZATION ---
@@ -82,8 +84,9 @@ def load_pitchers():
     # Check for McCullers in raw data (case-insensitive)
     mccullers_raw = df[df["name"].astype(str).str.contains("mccullers", case=False, na=False)]
     if not mccullers_raw.empty:
-        print("DEBUG: 'Mccullers' (case-insensitive) found in RAW pitchers_df:")
-        print(mccullers_raw["name"].tolist())
+        print("DEBUG: 'Mccullers' (case-insensitive) found in RAW pitchers_df. All found names (repr):")
+        for name in mccullers_raw["name"].tolist():
+            print(f"  - {repr(name)}") # Use repr to show hidden chars
     else:
         print("DEBUG: No 'Mccullers' (case-insensitive) found in RAW pitchers_df.")
     # --- END DEBUG PRINTS BEFORE NORMALIZATION ---
@@ -96,8 +99,9 @@ def load_pitchers():
     
     mccullers_in_pitchers_df_normalized = df[df["name"].str.contains("mccullers", case=False, na=False)]
     if not mccullers_in_pitchers_df_normalized.empty:
-        print("DEBUG: 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df:")
-        print(mccullers_in_pitchers_df_normalized["name"].tolist())
+        print("DEBUG: 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df. All found names (repr):")
+        for name in mccullers_in_pitchers_df_normalized["name"].tolist():
+            print(f"  - {repr(name)}") # Use repr to show hidden chars
     else:
         print("DEBUG: No 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df.")
     # --- END ADDED DEBUG PRINTS ---
@@ -122,9 +126,9 @@ def filter_and_tag(pitchers_df, games_df, side):
         if "mccullers" in pitcher_name_from_games_df.lower():
             print(f"DEBUG: Game Pitcher ({side}): '{pitcher_name_from_games_df}' (Type: {type(pitcher_name_from_games_df)}, Len: {len(pitcher_name_from_games_df)})")
             
-            # Check if the name from games_df exists in the set of normalized pitcher names
+            # This line had a typo - corrected from `found_in_pitcher_names_set` to `found_in_pitchers_df`
             found_in_pitchers_df = pitcher_name_from_games_df in normalized_pitcher_names_set
-            print(f"DEBUG: Is Game Pitcher found in Pitchers DataFrame? {found_in_pitcher_names_set}")
+            print(f"DEBUG: Is Game Pitcher found in Pitchers DataFrame? {found_in_pitchers_df}")
             
             if not found_in_pitchers_df:
                 print(f"DEBUG: Available Pitchers (first 5 for context, then specific McCullers variations):")
