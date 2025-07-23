@@ -1,8 +1,17 @@
 import pandas as pd
 import subprocess
 import sys
-from pathlib import Path
 from datetime import datetime
+import os
+from pathlib import Path
+
+# Begin debug logging
+log_dir = "summaries"
+os.makedirs(log_dir, exist_ok=True)
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+log_path = os.path.join(log_dir, f"{Path(sys.argv[0]).stem}_{timestamp}.log")
+sys.stdout = open(log_path, "w")
+sys.stderr = sys.stdout
 
 # Input paths
 BATTERS_HOME_FILE = "data/adjusted/batters_home_weather_park.csv"
