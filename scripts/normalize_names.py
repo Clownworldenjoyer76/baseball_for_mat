@@ -14,7 +14,6 @@ def strip_accents(text):
     text = unicodedata.normalize('NFD', text)
     return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
 
-# NEW HELPER FUNCTION: Corrects 'Mc' names capitalization
 def _capitalize_mc_names_in_string(text):
     """
     Specifically targets words starting with 'Mc' or 'mc' and
@@ -30,6 +29,7 @@ def _capitalize_mc_names_in_string(text):
     # This regex looks for 'Mc' (case-insensitive) at the start of a word boundary (\b),
     # followed by a letter, and then any remaining letters.
     # It then applies the replacer function to capitalize the correct character.
+    # We apply this to the whole string, letting it target words within.
     text = re.sub(r"\b(mc)([a-z])([a-z]*)\b", replacer, text, flags=re.IGNORECASE)
     return text
 
@@ -38,27 +38,36 @@ def normalize_name(name):
         return ""
     name = name.replace("’", "'").replace("`", "'").strip()
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)
-    name = re.sub(r"\s+", " ", name).strip()
+    name = re.sub(r"[^\w\s,\.]", "", name) # Remove non-word, non-space, non-comma, non-dot chars
+    name = re.sub(r"\s+", " ", name).strip() # Consolidate spaces
 
-    # NEW CALL: Apply specific capitalization rules for 'Mc' names after general cleanup
-    name = _capitalize_mc_names_in_string(name)
+    # Step 1: Apply general title casing to the entire cleaned string.
+    # This will handle "lance" -> "Lance", "jr" -> "Jr", etc.
+    # It will turn "mccullers" into "Mccullers".
+    temp_name = name.title() 
 
-    if "," in name:
-        parts = [p.strip().title() for p in name.split(",")]
-        # Ensure that if there are more than two parts (e.g., "Jr.", "Sr."), they are handled gracefully
+    # Step 2: Apply the specific 'Mc' capitalization fix.
+    # This MUST happen *after* the general title casing, as it correctly handles the 'C' in 'McCullers'.
+    # This result will be the final correctly capitalized name.
+    final_normalized_name = _capitalize_mc_names_in_string(temp_name)
+
+    # Step 3: Handle "Last, First" vs "First Last" formatting.
+    # The 'final_normalized_name' string already has the correct capitalization.
+    # We just need to ensure the correct Last, First order without re-applying .title().
+    if "," in final_normalized_name:
+        parts = [p.strip() for p in final_normalized_name.split(",")]
         if len(parts) >= 2:
-            return f"{parts[0]}, {parts[1]}" # Assuming last, first is always the structure
-        return ' '.join(parts).title() # Fallback for odd cases
+            return f"{parts[0]}, {parts[1]}"
+        return ' '.join(parts) # Fallback for odd cases where a comma was present but split yields one part
     else:
-        tokens = [t.title() for t in name.split()] # Ensure each token is titled
+        tokens = final_normalized_name.split()
         if len(tokens) >= 2:
             first = tokens[0]
             last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return ' '.join(tokens).title() # Handle single-word names correctly titled
+        return ' '.join(tokens) # Handle single-word names
 
-# --- Main Logic ---
+# --- Main Logic (Rest of your script remains the same) ---
 def load_games():
     df = pd.read_csv(GAMES_FILE)
     df["pitcher_home"] = df["pitcher_home"].astype(str).apply(normalize_name)
@@ -82,7 +91,6 @@ def filter_and_tag(pitchers_df, games_df, side):
     for _, row in games_df.iterrows():
         pitcher_name_from_games_df = row[key] # This name is already normalized by load_games()
         team_name = row[team_key] # This line defines team_name
-
 
         # --- DEBUG PRINT STATEMENTS START ---
         # Only print for the relevant pitcher to avoid excessive output
