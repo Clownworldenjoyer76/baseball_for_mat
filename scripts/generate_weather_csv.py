@@ -16,8 +16,7 @@ def generate_weather_csv():
     for f_path in [GAMES_FILE, STADIUM_FILE, TEAM_MAP_FILE]:
         if not os.path.exists(f_path):
             print(f"ERROR: Required input file not found: {f_path}")
-            # Optionally, you might want to raise an exception or exit here
-            return
+            return # Exit if a required file is missing
 
     try:
         games_df = pd.read_csv(GAMES_FILE)
@@ -115,23 +114,24 @@ def generate_weather_csv():
     Path(SUMMARY_FILE).write_text(summary)
     print(f"DEBUG: Wrote summary to {SUMMARY_FILE}")
 
-    # --- Git Operations ---
+    # --- UPDATED GIT OPERATIONS BLOCK (Option 1) ---
     try:
-        # Add the generated files
-        print(f"DEBUG: Attempting to git add {OUTPUT_FILE} and {SUMMARY_FILE}")
-        subprocess.run(["git", "add", OUTPUT_FILE, SUMMARY_FILE], check=True, capture_output=True, text=True)
-        print("DEBUG: Git add successful.")
+        # Add ALL newly generated or modified files in the current directory for the upcoming commit
+        print(f"DEBUG: Attempting to git add all modified files (git add .).")
+        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
+        print("DEBUG: Git add . successful. All changes staged.")
 
         # Check for changes before committing
         status_output = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if not status_output.strip():
-            print("DEBUG: No changes to commit after adding weather files.")
+            print("DEBUG: No changes to commit (this might indicate an issue if files were expected to be changed).")
         else:
             print("DEBUG: Changes detected, attempting to commit.")
-            subprocess.run(["git", "commit", "-m", "📝 Generate weather_input.csv and summary"], check=True, capture_output=True, text=True)
+            # Use a more general commit message since we are adding all changes
+            subprocess.run(["git", "commit", "-m", "🔁 Update data files and weather input/summary"], check=True, capture_output=True, text=True)
             print("DEBUG: Git commit successful.")
             print("DEBUG: Attempting to git push.")
-            subprocess.run(["git", "push"], check=True, capture_output=True, text=True) # Added capture_output/text for more verbose logging if needed
+            subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
             print("✅ Git commit and push complete.")
 
     except subprocess.CalledProcessError as e:
