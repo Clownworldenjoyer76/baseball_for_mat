@@ -22,6 +22,13 @@ jobs:
       - name: Install dependencies
         run: pip install pandas unidecode requests
 
+      # --- ADDED THIS STEP ---
+      - name: Configure Git User
+        run: |
+          git config --global user.name "github-actions[bot]" # A common practice for actions
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      # --- END ADDED STEP ---
+
       - name: Run All Scripts + Unified Logs
         run: |
           mkdir -p summaries
@@ -41,16 +48,10 @@ jobs:
 
             echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
 
-            # Changed this line: now redirects both stdout and stderr to LOG_FILE
             if python "scripts/${SCRIPT}" &>> "$LOG_FILE"; then
               echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
             else
               echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-              # Since all output (including stderr) now goes to LOG_FILE,
-              # we don't need to cat temp_error.log here.
-              # Any error messages will be in LOG_FILE where the script output is.
-              # You might want to parse LOG_FILE for specific error patterns
-              # or ensure your Python scripts log errors distinctly.
               echo "❌ $STEP_NAME FAILED. Check '$LOG_FILE' for details. [$STEP_TIMESTAMP]" >> "$ERRORS_FILE"
               echo -e "\n---\n" >> "$ERRORS_FILE"
             fi
@@ -116,6 +117,8 @@ jobs:
 
       - name: Commit All Logs and Outputs
         run: |
+          # These are already set globally now, but keeping them here doesn't hurt.
+          # The earlier 'Configure Git User' step handles it for scripts.
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add summaries/summary.txt
