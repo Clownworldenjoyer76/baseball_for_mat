@@ -41,12 +41,16 @@ def fix_pitcher_names_strict():
     ph = pd.read_csv(pitchers_home_path)
     if "last_name, first_name" in ph.columns:
         ph["last_name, first_name"] = ph["last_name, first_name"].apply(map_name)
+    if "home_team" in ph.columns and "team" not in ph.columns:
+        ph["team"] = ph["home_team"]
     ph.to_csv(pitchers_home_path, index=False)
 
     # Update away pitcher file
     pa = pd.read_csv(pitchers_away_path)
     if "last_name, first_name" in pa.columns:
         pa["last_name, first_name"] = pa["last_name, first_name"].apply(map_name)
+    if "away_team" in pa.columns and "team" not in pa.columns:
+        pa["team"] = pa["away_team"]
     pa.to_csv(pitchers_away_path, index=False)
 
     # Update todaysgames file
