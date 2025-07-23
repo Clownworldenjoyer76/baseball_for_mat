@@ -41,12 +41,17 @@ jobs:
 
             echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
 
-            if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
+            # Changed this line: now redirects both stdout and stderr to LOG_FILE
+            if python "scripts/${SCRIPT}" &>> "$LOG_FILE"; then
               echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
             else
               echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-              echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
-              cat temp_error.log >> "$ERRORS_FILE"
+              # Since all output (including stderr) now goes to LOG_FILE,
+              # we don't need to cat temp_error.log here.
+              # Any error messages will be in LOG_FILE where the script output is.
+              # You might want to parse LOG_FILE for specific error patterns
+              # or ensure your Python scripts log errors distinctly.
+              echo "❌ $STEP_NAME FAILED. Check '$LOG_FILE' for details. [$STEP_TIMESTAMP]" >> "$ERRORS_FILE"
               echo -e "\n---\n" >> "$ERRORS_FILE"
             fi
 
