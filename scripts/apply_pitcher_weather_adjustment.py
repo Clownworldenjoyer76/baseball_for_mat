@@ -1,42 +1,39 @@
+
 import pandas as pd
 
-HOME_PITCHERS = "data/adjusted/pitchers_home.csv"
-AWAY_PITCHERS = "data/adjusted/pitchers_away.csv"
 WEATHER_FILE = "data/weather_adjustments.csv"
+TEAM_FILE = "data/weather_teams.csv"
+PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
+PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
+OUTPUT_HOME_FILE = "data/adjusted/pitchers_home_weather.csv"
+OUTPUT_AWAY_FILE = "data/adjusted/pitchers_away_weather.csv"
 
-OUT_HOME = "data/adjusted/pitchers_home_weather.csv"
-OUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
-
-LOG_HOME = "data/adjusted/log_pitchers_home_weather.txt"
-LOG_AWAY = "data/adjusted/log_pitchers_away_weather.txt"
-
-def apply_weather(df, weather_df, team_col, log_path):
-    merged = pd.merge(df, weather_df, how="left", left_on=team_col, right_on=team_col)
-    merged.to_csv(log_path.replace(".txt", ".csv"), index=False)
-
-    # Minimal logging
-    top5 = merged[["last_name, first_name", team_col, "temperature", "humidity"]].head(5)
-    with open(log_path, "w") as f:
-        f.write("Top 5 pitcher weather-adjusted rows:\n")
-        f.write(top5.to_string(index=False))
-
-    return merged
+def apply_weather_adjustment(pitchers_df, weather_df, team_col, output_file):
+    merged_df = pd.merge(pitchers_df, weather_df, left_on=team_col, right_on=team_col, how='left')
+    if 'temperature' in merged_df.columns:
+        merged_df['adj_woba_weather'] = merged_df['woba'] * (1 + (merged_df['temperature'] - 70) * 0.005)
+    else:
+        merged_df['adj_woba_weather'] = merged_df['woba']
+    merged_df.to_csv(output_file, index=False)
 
 def main():
     weather_df = pd.read_csv(WEATHER_FILE)
-    home = pd.read_csv(HOME_PITCHERS)
-    away = pd.read_csv(AWAY_PITCHERS)
+    team_df = pd.read_csv(TEAM_FILE)
 
-    if "home_team" not in weather_df.columns or "away_team" not in weather_df.columns:
-        raise ValueError("weather_adjustments.csv missing home_team or away_team column")
+    if 'stadium' not in weather_df.columns:
+        raise ValueError("Missing 'stadium' column in weather_adjustments.csv")
 
-    adjusted_home = apply_weather(home, weather_df, "home_team", LOG_HOME)
-    adjusted_away = apply_weather(away, weather_df, "away_team", LOG_AWAY)
+    if 'home_team' not in team_df.columns or 'away_team' not in team_df.columns:
+        raise ValueError("weather_teams.csv missing home_team or away_team column")
 
-    adjusted_home.to_csv(OUT_HOME, index=False)
-    adjusted_away.to_csv(OUT_AWAY, index=False)
+    # Merge team info into weather dataframe
+    weather_df = pd.merge(weather_df, team_df, on='stadium', how='left')
 
-    print(f"✅ Pitcher weather adjustment complete. Saved to:\n- {OUT_HOME}\n- {OUT_AWAY}")
+    home_pitchers = pd.read_csv(PITCHERS_HOME_FILE)
+    away_pitchers = pd.read_csv(PITCHERS_AWAY_FILE)
+
+    apply_weather_adjustment(home_pitchers, weather_df, 'home_team', OUTPUT_HOME_FILE)
+    apply_weather_adjustment(away_pitchers, weather_df, 'away_team', OUTPUT_AWAY_FILE)
 
 if __name__ == "__main__":
     main()
