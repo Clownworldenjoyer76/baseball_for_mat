@@ -43,8 +43,8 @@ def main():
     # Validate required columns
     verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
     verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
-    verify_columns(ph, ["home_team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
-    verify_columns(pa, ["away_team_park", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
+    verify_columns(ph, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_home")
+    verify_columns(pa, ["team", "last_name, first_name", "adj_woba_combined"], "pitchers_away")
     verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
 
     # Normalize names for merging
