@@ -86,7 +86,7 @@ jobs:
           run_step commit_split_batters.py
           run_step normalize_pitcher_home_away.py
           run_step update_pitcher_team_names.py
-          run_step generate_weather_csv.py # This script will now have Git configured
+          run_step generate_weather_csv.py
           run_step filter_today_batters.py
           run_step get_weather_data.py
           run_step apply_weather_adjustment.py
@@ -114,6 +114,8 @@ jobs:
           # 🔗 CHAIN CONNECTION
           run_step chain_setup_inputs.py
           run_step chain_load_data.py
+          run_step clean_and_preprocess_batters.py
+          run_step clean_and_preprocess_pitchers.py
 
           # 📄 Combine single summary
           {
@@ -131,16 +133,13 @@ jobs:
 
       - name: Commit All Logs and Outputs (Main Workflow Commit)
         run: |
-          # These configs are redundant now but harmless. The key is the early config.
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           
-          # Stage all relevant generated and updated files
           git add data/end_chain/
           git add data/processed/
           git add data/adjusted/
           git add summaries/
 
-          # Check if there are any changes to commit, then commit
           git diff --cached --exit-code || git commit -m "A_Run_All: Automated data pipeline update on $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")"
           git push || echo "No new commits to push"
