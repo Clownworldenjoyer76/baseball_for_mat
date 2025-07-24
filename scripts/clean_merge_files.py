@@ -1,28 +1,33 @@
-# scripts/clean_merge_files.py
-
 import pandas as pd
 import os
 
-def clean_last_name_first_name_column(filepath: str) -> pd.DataFrame:
-    """
-    Cleans the 'last_name, first_name' column in the given file by removing
-    trailing commas and spaces.
+def fix_name_format(name: str) -> str:
+    name = name.strip().rstrip(",")
+    if "," in name:
+        parts = [part.strip() for part in name.split(",")]
+        if len(parts) == 2:
+            first, last = parts
+            return f"{last}, {first}" if " " in first and len(first.split()) == 1 else f"{first}, {last}"
+        return name
+    elif " " in name:
+        parts = name.split()
+        if len(parts) == 2:
+            return f"{parts[1]}, {parts[0]}"
+    return name
 
-    Args:
-        filepath (str): The path to the CSV file to be cleaned.
-
-    Returns:
-        pd.DataFrame: The cleaned DataFrame.
-    """
+def clean_and_deduplicate(filepath: str) -> pd.DataFrame:
     df = pd.read_csv(filepath)
 
     if 'last_name, first_name' in df.columns:
         df['last_name, first_name'] = (
             df['last_name, first_name']
             .astype(str)
-            .str.replace(r',$', '', regex=True)
-            .str.strip()
+            .apply(fix_name_format)
         )
+        before = len(df)
+        df = df.drop_duplicates(subset='last_name, first_name', keep='first')
+        after = len(df)
+        print(f"🔍 Removed {before - after} duplicate rows in {filepath}")
     else:
         print(f"⚠️ WARNING: 'last_name, first_name' column not found in {filepath}")
 
@@ -37,7 +42,7 @@ if __name__ == "__main__":
     for label, path in input_files.items():
         if os.path.exists(path):
             print(f"Cleaning file: {path}")
-            cleaned_df = clean_last_name_first_name_column(path)
+            cleaned_df = clean_and_deduplicate(path)
             cleaned_df.to_csv(path, index=False)
             print(f"✅ {label} cleaned and saved.")
         else:
