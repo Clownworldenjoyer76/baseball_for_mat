@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 import subprocess
-import os
+import os # Import os module
 
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 STADIUM_FILE = "data/Data/stadium_metadata.csv"
@@ -41,12 +41,9 @@ def generate_weather_csv():
         right_on='uppercase',
         how='left'
     )
-    # The 'home_team' column (original) is dropped and then 'team_name' from team_map_df is renamed to 'home_team'
-    # Ensure correct columns exist before dropping/renaming
     if 'home_team' in merged.columns and 'uppercase' in merged.columns:
         merged.drop(columns=['home_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'home_team'}, inplace=True)
-
 
     if 'away_team_x' in merged.columns and 'away_team_y' in merged.columns:
         merged['away_team'] = merged['away_team_x'].combine_first(merged['away_team_y'])
@@ -54,7 +51,6 @@ def generate_weather_csv():
     elif 'away_team' not in merged.columns:
         print("❌ 'away_team' column not found in merged dataframe.")
         return
-
 
     merged['away_team'] = merged['away_team'].str.strip().str.upper()
     merged = pd.merge(
@@ -64,8 +60,6 @@ def generate_weather_csv():
         right_on='uppercase',
         how='left'
     )
-    # The 'away_team' column (original) is dropped and then 'team_name' from team_map_df is renamed to 'away_team'
-    # Ensure correct columns exist before dropping/renaming
     if 'away_team' in merged.columns and 'uppercase' in merged.columns:
         merged.drop(columns=['away_team', 'uppercase'], inplace=True)
     merged.rename(columns={'team_name': 'away_team'}, inplace=True)
@@ -73,7 +67,6 @@ def generate_weather_csv():
     # Ensure output directory exists
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     merged.to_csv(OUTPUT_FILE, index=False)
-
 
     summary = (
         f"✅ Weather input file generated\n"
@@ -87,14 +80,21 @@ def generate_weather_csv():
 
     # --- Git Operations ---
     try:
-        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
+        # Create a new environment dictionary based on the current environment
+        # and explicitly set Git author information for the subprocess calls.
+        git_env = os.environ.copy()
+        git_env["GIT_AUTHOR_NAME"] = "github-actions"
+        git_env["GIT_AUTHOR_EMAIL"] = "github-actions@github.com"
+
+        # Pass the custom environment to each subprocess.run call
+        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True, env=git_env)
         
-        status_output = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
+        status_output = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True, env=git_env).stdout
         if not status_output.strip():
-            print("✅ No changes to commit.") # Adjusted for cleaner output if nothing was actually changed
+            print("✅ No changes to commit.")
         else:
-            subprocess.run(["git", "commit", "-m", "🔁 Update data files and weather input/summary"], check=True, capture_output=True, text=True)
-            subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
+            subprocess.run(["git", "commit", "-m", "🔁 Update data files and weather input/summary"], check=True, capture_output=True, text=True, env=git_env)
+            subprocess.run(["git", "push"], check=True, capture_output=True, text=True, env=git_env) # Also pass env for push
             print("✅ Git commit and push complete.")
 
     except subprocess.CalledProcessError as e:
@@ -108,3 +108,4 @@ def generate_weather_csv():
 
 if __name__ == "__main__":
     generate_weather_csv()
+
