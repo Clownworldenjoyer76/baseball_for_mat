@@ -68,6 +68,7 @@ def load_pitchers():
     print(df["name"].head(10).tolist())
     return df
 
+
 def filter_and_tag(pitchers_df, games_df, side):
     key = f"pitcher_{side}"
     team_key = f"{side}_team"
