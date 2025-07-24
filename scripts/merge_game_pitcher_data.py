@@ -96,28 +96,46 @@ def main():
     if "away_team" in games.columns:
         games["away_team"] = games["away_team"].astype(str).str.strip().str.upper()
 
-    # --- DEBUGGING TEAM NAMES ---
+    # --- DEBUGGING TEAM NAMES AND DATAFRAME HEADS BEFORE MERGE ---
     logging.info(f"DEBUG: Unique 'team' values in batters_home (bh['team']):\n{bh['team'].value_counts(dropna=False).to_string()}")
     logging.info(f"DEBUG: Unique 'home_team' values in games (games['home_team']):\n{games['home_team'].value_counts(dropna=False).to_string()}")
-    logging.info(f"DEBUG: Unique 'team' values in batters_away (ba['team']):\n{ba['team'].value_counts(dropna=False).to_string()}")
-    logging.info(f"DEBUG: Unique 'away_team' values in games (games['away_team']):\n{games['away_team'].value_counts(dropna=False).to_string()}")
-    # --- END DEBUGGING TEAM NAMES ---
+    logging.info(f"DEBUG: bh.head() before 1st merge:\n{bh.head().to_string()}")
+    logging.info(f"DEBUG: games[['home_team', 'pitcher_home', 'game_time']].head() before 1st merge:\n{games[['home_team', 'pitcher_home', 'game_time']].head().to_string()}")
+    # --- END DEBUGGING TEAM NAMES AND DATAFRAME HEADS BEFORE MERGE ---
 
     logging.info("DEBUG: Merging games data to batter dataframes to get pitcher names.")
-    # Merge games_df into batter dataframes to get the specific pitcher for that game
-    bh = bh.merge(games[["home_team", "pitcher_home", "game_time"]], how="left", left_on="team", right_on="home_team")
-    ba = ba.merge(games[["away_team", "pitcher_away", "game_time"]], how="left", left_on="team", right_on="away_team")
+    
+    # Perform the merge and store it in a temporary variable to inspect
+    temp_bh = bh.merge(games[["home_team", "pitcher_home", "game_time"]], how="left", left_on="team", right_on="home_team")
+    
+    # Log columns and a sample of pitcher_home from the temporary DataFrame
+    logging.info(f"DEBUG: Columns of temp_bh after 1st merge attempt: {temp_bh.columns.tolist()}")
+    # Using .get() with a default empty Series to avoid KeyError if 'pitcher_home' is truly absent
+    logging.info(f"DEBUG: temp_bh['pitcher_home'] value counts after 1st merge attempt:\n{temp_bh.get('pitcher_home', pd.Series(dtype='object')).value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: temp_bh.head() after 1st merge attempt:\n{temp_bh.head().to_string()}") 
+    
+    # Assign the result back to bh only after logging
+    bh = temp_bh
 
-    # Debugging: Verify 'pitcher_home'/'pitcher_away' are now in the dataframes and check for NaNs
+    # Repeat for away batters
+    logging.info(f"DEBUG: Unique 'team' values in batters_away (ba['team']):\n{ba['team'].value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: Unique 'away_team' values in games (games['away_team']):\n{games['away_team'].value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: ba.head() before 1st merge:\n{ba.head().to_string()}")
+    logging.info(f"DEBUG: games[['away_team', 'pitcher_away', 'game_time']].head() before 1st merge:\n{games[['away_team', 'pitcher_away', 'game_time']].head().to_string()}")
+
+    temp_ba = ba.merge(games[["away_team", "pitcher_away", "game_time"]], how="left", left_on="team", right_on="away_team")
+    logging.info(f"DEBUG: Columns of temp_ba after 1st merge attempt: {temp_ba.columns.tolist()}")
+    logging.info(f"DEBUG: temp_ba['pitcher_away'] value counts after 1st merge attempt:\n{temp_ba.get('pitcher_away', pd.Series(dtype='object')).value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: temp_ba.head() after 1st merge attempt:\n{temp_ba.head().to_string()}")
+    ba = temp_ba
+
+    # The existing checks will now apply to bh and ba which were just assigned
     if 'pitcher_home' not in bh.columns:
         logging.error("❌ 'pitcher_home' column not found in batters_home after first merge. This is critical. Check team name consistency.")
         raise KeyError("'pitcher_home' column not found after initial merge")
     if 'pitcher_away' not in ba.columns:
         logging.error("❌ 'pitcher_away' column not found in batters_away after first merge. This is critical. Check team name consistency.")
         raise KeyError("'pitcher_away' column not found after initial merge")
-
-    logging.info(f"DEBUG: bh['pitcher_home'] value counts after 1st merge (should have pitcher names):\n{bh['pitcher_home'].value_counts(dropna=False).to_string()}")
-    logging.info(f"DEBUG: ba['pitcher_away'] value counts after 1st merge (should have pitcher names):\n{ba['pitcher_away'].value_counts(dropna=False).to_string()}")
 
     logging.info("DEBUG: Merging pitcher wOBA data into batter dataframes.")
     # Then merge pitcher wOBA data
@@ -170,6 +188,5 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         logging.error(f"❌ Script failed: {e}")
-        # traceback.print_exc() # Removed this as per previous decision
     finally:
         logging.info("📝 Final debug log completed")
