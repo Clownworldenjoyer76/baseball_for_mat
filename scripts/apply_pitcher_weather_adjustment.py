@@ -1,6 +1,7 @@
 import pandas as pd
 import subprocess
-import os # Import os for path checking
+import os
+from pathlib import Path # <--- THIS LINE IS NOW INCLUDED AND CRUCIAL FOR 'Path' TO BE DEFINED
 
 # File paths
 PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
@@ -22,8 +23,12 @@ def adjust_temperature(temp):
 
 def apply_adjustment(df, team_col, weather_df, side):
     # Ensure team_col is treated consistently (e.g., upper case for merging)
-    df[team_col] = df[team_col].str.strip().str.upper()
-    weather_df[team_col] = weather_df[team_col].str.strip().str.upper() # Assuming weather_df has a similar team_col
+    # Check if team_col exists in df before attempting .str.strip().str.upper()
+    if team_col in df.columns:
+        df[team_col] = df[team_col].astype(str).str.strip().str.upper() # Added .astype(str) for robustness
+    # Assuming weather_df also has the team_col for merging
+    if team_col in weather_df.columns:
+        weather_df[team_col] = weather_df[team_col].astype(str).str.strip().str.upper() # Added .astype(str) for robustness
 
     merged = df.merge(weather_df, left_on=team_col, right_on=team_col, how='left')
 
@@ -86,8 +91,16 @@ def main():
     try:
         home_df = pd.read_csv(PITCHERS_HOME_FILE)
         away_df = pd.read_csv(PITCHERS_AWAY_FILE)
-        weather_df = pd.read_csv(WEATHER_FILE)
-        print(f"DEBUG: Loaded {len(home_df)} home pitchers, {len(away_df)} away pitchers, and {len(weather_df)} weather adjustments.")
+        
+        # Check if WEATHER_FILE exists before trying to read it
+        if not os.path.exists(WEATHER_FILE):
+            print(f"❌ Error: WEATHER_FILE not found at {WEATHER_FILE}. Cannot apply weather adjustments.")
+            # Create an empty weather_df to allow the script to proceed without crashing, but warn
+            weather_df = pd.DataFrame() 
+        else:
+            weather_df = pd.read_csv(WEATHER_FILE)
+            print(f"DEBUG: Loaded {len(home_df)} home pitchers, {len(away_df)} away pitchers, and {len(weather_df)} weather adjustments.")
+
     except FileNotFoundError as e:
         print(f"❌ File not found during initial loading: {e}")
         return
@@ -96,7 +109,8 @@ def main():
         return
 
     print("DEBUG: Applying weather adjustments to home pitchers.")
-    adjusted_home = apply_adjustment(home_df, "home_team", weather_df, "home")
+    # Pass an empty weather_df if it failed to load
+    adjusted_home = apply_adjustment(home_df, "home_team", weather_df, "home") 
     print("DEBUG: Applying weather adjustments to away pitchers.")
     adjusted_away = apply_adjustment(away_df, "away_team", weather_df, "away")
 
