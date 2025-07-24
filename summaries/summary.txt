@@ -1,1 +1,467 @@
+===== RUN TIMESTAMP: 2025-07-23 08:55:33 PM EDT =====
+
+===== STATUS =====
+
+✅ normalize_names succeeded [2025-07-23 08:55:10 PM EDT]
+✅ tag_master_files succeeded [2025-07-23 08:55:11 PM EDT]
+✅ deduplicate_normalized succeeded [2025-07-23 08:55:11 PM EDT]
+✅ normalize_lineups succeeded [2025-07-23 08:55:12 PM EDT]
+✅ normalize_todays_games succeeded [2025-07-23 08:55:12 PM EDT]
+✅ refresh_stadium_metadata succeeded [2025-07-23 08:55:12 PM EDT]
+✅ apply_team_name_mapping succeeded [2025-07-23 08:55:13 PM EDT]
+✅ update_game_time succeeded [2025-07-23 08:55:13 PM EDT]
+✅ filter_stadium_metadata succeeded [2025-07-23 08:55:13 PM EDT]
+✅ normalize_batter_team_names succeeded [2025-07-23 08:55:14 PM EDT]
+✅ split_batters_by_home_away succeeded [2025-07-23 08:55:14 PM EDT]
+✅ commit_split_batters succeeded [2025-07-23 08:55:14 PM EDT]
+✅ normalize_pitcher_home_away succeeded [2025-07-23 08:55:15 PM EDT]
+✅ update_pitcher_team_names succeeded [2025-07-23 08:55:15 PM EDT]
+✅ generate_weather_csv succeeded [2025-07-23 08:55:15 PM EDT]
+✅ filter_today_batters succeeded [2025-07-23 08:55:16 PM EDT]
+✅ get_weather_data succeeded [2025-07-23 08:55:17 PM EDT]
+✅ apply_weather_adjustment succeeded [2025-07-23 08:55:20 PM EDT]
+✅ apply_park_adjustment succeeded [2025-07-23 08:55:20 PM EDT]
+✅ combine_weather_park_home succeeded [2025-07-23 08:55:21 PM EDT]
+✅ combine_weather_park_away succeeded [2025-07-23 08:55:23 PM EDT]
+✅ normalize_pitcher_weather_outputs succeeded [2025-07-23 08:55:24 PM EDT]
+✅ fix_away_team_column succeeded [2025-07-23 08:55:25 PM EDT]
+✅ preprocess_pitcher_weather_park_away succeeded [2025-07-23 08:55:25 PM EDT]
+✅ add_team_alias_columns succeeded [2025-07-23 08:55:25 PM EDT]
+✅ add_team_columns_to_weather succeeded [2025-07-23 08:55:27 PM EDT]
+✅ apply_pitcher_weather_adjustment succeeded [2025-07-23 08:55:27 PM EDT]
+✅ apply_pitcher_park_adjustment succeeded [2025-07-23 08:55:28 PM EDT]
+✅ normalize_pitcher_merge_inputs succeeded [2025-07-23 08:55:29 PM EDT]
+✅ combine_pitcher_weather_park_home succeeded [2025-07-23 08:55:30 PM EDT]
+✅ combine_pitcher_weather_park_away succeeded [2025-07-23 08:55:31 PM EDT]
+✅ prep_merge succeeded [2025-07-23 08:55:32 PM EDT]
+✅ merge_game_pitcher_data succeeded [2025-07-23 08:55:33 PM EDT]
+
+===== LOG =====
+
+▶️ START: normalize_names (2025-07-23 08:55:10 PM EDT)
+DEBUG: Checking PITCHERS_FILE path: data/cleaned/pitchers_normalized_cleaned.csv
+DEBUG: PITCHERS_FILE exists.
+DEBUG: Raw Pitchers DataFrame (first 10 names from PITCHERS_FILE) BEFORE normalization:
+['Freeland, Kyle', 'Walker, Ryan', 'Thomas, Connor', 'Kolek, Stephen', 'De Los Santos, Yerry', 'Sands, Cole', 'Schultz, Paxton', 'Matsui, Yuki', 'Abbott, Andrew', 'Kelly, Zack']
+DEBUG: 'Mccullers' (case-insensitive) found in RAW pitchers_df. All found names (repr):
+  - 'Mccullers Jr., Lance'
+DEBUG: Pitchers DataFrame (first 10 names) AFTER normalization:
+['Freeland, Kyle', 'Walker, Ryan', 'Thomas, Connor', 'Kolek, Stephen', 'De Los Santos, Yerry', 'Sands, Cole', 'Schultz, Paxton', 'Matsui, Yuki', 'Abbott, Andrew', 'Kelly, Zack']
+DEBUG: 'Mccullers' (case-insensitive) found in NORMALIZED pitchers_df. All found names (repr):
+  - 'McCullers Jr., Lance'
+DEBUG: Game Pitcher (away): 'McCullers Jr., Lance' (Type: <class 'str'>, Len: 20)
+DEBUG: Is Game Pitcher found in Pitchers DataFrame? True
+✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
+✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
+⏹️ END: normalize_names (2025-07-23 08:55:10 PM EDT)
+
+▶️ START: tag_master_files (2025-07-23 08:55:11 PM EDT)
+✅ Tagged batters: data/tagged/batters_normalized.csv
+✅ Tagged pitchers: data/tagged/pitchers_normalized.csv
+⏹️ END: tag_master_files (2025-07-23 08:55:11 PM EDT)
+
+▶️ START: deduplicate_normalized (2025-07-23 08:55:11 PM EDT)
+2025-07-24 00:55:11,970 - INFO - Processing batters from data/tagged/batters_normalized.csv
+2025-07-24 00:55:11,982 - INFO - 🧼 Batters deduplicated: 627 → 625
+2025-07-24 00:55:11,985 - INFO - 🔗 Batters team names mapped using team_name_master.csv
+2025-07-24 00:55:12,001 - INFO - ✅ Wrote cleaned batters data to data/cleaned/batters_normalized_cleaned.csv
+2025-07-24 00:55:12,017 - WARNING - ⚠️ No changes detected for data/cleaned/batters_normalized_cleaned.csv to commit after deduplication. Skipping commit/push.
+2025-07-24 00:55:12,017 - INFO - Processing pitchers from data/tagged/pitchers_normalized.csv
+2025-07-24 00:55:12,028 - INFO - 🧼 Pitchers deduplicated: 699 → 699
+2025-07-24 00:55:12,031 - INFO - 🔗 Pitchers team names mapped using team_name_master.csv
+2025-07-24 00:55:12,049 - INFO - ✅ Wrote cleaned pitchers data to data/cleaned/pitchers_normalized_cleaned.csv
+2025-07-24 00:55:12,054 - WARNING - ⚠️ No changes detected for data/cleaned/pitchers_normalized_cleaned.csv to commit after deduplication. Skipping commit/push.
+⏹️ END: deduplicate_normalized (2025-07-23 08:55:11 PM EDT)
+
+▶️ START: normalize_lineups (2025-07-23 08:55:12 PM EDT)
+✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
+⏹️ END: normalize_lineups (2025-07-23 08:55:12 PM EDT)
+
+▶️ START: normalize_todays_games (2025-07-23 08:55:12 PM EDT)
+📥 Loading input files...
+🧼 Normalizing pitcher names...
+✅ All pitchers recognized.
+🔁 Mapping team abbreviations to full names...
+✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
+⏹️ END: normalize_todays_games (2025-07-23 08:55:12 PM EDT)
+
+▶️ START: refresh_stadium_metadata (2025-07-23 08:55:12 PM EDT)
+✅ Saved updated stadium metadata for 15 home teams to data/Data/stadium_metadata.csv
+⏹️ END: refresh_stadium_metadata (2025-07-23 08:55:12 PM EDT)
+
+▶️ START: apply_team_name_mapping (2025-07-23 08:55:13 PM EDT)
+✅ Updated: data/raw/todaysgames_normalized.csv
+✅ Updated: data/Data/stadium_metadata.csv
+⏹️ END: apply_team_name_mapping (2025-07-23 08:55:13 PM EDT)
+
+▶️ START: update_game_time (2025-07-23 08:55:13 PM EDT)
+✅ Game times updated for 15 teams:
+ - Blue Jays vs Giants: 3:07 PM
+ - Rays vs Orioles: 7:05 PM
+ - Guardians vs Athletics: 7:10 PM
+ - Mariners vs Astros: 9:40 PM
+ - Rangers vs Tigers: 7:05 PM
+ - Braves vs Yankees: 7:15 PM
+ - Phillies vs Angels: 6:05 PM
+ - Nationals vs Padres: 6:45 PM
+ - Mets vs Reds: 4:10 PM
+ - Marlins vs Royals: 4:10 PM
+ - Cubs vs Red Sox: 7:15 PM
+ - Pirates vs White Sox: 6:40 PM
+ - Dodgers vs Brewers: 9:10 PM
+ - Rockies vs Twins: 8:10 PM
+ - Diamondbacks vs Cardinals: 7:15 PM
+⏹️ END: update_game_time (2025-07-23 08:55:13 PM EDT)
+
+▶️ START: filter_stadium_metadata (2025-07-23 08:55:13 PM EDT)
+2025-07-24 00:55:14,195 - INFO - ✅ Cleaned stadium metadata written to data/Data/stadium_metadata.csv
+2025-07-24 00:55:14,196 - INFO - Summary for filter_stadium_metadata.py:
+2025-07-24 00:55:14,196 - INFO - Original rows: 15
+2025-07-24 00:55:14,196 - INFO - Removed rows: 0
+2025-07-24 00:55:14,196 - INFO - Remaining rows: 15
+2025-07-24 00:55:14,201 - WARNING - ⚠️ No changes detected for data/Data/stadium_metadata.csv to commit. Skipping commit.
+2025-07-24 00:55:14,201 - INFO - ℹ️ No new stadium_metadata.csv commits were made by filter_stadium_metadata.py to push.
+⏹️ END: filter_stadium_metadata (2025-07-23 08:55:13 PM EDT)
+
+▶️ START: normalize_batter_team_names (2025-07-23 08:55:14 PM EDT)
+📥 Loading batters_today and team_name_master...
+🔁 Replacing team codes with official team names...
+✅ Normalized teams in 243 rows. Saving to data/cleaned/batters_today.csv...
+⏹️ END: normalize_batter_team_names (2025-07-23 08:55:14 PM EDT)
+
+▶️ START: split_batters_by_home_away (2025-07-23 08:55:14 PM EDT)
+📥 Loading input files...
+🔍 Validating required columns...
+🧹 Cleaning and formatting team names...
+🏠 Home teams: ['Blue Jays', 'Braves', 'Cubs', 'Diamondbacks', 'Dodgers', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Rockies']
+🛫 Away teams: ['Angels', 'Astros', 'Athletics', 'Brewers', 'Cardinals', 'Giants', 'Orioles', 'Padres', 'Red Sox', 'Reds', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+👕 Batter teams: ['Angels', 'Astros', 'Athletics', 'Blue Jays', 'Braves', 'Brewers', 'Cardinals', 'Cubs', 'Diamondbacks', 'Dodgers', 'Giants', 'Guardians', 'Mariners', 'Marlins', 'Mets', 'Nationals', 'Orioles', 'Padres', 'Phillies', 'Pirates', 'Rangers', 'Rays', 'Red Sox', 'Reds', 'Rockies', 'Royals', 'Tigers', 'Twins', 'White Sox', 'Yankees']
+✅ All batter teams matched to today's games.
+⚙️ Splitting batters into home and away...
+✅ Saved 119 home batters and 124 away batters
+⏹️ END: split_batters_by_home_away (2025-07-23 08:55:14 PM EDT)
+
+▶️ START: commit_split_batters (2025-07-23 08:55:14 PM EDT)
+2025-07-24 00:55:14,994 - INFO - Attempting to add files to Git staging: data/adjusted/batters_home.csv, data/adjusted/batters_away.csv
+2025-07-24 00:55:14,999 - WARNING - ⚠️ No changes detected for split batters files to commit. Skipping commit/push.
+⏹️ END: commit_split_batters (2025-07-23 08:55:14 PM EDT)
+
+▶️ START: normalize_pitcher_home_away (2025-07-23 08:55:15 PM EDT)
+DEBUG: Game Pitcher (away): 'Mccullers Jr., Lance' (Type: <class 'str'>, Len: 20)
+DEBUG: Is Game Pitcher found in Pitchers DataFrame? True
+✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
+✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
+⏹️ END: normalize_pitcher_home_away (2025-07-23 08:55:15 PM EDT)
+
+▶️ START: update_pitcher_team_names (2025-07-23 08:55:15 PM EDT)
+🔁 Updated team names in data/adjusted/pitchers_home.csv
+🔎 Original teams: ['Blue Jays' 'Mets' 'Marlins' 'Phillies' 'Pirates' 'Nationals' 'Rays'
+ 'Rangers' 'Guardians' 'Twins' 'Cubs' 'Diamondbacks' 'Rockies' 'Dodgers'
+ 'Mariners']
+✅ New teams: ['Blue Jays' 'Mets' 'Marlins' 'Phillies' 'Pirates' 'Nationals' 'Rays'
+ 'Rangers' 'Guardians' 'Twins' 'Cubs' 'Diamondbacks' 'Rockies' 'Dodgers'
+ 'Mariners']
+🔁 Updated team names in data/adjusted/pitchers_away.csv
+🔎 Original teams: ['Giants' 'Reds' 'Royals' 'Angels' 'White Sox' 'Padres' 'Orioles' 'Tigers'
+ 'Athletics' 'Yankees' 'Red Sox' 'Cardinals' 'Twins' 'Brewers' 'Astros']
+✅ New teams: ['Giants' 'Reds' 'Royals' 'Angels' 'White Sox' 'Padres' 'Orioles' 'Tigers'
+ 'Athletics' 'Yankees' 'Red Sox' 'Cardinals' 'Twins' 'Brewers' 'Astros']
+⏹️ END: update_pitcher_team_names (2025-07-23 08:55:15 PM EDT)
+
+▶️ START: generate_weather_csv (2025-07-23 08:55:15 PM EDT)
+✅ Weather input file generated
+🔢 Rows: 15
+📁 Output: data/weather_input.csv
+📄 Games file: data/raw/todaysgames_normalized.csv
+🏟️ Stadium file: data/Data/stadium_metadata.csv
+✅ Git commit and push complete.
+⏹️ END: generate_weather_csv (2025-07-23 08:55:15 PM EDT)
+
+▶️ START: filter_today_batters (2025-07-23 08:55:16 PM EDT)
+📥 Loading lineups and batters...
+📊 Lineups columns: ['team_code', 'last_name, first_name']
+📊 Batters columns: ['last_name, first_name', 'player_id', 'year', 'player_age', 'ab', 'pa', 'hit', 'single', 'double', 'triple', 'home_run', 'strikeout', 'walk', 'k_percent', 'bb_percent', 'batting_avg', 'slg_percent', 'on_base_percent', 'on_base_plus_slg', 'xba', 'xslg', 'woba', 'xwoba', 'xobp', 'xiso', 'avg_swing_speed', 'fast_swing_rate', 'blasts_contact', 'blasts_swing', 'squared_up_contact', 'squared_up_swing', 'avg_swing_length', 'swords', 'attack_angle', 'attack_direction', 'ideal_angle_rate', 'vertical_swing_path', 'exit_velocity_avg', 'launch_angle_avg', 'sweet_spot_percent', 'barrel_batted_rate', 'hard_hit_percent', 'avg_best_speed', 'avg_hyper_speed', 'whiff_percent', 'swing_percent', 'name', 'team', 'type']
+🔍 Sample values from lineups:
+0      Heliot Ramos
+1      Willy Adames
+2     Rafael Devers
+3     Wilmer Flores
+4    Christian Koss
+Name: last_name, first_name, dtype: object
+🔍 Sample values from batters:
+0           Neto, Zach
+1    Goldschmidt, Paul
+2         Amaya, Jacob
+3      Tromp, Chadwick
+4      Tromp, Chadwick
+Name: name, dtype: object
+📐 Formatting names to match...
+🔢 300 unique names in today's lineups
+🔢 625 total batters in cleaned file
+🔎 Filtering batters based on formatted names...
+✅ Filtered down to 243 batters
+💾 Saved to data/cleaned/batters_today.csv
+⏹️ END: filter_today_batters (2025-07-23 08:55:16 PM EDT)
+
+▶️ START: get_weather_data (2025-07-23 08:55:17 PM EDT)
+2025-07-24 12:55:17 AM  🔄 Reading input file...
+2025-07-24 12:55:17 AM  🌍 Fetching weather for 15 stadiums...
+2025-07-24 12:55:20 AM  ✅ Weather data written to data/weather_adjustments.csv
+2025-07-24 12:55:20 AM  ✅ Forced insert of home_team and away_team into data/weather_adjustments.csv
+⏹️ END: get_weather_data (2025-07-23 08:55:17 PM EDT)
+
+▶️ START: apply_weather_adjustment (2025-07-23 08:55:20 PM EDT)
+⏹️ END: apply_weather_adjustment (2025-07-23 08:55:20 PM EDT)
+
+▶️ START: apply_park_adjustment (2025-07-23 08:55:20 PM EDT)
+[main e1edf90] Force commit: adjusted park batters + log
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   36fada4..e1edf90  main -> main
+Home batters adjusted: 119
+Away batters adjusted: 124
+✅ Committed and pushed adjusted park files.
+⏹️ END: apply_park_adjustment (2025-07-23 08:55:20 PM EDT)
+
+▶️ START: combine_weather_park_home (2025-07-23 08:55:21 PM EDT)
+[main 8745e61] Auto-commit: Combined home batter adjustments
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   e1edf90..8745e61  main -> main
+✅ Merged rows: 125
+✅ Forced commit and push to repo.
+⏹️ END: combine_weather_park_home (2025-07-23 08:55:21 PM EDT)
+
+▶️ START: combine_weather_park_away (2025-07-23 08:55:23 PM EDT)
+[main 1cccaa3] Auto-commit: Combined away batter adjustments
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   8745e61..1cccaa3  main -> main
+📥 Loading input CSVs...
+🔹 Weather rows: 124
+🔹 Park rows: 124
+🔀 Merging weather and park adjustment files...
+✅ Merged rows: 136
+📊 Columns in merged data: ['last_name, first_name', 'player_id', 'year', 'player_age', 'ab', 'pa', 'hit', 'single', 'double', 'triple', 'home_run', 'strikeout', 'walk', 'k_percent', 'bb_percent', 'batting_avg', 'slg_percent', 'on_base_percent', 'on_base_plus_slg', 'xba', 'xslg', 'woba', 'xwoba', 'xobp', 'xiso', 'avg_swing_speed', 'fast_swing_rate', 'blasts_contact', 'blasts_swing', 'squared_up_contact', 'squared_up_swing', 'avg_swing_length', 'swords', 'attack_angle', 'attack_direction', 'ideal_angle_rate', 'vertical_swing_path', 'exit_velocity_avg', 'launch_angle_avg', 'sweet_spot_percent', 'barrel_batted_rate', 'hard_hit_percent', 'avg_best_speed', 'avg_hyper_speed', 'whiff_percent', 'swing_percent', 'name', 'team', 'type', 'stadium', 'location', 'temperature', 'wind_speed', 'wind_direction', 'humidity', 'precipitation', 'condition', 'notes', 'game_time', 'away_team', 'home_team', 'adj_woba_weather', 'adj_woba_park']
+💾 Saved combined file to: data/adjusted/batters_away_adjusted.csv
+📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
+📤 Committing and pushing results...
+✅ Git commit & push successful.
+⏹️ END: combine_weather_park_away (2025-07-23 08:55:23 PM EDT)
+
+▶️ START: normalize_pitcher_weather_outputs (2025-07-23 08:55:24 PM EDT)
+[main a55d733] Normalize pitchers before weather adjustment
+ 2 files changed, 31 insertions(+), 31 deletions(-)
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   1cccaa3..a55d733  main -> main
+✅ Forced commit and push to repo.
+⏹️ END: normalize_pitcher_weather_outputs (2025-07-23 08:55:24 PM EDT)
+
+▶️ START: fix_away_team_column (2025-07-23 08:55:25 PM EDT)
+ℹ️ Column 'away_team_y' not found. No changes made.
+⏹️ END: fix_away_team_column (2025-07-23 08:55:25 PM EDT)
+
+▶️ START: preprocess_pitcher_weather_park_away (2025-07-23 08:55:25 PM EDT)
+⏹️ END: preprocess_pitcher_weather_park_away (2025-07-23 08:55:25 PM EDT)
+
+▶️ START: add_team_alias_columns (2025-07-23 08:55:25 PM EDT)
+[main 2ed0455] Add team alias columns to pitcher files
+ 2 files changed, 33 insertions(+), 33 deletions(-)
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   a55d733..2ed0455  main -> main
+✅ Added 'home_team' to data/adjusted/pitchers_home.csv (16 rows)
+✅ Added 'away_team' to data/adjusted/pitchers_away.csv (15 rows)
+📝 Log saved to log_add_team_alias_columns.txt
+⏹️ END: add_team_alias_columns (2025-07-23 08:55:25 PM EDT)
+
+▶️ START: add_team_columns_to_weather (2025-07-23 08:55:27 PM EDT)
+✅ Wrote home_team and away_team to data/weather_teams.csv
+✅ Renamed 'stadium' to 'home_team' in data/weather_adjustments.csv
+⏹️ END: add_team_columns_to_weather (2025-07-23 08:55:27 PM EDT)
+
+▶️ START: apply_pitcher_weather_adjustment (2025-07-23 08:55:27 PM EDT)
+✅ Git commit and push complete for pitcher weather adjustments.
+⏹️ END: apply_pitcher_weather_adjustment (2025-07-23 08:55:27 PM EDT)
+
+▶️ START: apply_pitcher_park_adjustment (2025-07-23 08:55:28 PM EDT)
+✅ Wrote data/adjusted/pitchers_home_park.csv with 15 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 15 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: apply_pitcher_park_adjustment (2025-07-23 08:55:28 PM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs (2025-07-23 08:55:29 PM EDT)
+✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
+⏹️ END: normalize_pitcher_merge_inputs (2025-07-23 08:55:29 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_home (2025-07-23 08:55:30 PM EDT)
+[main c54770b] Auto-commit: Cleaned combine pitcher weather + park (home)
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   46eaeb8..c54770b  main -> main
+⏹️ END: combine_pitcher_weather_park_home (2025-07-23 08:55:30 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_away (2025-07-23 08:55:31 PM EDT)
+[main 457aa6b] Auto-commit: Cleaned combine pitcher weather + park (away)
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   c54770b..457aa6b  main -> main
+⏹️ END: combine_pitcher_weather_park_away (2025-07-23 08:55:31 PM EDT)
+
+▶️ START: prep_merge (2025-07-23 08:55:32 PM EDT)
+[main 6ca658c] prep_merge: normalize team casing and enforce name match
+ 2 files changed, 34 insertions(+), 34 deletions(-)
+To https://github.com/Clownworldenjoyer76/sports-betting-site
+   457aa6b..6ca658c  main -> main
+✅ Git commit and push complete.
+✅ Team and name normalization complete.
+⏹️ END: prep_merge (2025-07-23 08:55:32 PM EDT)
+
+▶️ START: merge_game_pitcher_data (2025-07-23 08:55:33 PM EDT)
+2025-07-24 00:55:33,692 - INFO - Starting merge_game_pitcher_data script.
+2025-07-24 00:55:33,697 - INFO - ✅ Loaded batters_home: 125 rows
+2025-07-24 00:55:33,702 - INFO - ✅ Loaded batters_away: 131 rows
+2025-07-24 00:55:33,703 - INFO - ✅ Loaded pitchers_home: 17 rows
+2025-07-24 00:55:33,704 - INFO - ✅ Loaded pitchers_away: 15 rows
+2025-07-24 00:55:33,705 - INFO - ✅ Loaded games: 15 rows
+2025-07-24 00:55:33,709 - INFO - DEBUG: Unique 'team' values in batters_home (bh['team']):
+team
+RAYS            12
+DODGERS         11
+DIAMONDBACKS    10
+RANGERS          9
+MARLINS          9
+GUARDIANS        9
+ROCKIES          8
+MARINERS         8
+PHILLIES         8
+CUBS             8
+NATIONALS        7
+BRAVES           7
+BLUE JAYS        7
+METS             7
+PIRATES          5
+2025-07-24 00:55:33,710 - INFO - DEBUG: Unique 'home_team' values in games (games['home_team']):
+home_team
+BLUE JAYS       1
+METS            1
+MARLINS         1
+PHILLIES        1
+PIRATES         1
+NATIONALS       1
+RAYS            1
+RANGERS         1
+GUARDIANS       1
+BRAVES          1
+CUBS            1
+DIAMONDBACKS    1
+ROCKIES         1
+DODGERS         1
+MARINERS        1
+2025-07-24 00:55:33,736 - INFO - DEBUG: bh.head() before 1st merge:
+  last_name, first_name  player_id_x  year_x  player_age_x  ab_x  pa_x  hit_x  single_x  double_x  triple_x  home_run_x  strikeout_x  walk_x  k_percent_x  bb_percent_x  batting_avg_x  slg_percent_x  on_base_percent_x  on_base_plus_slg_x  xba_x  xslg_x  woba_x  xwoba_x  xobp_x  xiso_x  avg_swing_speed_x  fast_swing_rate_x  blasts_contact_x  blasts_swing_x  squared_up_contact_x  squared_up_swing_x  avg_swing_length_x  swords_x  attack_angle_x  attack_direction_x  ideal_angle_rate_x  vertical_swing_path_x  exit_velocity_avg_x  launch_angle_avg_x  sweet_spot_percent_x  barrel_batted_rate_x  hard_hit_percent_x  avg_best_speed_x  avg_hyper_speed_x  whiff_percent_x  swing_percent_x            name_x          team  type_x   home_team_x  away_team  pitcher_home  pitcher_away  venue  city  state  timezone  is_dome  lat  lon  game_time  temperature  humidity  wind_speed  wind_direction  condition  adj_woba_weather  player_id_y  year_y  player_age_y  ab_y  pa_y  hit_y  single_y  double_y  triple_y  home_run_y  strikeout_y  walk_y  k_percent_y  bb_percent_y  batting_avg_y  slg_percent_y  on_base_percent_y  on_base_plus_slg_y  xba_y  xslg_y  woba_y  xwoba_y  xobp_y  xiso_y  avg_swing_speed_y  fast_swing_rate_y  blasts_contact_y  blasts_swing_y  squared_up_contact_y  squared_up_swing_y  avg_swing_length_y  swords_y  attack_angle_y  attack_direction_y  ideal_angle_rate_y  vertical_swing_path_y  exit_velocity_avg_y  launch_angle_avg_y  sweet_spot_percent_y  barrel_batted_rate_y  hard_hit_percent_y  avg_best_speed_y  avg_hyper_speed_y  whiff_percent_y  swing_percent_y            name_y  type_y   home_team_y  time_of_day  Park Factor  adj_woba_park  adj_woba_combined
+0         Evan, Carter,       694497    2025            22   134   151     36        24         7         1           4           28      14         18.5           9.3          0.269          0.425              0.351               0.776  0.248   0.376   0.340    0.313   0.332   0.129               70.1                7.9              15.6            11.2                  40.3                29.0                 7.2         4             8.9                -9.1                46.5                   32.5                 86.9                14.3                  31.1                   6.6                34.9         98.135818          93.071920             28.5             43.8      Carter, Evan       RANGERS  batter       rangers        NaN           NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN        NaN          NaN       NaN         NaN             NaN        NaN               NaN       694497    2025            22   134   151     36        24         7         1           4           28      14         18.5           9.3          0.269          0.425              0.351               0.776  0.248   0.376   0.340    0.313   0.332   0.129               70.1                7.9              15.6            11.2                  40.3                29.0                 7.2         4             8.9                -9.1                46.5                   32.5                 86.9                14.3                  31.1                   6.6                34.9         98.135818          93.071920             28.5             43.8      Carter, Evan  batter       rangers          NaN          NaN          0.340                NaN
+1         Henry, Davis,       680779    2025            25   131   146     26        17         5         0           4           34      10         23.3           6.8          0.198          0.328              0.259               0.587  0.245   0.421   0.260    0.316   0.304   0.176               74.0               40.0              12.1             9.1                  26.8                20.0                 7.3         5             7.6                -5.2                53.6                   26.6                 87.2                23.6                  35.4                   9.1                33.3         99.395734          93.807389             26.7             55.4      Davis, Henry       PIRATES  batter       pirates        NaN           NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN        NaN          NaN       NaN         NaN             NaN        NaN               NaN       680779    2025            25   131   146     26        17         5         0           4           34      10         23.3           6.8          0.198          0.328              0.259               0.587  0.245   0.421   0.260    0.316   0.304   0.176               74.0               40.0              12.1             9.1                  26.8                20.0                 7.3         5             7.6                -5.2                53.6                   26.6                 87.2                23.6                  35.4                   9.1                33.3         99.395734          93.807389             26.7             55.4      Davis, Henry  batter       pirates          NaN          NaN          0.260                NaN
+2      Corbin, Carroll,       682998    2025            24   322   361     79        33        15        10          21           93      31         25.8           8.6          0.245          0.550              0.324               0.874  0.270   0.560   0.370    0.383   0.346   0.290               74.7               46.0              19.6            14.7                  30.1                22.6                 7.3        12            10.7                -3.1                71.2                   25.3                 93.0                16.7                  32.6                  15.2                50.9        104.224906          96.752335             26.3             49.0   Carroll, Corbin  DIAMONDBACKS  batter  diamondbacks        NaN           NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN        NaN          NaN       NaN         NaN             NaN        NaN               NaN       682998    2025            24   322   361     79        33        15        10          21           93      31         25.8           8.6          0.245          0.550              0.324               0.874  0.270   0.560   0.370    0.383   0.346   0.290               74.7               46.0              19.6            14.7                  30.1                22.6                 7.3        12            10.7                -3.1                71.2                   25.3                 93.0                16.7                  32.6                  15.2                50.9        104.224906          96.752335             26.3             49.0   Carroll, Corbin  batter  diamondbacks          NaN          NaN          0.370                NaN
+3         Riley, Adams,       656180    2025            29   105   111     16         8         4         0           4           47       5         42.3           4.5          0.152          0.305              0.198               0.503  0.183   0.346   0.221    0.250   0.227   0.164               77.9               76.3              16.0            10.3                  21.6                13.9                 7.8         8             9.1                -0.5                42.3                   34.4                 91.8                 7.5                  22.4                  10.3                48.3        102.779778          95.864741             38.2             49.7      Adams, Riley     NATIONALS  batter     nationals        NaN           NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN        NaN          NaN       NaN         NaN             NaN        NaN               NaN       656180    2025            29   105   111     16         8         4         0           4           47       5         42.3           4.5          0.152          0.305              0.198               0.503  0.183   0.346   0.221    0.250   0.227   0.164               77.9               76.3              16.0            10.3                  21.6                13.9                 7.8         8             9.1                -0.5                42.3                   34.4                 91.8                 7.5                  22.4                  10.3                48.3        102.779778          95.864741             38.2             49.7      Adams, Riley  batter     nationals          NaN          NaN          0.221                NaN
+4     Jonathan, Aranda,       666018    2025            27   315   358    102        71        20         0          11           85      33         23.7           9.2          0.324          0.492              0.399               0.891  0.305   0.540   0.387    0.399   0.386   0.235               70.5               14.7              16.8            12.9                  32.5                24.9                 7.3         8            10.2                 3.6                57.8                   35.7                 93.1                14.9                  41.4                  12.1                55.7        102.757824          96.344686             24.7             48.5  Aranda, Jonathan          RAYS  batter          rays        NaN           NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN        NaN          NaN       NaN         NaN             NaN        NaN               NaN       666018    2025            27   315   358    102        71        20         0          11           85      33         23.7           9.2          0.324          0.492              0.399               0.891  0.305   0.540   0.387    0.399   0.386   0.235               70.5               14.7              16.8            12.9                  32.5                24.9                 7.3         8            10.2                 3.6                57.8                   35.7                 93.1                14.9                  41.4                  12.1                55.7        102.757824          96.344686             24.7             48.5  Aranda, Jonathan  batter          rays          NaN          NaN          0.387                NaN
+2025-07-24 00:55:33,738 - INFO - DEBUG: games[['home_team', 'pitcher_home', 'game_time']].head() before 1st merge:
+   home_team    pitcher_home game_time
+0  BLUE JAYS      Eric Lauer   3:07 PM
+1       METS     Clay Holmes   4:10 PM
+2    MARLINS   Cal Quantrill   4:10 PM
+3   PHILLIES  Taijuan Walker   6:05 PM
+4    PIRATES    Mike Burrows   6:40 PM
+2025-07-24 00:55:33,738 - INFO - DEBUG: Merging games data to batter dataframes to get pitcher names.
+2025-07-24 00:55:33,740 - INFO - DEBUG: Columns of temp_bh after 1st merge attempt: ['last_name, first_name', 'player_id_x', 'year_x', 'player_age_x', 'ab_x', 'pa_x', 'hit_x', 'single_x', 'double_x', 'triple_x', 'home_run_x', 'strikeout_x', 'walk_x', 'k_percent_x', 'bb_percent_x', 'batting_avg_x', 'slg_percent_x', 'on_base_percent_x', 'on_base_plus_slg_x', 'xba_x', 'xslg_x', 'woba_x', 'xwoba_x', 'xobp_x', 'xiso_x', 'avg_swing_speed_x', 'fast_swing_rate_x', 'blasts_contact_x', 'blasts_swing_x', 'squared_up_contact_x', 'squared_up_swing_x', 'avg_swing_length_x', 'swords_x', 'attack_angle_x', 'attack_direction_x', 'ideal_angle_rate_x', 'vertical_swing_path_x', 'exit_velocity_avg_x', 'launch_angle_avg_x', 'sweet_spot_percent_x', 'barrel_batted_rate_x', 'hard_hit_percent_x', 'avg_best_speed_x', 'avg_hyper_speed_x', 'whiff_percent_x', 'swing_percent_x', 'name_x', 'team', 'type_x', 'home_team_x', 'away_team', 'pitcher_home_x', 'pitcher_away', 'venue', 'city', 'state', 'timezone', 'is_dome', 'lat', 'lon', 'game_time_x', 'temperature', 'humidity', 'wind_speed', 'wind_direction', 'condition', 'adj_woba_weather', 'player_id_y', 'year_y', 'player_age_y', 'ab_y', 'pa_y', 'hit_y', 'single_y', 'double_y', 'triple_y', 'home_run_y', 'strikeout_y', 'walk_y', 'k_percent_y', 'bb_percent_y', 'batting_avg_y', 'slg_percent_y', 'on_base_percent_y', 'on_base_plus_slg_y', 'xba_y', 'xslg_y', 'woba_y', 'xwoba_y', 'xobp_y', 'xiso_y', 'avg_swing_speed_y', 'fast_swing_rate_y', 'blasts_contact_y', 'blasts_swing_y', 'squared_up_contact_y', 'squared_up_swing_y', 'avg_swing_length_y', 'swords_y', 'attack_angle_y', 'attack_direction_y', 'ideal_angle_rate_y', 'vertical_swing_path_y', 'exit_velocity_avg_y', 'launch_angle_avg_y', 'sweet_spot_percent_y', 'barrel_batted_rate_y', 'hard_hit_percent_y', 'avg_best_speed_y', 'avg_hyper_speed_y', 'whiff_percent_y', 'swing_percent_y', 'name_y', 'type_y', 'home_team_y', 'time_of_day', 'Park Factor', 'adj_woba_park', 'adj_woba_combined', 'home_team', 'pitcher_home_y', 'game_time_y']
+2025-07-24 00:55:33,741 - INFO - DEBUG: temp_bh['pitcher_home'] value counts after 1st merge attempt:
+Series([], )
+2025-07-24 00:55:33,766 - INFO - DEBUG: temp_bh.head() after 1st merge attempt:
+  last_name, first_name  player_id_x  year_x  player_age_x  ab_x  pa_x  hit_x  single_x  double_x  triple_x  home_run_x  strikeout_x  walk_x  k_percent_x  bb_percent_x  batting_avg_x  slg_percent_x  on_base_percent_x  on_base_plus_slg_x  xba_x  xslg_x  woba_x  xwoba_x  xobp_x  xiso_x  avg_swing_speed_x  fast_swing_rate_x  blasts_contact_x  blasts_swing_x  squared_up_contact_x  squared_up_swing_x  avg_swing_length_x  swords_x  attack_angle_x  attack_direction_x  ideal_angle_rate_x  vertical_swing_path_x  exit_velocity_avg_x  launch_angle_avg_x  sweet_spot_percent_x  barrel_batted_rate_x  hard_hit_percent_x  avg_best_speed_x  avg_hyper_speed_x  whiff_percent_x  swing_percent_x            name_x          team  type_x   home_team_x  away_team  pitcher_home_x  pitcher_away  venue  city  state  timezone  is_dome  lat  lon  game_time_x  temperature  humidity  wind_speed  wind_direction  condition  adj_woba_weather  player_id_y  year_y  player_age_y  ab_y  pa_y  hit_y  single_y  double_y  triple_y  home_run_y  strikeout_y  walk_y  k_percent_y  bb_percent_y  batting_avg_y  slg_percent_y  on_base_percent_y  on_base_plus_slg_y  xba_y  xslg_y  woba_y  xwoba_y  xobp_y  xiso_y  avg_swing_speed_y  fast_swing_rate_y  blasts_contact_y  blasts_swing_y  squared_up_contact_y  squared_up_swing_y  avg_swing_length_y  swords_y  attack_angle_y  attack_direction_y  ideal_angle_rate_y  vertical_swing_path_y  exit_velocity_avg_y  launch_angle_avg_y  sweet_spot_percent_y  barrel_batted_rate_y  hard_hit_percent_y  avg_best_speed_y  avg_hyper_speed_y  whiff_percent_y  swing_percent_y            name_y  type_y   home_team_y  time_of_day  Park Factor  adj_woba_park  adj_woba_combined     home_team   pitcher_home_y game_time_y
+0         Evan, Carter,       694497    2025            22   134   151     36        24         7         1           4           28      14         18.5           9.3          0.269          0.425              0.351               0.776  0.248   0.376   0.340    0.313   0.332   0.129               70.1                7.9              15.6            11.2                  40.3                29.0                 7.2         4             8.9                -9.1                46.5                   32.5                 86.9                14.3                  31.1                   6.6                34.9         98.135818          93.071920             28.5             43.8      Carter, Evan       RANGERS  batter       rangers        NaN             NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN          NaN          NaN       NaN         NaN             NaN        NaN               NaN       694497    2025            22   134   151     36        24         7         1           4           28      14         18.5           9.3          0.269          0.425              0.351               0.776  0.248   0.376   0.340    0.313   0.332   0.129               70.1                7.9              15.6            11.2                  40.3                29.0                 7.2         4             8.9                -9.1                46.5                   32.5                 86.9                14.3                  31.1                   6.6                34.9         98.135818          93.071920             28.5             43.8      Carter, Evan  batter       rangers          NaN          NaN          0.340                NaN       RANGERS     Kumar Rocker     7:05 PM
+1         Henry, Davis,       680779    2025            25   131   146     26        17         5         0           4           34      10         23.3           6.8          0.198          0.328              0.259               0.587  0.245   0.421   0.260    0.316   0.304   0.176               74.0               40.0              12.1             9.1                  26.8                20.0                 7.3         5             7.6                -5.2                53.6                   26.6                 87.2                23.6                  35.4                   9.1                33.3         99.395734          93.807389             26.7             55.4      Davis, Henry       PIRATES  batter       pirates        NaN             NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN          NaN          NaN       NaN         NaN             NaN        NaN               NaN       680779    2025            25   131   146     26        17         5         0           4           34      10         23.3           6.8          0.198          0.328              0.259               0.587  0.245   0.421   0.260    0.316   0.304   0.176               74.0               40.0              12.1             9.1                  26.8                20.0                 7.3         5             7.6                -5.2                53.6                   26.6                 87.2                23.6                  35.4                   9.1                33.3         99.395734          93.807389             26.7             55.4      Davis, Henry  batter       pirates          NaN          NaN          0.260                NaN       PIRATES     Mike Burrows     6:40 PM
+2      Corbin, Carroll,       682998    2025            24   322   361     79        33        15        10          21           93      31         25.8           8.6          0.245          0.550              0.324               0.874  0.270   0.560   0.370    0.383   0.346   0.290               74.7               46.0              19.6            14.7                  30.1                22.6                 7.3        12            10.7                -3.1                71.2                   25.3                 93.0                16.7                  32.6                  15.2                50.9        104.224906          96.752335             26.3             49.0   Carroll, Corbin  DIAMONDBACKS  batter  diamondbacks        NaN             NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN          NaN          NaN       NaN         NaN             NaN        NaN               NaN       682998    2025            24   322   361     79        33        15        10          21           93      31         25.8           8.6          0.245          0.550              0.324               0.874  0.270   0.560   0.370    0.383   0.346   0.290               74.7               46.0              19.6            14.7                  30.1                22.6                 7.3        12            10.7                -3.1                71.2                   25.3                 93.0                16.7                  32.6                  15.2                50.9        104.224906          96.752335             26.3             49.0   Carroll, Corbin  batter  diamondbacks          NaN          NaN          0.370                NaN  DIAMONDBACKS      Ryne Nelson     7:15 PM
+3         Riley, Adams,       656180    2025            29   105   111     16         8         4         0           4           47       5         42.3           4.5          0.152          0.305              0.198               0.503  0.183   0.346   0.221    0.250   0.227   0.164               77.9               76.3              16.0            10.3                  21.6                13.9                 7.8         8             9.1                -0.5                42.3                   34.4                 91.8                 7.5                  22.4                  10.3                48.3        102.779778          95.864741             38.2             49.7      Adams, Riley     NATIONALS  batter     nationals        NaN             NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN          NaN          NaN       NaN         NaN             NaN        NaN               NaN       656180    2025            29   105   111     16         8         4         0           4           47       5         42.3           4.5          0.152          0.305              0.198               0.503  0.183   0.346   0.221    0.250   0.227   0.164               77.9               76.3              16.0            10.3                  21.6                13.9                 7.8         8             9.1                -0.5                42.3                   34.4                 91.8                 7.5                  22.4                  10.3                48.3        102.779778          95.864741             38.2             49.7      Adams, Riley  batter     nationals          NaN          NaN          0.221                NaN     NATIONALS  Mitchell Parker     6:45 PM
+4     Jonathan, Aranda,       666018    2025            27   315   358    102        71        20         0          11           85      33         23.7           9.2          0.324          0.492              0.399               0.891  0.305   0.540   0.387    0.399   0.386   0.235               70.5               14.7              16.8            12.9                  32.5                24.9                 7.3         8            10.2                 3.6                57.8                   35.7                 93.1                14.9                  41.4                  12.1                55.7        102.757824          96.344686             24.7             48.5  Aranda, Jonathan          RAYS  batter          rays        NaN             NaN           NaN    NaN   NaN    NaN       NaN      NaN  NaN  NaN          NaN          NaN       NaN         NaN             NaN        NaN               NaN       666018    2025            27   315   358    102        71        20         0          11           85      33         23.7           9.2          0.324          0.492              0.399               0.891  0.305   0.540   0.387    0.399   0.386   0.235               70.5               14.7              16.8            12.9                  32.5                24.9                 7.3         8            10.2                 3.6                57.8                   35.7                 93.1                14.9                  41.4                  12.1                55.7        102.757824          96.344686             24.7             48.5  Aranda, Jonathan  batter          rays          NaN          NaN          0.387                NaN          RAYS     Zack Littell     7:05 PM
+2025-07-24 00:55:33,767 - INFO - DEBUG: Unique 'team' values in batters_away (ba['team']):
+team
+RED SOX      13
+TWINS        12
+BREWERS      12
+TIGERS       11
+ORIOLES      10
+ROYALS        8
+ANGELS        8
+PADRES        8
+GIANTS        8
+CARDINALS     8
+ASTROS        8
+WHITE SOX     7
+YANKEES       7
+ATHLETICS     6
+REDS          5
+2025-07-24 00:55:33,768 - INFO - DEBUG: Unique 'away_team' values in games (games['away_team']):
+away_team
+GIANTS       1
+REDS         1
+ROYALS       1
+ANGELS       1
+WHITE SOX    1
+PADRES       1
+ORIOLES      1
+TIGERS       1
+ATHLETICS    1
+YANKEES      1
+RED SOX      1
+CARDINALS    1
+TWINS        1
+BREWERS      1
+ASTROS       1
+2025-07-24 00:55:33,791 - INFO - DEBUG: ba.head() before 1st merge:
+  last_name, first_name  player_id_x  year_x  player_age_x  ab_x  pa_x  hit_x  single_x  double_x  triple_x  home_run_x  strikeout_x  walk_x  k_percent_x  bb_percent_x  batting_avg_x  slg_percent_x  on_base_percent_x  on_base_plus_slg_x  xba_x  xslg_x  woba_x  xwoba_x  xobp_x  xiso_x  avg_swing_speed_x  fast_swing_rate_x  blasts_contact_x  blasts_swing_x  squared_up_contact_x  squared_up_swing_x  avg_swing_length_x  swords_x  attack_angle_x  attack_direction_x  ideal_angle_rate_x  vertical_swing_path_x  exit_velocity_avg_x  launch_angle_avg_x  sweet_spot_percent_x  barrel_batted_rate_x  hard_hit_percent_x  avg_best_speed_x  avg_hyper_speed_x  whiff_percent_x  swing_percent_x               name_x       team  type_x  stadium  location  temperature  wind_speed  wind_direction  humidity  precipitation  condition  notes  game_time  adj_woba_weather  player_id_y  year_y  player_age_y  ab_y  pa_y  hit_y  single_y  double_y  triple_y  home_run_y  strikeout_y  walk_y  k_percent_y  bb_percent_y  batting_avg_y  slg_percent_y  on_base_percent_y  on_base_plus_slg_y  xba_y  xslg_y  woba_y  xwoba_y  xobp_y  xiso_y  avg_swing_speed_y  fast_swing_rate_y  blasts_contact_y  blasts_swing_y  squared_up_contact_y  squared_up_swing_y  avg_swing_length_y  swords_y  attack_angle_y  attack_direction_y  ideal_angle_rate_y  vertical_swing_path_y  exit_velocity_avg_y  launch_angle_avg_y  sweet_spot_percent_y  barrel_batted_rate_y  hard_hit_percent_y  avg_best_speed_y  avg_hyper_speed_y  whiff_percent_y  swing_percent_y               name_y  type_y  home_team  time_of_day  Park Factor  adj_woba_park  adj_woba_combined
+0           Zach, Neto,       687263    2025            24   305   328     85        51        18         1          15           87      16         26.5           4.9          0.279          0.492              0.326               0.818  0.282   0.536   0.351    0.368   0.331   0.254               71.4               14.4              18.9            14.1                  38.9                28.9                 7.0        13            15.9                -5.0                53.7                   37.4                 91.4                15.7                  40.6                  14.6                47.9        101.945309          95.530332             27.4             47.8           Neto, Zach     ANGELS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN        NaN             0.351       687263    2025            24   305   328     85        51        18         1          15           87      16         26.5           4.9          0.279          0.492              0.326               0.818  0.282   0.536   0.351    0.368   0.331   0.254               71.4               14.4              18.9            14.1                  38.9                28.9                 7.0        13            15.9                -5.0                53.7                   37.4                 91.4                15.7                  40.6                  14.6                47.9        101.945309          95.530332             27.4             47.8           Neto, Zach  batter        NaN          NaN          NaN          0.351              0.351
+1    Paul, Goldschmidt,       502671    2025            37   334   367     96        65        22         1           8           61      28         16.6           7.6          0.287          0.431              0.345               0.776  0.281   0.475   0.335    0.347   0.340   0.194               72.9               25.3              16.1            13.3                  33.3                27.6                 7.6         5            10.0                 1.9                52.1                   31.6                 90.3                14.6                  36.1                   8.0                42.7        100.733490          94.693271             18.9             48.2    Goldschmidt, Paul    YANKEES  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN        NaN             0.335       502671    2025            37   334   367     96        65        22         1           8           61      28         16.6           7.6          0.287          0.431              0.345               0.776  0.281   0.475   0.335    0.347   0.340   0.194               72.9               25.3              16.1            13.3                  33.3                27.6                 7.6         5            10.0                 1.9                52.1                   31.6                 90.3                14.6                  36.1                   8.0                42.7        100.733490          94.693271             18.9             48.2    Goldschmidt, Paul  batter        NaN          NaN          NaN          0.335              0.335
+2          Nick, Kurtz,       701762    2025            22   206   235     53        26         9         1          17           78      25         33.2          10.6          0.257          0.558              0.333               0.891  0.242   0.529   0.376    0.359   0.321   0.288               77.5               77.1              23.1            15.8                  28.3                19.3                 7.7        11            13.1                -0.2                45.0                   38.7                 92.4                15.3                  38.2                  16.8                50.4        103.844953          96.807133             34.4             43.8          Kurtz, Nick  ATHLETICS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN        NaN             0.376       701762    2025            22   206   235     53        26         9         1          17           78      25         33.2          10.6          0.257          0.558              0.333               0.891  0.242   0.529   0.376    0.359   0.321   0.288               77.5               77.1              23.1            15.8                  28.3                19.3                 7.7        11            13.1                -0.2                45.0                   38.7                 92.4                15.3                  38.2                  16.8                50.4        103.844953          96.807133             34.4             43.8          Kurtz, Nick  batter        NaN          NaN          NaN          0.376              0.376
+3  Vinnie, Pasquantino,       686469    2025            27   371   404    101        71        14         1          15           68      27         16.8           6.7          0.272          0.437              0.329               0.766  0.269   0.456   0.332    0.337   0.328   0.187               72.9               30.1              18.1            14.9                  35.8                29.5                 7.4         8             9.7                -9.1                54.5                   29.5                 90.9                16.1                  31.3                   8.6                44.7        101.437372          95.030132             19.0             48.8  Pasquantino, Vinnie     ROYALS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN        NaN             0.332       686469    2025            27   371   404    101        71        14         1          15           68      27         16.8           6.7          0.272          0.437              0.329               0.766  0.269   0.456   0.332    0.337   0.328   0.187               72.9               30.1              18.1            14.9                  35.8                29.5                 7.4         8             9.7                -9.1                54.5                   29.5                 90.9                16.1                  31.3                   8.6                44.7        101.437372          95.030132             19.0             48.8  Pasquantino, Vinnie  batter        NaN          NaN          NaN          0.332              0.332
+4          Kyle, Isbel,       664728    2025            28   229   250     56        39        10         4           3           49       9         19.6           3.6          0.245          0.362              0.270               0.632  0.227   0.305   0.273    0.247   0.255   0.078               70.4               10.3              12.5            10.0                  31.9                25.6                 7.1         3             2.9                -5.6                37.4                   23.9                 87.5                11.4                  27.1                   1.6                34.4         99.386797          93.735700             19.5             47.5          Isbel, Kyle     ROYALS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN        NaN             0.273       664728    2025            28   229   250     56        39        10         4           3           49       9         19.6           3.6          0.245          0.362              0.270               0.632  0.227   0.305   0.273    0.247   0.255   0.078               70.4               10.3              12.5            10.0                  31.9                25.6                 7.1         3             2.9                -5.6                37.4                   23.9                 87.5                11.4                  27.1                   1.6                34.4         99.386797          93.735700             19.5             47.5          Isbel, Kyle  batter        NaN          NaN          NaN          0.273              0.273
+2025-07-24 00:55:33,793 - INFO - DEBUG: games[['away_team', 'pitcher_away', 'game_time']].head() before 1st merge:
+   away_team   pitcher_away game_time
+0     GIANTS     Logan Webb   3:07 PM
+1       REDS  Nick Martinez   4:10 PM
+2     ROYALS  Michael Wacha   4:10 PM
+3     ANGELS  Yusei Kikuchi   6:05 PM
+4  WHITE SOX  Adrian Houser   6:40 PM
+2025-07-24 00:55:33,795 - INFO - DEBUG: Columns of temp_ba after 1st merge attempt: ['last_name, first_name', 'player_id_x', 'year_x', 'player_age_x', 'ab_x', 'pa_x', 'hit_x', 'single_x', 'double_x', 'triple_x', 'home_run_x', 'strikeout_x', 'walk_x', 'k_percent_x', 'bb_percent_x', 'batting_avg_x', 'slg_percent_x', 'on_base_percent_x', 'on_base_plus_slg_x', 'xba_x', 'xslg_x', 'woba_x', 'xwoba_x', 'xobp_x', 'xiso_x', 'avg_swing_speed_x', 'fast_swing_rate_x', 'blasts_contact_x', 'blasts_swing_x', 'squared_up_contact_x', 'squared_up_swing_x', 'avg_swing_length_x', 'swords_x', 'attack_angle_x', 'attack_direction_x', 'ideal_angle_rate_x', 'vertical_swing_path_x', 'exit_velocity_avg_x', 'launch_angle_avg_x', 'sweet_spot_percent_x', 'barrel_batted_rate_x', 'hard_hit_percent_x', 'avg_best_speed_x', 'avg_hyper_speed_x', 'whiff_percent_x', 'swing_percent_x', 'name_x', 'team', 'type_x', 'stadium', 'location', 'temperature', 'wind_speed', 'wind_direction', 'humidity', 'precipitation', 'condition', 'notes', 'game_time_x', 'adj_woba_weather', 'player_id_y', 'year_y', 'player_age_y', 'ab_y', 'pa_y', 'hit_y', 'single_y', 'double_y', 'triple_y', 'home_run_y', 'strikeout_y', 'walk_y', 'k_percent_y', 'bb_percent_y', 'batting_avg_y', 'slg_percent_y', 'on_base_percent_y', 'on_base_plus_slg_y', 'xba_y', 'xslg_y', 'woba_y', 'xwoba_y', 'xobp_y', 'xiso_y', 'avg_swing_speed_y', 'fast_swing_rate_y', 'blasts_contact_y', 'blasts_swing_y', 'squared_up_contact_y', 'squared_up_swing_y', 'avg_swing_length_y', 'swords_y', 'attack_angle_y', 'attack_direction_y', 'ideal_angle_rate_y', 'vertical_swing_path_y', 'exit_velocity_avg_y', 'launch_angle_avg_y', 'sweet_spot_percent_y', 'barrel_batted_rate_y', 'hard_hit_percent_y', 'avg_best_speed_y', 'avg_hyper_speed_y', 'whiff_percent_y', 'swing_percent_y', 'name_y', 'type_y', 'home_team', 'time_of_day', 'Park Factor', 'adj_woba_park', 'adj_woba_combined', 'away_team', 'pitcher_away', 'game_time_y']
+2025-07-24 00:55:33,796 - INFO - DEBUG: temp_ba['pitcher_away'] value counts after 1st merge attempt:
+pitcher_away
+Brayan Bello           13
+Zebby Matthews         12
+Freddy Peralta         12
+Keider Montero         11
+Dean Kremer            10
+Michael Wacha           8
+Yusei Kikuchi           8
+Yu Darvish              8
+Logan Webb              8
+Sonny Gray              8
+Lance McCullers Jr.     8
+Adrian Houser           7
+Will Warren             7
+Luis Severino           6
+Nick Martinez           5
+2025-07-24 00:55:33,819 - INFO - DEBUG: temp_ba.head() after 1st merge attempt:
+  last_name, first_name  player_id_x  year_x  player_age_x  ab_x  pa_x  hit_x  single_x  double_x  triple_x  home_run_x  strikeout_x  walk_x  k_percent_x  bb_percent_x  batting_avg_x  slg_percent_x  on_base_percent_x  on_base_plus_slg_x  xba_x  xslg_x  woba_x  xwoba_x  xobp_x  xiso_x  avg_swing_speed_x  fast_swing_rate_x  blasts_contact_x  blasts_swing_x  squared_up_contact_x  squared_up_swing_x  avg_swing_length_x  swords_x  attack_angle_x  attack_direction_x  ideal_angle_rate_x  vertical_swing_path_x  exit_velocity_avg_x  launch_angle_avg_x  sweet_spot_percent_x  barrel_batted_rate_x  hard_hit_percent_x  avg_best_speed_x  avg_hyper_speed_x  whiff_percent_x  swing_percent_x               name_x       team  type_x  stadium  location  temperature  wind_speed  wind_direction  humidity  precipitation  condition  notes  game_time_x  adj_woba_weather  player_id_y  year_y  player_age_y  ab_y  pa_y  hit_y  single_y  double_y  triple_y  home_run_y  strikeout_y  walk_y  k_percent_y  bb_percent_y  batting_avg_y  slg_percent_y  on_base_percent_y  on_base_plus_slg_y  xba_y  xslg_y  woba_y  xwoba_y  xobp_y  xiso_y  avg_swing_speed_y  fast_swing_rate_y  blasts_contact_y  blasts_swing_y  squared_up_contact_y  squared_up_swing_y  avg_swing_length_y  swords_y  attack_angle_y  attack_direction_y  ideal_angle_rate_y  vertical_swing_path_y  exit_velocity_avg_y  launch_angle_avg_y  sweet_spot_percent_y  barrel_batted_rate_y  hard_hit_percent_y  avg_best_speed_y  avg_hyper_speed_y  whiff_percent_y  swing_percent_y               name_y  type_y  home_team  time_of_day  Park Factor  adj_woba_park  adj_woba_combined  away_team   pitcher_away game_time_y
+0           Zach, Neto,       687263    2025            24   305   328     85        51        18         1          15           87      16         26.5           4.9          0.279          0.492              0.326               0.818  0.282   0.536   0.351    0.368   0.331   0.254               71.4               14.4              18.9            14.1                  38.9                28.9                 7.0        13            15.9                -5.0                53.7                   37.4                 91.4                15.7                  40.6                  14.6                47.9        101.945309          95.530332             27.4             47.8           Neto, Zach     ANGELS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN          NaN             0.351       687263    2025            24   305   328     85        51        18         1          15           87      16         26.5           4.9          0.279          0.492              0.326               0.818  0.282   0.536   0.351    0.368   0.331   0.254               71.4               14.4              18.9            14.1                  38.9                28.9                 7.0        13            15.9                -5.0                53.7                   37.4                 91.4                15.7                  40.6                  14.6                47.9        101.945309          95.530332             27.4             47.8           Neto, Zach  batter        NaN          NaN          NaN          0.351              0.351     ANGELS  Yusei Kikuchi     6:05 PM
+1    Paul, Goldschmidt,       502671    2025            37   334   367     96        65        22         1           8           61      28         16.6           7.6          0.287          0.431              0.345               0.776  0.281   0.475   0.335    0.347   0.340   0.194               72.9               25.3              16.1            13.3                  33.3                27.6                 7.6         5            10.0                 1.9                52.1                   31.6                 90.3                14.6                  36.1                   8.0                42.7        100.733490          94.693271             18.9             48.2    Goldschmidt, Paul    YANKEES  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN          NaN             0.335       502671    2025            37   334   367     96        65        22         1           8           61      28         16.6           7.6          0.287          0.431              0.345               0.776  0.281   0.475   0.335    0.347   0.340   0.194               72.9               25.3              16.1            13.3                  33.3                27.6                 7.6         5            10.0                 1.9                52.1                   31.6                 90.3                14.6                  36.1                   8.0                42.7        100.733490          94.693271             18.9             48.2    Goldschmidt, Paul  batter        NaN          NaN          NaN          0.335              0.335    YANKEES    Will Warren     7:15 PM
+2          Nick, Kurtz,       701762    2025            22   206   235     53        26         9         1          17           78      25         33.2          10.6          0.257          0.558              0.333               0.891  0.242   0.529   0.376    0.359   0.321   0.288               77.5               77.1              23.1            15.8                  28.3                19.3                 7.7        11            13.1                -0.2                45.0                   38.7                 92.4                15.3                  38.2                  16.8                50.4        103.844953          96.807133             34.4             43.8          Kurtz, Nick  ATHLETICS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN          NaN             0.376       701762    2025            22   206   235     53        26         9         1          17           78      25         33.2          10.6          0.257          0.558              0.333               0.891  0.242   0.529   0.376    0.359   0.321   0.288               77.5               77.1              23.1            15.8                  28.3                19.3                 7.7        11            13.1                -0.2                45.0                   38.7                 92.4                15.3                  38.2                  16.8                50.4        103.844953          96.807133             34.4             43.8          Kurtz, Nick  batter        NaN          NaN          NaN          0.376              0.376  ATHLETICS  Luis Severino     7:10 PM
+3  Vinnie, Pasquantino,       686469    2025            27   371   404    101        71        14         1          15           68      27         16.8           6.7          0.272          0.437              0.329               0.766  0.269   0.456   0.332    0.337   0.328   0.187               72.9               30.1              18.1            14.9                  35.8                29.5                 7.4         8             9.7                -9.1                54.5                   29.5                 90.9                16.1                  31.3                   8.6                44.7        101.437372          95.030132             19.0             48.8  Pasquantino, Vinnie     ROYALS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN          NaN             0.332       686469    2025            27   371   404    101        71        14         1          15           68      27         16.8           6.7          0.272          0.437              0.329               0.766  0.269   0.456   0.332    0.337   0.328   0.187               72.9               30.1              18.1            14.9                  35.8                29.5                 7.4         8             9.7                -9.1                54.5                   29.5                 90.9                16.1                  31.3                   8.6                44.7        101.437372          95.030132             19.0             48.8  Pasquantino, Vinnie  batter        NaN          NaN          NaN          0.332              0.332     ROYALS  Michael Wacha     4:10 PM
+4          Kyle, Isbel,       664728    2025            28   229   250     56        39        10         4           3           49       9         19.6           3.6          0.245          0.362              0.270               0.632  0.227   0.305   0.273    0.247   0.255   0.078               70.4               10.3              12.5            10.0                  31.9                25.6                 7.1         3             2.9                -5.6                37.4                   23.9                 87.5                11.4                  27.1                   1.6                34.4         99.386797          93.735700             19.5             47.5          Isbel, Kyle     ROYALS  batter      NaN       NaN          NaN         NaN             NaN       NaN            NaN        NaN    NaN          NaN             0.273       664728    2025            28   229   250     56        39        10         4           3           49       9         19.6           3.6          0.245          0.362              0.270               0.632  0.227   0.305   0.273    0.247   0.255   0.078               70.4               10.3              12.5            10.0                  31.9                25.6                 7.1         3             2.9                -5.6                37.4                   23.9                 87.5                11.4                  27.1                   1.6                34.4         99.386797          93.735700             19.5             47.5          Isbel, Kyle  batter        NaN          NaN          NaN          0.273              0.273     ROYALS  Michael Wacha     4:10 PM
+2025-07-24 00:55:33,820 - ERROR - ❌ 'pitcher_home' column not found in batters_home after first merge. This is critical. Check team name consistency.
+2025-07-24 00:55:33,820 - ERROR - ❌ Script failed: "'pitcher_home' column not found after initial merge"
+2025-07-24 00:55:33,820 - INFO - 📝 Final debug log completed
+⏹️ END: merge_game_pitcher_data (2025-07-23 08:55:33 PM EDT)
+
+
+===== ERRORS =====
 
