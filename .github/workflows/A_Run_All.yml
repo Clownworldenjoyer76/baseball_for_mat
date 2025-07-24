@@ -113,6 +113,7 @@ jobs:
 
           # 🔗 CHAIN CONNECTION
           run_step chain_setup_inputs.py
+          run_step normalize_pitchers_xtra.py
           run_step clean_merge_files.py
           run_step chain_load_data.py
           run_step deduplicate_batters.py
