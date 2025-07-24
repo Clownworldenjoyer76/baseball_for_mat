@@ -111,8 +111,9 @@ jobs:
           run_step combine_pitcher_weather_park_away.py
           run_step prep_merge.py
 
-          #chain connection
+          # 🔗 CHAIN CONNECTION
           run_step chain_setup_inputs.py
+          run_step chain_load_data.py
 
           # 📄 Combine single summary
           {
