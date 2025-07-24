@@ -1,5 +1,3 @@
-# scripts/update_pitcher_team_names.py
-
 import pandas as pd
 import os
 
@@ -23,14 +21,7 @@ def update_team_names(pitchers_file):
     if "team" not in df.columns:
         raise ValueError(f"❌ Missing 'team' column in {pitchers_file}.")
 
-    original_team_values = df["team"].unique()
     df["team"] = df["team"].map(team_map).fillna(df["team"])
-
-    updated_team_values = df["team"].unique()
-    print(f"🔁 Updated team names in {pitchers_file}")
-    print(f"🔎 Original teams: {original_team_values}")
-    print(f"✅ New teams: {updated_team_values}")
-
     df.to_csv(pitchers_file, index=False)
 
 def main():
