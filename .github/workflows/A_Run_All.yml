@@ -22,13 +22,6 @@ jobs:
       - name: Install dependencies
         run: pip install pandas unidecode requests
 
-      # --- ADDED THIS STEP ---
-      - name: Configure Git User
-        run: |
-          git config --global user.name "github-actions[bot]" # A common practice for actions
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      # --- END ADDED STEP ---
-
       - name: Run All Scripts + Unified Logs
         run: |
           mkdir -p summaries
@@ -40,3 +33,89 @@ jobs:
           echo "" > "$LOG_FILE"
           echo "" > "$ERRORS_FILE"
           echo "" > "$SUMMARY_FILE"
+
+          run_step() {
+            SCRIPT="$1"
+            STEP_NAME=$(basename "$SCRIPT" .py)
+            STEP_TIMESTAMP=$(TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z")
+
+            echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
+
+            if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
+              echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+            else
+              echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+              echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
+              cat temp_error.log >> "$ERRORS_FILE"
+              echo -e "\n---\n" >> "$ERRORS_FILE"
+            fi
+
+            echo "⏹️ END: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
+            echo "" >> "$LOG_FILE"
+          }
+
+          # 🔁 Run all steps (unchanged)
+          run_step normalize_names.py
+          run_step tag_master_files.py
+          run_step deduplicate_normalized.py
+          run_step normalize_lineups.py
+          run_step normalize_todays_games.py
+          run_step refresh_stadium_metadata.py
+          run_step apply_team_name_mapping.py
+          run_step update_game_time.py
+          run_step filter_stadium_metadata.py
+          run_step normalize_batter_team_names.py
+          run_step split_batters_by_home_away.py
+          run_step commit_split_batters.py
+          run_step normalize_pitcher_home_away.py
+          run_step update_pitcher_team_names.py
+          run_step generate_weather_csv.py
+          run_step filter_today_batters.py
+          run_step get_weather_data.py
+          run_step apply_weather_adjustment.py
+          run_step apply_park_adjustment.py
+          run_step combine_weather_park_home.py
+          run_step combine_weather_park_away.py
+
+          # 🔧 FIX + CLEAN BEFORE MERGING
+          run_step normalize_pitcher_weather_outputs.py
+          run_step fix_away_team_column.py
+          run_step preprocess_pitcher_weather_park_away.py
+
+          # 🧱 APPLY PARK ADJUSTMENTS
+          run_step add_team_alias_columns.py
+          run_step add_team_columns_to_weather.py
+          run_step apply_pitcher_weather_adjustment.py
+          run_step apply_pitcher_park_adjustment.py
+          run_step normalize_pitcher_merge_inputs.py
+
+          # 🔀 FINAL COMBINE
+          run_step combine_pitcher_weather_park_home.py
+          run_step combine_pitcher_weather_park_away.py
+          run_step prep_merge.py
+          # Removed: run_step merge_game_pitcher_data.py
+
+          #chain connection
+          run_step chain_setup_inputs.py
+
+          # 📄 Combine single summary
+          {
+            echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
+            echo ""
+            echo "===== STATUS ====="
+            cat "$STATUS_FILE"
+            echo ""
+            echo "===== LOG ====="
+            cat "$LOG_FILE"
+            echo ""
+            echo "===== ERRORS ====="
+            cat "$ERRORS_FILE"
+          } > "$SUMMARY_FILE"
+
+      - name: Commit All Logs and Outputs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/summary.txt
+          git commit -m "A_Run_All: summary update at $(TZ='America/New_York' date)" || echo "Nothing to commit"
+          git push || echo "Nothing to push"
