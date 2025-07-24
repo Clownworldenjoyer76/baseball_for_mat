@@ -223,3 +223,44 @@ Away batters adjusted: 124
 ⏹️ END: add_team_columns_to_weather (2025-07-24 07:10:39 AM EDT)
 
 ▶️ START: apply_pitcher_weather_adjustment (2025-07-24 07:10:40 AM EDT)
+✅ Git commit and push complete for pitcher weather adjustments.
+⏹️ END: apply_pitcher_weather_adjustment (2025-07-24 07:10:40 AM EDT)
+
+▶️ START: apply_pitcher_park_adjustment (2025-07-24 07:10:41 AM EDT)
+⏹️ END: apply_pitcher_park_adjustment (2025-07-24 07:10:41 AM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs (2025-07-24 07:10:41 AM EDT)
+⏹️ END: normalize_pitcher_merge_inputs (2025-07-24 07:10:41 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home (2025-07-24 07:10:42 AM EDT)
+⏹️ END: combine_pitcher_weather_park_home (2025-07-24 07:10:42 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_away (2025-07-24 07:10:42 AM EDT)
+⏹️ END: combine_pitcher_weather_park_away (2025-07-24 07:10:42 AM EDT)
+
+▶️ START: prep_merge (2025-07-24 07:10:42 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/errors.txt
+	modified:   summaries/log.txt
+	modified:   summaries/status.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⚠️ Git operation failed: Command '['git', 'commit', '-m', 'prep_merge: normalize team casing and enforce name match']' returned non-zero exit status 1.
+✅ Team and name normalization complete.
+⏹️ END: prep_merge (2025-07-24 07:10:42 AM EDT)
+
+▶️ START: chain_setup_inputs (2025-07-24 07:10:43 AM EDT)
+2025-07-24 11:10:43,261 - INFO - Starting to copy input files to data/end_chain
+2025-07-24 11:10:43,261 - INFO - ✅ Copied 'data/adjusted/batters_home_weather_park.csv' to 'data/end_chain/batters_home_weather_park.csv'
+2025-07-24 11:10:43,261 - INFO - ✅ Copied 'data/adjusted/batters_away_weather_park.csv' to 'data/end_chain/batters_away_weather_park.csv'
+2025-07-24 11:10:43,262 - INFO - ✅ Copied 'data/adjusted/pitchers_home_weather_park.csv' to 'data/end_chain/pitchers_home_weather_park.csv'
+2025-07-24 11:10:43,262 - INFO - ✅ Copied 'data/adjusted/pitchers_away_weather_park.csv' to 'data/end_chain/pitchers_away_weather_park.csv'
+2025-07-24 11:10:43,262 - INFO - ✅ Copied 'data/raw/todaysgames_normalized.csv' to 'data/end_chain/todaysgames_normalized.csv'
+2025-07-24 11:10:43,262 - INFO - 🌟 All specified input files copied successfully to 'data/end_chain'.
+⏹️ END: chain_setup_inputs (2025-07-24 07:10:43 AM EDT)
+
