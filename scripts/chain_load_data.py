@@ -1,9 +1,5 @@
 # scripts/chain_load_data.py
 
-# Purpose: Responsible solely for loading raw data from its sources 
-# (CSV, database, API, etc.) into pandas DataFrames. This script acts 
-# as the initial ingestion point.
-
 import pandas as pd
 import os
 from typing import Dict
@@ -11,10 +7,6 @@ from typing import Dict
 def load_raw_data(file_paths: Dict[str, str]) -> Dict[str, pd.DataFrame]:
     """
     Loads multiple raw CSV files into pandas DataFrames.
-
-    This function is the first step in the data pipeline, focusing only on
-    ingesting data from specified file paths without performing any complex
-    transformations.
 
     Args:
         file_paths (Dict[str, str]): A dictionary where keys are descriptive
@@ -35,29 +27,32 @@ def load_raw_data(file_paths: Dict[str, str]) -> Dict[str, pd.DataFrame]:
             print(f"Loading {name} from {path}...")
             df = pd.read_csv(path)
             dataframes[name] = df
-            print(f"Successfully loaded {name}. Shape: {df.shape}")
+            print(f"✅ Loaded {name}. Shape: {df.shape}")
         except FileNotFoundError:
-            print(f"ERROR: File not found at {path}. Please check the path.")
+            print(f"❌ ERROR: File not found at {path}.")
             raise
-    print("--- Data Loading Process Complete ---")
+    print("--- Data Loading Complete ---")
     return dataframes
 
 if __name__ == '__main__':
+    END_CHAIN_DIR = 'data/end_chain'
+
     files_to_load = {
-        'games': 'data/end_chain/todaysgames_normalized.csv',
-        'batters_home': 'data/end_chain/batters_home_weather_park.csv',
-        'batters_away': 'data/end_chain/batters_away_weather_park.csv',
-        'pitchers_home': 'data/end_chain/pitchers_home_weather_park.csv',
-        'pitchers_away': 'data/end_chain/pitchers_away_weather_park.csv'
+        'games': os.path.join(END_CHAIN_DIR, 'todaysgames_normalized.csv'),
+        'batters_home': os.path.join(END_CHAIN_DIR, 'batters_home_weather_park.csv'),
+        'batters_away': os.path.join(END_CHAIN_DIR, 'batters_away_weather_park.csv'),
+        'pitchers_home': os.path.join(END_CHAIN_DIR, 'pitchers_home_weather_park.csv'),
+        'pitchers_away': os.path.join(END_CHAIN_DIR, 'pitchers_away_weather_park.csv')
     }
 
     try:
         raw_dataframes = load_raw_data(files_to_load)
 
-        print("\n--- Verifying Loaded Data (First 2 Rows) ---")
+        # Optional verification
+        print("\n--- Preview: First 2 Rows of Each DataFrame ---")
         for name, df in raw_dataframes.items():
-            print(f"\nDataFrame: '{name}'")
+            print(f"\n📄 {name}")
             print(df.head(2))
-            
+
     except FileNotFoundError:
-        print("\nExecution stopped due to a missing file.")
+        print("\n⛔ Execution stopped due to missing file(s).")
