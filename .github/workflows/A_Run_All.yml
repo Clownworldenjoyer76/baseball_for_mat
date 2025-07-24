@@ -14,13 +14,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Python dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install pandas unidecode requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run All Scripts + Unified Logs
         run: |
@@ -93,7 +103,6 @@ jobs:
           run_step combine_pitcher_weather_park_home.py
           run_step combine_pitcher_weather_park_away.py
           run_step prep_merge.py
-          # Removed: run_step merge_game_pitcher_data.py
 
           #chain connection
           run_step chain_setup_inputs.py
@@ -116,6 +125,13 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add summaries/summary.txt
-          git commit -m "A_Run_All: summary update at $(TZ='America/New_York' date)" || echo "Nothing to commit"
-          git push || echo "Nothing to push"
+          
+          # Stage all relevant generated and updated files
+          git add data/end_chain/ # For files copied by chain_setup_inputs.py
+          git add data/processed/ # Assuming scripts output processed data here
+          git add data/adjusted/  # If scripts modify files in this directory
+          git add summaries/      # To commit all log files including the combined summary
+
+          # Check if there are any changes to commit, then commit
+          git diff --cached --exit-code || git commit -m "A_Run_All: Automated data pipeline update on $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")"
+          git push || echo "No new commits to push"
