@@ -38,7 +38,28 @@ REQUIRED_COLUMNS = ["name", "team", "ab", "pa", "hit", "home_run", "walk", "stri
 
 def clean_batter_data(df: pd.DataFrame, label: str) -> pd.DataFrame:
     logging.info(f"🔧 Cleaning data for {label}...")
-    
+
+    # Drop columns ending in _y
+    drop_cols = [col for col in df.columns if col.endswith("_y")]
+    if drop_cols:
+        logging.info(f"🗑️ Dropping columns: {drop_cols}")
+        df = df.drop(columns=drop_cols)
+
+    # Rename columns ending in _x
+    rename_cols = {col: col[:-2] for col in df.columns if col.endswith("_x")}
+    if rename_cols:
+        logging.info(f"🔄 Renaming columns: {rename_cols}")
+        df = df.rename(columns=rename_cols)
+
+    # Drop columns with no header (unnamed) AND no data
+    unnamed_blank_cols = [
+        col for col in df.columns
+        if col.startswith("Unnamed") and df[col].isna().all()
+    ]
+    if unnamed_blank_cols:
+        logging.info(f"🧹 Removing unnamed empty columns: {unnamed_blank_cols}")
+        df = df.drop(columns=unnamed_blank_cols)
+
     # Ensure required columns are present
     missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
     if missing_cols:
