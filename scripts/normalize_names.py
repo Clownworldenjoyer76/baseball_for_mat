@@ -2,14 +2,12 @@ import pandas as pd
 import unicodedata
 import re
 import os
-import difflib
 
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 OUT_HOME = "data/adjusted/pitchers_home.csv"
 OUT_AWAY = "data/adjusted/pitchers_away.csv"
 
-# --- Normalization Utilities ---
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -31,22 +29,20 @@ def normalize_name(name):
     name = strip_accents(name)
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
-    temp_name = name.title()
-    final_normalized_name = _capitalize_mc_names_in_string(temp_name)
-    if "," in final_normalized_name:
-        parts = [p.strip() for p in final_normalized_name.split(",")]
+    name = _capitalize_mc_names_in_string(name)
+    if "," in name:
+        parts = [p.strip().title() for p in name.split(",")]
         if len(parts) >= 2:
             return f"{parts[0]}, {parts[1]}"
-        return ' '.join(parts)
+        return ' '.join(parts).title()
     else:
-        tokens = final_normalized_name.split()
+        tokens = [t.title() for t in name.split()]
         if len(tokens) >= 2:
             first = tokens[0]
             last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return ' '.join(tokens)
+        return ' '.join(tokens).title()
 
-# --- Main Logic ---
 def load_games():
     df = pd.read_csv(GAMES_FILE)
     df["pitcher_home"] = df["pitcher_home"].astype(str).apply(normalize_name)
@@ -54,20 +50,11 @@ def load_games():
     return df
 
 def load_pitchers():
-    print(f"DEBUG: Checking PITCHERS_FILE path: {PITCHERS_FILE}")
     if not os.path.exists(PITCHERS_FILE):
-        print(f"ERROR: PITCHERS_FILE does not exist at: {PITCHERS_FILE}")
         return pd.DataFrame(columns=['name'])
-    else:
-        print(f"DEBUG: PITCHERS_FILE exists.")
     df = pd.read_csv(PITCHERS_FILE)
-    print("DEBUG: Raw Pitchers DataFrame (first 10 names from PITCHERS_FILE) BEFORE normalization:")
-    print(df["name"].head(10).tolist())
     df["name"] = df["name"].astype(str).apply(normalize_name)
-    print("DEBUG: Pitchers DataFrame (first 10 names) AFTER normalization:")
-    print(df["name"].head(10).tolist())
     return df
-
 
 def filter_and_tag(pitchers_df, games_df, side):
     key = f"pitcher_{side}"
@@ -76,28 +63,13 @@ def filter_and_tag(pitchers_df, games_df, side):
     missing = []
 
     normalized_pitcher_names_set = set(pitchers_df["name"])
-    pitcher_list_sorted = sorted(normalized_pitcher_names_set)
 
     for _, row in games_df.iterrows():
-        game_pitcher = row[key]
+        pitcher_name = row[key]
         team_name = row[team_key]
-
-        if game_pitcher not in normalized_pitcher_names_set:
-            print(f"⚠️ MISMATCH: '{game_pitcher}' from games_df not found in normalized pitcher list.")
-            close_matches = difflib.get_close_matches(game_pitcher, pitcher_list_sorted, n=3, cutoff=0.6)
-            if close_matches:
-                print(f"  🔍 Close match candidates:")
-                for match in close_matches:
-                    print(f"    - {match}")
-                print(f"  🔬 Character diff vs closest match ({close_matches[0]}):")
-                diff = list(difflib.ndiff(game_pitcher, close_matches[0]))
-                print("    " + "".join(diff))
-            else:
-                print("  ❌ No close matches found.")
-
-        matched = pitchers_df[pitchers_df["name"] == game_pitcher].copy()
+        matched = pitchers_df[pitchers_df["name"] == pitcher_name].copy()
         if matched.empty:
-            missing.append(game_pitcher)
+            missing.append(pitcher_name)
         else:
             matched[team_key] = team_name
             tagged.append(matched)
