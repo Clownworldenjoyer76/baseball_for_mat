@@ -160,3 +160,123 @@ Away batters adjusted: 124
 ⏹️ END: apply_pitcher_weather_adjustment (2025-07-24 03:24:17 PM EDT)
 
 ▶️ START: apply_pitcher_park_adjustment (2025-07-24 03:24:17 PM EDT)
+✅ Wrote data/adjusted/pitchers_home_park.csv with 15 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 15 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: apply_pitcher_park_adjustment (2025-07-24 03:24:17 PM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs (2025-07-24 03:24:18 PM EDT)
+✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
+⏹️ END: normalize_pitcher_merge_inputs (2025-07-24 03:24:18 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_home (2025-07-24 03:24:19 PM EDT)
+[main d31aea1] Auto-commit: Cleaned combine pitcher weather + park (home)
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+⏹️ END: combine_pitcher_weather_park_home (2025-07-24 03:24:19 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_away (2025-07-24 03:24:20 PM EDT)
+[main aa35378] Auto-commit: Cleaned combine pitcher weather + park (away)
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+⏹️ END: combine_pitcher_weather_park_away (2025-07-24 03:24:20 PM EDT)
+
+▶️ START: prep_merge (2025-07-24 03:24:21 PM EDT)
+[main b648489] prep_merge: normalize team casing and enforce name match
+ 2 files changed, 34 insertions(+), 34 deletions(-)
+✅ Git commit and push complete.
+✅ Team and name normalization complete.
+⏹️ END: prep_merge (2025-07-24 03:24:21 PM EDT)
+
+▶️ START: chain_setup_inputs (2025-07-24 03:24:21 PM EDT)
+2025-07-24 19:24:21,988 - INFO - Starting to copy input files to data/end_chain
+2025-07-24 19:24:21,989 - INFO - ✅ Copied 'data/adjusted/batters_home_weather_park.csv' to 'data/end_chain/batters_home_weather_park.csv'
+2025-07-24 19:24:21,989 - INFO - ✅ Copied 'data/adjusted/batters_away_weather_park.csv' to 'data/end_chain/batters_away_weather_park.csv'
+2025-07-24 19:24:21,989 - INFO - ✅ Copied 'data/adjusted/pitchers_home_weather_park.csv' to 'data/end_chain/pitchers_home_weather_park.csv'
+2025-07-24 19:24:21,989 - INFO - ✅ Copied 'data/adjusted/pitchers_away_weather_park.csv' to 'data/end_chain/pitchers_away_weather_park.csv'
+2025-07-24 19:24:21,990 - INFO - ✅ Copied 'data/raw/todaysgames_normalized.csv' to 'data/end_chain/todaysgames_normalized.csv'
+2025-07-24 19:24:21,990 - INFO - 🌟 All specified input files copied successfully to 'data/end_chain'.
+⏹️ END: chain_setup_inputs (2025-07-24 03:24:21 PM EDT)
+
+▶️ START: clean_merge_files (2025-07-24 03:24:21 PM EDT)
+Cleaning file: data/end_chain/pitchers_home_weather_park.csv
+🔍 Removed 3 duplicate rows in data/end_chain/pitchers_home_weather_park.csv
+✅ pitchers_home cleaned and saved.
+Cleaning file: data/end_chain/pitchers_away_weather_park.csv
+🔍 Removed 0 duplicate rows in data/end_chain/pitchers_away_weather_park.csv
+✅ pitchers_away cleaned and saved.
+⏹️ END: clean_merge_files (2025-07-24 03:24:21 PM EDT)
+
+▶️ START: chain_load_data (2025-07-24 03:24:22 PM EDT)
+--- Starting Data Loading Process ---
+Loading games from data/end_chain/todaysgames_normalized.csv...
+✅ Loaded games. Shape: (15, 5)
+Loading batters_home from data/end_chain/batters_home_weather_park.csv...
+✅ Loaded batters_home. Shape: (125, 119)
+Loading batters_away from data/end_chain/batters_away_weather_park.csv...
+✅ Loaded batters_away. Shape: (131, 112)
+Loading pitchers_home from data/end_chain/pitchers_home_weather_park.csv...
+✅ Loaded pitchers_home. Shape: (14, 6)
+Loading pitchers_away from data/end_chain/pitchers_away_weather_park.csv...
+✅ Loaded pitchers_away. Shape: (15, 6)
+--- Data Loading Complete ---
+
+--- Preview: First 2 Rows of Each DataFrame ---
+
+📄 games
+   home_team away_team game_time pitcher_home   pitcher_away
+0  Blue Jays    Giants   3:07 PM   Eric Lauer     Logan Webb
+1       Mets      Reds   4:10 PM  Clay Holmes  Nick Martinez
+
+📄 batters_home
+  last_name, first_name  player_id_x  ...  adj_woba_park  adj_woba_combined
+0          Carter, Evan       694497  ...           0.34                NaN
+1          Davis, Henry       680779  ...           0.26                NaN
+
+[2 rows x 119 columns]
+
+📄 batters_away
+  last_name, first_name  player_id_x  ...  adj_woba_park  adj_woba_combined
+0            Neto, Zach       687263  ...          0.351              0.351
+1     Goldschmidt, Paul       502671  ...          0.335              0.335
+
+[2 rows x 112 columns]
+
+📄 pitchers_home
+  last_name, first_name  home_team  ...  adj_woba_combined       team
+0           Eric, Lauer  Blue Jays  ...           0.293299  Blue Jays
+1          Clay, Holmes       Mets  ...           0.289201       Mets
+
+[2 rows x 6 columns]
+
+📄 pitchers_away
+  last_name, first_name away_team  ...  adj_woba_combined    team
+0           Logan, Webb    Giants  ...           0.306965  Giants
+1        Nick, Martinez      Reds  ...           0.310338    Reds
+
+[2 rows x 6 columns]
+⏹️ END: chain_load_data (2025-07-24 03:24:22 PM EDT)
+
+▶️ START: clean_and_preprocess_batters (2025-07-24 03:24:22 PM EDT)
+2025-07-24 19:24:23,070 - INFO - 🔧 Cleaning data for batters_home...
+2025-07-24 19:24:23,070 - ERROR - ❌ Script failed: Missing columns in batters_home data: ['name', 'ab', 'pa', 'hit', 'home_run', 'walk', 'strikeout']
+⏹️ END: clean_and_preprocess_batters (2025-07-24 03:24:22 PM EDT)
+
+▶️ START: clean_and_preprocess_pitchers (2025-07-24 03:24:23 PM EDT)
+2025-07-24 19:24:23,394 - INFO - 🧼 Cleaning data for pitchers_home...
+2025-07-24 19:24:23,394 - ERROR - ❌ Script failed: Missing required columns in pitchers_home: ['name', 'innings_pitched', 'strikeouts', 'walks', 'earned_runs']
+⏹️ END: clean_and_preprocess_pitchers (2025-07-24 03:24:23 PM EDT)
+
+▶️ START: clean_and_preprocess_games (2025-07-24 03:24:23 PM EDT)
+🔧 Cleaning and preprocessing game-level data...
+✅ Saved cleaned game data to: data/end_chain/cleaned/games_cleaned.csv
+⏹️ END: clean_and_preprocess_games (2025-07-24 03:24:23 PM EDT)
+
+▶️ START: merge_data (2025-07-24 03:24:23 PM EDT)
+2025-07-24 19:24:24,046 - INFO - 🔗 Starting merge process...
+2025-07-24 19:24:24,046 - ERROR - ❌ Failed to load input files: [Errno 2] No such file or directory: 'data/end_chain/cleaned/batters_home_cleaned.csv'
+⏹️ END: merge_data (2025-07-24 03:24:23 PM EDT)
+
