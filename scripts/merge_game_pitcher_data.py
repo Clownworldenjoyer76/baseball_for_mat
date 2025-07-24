@@ -77,9 +77,24 @@ def main():
     # Validation
     verify_columns(bh, ["team", "last_name, first_name"], "batters_home")
     verify_columns(ba, ["team", "last_name, first_name"], "batters_away")
-    verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away"], "games")
+    verify_columns(games, ["home_team", "away_team", "pitcher_home", "pitcher_away", "game_time"], "games") # Ensure game_time is also checked
 
-    # Standardize names for merging
+    # Drop existing pitcher/game columns from batter dfs if they exist (from previous incomplete merges)
+    for col in ["home_team", "away_team", "pitcher_home", "pitcher_away", "game_time"]:
+        if col in bh.columns:
+            bh = bh.drop(columns=[col])
+        if col in ba.columns:
+            ba = ba.drop(columns=[col])
+    # Also drop any suffixed columns from previous attempts if they somehow persist
+    for col in ["home_team_x", "away_team_x", "pitcher_home_x", "pitcher_away_x", "game_time_x", "home_team_y", "away_team_y", "pitcher_home_y", "pitcher_away_y", "game_time_y"]:
+        if col in bh.columns:
+            bh = bh.drop(columns=[col])
+        if col in ba.columns:
+            ba = ba.drop(columns=[col])
+
+
+    # Standardize player names for future merges with pitcher data
+    # Note: `last_name, first_name` is used here, assuming it's the consistent column for player names
     for df in [bh, ba, ph, pa]:
         if "last_name, first_name" in df.columns:
             df["last_name, first_name"] = df["last_name, first_name"].apply(standardize_name)
@@ -106,13 +121,22 @@ def main():
     logging.info("DEBUG: Merging games data to batter dataframes to get pitcher names.")
     
     # Perform the merge and store it in a temporary variable to inspect
+    # Suffixes are implicitly handled by pandas if column names conflict beyond merge keys
     temp_bh = bh.merge(games[["home_team", "pitcher_home", "game_time"]], how="left", left_on="team", right_on="home_team")
     
+    # Rename the merged columns from games for consistency
+    temp_bh = temp_bh.rename(columns={"pitcher_home": "pitcher_home_temp_x", "game_time": "game_time_temp_x",
+                                      "pitcher_home_y": "pitcher_home", "game_time_y": "game_time"})
+    # Drop the original columns from bh if they weren't explicitly handled by suffixes (unlikely for pitch_home but good practice)
+    if "pitcher_home_temp_x" in temp_bh.columns: # This will be the original column if it existed
+        temp_bh = temp_bh.drop(columns=["pitcher_home_temp_x"])
+    if "game_time_temp_x" in temp_bh.columns:
+        temp_bh = temp_bh.drop(columns=["game_time_temp_x"])
+    
     # Log columns and a sample of pitcher_home from the temporary DataFrame
-    logging.info(f"DEBUG: Columns of temp_bh after 1st merge attempt: {temp_bh.columns.tolist()}")
-    # Using .get() with a default empty Series to avoid KeyError if 'pitcher_home' is truly absent
-    logging.info(f"DEBUG: temp_bh['pitcher_home'] value counts after 1st merge attempt:\n{temp_bh.get('pitcher_home', pd.Series(dtype='object')).value_counts(dropna=False).to_string()}")
-    logging.info(f"DEBUG: temp_bh.head() after 1st merge attempt:\n{temp_bh.head().to_string()}") 
+    logging.info(f"DEBUG: Columns of temp_bh after 1st merge attempt and renaming: {temp_bh.columns.tolist()}")
+    logging.info(f"DEBUG: temp_bh['pitcher_home'] value counts after 1st merge attempt and renaming:\n{temp_bh.get('pitcher_home', pd.Series(dtype='object')).value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: temp_bh.head() after 1st merge attempt and renaming:\n{temp_bh.head().to_string()}") 
     
     # Assign the result back to bh only after logging
     bh = temp_bh
@@ -124,26 +148,44 @@ def main():
     logging.info(f"DEBUG: games[['away_team', 'pitcher_away', 'game_time']].head() before 1st merge:\n{games[['away_team', 'pitcher_away', 'game_time']].head().to_string()}")
 
     temp_ba = ba.merge(games[["away_team", "pitcher_away", "game_time"]], how="left", left_on="team", right_on="away_team")
-    logging.info(f"DEBUG: Columns of temp_ba after 1st merge attempt: {temp_ba.columns.tolist()}")
-    logging.info(f"DEBUG: temp_ba['pitcher_away'] value counts after 1st merge attempt:\n{temp_ba.get('pitcher_away', pd.Series(dtype='object')).value_counts(dropna=False).to_string()}")
-    logging.info(f"DEBUG: temp_ba.head() after 1st merge attempt:\n{temp_ba.head().to_string()}")
+
+    # Rename the merged columns from games for consistency
+    temp_ba = temp_ba.rename(columns={"pitcher_away": "pitcher_away_temp_x", "game_time": "game_time_temp_x",
+                                      "pitcher_away_y": "pitcher_away", "game_time_y": "game_time"})
+    if "pitcher_away_temp_x" in temp_ba.columns:
+        temp_ba = temp_ba.drop(columns=["pitcher_away_temp_x"])
+    if "game_time_temp_x" in temp_ba.columns:
+        temp_ba = temp_ba.drop(columns=["game_time_temp_x"])
+
+    logging.info(f"DEBUG: Columns of temp_ba after 1st merge attempt and renaming: {temp_ba.columns.tolist()}")
+    logging.info(f"DEBUG: temp_ba['pitcher_away'] value counts after 1st merge attempt and renaming:\n{temp_ba.get('pitcher_away', pd.Series(dtype='object')).value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: temp_ba.head() after 1st merge attempt and renaming:\n{temp_ba.head().to_string()}")
     ba = temp_ba
 
     # The existing checks will now apply to bh and ba which were just assigned
     if 'pitcher_home' not in bh.columns:
-        logging.error("❌ 'pitcher_home' column not found in batters_home after first merge. This is critical. Check team name consistency.")
+        logging.error("❌ 'pitcher_home' column not found in batters_home after first merge. This is critical. Check column naming and merging logic.")
         raise KeyError("'pitcher_home' column not found after initial merge")
     if 'pitcher_away' not in ba.columns:
-        logging.error("❌ 'pitcher_away' column not found in batters_away after first merge. This is critical. Check team name consistency.")
+        logging.error("❌ 'pitcher_away' column not found in batters_away after first merge. This is critical. Check column naming and merging logic.")
         raise KeyError("'pitcher_away' column not found after initial merge")
+
+    # Standardize pitcher names found in games DataFrame (now in bh/ba)
+    if 'pitcher_home' in bh.columns:
+        bh['pitcher_home'] = bh['pitcher_home'].apply(standardize_name)
+    if 'pitcher_away' in ba.columns:
+        ba['pitcher_away'] = ba['pitcher_away'].apply(standardize_name)
+    
+    logging.info(f"DEBUG: bh['pitcher_home'] value counts after pitcher name standardization:\n{bh['pitcher_home'].value_counts(dropna=False).to_string()}")
+    logging.info(f"DEBUG: ba['pitcher_away'] value counts after pitcher name standardization:\n{ba['pitcher_away'].value_counts(dropna=False).to_string()}")
+
 
     logging.info("DEBUG: Merging pitcher wOBA data into batter dataframes.")
     # Then merge pitcher wOBA data
-    # Ensure to use a unique suffix if name columns might conflict
     bh = bh.merge(get_pitcher_woba(ph, "last_name, first_name"), how="left",
-                  left_on="pitcher_home", right_on="last_name, first_name", suffixes=("", "_pitcher_woba"))
+                  left_on="pitcher_home", right_on="last_name, first_name", suffixes=("_batter", "_pitcher_woba"))
     ba = ba.merge(get_pitcher_woba(pa, "last_name, first_name"), how="left",
-                  left_on="pitcher_away", right_on="last_name, first_name", suffixes=("", "_pitcher_woba"))
+                  left_on="pitcher_away", right_on="last_name, first_name", suffixes=("_batter", "_pitcher_woba"))
 
     logging.info(f"✅ HOME batters final rows: {len(bh)}")
     logging.info(f"✅ AWAY batters final rows: {len(ba)}")
