@@ -211,3 +211,44 @@ Away batters adjusted: 124
 ⏹️ END: apply_pitcher_weather_adjustment (2025-07-24 08:04:29 AM EDT)
 
 ▶️ START: apply_pitcher_park_adjustment (2025-07-24 08:04:30 AM EDT)
+✅ Wrote data/adjusted/pitchers_home_park.csv with 15 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 15 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: apply_pitcher_park_adjustment (2025-07-24 08:04:30 AM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs (2025-07-24 08:04:31 AM EDT)
+✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
+⏹️ END: normalize_pitcher_merge_inputs (2025-07-24 08:04:31 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home (2025-07-24 08:04:31 AM EDT)
+[main 0ad425d] Auto-commit: Cleaned combine pitcher weather + park (home)
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+⏹️ END: combine_pitcher_weather_park_home (2025-07-24 08:04:31 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_away (2025-07-24 08:04:32 AM EDT)
+[main 5da6d32] Auto-commit: Cleaned combine pitcher weather + park (away)
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+⏹️ END: combine_pitcher_weather_park_away (2025-07-24 08:04:32 AM EDT)
+
+▶️ START: prep_merge (2025-07-24 08:04:34 AM EDT)
+[main 3b85877] prep_merge: normalize team casing and enforce name match
+ 2 files changed, 34 insertions(+), 34 deletions(-)
+✅ Git commit and push complete.
+✅ Team and name normalization complete.
+⏹️ END: prep_merge (2025-07-24 08:04:34 AM EDT)
+
+▶️ START: chain_setup_inputs (2025-07-24 08:04:35 AM EDT)
+2025-07-24 12:04:35,249 - INFO - Starting to copy input files to data/end_chain
+2025-07-24 12:04:35,250 - INFO - ✅ Copied 'data/adjusted/batters_home_weather_park.csv' to 'data/end_chain/batters_home_weather_park.csv'
+2025-07-24 12:04:35,250 - INFO - ✅ Copied 'data/adjusted/batters_away_weather_park.csv' to 'data/end_chain/batters_away_weather_park.csv'
+2025-07-24 12:04:35,250 - INFO - ✅ Copied 'data/adjusted/pitchers_home_weather_park.csv' to 'data/end_chain/pitchers_home_weather_park.csv'
+2025-07-24 12:04:35,251 - INFO - ✅ Copied 'data/adjusted/pitchers_away_weather_park.csv' to 'data/end_chain/pitchers_away_weather_park.csv'
+2025-07-24 12:04:35,251 - INFO - ✅ Copied 'data/raw/todaysgames_normalized.csv' to 'data/end_chain/todaysgames_normalized.csv'
+2025-07-24 12:04:35,251 - INFO - 🌟 All specified input files copied successfully to 'data/end_chain'.
+⏹️ END: chain_setup_inputs (2025-07-24 08:04:35 AM EDT)
+
