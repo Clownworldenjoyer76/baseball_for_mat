@@ -1,1 +1,17 @@
 
+❌ prepopulate_batters_away ERROR (2025-07-25 02:11:47 PM EDT):
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/prepopulate_batters_away.py", line 34, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/prepopulate_batters_away.py", line 26, in main
+    weather_subset = weather[["away_team", "home_team", "temp", "humidity", "wind_speed", "wind_direction", "Park Factor", "time_of_day"]]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['temp', 'Park Factor', 'time_of_day'] not in index"
+
+---
+
