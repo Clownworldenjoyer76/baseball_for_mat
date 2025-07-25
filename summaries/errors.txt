@@ -1,19 +1,1 @@
 
-❌ prepopulate_batters_away ERROR (2025-07-25 03:15:45 PM EDT):
-Traceback (most recent call last):
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/prepopulate_batters_away.py", line 154, in <module>
-    main()
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/prepopulate_batters_away.py", line 75, in main
-    batters = pd.merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
-    op = _MergeOperation(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
-    ) = self._get_merge_keys()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1311, in _get_merge_keys
-    left_keys.append(left._get_label_or_level_values(lk))
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
-    raise KeyError(key)
-KeyError: 'home_team'
-
----
-
