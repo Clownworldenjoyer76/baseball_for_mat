@@ -5,7 +5,6 @@ from datetime import datetime
 
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
-VENUE_FILE = "data/Data/stadium_metadata.csv" # This variable is still here but no longer used
 API_KEY = "45d9502513854b489c3162411251907"
 BASE_URL = "http://api.weatherapi.com/v1/current.json"
 
@@ -35,13 +34,9 @@ def main():
     results = []
 
     for _, row in df.iterrows():
-        # Find venue in the venue column of data/weather_input.csv
         venue_name = row.get("venue", "")
-        # Find away_team value in away_team column of data/weather_input.csv
         away_team_val = row.get("away_team", "UNKNOWN")
-        # Find home_team value in team_name_x column of data/weather_input.csv
-        home_team_val = row.get("team_name_x", "UNKNOWN")
-
+        home_team_val = row.get("home_team", "UNKNOWN")
         city = row.get("city", "")
         location = f"{venue_name}, {city}"
         lat = row.get("latitude", "")
@@ -73,7 +68,7 @@ def main():
             "humidity": current.get("humidity", ""),
             "precipitation": current.get("precip_in", 0.0),
             "condition": condition,
-            "notes": "Roof closed" if is_dome is True else "Roof open",
+            "notes": "Roof closed" if is_dome else "Roof open",
             "game_time": game_time,
             "home_team": home_team_val,
             "away_team": away_team_val
