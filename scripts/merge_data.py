@@ -90,9 +90,16 @@ def main():
     merged = pd.merge(merged, pitchers_away, left_on='pitcher_away', right_on='team', how='left', suffixes=('', '_pitcher_away'))
 
     output_path = output_dir / "combined_game_data.csv"
+
+    # 🔧 Force overwrite: delete existing file
+    if output_path.exists():
+        output_path.unlink()
+        logging.info(f"🧹 Removed existing file: {output_path}")
+
     try:
         merged.to_csv(output_path, index=False)
         logging.info(f"✅ Merged data saved to {output_path}")
+        logging.info(f"📍 Absolute path: {output_path.resolve()}")
     except Exception as e:
         logging.critical(f"❌ Failed to write output: {e}")
         sys.exit(1)
