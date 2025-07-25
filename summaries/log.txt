@@ -158,3 +158,139 @@ Away batters adjusted: 124
 ⏹️ END: apply_pitcher_weather_adjustment (2025-07-25 12:48:41 PM EDT)
 
 ▶️ START: apply_pitcher_park_adjustment (2025-07-25 12:48:42 PM EDT)
+✅ Wrote data/adjusted/pitchers_home_park.csv with 15 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 15 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: apply_pitcher_park_adjustment (2025-07-25 12:48:42 PM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs (2025-07-25 12:48:43 PM EDT)
+✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
+⏹️ END: normalize_pitcher_merge_inputs (2025-07-25 12:48:43 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_home (2025-07-25 12:48:44 PM EDT)
+[main c14cbd3] Auto-commit: Cleaned combine pitcher weather + park (home)
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+⏹️ END: combine_pitcher_weather_park_home (2025-07-25 12:48:44 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_away (2025-07-25 12:48:44 PM EDT)
+[main 841a9b2] Auto-commit: Cleaned combine pitcher weather + park (away)
+ 1 file changed, 16 insertions(+), 16 deletions(-)
+⏹️ END: combine_pitcher_weather_park_away (2025-07-25 12:48:44 PM EDT)
+
+▶️ START: prep_merge (2025-07-25 12:48:45 PM EDT)
+[main 150e7c0] prep_merge: normalize team casing and enforce name match
+ 2 files changed, 34 insertions(+), 34 deletions(-)
+✅ Git commit and push complete.
+✅ Team and name normalization complete.
+⏹️ END: prep_merge (2025-07-25 12:48:45 PM EDT)
+
+▶️ START: chain_setup_inputs (2025-07-25 12:48:46 PM EDT)
+Copying input files...
+Copied: batters_home_weather_park.csv
+Copied: batters_away_weather_park.csv
+Copied: pitchers_home_weather_park.csv
+Copied: pitchers_away_weather_park.csv
+Copied: todaysgames_normalized.csv
+All files copied.
+⏹️ END: chain_setup_inputs (2025-07-25 12:48:46 PM EDT)
+
+▶️ START: clean_and_preprocess_games (2025-07-25 12:48:46 PM EDT)
+🔧 Cleaning and preprocessing game-level data...
+✅ Saved cleaned game data to: data/end_chain/cleaned/games_cleaned.csv
+⏹️ END: clean_and_preprocess_games (2025-07-25 12:48:46 PM EDT)
+
+▶️ START: normalize_games_pitchers (2025-07-25 12:48:47 PM EDT)
+✅ Normalized pitcher names written to data/end_chain/cleaned/games_cleaned.csv
+⏹️ END: normalize_games_pitchers (2025-07-25 12:48:47 PM EDT)
+
+▶️ START: normalize_pitchers_xtra (2025-07-25 12:48:47 PM EDT)
+🔄 Normalizing names in pitchers_xtra.csv...
+✅ Output written to data/end_chain/cleaned/pitchers_xtra_normalized.csv
+⏹️ END: normalize_pitchers_xtra (2025-07-25 12:48:47 PM EDT)
+
+▶️ START: clean_merge_files (2025-07-25 12:48:47 PM EDT)
+Cleaning file: data/end_chain/pitchers_home_weather_park.csv
+🔍 Removed 3 duplicate rows in data/end_chain/pitchers_home_weather_park.csv
+✅ pitchers_home cleaned and saved.
+Cleaning file: data/end_chain/pitchers_away_weather_park.csv
+🔍 Removed 0 duplicate rows in data/end_chain/pitchers_away_weather_park.csv
+✅ pitchers_away cleaned and saved.
+⏹️ END: clean_merge_files (2025-07-25 12:48:47 PM EDT)
+
+▶️ START: chain_load_data (2025-07-25 12:48:48 PM EDT)
+--- Starting Data Loading Process ---
+Loading games from data/end_chain/todaysgames_normalized.csv...
+✅ Loaded games. Shape: (15, 5)
+Loading batters_home from data/end_chain/batters_home_weather_park.csv...
+✅ Loaded batters_home. Shape: (125, 119)
+Loading batters_away from data/end_chain/batters_away_weather_park.csv...
+✅ Loaded batters_away. Shape: (131, 112)
+Loading pitchers_home from data/end_chain/pitchers_home_weather_park.csv...
+✅ Loaded pitchers_home. Shape: (14, 6)
+Loading pitchers_away from data/end_chain/pitchers_away_weather_park.csv...
+✅ Loaded pitchers_away. Shape: (15, 6)
+--- Data Loading Complete ---
+⏹️ END: chain_load_data (2025-07-25 12:48:48 PM EDT)
+
+▶️ START: deduplicate_batters (2025-07-25 12:48:48 PM EDT)
+✅ Cleaned and deduplicated: batters_home_weather_park.csv → 115 rows
+✅ Cleaned and deduplicated: batters_away_weather_park.csv → 115 rows
+⏹️ END: deduplicate_batters (2025-07-25 12:48:48 PM EDT)
+
+▶️ START: clean_and_preprocess_batters (2025-07-25 12:48:48 PM EDT)
+⏹️ END: clean_and_preprocess_batters (2025-07-25 12:48:48 PM EDT)
+
+▶️ START: rename_and_merge_pitcher_data (2025-07-25 12:48:49 PM EDT)
+✅ Cleaned and updated: pitchers_home_weather_park.csv
+✅ Cleaned and updated: pitchers_away_weather_park.csv
+⏹️ END: rename_and_merge_pitcher_data (2025-07-25 12:48:49 PM EDT)
+
+▶️ START: pit_clean1 (2025-07-25 12:48:49 PM EDT)
+✅ Updated names in pitchers_home_weather_park.csv
+✅ Updated names in pitchers_away_weather_park.csv
+✅ Synced 'home_team' with 'team' in batters_home_cleaned.csv
+⏹️ END: pit_clean1 (2025-07-25 12:48:49 PM EDT)
+
+▶️ START: pre_merge (2025-07-25 12:48:49 PM EDT)
+Successfully deleted columns ending in '_y': player_id_y, year_y, player_age_y, ab_y, pa_y, hit_y, single_y, double_y, triple_y, home_run_y, strikeout_y, walk_y, k_percent_y, bb_percent_y, batting_avg_y, slg_percent_y, on_base_percent_y, on_base_plus_slg_y, xba_y, xslg_y, woba_y, xwoba_y, xobp_y, xiso_y, avg_swing_speed_y, fast_swing_rate_y, blasts_contact_y, blasts_swing_y, squared_up_contact_y, squared_up_swing_y, avg_swing_length_y, swords_y, attack_angle_y, attack_direction_y, ideal_angle_rate_y, vertical_swing_path_y, exit_velocity_avg_y, launch_angle_avg_y, sweet_spot_percent_y, barrel_batted_rate_y, hard_hit_percent_y, avg_best_speed_y, avg_hyper_speed_y, whiff_percent_y, swing_percent_y, name_y, type_y, home_team_y
+Successfully removed '_x' trailing from column names.
+Modified DataFrame saved to data/adjusted/batters_home_weather_park.csv
+⏹️ END: pre_merge (2025-07-25 12:48:49 PM EDT)
+
+▶️ START: merge_data (2025-07-25 12:48:50 PM EDT)
+2025-07-25 16:48:50,435 - INFO - 🔗 Starting merge process...
+2025-07-25 16:48:50,435 - INFO - ⏳ Loading batters_home from data/end_chain/cleaned/batters_home_cleaned.csv...
+2025-07-25 16:48:50,438 - INFO - ✅ Loaded batters_home with 115 rows and 71 columns.
+2025-07-25 16:48:50,438 - INFO - ⏳ Loading batters_away from data/end_chain/cleaned/batters_away_cleaned.csv...
+2025-07-25 16:48:50,441 - INFO - ✅ Loaded batters_away with 115 rows and 65 columns.
+2025-07-25 16:48:50,441 - INFO - ⏳ Loading pitchers_home from data/end_chain/cleaned/pitchers_home_cleaned.csv...
+2025-07-25 16:48:50,442 - INFO - ✅ Loaded pitchers_home with 14 rows and 11 columns.
+2025-07-25 16:48:50,442 - INFO - ⏳ Loading pitchers_away from data/end_chain/cleaned/pitchers_away_cleaned.csv...
+2025-07-25 16:48:50,443 - INFO - ✅ Loaded pitchers_away with 15 rows and 11 columns.
+2025-07-25 16:48:50,443 - INFO - ⏳ Loading games from data/end_chain/cleaned/games_cleaned.csv...
+2025-07-25 16:48:50,444 - INFO - ✅ Loaded games with 15 rows and 5 columns.
+2025-07-25 16:48:50,444 - INFO - 🔍 Validating columns for games...
+2025-07-25 16:48:50,444 - INFO - ✅ All required columns present in games.
+2025-07-25 16:48:50,444 - INFO - 🔍 Validating columns for batters_home...
+2025-07-25 16:48:50,444 - INFO - ✅ All required columns present in batters_home.
+2025-07-25 16:48:50,444 - INFO - 🔍 Validating columns for batters_away...
+2025-07-25 16:48:50,444 - INFO - ✅ All required columns present in batters_away.
+2025-07-25 16:48:50,444 - INFO - 🔍 Validating columns for pitchers_home...
+2025-07-25 16:48:50,444 - INFO - ✅ All required columns present in pitchers_home.
+2025-07-25 16:48:50,444 - INFO - 🔍 Validating columns for pitchers_away...
+2025-07-25 16:48:50,445 - INFO - ✅ All required columns present in pitchers_away.
+2025-07-25 16:48:50,445 - INFO - 🔄 Merging with batters_home...
+2025-07-25 16:48:50,446 - INFO - 🔄 Merging with batters_away...
+2025-07-25 16:48:50,448 - INFO - 🔄 Merging with pitchers_home...
+2025-07-25 16:48:50,451 - INFO - 🔄 Merging with pitchers_away...
+2025-07-25 16:48:50,453 - INFO - 🧹 Removed existing file: data/end_chain/final/combined_game_data.csv
+2025-07-25 16:48:50,508 - INFO - ✅ Merged data saved to data/end_chain/final/combined_game_data.csv
+2025-07-25 16:48:50,509 - INFO - 📍 Absolute path: /home/runner/work/sports-betting-site/sports-betting-site/data/end_chain/final/combined_game_data.csv
+2025-07-25 16:48:50,509 - INFO - 🎉 Merge process completed.
+⏹️ END: merge_data (2025-07-25 12:48:50 PM EDT)
+
