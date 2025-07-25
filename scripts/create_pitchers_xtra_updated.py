@@ -57,31 +57,35 @@ def main():
     df = pd.read_csv(INPUT_FILE)
     ref = pd.read_csv(REF_FILE)
 
-    required_cols = {"pitcher_home", "pitcher_away", "team"}
+    required_cols = {"pitcher_home", "pitcher_away"}
     if not required_cols.issubset(df.columns):
         print(f"❌ Input file missing required columns: {required_cols - set(df.columns)}")
         return
 
-    # Initialize new DataFrame
+    # Create output DataFrame with blanks
     output_df = pd.DataFrame(columns=OUTPUT_COLUMNS)
     output_df["pitcher_home"] = df["pitcher_home"]
     output_df["pitcher_away"] = df["pitcher_away"]
-    output_df["team"] = df["team"]
 
-    # Create blank stat fields
     for col in ["innings_pitched", "strikeouts", "walks", "earned_runs"]:
         output_df[col] = ""
 
-    # Normalize name from pitcher_home for this example
+    # Normalize name from pitcher_home
     output_df["name"] = output_df["pitcher_home"].astype(str).apply(normalize_name)
 
-    # Merge team from ref based on normalized name
+    # Normalize name in reference file
     ref["name"] = ref["last_name, first_name"].astype(str).apply(normalize_name)
     ref_team_lookup = ref[["name", "team"]]
-    output_df = output_df.drop(columns=["team"], errors="ignore").merge(ref_team_lookup, on="name", how="left")
+
+    # Merge team into output_df
+    output_df = output_df.merge(ref_team_lookup, on="name", how="left")
+
+    # Debug info if team is missing
+    missing_teams = output_df["team"].isna().sum()
+    print(f"🔎 Missing team for {missing_teams} rows")
 
     # Save final file
-    output_df = output_df[OUTPUT_COLUMNS]  # Ensure column order
+    output_df = output_df[OUTPUT_COLUMNS]  # enforce correct column order
     output_df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Created {OUTPUT_FILE} with shape {output_df.shape}")
 
