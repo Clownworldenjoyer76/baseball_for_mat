@@ -18,14 +18,14 @@ def create_weather_teams_file():
     output_df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Wrote home_team and away_team to {OUTPUT_FILE}")
 
-def rename_stadium_to_home_team():
+def rename_stadium_to_venue():
     try:
         df = pd.read_csv(WEATHER_ADJUSTMENTS_FILE)
 
         if "stadium" in df.columns:
-            df.rename(columns={"stadium": "home_team"}, inplace=True)
+            df.rename(columns={"stadium": "venue"}, inplace=True)
             df.to_csv(WEATHER_ADJUSTMENTS_FILE, index=False)
-            print(f"✅ Renamed 'stadium' to 'home_team' in {WEATHER_ADJUSTMENTS_FILE}")
+            print(f"✅ Renamed 'stadium' to 'venue' in {WEATHER_ADJUSTMENTS_FILE}")
         else:
             print(f"⚠️ Column 'stadium' not found in {WEATHER_ADJUSTMENTS_FILE}")
     except Exception as e:
@@ -33,7 +33,7 @@ def rename_stadium_to_home_team():
 
 def main():
     create_weather_teams_file()
-    rename_stadium_to_home_team()
+    rename_stadium_to_venue() # Changed function call here
 
 if __name__ == "__main__":
     main()
