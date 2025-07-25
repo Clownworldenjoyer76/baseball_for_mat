@@ -65,13 +65,13 @@ def main():
 
     print(f"🔄 Normalizing names in {INPUT_FILE.name}...")
 
-    # Normalize name column
+    # Normalize name column as "Last, First"
     df["name"] = df[src_col].astype(str).apply(normalize_name)
 
-    # Clean trailing commas
+    # Strip trailing commas from all string fields
     df = df.applymap(lambda x: x.rstrip(',') if isinstance(x, str) else x)
 
-    # Rename known stat columns
+    # Rename stat fields
     df.rename(columns={
         "p_formatted_ip": "innings_pitched",
         "strikeout": "strikeouts",
@@ -79,15 +79,17 @@ def main():
         "p_earned_run": "earned_runs"
     }, inplace=True)
 
-    # Merge team from ref
+    # Merge team last
     ref = ref[["last_name, first_name", "team"]].rename(columns={"last_name, first_name": "name"})
     df = df.merge(ref, on="name", how="left")
 
     if "team" not in df.columns:
         print("❌ Failed to merge 'team' column.")
     else:
-        matched = df["team"].notna().sum()
-        print(f"✅ Merged 'team' for {matched} rows.")
+        # Move 'team' to the last column
+        team_col = df.pop("team")
+        df["team"] = team_col
+        print(f"✅ Merged 'team' for {df['team'].notna().sum()} rows.")
 
     df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Output written to {OUTPUT_FILE}")
