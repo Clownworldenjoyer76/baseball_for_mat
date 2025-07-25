@@ -1,5 +1,7 @@
 import pandas as pd
 from pathlib import Path
+import unicodedata
+import re
 
 # File paths
 HOME_FILE = Path("data/end_chain/pitchers_home_weather_park.csv")
@@ -9,12 +11,37 @@ XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
 MERGE_COLS = ["innings_pitched", "strikeouts", "walks", "earned_runs"]
 RENAME_MAP = {"last_name, first_name": "name"}
 
-def rename_name_column(df: pd.DataFrame, filename: str) -> pd.DataFrame:
+def strip_accents(text):
+    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+
+def capitalize_mc_names(text):
+    return re.sub(r'\b(mc)([a-z])([a-z]*)\b',
+                  lambda m: m.group(1).capitalize() + m.group(2).upper() + m.group(3).lower(),
+                  text, flags=re.IGNORECASE)
+
+def normalize_name(name):
+    if not isinstance(name, str):
+        return ""
+    name = name.replace("’", "'").replace("`", "'").strip()
+    name = strip_accents(name)
+    name = re.sub(r"[^\w\s,\.]", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
+    name = capitalize_mc_names(name)
+
+    tokens = name.split()
+    if len(tokens) >= 2:
+        return f"{tokens[1]}, {tokens[0]}"
+    return name
+
+def normalize_and_format_names(df: pd.DataFrame, filename: str) -> pd.DataFrame:
     if "last_name, first_name" in df.columns:
         df = df.rename(columns=RENAME_MAP)
-        print(f"✅ Renamed column in {filename}")
+
+    if "name" in df.columns:
+        df["name"] = df["name"].astype(str).apply(normalize_name)
+        print(f"🔄 Normalized names to 'Last, First' in {filename}")
     else:
-        print(f"⚠️ 'last_name, first_name' not found in {filename}")
+        print(f"⚠️ 'name' column not found in {filename}")
     return df
 
 def merge_extra_data(df: pd.DataFrame, xtra_df: pd.DataFrame, filename: str) -> pd.DataFrame:
@@ -28,7 +55,7 @@ def process_file(path: Path, xtra_df: pd.DataFrame):
         return
 
     df = pd.read_csv(path)
-    df = rename_name_column(df, path.name)
+    df = normalize_and_format_names(df, path.name)
     df = merge_extra_data(df, xtra_df, path.name)
     df.to_csv(path, index=False)
     print(f"💾 Updated: {path.name}")
@@ -39,6 +66,7 @@ def main():
         return
 
     xtra_df = pd.read_csv(XTRA_FILE)
+    xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
 
     process_file(HOME_FILE, xtra_df)
     process_file(AWAY_FILE, xtra_df)
