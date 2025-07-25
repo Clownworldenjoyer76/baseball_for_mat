@@ -12,10 +12,10 @@ LOG_AWAY = "log_weather_away.txt"
 def apply_adjustment(df, side, weather_df):
     if "team" not in df.columns:
         raise ValueError(f"Missing 'team' column in batters_{side}.csv")
-    if "stadium" not in weather_df.columns:
-        raise ValueError("Missing 'stadium' column in weather_adjustments.csv")
+    if "venue" not in weather_df.columns:
+        raise ValueError("Missing 'venue' column in weather_adjustments.csv")
 
-    merged = df.merge(weather_df, left_on="team", right_on="stadium", how="left")
+    merged = df.merge(weather_df, left_on="team", right_on="venue", how="left")
 
     if "temperature" not in merged.columns:
         raise ValueError("Missing 'temperature' column after merge")
