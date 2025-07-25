@@ -1,5 +1,3 @@
-# scripts/pit_xtra_merge.py
-
 import pandas as pd
 import unicodedata
 import re
@@ -25,10 +23,15 @@ def normalize_name(name):
         return ""
     name = name.replace("’", "'").replace("`", "'").strip()
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)  # remove special characters
-    name = re.sub(r"\b(Jr\.|Sr\.|II|III|IV|V)\b", "", name, flags=re.IGNORECASE)  # strip suffixes
+    name = re.sub(r"[^\w\s,\.]", "", name)
+    name = re.sub(r"\b(Jr\.|Sr\.|II|III|IV|V)\b", "", name, flags=re.IGNORECASE)
     name = re.sub(r"\s+", " ", name).strip()
     name = capitalize_mc_names(name)
+
+    # Preserve "Last, First" format
+    if "," in name:
+        return name
+
     tokens = name.split()
     if len(tokens) >= 2:
         return f"{tokens[1]}, {tokens[0]}"
@@ -51,6 +54,9 @@ def load_and_prepare(file_path: Path, xtra_df: pd.DataFrame):
     df["name"] = df["name"].astype(str).apply(normalize_name)
     df["name"] = df["name"].str.rstrip(", ").str.strip()
 
+    xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
+    xtra_df["name"] = xtra_df["name"].str.rstrip(", ").str.strip()
+
     xtra_names = set(xtra_df["name"])
     unmatched_names = df[~df["name"].isin(xtra_names)]["name"].unique()
     if len(unmatched_names) > 0:
@@ -71,9 +77,6 @@ def main():
     if "name" not in xtra_df.columns:
         print("❌ 'name' column missing in pitchers_xtra_normalized.csv")
         return
-
-    xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
-    xtra_df["name"] = xtra_df["name"].str.rstrip(", ").str.strip()
 
     load_and_prepare(HOME_FILE, xtra_df)
     load_and_prepare(AWAY_FILE, xtra_df)
