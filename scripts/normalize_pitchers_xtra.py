@@ -58,40 +58,36 @@ def main():
     df = pd.read_csv(INPUT_FILE)
     ref = pd.read_csv(NORMALIZED_REF)
 
-    old_name_col = "last_name, first_name"
-    if old_name_col not in df.columns:
-        print(f"❌ '{old_name_col}' column not found in input.")
+    src_col = "last_name, first_name"
+    if src_col not in df.columns:
+        print(f"❌ '{src_col}' column not found in input.")
         return
 
     print(f"🔄 Normalizing names in {INPUT_FILE.name}...")
 
-    # Normalize names
-    df[old_name_col] = df[old_name_col].astype(str).apply(normalize_name)
+    # Normalize name column
+    df["name"] = df[src_col].astype(str).apply(normalize_name)
 
-    # Rename and clean
-    df = df.rename(columns={
-        old_name_col: "name",
+    # Clean trailing commas
+    df = df.applymap(lambda x: x.rstrip(',') if isinstance(x, str) else x)
+
+    # Rename known stat columns
+    df.rename(columns={
         "p_formatted_ip": "innings_pitched",
         "strikeout": "strikeouts",
         "walk": "walks",
         "p_earned_run": "earned_runs"
-    })
+    }, inplace=True)
 
-    # Remove trailing commas in all string columns
-    df = df.applymap(lambda x: x.rstrip(',') if isinstance(x, str) else x)
+    # Merge team from ref
+    ref = ref[["last_name, first_name", "team"]].rename(columns={"last_name, first_name": "name"})
+    df = df.merge(ref, on="name", how="left")
 
-    # Match team from ref by name
-    ref = ref[['last_name, first_name', 'team']].rename(columns={'last_name, first_name': 'name'})
-    df = df.merge(ref, on='name', how='left')
-
-    if 'team' not in df.columns:
+    if "team" not in df.columns:
         print("❌ Failed to merge 'team' column.")
     else:
-        print(f"✅ Merged 'team' for {df['team'].notna().sum()} rows.")
-
-    # Log missing names
-    if df['name'].str.strip().eq("").any():
-        print("⚠️ Warning: Some names could not be normalized.")
+        matched = df["team"].notna().sum()
+        print(f"✅ Merged 'team' for {matched} rows.")
 
     df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Output written to {OUTPUT_FILE}")
