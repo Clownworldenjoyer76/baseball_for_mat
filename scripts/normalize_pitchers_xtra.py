@@ -31,19 +31,21 @@ def normalize_name(name):
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
     name = capitalize_mc_names(name)
-    
-    if "," in name:
-        parts = [p.strip().title() for p in name.split(",")]
-        if len(parts) >= 2:
-            return f"{parts[0]}, {parts[1]}"
-        return ' '.join(parts).title()
-    else:
-        tokens = [t.title() for t in name.split()]
-        if len(tokens) >= 2:
-            first = tokens[0]
+
+    suffixes = {"jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"}
+    tokens = name.split()
+
+    if len(tokens) >= 2:
+        first = tokens[0]
+        possible_suffix = tokens[-1].lower().strip(".")
+        if possible_suffix in suffixes and len(tokens) > 2:
+            last = " ".join(tokens[1:-1])
+            suffix = tokens[-1]
+            return f"{last} {suffix}, {first}"
+        else:
             last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return ' '.join(tokens).title()
+    return name.title()
 
 def main():
     if not INPUT_FILE.exists():
