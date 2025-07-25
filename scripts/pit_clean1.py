@@ -6,6 +6,7 @@ from pathlib import Path
 # Input file paths
 HOME_PATH = Path("data/end_chain/pitchers_home_weather_park.csv")
 AWAY_PATH = Path("data/end_chain/pitchers_away_weather_park.csv")
+BATTERS_HOME_PATH = Path("data/end_chain/cleaned/batters_home_cleaned.csv")
 
 def flip_name_format(name):
     try:
@@ -28,9 +29,22 @@ def process_file(path: Path):
     df.to_csv(path, index=False)
     print(f"✅ Updated names in {path.name}")
 
+def update_home_team_column():
+    if not BATTERS_HOME_PATH.exists():
+        print(f"❌ File not found: {BATTERS_HOME_PATH}")
+        return
+    df = pd.read_csv(BATTERS_HOME_PATH)
+    if "team" not in df.columns or "home_team" not in df.columns:
+        print(f"❌ Required columns not found in {BATTERS_HOME_PATH.name}")
+        return
+    df["home_team"] = df["team"]
+    df.to_csv(BATTERS_HOME_PATH, index=False)
+    print(f"✅ Synced 'home_team' with 'team' in {BATTERS_HOME_PATH.name}")
+
 def main():
     process_file(HOME_PATH)
     process_file(AWAY_PATH)
+    update_home_team_column()
 
 if __name__ == "__main__":
     main()
