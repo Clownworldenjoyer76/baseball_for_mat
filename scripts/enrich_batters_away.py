@@ -42,6 +42,12 @@ def main():
     weather = weather[weather_cols]
     weather["temperature"] = weather["temperature"].round(1)
 
+    # 🔧 Force correct data types for merge
+    batters["home_team"] = batters["home_team"].astype(str)
+    batters["away_team"] = batters["away_team"].astype(str)
+    weather["home_team"] = weather["home_team"].astype(str)
+    weather["away_team"] = weather["away_team"].astype(str)
+
     logging.info("🔗 Merging...")
     batters = pd.merge(batters, weather, on=["away_team", "home_team"], how="left")
 
