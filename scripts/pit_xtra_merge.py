@@ -42,8 +42,8 @@ def load_and_prepare(file_path: Path, xtra_df: pd.DataFrame):
         print(f"❌ No 'name' column in {file_path.name}")
         return
 
-    df["name"] = df["name"].astype(str).apply(normalize_name)
-    df["name"] = df["name"].str.rstrip(", ").str.strip()
+    # Preserve "Last, First", just clean up
+    df["name"] = df["name"].astype(str).str.rstrip(", ").str.strip()
 
     xtra_names = set(xtra_df["name"])
     unmatched_names = df[~df["name"].isin(xtra_names)]["name"].unique()
@@ -70,6 +70,7 @@ def main():
         print("❌ 'name' column missing in pitchers_xtra_normalized.csv")
         return
 
+    # Normalize only the xtra file
     xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
     xtra_df["name"] = xtra_df["name"].str.rstrip(", ").str.strip()
 
