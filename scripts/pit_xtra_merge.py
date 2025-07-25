@@ -1,3 +1,5 @@
+# scripts/pit_xtra_merge.py
+
 import pandas as pd
 import unicodedata
 import re
@@ -23,7 +25,8 @@ def normalize_name(name):
         return ""
     name = name.replace("’", "'").replace("`", "'").strip()
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)
+    name = re.sub(r"[^\w\s,\.]", "", name)  # remove special characters
+    name = re.sub(r"\b(Jr\.|Sr\.|II|III|IV|V)\b", "", name, flags=re.IGNORECASE)  # strip suffixes
     name = re.sub(r"\s+", " ", name).strip()
     name = capitalize_mc_names(name)
     tokens = name.split()
@@ -38,12 +41,15 @@ def load_and_prepare(file_path: Path, xtra_df: pd.DataFrame):
 
     df = pd.read_csv(file_path)
 
+    if "last_name, first_name" in df.columns:
+        df.rename(columns={"last_name, first_name": "name"}, inplace=True)
+
     if "name" not in df.columns:
         print(f"❌ No 'name' column in {file_path.name}")
         return
 
-    # Preserve Last, First format — just trim
-    df["name"] = df["name"].astype(str).str.rstrip(", ").str.strip()
+    df["name"] = df["name"].astype(str).apply(normalize_name)
+    df["name"] = df["name"].str.rstrip(", ").str.strip()
 
     xtra_names = set(xtra_df["name"])
     unmatched_names = df[~df["name"].isin(xtra_names)]["name"].unique()
@@ -62,21 +68,12 @@ def main():
         return
 
     xtra_df = pd.read_csv(XTRA_FILE)
-
-    if "name" not in xtra_df.columns and "last_name, first_name" in xtra_df.columns:
-        xtra_df["name"] = xtra_df["last_name, first_name"]
-
     if "name" not in xtra_df.columns:
         print("❌ 'name' column missing in pitchers_xtra_normalized.csv")
         return
 
     xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
     xtra_df["name"] = xtra_df["name"].str.rstrip(", ").str.strip()
-
-    # ✅ Strip suffixes like Jr., Sr., II from xtra_df only
-    xtra_df["name"] = xtra_df["name"].apply(
-        lambda n: re.sub(r"\b(Jr\.?|Sr\.?|II|III|IV|V)\b", "", n, flags=re.IGNORECASE).replace("  ", " ").strip() if isinstance(n, str) else n
-    )
 
     load_and_prepare(HOME_FILE, xtra_df)
     load_and_prepare(AWAY_FILE, xtra_df)
