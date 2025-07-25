@@ -66,7 +66,6 @@ def main():
 
         results.append({
             "venue": venue_name,
-            "stadium": venue_name, # Added 'stadium' column mirroring 'venue'
             "location": location,
             "temperature": current.get("temp_f", ""),
             "wind_speed": current.get("wind_mph", ""),
