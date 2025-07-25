@@ -48,11 +48,12 @@ if __name__ == '__main__':
     try:
         raw_dataframes = load_raw_data(files_to_load)
 
-        # Optional verification
-        print("\n--- Preview: First 2 Rows of Each DataFrame ---")
-        for name, df in raw_dataframes.items():
-            print(f"\n📄 {name}")
-            print(df.head(2))
+        # Optional verification - REMOVED PREVIEW
+        # print("\n--- Preview: First 2 Rows of Each DataFrame ---")
+        # for name, df in raw_dataframes.items():
+        #     print(f"\n📄 {name}")
+        #     print(df.head(2))
 
     except FileNotFoundError:
         print("\n⛔ Execution stopped due to missing file(s).")
+
