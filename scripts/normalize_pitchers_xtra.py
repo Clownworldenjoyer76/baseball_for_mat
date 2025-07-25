@@ -50,16 +50,17 @@ def main():
 
     df = pd.read_csv(INPUT_FILE)
 
-    if "name" not in df.columns:
-        print("❌ 'name' column not found in input.")
+    column = "last_name, first_name"
+    if column not in df.columns:
+        print(f"❌ '{column}' column not found in input.")
         return
 
     print(f"🔄 Normalizing names in {INPUT_FILE.name}...")
 
-    df["name"] = df["name"].astype(str).apply(normalize_name)
+    df[column] = df[column].astype(str).apply(normalize_name)
 
     # Log missing or empty names
-    missing = df[df["name"].str.strip() == ""]
+    missing = df[df[column].str.strip() == ""]
     if not missing.empty:
         print("\n⚠️ Missing or empty normalized names:")
         print(missing)
