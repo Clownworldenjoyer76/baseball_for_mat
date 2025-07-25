@@ -72,6 +72,9 @@ def main():
         "p_earned_run": "earned_runs"
     }, inplace=True)
 
+    # Add empty "team" column
+    df["team"] = ""
+
     df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Output written to {OUTPUT_FILE}")
 
