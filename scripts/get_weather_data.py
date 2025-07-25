@@ -5,7 +5,7 @@ from datetime import datetime
 
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
-VENUE_FILE = "data/Data/stadium_metadata.csv" # Changed STADIUM_FILE to VENUE_FILE
+VENUE_FILE = "data/Data/stadium_metadata.csv"
 API_KEY = "45d9502513854b489c3162411251907"
 BASE_URL = "http://api.weatherapi.com/v1/current.json"
 
@@ -30,19 +30,24 @@ def main():
         print(f"{timestamp()} ❌ Failed to read input file: {e}")
         return
 
-    print(f"{timestamp()} 🌍 Fetching weather for {len(df)} venues...") # Changed 'stadiums' to 'venues'
+    print(f"{timestamp()} 🌍 Fetching weather for {len(df)} venues...")
 
     results = []
 
     for _, row in df.iterrows():
-        venue_name = row.get("venue", "") # Renamed 'venue' to 'venue_name' to avoid conflict
+        # Find venue in the venue column of data/weather_input.csv
+        venue_name = row.get("venue", "")
+        # Find away_team value in away_team column of data/weather_input.csv
+        away_team_val = row.get("away_team", "UNKNOWN")
+        # Find home_team value in team_name_x column of data/weather_input.csv
+        home_team_val = row.get("team_name_x", "UNKNOWN")
+
         city = row.get("city", "")
         location = f"{venue_name}, {city}"
         lat = row.get("latitude", "")
         lon = row.get("longitude", "")
         is_dome = row.get("is_dome", False)
         game_time = row.get("game_time", "")
-        team_name = row.get("team_name", "UNKNOWN")  # this is your 'venue' value
 
         attempts = 0
         data = None
@@ -60,7 +65,7 @@ def main():
         condition = current.get("condition", {}).get("text", "Unknown")
 
         results.append({
-            "venue": team_name, # Changed "stadium" to "venue"
+            "venue": venue_name,
             "location": location,
             "temperature": current.get("temp_f", ""),
             "wind_speed": current.get("wind_mph", ""),
@@ -69,7 +74,9 @@ def main():
             "precipitation": current.get("precip_in", 0.0),
             "condition": condition,
             "notes": "Roof closed" if is_dome is True else "Roof open",
-            "game_time": game_time
+            "game_time": game_time,
+            "home_team": home_team_val,  # Added home_team from input file
+            "away_team": away_team_val   # Added away_team from input file
         })
 
     if not results:
@@ -80,33 +87,32 @@ def main():
     out_df.to_csv(OUTPUT_FILE, index=False)
     print(f"{timestamp()} ✅ Weather data written to {OUTPUT_FILE}")
 
-    # === FORCE INSERT HOME_TEAM AND AWAY_TEAM ===
-    try:
-        weather_df = pd.read_csv(OUTPUT_FILE)
-        venue_df = pd.read_csv(VENUE_FILE) # Changed stadium_df to venue_df
-
-        # Strip whitespace and normalize
-        weather_df["venue"] = weather_df["venue"].astype(str).str.strip() # Changed "stadium" to "venue"
-        venue_df["team_name"] = venue_df["team_name"].astype(str).str.strip() # Changed stadium_df to venue_df
-
-        # Merge to get away_team using venue → team_name match
-        merged = weather_df.merge(
-            venue_df[["team_name", "away_team"]], # Changed stadium_df to venue_df
-            left_on="venue", # Changed "stadium" to "venue"
-            right_on="team_name",
-            how="left"
-        )
-
-        merged["home_team"] = merged["venue"] # Changed "stadium" to "venue"
-        merged["away_team"] = merged["away_team"].fillna("UNKNOWN")
-
-        merged.drop(columns=["team_name"], inplace=True)
-        merged.to_csv(OUTPUT_FILE, index=False)
-
-        print(f"{timestamp()} ✅ Forced insert of home_team and away_team into {OUTPUT_FILE}")
-
-    except Exception as e:
-        print(f"{timestamp()} ❌ Final write failed: {e}")
+    # === The following block is no longer needed for home/away team population ===
+    # === as these values are now directly read from the input CSV.           ===
+    # try:
+    #     weather_df = pd.read_csv(OUTPUT_FILE)
+    #     venue_df = pd.read_csv(VENUE_FILE)
+    #
+    #     weather_df["venue"] = weather_df["venue"].astype(str).str.strip()
+    #     venue_df["team_name"] = venue_df["team_name"].astype(str).str.strip()
+    #
+    #     merged = weather_df.merge(
+    #         venue_df[["team_name", "away_team"]],
+    #         left_on="venue",
+    #         right_on="team_name",
+    #         how="left"
+    #     )
+    #
+    #     merged["home_team"] = merged["venue"]
+    #     merged["away_team"] = merged["away_team"].fillna("UNKNOWN")
+    #
+    #     merged.drop(columns=["team_name"], inplace=True)
+    #     merged.to_csv(OUTPUT_FILE, index=False)
+    #
+    #     print(f"{timestamp()} ✅ Forced insert of home_team and away_team into {OUTPUT_FILE}")
+    #
+    # except Exception as e:
+    #     print(f"{timestamp()} ❌ Final write failed: {e}")
 
 if __name__ == "__main__":
     main()
