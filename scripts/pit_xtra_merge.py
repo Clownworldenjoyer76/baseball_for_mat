@@ -38,9 +38,6 @@ def load_and_prepare(file_path: Path, xtra_df: pd.DataFrame):
 
     df = pd.read_csv(file_path)
 
-    if "last_name, first_name" in df.columns:
-        df.rename(columns={"last_name, first_name": "name"}, inplace=True)
-
     if "name" not in df.columns:
         print(f"❌ No 'name' column in {file_path.name}")
         return
@@ -65,6 +62,10 @@ def main():
         return
 
     xtra_df = pd.read_csv(XTRA_FILE)
+
+    if "name" not in xtra_df.columns and "last_name, first_name" in xtra_df.columns:
+        xtra_df["name"] = xtra_df["last_name, first_name"]
+
     if "name" not in xtra_df.columns:
         print("❌ 'name' column missing in pitchers_xtra_normalized.csv")
         return
