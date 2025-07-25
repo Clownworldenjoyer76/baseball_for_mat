@@ -39,6 +39,7 @@ def normalize_and_format_names(df: pd.DataFrame, filename: str) -> pd.DataFrame:
 
     if "name" in df.columns:
         df["name"] = df["name"].astype(str).apply(normalize_name)
+        df["name"] = df["name"].str.rstrip(", ").str.strip()
         print(f"🔄 Normalized names to 'Last, First' in {filename}")
     else:
         print(f"⚠️ 'name' column not found in {filename}")
@@ -57,6 +58,7 @@ def process_file(path: Path, xtra_df: pd.DataFrame):
     df = pd.read_csv(path)
     df = normalize_and_format_names(df, path.name)
     df = merge_extra_data(df, xtra_df, path.name)
+    df["name"] = df["name"].str.rstrip(", ").str.strip()  # Final cleanup
     df.to_csv(path, index=False)
     print(f"💾 Updated: {path.name}")
 
@@ -67,6 +69,7 @@ def main():
 
     xtra_df = pd.read_csv(XTRA_FILE)
     xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
+    xtra_df["name"] = xtra_df["name"].str.rstrip(", ").str.strip()
 
     process_file(HOME_FILE, xtra_df)
     process_file(AWAY_FILE, xtra_df)
