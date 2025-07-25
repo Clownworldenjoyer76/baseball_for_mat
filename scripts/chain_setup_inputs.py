@@ -5,12 +5,12 @@ from datetime import datetime
 import sys
 
 # Setup logging
-log_dir = Path("summaries")
-log_dir.mkdir(parents=True, exist_ok=True)
-log_path = log_dir / f"chain_setup_inputs_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+# log_dir = Path("summaries") # No longer needed if not writing to a file
+# log_dir.mkdir(parents=True, exist_ok=True) # No longer needed
+# log_path = log_dir / f"chain_setup_inputs_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log" # No longer needed
 
 logging.basicConfig(
-    filename=log_path,
+    # Removed filename=log_path, so it will only log to handlers added manually
     level=logging.INFO,
     format="%(message)s"
 )
@@ -18,7 +18,9 @@ console = logging.StreamHandler(sys.stdout)
 console.setLevel(logging.INFO)
 console.setFormatter(logging.Formatter("%(message)s"))
 logging.getLogger().addHandler(console)
+# Set the root logger level again to ensure console output respects INFO
 logging.getLogger().setLevel(logging.INFO)
+
 
 def copy_files_to_end_chain():
     input_files = [
