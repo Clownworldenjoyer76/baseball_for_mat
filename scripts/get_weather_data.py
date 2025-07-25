@@ -5,7 +5,7 @@ from datetime import datetime
 
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
-STADIUM_FILE = "data/Data/stadium_metadata.csv"
+VENUE_FILE = "data/Data/stadium_metadata.csv" # Changed STADIUM_FILE to VENUE_FILE
 API_KEY = "45d9502513854b489c3162411251907"
 BASE_URL = "http://api.weatherapi.com/v1/current.json"
 
@@ -30,19 +30,19 @@ def main():
         print(f"{timestamp()} ❌ Failed to read input file: {e}")
         return
 
-    print(f"{timestamp()} 🌍 Fetching weather for {len(df)} stadiums...")
+    print(f"{timestamp()} 🌍 Fetching weather for {len(df)} venues...") # Changed 'stadiums' to 'venues'
 
     results = []
 
     for _, row in df.iterrows():
-        venue = row.get("venue", "")
+        venue_name = row.get("venue", "") # Renamed 'venue' to 'venue_name' to avoid conflict
         city = row.get("city", "")
-        location = f"{venue}, {city}"
+        location = f"{venue_name}, {city}"
         lat = row.get("latitude", "")
         lon = row.get("longitude", "")
         is_dome = row.get("is_dome", False)
         game_time = row.get("game_time", "")
-        team_name = row.get("team_name", "UNKNOWN")  # this is your 'stadium' value
+        team_name = row.get("team_name", "UNKNOWN")  # this is your 'venue' value
 
         attempts = 0
         data = None
@@ -60,7 +60,7 @@ def main():
         condition = current.get("condition", {}).get("text", "Unknown")
 
         results.append({
-            "stadium": team_name,
+            "venue": team_name, # Changed "stadium" to "venue"
             "location": location,
             "temperature": current.get("temp_f", ""),
             "wind_speed": current.get("wind_mph", ""),
@@ -83,21 +83,21 @@ def main():
     # === FORCE INSERT HOME_TEAM AND AWAY_TEAM ===
     try:
         weather_df = pd.read_csv(OUTPUT_FILE)
-        stadium_df = pd.read_csv(STADIUM_FILE)
+        venue_df = pd.read_csv(VENUE_FILE) # Changed stadium_df to venue_df
 
         # Strip whitespace and normalize
-        weather_df["stadium"] = weather_df["stadium"].astype(str).str.strip()
-        stadium_df["team_name"] = stadium_df["team_name"].astype(str).str.strip()
+        weather_df["venue"] = weather_df["venue"].astype(str).str.strip() # Changed "stadium" to "venue"
+        venue_df["team_name"] = venue_df["team_name"].astype(str).str.strip() # Changed stadium_df to venue_df
 
-        # Merge to get away_team using stadium → team_name match
+        # Merge to get away_team using venue → team_name match
         merged = weather_df.merge(
-            stadium_df[["team_name", "away_team"]],
-            left_on="stadium",
+            venue_df[["team_name", "away_team"]], # Changed stadium_df to venue_df
+            left_on="venue", # Changed "stadium" to "venue"
             right_on="team_name",
             how="left"
         )
 
-        merged["home_team"] = merged["stadium"]
+        merged["home_team"] = merged["venue"] # Changed "stadium" to "venue"
         merged["away_team"] = merged["away_team"].fillna("UNKNOWN")
 
         merged.drop(columns=["team_name"], inplace=True)
