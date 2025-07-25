@@ -42,7 +42,7 @@ def load_and_prepare(file_path: Path, xtra_df: pd.DataFrame):
         print(f"❌ No 'name' column in {file_path.name}")
         return
 
-    # Preserve "Last, First", just clean up
+    # Preserve Last, First format — just trim
     df["name"] = df["name"].astype(str).str.rstrip(", ").str.strip()
 
     xtra_names = set(xtra_df["name"])
@@ -70,9 +70,13 @@ def main():
         print("❌ 'name' column missing in pitchers_xtra_normalized.csv")
         return
 
-    # Normalize only the xtra file
     xtra_df["name"] = xtra_df["name"].astype(str).apply(normalize_name)
     xtra_df["name"] = xtra_df["name"].str.rstrip(", ").str.strip()
+
+    # ✅ Strip suffixes like Jr., Sr., II from xtra_df only
+    xtra_df["name"] = xtra_df["name"].apply(
+        lambda n: re.sub(r"\b(Jr\.?|Sr\.?|II|III|IV|V)\b", "", n, flags=re.IGNORECASE).replace("  ", " ").strip() if isinstance(n, str) else n
+    )
 
     load_and_prepare(HOME_FILE, xtra_df)
     load_and_prepare(AWAY_FILE, xtra_df)
