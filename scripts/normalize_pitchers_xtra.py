@@ -1,3 +1,5 @@
+# scripts/normalize_pitchers_xtra.py
+
 import pandas as pd
 import unicodedata
 import re
@@ -50,23 +52,32 @@ def main():
 
     df = pd.read_csv(INPUT_FILE)
 
-    column = "last_name, first_name"
-    if column not in df.columns:
-        print(f"❌ '{column}' column not found in input.")
+    old_name_col = "last_name, first_name"
+    if old_name_col not in df.columns:
+        print(f"❌ '{old_name_col}' column not found in input.")
         return
 
     print(f"🔄 Normalizing names in {INPUT_FILE.name}...")
 
-    df[column] = df[column].astype(str).apply(normalize_name)
+    df[old_name_col] = df[old_name_col].astype(str).apply(normalize_name)
 
-    # Log missing or empty names
-    missing = df[df[column].str.strip() == ""]
+    # Rename columns
+    df = df.rename(columns={
+        old_name_col: "name",
+        "p_formatted_ip": "innings_pitched",
+        "strikeout": "strikeouts",
+        "walk": "walks",
+        "p_earned_run": "earned_runs"
+    })
+
+    # Log missing names
+    missing = df[df["name"].str.strip() == ""]
     if not missing.empty:
         print("\n⚠️ Missing or empty normalized names:")
         print(missing)
 
     df.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Normalized names written to {OUTPUT_FILE}")
+    print(f"✅ Normalized and renamed columns written to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
