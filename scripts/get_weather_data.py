@@ -5,7 +5,7 @@ from datetime import datetime
 
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
-VENUE_FILE = "data/Data/stadium_metadata.csv"
+VENUE_FILE = "data/Data/stadium_metadata.csv" # This variable is still here but no longer used
 API_KEY = "45d9502513854b489c3162411251907"
 BASE_URL = "http://api.weatherapi.com/v1/current.json"
 
@@ -66,6 +66,7 @@ def main():
 
         results.append({
             "venue": venue_name,
+            "stadium": venue_name, # Added 'stadium' column mirroring 'venue'
             "location": location,
             "temperature": current.get("temp_f", ""),
             "wind_speed": current.get("wind_mph", ""),
@@ -75,8 +76,8 @@ def main():
             "condition": condition,
             "notes": "Roof closed" if is_dome is True else "Roof open",
             "game_time": game_time,
-            "home_team": home_team_val,  # Added home_team from input file
-            "away_team": away_team_val   # Added away_team from input file
+            "home_team": home_team_val,
+            "away_team": away_team_val
         })
 
     if not results:
@@ -86,33 +87,6 @@ def main():
     out_df = pd.DataFrame(results)
     out_df.to_csv(OUTPUT_FILE, index=False)
     print(f"{timestamp()} ✅ Weather data written to {OUTPUT_FILE}")
-
-    # === The following block is no longer needed for home/away team population ===
-    # === as these values are now directly read from the input CSV.           ===
-    # try:
-    #     weather_df = pd.read_csv(OUTPUT_FILE)
-    #     venue_df = pd.read_csv(VENUE_FILE)
-    #
-    #     weather_df["venue"] = weather_df["venue"].astype(str).str.strip()
-    #     venue_df["team_name"] = venue_df["team_name"].astype(str).str.strip()
-    #
-    #     merged = weather_df.merge(
-    #         venue_df[["team_name", "away_team"]],
-    #         left_on="venue",
-    #         right_on="team_name",
-    #         how="left"
-    #     )
-    #
-    #     merged["home_team"] = merged["venue"]
-    #     merged["away_team"] = merged["away_team"].fillna("UNKNOWN")
-    #
-    #     merged.drop(columns=["team_name"], inplace=True)
-    #     merged.to_csv(OUTPUT_FILE, index=False)
-    #
-    #     print(f"{timestamp()} ✅ Forced insert of home_team and away_team into {OUTPUT_FILE}")
-    #
-    # except Exception as e:
-    #     print(f"{timestamp()} ❌ Final write failed: {e}")
 
 if __name__ == "__main__":
     main()
