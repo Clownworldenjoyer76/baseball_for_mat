@@ -1,5 +1,3 @@
-# scripts/tag_master_files.py
-
 import pandas as pd
 import os
 import unicodedata
@@ -11,7 +9,8 @@ from datetime import datetime
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
-    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    text = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
 
 def normalize_name(name):
     if not isinstance(name, str):
@@ -20,13 +19,22 @@ def normalize_name(name):
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
 
-    suffixes = {"Jr", "Sr", "II", "III", "IV", "V", "Jr.", "Sr."}
-    name = name.replace(",", "")
-    tokens = name.split()
+    # Normalize casing and spacing
+    name = name.replace(" ,", ",").replace(", ", ",")
 
+    # Known suffixes
+    suffixes = {"Jr", "Sr", "II", "III", "IV", "Jr.", "Sr.", "Iv", "Ii", "Iii"}
+
+    # If comma is present, assume already formatted
+    if "," in name:
+        parts = [p.strip().title() for p in name.split(",")]
+        return f"{parts[0]}, {parts[1]}" if len(parts) == 2 else name.title()
+
+    tokens = name.split()
     if len(tokens) < 2:
         return name.title()
 
+    # If last token is a suffix, treat it as part of last name
     if tokens[-1] in suffixes:
         last = f"{tokens[-2]} {tokens[-1]}"
         first = " ".join(tokens[:-2])
