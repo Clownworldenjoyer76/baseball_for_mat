@@ -14,6 +14,7 @@ BATTER_FILE = Path("data/normalized/batters_normalized.csv")
 PITCHER_FILE = Path("data/normalized/pitchers_normalized.csv")
 OUTPUT_FOLDER = Path("data/tagged")
 OUTPUT_TOTALS_FILE = Path("data/output/player_totals.txt")
+SUMMARY_FILE = Path("summaries/summary.txt")
 
 OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 OUTPUT_TOTALS_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -33,7 +34,6 @@ def normalize_name_series(names_series: pd.Series) -> pd.Series:
     names_series = names_series.str.replace(RE_MULTI_SPACE, " ", regex=True)
     names_series = names_series.str.strip()
 
-    # Remove suffixes from the last name (before comma)
     def remove_suffix(name):
         parts = name.split(",", 1)
         if len(parts) == 2:
@@ -64,13 +64,14 @@ def load_csv_safely(file_path: Path, column_to_check: str = None) -> pd.DataFram
         logging.error(f"Error loading {file_path}: {e}")
         return pd.DataFrame()
 
-def tag_and_save_players(input_file_path: Path, player_type: str, master_df: pd.DataFrame) -> pd.DataFrame:
+def tag_and_save_players(input_file_path: Path, player_type: str, master_df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     logging.info(f"Tagging {player_type} data from {input_file_path}...")
 
     df_to_tag = load_csv_safely(input_file_path, "last_name, first_name")
+    source_count = len(df_to_tag)
     if df_to_tag.empty:
         logging.warning(f"Skipping {player_type} due to missing or invalid input.")
-        return pd.DataFrame()
+        return pd.DataFrame(), 0
 
     df_to_tag["last_name, first_name"] = normalize_name_series(df_to_tag["last_name, first_name"])
 
@@ -104,7 +105,7 @@ def tag_and_save_players(input_file_path: Path, player_type: str, master_df: pd.
     except Exception as e:
         logging.error(f"❌ Error saving tagged file: {e}")
 
-    return merged_clean
+    return merged_clean, source_count
 
 # ─── Main ───────────────────────────────────────────────────
 
@@ -119,8 +120,11 @@ if __name__ == "__main__":
     master_players_df["name"] = normalize_name_series(master_players_df["name"])
 
     all_tagged_dfs = {}
+    source_counts = {}
     for file_path, player_type in [(BATTER_FILE, "batters"), (PITCHER_FILE, "pitchers")]:
-        all_tagged_dfs[player_type] = tag_and_save_players(file_path, player_type, master_players_df)
+        tagged_df, source_ct = tag_and_save_players(file_path, player_type, master_players_df)
+        all_tagged_dfs[player_type] = tagged_df
+        source_counts[player_type] = source_ct
 
     try:
         with open(OUTPUT_TOTALS_FILE, "w") as f:
@@ -130,5 +134,16 @@ if __name__ == "__main__":
         logging.info(f"📄 Summary written to {OUTPUT_TOTALS_FILE}")
     except Exception as e:
         logging.error(f"❌ Error writing summary: {e}")
+
+    # ✅ Append to main summary file
+    try:
+        with open(SUMMARY_FILE, "a") as f:
+            f.write("🏷️ Tag Master Files Summary\n")
+            for key in all_tagged_dfs:
+                f.write(f"{key.capitalize()} source rows:    {source_counts[key]}\n")
+                f.write(f"{key.capitalize()} tagged output:   {len(all_tagged_dfs[key])}\n")
+            f.write("\n")
+    except Exception as e:
+        logging.error(f"❌ Could not write to {SUMMARY_FILE}: {e}")
 
     logging.info("✅ Tagging process complete.")
