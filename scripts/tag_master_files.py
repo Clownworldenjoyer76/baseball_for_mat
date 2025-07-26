@@ -4,8 +4,6 @@ import unicodedata
 import re
 from datetime import datetime
 
-SUFFIXES = {"jr", "sr", "ii", "iii", "iv"}
-
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -15,18 +13,8 @@ def normalize_name(name):
     if not isinstance(name, str):
         return ""
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)
+    name = re.sub(r"[^\w\s,]", "", name)  # preserve comma
     name = re.sub(r"\s+", " ", name).strip()
-
-    tokens = name.replace(",", "").split()
-    if len(tokens) >= 2:
-        if tokens[-1].lower().strip(".") in SUFFIXES and len(tokens) >= 3:
-            last = f"{tokens[-2]} {tokens[-1]}"
-            first = " ".join(tokens[:-2])
-        else:
-            last = tokens[-1]
-            first = " ".join(tokens[:-1])
-        return f"{last.strip().title()}, {first.strip().title()}"
     return name.title()
 
 master_df = pd.read_csv("data/processed/player_team_master.csv")
