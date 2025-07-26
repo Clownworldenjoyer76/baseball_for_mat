@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 import time
 from datetime import datetime
+from requests.exceptions import RequestException
 
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
@@ -9,7 +10,7 @@ API_KEY = "45d9502513854b489c3162411251907"
 BASE_URL = "http://api.weatherapi.com/v1/current.json"
 
 def timestamp():
-    return datetime.now().strftime("%Y-%m-%d %I:%M:%S %p %Z")
+    return datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
 
 def fetch_weather(lat, lon):
     url = f"{BASE_URL}?key={API_KEY}&q={lat},{lon}"
@@ -17,8 +18,11 @@ def fetch_weather(lat, lon):
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
             return response.json()
-    except Exception:
-        return None
+        elif response.status_code == 429:
+            print(f"{timestamp()} ⚠️ Rate limit hit. Sleeping 5 seconds.")
+            time.sleep(5)
+    except RequestException as e:
+        print(f"{timestamp()} ⚠️ Request failed: {e}")
     return None
 
 def main():
@@ -43,6 +47,10 @@ def main():
         lon = row.get("longitude", "")
         is_dome = row.get("is_dome", False)
         game_time = row.get("game_time", "")
+
+        if not lat or not lon:
+            print(f"{timestamp()} ⚠️ Missing coordinates for {location}. Skipping.")
+            continue
 
         attempts = 0
         data = None
@@ -71,7 +79,8 @@ def main():
             "notes": "Roof closed" if is_dome else "Roof open",
             "game_time": game_time,
             "home_team": home_team_val,
-            "away_team": away_team_val
+            "away_team": away_team_val,
+            "fetched_at": timestamp()
         })
 
     if not results:
