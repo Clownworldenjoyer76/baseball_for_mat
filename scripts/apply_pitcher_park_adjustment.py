@@ -3,6 +3,7 @@ from pathlib import Path
 from unidecode import unidecode
 import os
 import subprocess
+import csv  # 🔧 Added to control quoting in CSV output
 
 # File paths
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
@@ -37,25 +38,18 @@ def load_park_factors():
         return park_day, park_night
     except FileNotFoundError as e:
         print(f"❌ Error loading park factor files: {e}")
-        # Return empty dataframes to prevent further errors
         return pd.DataFrame(columns=['home_team', 'Park Factor']), pd.DataFrame(columns=['home_team', 'Park Factor'])
     except Exception as e:
         print(f"❌ An unexpected error occurred loading park factor files: {e}")
         return pd.DataFrame(columns=['home_team', 'Park Factor']), pd.DataFrame(columns=['home_team', 'Park Factor'])
 
-
 def get_park_factor(park_day, park_night, home_team, game_time):
     try:
         hour = int(str(game_time).split(":")[0])
     except (ValueError, TypeError):
-        # Handle cases where game_time might not be a valid time string
-        print(f"WARNING: Invalid game_time format for {home_team}: '{game_time}'. Cannot determine park factor by time of day.")
-        # Fallback to day if time cannot be parsed, or return None based on desired behavior
-        # For now, let's return None to indicate failure to get factor
-        return None 
-    
+        print(f"WARNING: Invalid game_time format for {home_team}: '{game_time}'")
+        return None
     park_df = park_day if hour < 18 else park_night
-    # Ensure home_team is lowercase for lookup
     row = park_df[park_df['home_team'] == home_team.lower()] 
     if not row.empty and 'Park Factor' in row.columns and not pd.isna(row['Park Factor'].values[0]):
         return float(row['Park Factor'].values[0])
@@ -70,11 +64,10 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     adjusted = []
     logs = []
 
-    # Ensure necessary columns exist before proceeding
     required_games_cols = ['home_team', 'away_team', 'game_time']
     if not all(col in games_df.columns for col in required_games_cols):
         logs.append(f"❌ Missing required columns in games_df: {', '.join([col for col in required_games_cols if col not in games_df.columns])}")
-        return pd.DataFrame(columns=list(pitchers_df.columns) + ['adj_woba_park']), logs # Return empty df and logs
+        return pd.DataFrame(columns=list(pitchers_df.columns) + ['adj_woba_park']), logs
 
     team_key = "team"
     if team_key not in pitchers_df.columns:
@@ -106,9 +99,8 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
 
         for stat in STATS_TO_ADJUST:
             if stat in team_pitchers.columns:
-                # Ensure the stat column is numeric before multiplication
                 team_pitchers[stat] = pd.to_numeric(team_pitchers[stat], errors='coerce') 
-                team_pitchers[stat] *= (park_factor / 100) # Divide by 100 as park factors are often percentages
+                team_pitchers[stat] *= (park_factor / 100)
             else:
                 logs.append(f"Missing '{stat}' in data for {team_name}")
 
@@ -139,22 +131,17 @@ def apply_adjustments(pitchers_df, games_df, side, park_day, park_night):
     return df_result, logs
 
 def save_output(df, log, file_path, log_path):
-    # Ensure output directories exist
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
     Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-    
-    df.to_csv(file_path, index=False)
+    df.to_csv(file_path, index=False, quoting=csv.QUOTE_MINIMAL)  # 🔧 Fixed quoting
     with open(log_path, "w") as f:
         f.write("\n".join(log))
     print(f"✅ Wrote {file_path} with {len(df)} rows.")
     print(f"📝 Log written to {log_path}")
 
-def git_commit_and_push(): # No longer takes 'files' as argument
+def git_commit_and_push():
     try:
-        # Add all newly generated or modified files in the current directory
         subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        
-        # Check if there are any staged changes to commit
         status_output = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if not status_output.strip():
             print("✅ No changes to commit for pitcher park adjustments.")
@@ -162,7 +149,6 @@ def git_commit_and_push(): # No longer takes 'files' as argument
             subprocess.run(["git", "commit", "-m", "📝 Apply pitcher park adjustment and update data files"], check=True, capture_output=True, text=True)
             subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
             print("✅ Git commit and push complete for pitcher park adjustments.")
-
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Git commit/push failed for pitcher park adjustments:")
         print(f"  Command: {e.cmd}")
@@ -186,13 +172,11 @@ def main():
 
     park_day, park_night = load_park_factors()
 
-    # If park factor files failed to load, park_day/night might be empty DFs, handle this
     if park_day.empty or park_night.empty:
         print("⚠️ Skipping park adjustments due to missing or empty park factor data.")
-        # Create empty output files and logs to prevent workflow failure
         save_output(pd.DataFrame(), ["No park adjustments due to missing park factor data."], OUTPUT_HOME_FILE, LOG_HOME)
         save_output(pd.DataFrame(), ["No park adjustments due to missing park factor data."], OUTPUT_AWAY_FILE, LOG_AWAY)
-        git_commit_and_push() # Still try to commit empty files/logs
+        git_commit_and_push()
         return
 
     adj_home, log_home = apply_adjustments(pitchers_home, games_df, "home", park_day, park_night)
@@ -201,7 +185,7 @@ def main():
     save_output(adj_home, log_home, OUTPUT_HOME_FILE, LOG_HOME)
     save_output(adj_away, log_away, OUTPUT_AWAY_FILE, LOG_AWAY)
 
-    git_commit_and_push() # Call the unified function
+    git_commit_and_push()
 
 if __name__ == "__main__":
     main()
