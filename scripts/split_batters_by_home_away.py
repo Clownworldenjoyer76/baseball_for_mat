@@ -69,14 +69,9 @@ def main():
         logger.error("❌ Missing 'home_team' or 'away_team' in games file. Please check the file.")
         raise ValueError("Missing 'home_team' or 'away_team' in games file.")
 
-    logger.debug(f"DEBUG: Initial batters count: {len(batters)}")
-    logger.debug(f"DEBUG: Initial games count: {len(games)}")
-
     logger.info("🧽 Normalizing team names...")
     batters['team'] = batters['team'].apply(fix_team_name).apply(lambda x: normalize_team(x, valid_teams))
     batters.drop_duplicates(inplace=True)
-    logger.debug(f"DEBUG: Batters count after normalization and deduplication: {len(batters)}")
-    logger.debug(f"DEBUG: Sample normalized batters teams: {batters['team'].value_counts().head(3).to_dict()}")
 
     games['home_team'] = games['home_team'].astype(str).str.strip().str.title()
     games['away_team'] = games['away_team'].astype(str).str.strip().str.title()
@@ -84,9 +79,6 @@ def main():
     home_teams = games['home_team'].unique().tolist()
     away_teams = games['away_team'].unique().tolist()
     all_game_teams = set(home_teams + away_teams)
-
-    logger.debug(f"DEBUG: Unique home teams from games: {home_teams}")
-    logger.debug(f"DEBUG: Unique away teams from games: {away_teams}")
 
     logger.info("🔀 Splitting batters into home and away groups...")
     home_batters = batters[batters['team'].isin(home_teams)].copy()
