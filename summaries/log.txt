@@ -1,0 +1,76 @@
+
+▶️ START: normalize_names (2025-07-26 01:24:09 PM EDT)
+✅ Batters normalized: 565 → data/normalized/batters_normalized.csv
+✅ Pitchers normalized: 688 → data/normalized/pitchers_normalized.csv
+⏹️ END: normalize_names (2025-07-26 01:24:09 PM EDT)
+
+▶️ START: tag_master_files (2025-07-26 01:24:10 PM EDT)
+⏹️ END: tag_master_files (2025-07-26 01:24:10 PM EDT)
+
+▶️ START: validate_tagged_players (2025-07-26 01:24:10 PM EDT)
+
+🔍 Validating: data/tagged/batters_normalized.csv
+✅ All batters rows passed schema validation.
+
+🔍 Validating: data/tagged/pitchers_normalized.csv
+✅ All pitchers rows passed schema validation.
+⏹️ END: validate_tagged_players (2025-07-26 01:24:10 PM EDT)
+
+▶️ START: deduplicate_normalized (2025-07-26 01:24:11 PM EDT)
+⏹️ END: deduplicate_normalized (2025-07-26 01:24:11 PM EDT)
+
+▶️ START: normalize_lineups (2025-07-26 01:24:11 PM EDT)
+✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
+⏹️ END: normalize_lineups (2025-07-26 01:24:11 PM EDT)
+
+▶️ START: normalize_todays_games (2025-07-26 01:24:11 PM EDT)
+📥 Loading input files...
+🧼 Normalizing pitcher names...
+⚠️ WARNING: Unmatched pitchers found — logging to unmatched_pitchers.csv
+🔁 Mapping team abbreviations to full names...
+⏱ Validating game times...
+🔁 Checking for duplicate matchups...
+✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
+⏹️ END: normalize_todays_games (2025-07-26 01:24:11 PM EDT)
+
+▶️ START: refresh_stadium_metadata (2025-07-26 01:24:12 PM EDT)
+✅ Saved updated stadium metadata for 15 home teams to data/Data/stadium_metadata.csv
+⏹️ END: refresh_stadium_metadata (2025-07-26 01:24:12 PM EDT)
+
+▶️ START: apply_team_name_mapping (2025-07-26 01:24:12 PM EDT)
+✅ Updated: data/raw/todaysgames_normalized.csv
+✅ Updated: data/Data/stadium_metadata.csv
+⏹️ END: apply_team_name_mapping (2025-07-26 01:24:12 PM EDT)
+
+▶️ START: update_game_time (2025-07-26 01:24:12 PM EDT)
+✅ Game times and park factors updated for 15 teams.
+⏹️ END: update_game_time (2025-07-26 01:24:12 PM EDT)
+
+▶️ START: filter_stadium_metadata (2025-07-26 01:24:13 PM EDT)
+⏹️ END: filter_stadium_metadata (2025-07-26 01:24:13 PM EDT)
+
+▶️ START: normalize_batter_team_names (2025-07-26 01:24:13 PM EDT)
+⏹️ END: normalize_batter_team_names (2025-07-26 01:24:13 PM EDT)
+
+▶️ START: split_batters_by_home_away (2025-07-26 01:24:13 PM EDT)
+⏹️ END: split_batters_by_home_away (2025-07-26 01:24:13 PM EDT)
+
+▶️ START: commit_split_batters (2025-07-26 01:24:14 PM EDT)
+⏹️ END: commit_split_batters (2025-07-26 01:24:14 PM EDT)
+
+▶️ START: normalize_pitcher_home_away (2025-07-26 01:24:14 PM EDT)
+✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
+✅ Wrote 14 rows to data/adjusted/pitchers_away.csv
+
+=== MISSING AWAY PITCHERS ===
+Mccullers Jr., Lance
+
+⚠️ Unmatched team count: 1
+Top 5 unmatched teams:
+ - Astros
+⏹️ END: normalize_pitcher_home_away (2025-07-26 01:24:14 PM EDT)
+
+▶️ START: update_pitcher_team_names (2025-07-26 01:24:14 PM EDT)
+⏹️ END: update_pitcher_team_names (2025-07-26 01:24:14 PM EDT)
+
+▶️ START: generate_weather_csv (2025-07-26 01:24:15 PM EDT)
