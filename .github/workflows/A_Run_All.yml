@@ -154,4 +154,4 @@ jobs:
           git add summaries/
 
           git diff --cached --stat --exit-code || git commit -m "A_Run_All: Automated data pipeline update on $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")"
-          git push || echo "No new commits to push"
+          git push --force || echo "No new commits to push"
