@@ -1,12 +1,10 @@
-# scripts/tag_master_files.py
-
 import pandas as pd
 import os
 import unicodedata
 import re
 from datetime import datetime
 
-# ─── Name Normalization ─────────────────────────────────────────────
+# ─── Normalization Utilities ─────────────────────────────
 
 def strip_accents(text):
     if not isinstance(text, str):
@@ -17,33 +15,16 @@ def strip_accents(text):
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
-
     name = strip_accents(name)
-    name = name.replace("’", "'").replace("`", "'")
-    name = re.sub(r"[^\w\s,\.]", "", name)
+    name = re.sub(r"[^\w\s,]", "", name)  # preserve comma
+    name = re.sub(r"\b(jr|sr|ii|iii|iv|v)\b", "", name, flags=re.IGNORECASE)  # remove suffixes
     name = re.sub(r"\s+", " ", name).strip()
-
-    if "," in name:
-        parts = [part.strip().title() for part in name.split(",", 1)]
-        return f"{parts[0]}, {parts[1]}" if len(parts) == 2 else name.title()
-
-    tokens = name.split()
-    suffixes = {"Jr", "Sr", "II", "III", "IV"}
-
-    if len(tokens) >= 2:
-        if tokens[-1].replace(".", "") in suffixes and len(tokens) >= 3:
-            suffix = tokens[-1].title()
-            last = tokens[-2].title()
-            first = " ".join(tokens[:-2]).title()
-            return f"{last} {suffix}, {first}"
-        else:
-            last = tokens[-1].title()
-            first = " ".join(tokens[:-1]).title()
-            return f"{last}, {first}"
-
+    parts = name.split(",")
+    if len(parts) == 2:
+        return f"{parts[0].strip().title()}, {parts[1].strip().title()}"
     return name.title()
 
-# ─── File Paths ─────────────────────────────────────────────────────
+# ─── File Paths ───────────────────────────────────────────
 
 master_df = pd.read_csv("data/processed/player_team_master.csv")
 batter_file = "data/normalized/batters_normalized.csv"
@@ -54,11 +35,11 @@ output_totals_file = "data/output/player_totals.txt"
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs("data/output", exist_ok=True)
 
-# ─── Normalize Master File Once ─────────────────────────────────────
+# ─── Normalize Master File Name Column ───────────────────
 
 master_df["name"] = master_df["name"].apply(normalize_name)
 
-# ─── Tagging Logic ──────────────────────────────────────────────────
+# ─── Tagging Logic ───────────────────────────────────────
 
 def tag_players(file_path, player_type):
     df = pd.read_csv(file_path)
@@ -76,24 +57,28 @@ def tag_players(file_path, player_type):
         suffixes=("", "_master")
     )
 
+    # Log unmatched
     unmatched = merged[merged["team"].isna() | merged["type"].isna()]
     if not unmatched.empty:
         print(f"⚠️ {len(unmatched)} {player_type} rows had no team/type match and will be dropped:")
         print(unmatched[["last_name, first_name"]].drop_duplicates().to_string(index=False))
 
+    # Drop unmatched
     merged_clean = merged.dropna(subset=["team", "type"])
 
+    # Move key cols to front
     key_cols = ["name", "player_id", "team", "type"]
     other_cols = [col for col in merged_clean.columns if col not in key_cols]
     merged_clean = merged_clean[key_cols + other_cols]
 
+    # Save output
     output_file = os.path.join(output_folder, os.path.basename(file_path))
     merged_clean.to_csv(output_file, index=False)
     print(f"✅ Tagged {player_type}: {output_file} ({len(merged_clean)} rows)")
 
     return merged_clean
 
-# ─── Execution ──────────────────────────────────────────────────────
+# ─── Execution ────────────────────────────────────────────
 
 batters_tagged = tag_players(batter_file, "batters")
 pitchers_tagged = tag_players(pitcher_file, "pitchers")
