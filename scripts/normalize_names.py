@@ -10,6 +10,7 @@ BATT_IN = Path("data/Data/batters.csv")
 PITCH_IN = Path("data/Data/pitchers.csv")
 BATT_OUT = Path("data/normalized/batters_normalized.csv")
 PITCH_OUT = Path("data/normalized/pitchers_normalized.csv")
+SUMMARY_FILE = Path("summaries/summary.txt")
 TARGET_COLUMN = "last_name, first_name"
 
 # --- Regex Patterns ---
@@ -23,49 +24,41 @@ def strip_accents(text: str) -> str:
         return ""
     return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
-def clean_name(name: str) -> str:
-    name = strip_accents(name)
-    name = name.replace("’", "").replace("`", "")
-    name = RE_NON_ALPHANUM_OR_SPACE_OR_COMMA.sub("", name)
-    name = RE_MULTI_SPACE.sub(" ", name).strip()
-    name = name.rstrip(",")  # Remove trailing commas
+def normalize_series(name_series: pd.Series) -> pd.Series:
+    name_series = name_series.astype(str).fillna("")
+    name_series = name_series.apply(strip_accents)
+    name_series = name_series.str.replace("’", "", regex=False)
+    name_series = name_series.str.replace("`", "", regex=False)
+    name_series = name_series.str.replace(RE_NON_ALPHANUM_OR_SPACE_OR_COMMA, "", regex=True)
+    name_series = name_series.str.replace(RE_MULTI_SPACE, " ", regex=True)
+    name_series = name_series.str.strip()
+    return name_series
 
-    # Optionally remove suffixes from last name portion
-    if "," in name:
-        parts = name.split(",", 1)
-        last = RE_SUFFIX_REMOVE.sub("", parts[0]).strip().title()
-        first = parts[1].strip().title()
-        return f"{last}, {first}"
-    else:
-        return name.title()
-
-def normalize_series(series: pd.Series) -> pd.Series:
-    print("\n🔍 Preview of original names:")
-    print(series.head(10).to_string(index=False))
-    normalized = series.astype(str).fillna("").apply(clean_name)
-    print("\n✅ Preview of normalized names:")
-    print(normalized.head(10).to_string(index=False))
-    print(f"\n✅ Total names normalized: {len(normalized)}")
-    return normalized
-
-def process_file(label: str, input_path: Path, output_path: Path):
-    print(f"\n🔄 Processing {label} from {input_path} → {output_path}")
+def process(label: str, input_path: Path, output_path: Path) -> tuple[int, int]:
     if not input_path.exists():
-        print(f"❌ Missing input file: {input_path}")
-        return
+        print(f"❌ Missing: {input_path}")
+        return 0, 0
+    df = pd.read_csv(input_path)
+    if TARGET_COLUMN not in df.columns:
+        print(f"⚠️ Missing column '{TARGET_COLUMN}' in {input_path}")
+        return 0, 0
+    original_count = len(df)
+    df[TARGET_COLUMN] = normalize_series(df[TARGET_COLUMN])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(output_path, index=False)
+    print(f"✅ {label} normalized: {original_count} → {output_path}")
+    return original_count, len(df)
 
-    try:
-        df = pd.read_csv(input_path)
-        if TARGET_COLUMN in df.columns:
-            df[TARGET_COLUMN] = normalize_series(df[TARGET_COLUMN])
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            df.to_csv(output_path, index=False)
-            print(f"✅ Saved normalized {label} to: {output_path}")
-        else:
-            print(f"⚠️ Column '{TARGET_COLUMN}' not found in {input_path}")
-    except Exception as e:
-        print(f"❌ Error processing {label}: {e}")
+def main():
+    batt_src, batt_out = process("Batters", BATT_IN, BATT_OUT)
+    pitch_src, pitch_out = process("Pitchers", PITCH_IN, PITCH_OUT)
+
+    with open(SUMMARY_FILE, "a") as f:
+        f.write("🔡 Normalize Names Summary\n")
+        f.write(f"Batters in source:    {batt_src}\n")
+        f.write(f"Batters normalized:   {batt_out}\n")
+        f.write(f"Pitchers in source:   {pitch_src}\n")
+        f.write(f"Pitchers normalized:  {pitch_out}\n\n")
 
 if __name__ == "__main__":
-    process_file("batters", BATT_IN, BATT_OUT)
-    process_file("pitchers", PITCH_IN, PITCH_OUT)
+    main()
