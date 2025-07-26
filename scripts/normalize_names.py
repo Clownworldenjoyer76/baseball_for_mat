@@ -22,6 +22,9 @@ def strip_accents(text: str) -> str:
     return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 def normalize_to_last_first(name_series: pd.Series) -> pd.Series:
+    print("🔍 Preview of original names:")
+    print(name_series.head(10).to_string(index=False))
+
     name_series = name_series.astype(str).fillna("")
     name_series = name_series.apply(strip_accents)
     name_series = name_series.str.replace("’", "", regex=False)
@@ -47,10 +50,15 @@ def normalize_to_last_first(name_series: pd.Series) -> pd.Series:
     temp_df["last"] = temp_df["last"].str.title()
     temp_df["last"] = temp_df["last"].apply(lambda x: RE_SUFFIX_REMOVE.sub("", x).strip())
 
-    return temp_df.apply(
+    normalized_series = temp_df.apply(
         lambda row: f"{row['last']}, {row['first']}" if row['first'] else row['last'],
         axis=1
     )
+
+    print("✅ Preview of normalized names:")
+    print(normalized_series.head(10).to_string(index=False))
+
+    return normalized_series
 
 if __name__ == "__main__":
     files = {
@@ -59,7 +67,7 @@ if __name__ == "__main__":
     }
 
     for label, path in files.items():
-        print(f"🔄 Processing {label} - {path}")
+        print(f"\n🔄 Processing {label} - {path}")
         if not os.path.exists(path):
             print(f"❌ Missing: {path}")
             continue
