@@ -1,6 +1,7 @@
 import pandas as pd
 import unicodedata
 import re
+from pathlib import Path
 
 # --- Normalization Helpers ---
 def strip_accents(text):
@@ -33,6 +34,7 @@ def normalize_name(name):
 def normalize_lineups():
     INPUT_FILE = "data/raw/lineups.csv"
     OUTPUT_FILE = "data/raw/lineups_normalized.csv"
+    SUMMARY_FILE = Path("summaries/summary.txt")
 
     df = pd.read_csv(INPUT_FILE)
     df.columns = [col.strip().lower() for col in df.columns]
@@ -45,7 +47,14 @@ def normalize_lineups():
     df.drop_duplicates(inplace=True)
 
     df.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ normalize_lineups.py completed: {len(df)} rows written to {OUTPUT_FILE}")
+
+    num_teams = df['team_code'].nunique() if 'team_code' in df.columns else 0
+    num_players = len(df)
+
+    with SUMMARY_FILE.open("a") as f:
+        f.write(f"[normalize_lineups.py] ✅ {num_teams} teams, {num_players} players written to lineups_normalized.csv\n")
+
+    print(f"✅ normalize_lineups.py completed: {num_players} rows written to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     normalize_lineups()
