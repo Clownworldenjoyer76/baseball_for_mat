@@ -1,3 +1,5 @@
+# scripts/tag_master_files.py
+
 import pandas as pd
 import os
 import unicodedata
@@ -9,8 +11,7 @@ from datetime import datetime
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
-    text = unicodedata.normalize('NFD', text)
-    return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
+    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 def normalize_name(name):
     if not isinstance(name, str):
@@ -18,15 +19,22 @@ def normalize_name(name):
     name = strip_accents(name)
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
-    if "," not in name:
-        tokens = name.split()
-        if len(tokens) >= 2:
-            return f"{' '.join(tokens[1:])}, {tokens[0]}"
+
+    suffixes = {"Jr", "Sr", "II", "III", "IV", "V", "Jr.", "Sr."}
+    name = name.replace(",", "")
+    tokens = name.split()
+
+    if len(tokens) < 2:
         return name.title()
-    parts = name.split(",")
-    if len(parts) == 2:
-        return f"{parts[0].strip().title()}, {parts[1].strip().title()}"
-    return name.title()
+
+    if tokens[-1] in suffixes:
+        last = f"{tokens[-2]} {tokens[-1]}"
+        first = " ".join(tokens[:-2])
+    else:
+        last = tokens[-1]
+        first = " ".join(tokens[:-1])
+
+    return f"{last.strip().title()}, {first.strip().title()}"
 
 # ─── File Paths ───────────────────────────────────────────
 
