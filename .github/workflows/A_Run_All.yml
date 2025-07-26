@@ -74,6 +74,7 @@ jobs:
           # 🔁 Run all steps (unchanged)
           run_step normalize_names.py
           run_step tag_master_files.py
+          run_step validate_batters_schema.py
           run_step deduplicate_normalized.py
           run_step normalize_lineups.py
           run_step normalize_todays_games.py
