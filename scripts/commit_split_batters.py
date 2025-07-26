@@ -54,6 +54,14 @@ def main():
     # Use timezone-aware timestamp for accurate logging
     timestamp = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %I:%M:%S %p %Z")
 
+    # 🧾 Ensure Git identity is set
+    run_git_command(["git", "config", "user.name", "github-actions"],
+                    "✅ Git user.name set",
+                    "❌ Failed to set user.name")
+    run_git_command(["git", "config", "user.email", "github-actions@github.com"],
+                    "✅ Git user.email set",
+                    "❌ Failed to set user.email")
+
     # Check for missing files
     missing = [f for f in FILES_TO_COMMIT if not os.path.exists(f)]
     if missing:
