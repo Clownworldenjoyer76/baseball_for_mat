@@ -1,267 +1,101 @@
 
-▶️ START: normalize_names (2025-07-26 05:50:17 AM EDT)
+▶️ START: normalize_names (2025-07-26 08:52:09 AM EDT)
 ✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
 ✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
-⏹️ END: normalize_names (2025-07-26 05:50:17 AM EDT)
+⏹️ END: normalize_names (2025-07-26 08:52:09 AM EDT)
 
-▶️ START: tag_master_files (2025-07-26 05:50:17 AM EDT)
-✅ Tagged batters: data/tagged/batters_normalized.csv
-✅ Tagged pitchers: data/tagged/pitchers_normalized.csv
-⏹️ END: tag_master_files (2025-07-26 05:50:17 AM EDT)
+▶️ START: tag_master_files (2025-07-26 08:52:09 AM EDT)
+⚠️ 9 batters rows had no team/type match and will be dropped:
+last_name, first_name
+    Rooker Jr., Brent
+    Wilson Jr., Jacob
+    Alexander Jr., Cj
+    Gurriel Jr., Yuli
+    Yoshida, Masataka
+       Friedl Jr., Tj
+   Mullins Ii, Cedric
+ Springer Iii, George
+     Melendez Jr., Mj
+✅ Tagged batters: data/tagged/batters_normalized.csv (618 rows)
+⚠️ 10 pitchers rows had no team/type match and will be dropped:
+ last_name, first_name
+        Carrillo, Alex
+Harrington Iii, Thomas
+       Schlittler, Cam
+        Fulmer, Carson
+    Misiewicz, Anthony
+       Maton Iii, Phil
+          Manaea, Sean
+           Ortiz, Luis
+  Alexander Jr., Scott
+    Cortes Jr., Nestor
+✅ Tagged pitchers: data/tagged/pitchers_normalized.csv (689 rows)
+⏹️ END: tag_master_files (2025-07-26 08:52:09 AM EDT)
 
-▶️ START: deduplicate_normalized (2025-07-26 05:50:18 AM EDT)
-⏹️ END: deduplicate_normalized (2025-07-26 05:50:18 AM EDT)
+▶️ START: validate_tagged_players (2025-07-26 08:52:09 AM EDT)
+⏹️ END: validate_tagged_players (2025-07-26 08:52:09 AM EDT)
 
-▶️ START: normalize_lineups (2025-07-26 05:50:18 AM EDT)
+▶️ START: deduplicate_normalized (2025-07-26 08:52:10 AM EDT)
+⏹️ END: deduplicate_normalized (2025-07-26 08:52:10 AM EDT)
+
+▶️ START: normalize_lineups (2025-07-26 08:52:11 AM EDT)
 ✅ normalize_lineups.py completed: 300 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups (2025-07-26 05:50:18 AM EDT)
+⏹️ END: normalize_lineups (2025-07-26 08:52:11 AM EDT)
 
-▶️ START: normalize_todays_games (2025-07-26 05:50:18 AM EDT)
+▶️ START: normalize_todays_games (2025-07-26 08:52:12 AM EDT)
 📥 Loading input files...
 🧼 Normalizing pitcher names...
-✅ All pitchers recognized.
-🔁 Mapping team abbreviations to full names...
-✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games (2025-07-26 05:50:18 AM EDT)
+❌ Unrecognized pitcher(s) found:
+   home_team away_team       pitcher_home         pitcher_away
+0        TOR        SF         Eric Lauer           Logan Webb
+1        NYM       CIN        Clay Holmes        Nick Martinez
+2        MIA        KC      Cal Quantrill        Michael Wacha
+3        PHI       LAA     Taijuan Walker        Yusei Kikuchi
+4        PIT       CHW       Mike Burrows        Adrian Houser
+5        WSH        SD    Mitchell Parker           Yu Darvish
+6         TB       BAL       Zack Littell          Dean Kremer
+7        TEX       DET       Kumar Rocker       Keider Montero
+8        CLE       ATH        Logan Allen        Luis Severino
+9        ATL       NYY         Joey Wentz          Will Warren
+10       CHC       BOS      Shota Imanaga         Brayan Bello
+11       ARI       STL        Ryne Nelson           Sonny Gray
+12       COL       MIN  Antonio Senzatela       Zebby Matthews
+13       LAD       MIL      Emmet Sheehan       Freddy Peralta
+14       SEA       HOU        Logan Evans  Lance McCullers Jr.
+⏹️ END: normalize_todays_games (2025-07-26 08:52:12 AM EDT)
 
-▶️ START: refresh_stadium_metadata (2025-07-26 05:50:19 AM EDT)
+▶️ START: refresh_stadium_metadata (2025-07-26 08:52:12 AM EDT)
 ✅ Saved updated stadium metadata for 15 home teams to data/Data/stadium_metadata.csv
-⏹️ END: refresh_stadium_metadata (2025-07-26 05:50:19 AM EDT)
+⏹️ END: refresh_stadium_metadata (2025-07-26 08:52:12 AM EDT)
 
-▶️ START: apply_team_name_mapping (2025-07-26 05:50:19 AM EDT)
+▶️ START: apply_team_name_mapping (2025-07-26 08:52:12 AM EDT)
 ✅ Updated: data/raw/todaysgames_normalized.csv
 ✅ Updated: data/Data/stadium_metadata.csv
-⏹️ END: apply_team_name_mapping (2025-07-26 05:50:19 AM EDT)
+⏹️ END: apply_team_name_mapping (2025-07-26 08:52:12 AM EDT)
 
-▶️ START: update_game_time (2025-07-26 05:50:19 AM EDT)
+▶️ START: update_game_time (2025-07-26 08:52:13 AM EDT)
 ✅ Game times and park factors updated for 15 teams.
-⏹️ END: update_game_time (2025-07-26 05:50:19 AM EDT)
+⏹️ END: update_game_time (2025-07-26 08:52:13 AM EDT)
 
-▶️ START: filter_stadium_metadata (2025-07-26 05:50:20 AM EDT)
-⏹️ END: filter_stadium_metadata (2025-07-26 05:50:20 AM EDT)
+▶️ START: filter_stadium_metadata (2025-07-26 08:52:13 AM EDT)
+⏹️ END: filter_stadium_metadata (2025-07-26 08:52:13 AM EDT)
 
-▶️ START: normalize_batter_team_names (2025-07-26 05:50:20 AM EDT)
-📥 Loading batters_today and team_name_master...
-🔁 Replacing team codes with official team names...
-✅ Normalized teams in 243 rows. Saving to data/cleaned/batters_today.csv...
-⏹️ END: normalize_batter_team_names (2025-07-26 05:50:20 AM EDT)
+▶️ START: normalize_batter_team_names (2025-07-26 08:52:13 AM EDT)
+⏹️ END: normalize_batter_team_names (2025-07-26 08:52:13 AM EDT)
 
-▶️ START: split_batters_by_home_away (2025-07-26 05:50:20 AM EDT)
-📥 Loading input files...
-✅ Saved 119 home batters and 124 away batters
-⏹️ END: split_batters_by_home_away (2025-07-26 05:50:20 AM EDT)
+▶️ START: split_batters_by_home_away (2025-07-26 08:52:14 AM EDT)
+⏹️ END: split_batters_by_home_away (2025-07-26 08:52:14 AM EDT)
 
-▶️ START: commit_split_batters (2025-07-26 05:50:21 AM EDT)
-⏹️ END: commit_split_batters (2025-07-26 05:50:21 AM EDT)
+▶️ START: commit_split_batters (2025-07-26 08:52:14 AM EDT)
+⏹️ END: commit_split_batters (2025-07-26 08:52:14 AM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-07-26 05:50:21 AM EDT)
+▶️ START: normalize_pitcher_home_away (2025-07-26 08:52:15 AM EDT)
 ✅ Wrote 16 rows to data/adjusted/pitchers_home.csv
 ✅ Wrote 15 rows to data/adjusted/pitchers_away.csv
-⏹️ END: normalize_pitcher_home_away (2025-07-26 05:50:21 AM EDT)
+⚠️ Mismatch: Expected 30 total pitchers, but only 31 were matched.
+⏹️ END: normalize_pitcher_home_away (2025-07-26 08:52:15 AM EDT)
 
-▶️ START: update_pitcher_team_names (2025-07-26 05:50:21 AM EDT)
-⏹️ END: update_pitcher_team_names (2025-07-26 05:50:21 AM EDT)
+▶️ START: update_pitcher_team_names (2025-07-26 08:52:15 AM EDT)
+⏹️ END: update_pitcher_team_names (2025-07-26 08:52:15 AM EDT)
 
-▶️ START: generate_weather_csv (2025-07-26 05:50:21 AM EDT)
-✅ Weather input file generated
-🔢 Rows: 15
-📁 Output: data/weather_input.csv
-📄 Games file: data/raw/todaysgames_normalized.csv
-🏟️ Stadium file: data/Data/stadium_metadata.csv
-✅ Git commit and push complete.
-⏹️ END: generate_weather_csv (2025-07-26 05:50:21 AM EDT)
-
-▶️ START: filter_today_batters (2025-07-26 05:50:22 AM EDT)
-📥 Loading lineups and batters...
-✅ Filtered down to 243 batters
-💾 Saved to data/cleaned/batters_today.csv
-⏹️ END: filter_today_batters (2025-07-26 05:50:22 AM EDT)
-
-▶️ START: get_weather_data (2025-07-26 05:50:23 AM EDT)
-2025-07-26 09:50:23 AM  🔄 Reading input file...
-2025-07-26 09:50:23 AM  🌍 Fetching weather for 15 venues...
-2025-07-26 09:50:26 AM  ✅ Weather data written to data/weather_adjustments.csv
-⏹️ END: get_weather_data (2025-07-26 05:50:23 AM EDT)
-
-▶️ START: apply_weather_adjustment (2025-07-26 05:50:26 AM EDT)
-Loading input files...
-Files loaded successfully.
-Applying weather adjustments for home batters...
-Applying weather adjustments for away batters...
-Saving adjusted data...
-Adjusted data saved to data/adjusted/batters_home_weather.csv and data/adjusted/batters_away_weather.csv
-Writing adjustment logs...
-Logs written to log_weather_home.txt and log_weather_away.txt
-⏹️ END: apply_weather_adjustment (2025-07-26 05:50:26 AM EDT)
-
-▶️ START: apply_park_adjustment (2025-07-26 05:50:26 AM EDT)
-[main 3f0dfb0] Force commit: adjusted park batters + log
- 2 files changed, 47 insertions(+), 47 deletions(-)
-Home batters adjusted: 119
-Away batters adjusted: 124
-✅ Committed and pushed adjusted park files.
-⏹️ END: apply_park_adjustment (2025-07-26 05:50:26 AM EDT)
-
-▶️ START: combine_weather_park_home (2025-07-26 05:50:27 AM EDT)
-[main a0c2e0b] Auto-commit: Combined home batter adjustments
- 1 file changed, 26 insertions(+), 26 deletions(-)
-✅ Merged rows: 125
-✅ Forced commit and push to repo.
-⏹️ END: combine_weather_park_home (2025-07-26 05:50:27 AM EDT)
-
-▶️ START: combine_weather_park_away (2025-07-26 05:50:28 AM EDT)
-[main a421394] Auto-commit: Combined away batter adjustments
- 1 file changed, 27 insertions(+), 27 deletions(-)
-📥 Loading input CSVs...
-🔹 Weather rows: 124
-🔹 Park rows: 124
-🔀 Merging weather and park adjustment files...
-✅ Merged rows: 136
-📊 Columns in merged data: ['last_name, first_name', 'player_id', 'year', 'player_age', 'ab', 'pa', 'hit', 'single', 'double', 'triple', 'home_run', 'strikeout', 'walk', 'k_percent', 'bb_percent', 'batting_avg', 'slg_percent', 'on_base_percent', 'on_base_plus_slg', 'xba', 'xslg', 'woba', 'xwoba', 'xobp', 'xiso', 'avg_swing_speed', 'fast_swing_rate', 'blasts_contact', 'blasts_swing', 'squared_up_contact', 'squared_up_swing', 'avg_swing_length', 'swords', 'attack_angle', 'attack_direction', 'ideal_angle_rate', 'vertical_swing_path', 'exit_velocity_avg', 'launch_angle_avg', 'sweet_spot_percent', 'barrel_batted_rate', 'hard_hit_percent', 'avg_best_speed', 'avg_hyper_speed', 'whiff_percent', 'swing_percent', 'name', 'team', 'type', 'venue', 'location', 'temperature', 'wind_speed', 'wind_direction', 'humidity', 'precipitation', 'condition', 'notes', 'game_time', 'home_team', 'away_team', 'adj_woba_weather', 'adj_woba_park']
-💾 Saved combined file to: data/adjusted/batters_away_adjusted.csv
-📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
-📤 Committing and pushing results...
-✅ Git commit & push successful.
-⏹️ END: combine_weather_park_away (2025-07-26 05:50:28 AM EDT)
-
-▶️ START: normalize_pitcher_weather_outputs (2025-07-26 05:50:29 AM EDT)
-[main fc18045] Normalize pitchers before weather adjustment
- 2 files changed, 31 insertions(+), 31 deletions(-)
-✅ Forced commit and push to repo.
-⏹️ END: normalize_pitcher_weather_outputs (2025-07-26 05:50:29 AM EDT)
-
-▶️ START: fix_away_team_column (2025-07-26 05:50:30 AM EDT)
-ℹ️ Column 'away_team_y' not found. No changes made.
-⏹️ END: fix_away_team_column (2025-07-26 05:50:30 AM EDT)
-
-▶️ START: preprocess_pitcher_weather_park_away (2025-07-26 05:50:31 AM EDT)
-⏹️ END: preprocess_pitcher_weather_park_away (2025-07-26 05:50:31 AM EDT)
-
-▶️ START: add_team_alias_columns (2025-07-26 05:50:31 AM EDT)
-[main f121e74] Add team alias columns to pitcher files
- 2 files changed, 33 insertions(+), 33 deletions(-)
-✅ Added 'home_team' to data/adjusted/pitchers_home.csv (16 rows)
-✅ Added 'away_team' to data/adjusted/pitchers_away.csv (15 rows)
-📝 Log saved to log_add_team_alias_columns.txt
-⏹️ END: add_team_alias_columns (2025-07-26 05:50:31 AM EDT)
-
-▶️ START: add_team_columns_to_weather (2025-07-26 05:50:32 AM EDT)
-✅ Wrote home_team and away_team to data/weather_teams.csv
-⏹️ END: add_team_columns_to_weather (2025-07-26 05:50:32 AM EDT)
-
-▶️ START: apply_pitcher_weather_adjustment (2025-07-26 05:50:32 AM EDT)
-✅ Git commit and push complete for pitcher weather adjustments.
-⏹️ END: apply_pitcher_weather_adjustment (2025-07-26 05:50:32 AM EDT)
-
-▶️ START: apply_pitcher_park_adjustment (2025-07-26 05:50:33 AM EDT)
-✅ Wrote data/adjusted/pitchers_home_park.csv with 15 rows.
-📝 Log written to log_pitchers_home_park.txt
-✅ Wrote data/adjusted/pitchers_away_park.csv with 15 rows.
-📝 Log written to log_pitchers_away_park.txt
-✅ Git commit and push complete for pitcher park adjustments.
-⏹️ END: apply_pitcher_park_adjustment (2025-07-26 05:50:33 AM EDT)
-
-▶️ START: normalize_pitcher_merge_inputs (2025-07-26 05:50:34 AM EDT)
-✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
-✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
-✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
-✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
-⏹️ END: normalize_pitcher_merge_inputs (2025-07-26 05:50:34 AM EDT)
-
-▶️ START: combine_pitcher_weather_park_home (2025-07-26 05:50:35 AM EDT)
-[main f3b123c] Auto-commit: Cleaned combine pitcher weather + park (home)
- 1 file changed, 18 insertions(+), 18 deletions(-)
-⏹️ END: combine_pitcher_weather_park_home (2025-07-26 05:50:35 AM EDT)
-
-▶️ START: combine_pitcher_weather_park_away (2025-07-26 05:50:36 AM EDT)
-[main 2b83820] Auto-commit: Cleaned combine pitcher weather + park (away)
- 1 file changed, 16 insertions(+), 16 deletions(-)
-⏹️ END: combine_pitcher_weather_park_away (2025-07-26 05:50:36 AM EDT)
-
-▶️ START: prep_merge (2025-07-26 05:50:37 AM EDT)
-[main 7d9b9b8] prep_merge: normalize team casing and enforce name match
- 2 files changed, 34 insertions(+), 34 deletions(-)
-✅ Git commit and push complete.
-✅ Team and name normalization complete.
-⏹️ END: prep_merge (2025-07-26 05:50:37 AM EDT)
-
-▶️ START: chain_setup_inputs (2025-07-26 05:50:38 AM EDT)
-Copying input files...
-Copied: batters_home_weather_park.csv
-Copied: batters_away_weather_park.csv
-Copied: pitchers_home_weather_park.csv
-Copied: pitchers_away_weather_park.csv
-Copied: todaysgames_normalized.csv
-All files copied.
-⏹️ END: chain_setup_inputs (2025-07-26 05:50:38 AM EDT)
-
-▶️ START: clean_and_preprocess_games (2025-07-26 05:50:38 AM EDT)
-🔧 Cleaning and preprocessing game-level data...
-✅ Saved cleaned game data to: data/end_chain/cleaned/games_cleaned.csv
-⏹️ END: clean_and_preprocess_games (2025-07-26 05:50:38 AM EDT)
-
-▶️ START: normalize_games_pitchers (2025-07-26 05:50:38 AM EDT)
-✅ Normalized pitcher names written to data/end_chain/cleaned/games_cleaned.csv
-⏹️ END: normalize_games_pitchers (2025-07-26 05:50:38 AM EDT)
-
-▶️ START: normalize_pitchers_xtra (2025-07-26 05:50:39 AM EDT)
-🔄 Normalizing names in pitchers_xtra.csv...
-✅ Output written to data/end_chain/cleaned/pitchers_xtra_normalized.csv
-⏹️ END: normalize_pitchers_xtra (2025-07-26 05:50:39 AM EDT)
-
-▶️ START: clean_merge_files (2025-07-26 05:50:39 AM EDT)
-Cleaning file: data/end_chain/pitchers_home_weather_park.csv
-🔍 Removed 3 duplicate rows in data/end_chain/pitchers_home_weather_park.csv
-✅ pitchers_home cleaned and saved.
-Cleaning file: data/end_chain/pitchers_away_weather_park.csv
-🔍 Removed 0 duplicate rows in data/end_chain/pitchers_away_weather_park.csv
-✅ pitchers_away cleaned and saved.
-⏹️ END: clean_merge_files (2025-07-26 05:50:39 AM EDT)
-
-▶️ START: chain_load_data (2025-07-26 05:50:39 AM EDT)
---- Starting Data Loading Process ---
-Loading games from data/end_chain/todaysgames_normalized.csv...
-✅ Loaded games. Shape: (15, 5)
-Loading batters_home from data/end_chain/batters_home_weather_park.csv...
-✅ Loaded batters_home. Shape: (125, 71)
-Loading batters_away from data/end_chain/batters_away_weather_park.csv...
-✅ Loaded batters_away. Shape: (131, 112)
-Loading pitchers_home from data/end_chain/pitchers_home_weather_park.csv...
-✅ Loaded pitchers_home. Shape: (14, 6)
-Loading pitchers_away from data/end_chain/pitchers_away_weather_park.csv...
-✅ Loaded pitchers_away. Shape: (15, 6)
---- Data Loading Complete ---
-⏹️ END: chain_load_data (2025-07-26 05:50:39 AM EDT)
-
-▶️ START: rename_and_merge_pitcher_data (2025-07-26 05:50:40 AM EDT)
-✅ Cleaned and updated: pitchers_home_weather_park.csv
-✅ Cleaned and updated: pitchers_away_weather_park.csv
-⏹️ END: rename_and_merge_pitcher_data (2025-07-26 05:50:40 AM EDT)
-
-▶️ START: pit_clean1 (2025-07-26 05:50:40 AM EDT)
-✅ Updated names in pitchers_home_weather_park.csv
-✅ Updated names in pitchers_away_weather_park.csv
-✅ Synced 'home_team' with 'team' in batters_home_cleaned.csv
-⏹️ END: pit_clean1 (2025-07-26 05:50:40 AM EDT)
-
-▶️ START: merge_data (2025-07-26 05:50:40 AM EDT)
-2025-07-26 09:50:40,936 - INFO - 🔗 Starting merge process...
-2025-07-26 09:50:40,937 - INFO - ⏳ Loading batters_home from data/end_chain/cleaned/batters_home_cleaned.csv...
-2025-07-26 09:50:40,939 - INFO - ✅ Loaded batters_home with 15 rows and 61 columns.
-2025-07-26 09:50:40,939 - INFO - ⏳ Loading batters_away from data/end_chain/cleaned/batters_away_cleaned.csv...
-2025-07-26 09:50:40,941 - INFO - ✅ Loaded batters_away with 15 rows and 61 columns.
-2025-07-26 09:50:40,941 - INFO - ⏳ Loading pitchers_home from data/end_chain/cleaned/pitchers_home_cleaned.csv...
-2025-07-26 09:50:40,942 - INFO - ✅ Loaded pitchers_home with 14 rows and 11 columns.
-2025-07-26 09:50:40,942 - INFO - ⏳ Loading pitchers_away from data/end_chain/cleaned/pitchers_away_cleaned.csv...
-2025-07-26 09:50:40,943 - INFO - ✅ Loaded pitchers_away with 15 rows and 11 columns.
-2025-07-26 09:50:40,943 - INFO - ⏳ Loading games from data/end_chain/cleaned/games_cleaned.csv...
-2025-07-26 09:50:40,944 - INFO - ✅ Loaded games with 15 rows and 5 columns.
-2025-07-26 09:50:40,944 - INFO - 🔍 Validating columns for games...
-2025-07-26 09:50:40,944 - INFO - ✅ All required columns present in games.
-2025-07-26 09:50:40,944 - INFO - 🔍 Validating columns for batters_home...
-2025-07-26 09:50:40,944 - INFO - ✅ All required columns present in batters_home.
-2025-07-26 09:50:40,944 - INFO - 🔍 Validating columns for batters_away...
-2025-07-26 09:50:40,945 - ERROR - ❌ batters_away is missing required columns: ['team']
-2025-07-26 09:50:40,945 - CRITICAL - ❌ Column validation failed: batters_away is missing required columns: ['team']
-⏹️ END: merge_data (2025-07-26 05:50:40 AM EDT)
-
+▶️ START: generate_weather_csv (2025-07-26 08:52:15 AM EDT)
