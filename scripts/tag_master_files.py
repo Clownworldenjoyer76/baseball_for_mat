@@ -6,7 +6,6 @@ from datetime import datetime
 import logging
 
 # ─── Configuration ───────────────────────────────────────────
-
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 MASTER_FILE = Path("data/processed/player_team_master.csv")
@@ -18,13 +17,13 @@ SUMMARY_FILE = Path("summaries/summary.txt")
 
 OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 OUTPUT_TOTALS_FILE.parent.mkdir(parents=True, exist_ok=True)
+SUMMARY_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 RE_SUFFIX_REMOVE = re.compile(r"\b(jr|sr|ii|iii|iv|v)\b\.?", re.IGNORECASE)
 RE_NON_ALPHANUM_OR_SPACE_OR_COMMA = re.compile(r"[^\w\s,]")
 RE_MULTI_SPACE = re.compile(r"\s+")
 
 # ─── Name Normalization ──────────────────────────────────────
-
 def normalize_name_series(names_series: pd.Series) -> pd.Series:
     names_series = names_series.astype(str).fillna("")
     names_series = names_series.str.normalize("NFD").str.encode("ascii", errors="ignore").str.decode("utf-8")
@@ -45,7 +44,6 @@ def normalize_name_series(names_series: pd.Series) -> pd.Series:
     return names_series.apply(remove_suffix)
 
 # ─── File Handling ───────────────────────────────────────────
-
 def load_csv_safely(file_path: Path, column_to_check: str = None) -> pd.DataFrame:
     if not file_path.exists():
         logging.error(f"File not found: {file_path}")
@@ -57,21 +55,16 @@ def load_csv_safely(file_path: Path, column_to_check: str = None) -> pd.DataFram
             logging.warning(f"Column '{column_to_check}' not found in {file_path}.")
             return pd.DataFrame()
         return df
-    except pd.errors.EmptyDataError:
-        logging.warning(f"File is empty: {file_path}. Returning empty DataFrame.")
-        return pd.DataFrame()
     except Exception as e:
         logging.error(f"Error loading {file_path}: {e}")
         return pd.DataFrame()
 
-def tag_and_save_players(input_file_path: Path, player_type: str, master_df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+def tag_and_save_players(input_file_path: Path, player_type: str, master_df: pd.DataFrame) -> pd.DataFrame:
     logging.info(f"Tagging {player_type} data from {input_file_path}...")
-
     df_to_tag = load_csv_safely(input_file_path, "last_name, first_name")
-    source_count = len(df_to_tag)
     if df_to_tag.empty:
         logging.warning(f"Skipping {player_type} due to missing or invalid input.")
-        return pd.DataFrame(), 0
+        return pd.DataFrame()
 
     df_to_tag["last_name, first_name"] = normalize_name_series(df_to_tag["last_name, first_name"])
 
@@ -105,26 +98,25 @@ def tag_and_save_players(input_file_path: Path, player_type: str, master_df: pd.
     except Exception as e:
         logging.error(f"❌ Error saving tagged file: {e}")
 
-    return merged_clean, source_count
+    # 🔽 Append to summary.txt
+    with open(SUMMARY_FILE, "a") as f:
+        f.write(f"{player_type.capitalize()} tagged: {len(merged_clean)} rows → {output_file_path}\n")
+
+    return merged_clean
 
 # ─── Main ───────────────────────────────────────────────────
-
 if __name__ == "__main__":
     logging.info("🚀 Starting player tagging process...")
-
     master_players_df = load_csv_safely(MASTER_FILE, "name")
     if master_players_df.empty:
-        logging.critical("Master player file could not be loaded or is empty. Exiting.")
+        logging.critical("Master player file could not be loaded. Exiting.")
         exit(1)
 
     master_players_df["name"] = normalize_name_series(master_players_df["name"])
 
     all_tagged_dfs = {}
-    source_counts = {}
     for file_path, player_type in [(BATTER_FILE, "batters"), (PITCHER_FILE, "pitchers")]:
-        tagged_df, source_ct = tag_and_save_players(file_path, player_type, master_players_df)
-        all_tagged_dfs[player_type] = tagged_df
-        source_counts[player_type] = source_ct
+        all_tagged_dfs[player_type] = tag_and_save_players(file_path, player_type, master_players_df)
 
     try:
         with open(OUTPUT_TOTALS_FILE, "w") as f:
@@ -134,16 +126,5 @@ if __name__ == "__main__":
         logging.info(f"📄 Summary written to {OUTPUT_TOTALS_FILE}")
     except Exception as e:
         logging.error(f"❌ Error writing summary: {e}")
-
-    # ✅ Append to main summary file
-    try:
-        with open(SUMMARY_FILE, "a") as f:
-            f.write("🏷️ Tag Master Files Summary\n")
-            for key in all_tagged_dfs:
-                f.write(f"{key.capitalize()} source rows:    {source_counts[key]}\n")
-                f.write(f"{key.capitalize()} tagged output:   {len(all_tagged_dfs[key])}\n")
-            f.write("\n")
-    except Exception as e:
-        logging.error(f"❌ Could not write to {SUMMARY_FILE}: {e}")
 
     logging.info("✅ Tagging process complete.")
