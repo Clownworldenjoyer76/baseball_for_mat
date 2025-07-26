@@ -1,9 +1,8 @@
 import pandas as pd
-import os
 import unicodedata
 import re
 
-# Normalization helpers
+# --- Normalization Helpers ---
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -16,18 +15,21 @@ def normalize_name(name):
     name = strip_accents(name)
     name = re.sub(r"[^a-zA-Z.,' ]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
-    suffixes = ["Jr", "Sr", "II", "III", "IV", "Jr.", "Sr."]
 
+    suffixes = {"Jr", "Sr", "II", "III", "IV", "Jr.", "Sr."}
     tokens = name.replace(",", "").split()
+
     if len(tokens) >= 2:
         last_parts = [tokens[-1]]
         if tokens[-1].replace(".", "") in suffixes and len(tokens) >= 3:
             last_parts = [tokens[-2], tokens[-1]]
-        last = " ".join(last_parts)
         first = " ".join(tokens[:-len(last_parts)])
+        last = " ".join(last_parts)
         return f"{last.strip()}, {first.strip()}"
+
     return name.title()
 
+# --- Main Normalization Logic ---
 def normalize_lineups():
     INPUT_FILE = "data/raw/lineups.csv"
     OUTPUT_FILE = "data/raw/lineups_normalized.csv"
@@ -36,9 +38,12 @@ def normalize_lineups():
     df.columns = [col.strip().lower() for col in df.columns]
 
     if 'last_name, first_name' not in df.columns and 'name' in df.columns:
-        df = df.rename(columns={'name': 'last_name, first_name'})
+        df.rename(columns={'name': 'last_name, first_name'}, inplace=True)
 
     df['last_name, first_name'] = df['last_name, first_name'].apply(normalize_name)
+    df.dropna(subset=['last_name, first_name'], inplace=True)
+    df.drop_duplicates(inplace=True)
+
     df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ normalize_lineups.py completed: {len(df)} rows written to {OUTPUT_FILE}")
 
