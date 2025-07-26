@@ -1,6 +1,7 @@
 import pandas as pd
 import unicodedata
 import re
+from pathlib import Path
 
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
 PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
@@ -63,6 +64,7 @@ def filter_and_tag(pitchers_df, games_df, side):
     missing = []
 
     normalized_pitcher_names_set = set(pitchers_df["name"])
+    unmatched_teams = []
 
     for _, row in games_df.iterrows():
         pitcher_name = row[key]
@@ -72,22 +74,35 @@ def filter_and_tag(pitchers_df, games_df, side):
 
         if matched.empty:
             missing.append(pitcher_name)
+            unmatched_teams.append(team_name)
         else:
-            matched[team_key] = team_name
+            matched["team"] = team_name
+            matched["home_away"] = side
             tagged.append(matched)
 
     if tagged:
         df = pd.concat(tagged, ignore_index=True)
-        df = df.rename(columns={team_key: "team"})
-        return df, missing
-    return pd.DataFrame(columns=pitchers_df.columns.tolist() + [team_key]), missing
+
+        # Drop team.1 if present
+        if "team.1" in df.columns:
+            df.drop(columns=["team.1"], inplace=True)
+
+        # Sort by team and name for easier review
+        df.sort_values(by=["team", "name"], inplace=True)
+
+        # Drop exact duplicates
+        df.drop_duplicates(inplace=True)
+
+        return df, missing, unmatched_teams
+
+    return pd.DataFrame(columns=pitchers_df.columns.tolist() + ["team", "home_away"]), missing, unmatched_teams
 
 def main():
     games_df = load_games()
     pitchers_df = load_pitchers()
 
-    home_df, home_missing = filter_and_tag(pitchers_df, games_df, "home")
-    away_df, away_missing = filter_and_tag(pitchers_df, games_df, "away")
+    home_df, home_missing, home_unmatched_teams = filter_and_tag(pitchers_df, games_df, "home")
+    away_df, away_missing, away_unmatched_teams = filter_and_tag(pitchers_df, games_df, "away")
 
     home_df.to_csv(OUT_HOME, index=False)
     away_df.to_csv(OUT_AWAY, index=False)
@@ -95,14 +110,28 @@ def main():
     print(f"✅ Wrote {len(home_df)} rows to {OUT_HOME}")
     print(f"✅ Wrote {len(away_df)} rows to {OUT_AWAY}")
 
+    # Post-save validation
+    total_expected = len(games_df) * 2
+    actual_total = len(home_df) + len(away_df)
+    if actual_total != total_expected:
+        print(f"⚠️ Mismatch: Expected {total_expected} total pitchers, but only {actual_total} were matched.")
+
     if home_missing:
         print("\n=== MISSING HOME PITCHERS ===")
         for name in sorted(set(home_missing)):
             print(name)
+
     if away_missing:
         print("\n=== MISSING AWAY PITCHERS ===")
         for name in sorted(set(away_missing)):
             print(name)
+
+    unmatched = set(home_unmatched_teams + away_unmatched_teams)
+    if unmatched:
+        print(f"\n⚠️ Unmatched team count: {len(unmatched)}")
+        print("Top 5 unmatched teams:")
+        for team in sorted(unmatched)[:5]:
+            print(f" - {team}")
 
 if __name__ == "__main__":
     main()
