@@ -6,30 +6,8 @@ from pathlib import Path
 import sys
 
 INPUT_FILE = "data/raw/todaysgames.csv"
-PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 OUTPUT_FILE = "data/raw/todaysgames_normalized.csv"
-UNMATCHED_OUTPUT = "data/cleaned/unmatched_pitchers.csv"
-
-def normalize_name(name):
-    if not isinstance(name, str):
-        return ""
-    name = unidecode(name)
-    name = re.sub(r"[^\w\s]", "", name)
-    name = re.sub(r"\s+", " ", name).strip()
-
-    suffixes = {"Jr", "Sr", "II", "III", "IV"}
-    tokens = name.split()
-
-    if len(tokens) >= 2:
-        if tokens[-1] in suffixes and len(tokens) >= 3:
-            last = " ".join(tokens[-2:])
-            first = " ".join(tokens[:-2])
-        else:
-            last = tokens[-1]
-            first = " ".join(tokens[:-1])
-        return f"{last}, {first}"
-    return name
 
 def is_valid_time(t):
     try:
@@ -42,27 +20,10 @@ def normalize_todays_games():
     print("📥 Loading input files...")
     try:
         games = pd.read_csv(INPUT_FILE)
-        pitchers = pd.read_csv(PITCHERS_FILE)
         team_map = pd.read_csv(TEAM_MAP_FILE)
     except Exception as e:
         print(f"❌ Error loading input files: {e}")
         sys.exit(1)
-
-    print("🧼 Normalizing pitcher names for matching...")
-    games["pitcher_home_normalized"] = games["pitcher_home"].apply(normalize_name).str.lower()
-    games["pitcher_away_normalized"] = games["pitcher_away"].apply(normalize_name).str.lower()
-    pitchers["name_normalized"] = pitchers["last_name, first_name"].apply(normalize_name).str.lower()
-    valid_names = set(pitchers["name_normalized"])
-
-    unmatched_rows = games[
-        (~games["pitcher_home_normalized"].isin(valid_names)) |
-        (~games["pitcher_away_normalized"].isin(valid_names))
-    ]
-
-    if not unmatched_rows.empty:
-        print("⚠️ WARNING: Unmatched pitchers found — logging to unmatched_pitchers.csv")
-        Path(UNMATCHED_OUTPUT).parent.mkdir(parents=True, exist_ok=True)
-        unmatched_rows.to_csv(UNMATCHED_OUTPUT, index=False)
 
     print("🔁 Mapping team abbreviations to full names...")
     team_map["team_code"] = team_map["team_code"].astype(str).str.strip().str.upper()
@@ -76,10 +37,6 @@ def normalize_todays_games():
         if len(unmapped) > 0:
             print(f"⚠️ Unmapped {col} codes: {list(unmapped)}")
         games[col] = games[col].fillna(original)
-
-    print("🛠 Forcing pitcher names to Last, First format in output...")
-    games["pitcher_home"] = games["pitcher_home"].apply(normalize_name)
-    games["pitcher_away"] = games["pitcher_away"].apply(normalize_name)
 
     print("⏱ Validating game times...")
     invalid_times = games[~games["game_time"].apply(is_valid_time)]
@@ -95,7 +52,6 @@ def normalize_todays_games():
         print(games[dupes])
         sys.exit(1)
 
-    games.drop(columns=["pitcher_home_normalized", "pitcher_away_normalized"], inplace=True)
     games.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ normalize_todays_games completed: {OUTPUT_FILE}")
 
