@@ -12,6 +12,7 @@ PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 OUTPUT_FILE = "data/raw/todaysgames_normalized.csv"
 UNMATCHED_OUTPUT = "data/cleaned/unmatched_pitchers.csv"
+SUMMARY_FILE = Path("summaries/summary.txt")
 
 def normalize_name(name):
     if not isinstance(name, str):
@@ -41,16 +42,17 @@ def is_valid_time(t):
         return False
 
 def normalize_todays_games():
-    print("📥 Loading input files...")
+    status = "PASS"
     try:
         games = pd.read_csv(INPUT_FILE)
         pitchers = pd.read_csv(PITCHERS_FILE)
         team_map = pd.read_csv(TEAM_MAP_FILE)
     except Exception as e:
         print(f"❌ Error loading input files: {e}")
+        status = "FAIL"
+        write_summary(0, 0, status)
         sys.exit(1)
 
-    print("🧼 Normalizing pitcher names...")
     games["pitcher_home_normalized"] = games["pitcher_home"].apply(normalize_name).str.lower()
     games["pitcher_away_normalized"] = games["pitcher_away"].apply(normalize_name).str.lower()
     pitchers["name_normalized"] = pitchers["last_name, first_name"].apply(normalize_name).str.lower()
@@ -60,13 +62,12 @@ def normalize_todays_games():
         (~games["pitcher_home_normalized"].isin(valid_names)) |
         (~games["pitcher_away_normalized"].isin(valid_names))
     ]
+    unmatched_count = len(unmatched_rows)
 
-    if not unmatched_rows.empty:
-        print("⚠️ WARNING: Unmatched pitchers found — logging to unmatched_pitchers.csv")
+    if unmatched_count > 0:
         Path(UNMATCHED_OUTPUT).parent.mkdir(parents=True, exist_ok=True)
         unmatched_rows.to_csv(UNMATCHED_OUTPUT, index=False)
 
-    print("🔁 Mapping team abbreviations to full names...")
     team_map["team_code"] = team_map["team_code"].astype(str).str.strip().str.upper()
     team_map["team_name"] = team_map["team_name"].astype(str).str.strip()
     code_to_name = dict(zip(team_map["team_code"], team_map["team_name"]))
@@ -74,28 +75,30 @@ def normalize_todays_games():
     for col in ["home_team", "away_team"]:
         original = games[col].astype(str).str.strip().str.upper()
         games[col] = original.map(code_to_name)
-        unmapped = original[games[col].isna()].unique()
-        if len(unmapped) > 0:
-            print(f"⚠️ Unmapped {col} codes: {list(unmapped)}")
         games[col] = games[col].fillna(original)
 
-    print("⏱ Validating game times...")
-    invalid_times = games[~games["game_time"].apply(is_valid_time)]
-    if not invalid_times.empty:
-        print("❌ Invalid game_time values:")
-        print(invalid_times[["home_team", "away_team", "game_time"]])
+    if not games["game_time"].apply(is_valid_time).all():
+        print("❌ Invalid game_time values found")
+        status = "FAIL"
+        write_summary(len(games), unmatched_count, status)
         sys.exit(1)
 
-    print("🔁 Checking for duplicate matchups...")
-    dupes = games.duplicated(subset=["home_team", "away_team"], keep=False)
-    if dupes.any():
-        print("❌ Duplicate matchups found:")
-        print(games[dupes])
+    if games.duplicated(subset=["home_team", "away_team"]).any():
+        print("❌ Duplicate matchups found")
+        status = "FAIL"
+        write_summary(len(games), unmatched_count, status)
         sys.exit(1)
 
     games.drop(columns=["pitcher_home_normalized", "pitcher_away_normalized"], inplace=True)
     games.to_csv(OUTPUT_FILE, index=False)
+
+    write_summary(len(games), unmatched_count, status)
     print(f"✅ normalize_todays_games completed: {OUTPUT_FILE}")
+
+def write_summary(matchup_count, unmatched_count, status):
+    SUMMARY_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(SUMMARY_FILE, "a") as f:
+        f.write(f"normalize_todays_games: {matchup_count} matchups, {unmatched_count} unmatched pitchers — {status}\n")
 
 if __name__ == "__main__":
     normalize_todays_games()
