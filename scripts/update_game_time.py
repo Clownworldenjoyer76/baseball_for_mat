@@ -53,7 +53,6 @@ def update_game_time_and_park_factors():
             away_team = match.iloc[0]['away_team']
             time_of_day = determine_time_of_day(game_time)
 
-            # Select correct park factor
             if time_of_day == "day":
                 pf_match = day_df[day_df['home_team'] == team]
             else:
@@ -75,9 +74,10 @@ def update_game_time_and_park_factors():
 
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     stadium_df.to_csv(STADIUM_FILE, index=False)
+
     pd.DataFrame(
-        updated_rows, 
-        columns=["home_team", "away_team", "game_time", "Park Factor", "time_of_day"]
+        updated_rows,
+        columns=["home_team", "away_team", "game_time", "park_factor", "time_of_day"]
     ).to_csv(LOG_FILE, index=False)
 
     print(f"✅ Game times and park factors updated for {len(updated_rows)} teams.")
