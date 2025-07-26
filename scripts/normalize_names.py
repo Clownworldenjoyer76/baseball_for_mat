@@ -5,12 +5,11 @@ import unicodedata
 import re
 from pathlib import Path
 
-# ─── File Paths ───────────────────────────────────────────
-
 BATT_FILE = Path("data/normalized/batters_normalized.csv")
 PITCH_FILE = Path("data/normalized/pitchers_normalized.csv")
 
-# ─── Text Normalization Utilities ─────────────────────────
+# Common suffixes to strip from last names
+SUFFIXES = {"jr", "sr", "ii", "iii", "iv", "v"}
 
 def strip_accents(text):
     if not isinstance(text, str):
@@ -20,42 +19,31 @@ def strip_accents(text):
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
-    
+
+    # Normalize and clean
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)  # allow letters, digits, spaces, commas, periods
-    name = re.sub(r"\s+", " ", name).strip()
-    
-    # Handle names with a comma
+    name = name.replace("’", "").replace("`", "")
+    name = re.sub(r"[^\w\s,]", "", name)
+    name = re.sub(r"\s+", " ", name).strip().lower()
+
+    # Split and clean
     if "," in name:
-        parts = [p.strip() for p in name.split(",")]
-        if len(parts) == 2:
-            last, first = parts
-        else:
-            return name.title()  # fallback
+        last, first = [part.strip().title() for part in name.split(",", 1)]
     else:
-        tokens = name.split()
-        if len(tokens) < 2:
+        parts = name.split()
+        if len(parts) >= 2:
+            last, first = parts[0].title(), " ".join(parts[1:]).title()
+        else:
             return name.title()
-        last = tokens[-1]
-        first = " ".join(tokens[:-1])
     
-    # Detect and shift suffix (Jr., Sr., II, etc.) from last to first name
-    suffixes = {"Jr", "Jr.", "Sr", "Sr.", "II", "III", "IV"}
-    last_tokens = last.split()
-    
-    if last_tokens[-1] in suffixes and len(last_tokens) >= 2:
-        suffix = last_tokens[-1]
-        core_last = " ".join(last_tokens[:-1])
-        first = f"{first} {suffix}"
-        last = core_last
+    # Remove suffixes from last name
+    last_parts = last.split()
+    if last_parts[-1].lower().strip(".") in SUFFIXES:
+        last = " ".join(last_parts[:-1])
 
-    # Clean initials
-    first = re.sub(r"\b([A-Z])\.", r"\1", first, flags=re.IGNORECASE)
-    
-    return f"{last.title()}, {first.title()}"
+    return f"{last}, {first}"
 
-# ─── Normalize Both Files ─────────────────────────────────
-
+# Apply to both batter and pitcher files
 for file in [BATT_FILE, PITCH_FILE]:
     df = pd.read_csv(file)
     if "last_name, first_name" in df.columns:
