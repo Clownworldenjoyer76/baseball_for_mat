@@ -1,5 +1,3 @@
-# scripts/normalize_todays_games.py
-
 import pandas as pd
 import re
 from unidecode import unidecode
@@ -7,35 +5,32 @@ from datetime import datetime
 from pathlib import Path
 import sys
 
-# ─── File Paths ─────────────────────────────────────────────
 INPUT_FILE = "data/raw/todaysgames.csv"
 PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 OUTPUT_FILE = "data/raw/todaysgames_normalized.csv"
 UNMATCHED_OUTPUT = "data/cleaned/unmatched_pitchers.csv"
 
-# ─── Name Normalization ─────────────────────────────────────
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
     name = unidecode(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)
+    name = re.sub(r"[^\w\s]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
 
-    suffixes = {"Jr", "Sr", "II", "III", "IV", "Jr.", "Sr."}
-    tokens = name.replace(",", "").split()
+    suffixes = {"Jr", "Sr", "II", "III", "IV"}
+    tokens = name.split()
 
     if len(tokens) >= 2:
         if tokens[-1] in suffixes and len(tokens) >= 3:
-            last = f"{tokens[-2]} {tokens[-1]}"
+            last = " ".join(tokens[-2:])
             first = " ".join(tokens[:-2])
         else:
             last = tokens[-1]
             first = " ".join(tokens[:-1])
-        return f"{last.strip().title()}, {first.strip().title()}"
-    return name.title()
+        return f"{last}, {first}"
+    return name
 
-# ─── Game Time Validation ───────────────────────────────────
 def is_valid_time(t):
     try:
         datetime.strptime(t.strip(), "%I:%M %p")
@@ -43,7 +38,6 @@ def is_valid_time(t):
     except Exception:
         return False
 
-# ─── Main ───────────────────────────────────────────────────
 def normalize_todays_games():
     print("📥 Loading input files...")
     try:
