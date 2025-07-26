@@ -1,21 +1,49 @@
+# scripts/tag_master_files.py
+
 import pandas as pd
 import os
 import unicodedata
 import re
 from datetime import datetime
 
+# ─── Name Normalization ─────────────────────────────────────────────
+
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
-    return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    text = unicodedata.normalize('NFD', text)
+    return ''.join(c for c in text if unicodedata.category(c) != 'Mn')
 
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
+
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,]", "", name)  # preserve comma
+    name = name.replace("’", "'").replace("`", "'")
+    name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
+
+    if "," in name:
+        parts = [part.strip().title() for part in name.split(",", 1)]
+        return f"{parts[0]}, {parts[1]}" if len(parts) == 2 else name.title()
+
+    tokens = name.split()
+    suffixes = {"Jr", "Sr", "II", "III", "IV"}
+
+    if len(tokens) >= 2:
+        if tokens[-1].replace(".", "") in suffixes and len(tokens) >= 3:
+            suffix = tokens[-1].title()
+            last = tokens[-2].title()
+            first = " ".join(tokens[:-2]).title()
+            return f"{last} {suffix}, {first}"
+        else:
+            last = tokens[-1].title()
+            first = " ".join(tokens[:-1]).title()
+            return f"{last}, {first}"
+
     return name.title()
+
+# ─── File Paths ─────────────────────────────────────────────────────
 
 master_df = pd.read_csv("data/processed/player_team_master.csv")
 batter_file = "data/normalized/batters_normalized.csv"
@@ -26,7 +54,11 @@ output_totals_file = "data/output/player_totals.txt"
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs("data/output", exist_ok=True)
 
+# ─── Normalize Master File Once ─────────────────────────────────────
+
 master_df["name"] = master_df["name"].apply(normalize_name)
+
+# ─── Tagging Logic ──────────────────────────────────────────────────
 
 def tag_players(file_path, player_type):
     df = pd.read_csv(file_path)
@@ -60,6 +92,8 @@ def tag_players(file_path, player_type):
     print(f"✅ Tagged {player_type}: {output_file} ({len(merged_clean)} rows)")
 
     return merged_clean
+
+# ─── Execution ──────────────────────────────────────────────────────
 
 batters_tagged = tag_players(batter_file, "batters")
 pitchers_tagged = tag_players(pitcher_file, "pitchers")
