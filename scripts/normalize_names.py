@@ -4,13 +4,15 @@ import pandas as pd
 import unicodedata
 import re
 from pathlib import Path
-import os
 
-# --- Configuration ---
-BATT_FILE = Path("data/normalized/batters_normalized.csv")
-PITCH_FILE = Path("data/normalized/pitchers_normalized.csv")
+# --- File Paths ---
+BATT_IN = Path("data/Data/batters.csv")
+PITCH_IN = Path("data/Data/pitchers.csv")
+BATT_OUT = Path("data/normalized/batters_normalized.csv")
+PITCH_OUT = Path("data/normalized/pitchers_normalized.csv")
 TARGET_COLUMN = "last_name, first_name"
 
+# --- Regex Patterns ---
 SUFFIXES_PATTERN = r"\b(jr|sr|ii|iii|iv|v)\b\.?"
 RE_NON_ALPHANUM_OR_SPACE_OR_COMMA = re.compile(r"[^\w\s,]")
 RE_MULTI_SPACE = re.compile(r"\s+")
@@ -22,7 +24,7 @@ def strip_accents(text: str) -> str:
     return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
 
 def normalize_to_last_first(name_series: pd.Series) -> pd.Series:
-    print("🔍 Preview of original names:")
+    print("\n🔍 Preview of original names:")
     print(name_series.head(10).to_string(index=False))
 
     name_series = name_series.astype(str).fillna("")
@@ -57,28 +59,28 @@ def normalize_to_last_first(name_series: pd.Series) -> pd.Series:
 
     print("✅ Preview of normalized names:")
     print(normalized_series.head(10).to_string(index=False))
+    print(f"✅ Total names normalized: {len(normalized_series)}")
 
     return normalized_series
 
+def process_file(label: str, input_path: Path, output_path: Path):
+    print(f"\n🔄 Processing {label} from {input_path} → {output_path}")
+    if not input_path.exists():
+        print(f"❌ Missing input file: {input_path}")
+        return
+
+    try:
+        df = pd.read_csv(input_path)
+        if TARGET_COLUMN in df.columns:
+            df[TARGET_COLUMN] = normalize_to_last_first(df[TARGET_COLUMN])
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            df.to_csv(output_path, index=False)
+            print(f"✅ Saved normalized {label} to: {output_path}")
+        else:
+            print(f"⚠️ Column '{TARGET_COLUMN}' not found in {input_path}")
+    except Exception as e:
+        print(f"❌ Error processing {label}: {e}")
+
 if __name__ == "__main__":
-    files = {
-        "batters": BATT_FILE,
-        "pitchers": PITCH_FILE
-    }
-
-    for label, path in files.items():
-        print(f"\n🔄 Processing {label} - {path}")
-        if not os.path.exists(path):
-            print(f"❌ Missing: {path}")
-            continue
-
-        try:
-            df = pd.read_csv(path)
-            if TARGET_COLUMN in df.columns:
-                df[TARGET_COLUMN] = normalize_to_last_first(df[TARGET_COLUMN])
-                df.to_csv(path, index=False)
-                print(f"✅ Saved normalized {label} to: {path}")
-            else:
-                print(f"⚠️ Column '{TARGET_COLUMN}' not found in {path}")
-        except Exception as e:
-            print(f"❌ Error processing {label}: {e}")
+    process_file("batters", BATT_IN, BATT_OUT)
+    process_file("pitchers", PITCH_IN, PITCH_OUT)
