@@ -128,7 +128,6 @@ jobs:
           run_step rename_and_merge_pitcher_data.py
           run_step pit_clean1.py
           run_step merge_data.py
-          
 
           # 📄 Combine single summary
           {
@@ -148,11 +147,11 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          
+
           git add data/end_chain/
           git add data/processed/
           git add data/adjusted/
           git add summaries/
 
-          git diff --cached --exit-code || git commit -m "A_Run_All: Automated data pipeline update on $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")"
+          git diff --cached --stat --exit-code || git commit -m "A_Run_All: Automated data pipeline update on $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")"
           git push || echo "No new commits to push"
