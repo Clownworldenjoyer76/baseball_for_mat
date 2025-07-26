@@ -15,27 +15,17 @@ def strip_accents(text):
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
-
     name = strip_accents(name)
-    name = re.sub(r"[^\w\s,\.]", "", name)  # Keep alphanumerics, comma, period
+    name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
-
-    # Handle names in "First Middle Last" or "First Last Suffix" formats
     if "," not in name:
         tokens = name.split()
         if len(tokens) >= 2:
-            first = tokens[0]
-            last = " ".join(tokens[1:])
-            return f"{last}, {first}"
+            return f"{' '.join(tokens[1:])}, {tokens[0]}"
         return name.title()
-
-    # Handle names already in "Last, First Suffix" format
     parts = name.split(",")
     if len(parts) == 2:
-        last = parts[0].strip().title()
-        first = parts[1].strip().title()
-        return f"{last}, {first}"
-
+        return f"{parts[0].strip().title()}, {parts[1].strip().title()}"
     return name.title()
 
 # ─── File Paths ───────────────────────────────────────────
@@ -49,6 +39,10 @@ output_totals_file = "data/output/player_totals.txt"
 os.makedirs(output_folder, exist_ok=True)
 os.makedirs("data/output", exist_ok=True)
 
+# ─── Normalize Master File Once ──────────────────────────
+
+master_df["name"] = master_df["name"].apply(normalize_name)
+
 # ─── Tagging Logic ───────────────────────────────────────
 
 def tag_players(file_path, player_type):
@@ -58,7 +52,6 @@ def tag_players(file_path, player_type):
         return pd.DataFrame()
 
     df["last_name, first_name"] = df["last_name, first_name"].apply(normalize_name)
-    master_df["name"] = master_df["name"].apply(normalize_name)
 
     merged = df.merge(
         master_df,
@@ -68,11 +61,26 @@ def tag_players(file_path, player_type):
         suffixes=("", "_master")
     )
 
-    output_file = os.path.join(output_folder, os.path.basename(file_path))
-    merged.to_csv(output_file, index=False)
-    print(f"✅ Tagged {player_type}: {output_file}")
+    # Log unmatched
+    unmatched = merged[merged["team"].isna() | merged["type"].isna()]
+    if not unmatched.empty:
+        print(f"⚠️ {len(unmatched)} {player_type} rows had no team/type match and will be dropped:")
+        print(unmatched[["last_name, first_name"]].drop_duplicates().to_string(index=False))
 
-    return merged
+    # Drop unmatched
+    merged_clean = merged.dropna(subset=["team", "type"])
+
+    # Move key cols to front
+    key_cols = ["name", "player_id", "team", "type"]
+    other_cols = [col for col in merged_clean.columns if col not in key_cols]
+    merged_clean = merged_clean[key_cols + other_cols]
+
+    # Save output
+    output_file = os.path.join(output_folder, os.path.basename(file_path))
+    merged_clean.to_csv(output_file, index=False)
+    print(f"✅ Tagged {player_type}: {output_file} ({len(merged_clean)} rows)")
+
+    return merged_clean
 
 # ─── Execution ────────────────────────────────────────────
 
