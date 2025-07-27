@@ -156,5 +156,5 @@ jobs:
           git add data/adjusted/
           git add summaries/
 
-          git commit -am "A_Run_All: Forced commit for batter and log output $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
+          git commit -m "A_Run_All: Forced commit for batter and log output $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "No new commits to push"
