@@ -75,6 +75,8 @@ def normalize_name(name):
 NAME_OVERRIDES = {
     "Tatis Jr., Fernando": "Tatis, Fernando",
     "Witt Jr., Bobby": "Witt, Bobby",
+    "Crawford, John Paul": "Crawford, Jp",
+    "Realmuto, Jacob": "Realmuto, Jt",
     "P Muncy, Max": "Muncy, Max",
     "V Garcia, Luis": "Garcia, Luis",
     "O'Hearn, Ryan": "Ohearn, Ryan",
