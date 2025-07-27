@@ -1,10 +1,8 @@
 
-❌ normalize_pitcher_home_away ERROR (2025-07-27 08:40:14 AM EDT):
-2025-07-27 12:40:14,737 - INFO - Starting pitcher data processing and standardization with new workflow.
-2025-07-27 12:40:14,737 - INFO - Ensured processing directory exists: data/final_processed_pitchers
-2025-07-27 12:40:14,737 - INFO - Copied pitchers_normalized_cleaned.csv to data/final_processed_pitchers/pitchers_normalized_cleaned.csv
-2025-07-27 12:40:14,737 - INFO - Copied todaysgames_normalized.csv to data/final_processed_pitchers/todaysgames_normalized.csv
-2025-07-27 12:40:14,740 - INFO - Loaded team map with 30 entries.
+❌ normalize_pitcher_home_away ERROR (2025-07-27 09:16:01 AM EDT):
+2025-07-27 13:16:01,801 - INFO - Starting pitcher data processing and standardization.
+2025-07-27 13:16:01,804 - INFO - Loaded team map with 30 entries.
+2025-07-27 13:16:01,809 - CRITICAL - An unhandled error occurred during script execution: 'last_name'
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -17,12 +15,10 @@ KeyError: 'last_name'
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 188, in <module>
-    main()
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 145, in main
-    pitchers_df = load_pitchers() # Load from the temp location
-  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 51, in load_pitchers
-    df["name"] = df["last_name"].astype(str).str.strip() + ", " + df["first_name"].astype(str).str.strip()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 196, in <module>
+    process_pitcher_data(pitchers_input, games_input, output_home, output_away)
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 49, in process_pitcher_data
+    pitchers_df["name"] = pitchers_df["last_name"].astype(str).str.strip() + ", " + pitchers_df["first_name"].astype(str).str.strip()
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
     indexer = self.columns.get_loc(key)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
