@@ -1,28 +1,17 @@
 import pandas as pd
 import logging
 from pathlib import Path
-import shutil # For copying files
-import os     # For creating directories
+import sys # Import sys for command-line arguments
+import shutil # For potential cleanup, though YAML will manage temp inputs
+import os
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# --- Original Input File Paths ---
-PITCHERS_FILE_SOURCE = Path("data/cleaned/pitchers_normalized_cleaned.csv")
-GAMES_FILE_SOURCE = Path("data/raw/todaysgames_normalized.csv")
+# --- Fixed File Path (Team Map is always from source) ---
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")
-
-# --- New Processing/Output Directory ---
-# This is where copies of inputs will go, and where final outputs will be saved.
-PROCESSING_DIR = Path("data/final_processed_pitchers")
-
-# --- Paths for files within the new PROCESSING_DIR ---
-PITCHERS_FILE_TEMP = PROCESSING_DIR / "pitchers_normalized_cleaned.csv"
-GAMES_FILE_TEMP = PROCESSING_DIR / "todaysgames_normalized.csv"
-OUT_HOME = PROCESSING_DIR / "pitchers_home.csv"
-OUT_AWAY = PROCESSING_DIR / "pitchers_away.csv"
 
 # --- Helper Functions for Team Mapping ---
 def load_team_map():
@@ -40,149 +29,172 @@ def load_team_map():
     df["team_name"] = df["team_name"].astype(str).str.strip()
     return dict(zip(df["team_code"], df["team_name"]))
 
-# --- Original Helper Functions (modified to use temp paths) ---
-def load_pitchers():
-    """Loads and preprocesses the pitchers data from the temp location."""
-    if not PITCHERS_FILE_TEMP.exists():
-        logger.critical(f"❌ Missing temporary pitcher file: {PITCHERS_FILE_TEMP}")
-        raise FileNotFoundError(f"{PITCHERS_FILE_TEMP} does not exist. Ensure it was copied.")
-
-    df = pd.read_csv(PITCHERS_FILE_TEMP)
-    df["name"] = df["last_name"].astype(str).str.strip() + ", " + df["first_name"].astype(str).str.strip()
-    df = df.drop_duplicates(subset=["name", "team"])
-    return df
-
-def filter_and_tag(pitchers_df: pd.DataFrame, side: str, team_map: dict):
+# --- Core Processing Function ---
+def process_pitcher_data(pitchers_input_path: Path, games_input_path: Path,
+                         output_home_path: Path, output_away_path: Path):
     """
-    Filters and tags pitchers as home or away, applying team name standardization.
-
-    Args:
-        pitchers_df (pd.DataFrame): DataFrame containing pitcher data.
-        side (str): 'home' or 'away' to specify which pitcher/team to filter for.
-        team_map (dict): A dictionary for mapping team codes to full names.
-
-    Returns:
-        tuple: A tuple containing the filtered DataFrame, a list of missing pitchers,
-               and a list of unmatched teams.
+    Main function to load, process, and save pitcher data.
+    Takes all paths as arguments.
     """
-    key = f"pitcher_{side}"
-    team_key = f"{side}_team"
+    logger.info("Starting pitcher data processing and standardization.")
 
-    tagged = []
-    missing = []
-    unmatched_teams = []
+    team_map = load_team_map()
+    logger.info(f"Loaded team map with {len(team_map)} entries.")
 
-    # Load games file from the TEMP location
-    if not GAMES_FILE_TEMP.exists():
-        logger.critical(f"❌ Missing temporary games file: {GAMES_FILE_TEMP}")
-        raise FileNotFoundError(f"{GAMES_FILE_TEMP} does not exist. Ensure it was copied.")
+    # Load pitchers data from the specified input path
+    if not pitchers_input_path.exists():
+        logger.critical(f"❌ Missing pitcher input file: {pitchers_input_path}")
+        raise FileNotFoundError(f"{pitchers_input_path} does not exist.")
+    pitchers_df = pd.read_csv(pitchers_input_path)
+    pitchers_df["name"] = pitchers_df["last_name"].astype(str).str.strip() + ", " + pitchers_df["first_name"].astype(str).str.strip()
+    pitchers_df = pitchers_df.drop_duplicates(subset=["name", "team"])
+    logger.info(f"Loaded {len(pitchers_df)} unique pitchers from {pitchers_input_path}.")
 
-    full_games_df = pd.read_csv(GAMES_FILE_TEMP)[["pitcher_home", "pitcher_away", "home_team", "away_team"]]
-    full_games_df[key] = full_games_df[key].astype(str).str.strip() # Clean pitcher names
+    # Load games data from the specified input path
+    if not games_input_path.exists():
+        logger.critical(f"❌ Missing games input file: {games_input_path}")
+        raise FileNotFoundError(f"{games_input_path} does not exist.")
+    full_games_df = pd.read_csv(games_input_path)[["pitcher_home", "pitcher_away", "home_team", "away_team"]]
+    logger.info(f"Loaded {len(full_games_df)} games from {games_input_path}.")
 
-    # Apply standardization to game team names *before* matching
+    # Apply standardization to game team names immediately
     full_games_df['home_team'] = full_games_df['home_team'].astype(str).str.strip().map(team_map).fillna(full_games_df['home_team'])
     full_games_df['away_team'] = full_games_df['away_team'].astype(str).str.strip().map(team_map).fillna(full_games_df['away_team'])
-    full_games_df[team_key] = full_games_df[team_key].astype(str).str.strip() # Ensure 'team_key' column is also clean after map
+
+    # --- Process Home Pitchers ---
+    home_tagged = []
+    home_missing_pitchers = []
+    home_unmatched_teams = []
 
     for idx, row in full_games_df.iterrows():
-        pitcher_name = row[key]
-        game_home_team = row['home_team'] # Standardized game home team
-        game_away_team = row['away_team'] # Standardized game away team
+        pitcher_name = row['pitcher_home']
+        game_home_team = row['home_team']
+        game_away_team = row['away_team']
 
         matched = pitchers_df[pitchers_df["name"] == pitcher_name].copy()
 
         if matched.empty:
-            missing.append(pitcher_name)
-            unmatched_teams.append(row[team_key])
-            logger.debug(f"🔍 Pitcher '{pitcher_name}' (Team: {row[team_key]}, Game Index: {idx}) not found in copied pitcher file.")
+            home_missing_pitchers.append(pitcher_name)
+            home_unmatched_teams.append(game_home_team) # Team of the missing pitcher
+            logger.debug(f"🔍 Home pitcher '{pitcher_name}' (Team: {game_home_team}, Game Index: {idx}) not found.")
         else:
-            matched["team"] = row[team_key] # Pitcher's own team in the game context (standardized)
-            matched["home_away"] = side
+            matched["team"] = game_home_team # This pitcher's own team
+            matched["home_away"] = "home"
             matched["game_home_team"] = game_home_team # Full game context
             matched["game_away_team"] = game_away_team # Full game context
-            tagged.append(matched)
-            logger.debug(f"✅ Matched pitcher '{pitcher_name}' for {side} team '{row[team_key]}'.")
+            home_tagged.append(matched)
+            logger.debug(f"✅ Matched home pitcher '{pitcher_name}' for team '{game_home_team}'.")
 
-    if tagged:
-        df = pd.concat(tagged, ignore_index=True)
-        df.drop(columns=[col for col in df.columns if col.endswith(".1")], errors='ignore', inplace=True)
-        df.sort_values(by=["team", "name"], inplace=True)
-        df.drop_duplicates(inplace=True)
+    if home_tagged:
+        home_df = pd.concat(home_tagged, ignore_index=True)
+        home_df.drop(columns=[col for col in home_df.columns if col.endswith(".1")], errors='ignore', inplace=True)
+        home_df.sort_values(by=["team", "name"], inplace=True)
+        home_df.drop_duplicates(inplace=True)
+        home_df["team"] = home_df["team"].astype(str).str.strip().map(team_map).fillna(home_df["team"])
+        logger.info(f"Generated {len(home_df)} home pitcher records.")
+    else:
+        home_df = pd.DataFrame(columns=pitchers_df.columns.tolist() + ["name", "team", "home_away", "game_home_team", "game_away_team"])
+        logger.warning("⚠️ No home pitchers found or matched.")
 
-        # Final standardization pass on the 'team' column if pitchers_df wasn't perfectly clean initially
-        df["team"] = df["team"].astype(str).str.strip().map(team_map).fillna(df["team"])
+    # --- Process Away Pitchers ---
+    away_tagged = []
+    away_missing_pitchers = []
+    away_unmatched_teams = []
 
-        logger.info(f"Generated {len(df)} {side} pitcher records.")
-        return df, missing, unmatched_teams
+    for idx, row in full_games_df.iterrows():
+        pitcher_name = row['pitcher_away']
+        game_home_team = row['home_team']
+        game_away_team = row['away_team']
 
-    logger.warning(f"⚠️ No {side} pitchers found or matched.")
-    # Return an empty DataFrame with expected columns if no matches
-    return pd.DataFrame(columns=pitchers_df.columns.tolist() + ["team", "home_away", "game_home_team", "game_away_team"]), missing, unmatched_teams
+        matched = pitchers_df[pitchers_df["name"] == pitcher_name].copy()
 
-# --- Main Execution ---
-def main():
-    logger.info("Starting pitcher data processing and standardization with new workflow.")
+        if matched.empty:
+            away_missing_pitchers.append(pitcher_name)
+            away_unmatched_teams.append(game_away_team) # Team of the missing pitcher
+            logger.debug(f"🔍 Away pitcher '{pitcher_name}' (Team: {game_away_team}, Game Index: {idx}) not found.")
+        else:
+            matched["team"] = game_away_team # This pitcher's own team
+            matched["home_away"] = "away"
+            matched["game_home_team"] = game_home_team # Full game context
+            matched["game_away_team"] = game_away_team # Full game context
+            away_tagged.append(matched)
+            logger.debug(f"✅ Matched away pitcher '{pitcher_name}' for team '{game_away_team}'.")
 
-    # 1. Create the new processing directory if it doesn't exist
-    os.makedirs(PROCESSING_DIR, exist_ok=True)
-    logger.info(f"Ensured processing directory exists: {PROCESSING_DIR}")
+    if away_tagged:
+        away_df = pd.concat(away_tagged, ignore_index=True)
+        away_df.drop(columns=[col for col in away_df.columns if col.endswith(".1")], errors='ignore', inplace=True)
+        away_df.sort_values(by=["team", "name"], inplace=True)
+        away_df.drop_duplicates(inplace=True)
+        away_df["team"] = away_df["team"].astype(str).str.strip().map(team_map).fillna(away_df["team"])
+        logger.info(f"Generated {len(away_df)} away pitcher records.")
+    else:
+        away_df = pd.DataFrame(columns=pitchers_df.columns.tolist() + ["name", "team", "home_away", "game_home_team", "game_away_team"])
+        logger.warning("⚠️ No away pitchers found or matched.")
 
-    # 2. Copy input files to the new location
-    try:
-        shutil.copy(PITCHERS_FILE_SOURCE, PITCHERS_FILE_TEMP)
-        logger.info(f"Copied {PITCHERS_FILE_SOURCE.name} to {PITCHERS_FILE_TEMP}")
-        shutil.copy(GAMES_FILE_SOURCE, GAMES_FILE_TEMP)
-        logger.info(f"Copied {GAMES_FILE_SOURCE.name} to {GAMES_FILE_TEMP}")
-    except FileNotFoundError as e:
-        logger.critical(f"❌ Failed to copy source file: {e}")
-        logger.critical("Please ensure input files exist at their source paths.")
-        return # Exit if files can't be copied
+    # Ensure output directories exist
+    os.makedirs(output_home_path.parent, exist_ok=True)
+    os.makedirs(output_away_path.parent, exist_ok=True)
 
-    team_map = load_team_map() # Load the map once
-    logger.info(f"Loaded team map with {len(team_map)} entries.")
+    # Save output files to the FINAL desired location
+    if not home_df.empty:
+        home_df.to_csv(output_home_path, index=False)
+        logger.info(f"✅ Wrote {len(home_df)} rows to {output_home_path}")
+    else:
+        logger.warning(f"⚠️ No home pitcher data to write. {output_home_path} not created or updated.")
 
-    pitchers_df = load_pitchers() # Load from the temp location
-    logger.info(f"Loaded {len(pitchers_df)} unique pitchers from {PITCHERS_FILE_TEMP}.")
+    if not away_df.empty:
+        away_df.to_csv(output_away_path, index=False)
+        logger.info(f"✅ Wrote {len(away_df)} rows to {output_away_path}")
+    else:
+        logger.warning(f"⚠️ No away pitcher data to write. {output_away_path} not created or updated.")
 
-    # Process and get dataframes
-    home_df, home_missing, home_unmatched_teams = filter_and_tag(pitchers_df, "home", team_map)
-    away_df, away_missing, away_unmatched_teams = filter_and_tag(pitchers_df, "away", team_map)
-
-    # 3. Save output files to the new location
-    home_df.to_csv(OUT_HOME, index=False)
-    away_df.to_csv(OUT_AWAY, index=False)
-
-    logger.info(f"✅ Wrote {len(home_df)} rows to {OUT_HOME}")
-    logger.info(f"✅ Wrote {len(away_df)} rows to {OUT_AWAY}")
-
-    # Validation and reporting (using the copied games file for comparison)
-    raw_games_df = pd.read_csv(GAMES_FILE_TEMP)
+    # --- Validation and Reporting ---
+    raw_games_df = pd.read_csv(games_input_path) # Read from the temporary input
     expected = len(raw_games_df) * 2
     actual = len(home_df) + len(away_df)
     if actual != expected:
-        logger.warning(f"⚠️ Mismatch: Expected {expected} total pitchers from {GAMES_FILE_TEMP}, but got {actual}")
+        logger.warning(f"⚠️ Mismatch: Expected {expected} total pitchers from {games_input_path}, but got {actual}")
     else:
         logger.info(f"Total pitchers generated ({actual}) matches expected count ({expected}).")
 
-    if home_missing:
-        logger.warning(f"\n=== MISSING HOME PITCHERS ({len(set(home_missing))} unique) ===")
-        for name in sorted(set(home_missing)):
+    if home_missing_pitchers:
+        logger.warning(f"\n=== MISSING HOME PITCHERS ({len(set(home_missing_pitchers))} unique) ===")
+        for name in sorted(set(home_missing_pitchers)):
             logger.warning(f"  - {name}")
 
-    if away_missing:
-        logger.warning(f"\n=== MISSING AWAY PITCHERS ({len(set(away_missing))} unique) ===")
-        for name in sorted(set(away_missing)):
+    if away_missing_pitchers:
+        logger.warning(f"\n=== MISSING AWAY PITCHERS ({len(set(away_missing_pitchers))} unique) ===")
+        for name in sorted(set(away_missing_pitchers)):
             logger.warning(f"  - {name}")
 
-    unmatched = set(home_unmatched_teams + away_unmatched_teams)
-    if unmatched:
-        logger.warning(f"\n⚠️ Unmatched team codes from copied GAMES_FILE (after initial map attempt): {len(unmatched)}")
+    all_unmatched_teams = set(home_unmatched_teams + away_unmatched_teams)
+    if all_unmatched_teams:
+        logger.warning(f"\n⚠️ Unmatched team codes from {games_input_path.name} (after initial map attempt): {len(all_unmatched_teams)}")
         logger.warning("Top 5 unmatched teams:")
-        for team in sorted(unmatched)[:5]:
+        for team in sorted(list(all_unmatched_teams))[:5]:
             logger.warning(f"  - {team}")
 
     logger.info("Pitcher data processing and standardization completed.")
 
+
 if __name__ == "__main__":
-    main()
+    # Expect 4 command-line arguments:
+    # 1. Path to pitchers_normalized_cleaned.csv (temp copy)
+    # 2. Path to todaysgames_normalized.csv (temp copy)
+    # 3. Path for output pitchers_home.csv (final destination)
+    # 4. Path for output pitchers_away.csv (final destination)
+    if len(sys.argv) != 5:
+        logger.critical("Usage: python normalize_pitcher_home_away.py <pitchers_input_path> <games_input_path> <output_home_path> <output_away_path>")
+        sys.exit(1)
+
+    pitchers_input = Path(sys.argv[1])
+    games_input = Path(sys.argv[2])
+    output_home = Path(sys.argv[3])
+    output_away = Path(sys.argv[4])
+
+    try:
+        process_pitcher_data(pitchers_input, games_input, output_home, output_away)
+    except Exception as e:
+        logger.critical(f"An unhandled error occurred during script execution: {e}", exc_info=True)
+        sys.exit(1)
+
