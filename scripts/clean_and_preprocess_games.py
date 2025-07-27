@@ -50,7 +50,7 @@ def clean_and_preprocess_games(input_path: str, output_path: str) -> None:
     print(f"✅ Saved cleaned game data to: {output_path}")
 
 if __name__ == "__main__":
-    INPUT_FILE = "data/end_chain/todaysgames_normalized.csv"
-    OUTPUT_FILE = "data/end_chain/cleaned/games_cleaned.csv"
+    INPUT_FILE = "data/end_chain/first/games_today.csv"
+    OUTPUT_FILE = "data/end_chain/cleaned/games_today_cleaned.csv"
 
     clean_and_preprocess_games(INPUT_FILE, OUTPUT_FILE)
