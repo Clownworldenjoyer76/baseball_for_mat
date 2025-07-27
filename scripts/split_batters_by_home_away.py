@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import re
 import logging
+import os # Import os for file size checks
 
 # --- Setup ---
 BATTERS_FILE = "data/cleaned/batters_today.csv"
@@ -96,14 +97,12 @@ def main():
         logger.warning(f"⚠️ '{TEAM_MASTER_FILE}' does not contain a 'team_name' column. Team normalization will be ineffective.")
     else:
         for team in team_master["team_name"].dropna().unique():
-            # Store the canonical name (original case from master file) keyed by its lowercase version
             team_name_map[str(team).strip().lower()] = team
         logger.info(f"Constructed team_name_map with {len(team_name_map)} entries.")
         logger.debug(f"Team Master Map Sample (first 5): {dict(list(team_name_map.items())[:5])}")
 
 
     if not team_name_map and not team_master.empty and 'team_name' in team_master.columns:
-        # This means the file was not empty and had the column, but no valid teams were extracted
         logger.error("❌ Failed to create valid team name map despite master file existing. Check master file content.")
         script_status = "ERROR"
         with open(SUMMARY_FILE, "a") as f:
@@ -122,7 +121,6 @@ def main():
 
     logger.info("🧽 Normalizing team names across all relevant DataFrames...")
 
-    # DEBUG: Log unique team names *before* normalization
     logger.debug(f"Batters unique teams BEFORE normalization ({len(batters['team'].unique())} unique): {sorted(batters['team'].unique().tolist())}")
     logger.debug(f"Games unique home teams BEFORE normalization ({len(games['home_team'].unique())} unique): {sorted(games['home_team'].unique().tolist())}")
     logger.debug(f"Games unique away teams BEFORE normalization ({len(games['away_team'].unique())} unique): {sorted(games['away_team'].unique().tolist())}")
@@ -133,14 +131,10 @@ def main():
     batters.drop_duplicates(inplace=True)
     logger.debug(f"Batters DataFrame after normalization and de-duplication: {len(batters)} rows.")
 
-    # Apply normalization to games
-    # IMPORTANT: Your `games` normalization was different from `batters`.
-    # It used .astype(str).str.strip().str.title() directly.
-    # To ensure consistency, it should also use your `normalize_team` function.
+    # Apply normalization to games (consistent with batters normalization)
     games['home_team'] = games['home_team'].apply(fix_team_name).apply(lambda x: normalize_team(x, team_name_map))
     games['away_team'] = games['away_team'].apply(fix_team_name).apply(lambda x: normalize_team(x, team_name_map))
 
-    # DEBUG: Log unique team names *after* normalization
     logger.debug(f"Batters unique teams AFTER normalization ({len(batters['team'].unique())} unique): {sorted(batters['team'].unique().tolist())}")
     logger.debug(f"Games unique home teams AFTER normalization ({len(games['home_team'].unique())} unique): {sorted(games['home_team'].unique().tolist())}")
     logger.debug(f"Games unique away teams AFTER normalization ({len(games['away_team'].unique())} unique): {sorted(games['away_team'].unique().tolist())}")
@@ -153,7 +147,6 @@ def main():
     logger.debug(f"All game teams: {sorted(list(all_game_teams))}")
 
 
-    # DEBUG: Compare the sets of teams
     batter_teams_set = set(batters['team'].unique())
     logger.debug(f"Unique teams in batters after normalization: {sorted(list(batter_teams_set))}")
 
@@ -171,7 +164,6 @@ def main():
 
 
     logger.info("🔀 Splitting batters into home and away groups...")
-    # Filter batters that are playing today (i.e., their team is in all_game_teams)
     playing_batters = batters[batters['team'].isin(all_game_teams)].copy()
     logger.info(f"Initially identified {len(playing_batters)} batters as playing today.")
     if playing_batters.empty and not batters.empty:
@@ -186,7 +178,7 @@ def main():
     if home_batters.empty:
         logger.debug("No home batters found.")
     else:
-        logger.debug(f"Home batters (first 5 rows):\n{home_batters.head().to_string()}") # .to_string() for better console formatting
+        logger.debug(f"Home batters (first 5 rows):\n{home_batters.head().to_string()}")
 
 
     away_batters = playing_batters[playing_batters['team'].isin(away_teams)].copy()
@@ -199,7 +191,6 @@ def main():
         logger.debug(f"Away batters (first 5 rows):\n{away_batters.head().to_string()}")
 
 
-    # Identify truly unmatched batters (those not found in any game today)
     unmatched_batters = batters[~batters['team'].isin(all_game_teams)]
     unmatched_count = len(unmatched_batters)
     unmatched_teams_summary = unmatched_batters["team"].value_counts().head(5).to_dict()
@@ -212,18 +203,17 @@ def main():
     else:
         logger.info("✅ No unmatched batters detected (all batters were either home or away).")
 
-    # The row count check now specifically reflects if all *input* batters were accounted for
     total_processed_and_unmatched = home_count + away_count + unmatched_count
     if total_processed_and_unmatched == len(batters):
         logger.info(f"✅ All {len(batters)} input batters accounted for (Home: {home_count}, Away: {away_count}, Unmatched: {unmatched_count}).")
-        script_status = "PASS" if home_count > 0 or away_count > 0 else "WARN" # If all accounted but no home/away, warn.
+        script_status = "PASS" if home_count > 0 or away_count > 0 else "WARN"
     else:
         logger.error(f"❌ Mismatch in total rows: Input: {len(batters)}, Accounted: {total_processed_and_unmatched}. Data loss detected!")
         script_status = "ERROR"
 
 
     logger.info(f"💾 Saving output files to {OUTPUT_DIR}...")
-    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True) # Ensure directory exists (redundant but safe)
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
     out_home_path = Path(f"{OUTPUT_DIR}/batters_home.csv")
     out_away_path = Path(f"{OUTPUT_DIR}/batters_away.csv")
@@ -231,27 +221,49 @@ def main():
     try:
         if not home_batters.empty:
             home_batters.sort_values(by=["team", "name"]).to_csv(out_home_path, index=False)
-            logger.info(f"✅ Output file '{out_home_path}' created with {len(home_batters)} rows.")
+            logger.info(f"✅ Attempted to create '{out_home_path}' with {len(home_batters)} rows.")
         else:
-            logger.warning(f"⚠️ {out_home_path} not created as no home batters were found. File might be created with only headers.")
-            # Still create the file with headers if empty, as per original behavior of to_csv
+            logger.warning(f"⚠️ {out_home_path} not created with data as no home batters were found. Creating with headers only.")
             home_batters.to_csv(out_home_path, index=False)
+
+        # Verify home file size
+        if out_home_path.exists():
+            file_size_home = os.path.getsize(out_home_path) # Use os.path.getsize for simpler check
+            if file_size_home <= 100: # Very rough heuristic: expecting more than just headers.
+                logger.error(f"❌ '{out_home_path}' is suspiciously small ({file_size_home} bytes) for {len(home_batters)} rows. It might be empty or corrupt.")
+                script_status = "ERROR"
+            else:
+                logger.info(f"✅ '{out_home_path}' successfully saved with {file_size_home} bytes.")
+        else:
+            logger.error(f"❌ Output file '{out_home_path}' NOT FOUND after write attempt.")
+            script_status = "ERROR"
 
 
         if not away_batters.empty:
             away_batters.sort_values(by=["team", "name"]).to_csv(out_away_path, index=False)
-            logger.info(f"✅ Output file '{out_away_path}' created with {len(away_batters)} rows.")
+            logger.info(f"✅ Attempted to create '{out_away_path}' with {len(away_batters)} rows.")
         else:
-            logger.warning(f"⚠️ {out_away_path} not created as no away batters were found. File might be created with only headers.")
-            # Still create the file with headers if empty
+            logger.warning(f"⚠️ {out_away_path} not created with data as no away batters were found. Creating with headers only.")
             away_batters.to_csv(out_away_path, index=False)
 
+        # Verify away file size
+        if out_away_path.exists():
+            file_size_away = os.path.getsize(out_away_path)
+            if file_size_away <= 100: # Very rough heuristic
+                logger.error(f"❌ '{out_away_path}' is suspiciously small ({file_size_away} bytes) for {len(away_batters)} rows. It might be empty or corrupt.")
+                script_status = "ERROR"
+            else:
+                logger.info(f"✅ '{out_away_path}' successfully saved with {file_size_away} bytes.")
+        else:
+            logger.error(f"❌ Output file '{out_away_path}' NOT FOUND after write attempt.")
+            script_status = "ERROR"
+
     except Exception as e:
-        logger.error(f"❌ Error saving output files: {e}")
+        logger.error(f"❌ Error during file write or verification: {e}")
         script_status = "ERROR"
 
     # --- Write to summary ---
-    Path("summaries").mkdir(exist_ok=True) # Ensure directory exists
+    Path("summaries").mkdir(exist_ok=True)
     with open(SUMMARY_FILE, "a") as f:
         f.write(f"split_batters_by_home_away: {script_status} | Home: {home_count} | Away: {away_count} | Unmatched: {unmatched_count}\n")
 
@@ -260,3 +272,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
