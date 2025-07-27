@@ -6,16 +6,13 @@ PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 OUT_HOME = "data/adjusted/pitchers_home.csv"
 OUT_AWAY = "data/adjusted/pitchers_away.csv"
 
-def load_games():
-    return pd.read_csv(GAMES_FILE)[["home_team", "away_team"]].drop_duplicates()
-
 def load_pitchers():
     df = pd.read_csv(PITCHERS_FILE)
     df["name"] = df["last_name"].astype(str).str.strip() + ", " + df["first_name"].astype(str).str.strip()
     df = df.drop_duplicates(subset=["name", "team"])
     return df
 
-def filter_and_tag(pitchers_df, games_df, side):
+def filter_and_tag(pitchers_df, side):
     key = f"pitcher_{side}"
     team_key = f"{side}_team"
     opponent_key = "away_team" if side == "home" else "home_team"
@@ -23,8 +20,8 @@ def filter_and_tag(pitchers_df, games_df, side):
     missing = []
     unmatched_teams = []
 
-    # Load full matchup data for pitcher name matching
-    full_games_df = pd.read_csv(GAMES_FILE)
+    # Load all required columns for accurate mapping
+    full_games_df = pd.read_csv(GAMES_FILE)[["pitcher_home", "pitcher_away", "home_team", "away_team"]]
     full_games_df[key] = full_games_df[key].astype(str).str.strip()
     full_games_df[team_key] = full_games_df[team_key].astype(str).str.strip()
 
@@ -54,11 +51,10 @@ def filter_and_tag(pitchers_df, games_df, side):
     return pd.DataFrame(columns=pitchers_df.columns.tolist() + ["team", "home_away", opponent_key]), missing, unmatched_teams
 
 def main():
-    games_df = load_games()
     pitchers_df = load_pitchers()
 
-    home_df, home_missing, home_unmatched_teams = filter_and_tag(pitchers_df, games_df, "home")
-    away_df, away_missing, away_unmatched_teams = filter_and_tag(pitchers_df, games_df, "away")
+    home_df, home_missing, home_unmatched_teams = filter_and_tag(pitchers_df, "home")
+    away_df, away_missing, away_unmatched_teams = filter_and_tag(pitchers_df, "away")
 
     home_df.to_csv(OUT_HOME, index=False)
     away_df.to_csv(OUT_AWAY, index=False)
@@ -66,7 +62,7 @@ def main():
     print(f"✅ Wrote {len(home_df)} rows to {OUT_HOME}")
     print(f"✅ Wrote {len(away_df)} rows to {OUT_AWAY}")
 
-    expected = len(games_df) * 2
+    expected = len(pd.read_csv(GAMES_FILE)) * 2
     actual = len(home_df) + len(away_df)
     if actual != expected:
         print(f"⚠️ Mismatch: Expected {expected} total pitchers, but got {actual}")
