@@ -16,13 +16,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main  # Ensure we’re on a real branch, not detached HEAD
 
-      # --- Configure Git BEFORE any script runs Git commands ---
       - name: Configure Git
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-      # --- End Git Configuration ---
 
       - name: Cache Python dependencies
         uses: actions/cache@v4
@@ -146,15 +146,20 @@ jobs:
             cat "$ERRORS_FILE"
           } > "$SUMMARY_FILE"
 
-      - name: Commit All Logs and Outputs (Main Workflow Commit)
+      - name: Show current Git branch
+        run: git rev-parse --abbrev-ref HEAD
+
+      - name: Commit batter files and summary
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add data/end_chain/
-          git add data/processed/
-          git add data/adjusted/
-          git add summaries/
+          git add data/adjusted/batters_home.csv || echo "home not found"
+          git add data/adjusted/batters_away.csv || echo "away not found"
+          git add summaries/summary.txt || echo "summary not found"
 
-          git commit -m "A_Run_All: Forced commit for batter and log output $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
-          git push --force || echo "No new commits to push"
+          echo "📄 Git status:"
+          git status
+
+          git commit -m "Commit batter split + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
+          git push --force || echo "Nothing to push"
