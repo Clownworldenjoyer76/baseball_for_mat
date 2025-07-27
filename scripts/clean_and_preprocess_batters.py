@@ -2,14 +2,15 @@ import pandas as pd
 from pathlib import Path
 import sys
 
-# Input paths
+# Input and output directories
 INPUT_DIR = Path("data/end_chain")
 OUTPUT_DIR = INPUT_DIR / "cleaned"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Input file paths
 FILES = {
-    "batters_home": INPUT_DIR / "first/raw/bat_hwp_dirty.csv",
-    "batters_away": INPUT_DIR / "first/raw/bat_awp_dirty.csv"
+    "bat_hwp": INPUT_DIR / "first/raw/bat_hwp_dirty.csv",
+    "bat_awp": INPUT_DIR / "first/raw/bat_awp_dirty.csv"
 }
 
 REQUIRED_COLUMNS = ["name", "team", "ab", "pa", "hit", "home_run", "walk", "strikeout"]
