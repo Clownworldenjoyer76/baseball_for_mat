@@ -2,13 +2,12 @@
 
 import pandas as pd
 from pathlib import Path
-import re
 import logging
 
 # --- Setup ---
 BATTERS_FILE = "data/cleaned/batters_today.csv"
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
-TEAM_MASTER_FILE = "data/Data/team_name_master.csv"
+# TEAM_MASTER_FILE is no longer directly used in this script if normalization is upstream
 OUTPUT_DIR = "data/adjusted"
 SUMMARY_FILE = "summaries/summary.txt"
 
@@ -20,35 +19,8 @@ logger = logging.getLogger(__name__)
 Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 Path(SUMMARY_FILE).parent.mkdir(exist_ok=True)
 
-# --- Shared utilities ---
-def fix_team_name_format(name):
-    """
-    Adds a space between lowercase and uppercase letters (e.g., 'NewYork' -> 'New York').
-    This is a preliminary step before more formal normalization.
-    """
-    name = str(name).strip()
-    return re.sub(r'([a-z])([A-Z])', r'\1 \2', name)
-
-def get_normalized_team_name(name, team_name_map):
-    """
-    Normalizes a team name using a predefined mapping.
-    If no direct match, it attempts a simple title case as a fallback,
-    but logs a warning if the name remains unmatched.
-    """
-    original_name = str(name).strip()
-    processed_name = fix_team_name_format(original_name).lower()
-
-    # Try direct lookup in the lowercase map
-    if processed_name in team_name_map:
-        return team_name_map[processed_name] # Return the canonical name
-
-    # Fallback to title case if no direct map (still risky but better than nothing)
-    title_cased_name = original_name.title()
-    logger.warning(f"⚠️ Team name '{original_name}' (processed as '{processed_name}') "
-                   f"not found in master mapping. Falling back to '{title_cased_name}'. "
-                   f"This may lead to unmatched batters/games.")
-    return title_cased_name
-
+# --- No Shared utilities for normalization needed here ---
+# (fix_team_name_format and get_normalized_team_name functions removed)
 
 def main():
     script_status = "PASS" # Default status, will change to WARN, ERROR, or SKIP
@@ -60,7 +32,7 @@ def main():
     try:
         batters = pd.read_csv(BATTERS_FILE)
         games = pd.read_csv(GAMES_FILE)
-        team_master = pd.read_csv(TEAM_MASTER_FILE)
+        # team_master is no longer loaded if its purpose is solely for normalization here
     except FileNotFoundError as e:
         logger.error(f"❌ Critical Error: Input file not found: {e}. Ensure paths are correct.")
         script_status = "ERROR"
@@ -87,22 +59,11 @@ def main():
         logger.warning(f"⚠️ {GAMES_FILE} is empty. Cannot determine home/away teams.")
         script_status = "SKIP"
         with open(SUMMARY_FILE, "a") as f:
-            f.write(f"split_batters_by_home_away: {script_status} | Home: {home_count} | Away: {away_count} | Unmatched: {len(batters)} (No game data)\n")
+            f.write(f"split_batters_by_home_away: {script_status} | Home: {home_count} | Away: {home_count} | Unmatched: {len(batters)} (No game data)\n")
         return
 
-    # --- Team Master Processing ---
-    team_name_map = {}
-    if team_master.empty:
-        logger.warning(f"⚠️ {TEAM_MASTER_FILE} is empty. Team name normalization will rely only on fix_team_name_format and title() fallback, which is imprecise.")
-    elif 'team_name' not in team_master.columns:
-        logger.warning(f"⚠️ '{TEAM_MASTER_FILE}' does not contain a 'team_name' column. Team normalization will be ineffective.")
-    else:
-        # Create a lowercase mapping for robust lookups
-        for team in team_master["team_name"].dropna().unique():
-            team_name_map[str(team).strip().lower()] = team # Store the canonical name (original case)
-
-    if not team_name_map:
-        logger.warning("⚠️ No valid teams found or mapped in team master file. Team normalization will be less effective.")
+    # --- Team Master Processing (Removed) ---
+    # team_name_map related logic is removed here
 
     # --- Column Checks ---
     if 'team' not in batters.columns:
@@ -112,15 +73,23 @@ def main():
         logger.error("❌ Missing 'home_team' or 'away_team' in games file. Please check the file.")
         raise ValueError("Missing 'home_team' or 'away_team' in games file.") # Fatal error, raise
 
-    logger.info("🧽 Normalizing team names across all relevant DataFrames...")
+    logger.info("ℹ️ Assuming team names in input files are already normalized and consistent.")
 
-    # Apply unified normalization to batters
-    batters['team'] = batters['team'].apply(lambda x: get_normalized_team_name(x, team_name_map))
+    # No normalization applied here
+    # batters['team'] = batters['team'].apply(...) -- REMOVED
+    # games['home_team'] = games['home_team'].apply(...) -- REMOVED
+    # games['away_team'] = games['away_team'].apply(...) -- REMOVED
+
+    # Ensure team columns are clean strings just in case, even if 'normalized' upstream
+    # This just ensures consistent string type and stripping, not 'normalization' to a master list
+    batters['team'] = batters['team'].astype(str).str.strip()
+    games['home_team'] = games['home_team'].astype(str).str.strip()
+    games['away_team'] = games['away_team'].astype(str).str.strip()
+
+    # Drop duplicates in batters based on team (and potentially player name if it's relevant for uniqueness)
+    # This was retained as it's a good data hygiene step, regardless of normalization
     batters.drop_duplicates(inplace=True)
 
-    # Apply unified normalization to games
-    games['home_team'] = games['home_team'].apply(lambda x: get_normalized_team_name(x, team_name_map))
-    games['away_team'] = games['away_team'].apply(lambda x: get_normalized_team_name(x, team_name_map))
 
     home_teams = games['home_team'].unique().tolist()
     away_teams = games['away_team'].unique().tolist()
@@ -146,7 +115,7 @@ def main():
 
     logger.info(f"✅ Processed {home_count} home batters and {away_count} away batters.")
     if unmatched_count > 0:
-        logger.warning(f"❗ Skipped {unmatched_count} batters whose teams are not playing today or could not be matched.")
+        logger.warning(f"❗ Skipped {unmatched_count} batters whose teams are not playing today or could not be matched (due to assumed pre-existing normalization issues).")
         if unmatched_teams_summary:
             logger.warning(f"⚠️ Top 5 unmatched team names: {unmatched_teams_summary}")
 
@@ -155,7 +124,6 @@ def main():
     if total_processed_and_unmatched == len(batters):
         logger.info(f"✅ All {len(batters)} input batters accounted for (Home: {home_count}, Away: {away_count}, Unmatched: {unmatched_count}).")
         # Status remains "PASS" if all original batters are categorized, even if some are unmatched.
-        # "WARN" is for situations where data might be missing due to normalization issues.
     else:
         logger.error(f"❌ Mismatch in total rows: Input: {len(batters)}, Accounted: {total_processed_and_unmatched}. Data loss detected!")
         script_status = "ERROR" # This is a critical logic error if rows are truly lost.
