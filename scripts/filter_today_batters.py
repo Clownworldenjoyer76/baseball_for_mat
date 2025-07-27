@@ -76,6 +76,8 @@ NAME_OVERRIDES = {
     "Tatis Jr., Fernando": "Tatis, Fernando",
     "Witt Jr., Bobby": "Witt, Bobby",
     "Crawford, John Paul": "Crawford, Jp",
+    "Crawford, JP": "Crawford, Jp",
+    "Realmuto, JT": "Realmuto, Jt",
     "Realmuto, Jacob": "Realmuto, Jt",
     "P Muncy, Max": "Muncy, Max",
     "V Garcia, Luis": "Garcia, Luis",
