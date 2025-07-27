@@ -1,3 +1,5 @@
+# scripts/filter_today_batters.py
+
 import pandas as pd
 from pathlib import Path
 import unicodedata
@@ -8,7 +10,7 @@ BATTERS_FILE = "data/cleaned/batters_normalized_cleaned.csv"
 OUTPUT_FILE = "data/cleaned/batters_today.csv"
 UNMATCHED_FILE = "data/cleaned/unmatched_batters.txt"
 
-# --- Utility Functions ---
+# --- Normalization Functions ---
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -17,23 +19,25 @@ def strip_accents(text):
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
-    name = name.replace("’", "'").replace("`", "'").strip()
     name = strip_accents(name)
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
 
-    if "," in name:
-        parts = [p.strip().title() for p in name.split(",")]
-        if len(parts) >= 2:
-            return f"{parts[0]}, {parts[1]}"
-        return ' '.join(parts).title()
-    else:
-        tokens = [t.title() for t in name.split()]
+    if "," not in name:
+        tokens = name.split()
         if len(tokens) >= 2:
             first = tokens[0]
             last = " ".join(tokens[1:])
             return f"{last}, {first}"
-        return ' '.join(tokens).title()
+        return name.title()
+
+    parts = name.split(",")
+    if len(parts) == 2:
+        last = parts[0].strip().title()
+        first = parts[1].strip().title()
+        return f"{last}, {first}"
+
+    return name.title()
 
 # --- Main ---
 def main():
