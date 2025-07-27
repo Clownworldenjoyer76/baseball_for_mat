@@ -1,5 +1,3 @@
-# scripts/filter_today_batters.py
-
 import pandas as pd
 from pathlib import Path
 import unicodedata
@@ -10,7 +8,7 @@ BATTERS_FILE = "data/cleaned/batters_normalized_cleaned.csv"
 OUTPUT_FILE = "data/cleaned/batters_today.csv"
 UNMATCHED_FILE = "data/cleaned/unmatched_batters.txt"
 
-# --- Name Normalization (exactly matches deduplicate_normalized.py) ---
+# --- Utility Functions ---
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -19,6 +17,7 @@ def strip_accents(text):
 def normalize_name(name):
     if not isinstance(name, str):
         return ""
+    name = name.replace("’", "'").replace("`", "'").strip()
     name = strip_accents(name)
     name = re.sub(r"[^\w\s,\.]", "", name)
     name = re.sub(r"\s+", " ", name).strip()
@@ -39,6 +38,20 @@ def normalize_name(name):
 
     return name.title()
 
+# --- Manual Overrides for Known Variants ---
+NAME_OVERRIDES = {
+    "Tatis Jr., Fernando": "Tatis, Fernando",
+    "Witt Jr., Bobby": "Witt, Bobby",
+    "P Muncy, Max": "Muncy, Max",
+    "V Garcia, Luis": "Garcia, Luis",
+    "O'Hearn, Ryan": "Ohearn, Ryan",
+    "O'Hoppe, Logan": "Ohoppe, Logan",
+    "Crow-Armstrong, Pete": "Crowarmstrong, Pete",
+    "Encarnacion-Strand, Christian": "Encarnacionstrand, Christian",
+    "Kiner-Falefa, Isiah": "Kinerfalefa, Isiah",
+    "De La Cruz, Elly": "De La Cruz, Elly",  # already proper if exists
+}
+
 # --- Main ---
 def main():
     print("📥 Loading lineups and batters...")
@@ -51,13 +64,13 @@ def main():
     if 'last_name, first_name' not in lineups_df.columns or 'name' not in batters_df.columns:
         raise ValueError("❌ Missing required columns in either lineups or batters file.")
 
-    # Normalize names using exact deduplicate logic
-    lineups_df['normalized_name'] = lineups_df['last_name, first_name'].astype(str).apply(normalize_name)
+    # Normalize and remap
+    raw_names = lineups_df['last_name, first_name'].astype(str)
+    lineups_df['normalized_name'] = raw_names.apply(lambda n: normalize_name(NAME_OVERRIDES.get(n, n)))
     batters_df['normalized_name'] = batters_df['name'].astype(str).apply(normalize_name)
 
     expected_names_set = set(lineups_df['normalized_name'])
     filtered = batters_df[batters_df['normalized_name'].isin(expected_names_set)].copy()
-
     unmatched = sorted(expected_names_set - set(filtered['normalized_name']))
 
     print(f"✅ Filtered down to {len(filtered)} batters")
