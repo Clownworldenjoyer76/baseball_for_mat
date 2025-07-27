@@ -5,10 +5,10 @@ import re
 
 LINEUPS_FILE = "data/cleaned/lineups_cleaned.csv"
 BATTERS_FILE = "data/cleaned/batters_normalized_cleaned.csv"
-PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv" # Path to the pitchers file
+PITCHERS_FILE = "data/cleaned/pitchers_normalized_cleaned.csv"
 OUTPUT_FILE = "data/cleaned/batters_today.csv"
 UNMATCHED_FILE = "data/cleaned/unmatched_batters.txt"
-PITCHERS_IN_LINEUPS_FILE = "data/cleaned/pitchers_in_lineups.txt" # File to list identified pitchers
+PITCHERS_IN_LINEUPS_FILE = "data/cleaned/pitchers_in_lineups.txt"
 
 # --- Utility Functions ---
 def strip_accents(text):
@@ -23,37 +23,54 @@ def normalize_name(name):
     name = strip_accents(name)
 
     # Specific handling for initials with periods (e.g., J.P. -> JP, J.T. -> JT)
-    # This converts "J.P. Crawford" to "JP Crawford" and "J.T. Realmuto" to "JT Realmuto"
     name = re.sub(r'\bJ\.P\.', 'JP', name, flags=re.IGNORECASE)
     name = re.sub(r'\bJ\.T\.', 'JT', name, flags=re.IGNORECASE)
 
     # Remove any characters that are not word characters, whitespace, comma, or period.
-    # The previous regexes ensure that J.P./J.T. become JP/JT first, so this won't re-introduce periods.
     name = re.sub(r"[^\w\s,\.]", "", name)
-
-    # Replace multiple spaces with a single space and strip leading/trailing whitespace
     name = re.sub(r"\s+", " ", name).strip()
 
-    # If the name doesn't contain a comma, assume "First Last" format and convert to "Last, First"
+    # --- New Logic: Map common short first names to full names ---
+    first_name_mapping = {
+        "Jake": "Jacob",
+        "Matt": "Matthew",
+        "Zach": "Zachary",
+        "Jeff": "Jeffrey",
+        "JP": "John Paul", # Assuming JP means John Paul for Crawford
+        "JT": "Jacob", # Assuming JT means Jacob for Realmuto (Jacob Tyler)
+        "Andy": "Andrew" # If 'Andrew' McCutchen can sometimes be 'Andy'
+        # Add any other short name mappings found in your data
+    }
+
+    # Process name based on comma presence
     if "," not in name:
         tokens = name.split()
         if len(tokens) >= 2:
             first = tokens[0]
             last = " ".join(tokens[1:])
+            # Apply first name mapping
+            first = first_name_mapping.get(first, first)
             return f"{last}, {first}"
         return name.title() # Title case for single-token names
 
-    # If it contains a comma, assume "Last, First" and title case parts
-    parts = name.split(",")
-    if len(parts) == 2:
+    else: # Name contains a comma, assume "Last, First" format
+        parts = name.split(",", 1) # Split only on the first comma
         last = parts[0].strip().title()
-        first = parts[1].strip().title()
-        return f"{last}, {first}"
+        first_raw = parts[1].strip()
 
-    return name.title() # Fallback for other comma-separated formats
+        # Split first name part to handle middle initials if present, and map only the primary first name
+        first_tokens = first_raw.split()
+        if first_tokens:
+            first = first_tokens[0] # Get the first part of the first name
+            mapped_first = first_name_mapping.get(first, first)
+            # Reconstruct the first name part, keeping middle initials if they existed
+            first_full = f"{mapped_first} {' '.join(first_tokens[1:])}"
+            return f"{last}, {first_full}"
+        return f"{last}, {first_raw.title()}" # Fallback if no first name tokens
 
-# --- Manual Overrides for Known Variants (Applied to raw names before initial normalization, if applicable) ---
-# Note: For `normalized_full_name_for_match`, these are less relevant as that column should already be normalized.
+    return name.title() # Fallback for unexpected formats
+
+# --- Manual Overrides for Known Variants (Less relevant with enhanced normalize_name) ---
 NAME_OVERRIDES = {
     "Tatis Jr., Fernando": "Tatis, Fernando",
     "Witt Jr., Bobby": "Witt, Bobby",
@@ -65,7 +82,6 @@ NAME_OVERRIDES = {
     "Encarnacion-Strand, Christian": "Encarnacionstrand, Christian",
     "Kiner-Falefa, Isiah": "Kinerfalefa, Isiah",
     "De La Cruz, Elly": "De La Cruz, Elly",  # already proper if exists
-    # Add any other RAW name overrides if necessary
 }
 
 # --- Main ---
@@ -88,11 +104,11 @@ def main():
             f"'name' in batters file, and 'name' in pitchers file."
         )
 
-    # Normalize batter and pitcher names
+    # Normalize batter and pitcher names using the enhanced normalize_name
     batters_df['normalized_name'] = batters_df['name'].astype(str).apply(normalize_name)
     pitchers_df['normalized_name'] = pitchers_df['name'].astype(str).apply(normalize_name)
 
-    # Normalize the names from the lineups file using the same normalize_name function
+    # Normalize the names from the lineups file using the same enhanced normalize_name function
     lineups_df['final_match_name'] = lineups_df[lineups_match_column].astype(str).apply(normalize_name)
 
     # Get sets of normalized names for efficient lookup
@@ -115,7 +131,7 @@ def main():
 
     print(f"✅ Filtered down to {len(filtered)} batters (excluding identified pitchers)")
     if unmatched_batters:
-        print(f"⚠️ {len(unmatched_batters)} unmatched batters found (after removing pitchers). Writing to {UNMATCHED_FILE}")
+        print(f"⚠️ {len(unmatched_batters)} unmatched batters found. Writing to {UNMATCHED_FILE}")
         Path(UNMATCHED_FILE).parent.mkdir(parents=True, exist_ok=True)
         Path(UNMATCHED_FILE).write_text("\n".join(unmatched_batters))
     else:
