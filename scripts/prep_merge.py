@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import subprocess
+import shutil
 
 def prep_merge():
     """
@@ -31,15 +32,18 @@ def prep_merge():
     input_pitchers_away = 'data/adjusted/pitchers_away_weather_park.csv'
     input_batters_home = 'data/adjusted/batters_home_weather_park.csv'
     input_batters_away = 'data/adjusted/batters_away_weather_park.csv'
+    input_games_today = 'data/raw/todaysgames_normalized.csv'
 
     output_pit_hwp = 'data/end_chain/first/pit_hwp.csv'
     output_pit_awp = 'data/end_chain/first/pit_awp.csv'
     output_bat_awp_dirty = 'data/end_chain/first/raw/bat_awp_dirty.csv'
     output_bat_hwp_dirty = 'data/end_chain/first/raw/bat_hwp_dirty.csv'
+    output_games_today = 'data/end_chain/games_today.csv'
 
     # Ensure output directories exist
     os.makedirs(os.path.dirname(output_pit_hwp), exist_ok=True)
     os.makedirs(os.path.dirname(output_bat_awp_dirty), exist_ok=True)
+    os.makedirs(os.path.dirname(output_games_today), exist_ok=True)
 
     # Function to update name format
     def update_name_format(df, column_name):
@@ -91,18 +95,26 @@ def prep_merge():
     else:
         print(f"Warning: {input_batters_home} not found. Skipping.")
 
+    # Copy todaysgames_normalized.csv to games_today.csv
+    if os.path.exists(input_games_today):
+        shutil.copy2(input_games_today, output_games_today)
+        print(f"Copied {input_games_today} to {output_games_today}")
+    else:
+        print(f"Warning: {input_games_today} not found. Skipping.")
+
     # Git commit and push
     commit_and_push([
         output_pit_hwp,
         output_pit_awp,
         output_bat_awp_dirty,
-        output_bat_hwp_dirty
+        output_bat_hwp_dirty,
+        output_games_today
     ])
 
 def commit_and_push(paths):
     try:
         subprocess.run(["git", "add"] + paths, check=True)
-        subprocess.run(["git", "commit", "-m", "prep_merge: cleaned pitchers and batters data"], check=True)
+        subprocess.run(["git", "commit", "-m", "prep_merge: cleaned data and copied games_today"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Git commit and push complete.")
     except subprocess.CalledProcessError as e:
