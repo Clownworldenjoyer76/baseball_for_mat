@@ -38,7 +38,7 @@ def prep_merge():
     output_pit_awp = 'data/end_chain/first/pit_awp.csv'
     output_bat_awp_dirty = 'data/end_chain/first/raw/bat_awp_dirty.csv'
     output_bat_hwp_dirty = 'data/end_chain/first/raw/bat_hwp_dirty.csv'
-    output_games_today = 'data/end_chain/games_today.csv'
+    output_games_today = 'data/end_chain/first/games_today.csv'
 
     # Ensure output directories exist
     os.makedirs(os.path.dirname(output_pit_hwp), exist_ok=True)
