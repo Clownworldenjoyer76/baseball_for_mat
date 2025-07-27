@@ -6,25 +6,44 @@ def load_data():
     print("📥 Loading input CSVs...")
     weather = pd.read_csv("data/adjusted/batters_away_weather.csv")
     park = pd.read_csv("data/adjusted/batters_away_park.csv")
-    print(f"🔹 Weather rows: {len(weather)}")
-    print(f"🔹 Park rows: {len(park)}")
+
+    print(f"🔹 Weather rows before dedup: {len(weather)}")
+    print(f"🔹 Park rows before dedup: {len(park)}")
+
+    # Drop duplicates before merging
+    weather = weather.drop_duplicates(subset=["last_name, first_name", "team"])
+    park = park.drop_duplicates(subset=["last_name, first_name", "team"])
+
+    print(f"🔹 Weather rows after dedup: {len(weather)}")
+    print(f"🔹 Park rows after dedup: {len(park)}")
+
     return weather, park
 
 def merge_and_combine(weather, park):
     print("🔀 Merging weather and park adjustment files...")
+
     merged = pd.merge(
         weather,
         park[["last_name, first_name", "team", "adj_woba_park"]],
         on=["last_name, first_name", "team"],
         how="inner"
     )
+
     print(f"✅ Merged rows: {len(merged)}")
     print("📊 Columns in merged data:", merged.columns.tolist())
 
     if len(merged) == 0:
         print("⚠️ No rows matched between weather and park files. Check name/team formatting.")
+    elif len(merged) < min(len(weather), len(park)) * 0.9:
+        print("⚠️ Significant row loss detected in merge. Manual inspection recommended.")
 
+    # Ensure correct types before calculation
+    merged["adj_woba_weather"] = pd.to_numeric(merged["adj_woba_weather"], errors="coerce")
+    merged["adj_woba_park"] = pd.to_numeric(merged["adj_woba_park"], errors="coerce")
+
+    # Compute combined adjustment
     merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
+
     return merged
 
 def save_output(df):
