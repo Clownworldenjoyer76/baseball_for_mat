@@ -10,7 +10,6 @@ OUTPUT_FILE = "data/cleaned/batters_today.csv"
 UNMATCHED_FILE = "data/cleaned/unmatched_batters.txt"
 PITCHERS_IN_LINEUPS_FILE = "data/cleaned/pitchers_in_lineups.txt"
 
-# --- Utility Functions ---
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -33,7 +32,6 @@ def normalize_name(name):
 
     last_name = ""
     first_name = ""
-
     if "," in name:
         parts = name.split(",")
         if len(parts) == 2:
@@ -50,10 +48,8 @@ def normalize_name(name):
     mapped_first_name = full_to_initials_mapping.get(first_name.lower(), first_name)
     final_first_name = mapped_first_name.upper() if mapped_first_name in ["JP", "JT"] else mapped_first_name.title()
     final_last_name = last_name.title()
-
     return f"{final_last_name}, {final_first_name}"
 
-# --- Manual Overrides ---
 NAME_OVERRIDES = {
     "Tatis Jr., Fernando": "Tatis, Fernando",
     "Witt Jr., Bobby": "Witt, Bobby",
@@ -71,7 +67,6 @@ NAME_OVERRIDES = {
     "De La Cruz, Elly": "De La Cruz, Elly",
 }
 
-# --- Main ---
 def main():
     print("📥 Loading lineups, batters, and pitchers...")
     try:
@@ -91,20 +86,21 @@ def main():
             f"'name' in batters file, and 'name' in pitchers file."
         )
 
-    # 🛠 Apply manual name overrides before normalization
+    # Apply overrides before normalization
+    lineups_df[lineups_match_column] = lineups_df[lineups_match_column].replace(NAME_OVERRIDES)
     batters_df['name'] = batters_df['name'].replace(NAME_OVERRIDES)
     pitchers_df['name'] = pitchers_df['name'].replace(NAME_OVERRIDES)
 
-    # Normalize all names
+    # Normalize
+    lineups_df['final_match_name'] = lineups_df[lineups_match_column].astype(str).apply(normalize_name)
     batters_df['normalized_name'] = batters_df['name'].astype(str).apply(normalize_name)
     pitchers_df['normalized_name'] = pitchers_df['name'].astype(str).apply(normalize_name)
-    lineups_df['final_match_name'] = lineups_df[lineups_match_column].astype(str).apply(normalize_name)
 
-    expected_names_from_lineups = set(lineups_df['final_match_name'])
-    pitcher_names_set = set(pitchers_df['normalized_name'])
+    expected_names = set(lineups_df['final_match_name'])
+    pitcher_names = set(pitchers_df['normalized_name'])
 
-    pitchers_in_lineups = expected_names_from_lineups.intersection(pitcher_names_set)
-    batters_for_matching = expected_names_from_lineups - pitcher_names_set
+    pitchers_in_lineups = expected_names.intersection(pitcher_names)
+    batters_to_keep = expected_names - pitcher_names
 
     print(f"✅ Identified {len(pitchers_in_lineups)} pitchers in the lineup (based on {PITCHERS_FILE}).")
     if pitchers_in_lineups:
@@ -112,14 +108,14 @@ def main():
         Path(PITCHERS_IN_LINEUPS_FILE).write_text("\n".join(sorted(pitchers_in_lineups)))
         print(f"📝 Saved identified pitchers to {PITCHERS_IN_LINEUPS_FILE}")
 
-    filtered = batters_df[batters_df['normalized_name'].isin(batters_for_matching)].copy()
-    unmatched_batters = sorted(batters_for_matching - set(filtered['normalized_name']))
+    filtered = batters_df[batters_df['normalized_name'].isin(batters_to_keep)].copy()
+    unmatched = sorted(batters_to_keep - set(filtered['normalized_name']))
 
     print(f"✅ Filtered down to {len(filtered)} batters (excluding identified pitchers)")
-    if unmatched_batters:
-        print(f"⚠️ {len(unmatched_batters)} unmatched batters found (after removing pitchers). Writing to {UNMATCHED_FILE}")
+    if unmatched:
+        print(f"⚠️ {len(unmatched)} unmatched batters found (after removing pitchers). Writing to {UNMATCHED_FILE}")
         Path(UNMATCHED_FILE).parent.mkdir(parents=True, exist_ok=True)
-        Path(UNMATCHED_FILE).write_text("\n".join(unmatched_batters))
+        Path(UNMATCHED_FILE).write_text("\n".join(unmatched))
     else:
         print("✅ All intended lineup batters matched successfully.")
 
