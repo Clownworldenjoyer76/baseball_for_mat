@@ -1,3 +1,5 @@
+# scripts/preprocess_pitcher_weather_park_away.py
+
 import pandas as pd
 from unidecode import unidecode
 
@@ -22,7 +24,7 @@ def normalize_team(team, valid_teams):
     matches = [vt for vt in valid_teams if vt.lower() == team.lower()]
     return matches[0] if matches else team
 
-def clean_dataframe(df, team_col, valid_teams):
+def clean_dataframe(df, team_col, valid_teams, preserve_cols=None):
     df = df.copy()
 
     # Normalize name and team
@@ -31,14 +33,17 @@ def clean_dataframe(df, team_col, valid_teams):
     if team_col in df.columns:
         df[team_col] = df[team_col].apply(lambda x: normalize_team(x, valid_teams))
 
-    # Drop junk columns
-    cols_to_drop = [col for col in df.columns if col.endswith("_x") or col.endswith("_y") or col in [
-        "venue", "city", "state", "timezone", "is_dome", "lat", "lon",
-        "game_time", "temperature", "humidity", "wind_speed", "wind_direction",
-        "condition", "pitcher_away_x", "pitcher_away_y", "adj_woba_weather"
-    ]]
-    df.drop(columns=cols_to_drop, errors="ignore", inplace=True)
+    # Drop junk columns, preserving any required columns
+    preserve_cols = preserve_cols or []
+    cols_to_drop = [col for col in df.columns if (
+        col.endswith("_x") or col.endswith("_y") or col in [
+            "venue", "city", "state", "timezone", "is_dome", "lat", "lon",
+            "game_time", "temperature", "humidity", "wind_speed", "wind_direction",
+            "condition", "pitcher_away_x", "pitcher_away_y"
+        ]
+    ) and col not in preserve_cols]
 
+    df.drop(columns=cols_to_drop, errors="ignore", inplace=True)
     return df
 
 def main():
@@ -48,7 +53,8 @@ def main():
         park = pd.read_csv(PARK_IN)
         teams = pd.read_csv(TEAM_MAP)["team_name"].dropna().unique().tolist()
 
-        weather_clean = clean_dataframe(weather, "away_team", teams)
+        # Preserve adj_woba_weather in weather_clean
+        weather_clean = clean_dataframe(weather, "away_team", teams, preserve_cols=["adj_woba_weather"])
         park_clean = clean_dataframe(park, "away_team", teams)
 
         weather_clean.to_csv(WEATHER_OUT, index=False)
@@ -65,3 +71,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
