@@ -4,7 +4,7 @@ import sys
 
 # Input and output directories
 INPUT_DIR = Path("data/end_chain")
-OUTPUT_DIR = INPUT_DIR / "cleaned"
+OUTPUT_DIR = INPUT_DIR / "cleaned" / "prep"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Input file paths
