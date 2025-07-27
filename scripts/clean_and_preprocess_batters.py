@@ -8,8 +8,8 @@ OUTPUT_DIR = INPUT_DIR / "cleaned"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 FILES = {
-    "batters_home": INPUT_DIR / "batters_home_weather_park.csv",
-    "batters_away": INPUT_DIR / "batters_away_weather_park.csv"
+    "batters_home": INPUT_DIR / "first/raw/bat_hwp_dirty.csv",
+    "batters_away": INPUT_DIR / "first/raw/bat_awp_dirty.csv"
 }
 
 REQUIRED_COLUMNS = ["name", "team", "ab", "pa", "hit", "home_run", "walk", "strikeout"]
