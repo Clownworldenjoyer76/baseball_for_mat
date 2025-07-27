@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     logger.info("📥 Loading data...")
-    batters_path = Path("data/end_chain/first/raw/bat_awp_dirty.csv")
+    batters_path = Path("data/end_chain/cleaned/prep/bat_awp_cleaned.csv")
     weather_path = Path("data/weather_adjustments.csv")
 
     batters = pd.read_csv(batters_path)
