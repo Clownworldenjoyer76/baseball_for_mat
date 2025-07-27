@@ -1,98 +1,96 @@
 import pandas as pd
-from pathlib import Path
-import subprocess
+import os
 
-# File paths
-home_path = "data/adjusted/batters_home_weather_park.csv"
-away_path = "data/adjusted/batters_away_weather_park.csv"
-master_path = "data/Data/team_name_master.csv"
+def prep_merge():
+    """
+    Prepares baseball data files for merging.
 
-# New files for name correction
-pitchers_home_path = "data/adjusted/pitchers_home_weather_park.csv"
-pitchers_away_path = "data/adjusted/pitchers_away_weather_park.csv"
-games_path = "data/raw/todaysgames_normalized.csv"
-normalized_pitchers_path = "data/cleaned/pitchers_normalized_cleaned.csv"
+    This script performs the following operations:
+    1. Updates 'last_name, first_name' column format in pitchers' data files
+       from "First, Last" to "Last, First".
+    2. Cleans column headers in the batters_away_weather_park.csv file
+       by removing '_x' suffixes and deleting columns with '_y' suffixes.
+    3. Copies batters_home_weather_park.csv to a new raw directory.
 
-def normalize_team_column(df, team_map):
-    df["team"] = df["team"].astype(str).str.strip().str.lower().map(team_map)
-    return df
+    Input files:
+    - data/adjusted/batters_home_weather_park.csv
+    - data/adjusted/batters_away_weather_park.csv
+    - data/adjusted/pitchers_home_weather_park.csv
+    - data/adjusted/pitchers_away_weather_park.csv
 
-def normalize_and_write(path, team_map):
-    df = pd.read_csv(path)
-    df = normalize_team_column(df, team_map)
-    df.to_csv(path, index=False)
+    Output files:
+    - data/end_chain/first/pit_hwp.csv
+    - data/end_chain/first/pit_awp.csv
+    - data/end_chain/first/raw/bat_awp_dirty.csv
+    - data/end_chain/first/raw/bat_hwp_dirty.csv
+    """
 
-def fix_pitcher_names_strict():
-    normalized = pd.read_csv(normalized_pitchers_path)
-    valid_names = normalized["last_name, first_name"].dropna().unique()
+    # Define input and output file paths
+    input_pitchers_home = 'data/adjusted/pitchers_home_weather_park.csv'
+    input_pitchers_away = 'data/adjusted/pitchers_away_weather_park.csv'
+    input_batters_home = 'data/adjusted/batters_home_weather_park.csv'
+    input_batters_away = 'data/adjusted/batters_away_weather_park.csv'
 
-    name_map = {
-        raw.strip().replace(",", "").upper(): valid
-        for valid in valid_names
-        for raw in [valid]
-    }
+    output_pit_hwp = 'data/end_chain/first/pit_hwp.csv'
+    output_pit_awp = 'data/end_chain/first/pit_awp.csv'
+    output_bat_awp_dirty = 'data/end_chain/first/raw/bat_awp_dirty.csv'
+    output_bat_hwp_dirty = 'data/end_chain/first/raw/bat_hwp_dirty.csv'
 
-    def map_name(name):
-        if pd.isna(name): return name
-        key = name.strip().rstrip(",").replace(" ,", ",").upper()
-        return name_map.get(key, name)
+    # Ensure output directories exist
+    os.makedirs(os.path.dirname(output_pit_hwp), exist_ok=True)
+    os.makedirs(os.path.dirname(output_bat_awp_dirty), exist_ok=True)
 
-    def strip_trailing_comma(name):
-        if pd.isna(name): return name
-        return name.rstrip(",")
+    # Function to update name format
+    def update_name_format(df, column_name):
+        if column_name in df.columns:
+            # Handle cases where there might be extra spaces or missing comma
+            df[column_name] = df[column_name].astype(str).str.strip().str.replace(r',\s*$', '', regex=True)
+            df[column_name] = df[column_name].apply(
+                lambda x: f"{x.split(', ')[1]}, {x.split(', ')[0]}" if ', ' in x else x
+            )
+        return df
 
-    # Update home pitcher file
-    ph = pd.read_csv(pitchers_home_path)
-    if "last_name, first_name" in ph.columns:
-        ph["last_name, first_name"] = ph["last_name, first_name"].apply(map_name).apply(strip_trailing_comma)
-    if "home_team" in ph.columns and "team" not in ph.columns:
-        ph["team"] = ph["home_team"]
-    ph.to_csv(pitchers_home_path, index=False)
+    # Process pitchers_home_weather_park.csv
+    if os.path.exists(input_pitchers_home):
+        print(f"Processing {input_pitchers_home}...")
+        df_pit_home = pd.read_csv(input_pitchers_home)
+        df_pit_home = update_name_format(df_pit_home, 'last_name, first_name')
+        df_pit_home.to_csv(output_pit_hwp, index=False)
+        print(f"Saved updated pitchers home data to {output_pit_hwp}")
+    else:
+        print(f"Warning: {input_pitchers_home} not found. Skipping.")
 
-    # Update away pitcher file
-    pa = pd.read_csv(pitchers_away_path)
-    if "last_name, first_name" in pa.columns:
-        pa["last_name, first_name"] = pa["last_name, first_name"].apply(map_name).apply(strip_trailing_comma)
-    if "away_team" in pa.columns and "team" not in pa.columns:
-        pa["team"] = pa["away_team"]
-    pa.to_csv(pitchers_away_path, index=False)
+    # Process pitchers_away_weather_park.csv
+    if os.path.exists(input_pitchers_away):
+        print(f"Processing {input_pitchers_away}...")
+        df_pit_away = pd.read_csv(input_pitchers_away)
+        df_pit_away = update_name_format(df_pit_away, 'last_name, first_name')
+        df_pit_away.to_csv(output_pit_awp, index=False)
+        print(f"Saved updated pitchers away data to {output_pit_awp}")
+    else:
+        print(f"Warning: {input_pitchers_away} not found. Skipping.")
 
-    # Update todaysgames file
-    games = pd.read_csv(games_path)
-    if "pitcher_home" in games.columns:
-        games["pitcher_home"] = games["pitcher_home"].apply(map_name).apply(strip_trailing_comma)
-    if "pitcher_away" in games.columns:
-        games["pitcher_away"] = games["pitcher_away"].apply(map_name).apply(strip_trailing_comma)
-    games.to_csv(games_path, index=False)
+    # Process batters_away_weather_park.csv
+    if os.path.exists(input_batters_away):
+        print(f"Processing {input_batters_away}...")
+        df_bat_away = pd.read_csv(input_batters_away)
+        # Remove trailing _x and delete columns with trailing _y
+        cols_to_drop = [col for col in df_bat_away.columns if col.endswith('_y')]
+        df_bat_away.drop(columns=cols_to_drop, inplace=True)
+        df_bat_away.columns = [col.replace('_x', '') for col in df_bat_away.columns]
+        df_bat_away.to_csv(output_bat_awp_dirty, index=False)
+        print(f"Saved cleaned batters away data to {output_bat_awp_dirty}")
+    else:
+        print(f"Warning: {input_batters_away} not found. Skipping.")
 
-def commit_files(paths):
-    try:
-        subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
-        subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-        subprocess.run(["git", "add"] + paths, check=True)
-        subprocess.run(["git", "commit", "-m", "prep_merge: normalize team casing and enforce name match"], check=True)
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Git commit and push complete.")
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git operation failed: {e}")
-
-def main():
-    master = pd.read_csv(master_path)
-    team_map = {team.lower(): team for team in master["team_name"]}
-
-    normalize_and_write(home_path, team_map)
-    normalize_and_write(away_path, team_map)
-
-    fix_pitcher_names_strict()
-
-    commit_files([
-        home_path,
-        away_path,
-        pitchers_home_path,
-        pitchers_away_path,
-        games_path
-    ])
-    print("✅ Team and name normalization complete.")
+    # Copy batters_home_weather_park.csv
+    if os.path.exists(input_batters_home):
+        print(f"Copying {input_batters_home}...")
+        df_bat_home = pd.read_csv(input_batters_home)
+        df_bat_home.to_csv(output_bat_hwp_dirty, index=False)
+        print(f"Copied batters home data to {output_bat_hwp_dirty}")
+    else:
+        print(f"Warning: {input_batters_home} not found. Skipping.")
 
 if __name__ == "__main__":
-    main()
+    prep_merge()
