@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import subprocess
 
 def prep_merge():
     """
@@ -43,7 +44,6 @@ def prep_merge():
     # Function to update name format
     def update_name_format(df, column_name):
         if column_name in df.columns:
-            # Handle cases where there might be extra spaces or missing comma
             df[column_name] = df[column_name].astype(str).str.strip().str.replace(r',\s*$', '', regex=True)
             df[column_name] = df[column_name].apply(
                 lambda x: f"{x.split(', ')[1]}, {x.split(', ')[0]}" if ', ' in x else x
@@ -74,7 +74,6 @@ def prep_merge():
     if os.path.exists(input_batters_away):
         print(f"Processing {input_batters_away}...")
         df_bat_away = pd.read_csv(input_batters_away)
-        # Remove trailing _x and delete columns with trailing _y
         cols_to_drop = [col for col in df_bat_away.columns if col.endswith('_y')]
         df_bat_away.drop(columns=cols_to_drop, inplace=True)
         df_bat_away.columns = [col.replace('_x', '') for col in df_bat_away.columns]
@@ -91,6 +90,23 @@ def prep_merge():
         print(f"Copied batters home data to {output_bat_hwp_dirty}")
     else:
         print(f"Warning: {input_batters_home} not found. Skipping.")
+
+    # Git commit and push
+    commit_and_push([
+        output_pit_hwp,
+        output_pit_awp,
+        output_bat_awp_dirty,
+        output_bat_hwp_dirty
+    ])
+
+def commit_and_push(paths):
+    try:
+        subprocess.run(["git", "add"] + paths, check=True)
+        subprocess.run(["git", "commit", "-m", "prep_merge: cleaned pitchers and batters data"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("✅ Git commit and push complete.")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Git operation failed: {e}")
 
 if __name__ == "__main__":
     prep_merge()
