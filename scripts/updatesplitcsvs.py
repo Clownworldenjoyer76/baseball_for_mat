@@ -17,26 +17,41 @@ def main():
     batters_away = load_csv(AWAY_FILE)
     games = load_csv(GAMES_FILE)
 
-    # Normalize team names for merging
-    games = games[['home_team', 'away_team']].drop_duplicates()
+    # Prepare the games DataFrame for merging
+    # We need the home_team and away_team for each game
+    # Ensure no duplicates if games file might have them (though for today's games, it should be unique matchups)
+    games_for_merge = games[['home_team', 'away_team']].drop_duplicates()
 
-    # Add columns to away batters
-    away_team = batters_away['team'].unique()
-    if len(away_team) == 1:
-        away = away_team[0]
-        match = games[games['away_team'] == away]
-        if not match.empty:
-            batters_away['home_team'] = match['home_team'].values[0]
-            batters_away['away_team'] = away
+    # --- Correctly adding columns using pd.merge() ---
 
-    # Add columns to home batters
-    home_team = batters_home['team'].unique()
-    if len(home_team) == 1:
-        home = home_team[0]
-        match = games[games['home_team'] == home]
-        if not match.empty:
-            batters_home['away_team'] = match['away_team'].values[0]
-            batters_home['home_team'] = home
+    # For batters_home: Merge based on 'team' in batters_home and 'home_team' in games
+    # This will add 'away_team' and 'home_team' columns from 'games_for_merge' to 'batters_home'
+    # We use a 'left' merge to keep all rows from batters_home
+    batters_home = pd.merge(batters_home, games_for_merge,
+                            left_on='team',    # Column in batters_home
+                            right_on='home_team', # Column in games_for_merge
+                            how='left',
+                            suffixes=('_batter', '')) # Suffixes to distinguish columns if names clash (e.g., if batters_home also had 'home_team')
+                                                    # '' for the right DataFrame means no suffix for its columns
+
+    # For batters_away: Merge based on 'team' in batters_away and 'away_team' in games
+    # This will add 'home_team' and 'away_team' columns from 'games_for_merge' to 'batters_away'
+    batters_away = pd.merge(batters_away, games_for_merge,
+                            left_on='team',    # Column in batters_away
+                            right_on='away_team', # Column in games_for_merge
+                            how='left',
+                            suffixes=('_batter', ''))
+
+
+    # --- Important Consideration: Duplicates from Merge ---
+    # If a 'team' in batters_home/away plays multiple games today (e.g., a doubleheader scenario,
+    # or if your 'games' file lists different game types for the same teams),
+    # the merge might create duplicate rows in batters_home/away if there are multiple matches
+    # in the 'games_for_merge' DataFrame.
+    # You might need to add a .drop_duplicates() on relevant columns or refine your merge key
+    # if this is not the desired behavior.
+    # For a typical "today's games" file, each team should only have one home/away game.
+
 
     # Save updated files
     batters_home.to_csv(HOME_FILE, index=False)
