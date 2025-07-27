@@ -163,6 +163,7 @@ jobs:
           run_step updatesplitcsvs.py
           run_step commit_split_batters.py
           run_step normalize_pitcher_home_away.py # This now uses the special handling above
+          run_step pitcherfilecleanup.py
           run_step generate_weather_csv.py
           run_step filter_today_batters.py
           run_step get_weather_data.py
