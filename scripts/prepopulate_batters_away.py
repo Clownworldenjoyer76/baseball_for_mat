@@ -1,9 +1,9 @@
 import pandas as pd
 from pathlib import Path
 
-# File paths
-BATT_FILE = Path("data/end_chain/cleaned/batters_away_cleaned.csv")
-GAMES_FILE = Path("data/end_chain/todaysgames_normalized.csv")
+# Updated file paths
+BATT_FILE = Path("data/end_chain/cleaned/bat_awp_cleaned.csv")
+GAMES_FILE = Path("data/end_chain/cleaned/games_today_cleaned.csv")
 WEATHER_ADJUSTMENTS_FILE = Path("data/weather_adjustments.csv")
 WEATHER_INPUT_FILE = Path("data/weather_input.csv")
 
