@@ -1,1 +1,28 @@
 
+❌ normalize_pitcher_home_away ERROR (2025-07-27 08:09:59 AM EDT):
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'last_name'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 92, in <module>
+    main()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 58, in main
+    pitchers_df = load_pitchers()
+  File "/home/runner/work/sports-betting-site/sports-betting-site/scripts/normalize_pitcher_home_away.py", line 14, in load_pitchers
+    df["name"] = df["last_name"].astype(str).str.strip() + ", " + df["first_name"].astype(str).str.strip()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'last_name'
+
+---
+
