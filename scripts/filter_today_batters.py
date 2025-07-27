@@ -10,7 +10,7 @@ BATTERS_FILE = "data/cleaned/batters_normalized_cleaned.csv"
 OUTPUT_FILE = "data/cleaned/batters_today.csv"
 UNMATCHED_FILE = "data/cleaned/unmatched_batters.txt"
 
-# --- Normalization Functions ---
+# --- Name Normalization (exactly matches deduplicate_normalized.py) ---
 def strip_accents(text):
     if not isinstance(text, str):
         return ""
@@ -51,7 +51,7 @@ def main():
     if 'last_name, first_name' not in lineups_df.columns or 'name' not in batters_df.columns:
         raise ValueError("❌ Missing required columns in either lineups or batters file.")
 
-    # Normalize names
+    # Normalize names using exact deduplicate logic
     lineups_df['normalized_name'] = lineups_df['last_name, first_name'].astype(str).apply(normalize_name)
     batters_df['normalized_name'] = batters_df['name'].astype(str).apply(normalize_name)
 
