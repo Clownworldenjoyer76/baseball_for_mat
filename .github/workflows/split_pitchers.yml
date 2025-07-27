@@ -19,7 +19,7 @@ jobs:
         run: pip install pandas
 
       - name: Run Split Script
-        run: python scripts/split_batters_by_home_away.py
+        run: python scripts/diagnose_dropped_batters.py
 
       - name: Upload Split Batters Data
         uses: actions/upload-artifact@v4 # Use v4 for the latest version
