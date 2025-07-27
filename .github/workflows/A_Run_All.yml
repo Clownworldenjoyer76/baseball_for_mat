@@ -81,9 +81,18 @@ jobs:
 
             echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
 
-            # Check if it's splitaway.py and adjust arguments
+            # Special handling for splitaway.py and splithome.py
             if [[ "$SCRIPT" == "splitaway.py" ]]; then
               if python "scripts/${SCRIPT}" "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_away.csv" >> "$LOG_FILE" 2> temp_error.log; then
+                echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+              else
+                echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+                echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
+                cat temp_error.log >> "$ERRORS_FILE"
+                echo -e "\n---\n" >> "$ERRORS_FILE"
+              fi
+            elif [[ "$SCRIPT" == "splithome.py" ]]; then # <--- NEW: Special handling for splithome.py
+              if python "scripts/${SCRIPT}" "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_home.csv" >> "$LOG_FILE" 2> temp_error.log; then
                 echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
               else
                 echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
@@ -118,7 +127,8 @@ jobs:
           run_step update_game_time.py
           run_step filter_stadium_metadata.py
           run_step normalize_batter_team_names.py
-          run_step splitaway.py # This call will now be handled by the special logic in run_step()
+          run_step splitaway.py
+          run_step splithome.py # <--- NEW: Added splithome.py call
           run_step commit_split_batters.py
           run_step normalize_pitcher_home_away.py
           run_step update_pitcher_team_names.py
@@ -186,7 +196,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add data/adjusted/batters_home.csv || echo "home not found"
+          # Add batters_home.csv to the commit
+          git add data/adjusted/batters_home.csv || echo "home not found" # <--- NEW: Added this line
           git add data/adjusted/batters_away.csv || echo "away not found"
           git add summaries/summary.txt || echo "summary not found"
 
