@@ -19,10 +19,16 @@ def merge_and_combine(weather, park):
         how="inner"
     )
     print(f"✅ Merged rows: {len(merged)}")
+    
     if len(merged) == 0:
         print("⚠️ No rows matched. Check name or team column mismatches.")
-    if merged.duplicated(subset=["last_name, first_name", "team"]).any():
-        print("⚠️ Warning: Duplicate rows detected in merged result.")
+
+    duplicates = merged.duplicated(subset=["last_name, first_name", "team"], keep=False)
+    if duplicates.any():
+        print(f"⚠️ Warning: Duplicate rows detected in merged result: {duplicates.sum()} rows")
+        dupes_df = merged[duplicates].sort_values(by=["last_name, first_name", "team"])
+        dupes_df.to_csv("data/adjusted/dupes_home_combined.csv", index=False)
+        print("📄 Duplicate rows saved to data/adjusted/dupes_home_combined.csv")
 
     merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
     return merged
@@ -52,7 +58,8 @@ def commit_outputs():
         subprocess.run([
             "git", "add",
             "data/adjusted/batters_home_adjusted.csv",
-            "data/adjusted/log_combined_home.txt"
+            "data/adjusted/log_combined_home.txt",
+            "data/adjusted/dupes_home_combined.csv"
         ], check=True)
         subprocess.run(["git", "commit", "--allow-empty", "-m", "Auto-commit: Combined home batter adjustments"], check=True)
         subprocess.run(["git", "push"], check=True)
