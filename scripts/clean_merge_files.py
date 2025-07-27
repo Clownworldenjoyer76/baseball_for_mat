@@ -3,7 +3,7 @@ import os
 
 def clean_merge_files():
     """
-    Identifies and summarizes duplicate rows across specified input CSV files.
+    Identifies, removes, and logs duplicate rows across specified input CSV files.
 
     Input files:
     - data/end_chain/first/pit_hwp.csv
@@ -11,8 +11,9 @@ def clean_merge_files():
     - data/end_chain/first/raw/bat_awp_dirty.csv
     - data/end_chain/first/raw/bat_hwp_dirty.csv
 
-    Output file:
-    - data/end_chain/duplicates.txt (summary of findings)
+    Output:
+    - Overwrites each file with duplicates removed
+    - Logs summary to: data/end_chain/duplicates.txt
     """
 
     input_files = [
@@ -28,7 +29,7 @@ def clean_merge_files():
     os.makedirs(os.path.dirname(output_summary_file), exist_ok=True)
 
     with open(output_summary_file, 'w') as f:
-        f.write("--- Duplicate Row Analysis ---\n\n")
+        f.write("--- Duplicate Row Analysis and Cleaning ---\n\n")
 
         for file_path in input_files:
             if not os.path.exists(file_path):
@@ -39,26 +40,33 @@ def clean_merge_files():
             try:
                 df = pd.read_csv(file_path)
                 initial_rows = len(df)
-                duplicates = df[df.duplicated()]
-                num_duplicates = len(duplicates)
+                pre_dedup = df.duplicated()
+                num_duplicates = pre_dedup.sum()
 
                 f.write(f"Analysis for: {file_path}\n")
-                f.write(f"  Total rows: {initial_rows}\n")
-                f.write(f"  Number of duplicate rows found: {num_duplicates}\n")
+                f.write(f"  Total rows before: {initial_rows}\n")
+                f.write(f"  Duplicate rows found: {num_duplicates}\n")
 
                 if num_duplicates > 0:
-                    f.write("  Sample of duplicate rows (first 5):\n")
-                    f.write(duplicates.head().to_string() + "\n")
-                else:
-                    f.write("  No duplicate rows found.\n")
-                f.write("\n")
-                print(f"Processed {file_path}. Found {num_duplicates} duplicates.")
+                    f.write("  Sample duplicates (first 5):\n")
+                    f.write(df[pre_dedup].head().to_string() + "\n")
+
+                # Remove duplicates
+                df_cleaned = df.drop_duplicates()
+                df_cleaned.to_csv(file_path, index=False)
+
+                # Recheck for remaining duplicates
+                remaining_duplicates = df_cleaned.duplicated().sum()
+                f.write(f"  Rows after deduplication: {len(df_cleaned)}\n")
+                f.write(f"  Remaining duplicates after cleanup: {remaining_duplicates}\n\n")
+
+                print(f"Cleaned {file_path} → removed {num_duplicates}, remaining: {remaining_duplicates}")
 
             except Exception as e:
                 f.write(f"Error processing {file_path}: {e}\n\n")
                 print(f"Error processing {file_path}: {e}")
 
-    print(f"\nDuplicate row analysis summary saved to {output_summary_file}")
+    print(f"\n✅ Duplicate cleanup complete. Summary written to {output_summary_file}")
 
 if __name__ == "__main__":
     clean_merge_files()
