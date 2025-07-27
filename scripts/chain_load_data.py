@@ -35,25 +35,15 @@ def load_raw_data(file_paths: Dict[str, str]) -> Dict[str, pd.DataFrame]:
     return dataframes
 
 if __name__ == '__main__':
-    END_CHAIN_DIR = 'data/end_chain'
-
     files_to_load = {
-        'games': os.path.join(END_CHAIN_DIR, 'todaysgames_normalized.csv'),
-        'batters_home': os.path.join(END_CHAIN_DIR, 'batters_home_weather_park.csv'),
-        'batters_away': os.path.join(END_CHAIN_DIR, 'batters_away_weather_park.csv'),
-        'pitchers_home': os.path.join(END_CHAIN_DIR, 'pitchers_home_weather_park.csv'),
-        'pitchers_away': os.path.join(END_CHAIN_DIR, 'pitchers_away_weather_park.csv')
+        'games': 'data/end_chain/first/games_today.csv',
+        'batters_home': 'data/end_chain/first/raw/bat_hwp_dirty.csv',
+        'batters_away': 'data/end_chain/first/raw/bat_awp_dirty.csv',
+        'pitchers_home': 'data/end_chain/first/pit_hwp.csv',
+        'pitchers_away': 'data/end_chain/first/pit_awp.csv'
     }
 
     try:
         raw_dataframes = load_raw_data(files_to_load)
-
-        # Optional verification - REMOVED PREVIEW
-        # print("\n--- Preview: First 2 Rows of Each DataFrame ---")
-        # for name, df in raw_dataframes.items():
-        #     print(f"\n📄 {name}")
-        #     print(df.head(2))
-
     except FileNotFoundError:
         print("\n⛔ Execution stopped due to missing file(s).")
-
