@@ -1,46 +1,4 @@
-name: A_Run_All
-
-on:
-  workflow_dispatch:
-
-env:
-  ACTIONS_STEP_DEBUG: true
-  ACTIONS_RUNNER_DEBUG: true
-
-permissions:
-  contents: write
-
-jobs:
-  A_Run_All:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main  # Ensure we’re on a real branch, not detached HEAD
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-      - name: Cache Python dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-python-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-python-
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt unidecode
+# ... (rest of your YAML remains the same until the 'Run All Scripts' step) ...
 
       - name: Run All Scripts + Unified Logs
         run: |
@@ -54,14 +12,14 @@ jobs:
           echo "" > "$ERRORS_FILE"
           echo "" > "$SUMMARY_FILE"
 
-          # --- Start of Debugging Copy & Inspection for splitaway.py ---
-          echo "--- Creating temporary copies for splitaway.py debugging ---"
+          # --- Start of Debugging Copy & Inspection for batters scripts ---
+          echo "--- Creating temporary copies for batter scripts debugging ---"
           mkdir -p data/temp_inputs # Ensure the temporary directory exists
           cp data/cleaned/batters_today.csv data/temp_inputs/batters_today_copy.csv
           cp data/raw/todaysgames_normalized.csv data/temp_inputs/todaysgames_normalized_copy.csv
           echo "Copies created in data/temp_inputs/"
 
-          echo "--- Inspecting copied input files for splitaway.py ---"
+          echo "--- Inspecting copied input files for batter scripts ---"
           echo "Content of data/temp_inputs/batters_today_copy.csv (first 5 lines):"
           head -n 5 data/temp_inputs/batters_today_copy.csv
           echo "Line count of data/temp_inputs/batters_today_copy.csv:"
@@ -72,7 +30,28 @@ jobs:
           echo "Line count of data/temp_inputs/todaysgames_normalized_copy.csv:"
           wc -l data/temp_inputs/todaysgames_normalized_copy.csv
           echo "--- End Inspection of copied input files ---"
-          # --- End of Debugging Copy & Inspection for splitaway.py ---
+          # --- End of Debugging Copy & Inspection for batters scripts ---
+
+          # --- NEW: Create and inspect temporary copies for pitcher script ---
+          echo "--- Creating temporary copies for pitcher script ---"
+          # Ensure a distinct temp directory for pitcher inputs, if needed,
+          # or reuse data/temp_inputs if their names won't conflict.
+          # For simplicity and consistency with batters, let's reuse data/temp_inputs
+          # but use distinct filenames.
+          cp data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv
+          # todaysgames_normalized.csv is already copied for batters, if it's the same file.
+          # If 'todaysgames_normalized.csv' is identical for both, no need to copy again.
+          # If it's a different 'todaysgames_normalized.csv' for pitchers, adjust the source.
+          echo "Pitcher inputs copied to data/temp_inputs/"
+
+          echo "--- Inspecting copied input files for pitcher script ---"
+          echo "Content of data/temp_inputs/pitchers_normalized_cleaned_copy.csv (first 5 lines):"
+          head -n 5 data/temp_inputs/pitchers_normalized_cleaned_copy.csv
+          echo "Line count of data/temp_inputs/pitchers_normalized_cleaned_copy.csv:"
+          wc -l data/temp_inputs/pitchers_normalized_cleaned_copy.csv
+          echo "--- End Inspection of copied input files for pitcher script ---"
+          # --- END NEW Pitcher temp copies ---
+
 
           run_step() {
             SCRIPT="$1"
@@ -91,7 +70,7 @@ jobs:
                 cat temp_error.log >> "$ERRORS_FILE"
                 echo -e "\n---\n" >> "$ERRORS_FILE"
               fi
-            elif [[ "$SCRIPT" == "splithome.py" ]]; then # <--- NEW: Special handling for splithome.py
+            elif [[ "$SCRIPT" == "splithome.py" ]]; then
               if python "scripts/${SCRIPT}" "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_home.csv" >> "$LOG_FILE" 2> temp_error.log; then
                 echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
               else
@@ -100,6 +79,22 @@ jobs:
                 cat temp_error.log >> "$ERRORS_FILE"
                 echo -e "\n---\n" >> "$ERRORS_FILE"
               fi
+            # --- NEW: Special handling for normalize_pitcher_home_away.py ---
+            elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
+              if python "scripts/${SCRIPT}" \
+                "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
+                "data/temp_inputs/todaysgames_normalized_copy.csv" \
+                "data/adjusted/pitchers_home.csv" \
+                "data/adjusted/pitchers_away.csv" \
+                >> "$LOG_FILE" 2> temp_error.log; then
+                echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+              else
+                echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+                echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
+                cat temp_error.log >> "$ERRORS_FILE"
+                echo -e "\n---\n" >> "$ERRORS_FILE"
+              fi
+            # --- End NEW special handling ---
             else # For all other scripts, run without special arguments
               if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
                 echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
@@ -128,11 +123,13 @@ jobs:
           run_step filter_stadium_metadata.py
           run_step normalize_batter_team_names.py
           run_step splitaway.py
-          run_step splithome.py # <--- NEW: Added splithome.py call
+          run_step splithome.py
           run_step updatesplitcsvs.py
           run_step commit_split_batters.py
-          run_step normalize_pitcher_home_away.py
-          # run_step update_pitcher_team_names.py
+          # Original: run_step normalize_pitcher_home_away.py
+          # Changed to use new command-line arguments for pitcher script
+          run_step normalize_pitcher_home_away.py # This now uses the special handling above
+          # ... (rest of the run_step calls remain the same) ...
           run_step generate_weather_csv.py
           run_step filter_today_batters.py
           run_step get_weather_data.py
@@ -197,13 +194,17 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          # Add batters_home.csv to the commit
-          git add data/adjusted/batters_home.csv || echo "home not found" # <--- NEW: Added this line
-          git add data/adjusted/batters_away.csv || echo "away not found"
+          # Add batter files to the commit
+          git add data/adjusted/batters_home.csv || echo "home batter file not found or no changes"
+          git add data/adjusted/batters_away.csv || echo "away batter file not found or no changes"
+          # --- NEW: Add pitcher files to the commit ---
+          git add data/adjusted/pitchers_home.csv || echo "home pitcher file not found or no changes"
+          git add data/adjusted/pitchers_away.csv || echo "away pitcher file not found or no changes"
+          # --- End NEW ---
           git add summaries/summary.txt || echo "summary not found"
 
           echo "📄 Git status:"
           git status
 
-          git commit -m "Commit batter split + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
+          git commit -m "Commit processed data + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
