@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import sys # Import sys module to access command-line arguments
 
 def populate_away_batters(
     batters_today_path: str, todaysgames_normalized_path: str, batters_away_output_path: str
@@ -16,6 +17,8 @@ def populate_away_batters(
         batters_away_output_path (str): Path where the resulting batters_away.csv will be saved.
     """
     print(f"--- Starting populate_away_batters for {batters_away_output_path} ---")
+    print(f"Using batters_today from: {batters_today_path}")
+    print(f"Using todaysgames_normalized from: {todaysgames_normalized_path}")
 
     # --- Load batters_today.csv ---
     try:
@@ -80,7 +83,7 @@ def populate_away_batters(
     if away_batters_df.empty:
         print(f"WARNING: No away team batters found after filtering. The output file will contain only headers.")
         # To ensure an empty file with correct headers is written if no data matches
-        if not batters_df.empty:
+        if not batters_df.empty: # If batters_df was not empty, but filtering yielded nothing
             away_batters_df = pd.DataFrame(columns=batters_df.drop(columns=['team_cleaned']).columns)
         else: # If batters_df was already empty, just pass an empty df (no columns)
             away_batters_df = pd.DataFrame()
@@ -103,9 +106,18 @@ def populate_away_batters(
 
 
 if __name__ == "__main__":
-    # Define input and output file paths
-    BATTERS_TODAY_FILE = "data/cleaned/batters_today.csv"
-    TODAYS_GAMES_NORMALIZED_FILE = "data/raw/todaysgames_normalized.csv"
-    BATTERS_AWAY_OUTPUT_FILE = "data/adjusted/batters_away.csv"
-
-    populate_away_batters(BATTERS_TODAY_FILE, TODAYS_GAMES_NORMALIZED_FILE, BATTERS_AWAY_OUTPUT_FILE)
+    # When run from the command line, sys.argv will contain the arguments.
+    # sys.argv[0] is the script name itself.
+    # sys.argv[1] should be batters_today_path
+    # sys.argv[2] should be todaysgames_normalized_path
+    # sys.argv[3] should be batters_away_output_path
+    if len(sys.argv) != 4:
+        print("Usage: python splitaway.py <batters_today_path> <todaysgames_normalized_path> <batters_away_output_path>")
+        # Fallback to hardcoded paths if run directly without args, but prefer args for GH Actions
+        BATTERS_TODAY_FILE = "data/cleaned/batters_today.csv"
+        TODAYS_GAMES_NORMALIZED_FILE = "data/raw/todaysgames_normalized.csv"
+        BATTERS_AWAY_OUTPUT_FILE = "data/adjusted/batters_away.csv"
+        print("Falling back to default paths for local execution.")
+        populate_away_batters(BATTERS_TODAY_FILE, TODAYS_GAMES_NORMALIZED_FILE, BATTERS_AWAY_OUTPUT_FILE)
+    else:
+        populate_away_batters(sys.argv[1], sys.argv[2], sys.argv[3])
