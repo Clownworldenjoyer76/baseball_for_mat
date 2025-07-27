@@ -2,7 +2,7 @@ import pandas as pd
 from pathlib import Path
 
 # Paths
-INPUT_FILE = Path("data/end_chain/cleaned/batters_away_cleaned.csv")
+INPUT_FILE = Path("data/end_chain/cleaned/bat_awp_cleaned.csv")
 OUTPUT_FILE = INPUT_FILE  # Overwrite same file
 
 # Load data
