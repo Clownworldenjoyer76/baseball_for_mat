@@ -183,6 +183,7 @@ jobs:
           git add data/adjusted/pitchers_home.csv || echo "home pitcher file not found or no changes"
           git add data/adjusted/pitchers_away.csv || echo "away pitcher file not found or no changes"
           git add data/end_chain/cleaned/*.csv || echo "No cleaned end_chain CSVs found or no changes"
+          git add data/end_chain/cleaned/prep/*.csv || echo "No cleaned end_chain CSVs found or no changes"
           git add summaries/summary.txt || echo "summary not found"
 
           echo "📄 Git status:"
