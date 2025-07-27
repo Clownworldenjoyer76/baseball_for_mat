@@ -1,49 +1,64 @@
 import pandas as pd
 import os
 
-def fix_name_format(name: str) -> str:
-    name = name.strip().rstrip(",")
-    if "," in name:
-        parts = [part.strip() for part in name.split(",")]
-        if len(parts) == 2:
-            first, last = parts
-            return f"{last}, {first}" if " " in first and len(first.split()) == 1 else f"{first}, {last}"
-        return name
-    elif " " in name:
-        parts = name.split()
-        if len(parts) == 2:
-            return f"{parts[1]}, {parts[0]}"
-    return name
+def clean_merge_files():
+    """
+    Identifies and summarizes duplicate rows across specified input CSV files.
 
-def clean_and_deduplicate(filepath: str) -> pd.DataFrame:
-    df = pd.read_csv(filepath)
+    Input files:
+    - data/end_chain/first/pit_hwp.csv
+    - data/end_chain/first/pit_awp.csv
+    - data/end_chain/first/raw/bat_awp_dirty.csv
+    - data/end_chain/first/raw/bat_hwp_dirty.csv
 
-    if 'last_name, first_name' in df.columns:
-        df['last_name, first_name'] = (
-            df['last_name, first_name']
-            .astype(str)
-            .apply(fix_name_format)
-        )
-        before = len(df)
-        df = df.drop_duplicates(subset='last_name, first_name', keep='first')
-        after = len(df)
-        print(f"🔍 Removed {before - after} duplicate rows in {filepath}")
-    else:
-        print(f"⚠️ WARNING: 'last_name, first_name' column not found in {filepath}")
+    Output file:
+    - data/end_chain/duplicates.txt (summary of findings)
+    """
 
-    return df
+    input_files = [
+        'data/end_chain/first/pit_hwp.csv',
+        'data/end_chain/first/pit_awp.csv',
+        'data/end_chain/first/raw/bat_awp_dirty.csv',
+        'data/end_chain/first/raw/bat_hwp_dirty.csv'
+    ]
+
+    output_summary_file = 'data/end_chain/duplicates.txt'
+
+    # Ensure the output directory exists
+    os.makedirs(os.path.dirname(output_summary_file), exist_ok=True)
+
+    with open(output_summary_file, 'w') as f:
+        f.write("--- Duplicate Row Analysis ---\n\n")
+
+        for file_path in input_files:
+            if not os.path.exists(file_path):
+                f.write(f"File not found: {file_path}\n")
+                print(f"Warning: {file_path} not found. Skipping.")
+                continue
+
+            try:
+                df = pd.read_csv(file_path)
+                initial_rows = len(df)
+                duplicates = df[df.duplicated()]
+                num_duplicates = len(duplicates)
+
+                f.write(f"Analysis for: {file_path}\n")
+                f.write(f"  Total rows: {initial_rows}\n")
+                f.write(f"  Number of duplicate rows found: {num_duplicates}\n")
+
+                if num_duplicates > 0:
+                    f.write("  Sample of duplicate rows (first 5):\n")
+                    f.write(duplicates.head().to_string() + "\n")
+                else:
+                    f.write("  No duplicate rows found.\n")
+                f.write("\n")
+                print(f"Processed {file_path}. Found {num_duplicates} duplicates.")
+
+            except Exception as e:
+                f.write(f"Error processing {file_path}: {e}\n\n")
+                print(f"Error processing {file_path}: {e}")
+
+    print(f"\nDuplicate row analysis summary saved to {output_summary_file}")
 
 if __name__ == "__main__":
-    input_files = {
-        "pitchers_home": "data/end_chain/pitchers_home_weather_park.csv",
-        "pitchers_away": "data/end_chain/pitchers_away_weather_park.csv"
-    }
-
-    for label, path in input_files.items():
-        if os.path.exists(path):
-            print(f"Cleaning file: {path}")
-            cleaned_df = clean_and_deduplicate(path)
-            cleaned_df.to_csv(path, index=False)
-            print(f"✅ {label} cleaned and saved.")
-        else:
-            print(f"❌ File not found: {path}")
+    clean_merge_files()
