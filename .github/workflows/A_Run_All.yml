@@ -7,6 +7,9 @@ env:
   ACTIONS_STEP_DEBUG: true
   ACTIONS_RUNNER_DEBUG: true
 
+permissions:
+  contents: write
+
 jobs:
   A_Run_All:
     runs-on: ubuntu-latest
@@ -71,7 +74,7 @@ jobs:
             echo "" >> "$LOG_FILE"
           }
 
-          # 🔁 Run all steps (unchanged)
+          # 🔁 Run all steps
           run_step normalize_names.py
           run_step tag_master_files.py
           run_step validate_tagged_players.py
@@ -153,5 +156,5 @@ jobs:
           git add data/adjusted/
           git add summaries/
 
-          git diff --cached --stat --exit-code || git commit -m "A_Run_All: Automated data pipeline update on $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")"
+          git commit -am "A_Run_All: Forced commit for batter and log output $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "No new commits to push"
