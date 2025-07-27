@@ -12,7 +12,7 @@ GAMES_FILE = Path("data/raw/todaysgames_normalized.csv")
 PITCHERS_FILE = Path("data/cleaned/pitchers_normalized_cleaned.csv")
 OUT_HOME = Path("data/adjusted/pitchers_home.csv")
 OUT_AWAY = Path("data/adjusted/pitchers_away.csv")
-TEAM_MAP_FILE = Path("data/Data/team_name_master.csv") # Added this file path
+TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")
 
 # --- Helper Functions for Team Mapping ---
 def load_team_map():
@@ -30,7 +30,7 @@ def load_team_map():
     df["team_name"] = df["team_name"].astype(str).str.strip()
     return dict(zip(df["team_code"], df["team_name"]))
 
-# --- Original Helper Functions (modified for integration) ---
+# --- Original Helper Functions ---
 def load_pitchers():
     """Loads and preprocesses the pitchers data."""
     df = pd.read_csv(PITCHERS_FILE)
@@ -51,9 +51,10 @@ def filter_and_tag(pitchers_df: pd.DataFrame, side: str, team_map: dict):
         tuple: A tuple containing the filtered DataFrame, a list of missing pitchers,
                and a list of unmatched teams.
     """
-    key = f"pitcher_{side}"
-    team_key = f"{side}_team"
-    opponent_key = "away_team" if side == "home" else "home_team"
+    key = f"pitcher_{side}" # e.g., 'pitcher_home'
+    team_key = f"{side}_team" # e.g., 'home_team' (the pitcher's own team in the game context)
+    # opponent_key = "away_team" if side == "home" else "home_team" # No longer directly needed for new columns
+
     tagged = []
     missing = []
     unmatched_teams = []
@@ -65,38 +66,42 @@ def filter_and_tag(pitchers_df: pd.DataFrame, side: str, team_map: dict):
     # Apply standardization to game team names *before* matching
     full_games_df['home_team'] = full_games_df['home_team'].astype(str).str.strip().map(team_map).fillna(full_games_df['home_team'])
     full_games_df['away_team'] = full_games_df['away_team'].astype(str).str.strip().map(team_map).fillna(full_games_df['away_team'])
-    full_games_df[team_key] = full_games_df[team_key].astype(str).str.strip() # Ensure 'team_key' column is also clean after map
+    # Ensure 'team_key' column is also clean after map, though it will be from home_team/away_team
+    full_games_df[team_key] = full_games_df[team_key].astype(str).str.strip()
 
-    for idx, row in full_games_df.iterrows(): # Use idx for potential logging
+    for idx, row in full_games_df.iterrows():
         pitcher_name = row[key]
-        team_name = row[team_key] # This team_name is now standardized
-        opponent_team = row[opponent_key] # This opponent_team is also standardized
+        # Get the standardized home and away team names for *this specific game*
+        game_home_team = row['home_team']
+        game_away_team = row['away_team']
 
-        # Filter the pitchers_df for the current pitcher name
         matched = pitchers_df[pitchers_df["name"] == pitcher_name].copy()
 
         if matched.empty:
             missing.append(pitcher_name)
-            logger.debug(f"🔍 Pitcher '{pitcher_name}' (Team: {team_name}, Game Index: {idx}) not found in pitchers_normalized_cleaned.csv.")
+            # Use the actual team from the game to report if the pitcher wasn't found
+            unmatched_teams.append(row[team_key])
+            logger.debug(f"🔍 Pitcher '{pitcher_name}' (Team: {row[team_key]}, Game Index: {idx}) not found in pitchers_normalized_cleaned.csv.")
         else:
-            # Assign the *standardized* team name from games_df
-            matched["team"] = team_name
+            # Assign the pitcher's *own* team based on the game context (standardized)
+            matched["team"] = row[team_key]
             matched["home_away"] = side
-            matched[opponent_key] = opponent_team
+            # Add BOTH home_team and away_team columns for the game context
+            matched["game_home_team"] = game_home_team
+            matched["game_away_team"] = game_away_team
             tagged.append(matched)
-            logger.debug(f"✅ Matched pitcher '{pitcher_name}' for {side} team '{team_name}'.")
+            logger.debug(f"✅ Matched pitcher '{pitcher_name}' for {side} team '{row[team_key]}'.")
 
 
     if tagged:
         df = pd.concat(tagged, ignore_index=True)
         # Drop any duplicate columns that might arise from the initial load or merge if not careful
         # (e.g., if pitchers_df itself had 'home_team' or 'away_team' columns initially)
-        # This part handles columns ending with .1, which often appear from merges
         df.drop(columns=[col for col in df.columns if col.endswith(".1")], errors='ignore', inplace=True)
         df.sort_values(by=["team", "name"], inplace=True)
         df.drop_duplicates(inplace=True) # Ensure unique pitcher-team entries in the output
 
-        # Final standardization pass on the 'team' column if pitchers_df wasn't perfectly clean
+        # Final standardization pass on the 'team' column if pitchers_df wasn't perfectly clean initially
         df["team"] = df["team"].astype(str).str.strip().map(team_map).fillna(df["team"])
 
         logger.info(f"Generated {len(df)} {side} pitcher records.")
@@ -104,7 +109,8 @@ def filter_and_tag(pitchers_df: pd.DataFrame, side: str, team_map: dict):
 
     logger.warning(f"⚠️ No {side} pitchers found or matched.")
     # Return an empty DataFrame with expected columns if no matches
-    return pd.DataFrame(columns=pitchers_df.columns.tolist() + ["team", "home_away", opponent_key]), missing, unmatched_teams
+    # Ensure new columns are also in the empty DataFrame structure
+    return pd.DataFrame(columns=pitchers_df.columns.tolist() + ["team", "home_away", "game_home_team", "game_away_team"]), missing, unmatched_teams
 
 # --- Main Execution ---
 def main():
@@ -132,7 +138,6 @@ def main():
         logger.warning(f"⚠️ Mismatch: Expected {expected} total pitchers from {GAMES_FILE}, but got {actual}")
     else:
         logger.info(f"Total pitchers generated ({actual}) matches expected count ({expected}).")
-
 
     if home_missing:
         logger.warning(f"\n=== MISSING HOME PITCHERS ({len(set(home_missing))} unique) ===")
