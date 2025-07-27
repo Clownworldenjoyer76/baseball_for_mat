@@ -3,7 +3,7 @@ from pathlib import Path
 import unicodedata
 import re
 
-LINEUPS_FILE = "data/raw/lineups.csv"
+LINEUPS_FILE = "data/cleaned/lineups_cleaned.csv" # Updated to new file
 BATTERS_FILE = "data/cleaned/batters_normalized_cleaned.csv"
 OUTPUT_FILE = "data/cleaned/batters_today.csv"
 UNMATCHED_FILE = "data/cleaned/unmatched_batters.txt"
@@ -61,15 +61,18 @@ def main():
     except Exception as e:
         raise RuntimeError(f"❌ Failed to load input files: {e}")
 
-    if 'last_name, first_name' not in lineups_df.columns or 'name' not in batters_df.columns:
-        raise ValueError("❌ Missing required columns in either lineups or batters file.")
+    # Updated column for matching in lineups_df
+    lineups_match_column = 'normalized_full_name_for_match'
 
-    # Normalize and remap
-    raw_names = lineups_df['last_name, first_name'].astype(str)
-    lineups_df['normalized_name'] = raw_names.apply(lambda n: normalize_name(NAME_OVERRIDES.get(n, n)))
+    if lineups_match_column not in lineups_df.columns or 'name' not in batters_df.columns:
+        raise ValueError(f"❌ Missing required columns. Ensure '{lineups_match_column}' is in lineups file and 'name' in batters file.")
+
+    # No need to normalize lineups_df names, as they should already be normalized
+    # based on the new column name.
+    # We still need to normalize batter names.
     batters_df['normalized_name'] = batters_df['name'].astype(str).apply(normalize_name)
 
-    expected_names_set = set(lineups_df['normalized_name'])
+    expected_names_set = set(lineups_df[lineups_match_column].astype(str))
     filtered = batters_df[batters_df['normalized_name'].isin(expected_names_set)].copy()
     unmatched = sorted(expected_names_set - set(filtered['normalized_name']))
 
