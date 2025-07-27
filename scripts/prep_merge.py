@@ -37,10 +37,14 @@ def fix_pitcher_names_strict():
         key = name.strip().rstrip(",").replace(" ,", ",").upper()
         return name_map.get(key, name)
 
+    def strip_trailing_comma(name):
+        if pd.isna(name): return name
+        return name.rstrip(",")
+
     # Update home pitcher file
     ph = pd.read_csv(pitchers_home_path)
     if "last_name, first_name" in ph.columns:
-        ph["last_name, first_name"] = ph["last_name, first_name"].apply(map_name)
+        ph["last_name, first_name"] = ph["last_name, first_name"].apply(map_name).apply(strip_trailing_comma)
     if "home_team" in ph.columns and "team" not in ph.columns:
         ph["team"] = ph["home_team"]
     ph.to_csv(pitchers_home_path, index=False)
@@ -48,7 +52,7 @@ def fix_pitcher_names_strict():
     # Update away pitcher file
     pa = pd.read_csv(pitchers_away_path)
     if "last_name, first_name" in pa.columns:
-        pa["last_name, first_name"] = pa["last_name, first_name"].apply(map_name)
+        pa["last_name, first_name"] = pa["last_name, first_name"].apply(map_name).apply(strip_trailing_comma)
     if "away_team" in pa.columns and "team" not in pa.columns:
         pa["team"] = pa["away_team"]
     pa.to_csv(pitchers_away_path, index=False)
@@ -56,9 +60,9 @@ def fix_pitcher_names_strict():
     # Update todaysgames file
     games = pd.read_csv(games_path)
     if "pitcher_home" in games.columns:
-        games["pitcher_home"] = games["pitcher_home"].apply(map_name)
+        games["pitcher_home"] = games["pitcher_home"].apply(map_name).apply(strip_trailing_comma)
     if "pitcher_away" in games.columns:
-        games["pitcher_away"] = games["pitcher_away"].apply(map_name)
+        games["pitcher_away"] = games["pitcher_away"].apply(map_name).apply(strip_trailing_comma)
     games.to_csv(games_path, index=False)
 
 def commit_files(paths):
