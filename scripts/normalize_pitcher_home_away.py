@@ -55,6 +55,7 @@ def load_games():
 def load_pitchers():
     df = pd.read_csv(PITCHERS_FILE)
     df["name"] = df["name"].astype(str).apply(normalize_name)
+    df = df.drop_duplicates(subset=["name", "team"])  # ✅ Deduplicate pitchers before matching
     return df
 
 def filter_and_tag(pitchers_df, games_df, side):
@@ -62,8 +63,6 @@ def filter_and_tag(pitchers_df, games_df, side):
     team_key = f"{side}_team"
     tagged = []
     missing = []
-
-    normalized_pitcher_names_set = set(pitchers_df["name"])
     unmatched_teams = []
 
     for _, row in games_df.iterrows():
@@ -83,14 +82,10 @@ def filter_and_tag(pitchers_df, games_df, side):
     if tagged:
         df = pd.concat(tagged, ignore_index=True)
 
-        # Drop team.1 if present
         if "team.1" in df.columns:
             df.drop(columns=["team.1"], inplace=True)
 
-        # Sort by team and name for easier review
         df.sort_values(by=["team", "name"], inplace=True)
-
-        # Drop exact duplicates
         df.drop_duplicates(inplace=True)
 
         return df, missing, unmatched_teams
@@ -110,11 +105,10 @@ def main():
     print(f"✅ Wrote {len(home_df)} rows to {OUT_HOME}")
     print(f"✅ Wrote {len(away_df)} rows to {OUT_AWAY}")
 
-    # Post-save validation
-    total_expected = len(games_df) * 2
-    actual_total = len(home_df) + len(away_df)
-    if actual_total != total_expected:
-        print(f"⚠️ Mismatch: Expected {total_expected} total pitchers, but only {actual_total} were matched.")
+    expected = len(games_df) * 2
+    actual = len(home_df) + len(away_df)
+    if actual != expected:
+        print(f"⚠️ Mismatch: Expected {expected} total pitchers, but got {actual}")
 
     if home_missing:
         print("\n=== MISSING HOME PITCHERS ===")
