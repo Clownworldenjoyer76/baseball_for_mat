@@ -5,7 +5,7 @@ import subprocess
 def final_bat_hwp():
     """
     Processes baseball data by merging various input files to create a final
-    batting average with runners in scoring scoring position (HWP) dataset for home batters.
+    batting average with runners in scoring position (HWP) dataset for home batters.
 
     Input files:
     - data/end_chain/cleaned/games_today_cleaned.csv
@@ -87,41 +87,44 @@ def final_bat_hwp():
         suffixes=('', '_input') # Avoid column name clashes
     )
 
-    # Merge 4: batters_home_weather.csv for adj_woba_weather
-    if 'last_name' in final_df.columns and 'first_name' in final_df.columns:
-        final_df['full_name_merge'] = final_df['first_name'].astype(str) + ' ' + final_df['last_name'].astype(str)
+    # --- MERGE 4: batters_home_weather.csv for adj_woba_weather ---
+    # Now correctly looking for the single column named "last_name, first_name"
+    player_name_col = "last_name, first_name"
+    if player_name_col in final_df.columns:
+        # Create a lowercase version for case-insensitive merge if needed, similar to 'name_lower' in target DFs
+        final_df[f'{player_name_col}_lower'] = final_df[player_name_col].astype(str).str.lower()
         batters_home_weather_df['name_lower'] = batters_home_weather_df['name'].astype(str).str.lower()
-        final_df['full_name_merge_lower'] = final_df['full_name_merge'].astype(str).str.lower()
 
         final_df = pd.merge(
             final_df,
             batters_home_weather_df[['name_lower', 'adj_woba_weather']],
-            left_on='full_name_merge_lower',
+            left_on=f'{player_name_col}_lower',
             right_on='name_lower',
             how='left'
         )
-        final_df.drop(['full_name_merge', 'full_name_merge_lower', 'name_lower'], axis=1, inplace=True, errors='ignore')
+        final_df.drop([f'{player_name_col}_lower', 'name_lower'], axis=1, inplace=True, errors='ignore')
     else:
-        print("⚠️ Warning: 'last_name' or 'first_name' not found in bat_awp_clean2.csv. Skipping adj_woba_weather merge.")
+        print(f"⚠️ Warning: Column '{player_name_col}' not found in bat_awp_clean2.csv. Skipping adj_woba_weather merge.")
 
 
-    # Merge 5: batters_home_adjusted.csv for adj_woba_combined
-    if 'last_name' in final_df.columns and 'first_name' in final_df.columns:
-        final_df['full_name_merge'] = final_df['first_name'].astype(str) + ' ' + final_df['last_name'].astype(str)
-        batters_home_adjusted_df['name_lower'] = batters_home_adjusted_df['name'].astype(str).str.lower()
-        final_df['full_name_merge_lower'] = final_df['full_name_merge'].astype(str).str.lower()
+    # --- MERGE 5: batters_home_adjusted.csv for adj_woba_combined ---
+    # Now correctly looking for the single column named "last_name, first_name"
+    if player_name_col in final_df.columns:
+        final_df[f'{player_name_col}_lower_adj'] = final_df[player_name_col].astype(str).str.lower()
+        batters_home_adjusted_df['name_lower_adj'] = batters_home_adjusted_df['name'].astype(str).str.lower()
 
         final_df = pd.merge(
             final_df,
-            batters_home_adjusted_df[['name_lower', 'adj_woba_combined']],
-            left_on='full_name_merge_lower',
-            right_on='name_lower',
+            batters_home_adjusted_df[['name_lower_adj', 'adj_woba_combined']],
+            left_on=f'{player_name_col}_lower_adj',
+            right_on='name_lower_adj',
             how='left'
         )
         # Clean up temporary merge columns
-        final_df.drop(['full_name_merge', 'full_name_merge_lower', 'name_lower'], axis=1, inplace=True, errors='ignore')
+        final_df.drop([f'{player_name_col}_lower_adj', 'name_lower_adj'], axis=1, inplace=True, errors='ignore')
     else:
-        print("⚠️ Warning: 'last_name' or 'first_name' not found in bat_awp_clean2.csv. Skipping adj_woba_combined merge.")
+        print(f"⚠️ Warning: Column '{player_name_col}' not found in bat_awp_clean2.csv. Skipping adj_woba_combined merge.")
+
 
     # --- Renaming 'lat' to 'latitude' and 'lon' to 'longitude' in the final output ---
     rename_mapping = {}
