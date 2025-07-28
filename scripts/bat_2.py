@@ -98,7 +98,7 @@ def process_bat_home_file(input_filepath, output_filepath):
 def process_bat_away_file(input_filepath, output_filepath):
     """
     Processes bat_away1.csv:
-    1. Adds new empty columns.
+    1. Adds new empty columns (excluding 'pitcher_home' and 'pitcher_away').
     2. Removes the 'stadium' column.
     """
     print(f"🔄 Processing {input_filepath} for bat_away2.csv...")
@@ -112,9 +112,9 @@ def process_bat_away_file(input_filepath, output_filepath):
         return
 
     # Add Columns headers
+    # Removed 'pitcher_home' and 'pitcher_away' from the list of new columns to add
     new_away_columns = [
-        'latitude', 'longitude', 'city', 'state', 'timezone',
-        'is_dome', 'pitcher_home', 'pitcher_away'
+        'latitude', 'longitude', 'city', 'state', 'timezone', 'is_dome'
     ]
     for col in new_away_columns:
         if col not in df.columns:
@@ -123,7 +123,7 @@ def process_bat_away_file(input_filepath, output_filepath):
         else:
             print(f"  ⚠️ Column '{col}' already exists. Skipping addition.")
 
-    # NEW: Remove 'stadium' column
+    # Remove 'stadium' column
     columns_to_delete_away = ['stadium']
     for col in columns_to_delete_away:
         if col in df.columns:
