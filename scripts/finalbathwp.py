@@ -5,7 +5,7 @@ import subprocess
 def final_bat_hwp():
     """
     Processes baseball data by merging various input files to create a final
-    batting average with runners in scoring position (HWP) dataset for home batters.
+    batting average with runners in scoring scoring position (HWP) dataset for home batters.
 
     Input files:
     - data/end_chain/cleaned/games_today_cleaned.csv
@@ -74,10 +74,10 @@ def final_bat_hwp():
     )
 
     # Merge 3: weather_input.csv for city, state, timezone, Park Factor, etc.
-    # IMPORTANT: 'lat' and 'lon' must exist in data/weather_input.csv for this merge to work without KeyError.
+    # 'lat' and 'lon' are intentionally excluded here based on previous instructions.
     weather_input_cols = [
         'home_team', 'city', 'state', 'timezone', 'Park Factor', 'is_dome',
-        'lat', 'lon', 'time_of_day'
+        'time_of_day'
     ]
     final_df = pd.merge(
         final_df,
@@ -123,8 +123,7 @@ def final_bat_hwp():
     else:
         print("⚠️ Warning: 'last_name' or 'first_name' not found in bat_awp_clean2.csv. Skipping adj_woba_combined merge.")
 
-    # --- NEW: Rename 'lat' to 'latitude' and 'lon' to 'longitude' ---
-    # Only attempt to rename if the columns exist in the final_df
+    # --- Renaming 'lat' to 'latitude' and 'lon' to 'longitude' in the final output ---
     rename_mapping = {}
     if 'lat' in final_df.columns:
         rename_mapping['lat'] = 'latitude'
@@ -133,10 +132,9 @@ def final_bat_hwp():
 
     if rename_mapping: # Only call rename if there's something to rename
         final_df.rename(columns=rename_mapping, inplace=True)
-        print(f"✅ Renamed columns: {rename_mapping}")
+        print(f"✅ Renamed columns in final output: {rename_mapping}")
     else:
-        print("⚠️ Warning: 'lat' or 'lon' columns not found in the final DataFrame for renaming.")
-
+        print("⚠️ Warning: 'lat' or 'lon' columns not found in the final DataFrame for renaming. Ensure they are present from an upstream process if desired in the output.")
 
     # Ensure the output directory exists
     os.makedirs(output_directory, exist_ok=True)
