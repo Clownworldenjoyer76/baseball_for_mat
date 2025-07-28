@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import subprocess
 
 def final_bat_awp():
     """
@@ -28,7 +29,6 @@ def final_bat_awp():
         return
 
     # Merge with games_today_cleaned.csv to get home_team and game_time
-    # Merge on away_team from bat_awp_df to get home_team and game_time from games_today_df
     final_df = pd.merge(
         bat_awp_df,
         games_today_df[['away_team', 'home_team', 'game_time']],
@@ -36,8 +36,7 @@ def final_bat_awp():
         how='left'
     )
 
-    # Merge with weather_adjustments.csv to get weather-related information
-    # Merge on away_team from bat_awp_df to get weather details from weather_adjustments_df
+    # Merge with weather_adjustments.csv
     weather_cols_to_merge = [
         'away_team', 'venue', 'location', 'temperature', 'wind_speed',
         'wind_direction', 'humidity', 'precipitation', 'condition', 'notes'
@@ -50,12 +49,10 @@ def final_bat_awp():
     )
 
     # Merge with weather_input.csv to get Park Factor
-    # Merge on away_team (present in both final_df and weather_input_df) to get 'Park Factor'
     final_df = pd.merge(
         final_df,
-        # Select 'away_team' and 'Park Factor' from weather_input_df
         weather_input_df[['away_team', 'Park Factor']],
-        on='away_team', # Merge directly on 'away_team' as it exists in both
+        on='away_team',
         how='left'
     )
 
@@ -69,7 +66,16 @@ def final_bat_awp():
 
     # Save the final DataFrame to a CSV file
     final_df.to_csv(output_filepath, index=False)
-    print(f"Successfully created '{output_filepath}'")
+    print(f"✅ Successfully created '{output_filepath}'")
+
+    # Git commit and push
+    try:
+        subprocess.run(["git", "add", output_filepath], check=True)
+        subprocess.run(["git", "commit", "-m", f"📊 Auto-update {output_filename}"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("✅ Pushed to repository.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git push failed: {e}")
 
 if __name__ == "__main__":
     final_bat_awp()
