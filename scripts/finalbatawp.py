@@ -68,19 +68,32 @@ def final_bat_awp():
     final_df.to_csv(output_filepath, index=False)
     print(f"✅ Successfully created '{output_filepath}'")
 
-    # --- New Section for bat_hwp_cleaned.csv normalization ---
+    # --- Section for bat_hwp_cleaned.csv normalization ---
     hwp_input_filepath = 'data/end_chain/cleaned/prep/bat_hwp_cleaned.csv'
-    hwp_output_filepath = 'data/end_chain/cleaned/bat_awp_clean2.csv'
+    hwp_output_filepath = 'data/end_chain/cleaned/bat_awp_clean2.csv' # Keep output location the same
 
     try:
         hwp_df = pd.read_csv(hwp_input_filepath)
 
-        # Normalize 'team' column: capitalize first letter, remove trailing commas/whitespace
-        if 'team' in hwp_df.columns:
-            hwp_df['team'] = hwp_df['team'].astype(str).str.capitalize().str.replace(r',$', '', regex=True).str.strip()
-            print(f"✅ Normalized 'team' column in '{hwp_input_filepath}'.")
+        # Normalize 'home_team' column based on 'team' column's values
+        if 'home_team' in hwp_df.columns and 'team' in hwp_df.columns:
+            # Map values from 'team' column to 'home_team' and apply normalization
+            # Create a mapping from original 'team' values to their normalized versions
+            # Assuming 'team' column already has the correct values you want to map from.
+            # If 'team' itself needs normalization before mapping, add it here:
+            # hwp_df['team_normalized'] = hwp_df['team'].astype(str).str.capitalize().str.replace(r',$', '', regex=True).str.strip()
+            # mapping = hwp_df.set_index('team')['team_normalized'].to_dict()
+
+            # For now, directly normalize 'home_team' based on its own value's first letter capitalized, no trailing comma/whitespace
+            hwp_df['home_team'] = hwp_df['home_team'].astype(str).str.capitalize().str.replace(r',$', '', regex=True).str.strip()
+
+            print(f"✅ Normalized 'home_team' column in '{hwp_input_filepath}'.")
         else:
-            print(f"⚠️ Warning: 'team' column not found in '{hwp_input_filepath}'. Skipping normalization.")
+            if 'home_team' not in hwp_df.columns:
+                print(f"⚠️ Warning: 'home_team' column not found in '{hwp_input_filepath}'. Skipping normalization.")
+            if 'team' not in hwp_df.columns:
+                print(f"⚠️ Warning: 'team' column not found in '{hwp_input_filepath}'. Cannot use it for reference.")
+
 
         # Ensure output directory for bat_awp_clean2.csv exists
         os.makedirs(os.path.dirname(hwp_output_filepath), exist_ok=True)
@@ -116,3 +129,4 @@ def final_bat_awp():
 
 if __name__ == "__main__":
     final_bat_awp()
+
