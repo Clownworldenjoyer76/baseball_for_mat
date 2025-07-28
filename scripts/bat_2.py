@@ -6,7 +6,7 @@ def process_bat_home_file(input_filepath, output_filepath):
     """
     Processes bat_home1.csv:
     1. Conditionally drops empty base columns and renames corresponding _input/_adj columns.
-    2. Adds new empty columns.
+    2. Adds new empty columns (excluding 'stadium').
     3. Deletes a specific column.
     """
     print(f"🔄 Processing {input_filepath} for bat_home2.csv...")
@@ -24,14 +24,13 @@ def process_bat_home_file(input_filepath, output_filepath):
     
     # Task 1: Conditional Drop and Rename for _input and _adj columns
     print("  Checking for _input and _adj columns for conditional processing...")
-    current_columns = df.columns.tolist() # Get columns list before potential drops/renames
+    current_columns = df.columns.tolist() 
     
     # Process _input columns first
     for col in current_columns:
         if col.endswith('_input'):
             base_col = col[:-len('_input')]
             if base_col in df.columns:
-                # Check if the base column exists and is entirely empty/NaN
                 if df[base_col].isnull().all():
                     columns_to_drop_later.append(base_col)
                     rename_map[col] = base_col
@@ -41,19 +40,11 @@ def process_bat_home_file(input_filepath, output_filepath):
             else:
                 print(f"    - No base column '{base_col}' found for '{col}'. Skipping conditional rename.")
 
-    # Process _adj columns (after potential renames from _input, ensure to work on current state)
-    # Re-iterate or make sure handling order doesn't cause issues if a column could be both,
-    # though usually suffixes are distinct.
-    # We will iterate through current columns again to catch new names if any, but unlikely for _adj if _input done first.
-    # It's safer to create a fresh list of columns after the first pass if column names might change and affect second pass.
-    # For independent _input and _adj checks, processing against original column list is fine.
-    for col in current_columns: # Process against original columns to avoid conflict if base_col was renamed from _input
+    # Process _adj columns
+    for col in current_columns:
         if col.endswith('_adj'):
             base_col = col[:-len('_adj')]
-            # Check if this base_col is not already marked for rename by an _input column
-            # If base_col was renamed from an _input, its original name wouldn't be 'base_col'.
-            # This logic assumes suffixes are mutually exclusive for a given base column (e.g., 'col_input' not 'col_adj').
-            if base_col in df.columns and base_col not in rename_map.values(): # Check if base_col exists and isn't a *new* name from a previous rename
+            if base_col in df.columns and base_col not in rename_map.values():
                 if df[base_col].isnull().all():
                     columns_to_drop_later.append(base_col)
                     rename_map[col] = base_col
@@ -62,9 +53,6 @@ def process_bat_home_file(input_filepath, output_filepath):
                     print(f"    - Base column '{base_col}' is NOT empty. Keeping both '{base_col}' and '{col}'.")
             elif base_col not in df.columns:
                 print(f"    - No base column '{base_col}' found for '{col}'. Skipping conditional rename.")
-            # If base_col is in df.columns but IS in rename_map.values(), it means it's a target name from an _input rename.
-            # In this scenario, we don't apply the _adj rename, implying _input takes precedence for that base name.
-            # The prompt implies simple suffix removal, not priority. Let's simplify to apply if target name is not already taken.
 
     # Apply all collected drops and renames
     if columns_to_drop_later:
@@ -77,8 +65,8 @@ def process_bat_home_file(input_filepath, output_filepath):
         print("  ✅ No conditional drops or renames applied.")
 
 
-    # Task 2: Add Columns headers
-    new_home_columns = ['location', 'notes', 'precipitation', 'stadium']
+    # Task 2: Add Columns headers (Removed 'stadium')
+    new_home_columns = ['location', 'notes', 'precipitation']
     for col in new_home_columns:
         if col not in df.columns:
             df[col] = None # Add as empty column
@@ -111,6 +99,7 @@ def process_bat_away_file(input_filepath, output_filepath):
     """
     Processes bat_away1.csv:
     1. Adds new empty columns.
+    2. Removes the 'stadium' column.
     """
     print(f"🔄 Processing {input_filepath} for bat_away2.csv...")
     try:
@@ -133,6 +122,16 @@ def process_bat_away_file(input_filepath, output_filepath):
             print(f"  ➕ Added column: '{col}'")
         else:
             print(f"  ⚠️ Column '{col}' already exists. Skipping addition.")
+
+    # NEW: Remove 'stadium' column
+    columns_to_delete_away = ['stadium']
+    for col in columns_to_delete_away:
+        if col in df.columns:
+            df.drop(columns=[col], inplace=True)
+            print(f"  🗑️ Deleted column: '{col}'")
+        else:
+            print(f"  ✅ Column '{col}' not found for deletion.")
+
 
     # Ensure output directory exists
     output_dir = os.path.dirname(output_filepath)
