@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main  # Ensure we’re on a real branch, not detached HEAD
+          ref: main # Ensure we’re on a real branch, not detached HEAD
 
       - name: Configure Git
         run: |
@@ -158,8 +158,8 @@ jobs:
           run_step clean_and_preprocess_batters.py
           run_step enrich_batters_away.py
           run_step cleanup_enriched_batters_away.py
-          run_step finalbatawp.py 
-          run_step finalbathwp.py# <--- Added this line
+          run_step finalbatawp.py
+          run_step finalbathwp.py
           # fixfilesfirst run_step prepopulate_batters_away.py
 
           {
@@ -190,8 +190,8 @@ jobs:
           git add data/end_chain/cleaned/*.csv || echo "No cleaned end_chain CSVs found or no changes"
           git add data/end_chain/cleaned/prep/*.csv || echo "No cleaned end_chain prep CSVs found or no changes"
           git add data/end_chain/cleaned/prep/bat_awp_cleaned.csv || echo "bat_awp_cleaned not found or no changes"
-          git add data/end_chain/final/finalbatawp.csv || echo "finalbatawp.csv not found or no changes" # <--- Added this line
-          git add data/end_chain/final/finalbathwp.csv || echo "finalbathwp.csv not found or no changes" # <--- Added this line
+          git add data/end_chain/final/finalbatawp.csv || echo "finalbatawp.csv not found or no changes"
+          git add data/end_chain/final/finalbathwp.csv || echo "finalbathwp.csv not found or no changes"
           git add summaries/summary.txt || echo "summary not found"
 
           echo "📄 Git status:"
