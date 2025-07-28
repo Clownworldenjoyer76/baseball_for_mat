@@ -37,7 +37,7 @@ for file_path, columns in source_files:
         for col in shared_cols:
             update_col = f"{col}_new"
             df[col] = merged[update_col].combine_first(df[col])
-        df = df.drop(columns=[f"{col}_new" for col in shared_cols])
+        df = df.drop(columns=[f"{col}_new" for col in shared_cols if f"{col}_new" in merged.columns])
 
 # Save final output
 df.to_csv(OUTPUT_FILE, index=False)
