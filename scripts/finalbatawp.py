@@ -56,7 +56,7 @@ def final_bat_awp():
         how='left'
     )
 
-    # Define the output path and filename
+    # Define the output path and filename for finalbatawp.csv
     output_directory = 'data/end_chain/final'
     output_filename = 'finalbatawp.csv'
     output_filepath = os.path.join(output_directory, output_filename)
@@ -68,14 +68,51 @@ def final_bat_awp():
     final_df.to_csv(output_filepath, index=False)
     print(f"✅ Successfully created '{output_filepath}'")
 
-    # Git commit and push
+    # --- New Section for bat_hwp_cleaned.csv normalization ---
+    hwp_input_filepath = 'data/end_chain/cleaned/prep/bat_hwp_cleaned.csv'
+    hwp_output_filepath = 'data/end_chain/cleaned/bat_awp_clean2.csv'
+
     try:
+        hwp_df = pd.read_csv(hwp_input_filepath)
+
+        # Normalize 'team' column: capitalize first letter, remove trailing commas/whitespace
+        if 'team' in hwp_df.columns:
+            hwp_df['team'] = hwp_df['team'].astype(str).str.capitalize().str.replace(r',$', '', regex=True).str.strip()
+            print(f"✅ Normalized 'team' column in '{hwp_input_filepath}'.")
+        else:
+            print(f"⚠️ Warning: 'team' column not found in '{hwp_input_filepath}'. Skipping normalization.")
+
+        # Ensure output directory for bat_awp_clean2.csv exists
+        os.makedirs(os.path.dirname(hwp_output_filepath), exist_ok=True)
+
+        # Output updated file
+        hwp_df.to_csv(hwp_output_filepath, index=False)
+        print(f"✅ Successfully created '{hwp_output_filepath}' with normalized data.")
+
+    except FileNotFoundError:
+        print(f"❌ Error: Input file for normalization not found: '{hwp_input_filepath}'.")
+    except Exception as e:
+        print(f"❌ Error during bat_hwp_cleaned.csv normalization: {e}")
+    # --- End of New Section ---
+
+    # Git commit and push for both files
+    try:
+        # Add finalbatawp.csv
         subprocess.run(["git", "add", output_filepath], check=True)
-        subprocess.run(["git", "commit", "-m", f"📊 Auto-update {output_filename}"], check=True)
+        # Add bat_awp_clean2.csv
+        subprocess.run(["git", "add", hwp_output_filepath], check=True)
+
+        commit_message = f"📊 Auto-update {output_filename} and normalize bat_hwp_cleaned.csv"
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Pushed to repository.")
     except subprocess.CalledProcessError as e:
         print(f"❌ Git push failed: {e}")
+        # Detailed error output for debugging
+        if e.stderr:
+            print("Git stderr:", e.stderr.decode())
+        if e.stdout:
+            print("Git stdout:", e.stdout.decode())
 
 if __name__ == "__main__":
     final_bat_awp()
