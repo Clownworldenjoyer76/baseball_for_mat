@@ -100,6 +100,7 @@ def process_bat_away_file(input_filepath, output_filepath):
     Processes bat_away1.csv:
     1. Adds new empty columns (excluding 'pitcher_home' and 'pitcher_away').
     2. Removes the 'stadium' column.
+    3. Renames pitcher_away_games and pitcher_home_games columns.
     """
     print(f"🔄 Processing {input_filepath} for bat_away2.csv...")
     try:
@@ -132,6 +133,18 @@ def process_bat_away_file(input_filepath, output_filepath):
         else:
             print(f"  ✅ Column '{col}' not found for deletion.")
 
+    # NEW: Update headers to remove '_games' suffix
+    rename_games_columns = {}
+    if 'pitcher_away_games' in df.columns:
+        rename_games_columns['pitcher_away_games'] = 'pitcher_away'
+    if 'pitcher_home_games' in df.columns:
+        rename_games_columns['pitcher_home_games'] = 'pitcher_home'
+
+    if rename_games_columns:
+        df.rename(columns=rename_games_columns, inplace=True)
+        print(f"  ✏️ Renamed columns (removed '_games' suffix): {rename_games_columns}")
+    else:
+        print("  ✅ No '_games' suffix columns found to rename.")
 
     # Ensure output directory exists
     output_dir = os.path.dirname(output_filepath)
@@ -164,3 +177,6 @@ if __name__ == "__main__":
     process_bat_away_file(input_bat_away1, output_bat_away2)
 
     print("\nProcessing complete for bat_2.py.")
+
+
+
