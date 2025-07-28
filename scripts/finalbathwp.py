@@ -74,7 +74,7 @@ def final_bat_hwp():
     )
 
     # Merge 3: weather_input.csv for city, state, timezone, Park Factor, etc.
-    # Use `home_team` from final_df to match in weather_input_df
+    # IMPORTANT: 'lat' and 'lon' must exist in data/weather_input.csv for this merge to work without KeyError.
     weather_input_cols = [
         'home_team', 'city', 'state', 'timezone', 'Park Factor', 'is_dome',
         'lat', 'lon', 'time_of_day'
@@ -88,13 +88,6 @@ def final_bat_hwp():
     )
 
     # Merge 4: batters_home_weather.csv for adj_woba_weather
-    # Merge on 'last_name', 'first_name' in final_df to 'name' in batters_home_weather_df
-    # Assuming 'name' in batters_home_weather.csv is a concatenated 'first_name last_name' or similar.
-    # We need to create a 'full_name' in final_df to match 'name' in batters_home_weather_df.
-    # Or, if batters_home_weather_df has 'last_name' and 'first_name' columns, merge directly.
-    # For now, let's assume 'name' in batters_home_weather_df is unique and matchable to (first_name, last_name)
-    # A safer approach is to ensure unique identifiers or create a combined name.
-    # Let's create a temporary 'full_name' for merging.
     if 'last_name' in final_df.columns and 'first_name' in final_df.columns:
         final_df['full_name_merge'] = final_df['first_name'].astype(str) + ' ' + final_df['last_name'].astype(str)
         batters_home_weather_df['name_lower'] = batters_home_weather_df['name'].astype(str).str.lower()
@@ -113,7 +106,6 @@ def final_bat_hwp():
 
 
     # Merge 5: batters_home_adjusted.csv for adj_woba_combined
-    # Merge on 'last_name', 'first_name' in final_df to 'name' in batters_home_adjusted_df
     if 'last_name' in final_df.columns and 'first_name' in final_df.columns:
         final_df['full_name_merge'] = final_df['first_name'].astype(str) + ' ' + final_df['last_name'].astype(str)
         batters_home_adjusted_df['name_lower'] = batters_home_adjusted_df['name'].astype(str).str.lower()
@@ -130,6 +122,20 @@ def final_bat_hwp():
         final_df.drop(['full_name_merge', 'full_name_merge_lower', 'name_lower'], axis=1, inplace=True, errors='ignore')
     else:
         print("⚠️ Warning: 'last_name' or 'first_name' not found in bat_awp_clean2.csv. Skipping adj_woba_combined merge.")
+
+    # --- NEW: Rename 'lat' to 'latitude' and 'lon' to 'longitude' ---
+    # Only attempt to rename if the columns exist in the final_df
+    rename_mapping = {}
+    if 'lat' in final_df.columns:
+        rename_mapping['lat'] = 'latitude'
+    if 'lon' in final_df.columns:
+        rename_mapping['lon'] = 'longitude'
+
+    if rename_mapping: # Only call rename if there's something to rename
+        final_df.rename(columns=rename_mapping, inplace=True)
+        print(f"✅ Renamed columns: {rename_mapping}")
+    else:
+        print("⚠️ Warning: 'lat' or 'lon' columns not found in the final DataFrame for renaming.")
 
 
     # Ensure the output directory exists
@@ -159,4 +165,3 @@ def final_bat_hwp():
 
 if __name__ == "__main__":
     final_bat_hwp()
-
