@@ -1,0 +1,106 @@
+import pandas as pd
+
+def update_bat_away(
+    bat_away2_path="data/end_chain/final/updating/bat_away2.csv",
+    stadium_metadata_path="data/Data/stadium_metadata.csv",
+    games_today_cleaned_path="data/end_chain/cleaned/games_today_cleaned.csv",
+    weather_adjustments_path="data/weather_adjustments.csv",
+    weather_input_path="data/weather_input.csv",
+    output_path="data/end_chain/final/updating/bat_away3.csv"
+):
+    """
+    Updates rows in bat_away2.csv by matching on the 'away_team' column
+    using data from several source files.
+
+    Args:
+        bat_away2_path (str): Path to the initial bat_away2.csv file.
+        stadium_metadata_path (str): Path to the stadium_metadata.csv file.
+        games_today_cleaned_path (str): Path to the games_today_cleaned.csv file.
+        weather_adjustments_path (str): Path to the weather_adjustments.csv file.
+        weather_input_path (str): Path to the weather_input.csv file.
+        output_path (str): Path to save the updated bat_away3.csv file.
+    """
+
+    try:
+        df_bat_away = pd.read_csv(bat_away2_path)
+    except FileNotFoundError:
+        print(f"Error: {bat_away2_path} not found. Please ensure the file exists.")
+        return
+
+    original_columns = df_bat_away.columns.tolist()
+
+    # Process stadium_metadata.csv
+    try:
+        df_stadium = pd.read_csv(stadium_metadata_path)
+        cols_to_update_stadium = ['timezone', 'is_dome', 'game_time']
+        for col in cols_to_update_stadium:
+            if col in original_columns:
+                df_bat_away = df_bat_away.set_index('away_team').combine_first(
+                    df_stadium.set_index('team').rename_axis('away_team')[[col]]
+                ).reset_index()
+            else:
+                print(f"Skipping column '{col}' from '{stadium_metadata_path}' as it does not exist in '{bat_away2_path}'.")
+    except FileNotFoundError:
+        print(f"Warning: {stadium_metadata_path} not found. Skipping this source.")
+    except KeyError as e:
+        print(f"Warning: Missing expected column in {stadium_metadata_path}: {e}. Skipping update from this file.")
+
+
+    # Process games_today_cleaned.csv
+    try:
+        df_games_today = pd.read_csv(games_today_cleaned_path)
+        cols_to_update_games = ['home_team']
+        for col in cols_to_update_games:
+            if col in original_columns:
+                df_bat_away = df_bat_away.set_index('away_team').combine_first(
+                    df_games_today.set_index('away_team')[[col]]
+                ).reset_index()
+            else:
+                print(f"Skipping column '{col}' from '{games_today_cleaned_path}' as it does not exist in '{bat_away2_path}'.")
+    except FileNotFoundError:
+        print(f"Warning: {games_today_cleaned_path} not found. Skipping this source.")
+    except KeyError as e:
+        print(f"Warning: Missing expected column in {games_today_cleaned_path}: {e}. Skipping update from this file.")
+
+
+    # Process weather_adjustments.csv
+    try:
+        df_weather_adj = pd.read_csv(weather_adjustments_path)
+        cols_to_update_weather_adj = [
+            'condition', 'humidity', 'notes', 'precipitation',
+            'temperature', 'wind_direction', 'wind_speed', 'location'
+        ]
+        for col in cols_to_update_weather_adj:
+            if col in original_columns:
+                df_bat_away = df_bat_away.set_index('away_team').combine_first(
+                    df_weather_adj.set_index('team').rename_axis('away_team')[[col]]
+                ).reset_index()
+            else:
+                print(f"Skipping column '{col}' from '{weather_adjustments_path}' as it does not exist in '{bat_away2_path}'.")
+    except FileNotFoundError:
+        print(f"Warning: {weather_adjustments_path} not found. Skipping this source.")
+    except KeyError as e:
+        print(f"Warning: Missing expected column in {weather_adjustments_path}: {e}. Skipping update from this file.")
+
+    # Process weather_input.csv (this file is processed but no columns are explicitly specified in the request
+    # to be copied, so it will not update any columns unless specified.
+    # If the intent was to update existing columns based on this file as well,
+    # please specify the columns. For now, it's included in the sequence but no update action is performed.)
+    try:
+        pd.read_csv(weather_input_path)
+        # No columns specified to copy from weather_input.csv, so no update logic here.
+    except FileNotFoundError:
+        print(f"Warning: {weather_input_path} not found. Skipping this source.")
+
+
+    # Ensure all original columns are preserved and no new ones are added
+    df_bat_away = df_bat_away[original_columns]
+
+    try:
+        df_bat_away.to_csv(output_path, index=False)
+        print(f"Successfully updated '{bat_away2_path}' and saved to '{output_path}'.")
+    except Exception as e:
+        print(f"Error saving the output file to '{output_path}': {e}")
+
+if __name__ == "__main__":
+    update_bat_away()
