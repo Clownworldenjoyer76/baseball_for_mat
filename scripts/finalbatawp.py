@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 def final_bat_awp():
     """
@@ -27,8 +28,7 @@ def final_bat_awp():
         return
 
     # Merge with games_today_cleaned.csv to get home_team and game_time
-    # Assuming 'away_team' in bat_awp_df corresponds to 'away_team' in games_today_df
-    # and we need 'home_team' and 'game_time' for the corresponding away_team's game.
+    # Merge on away_team from bat_awp_df to get home_team and game_time from games_today_df
     final_df = pd.merge(
         bat_awp_df,
         games_today_df[['away_team', 'home_team', 'game_time']],
@@ -37,7 +37,7 @@ def final_bat_awp():
     )
 
     # Merge with weather_adjustments.csv to get weather-related information
-    # Assuming 'away_team' in final_df corresponds to 'away_team' in weather_adjustments_df
+    # Merge on away_team from bat_awp_df to get weather details from weather_adjustments_df
     weather_cols_to_merge = [
         'away_team', 'venue', 'location', 'temperature', 'wind_speed',
         'wind_direction', 'humidity', 'precipitation', 'condition', 'notes'
@@ -50,23 +50,21 @@ def final_bat_awp():
     )
 
     # Merge with weather_input.csv to get Park Factor
-    # Assuming 'away_team' in final_df corresponds to 'team' in weather_input_df
+    # Merge on away_team (present in both final_df and weather_input_df) to get 'Park Factor'
     final_df = pd.merge(
         final_df,
-        weather_input_df[['team', 'Park Factor']],
-        left_on='away_team',
-        right_on='team',
+        # Select 'away_team' and 'Park Factor' from weather_input_df
+        weather_input_df[['away_team', 'Park Factor']],
+        on='away_team', # Merge directly on 'away_team' as it exists in both
         how='left'
     )
-    final_df.drop('team', axis=1, inplace=True) # Drop the redundant 'team' column from weather_input_df
 
     # Define the output path and filename
     output_directory = 'data/end_chain/final'
     output_filename = 'finalbatawp.csv'
-    output_filepath = f"{output_directory}/{output_filename}"
+    output_filepath = os.path.join(output_directory, output_filename)
 
     # Ensure the output directory exists
-    import os
     os.makedirs(output_directory, exist_ok=True)
 
     # Save the final DataFrame to a CSV file
