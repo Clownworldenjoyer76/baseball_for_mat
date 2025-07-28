@@ -157,7 +157,7 @@ jobs:
           run_step clean_and_preprocess_batters.py
           run_step enrich_batters_away.py
           run_step cleanup_enriched_batters_away.py
-          run_step prepopulate_batters_away.py
+          # fixfilesfirst run_step prepopulate_batters_away.py
 
           {
             echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
