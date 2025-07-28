@@ -6,8 +6,7 @@ def process_bat_home_file(input_filepath, output_filepath):
     """
     Processes bat_home1.csv:
     1. Conditionally drops empty base columns and renames corresponding _input/_adj columns.
-    2. Adds new empty columns (excluding 'stadium').
-    3. Deletes a specific column.
+    2. Adds new empty columns.
     """
     print(f"🔄 Processing {input_filepath} for bat_home2.csv...")
     try:
@@ -75,14 +74,10 @@ def process_bat_home_file(input_filepath, output_filepath):
             print(f"  ⚠️ Column '{col}' already exists. Skipping addition.")
 
 
-    # Task 3: Delete Columns
-    columns_to_delete_home = ['away_team_games']
-    for col in columns_to_delete_home:
-        if col in df.columns:
-            df.drop(columns=[col], inplace=True)
-            print(f"  🗑️ Deleted column: '{col}'")
-        else:
-            print(f"  ✅ Column '{col}' not found for deletion.")
+    # Task 3: Delete Columns (removed away_team_games)
+    # The section to delete 'away_team_games' has been removed.
+    print("  ✅ Skipping deletion of 'away_team_games' column as requested.")
+
 
     # Ensure output directory exists
     output_dir = os.path.dirname(output_filepath)
@@ -177,6 +172,3 @@ if __name__ == "__main__":
     process_bat_away_file(input_bat_away1, output_bat_away2)
 
     print("\nProcessing complete for bat_2.py.")
-
-
-
