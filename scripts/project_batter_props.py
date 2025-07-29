@@ -1,75 +1,71 @@
-# scripts/project_batter_props.py
+# project_batter_props.py
 
 import pandas as pd
 from pathlib import Path
-import os
 
-# --- File Paths ---
-HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
-AWAY_FILE = Path("data/end_chain/final/updating/bat_away3.csv")
-PITCHERS_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
-OUTPUT_DIR = Path("data/end_chain/complete")
-OUTPUT_FILE = OUTPUT_DIR / "batter_prop_projections.csv"
+BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away3.csv")
+PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
+OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
-# --- Utility ---
-def normalize_name(name):
-    if not isinstance(name, str):
-        return ""
-    name = name.replace("’", "'").replace("`", "'").strip().rstrip(',')
-    return name.lower()
+def load_csv(path):
+    if not path.exists():
+        raise FileNotFoundError(f"Missing file: {path}")
+    return pd.read_csv(path)
 
-# --- Prop Projection Logic ---
-def project_batter_props(df: pd.DataFrame, pitchers_df: pd.DataFrame, side: str) -> pd.DataFrame:
-    pitcher_col = f"pitcher_{side}"
+def project_batter_props(df, pitchers, context):
+    if context == "home":
+        key_col = "pitcher_away"
+    else:
+        key_col = "pitcher_home"
 
-    # Normalize for join
-    df["pitcher_normalized"] = df[pitcher_col].astype(str).apply(normalize_name)
-    pitchers_df["name_normalized"] = pitchers_df["name"].astype(str).apply(normalize_name)
+    df["name_key"] = df[key_col].astype(str).str.strip().str.lower()
+    pitchers["name_key"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
-    # Merge with pitcher data
-    df = df.merge(pitchers_df, how="left", left_on="pitcher_normalized", right_on="name_normalized", suffixes=("", "_pitcher"))
+    df = df.merge(
+        pitchers.drop(columns=["team_context", "team"], errors="ignore"),
+        on="name_key",
+        how="left",
+        suffixes=("", "_pitcher")
+    )
 
-    # Basic projection logic
+    # Create safe fillers if column missing or not numeric
+    def safe_col(df, col, default=0):
+        return df[col].fillna(0) if col in df.columns else pd.Series([default] * len(df))
+
     df["projected_total_bases"] = (
-        df.get("adj_woba_combined", 0) * 4 +
-        df.get("hit_weather", 0) * 1.5 +
-        df.get("innings_pitched", 0).fillna(0) * 0.1 -
-        df.get("walks", 0).fillna(0) * 0.05
+        df["adj_woba_combined"].fillna(0) * 1.75 +
+        safe_col(df, "whiff%", 0) * -0.1 +
+        safe_col(df, "zone_swing_miss%", 0) * -0.05 +
+        safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
+        safe_col(df, "gb%", 0) * -0.02 +
+        safe_col(df, "fb%", 0) * 0.03 +
+        safe_col(df, "innings_pitched", 0) * -0.01 +
+        safe_col(df, "strikeouts", 0) * 0.005
     ).round(2)
 
-    df["projected_hits"] = (
-        df.get("adj_woba_weather", 0) * 3 +
-        df.get("whiff%", 0).fillna(0) * -0.1 +
-        df.get("strikeouts", 0).fillna(0) * -0.05
-    ).round(2)
+    df["prop_type"] = "total_bases"
+    df["context"] = context
 
-    df["projected_rbis"] = (
-        df.get("adj_woba_combined", 0) * 2 +
-        df.get("earned_runs", 0).fillna(0) * 0.25
-    ).round(2)
+    return df[["name", "team", "projected_total_bases", "prop_type", "context"]]
 
-    df["side"] = side
-    return df
-
-# --- Main Execution ---
 def main():
-    if not OUTPUT_DIR.exists():
-        OUTPUT_DIR.mkdir(parents=True)
+    print("🔄 Loading input files...")
+    bat_home = load_csv(BAT_HOME_FILE)
+    bat_away = load_csv(BAT_AWAY_FILE)
+    pitchers = load_csv(PITCHERS_FILE)
 
-    if not (HOME_FILE.exists() and AWAY_FILE.exists() and PITCHERS_FILE.exists()):
-        print("❌ Missing input files.")
-        return
-
-    bat_home = pd.read_csv(HOME_FILE)
-    bat_away = pd.read_csv(AWAY_FILE)
-    pitchers = pd.read_csv(PITCHERS_FILE)
-
+    print("📊 Projecting props for home batters...")
     home_proj = project_batter_props(bat_home, pitchers, "home")
+
+    print("📊 Projecting props for away batters...")
     away_proj = project_batter_props(bat_away, pitchers, "away")
 
     combined = pd.concat([home_proj, away_proj], ignore_index=True)
+
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     combined.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Prop projections saved to: {OUTPUT_FILE}")
+    print(f"✅ Projections saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
