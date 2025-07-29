@@ -27,24 +27,19 @@ def project_batter_props(df, pitchers, context, fallback):
         how="left"
     )
 
-    # Normalize and align fallback names
     fallback["name_key"] = fallback["name"].astype(str).str.strip().str.lower()
-    df["batter_name"] = df["batter_name"].astype(str).str.strip()
-    df["name_key"] = df["batter_name"].str.lower()
+    df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip().str.lower()
 
     df = df.merge(
         fallback[["name_key", "b_total_bases", "b_rbi"]],
-        on="name_key",
-        how="left",
-        suffixes=("", "_fallback")
+        left_on="name_key_batter",
+        right_on="name_key",
+        how="left"
     )
 
-    for col in ["b_total_bases", "b_rbi"]:
-        fallback_col = f"{col}_fallback"
-        if fallback_col in df.columns:
-            df[col] = df[col].fillna(df[fallback_col])
+    df["b_total_bases"] = df["b_total_bases"].fillna(0)
+    df["b_rbi"] = df["b_rbi"].fillna(0)
 
-    # Calculate props
     df["projected_total_bases"] = (
         safe_col(df, "adj_woba_combined", 0) * 1.75 +
         safe_col(df, "whiff%", 0) * -0.1 +
@@ -67,12 +62,11 @@ def project_batter_props(df, pitchers, context, fallback):
 
     df["prop_type"] = "total_bases"
     df["context"] = context
-    df = df.rename(columns={"batter_name": "name"})
 
     return df[[
-        "name", "team", "projected_total_bases", "projected_hits",
+        "last_name, first_name", "team", "projected_total_bases", "projected_hits",
         "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
-    ]]
+    ]].rename(columns={"last_name, first_name": "name"})
 
 def main():
     print("🔄 Loading input files...")
