@@ -3,9 +3,9 @@
 import pandas as pd
 from pathlib import Path
 
-# Define input file paths
-HWP_FILE = Path("data/end_chain/pit_hwp.csv")
-AWP_FILE = Path("data/end_chain/pit_awp.csv")
+# Corrected input file paths
+HWP_FILE = Path("data/end_chain/first/pit_hwp.csv")
+AWP_FILE = Path("data/end_chain/first/pit_awp.csv")
 XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
 OUTPUT_FILE = Path("data/end_chain/final/startingpitchers.csv")
 
@@ -20,32 +20,38 @@ def normalize_name(name):
     return name.strip().lower()
 
 def main():
-    # Load HWP and AWP pitcher data
+    # Load home and away pitcher data
     hwp = load_csv(HWP_FILE)
     awp = load_csv(AWP_FILE)
 
-    # Add context column
+    # Add context columns
     hwp["team_context"] = "home"
     awp["team_context"] = "away"
 
-    # Standardize column for merging
+    # Standardize 'team' column for merge alignment
     hwp.rename(columns={"home_team": "team"}, inplace=True)
     awp.rename(columns={"away_team": "team"}, inplace=True)
 
-    # Combine today's pitchers
+    # Combine both datasets
     today_pitchers = pd.concat([hwp, awp], ignore_index=True)
     today_pitchers["name_key"] = today_pitchers["last_name, first_name"].apply(normalize_name)
 
-    # Load pitcher stat lines
+    # Load xtra pitcher stats
     xtra = load_csv(XTRA_FILE)
     xtra["name_key"] = xtra["last_name, first_name"].apply(normalize_name)
 
-    # Drop duplicate columns if necessary
+    # Ensure 'team' exists in xtra
     if "team" not in xtra.columns:
         xtra["team"] = None
 
-    # Merge stat data into today's pitchers
-    merged = pd.merge(today_pitchers, xtra.drop(columns=["last_name, first_name", "name"]), on="name_key", how="left", suffixes=("", "_xtra"))
+    # Merge stats into today's pitchers
+    merged = pd.merge(
+        today_pitchers,
+        xtra.drop(columns=["last_name, first_name", "name"], errors="ignore"),
+        on="name_key",
+        how="left",
+        suffixes=("", "_xtra")
+    )
 
     # Drop helper column
     merged.drop(columns=["name_key"], inplace=True)
