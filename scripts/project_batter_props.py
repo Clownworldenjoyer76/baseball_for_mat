@@ -18,27 +18,27 @@ def safe_col(df, col, default=0):
 
 def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
-    df["name_key"] = df[key_col].astype(str).str.strip().str.lower()
-    pitchers["name_key"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
+    df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
+    pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
     df = df.merge(
         pitchers.drop(columns=["team_context", "team"], errors="ignore"),
-        on="name_key",
+        on="name_key_pitcher",
         how="left"
     )
 
-    fallback["name_key"] = fallback["name"].astype(str).str.strip().str.lower()
     df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip().str.lower()
+    fallback["name_key_batter"] = fallback["name"].astype(str).str.strip().str.lower()
 
     df = df.merge(
-        fallback[["name_key", "b_total_bases", "b_rbi"]],
-        left_on="name_key_batter",
-        right_on="name_key",
+        fallback[["name_key_batter", "b_total_bases", "b_rbi"]],
+        on="name_key_batter",
         how="left"
     )
 
-    df["b_total_bases"] = df["b_total_bases"].fillna(0)
-    df["b_rbi"] = df["b_rbi"].fillna(0)
+    for col in ["b_total_bases", "b_rbi"]:
+        if col in df.columns:
+            df[col] = df[col].fillna(0)
 
     df["projected_total_bases"] = (
         safe_col(df, "adj_woba_combined", 0) * 1.75 +
@@ -66,7 +66,7 @@ def project_batter_props(df, pitchers, context, fallback):
     return df[[
         "last_name, first_name", "team", "projected_total_bases", "projected_hits",
         "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
-    ]].rename(columns={"last_name, first_name": "name"})
+    ]]
 
 def main():
     print("🔄 Loading input files...")
@@ -87,3 +87,4 @@ def main():
     print(f"✅ Projections saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
+    main()
