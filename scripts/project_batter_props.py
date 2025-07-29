@@ -3,10 +3,10 @@ import pandas as pd
 from pathlib import Path
 
 # File paths (updated)
-BAT_HOME_FILE = Path("data/end_chain/final/normalize_end/batter_home_final.csv")
-BAT_AWAY_FILE = Path("data/end_chain/final/normalize_end/batter_away_final.csv")
-PITCHERS_FILE = Path("data/end_chain/final/normalize_end/startingpitchers_final.csv")
-FALLBACK_FILE = Path("data/end_chain/final/normalize_end/bat_today_final.csv")
+BAT_HOME_FILE = Path("data/end_chain/final/batter_home_final.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/batter_away_final.csv")
+PITCHERS_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
+FALLBACK_FILE = Path("data/end_chain/final/bat_today_final.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
 def load_csv(path):
