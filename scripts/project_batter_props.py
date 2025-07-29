@@ -14,9 +14,9 @@ def load_csv(path):
     return pd.read_csv(path)
 
 def safe_col(df, col, default=0):
-    return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
+    return df[col].fillna(0) if col in df.columns else pd.Series([default] * len(df))
 
-def project_batter_props(df, pitchers, context, fallback_df):
+def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
     df["name_key"] = df[key_col].astype(str).str.strip().str.lower()
     pitchers["name_key"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
@@ -24,27 +24,29 @@ def project_batter_props(df, pitchers, context, fallback_df):
     df = df.merge(
         pitchers.drop(columns=["team_context", "team"], errors="ignore"),
         on="name_key",
-        how="left",
-        suffixes=("", "_pitcher")
+        how="left"
     )
 
-    # Merge fallback data for b_total_bases and b_rbi
-    fallback_df = fallback_df.rename(columns={"name": "batter_name"})
+    # Fallback for b_total_bases and b_rbi from fallback file
     df = df.rename(columns={"name": "batter_name"})
-    df = df.merge(
-        fallback_df[["batter_name", "b_total_bases", "b_rbi"]],
-        on="batter_name",
-        how="left",
-        suffixes=("", "_fb")
-    )
+    fallback = fallback.rename(columns={"name": "batter_name"})
+    fallback_trimmed = fallback[["batter_name", "b_total_bases", "b_rbi"]]
 
-    # Use fallback values if originals are missing or null
-    for col in ["b_total_bases", "b_rbi"]:
-        df[col] = df[col].combine_first(df[f"{col}_fb"])
+    df = df.merge(fallback_trimmed, on="batter_name", how="left")
 
-    # Calculate projections
+    if "b_total_bases" not in df.columns:
+        df["b_total_bases"] = fallback["b_total_bases"]
+    else:
+        df["b_total_bases"] = df["b_total_bases"].combine_first(fallback["b_total_bases"])
+
+    if "b_rbi" not in df.columns:
+        df["b_rbi"] = fallback["b_rbi"]
+    else:
+        df["b_rbi"] = df["b_rbi"].combine_first(fallback["b_rbi"])
+
+    # Calculate props
     df["projected_total_bases"] = (
-        safe_col(df, "adj_woba_combined", 0) * 1.75 +
+        df["adj_woba_combined"].fillna(0) * 1.75 +
         safe_col(df, "whiff%", 0) * -0.1 +
         safe_col(df, "zone_swing_miss%", 0) * -0.05 +
         safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
@@ -57,10 +59,10 @@ def project_batter_props(df, pitchers, context, fallback_df):
     df["projected_hits"] = safe_col(df, "hit", 0).round(2)
     df["projected_walks"] = safe_col(df, "bb_percent", 0).round(2)
     df["projected_singles"] = (
-        df["projected_hits"]
-        - safe_col(df, "double", 0)
-        - safe_col(df, "triple", 0)
-        - safe_col(df, "home_run", 0)
+        df["projected_hits"] -
+        safe_col(df, "double", 0) -
+        safe_col(df, "triple", 0) -
+        safe_col(df, "home_run", 0)
     ).clip(lower=0).round(2)
 
     df["prop_type"] = "total_bases"
@@ -85,8 +87,9 @@ def main():
     print("📊 Projecting props for away batters...")
     away_proj = project_batter_props(bat_away, pitchers, "away", fallback)
 
+    full = pd.concat([home_proj, away_proj], ignore_index=True)
+    full.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Projections saved to: {OUTPUT_FILE}")
-    pd.concat([home_proj, away_proj], ignore_index=True).to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
     main()
