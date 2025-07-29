@@ -2,10 +2,13 @@
 import pandas as pd
 from pathlib import Path
 
-# Import functions from your new modules
-from .utils import load_csv
-from .data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
-from .projection_formulas import calculate_all_projections
+# --- CHANGE THESE IMPORTS ---
+# From: from .utils import load_csv
+# To:   from utils import load_csv
+from utils import load_csv
+from data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
+from projection_formulas import calculate_all_projections
+# ----------------------------
 
 # File paths (remain the same)
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
