@@ -1,12 +1,11 @@
 import pandas as pd
 from pathlib import Path
-import sys
 
 # File paths
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
 BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
-FALLBACK_FILE = Path("data/end_chain/bat_today.csv")
+FALLBACK_FILE = Path("data/end_chain/bat_today.csv")  # updated path
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
 def load_csv(path):
@@ -17,34 +16,21 @@ def load_csv(path):
 def safe_col(df, col, default=0):
     return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
 
-def check_column(df, col, df_name):
-    if col not in df.columns:
-        print(f"❌ Column '{col}' NOT FOUND in {df_name}. Columns present: {list(df.columns)}")
-        sys.exit(1)
-    else:
-        print(f"✅ Column '{col}' found in {df_name}")
-
 def project_batter_props(df, pitchers, context, fallback):
-    check_column(df, "last_name, first_name", f"{context} batters")
-    check_column(pitchers, "last_name, first_name", "pitchers")
-    check_column(fallback, "last_name, first_name", "fallback")
-
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
-    df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
-    pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
+    # Match on pitcher name
     df = df.merge(
         pitchers.drop(columns=["team_context", "team"], errors="ignore"),
-        on="name_key_pitcher",
+        left_on=key_col,
+        right_on="last_name, first_name",
         how="left"
     )
 
-    df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip().str.lower()
-    fallback["name_key_batter"] = fallback["last_name, first_name"].astype(str).str.strip().str.lower()
-
+    # Match on batter name (no transformation)
     df = df.merge(
-        fallback[["name_key_batter", "b_total_bases", "b_rbi"]],
-        on="name_key_batter",
+        fallback[["last_name, first_name", "b_total_bases", "b_rbi"]],
+        on="last_name, first_name",
         how="left"
     )
 
