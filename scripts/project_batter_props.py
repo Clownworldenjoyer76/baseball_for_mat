@@ -87,4 +87,3 @@ def main():
     print(f"✅ Projections saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
-    main()
