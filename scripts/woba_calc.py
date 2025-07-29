@@ -1,5 +1,3 @@
-# woba_calc.py
-
 import pandas as pd
 from pathlib import Path
 
@@ -27,7 +25,7 @@ def apply_woba_adjustments(file_path):
 def main():
     files = [
         Path("data/end_chain/final/updating/bat_home3.csv"),
-        Path("data/end_chain/final/updating/bat_away3.csv")
+        Path("data/end_chain/final/updating/bat_away4.csv")
     ]
 
     for file in files:
