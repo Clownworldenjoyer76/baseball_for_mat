@@ -11,7 +11,13 @@ OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 def load_csv(path):
     if not path.exists():
         raise FileNotFoundError(f"Missing file: {path}")
-    return pd.read_csv(path)
+    # Try different encodings if default fails, though 'utf-8' is usually fine
+    try:
+        return pd.read_csv(path, encoding='utf-8')
+    except UnicodeDecodeError:
+        print(f"Warning: UTF-8 decode failed for {path}, trying 'latin1'.")
+        return pd.read_csv(path, encoding='latin1')
+
 
 def safe_col(df, col, default=0):
     return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
@@ -19,24 +25,75 @@ def safe_col(df, col, default=0):
 def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
 
+    print(f"\n--- Entering project_batter_props (context: {context}) ---")
+
+    # --- Aggressive Column Name Cleaning for All DataFrames ---
+    # Apply to df (bat_home/away)
+    df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.replace(r'\s+', ' ', regex=True) # Replace multiple spaces with single space
+
+    # Apply to pitchers
+    pitchers.columns = pitchers.columns.str.strip()
+    pitchers.columns = pitchers.columns.str.replace(r'\s+', ' ', regex=True)
+
+    # Apply to fallback
+    fallback.columns = fallback.columns.str.strip()
+    fallback.columns = fallback.columns.str.replace(r'\s+', ' ', regex=True)
+    # --- End of Aggressive Cleaning ---
+
+
+    print("Columns in input DF (bat_home/away) after cleaning:", df.columns.tolist())
+    print("Columns in PITCHERS after cleaning:", pitchers.columns.tolist())
+    print("Columns in FALLBACK after cleaning:", fallback.columns.tolist())
+
+    # --- Explicit Check before the first merge ---
+    expected_pitcher_col = "last_name, first_name"
+    if expected_pitcher_col not in pitchers.columns:
+        print(f"\nCRITICAL ERROR: '{expected_pitcher_col}' still not found in PITCHERS DataFrame after cleaning!")
+        print(f"Actual columns in PITCHERS: {pitchers.columns.tolist()}")
+        raise KeyError(f"Missing expected column: '{expected_pitcher_col}' in PITCHERS for merge.")
+
     # Match on pitcher name
+    pitchers_for_merge = pitchers.drop(columns=["team_context", "team"], errors="ignore")
+    print("Columns in PITCHERS AFTER drop for merge 1:", pitchers_for_merge.columns.tolist())
+
+    # Re-check after dropping just to be absolutely certain it wasn't dropped somehow (highly unlikely with errors='ignore')
+    if expected_pitcher_col not in pitchers_for_merge.columns:
+        print(f"\nCRITICAL ERROR: '{expected_pitcher_col}' *still* not found in PITCHERS AFTER DROP!")
+        print(f"Actual columns in PITCHERS after drop: {pitchers_for_merge.columns.tolist()}")
+        raise KeyError(f"Missing expected column: '{expected_pitcher_col}' in PITCHERS after drop for merge.")
+
+
     df = df.merge(
-        pitchers.drop(columns=["team_context", "team"], errors="ignore"),
+        pitchers_for_merge,
         left_on=key_col,
-        right_on="last_name, first_name",
+        right_on=expected_pitcher_col, # Use the variable for clarity
         how="left"
     )
+    print("Columns in DF after first merge:", df.columns.tolist())
+
+
+    # --- Explicit Check before the second merge ---
+    expected_fallback_col = "last_name, first_name" # Same column name here
+    if expected_fallback_col not in fallback.columns:
+        print(f"\nCRITICAL ERROR: '{expected_fallback_col}' still not found in FALLBACK DataFrame after cleaning!")
+        print(f"Actual columns in FALLBACK: {fallback.columns.tolist()}")
+        raise KeyError(f"Missing expected column: '{expected_fallback_col}' in FALLBACK for merge.")
 
     # Match on batter name (no transformation)
     df = df.merge(
-        fallback[["last_name, first_name", "b_total_bases", "b_rbi"]],
-        on="last_name, first_name",
+        fallback[[expected_fallback_col, "b_total_bases", "b_rbi"]],
+        on=expected_fallback_col,
         how="left"
     )
+    print("Columns in DF after second merge:", df.columns.tolist())
 
     for col in ["b_total_bases", "b_rbi"]:
         if col in df.columns:
             df[col] = df[col].fillna(0)
+        else:
+            print(f"Warning: Column '{col}' not found after merges to fillna. Creating with default 0.")
+            df[col] = 0 # Ensure it exists if somehow not merged
 
     df["projected_total_bases"] = (
         safe_col(df, "adj_woba_combined", 0) * 1.75 +
@@ -61,10 +118,17 @@ def project_batter_props(df, pitchers, context, fallback):
     df["prop_type"] = "total_bases"
     df["context"] = context
 
-    return df[[
+    # Final columns check before returning
+    required_output_cols = [
         "last_name, first_name", "team", "projected_total_bases", "projected_hits",
         "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
-    ]]
+    ]
+    missing_output_cols = [col for col in required_output_cols if col not in df.columns]
+    if missing_output_cols:
+        print(f"WARNING: Missing expected output columns: {missing_output_cols}")
+        print(f"Available columns before return: {df.columns.tolist()}")
+
+    return df[required_output_cols]
 
 def main():
     print("🔄 Loading input files...")
@@ -73,11 +137,20 @@ def main():
     pitchers = load_csv(PITCHERS_FILE)
     fallback = load_csv(FALLBACK_FILE)
 
+    print("\n--- Initial Load Checks (before any processing) ---")
+    print("Bat Home Columns (initial):", bat_home.columns.tolist())
+    print("Bat Away Columns (initial):", bat_away.columns.tolist())
+    print("Pitchers Columns (initial):", pitchers.columns.tolist())
+    print("Fallback Columns (initial):", fallback.columns.tolist())
+    print("---------------------------------------------------\n")
+
     print("📊 Projecting props for home batters...")
-    home_proj = project_batter_props(bat_home, pitchers, "home", fallback)
+    home_proj = project_batter_props(bat_home.copy(), pitchers.copy(), "home", fallback.copy()) # Pass copies
+                                                                                              # to avoid modifying
+                                                                                              # original DFs if processed multiple times
 
     print("📊 Projecting props for away batters...")
-    away_proj = project_batter_props(bat_away, pitchers, "away", fallback)
+    away_proj = project_batter_props(bat_away.copy(), pitchers.copy(), "away", fallback.copy())
 
     print("💾 Saving output...")
     all_proj = pd.concat([home_proj, away_proj], ignore_index=True)
