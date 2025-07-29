@@ -5,7 +5,7 @@ from pathlib import Path
 # === Config ===
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
 BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
-BAT_TODAY_FILE = Path("data/raw/bat_today_normalized.csv")
+BAT_TODAY_FILE = Path("data/raw/bat_today.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
 
 OUTPUT_DIR = Path("data/end_chain/final/")
