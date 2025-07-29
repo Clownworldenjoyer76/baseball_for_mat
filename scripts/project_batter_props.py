@@ -1,75 +1,45 @@
+# project_batter_props.py
 import pandas as pd
 from pathlib import Path
 
-# File paths
+# Import functions from your new modules
+from .utils import load_csv
+from .data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
+from .projection_formulas import calculate_all_projections
+
+# File paths (remain the same)
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
 BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
 FALLBACK_FILE = Path("data/cleaned/batters_today.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
-def load_csv(path):
-    if not path.exists():
-        raise FileNotFoundError(f"Missing file: {path}")
-    return pd.read_csv(path)
+def project_batter_props(df: pd.DataFrame, pitchers: pd.DataFrame, context: str, fallback: pd.DataFrame) -> pd.DataFrame:
+    """
+    Orchestrates the batter projection process for a given DataFrame.
 
-def safe_col(df, col, default=0):
-    return df[col].fillna(0) if col in df.columns else pd.Series([default] * len(df))
+    Args:
+        df: The batter DataFrame (home or away).
+        pitchers: The starting pitchers DataFrame.
+        context: "home" or "away" to indicate the team context.
+        fallback: The fallback batter data DataFrame.
 
-def project_batter_props(df, pitchers, context, fallback):
-    key_col = "pitcher_away" if context == "home" else "pitcher_home"
-    df["name_key"] = df[key_col].astype(str).str.strip().str.lower()
-    pitchers["name_key"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
+    Returns:
+        A DataFrame containing the projected batter properties.
+    """
+    # Step 1: Preprocess data (merge with pitchers, apply fallback)
+    df_prepared = merge_with_pitcher_data(df, pitchers, context)
+    df_prepared = apply_batter_fallback_stats(df_prepared, fallback)
 
-    df = df.merge(
-        pitchers.drop(columns=["team_context", "team"], errors="ignore"),
-        on="name_key",
-        how="left"
-    )
+    # Step 2: Calculate all projections
+    df_projected = calculate_all_projections(df_prepared)
 
-    # Fallback for b_total_bases and b_rbi from fallback file
-    df = df.rename(columns={"name": "batter_name"})
-    fallback = fallback.rename(columns={"name": "batter_name"})
-    fallback_trimmed = fallback[["batter_name", "b_total_bases", "b_rbi"]]
+    # Step 3: Add final metadata and select columns
+    df_projected["prop_type"] = "total_bases"
+    df_projected["context"] = context
+    df_projected = df_projected.rename(columns={"batter_name": "name"}) # Ensure 'batter_name' is renamed back to 'name'
 
-    df = df.merge(fallback_trimmed, on="batter_name", how="left")
-
-    if "b_total_bases" not in df.columns:
-        df["b_total_bases"] = fallback["b_total_bases"]
-    else:
-        df["b_total_bases"] = df["b_total_bases"].combine_first(fallback["b_total_bases"])
-
-    if "b_rbi" not in df.columns:
-        df["b_rbi"] = fallback["b_rbi"]
-    else:
-        df["b_rbi"] = df["b_rbi"].combine_first(fallback["b_rbi"])
-
-    # Calculate props
-    df["projected_total_bases"] = (
-        df["adj_woba_combined"].fillna(0) * 1.75 +
-        safe_col(df, "whiff%", 0) * -0.1 +
-        safe_col(df, "zone_swing_miss%", 0) * -0.05 +
-        safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
-        safe_col(df, "gb%", 0) * -0.02 +
-        safe_col(df, "fb%", 0) * 0.03 +
-        safe_col(df, "innings_pitched", 0) * -0.01 +
-        safe_col(df, "strikeouts", 0) * 0.005
-    ).round(2)
-
-    df["projected_hits"] = safe_col(df, "hit", 0).round(2)
-    df["projected_walks"] = safe_col(df, "bb_percent", 0).round(2)
-    df["projected_singles"] = (
-        df["projected_hits"] -
-        safe_col(df, "double", 0) -
-        safe_col(df, "triple", 0) -
-        safe_col(df, "home_run", 0)
-    ).clip(lower=0).round(2)
-
-    df["prop_type"] = "total_bases"
-    df["context"] = context
-    df = df.rename(columns={"batter_name": "name"})
-
-    return df[[
+    return df_projected[[
         "name", "team", "projected_total_bases", "projected_hits",
         "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
     ]]
@@ -93,3 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
