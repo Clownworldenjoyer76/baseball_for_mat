@@ -3,14 +3,19 @@ import pandas as pd
 from pathlib import Path
 
 # === Config ===
-INPUT_DIR = Path("data/end_chain/final/normalize_end")
-OUTPUT_DIR = INPUT_DIR  # Output to same directory
+BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
+BAT_TODAY_FILE = Path("data/raw/bat_today_normalized.csv")
+PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
+
+OUTPUT_DIR = Path("data/end_chain/final/")
+
 
 # === Input file paths ===
-BAT_HOME_FILE = INPUT_DIR / "bat_home3_normalized.csv"
-BAT_AWAY_FILE = INPUT_DIR / "bat_away4_normalized.csv"
-BAT_TODAY_FILE = INPUT_DIR / "bat_today_normalized.csv"
-PITCHERS_FILE = INPUT_DIR / "startingpitchers_normalized.csv"
+BAT_HOME_FILE = INPUT_DIR / "bat_home3csv"
+BAT_AWAY_FILE = INPUT_DIR / "bat_away4.csv"
+BAT_TODAY_FILE = INPUT_DIR / "bat_today.csv"
+PITCHERS_FILE = INPUT_DIR / "startingpitchers.csv"
 
 # === Output file paths ===
 BAT_HOME_FINAL = OUTPUT_DIR / "batter_home_final.csv"
