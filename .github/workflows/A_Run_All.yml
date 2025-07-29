@@ -1,3 +1,4 @@
+
 name: A_Run_All
 
 on:
@@ -8,7 +9,7 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 permissions:
-  contents: write # This is crucial for the workflow to be able to push changes
+  contents: write
 
 jobs:
   A_Run_All:
@@ -17,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main # Ensure we’re on a real branch, not detached HEAD
+          ref: main
 
       - name: Configure Git
         run: |
@@ -85,12 +86,7 @@ jobs:
                 echo -e "\n---\n" >> "$ERRORS_FILE"
               fi
             elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
-              if python "scripts/${SCRIPT}" \
-                "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
-                "data/temp_inputs/todaysgames_normalized_copy.csv" \
-                "data/adjusted/pitchers_home.csv" \
-                "data/adjusted/pitchers_away.csv" \
-                >> "$LOG_FILE" 2> temp_error.log; then
+              if python "scripts/${SCRIPT}"                 "data/temp_inputs/pitchers_normalized_cleaned_copy.csv"                 "data/temp_inputs/todaysgames_normalized_copy.csv"                 "data/adjusted/pitchers_home.csv"                 "data/adjusted/pitchers_away.csv"                 >> "$LOG_FILE" 2> temp_error.log; then
                 echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
               else
                 echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
@@ -99,7 +95,6 @@ jobs:
                 echo -e "\n---\n" >> "$ERRORS_FILE"
               fi
             else
-              # For scripts that don't take specific arguments (like finalbatawp.py)
               if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
                 echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
               else
@@ -114,7 +109,6 @@ jobs:
             echo "" >> "$LOG_FILE"
           }
 
-          # 🔁 Run all steps
           run_step normalize_names.py
           run_step tag_master_files.py
           run_step validate_tagged_players.py
@@ -154,7 +148,6 @@ jobs:
           run_step clean_and_preprocess_games.py
           run_step normalize_pitchers_xtra.py
           run_step clean_merge_files.py
-          # obsolete run_step chain_load_data.py
           run_step clean_and_preprocess_batters.py
           run_step enrich_batters_away.py
           run_step cleanup_enriched_batters_away.py
@@ -168,6 +161,7 @@ jobs:
           run_step woba_calc.py
           run_step pit1.py
           run_step pit2.py
+          run_step end_prep.py
           run_step project_batter_props.py
 
           {
@@ -190,31 +184,8 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
-          git add data/adjusted/batters_home.csv || echo "home batter file not found or no changes"
-          git add data/adjusted/batters_away.csv || echo "away batter file not found or no changes"
-          git add data/adjusted/pitchers_home.csv || echo "home pitcher file not found or no changes"
-          git add data/adjusted/pitchers_away.csv || echo "away pitcher file not found or no changes"
-          git add data/end_chain/cleaned/*.csv || echo "No cleaned end_chain CSVs found or no changes"
-          git add data/end_chain/cleaned/prep/*.csv || echo "No cleaned end_chain prep CSVs found or no changes"
-          git add data/end_chain/cleaned/prep/bat_awp_cleaned.csv || echo "bat_awp_cleaned not found or no changes"
-          git add data/end_chain/final/finalbatawp.csv || echo "finalbatawp.csv not found or no changes"
-          git add data/end_chain/final/finalbathwp.csv || echo "finalbathwp.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_home1.csv || echo "bat_home1.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_away1.csv || echo "bat_away1.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_home2.csv || echo "bat_home2.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_away2.csv || echo "bat_away2.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_away3.csv || echo "bat_away3.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_home3.csv || echo "bat_home3.csv not found or no changes"
-          git add data/end_chain/final/updating/bat_away4.csv || echo "bat_away4.csv not found or no changes"
-          git add data/end_chain/final/startingpitchers.csv || echo "startingpitchers.csv not found or no changes"
-          git add data/end_chain/bat_today.csv || echo "bat_today.csv not found or no changes"
-          git add data/end_chain/complete/batter_props_projected.csv || echo "batter_props_projected.csv not found or no changes"
-
+          git add data/adjusted/*.csv || echo "No adjusted files changed"
+          git add data/end_chain/**/*.csv || echo "No end_chain files changed"
           git add summaries/summary.txt || echo "summary not found"
-
-          echo "📄 Git status:"
-          git status
-
           git commit -m "Commit processed data + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
