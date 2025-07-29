@@ -14,7 +14,7 @@ def load_csv(path):
     return pd.read_csv(path)
 
 def safe_col(df, col, default=0):
-    return df[col].fillna(0) if col in df.columns else pd.Series([default] * len(df))
+    return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
 
 def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
@@ -58,14 +58,19 @@ def project_batter_props(df, pitchers, context, fallback):
 
     df["projected_hits"] = safe_col(df, "hit", 0).round(2)
     df["projected_walks"] = safe_col(df, "bb_percent", 0).round(2)
-    df["projected_singles"] = (df["projected_hits"] - safe_col(df, "double", 0) - safe_col(df, "triple", 0) - safe_col(df, "home_run", 0)).clip(lower=0).round(2)
+    df["projected_singles"] = (
+        df["projected_hits"] -
+        safe_col(df, "double", 0) -
+        safe_col(df, "triple", 0) -
+        safe_col(df, "home_run", 0)
+    ).clip(lower=0).round(2)
 
     df["prop_type"] = "total_bases"
     df["context"] = context
     df = df.rename(columns={"batter_name": "name"})
 
     return df[[
-        "name", "team", "projected_total_bases", "projected_hits", 
+        "name", "team", "projected_total_bases", "projected_hits",
         "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
     ]]
 
@@ -76,4 +81,16 @@ def main():
     pitchers = load_csv(PITCHERS_FILE)
     fallback = load_csv(FALLBACK_FILE)
 
-    print
+    print("📊 Projecting props for home batters...")
+    home_proj = project_batter_props(bat_home, pitchers, "home", fallback)
+
+    print("📊 Projecting props for away batters...")
+    away_proj = project_batter_props(bat_away, pitchers, "away", fallback)
+
+    df = pd.concat([home_proj, away_proj], ignore_index=True)
+
+    print(f"✅ Projections saved to: {OUTPUT_FILE}")
+    df.to_csv(OUTPUT_FILE, index=False)
+
+if __name__ == "__main__":
+    main()
