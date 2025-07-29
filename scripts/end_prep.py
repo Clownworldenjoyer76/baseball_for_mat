@@ -72,7 +72,7 @@ def main():
         bat_away.drop(columns=[f"{col}_update"], inplace=True)
 
     # === Update innings_pitched from pitchers_xtra ===
-    innings_map = pitchers_xtra.set_index("last_name, first_name")["innings_pitched"].to_dict()
+    innings_map = pitchers_xtra.set_index("last_name_first_name")["innings_pitched"].to_dict()
     for df in [bat_home, bat_away]:
         name_col = "last_name, first_name"
         if "innings_pitched" in df.columns:
