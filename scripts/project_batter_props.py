@@ -46,47 +46,55 @@ def project_batter_props(df, pitchers, context, fallback):
     print("Columns in PITCHERS after cleaning:", pitchers.columns.tolist())
     print("Columns in FALLBACK after cleaning:", fallback.columns.tolist())
 
-    # --- Explicit Check before the first merge ---
-    expected_pitcher_col = "last_name, first_name"
-    if expected_pitcher_col not in pitchers.columns:
-        print(f"\nCRITICAL ERROR: '{expected_pitcher_col}' still not found in PITCHERS DataFrame after cleaning!")
+    # --- Explicit Check before the first merge (Pitchers) ---
+    # This merge still uses 'last_name, first_name' as the key_col (pitcher name) in batter data
+    # (pitcher_home/away) is a name, not an ID.
+    expected_pitcher_name_col = "last_name, first_name"
+    if expected_pitcher_name_col not in pitchers.columns:
+        print(f"\nCRITICAL ERROR: '{expected_pitcher_name_col}' still not found in PITCHERS DataFrame after cleaning!")
         print(f"Actual columns in PITCHERS: {pitchers.columns.tolist()}")
-        raise KeyError(f"Missing expected column: '{expected_pitcher_col}' in PITCHERS for merge.")
+        raise KeyError(f"Missing expected column: '{expected_pitcher_name_col}' in PITCHERS for merge.")
 
     # Match on pitcher name
     pitchers_for_merge = pitchers.drop(columns=["team_context", "team"], errors="ignore")
     print("Columns in PITCHERS AFTER drop for merge 1:", pitchers_for_merge.columns.tolist())
 
     # Re-check after dropping just to be absolutely certain it wasn't dropped somehow (highly unlikely with errors='ignore')
-    if expected_pitcher_col not in pitchers_for_merge.columns:
-        print(f"\nCRITICAL ERROR: '{expected_pitcher_col}' *still* not found in PITCHERS AFTER DROP!")
+    if expected_pitcher_name_col not in pitchers_for_merge.columns:
+        print(f"\nCRITICAL ERROR: '{expected_pitcher_name_col}' *still* not found in PITCHERS AFTER DROP!")
         print(f"Actual columns in PITCHERS after drop: {pitchers_for_merge.columns.tolist()}")
-        raise KeyError(f"Missing expected column: '{expected_pitcher_col}' in PITCHERS after drop for merge.")
+        raise KeyError(f"Missing expected column: '{expected_pitcher_name_col}' in PITCHERS after drop for merge.")
 
 
     df = df.merge(
         pitchers_for_merge,
         left_on=key_col,
-        right_on=expected_pitcher_col, # Use the variable for clarity
+        right_on=expected_pitcher_name_col, # Still merging on pitcher name here
         how="left"
     )
-    print("Columns in DF after first merge:", df.columns.tolist())
+    print("Columns in DF after first merge (Pitchers):", df.columns.tolist())
 
 
-    # --- Explicit Check before the second merge ---
-    expected_fallback_col = "last_name, first_name" # Same column name here
-    if expected_fallback_col not in fallback.columns:
-        print(f"\nCRITICAL ERROR: '{expected_fallback_col}' still not found in FALLBACK DataFrame after cleaning!")
+    # --- Explicit Check before the second merge (Fallback - now on player_id) ---
+    expected_player_id_col = "player_id"
+    if expected_player_id_col not in fallback.columns:
+        print(f"\nCRITICAL ERROR: '{expected_player_id_col}' still not found in FALLBACK DataFrame after cleaning!")
         print(f"Actual columns in FALLBACK: {fallback.columns.tolist()}")
-        raise KeyError(f"Missing expected column: '{expected_fallback_col}' in FALLBACK for merge.")
+        raise KeyError(f"Missing expected column: '{expected_player_id_col}' in FALLBACK for merge.")
+    
+    if expected_player_id_col not in df.columns:
+        print(f"\nCRITICAL ERROR: '{expected_player_id_col}' still not found in DF (bat_home/away) for fallback merge!")
+        print(f"Actual columns in DF: {df.columns.tolist()}")
+        raise KeyError(f"Missing expected column: '{expected_player_id_col}' in DF for fallback merge.")
 
-    # Match on batter name (no transformation)
+
+    # Match on batter player_id
     df = df.merge(
-        fallback[[expected_fallback_col, "b_total_bases", "b_rbi"]],
-        on=expected_fallback_col,
+        fallback[[expected_player_id_col, "b_total_bases", "b_rbi"]],
+        on=expected_player_id_col, # Changed to player_id for this merge
         how="left"
     )
-    print("Columns in DF after second merge:", df.columns.tolist())
+    print("Columns in DF after second merge (Fallback):", df.columns.tolist())
 
     for col in ["b_total_bases", "b_rbi"]:
         if col in df.columns:
@@ -120,8 +128,16 @@ def project_batter_props(df, pitchers, context, fallback):
 
     # Final columns check before returning
     required_output_cols = [
-        "last_name, first_name", "team", "projected_total_bases", "projected_hits",
-        "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
+        "player_id", # Added player_id to output
+        "last_name, first_name",
+        "team",
+        "projected_total_bases",
+        "projected_hits",
+        "projected_singles",
+        "projected_walks",
+        "b_rbi",
+        "prop_type",
+        "context"
     ]
     missing_output_cols = [col for col in required_output_cols if col not in df.columns]
     if missing_output_cols:
@@ -145,9 +161,8 @@ def main():
     print("---------------------------------------------------\n")
 
     print("📊 Projecting props for home batters...")
-    home_proj = project_batter_props(bat_home.copy(), pitchers.copy(), "home", fallback.copy()) # Pass copies
-                                                                                              # to avoid modifying
-                                                                                              # original DFs if processed multiple times
+    # Pass copies to avoid modifying original DFs if processed multiple times in the same run
+    home_proj = project_batter_props(bat_home.copy(), pitchers.copy(), "home", fallback.copy())
 
     print("📊 Projecting props for away batters...")
     away_proj = project_batter_props(bat_away.copy(), pitchers.copy(), "away", fallback.copy())
