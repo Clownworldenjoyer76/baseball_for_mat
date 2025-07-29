@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+import sys
 
 # File paths
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
@@ -16,7 +17,18 @@ def load_csv(path):
 def safe_col(df, col, default=0):
     return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
 
+def check_column(df, col, df_name):
+    if col not in df.columns:
+        print(f"❌ Column '{col}' NOT FOUND in {df_name}. Columns present: {list(df.columns)}")
+        sys.exit(1)
+    else:
+        print(f"✅ Column '{col}' found in {df_name}")
+
 def project_batter_props(df, pitchers, context, fallback):
+    check_column(df, "last_name, first_name", f"{context} batters")
+    check_column(pitchers, "last_name, first_name", "pitchers")
+    check_column(fallback, "last_name, first_name", "fallback")
+
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
     df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
     pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
@@ -42,11 +54,11 @@ def project_batter_props(df, pitchers, context, fallback):
 
     df["projected_total_bases"] = (
         safe_col(df, "adj_woba_combined", 0) * 1.75 +
-        safe_col(df, "whiff_percent", 0) * -0.1 +
-        safe_col(df, "z_swing_miss_percent", 0) * -0.05 +
-        safe_col(df, "oz_swing_miss_percent", 0) * -0.05 +
-        safe_col(df, "groundballs_percent", 0) * -0.02 +
-        safe_col(df, "flyballs_percent", 0) * 0.03 +
+        safe_col(df, "whiff%", 0) * -0.1 +
+        safe_col(df, "zone_swing_miss%", 0) * -0.05 +
+        safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
+        safe_col(df, "gb%", 0) * -0.02 +
+        safe_col(df, "fb%", 0) * 0.03 +
         safe_col(df, "innings_pitched", 0) * -0.01 +
         safe_col(df, "strikeouts", 0) * 0.005
     ).round(2)
