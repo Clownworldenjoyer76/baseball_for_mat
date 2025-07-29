@@ -12,10 +12,11 @@ OUTPUT_DIR = Path("data/end_chain/final/")
 
 
 # === Input file paths ===
-BAT_HOME_FILE = INPUT_DIR / "bat_home3csv"
-BAT_AWAY_FILE = INPUT_DIR / "bat_away4.csv"
-BAT_TODAY_FILE = INPUT_DIR / "bat_today.csv"
-PITCHERS_FILE = INPUT_DIR / "startingpitchers.csv"
+BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
+BAT_TODAY_FILE = Path("data/raw/bat_today.csv")
+PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
+
 
 # === Output file paths ===
 BAT_HOME_FINAL = OUTPUT_DIR / "batter_home_final.csv"
