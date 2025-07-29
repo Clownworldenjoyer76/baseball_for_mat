@@ -1,8 +1,11 @@
+# scripts/project_batter_props.py
+
 import pandas as pd
 from pathlib import Path
 
+# File paths
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
-BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")  # Updated to bat_away4
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
@@ -12,11 +15,15 @@ def load_csv(path):
     return pd.read_csv(path)
 
 def project_batter_props(df, pitchers, context):
-    if context == "home":
-        key_col = "pitcher_away"
-    else:
+    # Determine which pitcher column to use based on context
+    key_col = "pitcher_away" if context == "home" else "pitcher_home"
+
+    # If away file doesn't have 'pitcher_home', fallback to 'pitcher_away'
+    if key_col not in df.columns and context == "away" and "pitcher_away" in df.columns:
+        df["pitcher_home"] = df["pitcher_away"]
         key_col = "pitcher_home"
 
+    # Normalize for merge
     df["name_key"] = df[key_col].astype(str).str.strip().str.lower()
     pitchers["name_key"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
@@ -27,7 +34,6 @@ def project_batter_props(df, pitchers, context):
         suffixes=("", "_pitcher")
     )
 
-    # Create safe fillers if column missing or not numeric
     def safe_col(df, col, default=0):
         return df[col].fillna(0) if col in df.columns else pd.Series([default] * len(df))
 
