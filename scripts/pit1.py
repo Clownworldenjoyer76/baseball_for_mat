@@ -42,16 +42,19 @@ def main():
 
     # Ensure 'team' exists in xtra
     if "team" not in xtra.columns:
-        xtra["team"] = None
+        xtra["team"] = ""
 
-    # Merge stats into today's pitchers
+    # Merge xtra stats with today's pitchers
     merged = pd.merge(
         today_pitchers,
-        xtra.drop(columns=["last_name, first_name", "name"], errors="ignore"),
+        xtra.drop(columns=["last_name, first_name", "name", "team"], errors="ignore"),
         on="name_key",
         how="left",
         suffixes=("", "_xtra")
     )
+
+    # Assign team values from today_pitchers into xtra columns (only if xtra's 'team' is empty downstream)
+    merged["team_xtra"] = merged["team"]  # Ensure consistency for downstream logic, if needed
 
     # Drop helper column
     merged.drop(columns=["name_key"], inplace=True)
