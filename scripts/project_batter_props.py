@@ -4,7 +4,11 @@ from pathlib import Path
 
 # --- CHANGE THESE IMPORTS ---
 # From: from .utils import load_csv
+#       from .data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
+#       from .projection_formulas import calculate_all_projections
 # To:   from utils import load_csv
+#       from data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
+#       from projection_formulas import calculate_all_projections
 from utils import load_csv
 from data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
 from projection_formulas import calculate_all_projections
@@ -20,15 +24,6 @@ OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 def project_batter_props(df: pd.DataFrame, pitchers: pd.DataFrame, context: str, fallback: pd.DataFrame) -> pd.DataFrame:
     """
     Orchestrates the batter projection process for a given DataFrame.
-
-    Args:
-        df: The batter DataFrame (home or away).
-        pitchers: The starting pitchers DataFrame.
-        context: "home" or "away" to indicate the team context.
-        fallback: The fallback batter data DataFrame.
-
-    Returns:
-        A DataFrame containing the projected batter properties.
     """
     # Step 1: Preprocess data (merge with pitchers, apply fallback)
     df_prepared = merge_with_pitcher_data(df, pitchers, context)
@@ -40,7 +35,7 @@ def project_batter_props(df: pd.DataFrame, pitchers: pd.DataFrame, context: str,
     # Step 3: Add final metadata and select columns
     df_projected["prop_type"] = "total_bases"
     df_projected["context"] = context
-    df_projected = df_projected.rename(columns={"batter_name": "name"}) # Ensure 'batter_name' is renamed back to 'name'
+    df_projected = df_projected.rename(columns={"batter_name": "name"})
 
     return df_projected[[
         "name", "team", "projected_total_bases", "projected_hits",
