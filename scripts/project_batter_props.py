@@ -2,10 +2,10 @@ import pandas as pd
 from pathlib import Path
 
 # File paths
-BAT_HOME_FILE = Path("data/end_chain/final/batter_home_final.csv")
-BAT_AWAY_FILE = Path("data/end_chain/final/batter_away_final.csv")
-PITCHERS_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
-FALLBACK_FILE = Path("data/end_chain/final/bat_today_final.csv")
+BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
+PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
+FALLBACK_FILE = Path("data/end_chain/bat_today.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
 def load_csv(path):
@@ -18,14 +18,8 @@ def safe_col(df, col, default=0):
 
 def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
-
-    # Pitcher merge key
     df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
     pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
-
-    missing_keys = df[~df["name_key_pitcher"].isin(pitchers["name_key_pitcher"])]
-    if not missing_keys.empty:
-        print(f"⚠️ WARNING: {len(missing_keys)} batters had no matching pitcher data and may result in NaNs")
 
     df = df.merge(
         pitchers.drop(columns=["team_context", "team"], errors="ignore"),
@@ -33,7 +27,6 @@ def project_batter_props(df, pitchers, context, fallback):
         how="left"
     )
 
-    # Batter merge key (fallback)
     df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip().str.lower()
     fallback["name_key_batter"] = fallback["last_name, first_name"].astype(str).str.strip().str.lower()
 
@@ -49,11 +42,11 @@ def project_batter_props(df, pitchers, context, fallback):
 
     df["projected_total_bases"] = (
         safe_col(df, "adj_woba_combined", 0) * 1.75 +
-        safe_col(df, "whiff%", 0) * -0.1 +
-        safe_col(df, "zone_swing_miss%", 0) * -0.05 +
-        safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
-        safe_col(df, "gb%", 0) * -0.02 +
-        safe_col(df, "fb%", 0) * 0.03 +
+        safe_col(df, "whiff_percent", 0) * -0.1 +
+        safe_col(df, "z_swing_miss_percent", 0) * -0.05 +
+        safe_col(df, "oz_swing_miss_percent", 0) * -0.05 +
+        safe_col(df, "groundballs_percent", 0) * -0.02 +
+        safe_col(df, "flyballs_percent", 0) * 0.03 +
         safe_col(df, "innings_pitched", 0) * -0.01 +
         safe_col(df, "strikeouts", 0) * 0.005
     ).round(2)
