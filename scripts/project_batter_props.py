@@ -76,22 +76,27 @@ def project_batter_props(df, pitchers, context, fallback):
 
 
     # --- Explicit Check before the second merge (Fallback - now on player_id) ---
-    expected_player_id_col = "player_id"
-    if expected_player_id_col not in fallback.columns:
-        print(f"\nCRITICAL ERROR: '{expected_player_id_col}' still not found in FALLBACK DataFrame after cleaning!")
+    # The 'player_id' column from the initial 'df' (batter data) will become 'player_id_x' after the first merge.
+    # The 'player_id' from the 'fallback' dataframe will remain 'player_id'.
+    expected_batter_id_in_df = "player_id_x" # The batter's player_id after the first merge
+    expected_batter_id_in_fallback = "player_id" # The batter's player_id in the fallback file
+
+    if expected_batter_id_in_fallback not in fallback.columns:
+        print(f"\nCRITICAL ERROR: '{expected_batter_id_in_fallback}' still not found in FALLBACK DataFrame after cleaning!")
         print(f"Actual columns in FALLBACK: {fallback.columns.tolist()}")
-        raise KeyError(f"Missing expected column: '{expected_player_id_col}' in FALLBACK for merge.")
+        raise KeyError(f"Missing expected column: '{expected_batter_id_in_fallback}' in FALLBACK for merge.")
     
-    if expected_player_id_col not in df.columns:
-        print(f"\nCRITICAL ERROR: '{expected_player_id_col}' still not found in DF (bat_home/away) for fallback merge!")
+    if expected_batter_id_in_df not in df.columns:
+        print(f"\nCRITICAL ERROR: '{expected_batter_id_in_df}' still not found in DF (bat_home/away) for fallback merge!")
         print(f"Actual columns in DF: {df.columns.tolist()}")
-        raise KeyError(f"Missing expected column: '{expected_player_id_col}' in DF for fallback merge.")
+        raise KeyError(f"Missing expected column: '{expected_batter_id_in_df}' in DF for fallback merge.")
 
 
     # Match on batter player_id
     df = df.merge(
-        fallback[[expected_player_id_col, "b_total_bases", "b_rbi"]],
-        on=expected_player_id_col, # Changed to player_id for this merge
+        fallback[[expected_batter_id_in_fallback, "b_total_bases", "b_rbi"]],
+        left_on=expected_batter_id_in_df,    # Use 'player_id_x' from the main DF
+        right_on=expected_batter_id_in_fallback, # Use 'player_id' from the fallback DF
         how="left"
     )
     print("Columns in DF after second merge (Fallback):", df.columns.tolist())
@@ -127,8 +132,19 @@ def project_batter_props(df, pitchers, context, fallback):
     df["context"] = context
 
     # Final columns check before returning
+    # We need to decide which 'last_name, first_name' and 'player_id' to keep if both exist.
+    # 'last_name, first_name_x' and 'player_id_x' refer to the batter from the initial df.
+    # 'last_name, first_name_y' and 'player_id_y' refer to the pitcher from the first merge.
+    # Since this function is for batter props, we prioritize the batter's info.
+    
+    # Rename for clarity in output
+    df = df.rename(columns={
+        "last_name, first_name_x": "last_name, first_name",
+        "player_id_x": "player_id"
+    })
+
     required_output_cols = [
-        "player_id", # Added player_id to output
+        "player_id",
         "last_name, first_name",
         "team",
         "projected_total_bases",
