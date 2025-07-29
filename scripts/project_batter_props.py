@@ -1,10 +1,8 @@
-# project_batter_props.py
-
 import pandas as pd
 from pathlib import Path
 
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
-BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away3.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
