@@ -1,27 +1,21 @@
 # data_preprocessing.py
 import pandas as pd
-from .utils import standardize_name_key # Assuming utils.py is in the same directory
+# --- CHANGE THIS IMPORT ---
+# From: from .utils import standardize_name_key
+# To:   from utils import standardize_name_key
+from utils import standardize_name_key
 
 def merge_with_pitcher_data(batters_df: pd.DataFrame, pitchers_df: pd.DataFrame, context: str) -> pd.DataFrame:
     """
     Merges batter DataFrame with relevant pitcher data.
-
-    Args:
-        batters_df: DataFrame containing batter data.
-        pitchers_df: DataFrame containing pitcher data.
-        context: "home" or "away", used to determine the key for merging.
-
-    Returns:
-        Merged DataFrame with pitcher data added.
     """
     df_copy = batters_df.copy()
-    pitchers_copy = pitchers_df.copy() # Work on copies to prevent modifying originals
+    pitchers_copy = pitchers_df.copy()
 
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
     df_copy = standardize_name_key(df_copy, key_col)
     pitchers_copy = standardize_name_key(pitchers_copy, "last_name, first_name")
 
-    # Perform the merge
     merged_df = df_copy.merge(
         pitchers_copy.drop(columns=["team_context", "team"], errors="ignore"),
         on="name_key",
@@ -32,13 +26,6 @@ def merge_with_pitcher_data(batters_df: pd.DataFrame, pitchers_df: pd.DataFrame,
 def apply_batter_fallback_stats(main_df: pd.DataFrame, fallback_df: pd.DataFrame) -> pd.DataFrame:
     """
     Applies fallback statistics (b_total_bases, b_rbi) from a fallback DataFrame.
-
-    Args:
-        main_df: The primary batter DataFrame.
-        fallback_df: The fallback DataFrame containing additional batter stats.
-
-    Returns:
-        DataFrame with fallback stats applied.
     """
     df_copy = main_df.copy()
     fallback_copy = fallback_df.copy()
@@ -49,14 +36,11 @@ def apply_batter_fallback_stats(main_df: pd.DataFrame, fallback_df: pd.DataFrame
 
     merged_df = df_copy.merge(fallback_trimmed, on="batter_name", how="left", suffixes=('_current', '_fallback'))
 
-    # Use combine_first to fill missing values from fallback
     for col in ["b_total_bases", "b_rbi"]:
         if f"{col}_fallback" in merged_df.columns:
             merged_df[col] = merged_df[f"{col}_current"].combine_first(merged_df[f"{col}_fallback"])
             merged_df = merged_df.drop(columns=[f"{col}_current", f"{col}_fallback"])
         elif col not in merged_df.columns and f"{col}_fallback" in merged_df.columns:
              merged_df[col] = merged_df[f"{col}_fallback"]
-        # If neither current nor fallback, it remains missing, which is handled by safe_col later if needed.
 
     return merged_df
-
