@@ -3,11 +3,9 @@ import unicodedata
 import re
 from pathlib import Path
 
-# Input and output paths
 INPUT_FILE = Path("data/end_chain/pitchers_xtra.csv")
 OUTPUT_DIR = Path("data/end_chain/cleaned")
 OUTPUT_FILE = OUTPUT_DIR / "pitchers_xtra_normalized.csv"
-
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def strip_accents(text):
@@ -44,6 +42,16 @@ def normalize_name(name):
             return f"{last}, {first}"
     return name.title()
 
+def clean_column_names(columns):
+    cleaned = []
+    for col in columns:
+        col = col.lower()
+        col = col.replace('%', 'percent')
+        col = col.replace(' ', '_')
+        col = re.sub(r'[^\w_]', '', col)
+        cleaned.append(col)
+    return cleaned
+
 def main():
     if not INPUT_FILE.exists():
         print(f"❌ Input file not found: {INPUT_FILE}")
@@ -51,20 +59,20 @@ def main():
 
     df = pd.read_csv(INPUT_FILE)
 
+    # Normalize name column
     src_col = "last_name, first_name"
     if src_col not in df.columns:
-        print(f"❌ '{src_col}' column not found in input.")
+        print(f"❌ '{src_col}' column not found.")
         return
 
     print(f"🔄 Normalizing names in {INPUT_FILE.name}...")
-
-    # Normalize name column as "Last, First"
     df["name"] = df[src_col].astype(str).apply(normalize_name)
 
-    # Strip trailing commas from all string fields
-    df = df.applymap(lambda x: x.rstrip(',') if isinstance(x, str) else x)
+    # Strip commas and accents from all string columns
+    for col in df.select_dtypes(include='object').columns:
+        df[col] = df[col].astype(str).apply(strip_accents).str.rstrip(',')
 
-    # Rename stat fields
+    # Rename basic stat fields
     df.rename(columns={
         "p_formatted_ip": "innings_pitched",
         "strikeout": "strikeouts",
@@ -72,8 +80,12 @@ def main():
         "p_earned_run": "earned_runs"
     }, inplace=True)
 
-    # Add empty "team" column
-    df["team"] = ""
+    # Normalize all column names
+    df.columns = clean_column_names(df.columns)
+
+    # Ensure 'team' column exists
+    if 'team' not in df.columns:
+        df['team'] = ""
 
     df.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Output written to {OUTPUT_FILE}")
