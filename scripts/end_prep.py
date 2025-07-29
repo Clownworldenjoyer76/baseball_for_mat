@@ -55,19 +55,20 @@ def main():
         "strikeouts", "hit", "bb_percent", "double", "triple", "home_run"
     ]
 
-    # === Update bat_home ===
     source_merge = batters_today_data[["player_id"] + [col for col in update_columns if col in batters_today_data.columns]]
+
+    # === Update bat_home ===
     update_cols_home = [col for col in update_columns if col in bat_home.columns and col in source_merge.columns]
     bat_home = pd.merge(bat_home, source_merge[["player_id"] + update_cols_home], on="player_id", how="left", suffixes=('', '_update'))
     for col in update_cols_home:
-        bat_home[col].update(bat_home[f"{col}_update"])
+        bat_home.loc[:, col] = bat_home[f"{col}_update"].combine_first(bat_home[col])
         bat_home.drop(columns=[f"{col}_update"], inplace=True)
 
     # === Update bat_away ===
     update_cols_away = [col for col in update_columns if col in bat_away.columns and col in source_merge.columns]
     bat_away = pd.merge(bat_away, source_merge[["player_id"] + update_cols_away], on="player_id", how="left", suffixes=('', '_update'))
     for col in update_cols_away:
-        bat_away[col].update(bat_away[f"{col}_update"])
+        bat_away.loc[:, col] = bat_away[f"{col}_update"].combine_first(bat_away[col])
         bat_away.drop(columns=[f"{col}_update"], inplace=True)
 
     # === Update innings_pitched from pitchers_xtra ===
@@ -75,7 +76,7 @@ def main():
     for df in [bat_home, bat_away]:
         name_col = "last_name, first_name"
         if "innings_pitched" in df.columns:
-            df["innings_pitched"] = df[name_col].map(innings_map).fillna(df["innings_pitched"])
+            df.loc[:, "innings_pitched"] = df[name_col].map(innings_map).combine_first(df["innings_pitched"])
 
     print("💾 Saving final files...")
     bat_home.to_csv(BAT_HOME_FINAL, index=False)
