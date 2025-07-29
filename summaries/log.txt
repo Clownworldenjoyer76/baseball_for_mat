@@ -90,3 +90,105 @@ SUCCESS: Populated 'data/adjusted/batters_home.csv' with 125 home team batters.
 ⏹️ END: pitcherfilecleanup (2025-07-29 03:27:27 PM EDT)
 
 ▶️ START: generate_weather_csv (2025-07-29 03:27:28 PM EDT)
+✅ Weather input file generated
+🔢 Rows: 15
+📁 Output: data/weather_input.csv
+📄 Games file: data/raw/todaysgames_normalized.csv
+🏟️ Stadium file: data/Data/stadium_metadata.csv
+✅ Git commit and push complete.
+⏹️ END: generate_weather_csv (2025-07-29 03:27:28 PM EDT)
+
+▶️ START: lineupcleaned (2025-07-29 03:27:29 PM EDT)
+⏹️ END: lineupcleaned (2025-07-29 03:27:29 PM EDT)
+
+▶️ START: filter_today_batters (2025-07-29 03:27:29 PM EDT)
+📥 Loading lineups, batters, and pitchers...
+✅ Identified 31 pitchers in the lineup (based on data/cleaned/pitchers_normalized_cleaned.csv).
+📝 Saved identified pitchers to data/cleaned/pitchers_in_lineups.txt
+✅ Filtered down to 251 batters (excluding identified pitchers)
+✅ All intended lineup batters matched successfully.
+💾 Saved filtered batters to data/cleaned/batters_today.csv
+⏹️ END: filter_today_batters (2025-07-29 03:27:29 PM EDT)
+
+▶️ START: get_weather_data (2025-07-29 03:27:29 PM EDT)
+2025-07-29 07:27:30 PM 🔄 Reading input file...
+2025-07-29 07:27:30 PM 🌍 Fetching weather for 15 venues...
+2025-07-29 07:27:33 PM ✅ Weather data written to data/weather_adjustments.csv
+⏹️ END: get_weather_data (2025-07-29 03:27:29 PM EDT)
+
+▶️ START: apply_weather_adjustment (2025-07-29 03:27:33 PM EDT)
+Loading input files...
+Files loaded successfully.
+Applying weather adjustments for home batters...
+Applying weather adjustments for away batters...
+Saving adjusted data...
+Adjusted data saved to data/adjusted/batters_home_weather.csv and data/adjusted/batters_away_weather.csv
+Writing adjustment logs...
+Logs written to log_weather_home.txt and log_weather_away.txt
+⏹️ END: apply_weather_adjustment (2025-07-29 03:27:33 PM EDT)
+
+▶️ START: apply_park_adjustment (2025-07-29 03:27:33 PM EDT)
+[main d97980e] Force commit: adjusted park batters + log
+ 2 files changed, 251 insertions(+), 251 deletions(-)
+Home batters adjusted: 125
+Away batters adjusted: 126
+✅ Committed and pushed adjusted park files.
+⏹️ END: apply_park_adjustment (2025-07-29 03:27:33 PM EDT)
+
+▶️ START: combine_weather_park_home (2025-07-29 03:27:34 PM EDT)
+[main 5fd1a55] Auto-commit: Combined home batter adjustments
+ 1 file changed, 122 insertions(+), 122 deletions(-)
+📥 Loading input CSVs...
+🔹 Weather rows: 125
+🔹 Park rows: 125
+🔀 Merging weather and park adjustment files...
+✅ Merged rows: 122
+💾 Saved to: data/adjusted/batters_home_adjusted.csv
+📝 Log written to: data/adjusted/log_combined_home.txt
+📤 Committing and pushing to repo...
+✅ Git commit and push successful.
+⏹️ END: combine_weather_park_home (2025-07-29 03:27:34 PM EDT)
+
+▶️ START: combine_weather_park_away (2025-07-29 03:27:35 PM EDT)
+[main 8654d67] Auto-commit: Combined away batter adjustments
+ 1 file changed, 121 insertions(+), 121 deletions(-)
+📥 Loading input CSVs...
+🔹 Weather rows before dedup: 126
+🔹 Park rows before dedup: 126
+🔹 Weather rows after dedup: 121
+🔹 Park rows after dedup: 121
+🔀 Merging weather and park adjustment files...
+✅ Merged rows: 121
+📊 Columns in merged data: ['name', 'player_id', 'team', 'type', 'last_name, first_name', 'year', 'player_age', 'ab', 'pa', 'hit', 'single', 'double', 'triple', 'home_run', 'strikeout', 'walk', 'k_percent', 'bb_percent', 'batting_avg', 'slg_percent', 'on_base_percent', 'on_base_plus_slg', 'isolated_power', 'babip', 'b_rbi', 'b_lob', 'b_total_bases', 'r_total_caught_stealing', 'r_total_stolen_base', 'b_ab_scoring', 'b_ball', 'b_called_strike', 'b_catcher_interf', 'b_foul', 'b_foul_tip', 'b_game', 'b_gnd_into_dp', 'b_gnd_into_tp', 'b_gnd_rule_double', 'b_hit_by_pitch', 'b_hit_ground', 'b_hit_fly', 'b_hit_into_play', 'b_hit_line_drive', 'b_hit_popup', 'b_out_fly', 'b_out_ground', 'b_out_line_drive', 'b_out_popup', 'b_intent_ball', 'b_intent_walk', 'b_interference', 'b_pinch_hit', 'b_pinch_run', 'b_pitchout', 'b_played_dh', 'b_sac_bunt', 'b_sac_fly', 'b_swinging_strike', 'r_caught_stealing_2b', 'r_caught_stealing_3b', 'r_caught_stealing_home', 'r_defensive_indiff', 'r_interference', 'r_pickoff_1b', 'r_pickoff_2b', 'r_pickoff_3b', 'r_run', 'r_stolen_base_2b', 'r_stolen_base_3b', 'r_stolen_base_home', 'b_total_ball', 'b_total_sacrifices', 'b_total_strike', 'b_total_swinging_strike', 'b_total_pitches', 'r_stolen_base_pct', 'r_total_pickoff', 'b_reached_on_error', 'b_walkoff', 'b_reached_on_int', 'xba', 'xslg', 'woba', 'xwoba', 'xobp', 'xiso', 'wobacon', 'xwobacon', 'bacon', 'xbacon', 'xbadiff', 'xslgdiff', 'wobadiff', 'avg_swing_speed', 'fast_swing_rate', 'blasts_contact', 'blasts_swing', 'squared_up_contact', 'squared_up_swing', 'avg_swing_length', 'swords', 'attack_angle', 'attack_direction', 'ideal_angle_rate', 'vertical_swing_path', 'exit_velocity_avg', 'launch_angle_avg', 'sweet_spot_percent', 'barrel', 'barrel_batted_rate', 'solidcontact_percent', 'flareburner_percent', 'poorlyunder_percent', 'poorlytopped_percent', 'poorlyweak_percent', 'hard_hit_percent', 'avg_best_speed', 'avg_hyper_speed', 'z_swing_percent', 'z_swing_miss_percent', 'oz_swing_percent', 'oz_swing_miss_percent', 'oz_contact_percent', 'out_zone_swing_miss', 'out_zone_swing', 'out_zone_percent', 'out_zone', 'meatball_swing_percent', 'meatball_percent', 'pitch_count_offspeed', 'pitch_count_fastball', 'pitch_count_breaking', 'pitch_count', 'iz_contact_percent', 'in_zone_swing_miss', 'in_zone_swing', 'in_zone_percent', 'in_zone', 'edge_percent', 'edge', 'whiff_percent', 'swing_percent', 'pull_percent', 'straightaway_percent', 'opposite_percent', 'batted_ball', 'f_strike_percent', 'groundballs_percent', 'groundballs', 'flyballs_percent', 'flyballs', 'linedrives_percent', 'linedrives', 'popups_percent', 'popups', 'pop_2b_sba_count', 'pop_2b_sba', 'pop_2b_sb', 'pop_2b_cs', 'pop_3b_sba_count', 'pop_3b_sba', 'pop_3b_sb', 'pop_3b_cs', 'exchange_2b_3b_sba', 'maxeff_arm_2b_3b_sba', 'n_outs_above_average', 'n_fieldout_5stars', 'n_opp_5stars', 'n_5star_percent', 'n_fieldout_4stars', 'n_opp_4stars', 'n_4star_percent', 'n_fieldout_3stars', 'n_opp_3stars', 'n_3star_percent', 'n_fieldout_2stars', 'n_opp_2stars', 'n_2star_percent', 'n_fieldout_1stars', 'n_opp_1stars', 'n_1star_percent', 'rel_league_reaction_distance', 'rel_league_burst_distance', 'rel_league_routing_distance', 'rel_league_bootup_distance', 'f_bootup_distance', 'n_bolts', 'hp_to_1b', 'sprint_speed', 'venue', 'location', 'temperature', 'wind_speed', 'wind_direction', 'humidity', 'precipitation', 'condition', 'notes', 'game_time', 'home_team_weather', 'away_team_weather', 'fetched_at', 'adj_woba_weather', 'adj_woba_park']
+💾 Saved combined file to: data/adjusted/batters_away_adjusted.csv
+📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
+📤 Committing and pushing results...
+✅ Git commit & push successful.
+⏹️ END: combine_weather_park_away (2025-07-29 03:27:35 PM EDT)
+
+▶️ START: normalize_pitcher_weather_outputs (2025-07-29 03:27:36 PM EDT)
+[main 25846d9] Normalize pitchers before weather adjustment
+ 2 files changed, 30 insertions(+), 30 deletions(-)
+✅ Forced commit and push to repo.
+⏹️ END: normalize_pitcher_weather_outputs (2025-07-29 03:27:36 PM EDT)
+
+▶️ START: fix_away_team_column (2025-07-29 03:27:37 PM EDT)
+ℹ️ Column 'away_team_y' not found. No changes made.
+⏹️ END: fix_away_team_column (2025-07-29 03:27:37 PM EDT)
+
+▶️ START: preprocess_pitcher_weather_park_away (2025-07-29 03:27:37 PM EDT)
+⏹️ END: preprocess_pitcher_weather_park_away (2025-07-29 03:27:37 PM EDT)
+
+▶️ START: add_team_alias_columns (2025-07-29 03:27:38 PM EDT)
+[main 1427923] Add team alias columns to pitcher files
+ 2 files changed, 32 insertions(+), 32 deletions(-)
+✅ Added 'home_team' to data/adjusted/pitchers_home.csv (15 rows)
+✅ Added 'away_team' to data/adjusted/pitchers_away.csv (15 rows)
+📝 Log saved to log_add_team_alias_columns.txt
+⏹️ END: add_team_alias_columns (2025-07-29 03:27:38 PM EDT)
+
+▶️ START: add_team_columns_to_weather (2025-07-29 03:27:38 PM EDT)
+✅ Wrote home_team and away_team to data/weather_teams.csv
+⏹️ END: add_team_columns_to_weather (2025-07-29 03:27:38 PM EDT)
+
+▶️ START: apply_pitcher_weather_adjustment (2025-07-29 03:27:39 PM EDT)
