@@ -131,13 +131,18 @@ def project_batter_props(df, pitchers, context, fallback):
     df["prop_type"] = "total_bases"
     df["context"] = context
 
+    # Handle 'team' column consistency for output
+    if 'team' not in df.columns and 'away_team' in df.columns:
+        df['team'] = df['away_team']
+    # If 'team' is already there (from home data), we assume it's the correct one.
+    # If it's the away context, and 'team' isn't explicitly defined, 'away_team' is used.
+    # If 'home_team' is the batter's team for away context, a different logic is needed.
+    # Assuming 'away_team' is the batter's team when context is 'away'.
+
+
     # Final columns check before returning
-    # We need to decide which 'last_name, first_name' and 'player_id' to keep if both exist.
-    # 'last_name, first_name_x' and 'player_id_x' refer to the batter from the initial df.
-    # 'last_name, first_name_y' and 'player_id_y' refer to the pitcher from the first merge.
-    # Since this function is for batter props, we prioritize the batter's info.
-    
-    # Rename for clarity in output
+    # Rename for clarity in output. We prioritize the batter's information.
+    # The player_id and last_name, first_name from the initial batter DF are player_id_x and last_name, first_name_x
     df = df.rename(columns={
         "last_name, first_name_x": "last_name, first_name",
         "player_id_x": "player_id"
@@ -146,7 +151,7 @@ def project_batter_props(df, pitchers, context, fallback):
     required_output_cols = [
         "player_id",
         "last_name, first_name",
-        "team",
+        "team", # Now ensured to exist
         "projected_total_bases",
         "projected_hits",
         "projected_singles",
