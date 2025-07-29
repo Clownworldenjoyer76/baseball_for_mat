@@ -1,8 +1,7 @@
-
 import pandas as pd
 from pathlib import Path
 
-# File paths (updated)
+# File paths
 BAT_HOME_FILE = Path("data/end_chain/final/batter_home_final.csv")
 BAT_AWAY_FILE = Path("data/end_chain/final/batter_away_final.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
@@ -19,8 +18,10 @@ def safe_col(df, col, default=0):
 
 def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
-    df["name_key_pitcher"] = df[key_col].astype(str).str.strip()
-    pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip()
+
+    # Pitcher merge key
+    df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
+    pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
     missing_keys = df[~df["name_key_pitcher"].isin(pitchers["name_key_pitcher"])]
     if not missing_keys.empty:
@@ -32,8 +33,9 @@ def project_batter_props(df, pitchers, context, fallback):
         how="left"
     )
 
-    df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip()
-    fallback["name_key_batter"] = fallback["name"].astype(str).str.strip()
+    # Batter merge key (fallback)
+    df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip().str.lower()
+    fallback["name_key_batter"] = fallback["last_name, first_name"].astype(str).str.strip().str.lower()
 
     df = df.merge(
         fallback[["name_key_batter", "b_total_bases", "b_rbi"]],
