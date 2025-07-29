@@ -1,43 +1,75 @@
-# project_batter_props.py
 import pandas as pd
 from pathlib import Path
 
-# --- CHANGE THESE IMPORTS ---
-# From: from .utils import load_csv
-#       from .data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
-#       from .projection_formulas import calculate_all_projections
-# To:   from utils import load_csv
-#       from data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
-#       from projection_formulas import calculate_all_projections
-from utils import load_csv
-from data_preprocessing import merge_with_pitcher_data, apply_batter_fallback_stats
-from projection_formulas import calculate_all_projections
-# ----------------------------
-
-# File paths (remain the same)
+# File paths
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
 BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
 FALLBACK_FILE = Path("data/cleaned/batters_today.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
-def project_batter_props(df: pd.DataFrame, pitchers: pd.DataFrame, context: str, fallback: pd.DataFrame) -> pd.DataFrame:
-    """
-    Orchestrates the batter projection process for a given DataFrame.
-    """
-    # Step 1: Preprocess data (merge with pitchers, apply fallback)
-    df_prepared = merge_with_pitcher_data(df, pitchers, context)
-    df_prepared = apply_batter_fallback_stats(df_prepared, fallback)
+def load_csv(path):
+    if not path.exists():
+        raise FileNotFoundError(f"Missing file: {path}")
+    return pd.read_csv(path)
 
-    # Step 2: Calculate all projections
-    df_projected = calculate_all_projections(df_prepared)
+def safe_col(df, col, default=0):
+    return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
 
-    # Step 3: Add final metadata and select columns
-    df_projected["prop_type"] = "total_bases"
-    df_projected["context"] = context
-    df_projected = df_projected.rename(columns={"batter_name": "name"})
+def project_batter_props(df, pitchers, context, fallback):
+    key_col = "pitcher_away" if context == "home" else "pitcher_home"
+    df["name_key"] = df[key_col].astype(str).str.strip().str.lower()
+    pitchers["name_key"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
-    return df_projected[[
+    df = df.merge(
+        pitchers.drop(columns=["team_context", "team"], errors="ignore"),
+        on="name_key",
+        how="left"
+    )
+
+    # Normalize and align fallback names
+    fallback["name_key"] = fallback["name"].astype(str).str.strip().str.lower()
+    df["batter_name"] = df["batter_name"].astype(str).str.strip()
+    df["name_key"] = df["batter_name"].str.lower()
+
+    df = df.merge(
+        fallback[["name_key", "b_total_bases", "b_rbi"]],
+        on="name_key",
+        how="left",
+        suffixes=("", "_fallback")
+    )
+
+    for col in ["b_total_bases", "b_rbi"]:
+        fallback_col = f"{col}_fallback"
+        if fallback_col in df.columns:
+            df[col] = df[col].fillna(df[fallback_col])
+
+    # Calculate props
+    df["projected_total_bases"] = (
+        safe_col(df, "adj_woba_combined", 0) * 1.75 +
+        safe_col(df, "whiff%", 0) * -0.1 +
+        safe_col(df, "zone_swing_miss%", 0) * -0.05 +
+        safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
+        safe_col(df, "gb%", 0) * -0.02 +
+        safe_col(df, "fb%", 0) * 0.03 +
+        safe_col(df, "innings_pitched", 0) * -0.01 +
+        safe_col(df, "strikeouts", 0) * 0.005
+    ).round(2)
+
+    df["projected_hits"] = safe_col(df, "hit", 0).round(2)
+    df["projected_walks"] = safe_col(df, "bb_percent", 0).round(2)
+    df["projected_singles"] = (
+        df["projected_hits"] -
+        safe_col(df, "double", 0) -
+        safe_col(df, "triple", 0) -
+        safe_col(df, "home_run", 0)
+    ).clip(lower=0).round(2)
+
+    df["prop_type"] = "total_bases"
+    df["context"] = context
+    df = df.rename(columns={"batter_name": "name"})
+
+    return df[[
         "name", "team", "projected_total_bases", "projected_hits",
         "projected_singles", "projected_walks", "b_rbi", "prop_type", "context"
     ]]
@@ -55,10 +87,10 @@ def main():
     print("📊 Projecting props for away batters...")
     away_proj = project_batter_props(bat_away, pitchers, "away", fallback)
 
-    full = pd.concat([home_proj, away_proj], ignore_index=True)
-    full.to_csv(OUTPUT_FILE, index=False)
+    print("💾 Saving output...")
+    all_proj = pd.concat([home_proj, away_proj], ignore_index=True)
+    all_proj.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Projections saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
-
