@@ -21,6 +21,11 @@ def project_batter_props(df, pitchers, context, fallback):
     df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
     pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
 
+    # Validate pitcher key existence before merge
+    missing_keys = df[~df["name_key_pitcher"].isin(pitchers["name_key_pitcher"])]
+    if not missing_keys.empty:
+        print(f"⚠️ WARNING: {len(missing_keys)} batters had no matching pitcher data and may result in NaNs")
+
     df = df.merge(
         pitchers.drop(columns=["team_context", "team"], errors="ignore"),
         on="name_key_pitcher",

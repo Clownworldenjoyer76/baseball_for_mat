@@ -53,3 +53,22 @@ def standardize_name_key(df: pd.DataFrame, name_column: str) -> pd.DataFrame:
     df_copy = df.copy() # Avoid modifying original DataFrame in place if it's reused
     df_copy["name_key"] = df_copy[name_column].astype(str).str.strip().str.lower()
     return df_copy
+
+
+def standardize_name_key(df: pd.DataFrame, name_col: str = "last_name, first_name") -> pd.DataFrame:
+    """
+    Adds a 'name_key' column to the DataFrame, standardized for merge operations.
+    Applies lowercasing, trimming, and accent stripping.
+    """
+    def strip_accents(text):
+        return ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+
+    import re
+    def normalize(name):
+        name = name.strip().lower()
+        name = strip_accents(name)
+        name = re.sub(r'[^a-z0-9, ]+', '', name)
+        return name
+
+    df['name_key'] = df[name_col].astype(str).apply(normalize)
+    return df

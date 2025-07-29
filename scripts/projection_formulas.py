@@ -20,8 +20,8 @@ def calculate_projected_total_bases(df: pd.DataFrame) -> pd.DataFrame:
 
     # List of columns used in the calculation
     input_cols = [
-        "adj_woba_combined", "whiff%", "zone_swing_miss%",
-        "out_of_zone_swing_miss%", "gb%", "fb%",
+        "adj_woba_combined", "whiff_percent", "zone_swing_miss_percent",
+        "out_of_zone_swing_miss_percent", "gb_percent", "fb_percent",
         "innings_pitched", "strikeouts"
     ]
     
@@ -38,11 +38,11 @@ def calculate_projected_total_bases(df: pd.DataFrame) -> pd.DataFrame:
 
     df_copy["projected_total_bases"] = (
         safe_col(df_copy, "adj_woba_combined", 0) * 1.75 +
-        safe_col(df_copy, "whiff%", 0) * -0.1 +
-        safe_col(df_copy, "zone_swing_miss%", 0) * -0.05 +
-        safe_col(df_copy, "out_of_zone_swing_miss%", 0) * -0.05 +
-        safe_col(df_copy, "gb%", 0) * -0.02 +
-        safe_col(df_copy, "fb%", 0) * 0.03 +
+        safe_col(df_copy, "whiff_percent", 0) * -0.1 +
+        safe_col(df_copy, "zone_swing_miss_percent", 0) * -0.05 +
+        safe_col(df_copy, "out_of_zone_swing_miss_percent", 0) * -0.05 +
+        safe_col(df_copy, "gb_percent", 0) * -0.02 +
+        safe_col(df_copy, "fb_percent", 0) * 0.03 +
         safe_col(df_copy, "innings_pitched", 0) * -0.01 +
         safe_col(df_copy, "strikeouts", 0) * 0.005
     ).round(2)
