@@ -1,11 +1,12 @@
+
 import pandas as pd
 from pathlib import Path
 
-# File paths
-BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
-BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
-PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
-FALLBACK_FILE = Path("data/end_chain/bat_today.csv")
+# File paths (updated)
+BAT_HOME_FILE = Path("data/end_chain/final/normalize_end/batter_home_final.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/normalize_end/batter_away_final.csv")
+PITCHERS_FILE = Path("data/end_chain/final/normalize_end/startingpitchers_final.csv")
+FALLBACK_FILE = Path("data/end_chain/final/normalize_end/bat_today_final.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
 def load_csv(path):
@@ -18,10 +19,9 @@ def safe_col(df, col, default=0):
 
 def project_batter_props(df, pitchers, context, fallback):
     key_col = "pitcher_away" if context == "home" else "pitcher_home"
-    df["name_key_pitcher"] = df[key_col].astype(str).str.strip().str.lower()
-    pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip().str.lower()
+    df["name_key_pitcher"] = df[key_col].astype(str).str.strip()
+    pitchers["name_key_pitcher"] = pitchers["last_name, first_name"].astype(str).str.strip()
 
-    # Validate pitcher key existence before merge
     missing_keys = df[~df["name_key_pitcher"].isin(pitchers["name_key_pitcher"])]
     if not missing_keys.empty:
         print(f"⚠️ WARNING: {len(missing_keys)} batters had no matching pitcher data and may result in NaNs")
@@ -32,8 +32,8 @@ def project_batter_props(df, pitchers, context, fallback):
         how="left"
     )
 
-    df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip().str.lower()
-    fallback["name_key_batter"] = fallback["name"].astype(str).str.strip().str.lower()
+    df["name_key_batter"] = df["last_name, first_name"].astype(str).str.strip()
+    fallback["name_key_batter"] = fallback["name"].astype(str).str.strip()
 
     df = df.merge(
         fallback[["name_key_batter", "b_total_bases", "b_rbi"]],
