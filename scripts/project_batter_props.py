@@ -5,7 +5,7 @@ from pathlib import Path
 BAT_HOME_FILE = Path("data/end_chain/final/updating/bat_home3.csv")
 BAT_AWAY_FILE = Path("data/end_chain/final/updating/bat_away4.csv")
 PITCHERS_FILE = Path("data/end_chain/final/startingpitchers.csv")
-FALLBACK_FILE = Path("data/cleaned/batters_today.csv")
+FALLBACK_FILE = Path("data/end_chain/bat_today.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
 
 def load_csv(path):
