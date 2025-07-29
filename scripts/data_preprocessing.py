@@ -1,13 +1,18 @@
 # data_preprocessing.py
 import pandas as pd
-# --- CHANGE THIS IMPORT ---
-# From: from .utils import standardize_name_key
-# To:   from utils import standardize_name_key
-from utils import standardize_name_key
+from utils import standardize_name_key # Assuming utils.py is in the same directory
 
 def merge_with_pitcher_data(batters_df: pd.DataFrame, pitchers_df: pd.DataFrame, context: str) -> pd.DataFrame:
     """
-    Merges batter DataFrame with relevant pitcher data.
+    Merges batter DataFrame with relevant pitcher data and normalizes team column.
+
+    Args:
+        batters_df: DataFrame containing batter data.
+        pitchers_df: DataFrame containing pitcher data.
+        context: "home" or "away", used to determine the key for merging and team column handling.
+
+    Returns:
+        Merged DataFrame with pitcher data added and 'team' column normalized.
     """
     df_copy = batters_df.copy()
     pitchers_copy = pitchers_df.copy()
@@ -16,6 +21,25 @@ def merge_with_pitcher_data(batters_df: pd.DataFrame, pitchers_df: pd.DataFrame,
     df_copy = standardize_name_key(df_copy, key_col)
     pitchers_copy = standardize_name_key(pitchers_copy, "last_name, first_name")
 
+    # --- NEW LOGIC FOR TEAM COLUMN HANDLING ---
+    if context == "away":
+        # Check if 'away_team' exists and rename it to 'team'
+        if 'away_team' in df_copy.columns:
+            df_copy = df_copy.rename(columns={"away_team": "team"})
+        # Normalize casing for the 'team' column, regardless if it was renamed or already existed
+        if 'team' in df_copy.columns:
+            # Assuming team names should be Title Case for consistency
+            df_copy['team'] = df_copy['team'].astype(str).str.title()
+    elif context == "home":
+        # For home, just ensure 'team' column exists and normalize its casing if necessary
+        # (Though you mentioned it's already normalized, this ensures consistency)
+        if 'team' in df_copy.columns:
+            df_copy['team'] = df_copy['team'].astype(str).str.title()
+    # If a 'team' column is expected but not found after these checks, the KeyError will occur later during selection,
+    # which is appropriate if it's truly missing.
+    # --- END NEW LOGIC ---
+
+    # Perform the merge
     merged_df = df_copy.merge(
         pitchers_copy.drop(columns=["team_context", "team"], errors="ignore"),
         on="name_key",
@@ -26,6 +50,7 @@ def merge_with_pitcher_data(batters_df: pd.DataFrame, pitchers_df: pd.DataFrame,
 def apply_batter_fallback_stats(main_df: pd.DataFrame, fallback_df: pd.DataFrame) -> pd.DataFrame:
     """
     Applies fallback statistics (b_total_bases, b_rbi) from a fallback DataFrame.
+    (This function remains unchanged as it doesn't directly interact with 'team' column for this issue)
     """
     df_copy = main_df.copy()
     fallback_copy = fallback_df.copy()
