@@ -139,7 +139,7 @@ def calculate_all_pitcher_projections(df: pd.DataFrame) -> pd.DataFrame:
 def project_final_score(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["adjusted_runs"] = (
-        safe_col(df, "projected_runs", 0) *
+        safe_col(df, "projected_rbi", 0) *
         safe_col(df, "park_factor", 1) *
         safe_col(df, "weather_factor", 1)
     )
