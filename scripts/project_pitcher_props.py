@@ -36,13 +36,20 @@ def main():
     df["projected_hits_allowed"] = (df["hits_per_9"] * df["innings_pitched"] / 9).round(2)
     df["projected_earned_runs"] = (df["era"] * df["innings_pitched"] / 9).round(2)
 
-    # Output format
-    out_cols = [
-        "last_name, first_name", "team", "innings_pitched",
-        "projected_strikeouts", "projected_walks", "projected_outs",
-        "projected_hits_allowed", "projected_earned_runs"
+    # Select output columns that exist
+    output_cols = [
+        "last_name, first_name", 
+        "innings_pitched", 
+        "projected_strikeouts", 
+        "projected_walks", 
+        "projected_outs", 
+        "projected_hits_allowed", 
+        "projected_earned_runs"
     ]
-    df[out_cols].to_csv(OUTPUT_FILE, index=False)
+    if "team" in df.columns:
+        output_cols.insert(1, "team")  # Insert after name
+
+    df[output_cols].to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Saved pitcher projections to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
