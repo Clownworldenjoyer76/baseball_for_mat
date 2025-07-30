@@ -1,5 +1,3 @@
-# projection_formulas.py
-# projection_formulas.py
 import pandas as pd
 from utils import safe_col
 
@@ -138,39 +136,24 @@ def calculate_all_pitcher_projections(df: pd.DataFrame) -> pd.DataFrame:
 # 📌 FINAL SCORE PROJECTION
 # ─────────────────────────────
 
-def project_final_score(batter_df: pd.DataFrame) -> pd.DataFrame:
-    df = batter_df.copy()
-
-    # Expecting columns: team, team_type (home/away), projected_runs, park_factor, weather_factor
+def project_final_score(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
     df["adjusted_runs"] = (
         safe_col(df, "projected_runs", 0) *
         safe_col(df, "park_factor", 1) *
         safe_col(df, "weather_factor", 1)
     )
 
-    team_scores = (
-        df.groupby(["team", "team_type"])
-          .agg(avg_proj_runs=("adjusted_runs", "mean"))
-          .reset_index()
-    )
-    team_scores["team_score"] = (team_scores["avg_proj_runs"] * 9).round(2)
+    home_df = df[df["home_team"].notna()]
+    away_df = df[df["away_team"].notna()]
 
-    home = team_scores.loc[team_scores["team_type"] == "home"]
-    away = team_scores.loc[team_scores["team_type"] == "away"]
-
-    if home.empty or away.empty:
-        return pd.DataFrame([{
-            "home_team": home["team"].iloc[0] if not home.empty else None,
-            "away_team": away["team"].iloc[0] if not away.empty else None,
-            "home_score": home["team_score"].iloc[0] if not home.empty else 0,
-            "away_score": away["team_score"].iloc[0] if not away.empty else 0,
-            "total_score": 0
-        }])
+    home_score = home_df["adjusted_runs"].mean() * 9 if not home_df.empty else 0
+    away_score = away_df["adjusted_runs"].mean() * 9 if not away_df.empty else 0
 
     return pd.DataFrame([{
-        "home_team": home["team"].iloc[0],
-        "away_team": away["team"].iloc[0],
-        "home_score": home["team_score"].iloc[0],
-        "away_score": away["team_score"].iloc[0],
-        "total_score": round(home["team_score"].iloc[0] + away["team_score"].iloc[0], 2)
+        "home_team": home_df["home_team"].iloc[0] if not home_df.empty else None,
+        "away_team": away_df["away_team"].iloc[0] if not away_df.empty else None,
+        "home_score": round(home_score, 2),
+        "away_score": round(away_score, 2),
+        "total_score": round(home_score + away_score, 2)
     }])
