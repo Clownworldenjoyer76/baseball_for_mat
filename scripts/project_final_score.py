@@ -5,7 +5,7 @@ from pathlib import Path
 BAT_HOME = Path("data/end_chain/final/batter_home_final.csv")
 BAT_AWAY = Path("data/end_chain/final/batter_away_final.csv")
 PITCHERS = Path("data/end_chain/final/startingpitchers_final.csv")
-PARK_FACTORS = Path("weather_input.csv")
+PARK_FACTORS = Path("data/weather_input.csv")
 WEATHER = Path("data/weather_adjustments.csv")
 
 # === OUTPUT FILE ===
