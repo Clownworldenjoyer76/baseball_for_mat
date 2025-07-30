@@ -85,7 +85,7 @@ jobs:
                 echo -e "\n---\n" >> "$ERRORS_FILE"
               fi
             elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
-              if python "scripts/${SCRIPT}" "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/pitchers_home.csv" "data/adjusted/pitchers_away.csv" >> "$LOG_FILE" 2> temp_error.log; then
+              if python "scripts/${SCRIPT}"                 "data/temp_inputs/pitchers_normalized_cleaned_copy.csv"                 "data/temp_inputs/todaysgames_normalized_copy.csv"                 "data/adjusted/pitchers_home.csv"                 "data/adjusted/pitchers_away.csv"                 >> "$LOG_FILE" 2> temp_error.log; then
                 echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
               else
                 echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
@@ -165,6 +165,7 @@ jobs:
           run_step normalize_batters_projection_columns.py
           run_step bat5.py
           run_step project_batter_props.py
+          run_step project_pitcher_props.py
 
           {
             echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
