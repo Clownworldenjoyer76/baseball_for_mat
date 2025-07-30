@@ -1,6 +1,10 @@
-
+#Projected Pitcher Props 7.30.25
 import pandas as pd
+from pathlib import Path
 from utils import safe_col
+
+# Output path
+OUTPUT_PATH = Path("data/_projections/pitcher_projections.csv")
 
 def calculate_projected_strikeouts(df: pd.DataFrame) -> pd.DataFrame:
     df_copy = df.copy()
