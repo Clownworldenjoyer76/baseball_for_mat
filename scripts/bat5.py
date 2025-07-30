@@ -27,22 +27,21 @@ def main():
     df_away = pd.read_csv(AWAY_FILE)
     df_filler = pd.read_csv(FILLER_FILE)
 
-    if "player_id" not in df_home.columns or "player_id" not in df_away.columns:
-        raise KeyError("❌ Missing 'player_id' column in one of the batter files.")
-    if "player_id" not in df_filler.columns:
-        raise KeyError("❌ Missing 'player_id' column in all_bat_col.csv")
+    for df, name in [(df_home, "batter_home_final"), (df_away, "batter_away_final"), (df_filler, "all_bat_col")]:
+        if "player_id" not in df.columns:
+            raise KeyError(f"❌ Missing 'player_id' column in {name}.csv")
 
-    # Deduplicate filler data and set index
+    # Deduplicate all
     df_filler = df_filler.drop_duplicates(subset="player_id").set_index("player_id")
+    df_home = df_home.drop_duplicates(subset="player_id").set_index("player_id")
+    df_away = df_away.drop_duplicates(subset="player_id").set_index("player_id")
 
     print("🛠️ Filling batter_home_final.csv...")
-    df_home = df_home.set_index("player_id")
     df_home = fill_missing_columns(df_home, df_filler)
     df_home.reset_index().to_csv(HOME_FILE, index=False)
     print(f"✅ Updated: {HOME_FILE}")
 
     print("🛠️ Filling batter_away_final.csv...")
-    df_away = df_away.set_index("player_id")
     df_away = fill_missing_columns(df_away, df_filler)
     df_away.reset_index().to_csv(AWAY_FILE, index=False)
     print(f"✅ Updated: {AWAY_FILE}")
