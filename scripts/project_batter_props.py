@@ -60,6 +60,10 @@ def project_batter_props(df, pitchers, context, fallback):
         right_on=expected_batter_id_in_fallback,
         how="left"
     )
+
+    # ✅ DROP duplicate player_id from fallback
+    df = df.drop(columns=["player_id.1"], errors="ignore")
+
     print("Columns in DF after second merge (Fallback):", df.columns.tolist())
 
     for col in ["b_total_bases", "b_rbi"]:
@@ -67,11 +71,11 @@ def project_batter_props(df, pitchers, context, fallback):
 
     df["projected_total_bases"] = (
         safe_col(df, "adj_woba_combined", 0) * 1.75 +
-        safe_col(df, "whiff%", 0) * -0.1 +
-        safe_col(df, "zone_swing_miss%", 0) * -0.05 +
-        safe_col(df, "out_of_zone_swing_miss%", 0) * -0.05 +
-        safe_col(df, "gb%", 0) * -0.02 +
-        safe_col(df, "fb%", 0) * 0.03 +
+        safe_col(df, "whiff_percent", 0) * -0.1 +
+        safe_col(df, "zone_swing_miss_percent", 0) * -0.05 +
+        safe_col(df, "out_of_zone_swing_miss_percent", 0) * -0.05 +
+        safe_col(df, "gb_percent", 0) * -0.02 +
+        safe_col(df, "fb_percent", 0) * 0.03 +
         safe_col(df, "innings_pitched", 0) * -0.01 +
         safe_col(df, "strikeouts", 0) * 0.005
     ).round(2)
