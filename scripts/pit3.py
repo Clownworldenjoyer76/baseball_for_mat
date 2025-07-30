@@ -16,8 +16,11 @@ def main():
     df_final = pd.read_csv(FINAL_FILE)
     df_xtra = pd.read_csv(XTRA_FILE)
 
-    df_xtra["last_name, first_name"] = df_xtra["last_name_first_name"].apply(to_last_first)
+    # Normalize name formats
+    df_final["last_name, first_name"] = df_final["last_name, first_name"].str.strip().str.title()
+    df_xtra["last_name, first_name"] = df_xtra["last_name_first_name"].apply(to_last_first).str.strip().str.title()
 
+    # Merge pitcher stats
     df_final = df_final.drop(columns=["innings_pitched", "strikeouts", "walks", "earned_runs"], errors="ignore")
     df_final = df_final.merge(
         df_xtra[["last_name, first_name", "innings_pitched", "strikeouts", "walks", "earned_runs"]],
@@ -25,7 +28,7 @@ def main():
         how="left"
     )
 
-    # ✅ Force change so Git always commits
+    # Force update so GitHub commits it
     df_final["debug_timestamp"] = pd.Timestamp.now()
 
     df_final.to_csv(FINAL_FILE, index=False)
