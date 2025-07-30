@@ -1,13 +1,12 @@
 import pandas as pd
 from pathlib import Path
+from projection_formulas import calculate_all_projections
+from utils import safe_col
 
 # File paths
 FINAL_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
 XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
 OUTPUT_FILE = Path("data/end_chain/complete/pitcher_props_projected.csv")
-
-def safe_col(df, col, default=0):
-    return df[col].fillna(default) if col in df.columns else pd.Series([default] * len(df))
 
 def main():
     print("🔄 Loading pitcher files...")
@@ -29,25 +28,33 @@ def main():
     for col in ["innings_pitched", "k_percent", "bb_percent", "era", "hits_per_9"]:
         df[col] = safe_col(df, col, 0)
 
-    # Project props
+    # Apply full projection formula logic
+    df = calculate_all_projections(df)
+
+    # Optional: also include basic traditional props
     df["projected_strikeouts"] = (df["k_percent"] / 100 * (df["innings_pitched"] / 3)).round(2)
     df["projected_walks"] = (df["bb_percent"] / 100 * (df["innings_pitched"] / 3)).round(2)
     df["projected_outs"] = (df["innings_pitched"] * 3).round(2)
     df["projected_hits_allowed"] = (df["hits_per_9"] * df["innings_pitched"] / 9).round(2)
     df["projected_earned_runs"] = (df["era"] * df["innings_pitched"] / 9).round(2)
 
-    # Select output columns that exist
+    # Final columns to output
     output_cols = [
-        "last_name, first_name", 
-        "innings_pitched", 
-        "projected_strikeouts", 
-        "projected_walks", 
-        "projected_outs", 
-        "projected_hits_allowed", 
-        "projected_earned_runs"
+        "last_name, first_name",
+        "innings_pitched",
+        "projected_total_bases",
+        "projected_hits",
+        "projected_walks",
+        "projected_singles",
+        "projected_rbi",
+        "projected_home_runs",
+        "projected_strikeouts",
+        "projected_outs",
+        "projected_hits_allowed",
+        "projected_earned_runs",
     ]
     if "team" in df.columns:
-        output_cols.insert(1, "team")  # Insert after name
+        output_cols.insert(1, "team")  # Place team after name
 
     df[output_cols].to_csv(OUTPUT_FILE, index=False)
     print(f"✅ Saved pitcher projections to: {OUTPUT_FILE}")
