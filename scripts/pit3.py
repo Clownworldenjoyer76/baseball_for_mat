@@ -4,7 +4,6 @@ from pathlib import Path
 # File paths
 FINAL_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
 XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
-OUTPUT_FILE = Path("data/end_chain/final/startingpitchers_final_fixed.csv")
 
 def main():
     df_final = pd.read_csv(FINAL_FILE)
@@ -21,8 +20,8 @@ def main():
         how="left"
     )
 
-    df_final.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Saved updated file to: {{OUTPUT_FILE}}")
+    df_final.to_csv(FINAL_FILE, index=False)
+    print(f"✅ Overwrote: {FINAL_FILE}")
 
 if __name__ == "__main__":
     main()
