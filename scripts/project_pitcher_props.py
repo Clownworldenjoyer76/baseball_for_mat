@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from projection_formulas import calculate_all_projections
+from projection_formulas import calculate_all_pitcher_projections
 from utils import safe_col
 
 # File paths
@@ -21,7 +21,7 @@ def main():
     df = df_final.merge(df_xtra, on="last_name, first_name", how="left")
 
     print("📈 Applying projection formulas...")
-    df = calculate_all_projections(df)
+    df = calculate_all_pitcher_projections(df)
 
     print("💾 Saving to:", OUTPUT_FILE)
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
