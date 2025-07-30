@@ -29,11 +29,11 @@ def main():
 
     if "player_id" not in df_home.columns or "player_id" not in df_away.columns:
         raise KeyError("❌ Missing 'player_id' column in one of the batter files.")
-
     if "player_id" not in df_filler.columns:
         raise KeyError("❌ Missing 'player_id' column in all_bat_col.csv")
 
-    df_filler = df_filler.set_index("player_id")
+    # Deduplicate filler data and set index
+    df_filler = df_filler.drop_duplicates(subset="player_id").set_index("player_id")
 
     print("🛠️ Filling batter_home_final.csv...")
     df_home = df_home.set_index("player_id")
