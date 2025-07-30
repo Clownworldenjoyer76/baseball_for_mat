@@ -15,8 +15,8 @@ def main():
     df_xtra = pd.read_csv(XTRA_FILE)
 
     print("🧼 Cleaning & aligning columns...")
-    df_final["last_name, first_name"] = df_final["last_name, first_name"].str.strip().str.title()
-    df_xtra["last_name, first_name"] = df_xtra["last_name_first_name"].apply(lambda x: str(x).strip().title())
+    df_final["last_name, first_name"] = df_final["last_name, first_name"].astype(str).str.strip().str.title()
+    df_xtra["last_name, first_name"] = df_xtra["last_name, first_name"].astype(str).str.strip().str.title()
 
     # Merge extra stats into final
     df = df_final.merge(
