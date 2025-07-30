@@ -7,7 +7,7 @@ XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
 
 def to_last_first(name):
     parts = str(name).strip().split()
-    return f"{parts[-1]}, {' '.join(parts[:-1])}" if len(parts) > 1 else name
+    return f"{parts[1]}, {parts[0]}" if len(parts) == 2 else name
 
 def main():
     if not XTRA_FILE.exists():
@@ -16,11 +16,11 @@ def main():
     df_final = pd.read_csv(FINAL_FILE)
     df_xtra = pd.read_csv(XTRA_FILE)
 
-    # Normalize name formats
+    # Normalize and convert names properly
     df_final["last_name, first_name"] = df_final["last_name, first_name"].str.strip().str.title()
     df_xtra["last_name, first_name"] = df_xtra["last_name_first_name"].apply(to_last_first).str.strip().str.title()
 
-    # Merge pitcher stats
+    # Merge and inject stats
     df_final = df_final.drop(columns=["innings_pitched", "strikeouts", "walks", "earned_runs"], errors="ignore")
     df_final = df_final.merge(
         df_xtra[["last_name, first_name", "innings_pitched", "strikeouts", "walks", "earned_runs"]],
@@ -28,7 +28,7 @@ def main():
         how="left"
     )
 
-    # Force update so GitHub commits it
+    # Force file to always commit
     df_final["debug_timestamp"] = pd.Timestamp.now()
 
     df_final.to_csv(FINAL_FILE, index=False)
