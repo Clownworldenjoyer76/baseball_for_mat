@@ -190,6 +190,7 @@ jobs:
           git config user.email "github-actions@github.com"
           git add data/adjusted/*.csv || echo "No adjusted files changed"
           git add data/end_chain/**/*.csv || echo "No end_chain files changed"
+          git add data/_projections/*.csv || echo "No projections files changed"
           git add summaries/summary.txt || echo "summary not found"
           git commit -m "Commit processed data + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
