@@ -1,4 +1,3 @@
-#Project Final Score 7.30.25
 import pandas as pd
 from pathlib import Path
 from projection_formulas import project_final_score
