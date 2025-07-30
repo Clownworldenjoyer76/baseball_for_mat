@@ -11,6 +11,7 @@ def main():
     df = pd.read_csv(BATTER_PROPS_FILE)
 
     print("🧠 Projecting final scores...")
+    df["team"] = df.apply(lambda row: row["home_team"] if row["team_type"] == "home" else row["away_team"], axis=1)
     final_df = project_final_score(df)
 
     print("💾 Saving to:", OUTPUT_FILE)
