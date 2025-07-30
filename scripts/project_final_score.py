@@ -8,7 +8,7 @@ HOME_FILE = Path("data/end_chain/final/batter_home_final.csv")
 AWAY_FILE = Path("data/end_chain/final/batter_away_final.csv")
 PARK_FACTORS = Path("data/weather_input.csv")
 WEATHER_ADJUSTMENTS = Path("data/weather_adjustments.csv")
-OUTPUT_FILE = Path("data/projections/final_scores_projected.csv")
+OUTPUT_FILE = Path("data/_projections/final_scores_projected.csv")
 
 def main():
     print("🔄 Loading batter and environment data...")
