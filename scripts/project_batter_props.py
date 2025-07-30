@@ -1,6 +1,10 @@
-
+#Project Batter Stats 7.30.25
 import pandas as pd
+from pathlib import Path
 from utils import safe_col
+
+# Output path
+OUTPUT_PATH = Path("data/_projections/projections.csv")
 
 def calculate_projected_total_bases(df: pd.DataFrame) -> pd.DataFrame:
     df_copy = df.copy()
