@@ -1,63 +1,64 @@
+
 import pandas as pd
-from pathlib import Path
-from projection_formulas import calculate_all_projections
 from utils import safe_col
 
-# File paths
-FINAL_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
-XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
-OUTPUT_FILE = Path("data/end_chain/complete/pitcher_props_projected.csv")
+def calculate_projected_strikeouts(df: pd.DataFrame) -> pd.DataFrame:
+    df_copy = df.copy()
+    df_copy["k_percent"] = safe_col(df_copy, "k_percent", 0) / 100
+    df_copy["opponent_k_rate"] = safe_col(df_copy, "opponent_k_rate", 0.22)
+    df_copy["projected_bf"] = safe_col(df_copy, "projected_bf", 22)
 
-def main():
-    print("🔄 Loading pitcher files...")
-    df_final = pd.read_csv(FINAL_FILE)
-    df_xtra = pd.read_csv(XTRA_FILE)
+    df_copy["projected_strikeouts"] = (
+        df_copy["k_percent"] * df_copy["opponent_k_rate"] * df_copy["projected_bf"]
+    ).clip(lower=0).round(2)
 
-    print("🧼 Cleaning & aligning columns...")
-    df_final["last_name, first_name"] = df_final["last_name, first_name"].astype(str).str.strip().str.title()
-    df_xtra["last_name, first_name"] = df_xtra["last_name, first_name"].astype(str).str.strip().str.title()
+    return df_copy
 
-    # Merge extra stats into final
-    df = df_final.merge(
-        df_xtra,
-        on="last_name, first_name",
-        how="left"
-    )
+def calculate_projected_walks(df: pd.DataFrame) -> pd.DataFrame:
+    df_copy = df.copy()
+    df_copy["bb_percent"] = safe_col(df_copy, "bb_percent", 0) / 100
+    df_copy["opponent_bb_rate"] = safe_col(df_copy, "opponent_bb_rate", 0.08)
+    df_copy["projected_bf"] = safe_col(df_copy, "projected_bf", 22)
 
-    # Fill missing numeric fields with 0
-    for col in ["innings_pitched", "k_percent", "bb_percent", "era", "hits_per_9"]:
-        df[col] = safe_col(df, col, 0)
+    df_copy["projected_walks"] = (
+        df_copy["bb_percent"] * df_copy["opponent_bb_rate"] * df_copy["projected_bf"]
+    ).clip(lower=0).round(2)
 
-    # Apply full projection formula logic
-    df = calculate_all_projections(df)
+    return df_copy
 
-    # Optional: also include basic traditional props
-    df["projected_strikeouts"] = (df["k_percent"] / 100 * (df["innings_pitched"] / 3)).round(2)
-    df["projected_walks"] = (df["bb_percent"] / 100 * (df["innings_pitched"] / 3)).round(2)
-    df["projected_outs"] = (df["innings_pitched"] * 3).round(2)
-    df["projected_hits_allowed"] = (df["hits_per_9"] * df["innings_pitched"] / 9).round(2)
-    df["projected_earned_runs"] = (df["era"] * df["innings_pitched"] / 9).round(2)
+def calculate_projected_outs(df: pd.DataFrame) -> pd.DataFrame:
+    df_copy = df.copy()
+    df_copy["projected_ip"] = safe_col(df_copy, "projected_ip", 5.1)
 
-    # Final columns to output
-    output_cols = [
-        "last_name, first_name",
-        "innings_pitched",
-        "projected_total_bases",
-        "projected_hits",
-        "projected_walks",
-        "projected_singles",
-        "projected_rbi",
-        "projected_home_runs",
-        "projected_strikeouts",
-        "projected_outs",
-        "projected_hits_allowed",
-        "projected_earned_runs",
-    ]
-    if "team" in df.columns:
-        output_cols.insert(1, "team")  # Place team after name
+    df_copy["projected_outs"] = (df_copy["projected_ip"] * 3).clip(lower=0).round(2)
+    return df_copy
 
-    df[output_cols].to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Saved pitcher projections to: {OUTPUT_FILE}")
+def calculate_projected_hits_allowed(df: pd.DataFrame) -> pd.DataFrame:
+    df_copy = df.copy()
+    df_copy["hits_per_9"] = safe_col(df_copy, "hits_per_9", 8.5)
+    df_copy["projected_ip"] = safe_col(df_copy, "projected_ip", 5.1)
 
-if __name__ == "__main__":
-    main()
+    df_copy["projected_hits_allowed"] = (
+        df_copy["hits_per_9"] * df_copy["projected_ip"] / 9
+    ).clip(lower=0).round(2)
+
+    return df_copy
+
+def calculate_projected_earned_runs(df: pd.DataFrame) -> pd.DataFrame:
+    df_copy = df.copy()
+    df_copy["era"] = safe_col(df_copy, "era", 4.2)
+    df_copy["projected_ip"] = safe_col(df_copy, "projected_ip", 5.1)
+
+    df_copy["projected_earned_runs"] = (
+        df_copy["era"] * df_copy["projected_ip"] / 9
+    ).clip(lower=0).round(2)
+
+    return df_copy
+
+def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
+    df = calculate_projected_strikeouts(df)
+    df = calculate_projected_walks(df)
+    df = calculate_projected_outs(df)
+    df = calculate_projected_hits_allowed(df)
+    df = calculate_projected_earned_runs(df)
+    return df
