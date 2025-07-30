@@ -3,6 +3,10 @@
 import pandas as pd
 from utils import safe_col
 
+# ─────────────────────────────
+# 📌 BATTER PROJECTIONS
+# ─────────────────────────────
+
 def calculate_projected_total_bases(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
@@ -99,4 +103,48 @@ def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
     df = calculate_projected_singles(df)
     df = calculate_projected_rbi(df)
     df = calculate_projected_home_runs(df)
+    return df
+
+# ─────────────────────────────
+# 📌 PITCHER PROJECTIONS
+# ─────────────────────────────
+
+def calculate_pitcher_strikeouts(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["projected_strikeouts"] = (
+        safe_col(df, "strikeouts", 0) / safe_col(df, "innings_pitched", 1) * 5.5
+    ) * safe_col(df, "weather_factor", 1)
+    df["projected_strikeouts"] = df["projected_strikeouts"].clip(lower=0).round(2)
+    return df
+
+def calculate_pitcher_walks(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    walk_rate = safe_col(df, "walks", 0) / safe_col(df, "innings_pitched", 1)
+    df["projected_walks_allowed"] = (
+        walk_rate * 5.5
+    ) * safe_col(df, "weather_factor", 1)
+    df["projected_walks_allowed"] = df["projected_walks_allowed"].clip(lower=0).round(2)
+    return df
+
+def calculate_pitcher_home_runs(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    hr_9 = safe_col(df, "home_run", 0) / (safe_col(df, "innings_pitched", 1) / 9.0)
+    df["projected_home_runs_allowed"] = (
+        hr_9 * (5.5 / 9.0)
+    ) * safe_col(df, "park_factor", 1) * safe_col(df, "weather_factor", 1)
+    df["projected_home_runs_allowed"] = df["projected_home_runs_allowed"].clip(lower=0).round(2)
+    return df
+
+def calculate_pitcher_ip(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["projected_innings_pitched"] = (
+        safe_col(df, "innings_pitched", 0) / 20.0 * 5.5
+    ).clip(lower=0).round(2)
+    return df
+
+def calculate_all_pitcher_projections(df: pd.DataFrame) -> pd.DataFrame:
+    df = calculate_pitcher_ip(df)
+    df = calculate_pitcher_strikeouts(df)
+    df = calculate_pitcher_walks(df)
+    df = calculate_pitcher_home_runs(df)
     return df
