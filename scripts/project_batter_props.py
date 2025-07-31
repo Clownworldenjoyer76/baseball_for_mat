@@ -26,14 +26,17 @@ def main():
         "slg_percent": "slg"
     }, inplace=True)
 
-    # Ensure all required numeric fields exist
     required_cols = ["hit", "hr", "rbi", "bb_percent", "obp", "slg", "woba"]
     for col in required_cols:
         if col not in df.columns:
             print(f"⚠️ WARNING: Column '{col}' missing — filling with 0s")
             df[col] = 0
         else:
-            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+            try:
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+            except Exception as e:
+                print(f"❌ ERROR processing column '{col}': {e}")
+                df[col] = 0
 
     print("✅ Running projection formulas...")
     df = calculate_all_projections(df)
