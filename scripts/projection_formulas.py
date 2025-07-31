@@ -5,33 +5,40 @@ from utils import safe_col
 def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # Ensure required columns exist with fallback defaults
+    # Ensure required columns exist
     for col in [
         "hit", "hr", "rbi", "bb_percent", "obp", "slg", "woba",
         "era", "xfip", "whip", "k_percent", "bb_percent_pitcher"
     ]:
         df[col] = safe_col(df, col, 0)
 
-    # Projected total bases: batter + pitcher suppression
-    df["total_bases_projection"] = (
-        df["hit"] * 0.75 +
-        df["hr"] * 1.4 +
-        df["slg"] * 2.0 -
-        df["whip"] * 0.8 -
-        df["k_percent"] * 0.4
-    ).round(2)
+    # Estimated plate appearances per game
+    df["estimated_pa"] = 4.1
 
-    # Projected hits: batter + pitcher interaction
+    # Projected per-game hits vs specific pitcher
     df["total_hits_projection"] = (
-        df["hit"] * 0.6 +
-        df["obp"] * 1.1 -
-        df["era"] * 0.5 -
-        df["xfip"] * 0.5
+        df["hit"] / df["estimated_pa"] * (1 - df["k_percent"] / 100)
+        * (1 - df["whip"] / 10)
+        * df["estimated_pa"]
     ).round(2)
 
-    # Add avg_hr and avg_woba for scoring model
-    df["avg_hr"] = df["hr"]
-    df["avg_woba"] = df["woba"]
+    # Projected per-game total bases
+    df["total_bases_projection"] = (
+        df["slg"] * (1 - df["era"] / 10)
+        * df["estimated_pa"] / 4.0
+    ).round(2)
+
+    # Projected per-game home runs
+    df["avg_hr"] = (
+        df["hr"] / df["estimated_pa"]
+        * (1 - df["xfip"] / 10)
+        * df["estimated_pa"]
+    ).round(2)
+
+    # Projected per-game wOBA adjusted by pitcher effectiveness
+    df["avg_woba"] = (
+        df["woba"] * (1 - df["era"] / 10) * (1 - df["whip"] / 10)
+    ).round(3)
 
     return df
 
