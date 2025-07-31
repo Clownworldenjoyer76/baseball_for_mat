@@ -5,7 +5,7 @@ from projection_formulas import calculate_all_projections
 from utils import safe_col
 
 # File paths
-FINAL_FILE = Path("data/end_chain/final/batter_props_input.csv")
+FINAL_FILE = Path("data/end_chain/final/bat_today_final.csv")
 OUTPUT_FILE = Path("data/_projections/batter_props_projected.csv")
 
 def main():
