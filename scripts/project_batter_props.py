@@ -26,6 +26,9 @@ def main():
         "slg_percent": "slg"
     }, inplace=True)
 
+    # Remove any duplicate column names after renaming
+    df = df.loc[:, ~df.columns.duplicated()]
+
     required_cols = ["hit", "hr", "rbi", "bb_percent", "obp", "slg", "woba"]
     for col in required_cols:
         if col not in df.columns:
