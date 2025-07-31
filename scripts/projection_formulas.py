@@ -5,36 +5,31 @@ from utils import safe_col
 def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    # Ensure required columns exist
     for col in [
         "hit", "hr", "rbi", "bb_percent", "obp", "slg", "woba",
         "era", "xfip", "whip", "k_percent", "bb_percent_pitcher"
     ]:
         df[col] = safe_col(df, col, 0)
 
-    # Estimated PA and AB per game
     df["estimated_pa"] = 4.1
     df["estimated_ab"] = 3.6
 
-    # Normalize batter stats to per-PA rates (use 500 PA instead of 600)
-    df["hit_rate"] = df["hit"] / 500
+    # Adjusted: reduce denominator to 400
+    df["hit_rate"] = df["hit"] / 400
     df["hr_rate"] = df["hr"] / 400
     df["slg_rate"] = df["slg"]
     df["woba_rate"] = df["woba"]
 
-    # Cap suppression multipliers at more forgiving thresholds
     df["k_mult"] = (1 - df["k_percent"] / 100).clip(lower=0.7)
     df["whip_mult"] = (1 - df["whip"] / 10).clip(lower=0.75)
     df["era_mult"] = (1 - df["era"] / 10).clip(lower=0.70)
     df["xfip_mult"] = (1 - df["xfip"] / 10).clip(lower=0.75)
 
-    # Adjusted rates
     df["hit_rate_adj"] = df["hit_rate"] * df["k_mult"] * df["whip_mult"]
     df["hr_rate_adj"] = df["hr_rate"] * df["xfip_mult"]
     df["slg_rate_adj"] = df["slg_rate"] * df["era_mult"]
     df["woba_rate_adj"] = df["woba_rate"] * df["era_mult"] * df["whip_mult"]
 
-    # Project per-game outcomes
     df["total_hits_projection"] = df["hit_rate_adj"] * df["estimated_pa"]
     df["avg_hr"] = df["hr_rate_adj"] * df["estimated_pa"]
     df["total_bases_projection"] = df["slg_rate_adj"] * df["estimated_ab"]
