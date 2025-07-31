@@ -3,14 +3,14 @@ import pandas as pd
 
 def calculate_all_projections(df):
     # Safe conversions
-    for col in ["hit", "hr", "slg", "woba", "era", "whip", "k_percent", "bb_percent"]:
+    for col in ["hit", "home_run", "slg_percent", "woba", "era", "whip", "k_percent", "bb_percent"]:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
     # Base projection rates
     df["hit_rate"] = df["hit"] / 400
-    df["hr_rate"] = df["hr"] / 400
-    df["tb_rate"] = df["slg"]
+    df["hr_rate"] = df["home_run"] / 400
+    df["tb_rate"] = df["slg_percent"]
     df["woba_rate"] = df["woba"]
 
     # Modifier based on plate discipline
