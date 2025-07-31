@@ -36,10 +36,14 @@ def main():
     df["era"] = (df["p_earned_run"] / df["innings_pitched"]) * 9
     df["era"] = df["era"].fillna(0).round(2)
 
-    # Remove exact duplicate rows by player_id
+    print("🧮 Calculating WHIP from walk + hit / innings_pitched...")
+    df["whip"] = (df["walk"] + df["hit"]) / df["innings_pitched"]
+    df["whip"] = df["whip"].fillna(0).round(2)
+
+    # Drop duplicates
     df = df.drop_duplicates(subset=["player_id"], keep="first")
 
-    # Clean duplicate columns (_x/_y style suffixes)
+    # Resolve _dup columns
     for col in df.columns:
         if col.endswith("_dup"):
             base = col.replace("_dup", "")
