@@ -20,6 +20,12 @@ def main():
     print("🧬 Concatenating home + away batters...")
     df = pd.concat([df_home, df_away], ignore_index=True)
 
+    print("🔁 Renaming columns: home_run → hr, slg_percent → slg")
+    df.rename(columns={
+        "home_run": "hr",
+        "slg_percent": "slg"
+    }, inplace=True)
+
     # Ensure all required numeric fields exist
     required_cols = ["hit", "hr", "rbi", "bb_percent", "obp", "slg", "woba"]
     for col in required_cols:
