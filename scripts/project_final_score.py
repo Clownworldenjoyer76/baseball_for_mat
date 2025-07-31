@@ -14,13 +14,12 @@ def main():
 
     # Normalize team join keys
     batters["team"] = batters["team"].str.strip().str.upper()
-    pitchers["team_x"] = pitchers["team_x"].str.strip().str.upper()
+    pitchers["team"] = pitchers["team"].str.strip().str.upper()
 
     # Join each batter with the opposing pitcher
     merged = batters.merge(
         pitchers,
-        left_on="team",
-        right_on="team_x",
+        on="team",
         suffixes=("", "_pitch"),
         how="left"
     )
