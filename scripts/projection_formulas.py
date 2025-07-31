@@ -12,23 +12,29 @@ def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
     ]:
         df[col] = safe_col(df, col, 0)
 
-    # Estimated plate appearances and ABs per game
+    # Estimated PA and AB per game
     df["estimated_pa"] = 4.1
     df["estimated_ab"] = 3.6
 
-    # Normalize batter season stats to per-PA rates
-    df["hit_rate"] = df["hit"] / 600  # assume 600 PA season
-    df["hr_rate"] = df["hr"] / 600
-    df["slg_rate"] = df["slg"]  # already a rate
-    df["woba_rate"] = df["woba"]  # already a rate
+    # Normalize batter stats to per-PA rates
+    df["hit_rate"] = df["hit"] / 600
+    df["hr_rate"] = df["hr"] / 400  # 🔧 smaller denominator to avoid zeroing out
+    df["slg_rate"] = df["slg"]
+    df["woba_rate"] = df["woba"]
 
-    # Adjusted rates with pitcher suppression
-    df["hit_rate_adj"] = df["hit_rate"] * (1 - df["k_percent"] / 100) * (1 - df["whip"] / 10)
-    df["hr_rate_adj"] = df["hr_rate"] * (1 - df["xfip"] / 10)
-    df["slg_rate_adj"] = df["slg_rate"] * (1 - df["era"] / 10)
-    df["woba_rate_adj"] = df["woba_rate"] * (1 - df["era"] / 10) * (1 - df["whip"] / 10)
+    # Suppression caps to avoid collapsing
+    df["k_mult"] = (1 - df["k_percent"] / 100).clip(lower=0.6)
+    df["whip_mult"] = (1 - df["whip"] / 10).clip(lower=0.7)
+    df["era_mult"] = (1 - df["era"] / 10).clip(lower=0.65)
+    df["xfip_mult"] = (1 - df["xfip"] / 10).clip(lower=0.7)
 
-    # Project per-game outputs
+    # Adjusted rates
+    df["hit_rate_adj"] = df["hit_rate"] * df["k_mult"] * df["whip_mult"]
+    df["hr_rate_adj"] = df["hr_rate"] * df["xfip_mult"]
+    df["slg_rate_adj"] = df["slg_rate"] * df["era_mult"]
+    df["woba_rate_adj"] = df["woba_rate"] * df["era_mult"] * df["whip_mult"]
+
+    # Project per-game outcomes
     df["total_hits_projection"] = df["hit_rate_adj"] * df["estimated_pa"]
     df["avg_hr"] = df["hr_rate_adj"] * df["estimated_pa"]
     df["total_bases_projection"] = df["slg_rate_adj"] * df["estimated_ab"]
