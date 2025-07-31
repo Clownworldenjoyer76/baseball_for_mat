@@ -15,6 +15,11 @@ def main():
     df_cleaned = pd.read_csv(CLEANED_FILE)
     df_xtra = pd.read_csv(XTRA_FILE)
 
+    # Log contents of xtra file for debugging
+    print("📊 XTRA DF Columns:", df_xtra.columns.tolist())
+    if "p_formatted_ip" in df_xtra.columns:
+        print("🧪 Sample p_formatted_ip:", df_xtra["p_formatted_ip"].dropna().head())
+
     # Force player_id to string for safe merge
     for df in [df_final, df_cleaned, df_xtra]:
         df["player_id"] = df["player_id"].astype(str)
@@ -31,7 +36,6 @@ def main():
     print("🔗 Merging xtra stats (IP + ER) on player_id...")
     df = df.merge(df_xtra[["player_id", "p_earned_run", "p_formatted_ip"]], on="player_id", how="left")
 
-    # Validate ERA source columns
     if "p_formatted_ip" not in df.columns:
         raise KeyError("'p_formatted_ip' not in merged DataFrame columns")
     if df["p_formatted_ip"].isnull().all():
