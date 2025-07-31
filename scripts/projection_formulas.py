@@ -16,17 +16,17 @@ def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
     df["estimated_pa"] = 4.1
     df["estimated_ab"] = 3.6
 
-    # Normalize batter stats to per-PA rates
-    df["hit_rate"] = df["hit"] / 600
-    df["hr_rate"] = df["hr"] / 400  # 🔧 smaller denominator to avoid zeroing out
+    # Normalize batter stats to per-PA rates (use 500 PA instead of 600)
+    df["hit_rate"] = df["hit"] / 500
+    df["hr_rate"] = df["hr"] / 400
     df["slg_rate"] = df["slg"]
     df["woba_rate"] = df["woba"]
 
-    # Suppression caps to avoid collapsing
-    df["k_mult"] = (1 - df["k_percent"] / 100).clip(lower=0.6)
-    df["whip_mult"] = (1 - df["whip"] / 10).clip(lower=0.7)
-    df["era_mult"] = (1 - df["era"] / 10).clip(lower=0.65)
-    df["xfip_mult"] = (1 - df["xfip"] / 10).clip(lower=0.7)
+    # Cap suppression multipliers at more forgiving thresholds
+    df["k_mult"] = (1 - df["k_percent"] / 100).clip(lower=0.7)
+    df["whip_mult"] = (1 - df["whip"] / 10).clip(lower=0.75)
+    df["era_mult"] = (1 - df["era"] / 10).clip(lower=0.70)
+    df["xfip_mult"] = (1 - df["xfip"] / 10).clip(lower=0.75)
 
     # Adjusted rates
     df["hit_rate_adj"] = df["hit_rate"] * df["k_mult"] * df["whip_mult"]
