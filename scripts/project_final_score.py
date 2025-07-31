@@ -12,36 +12,34 @@ def main():
     batters = pd.read_csv(BATTER_FILE)
     pitchers = pd.read_csv(PITCHER_FILE)
 
-    # Normalize join keys
+    # Normalize team names
     batters["team"] = batters["team"].str.strip().str.upper()
     pitchers["team"] = pitchers["team_x"].str.strip().str.upper()
 
-    # Merge on team
+    # Merge and deduplicate
     merged = batters.merge(pitchers, on="team", suffixes=("", "_pitch"), how="left")
-
-    # Deduplicate on name + team to avoid inflating score
     merged = merged.drop_duplicates(subset=["name", "team"])
 
-    # Compute raw adjusted score with rebalanced weights
+    # Rebalanced scoring
     merged["adjusted_score"] = (
         merged["total_hits_projection"].fillna(0)
         + merged["avg_hr"].fillna(0) * 1.1
         + merged["total_bases_projection"].fillna(0) * 0.1
     )
 
-    raw_scores = (
+    # Aggregate and normalize to 137.5 total runs
+    team_scores = (
         merged.groupby("team")["adjusted_score"]
         .sum()
         .reset_index()
     )
 
-    # Normalize total to 137.5
-    scaling = 137.5 / raw_scores["adjusted_score"].sum()
-    raw_scores["projected_team_score"] = (raw_scores["adjusted_score"] * scaling).round(2)
-    raw_scores.drop(columns="adjusted_score", inplace=True)
+    scale = 137.5 / team_scores["adjusted_score"].sum()
+    team_scores["projected_team_score"] = (team_scores["adjusted_score"] * scale).round(2)
+    team_scores.drop(columns="adjusted_score", inplace=True)
 
     print("💾 Saving final score output to:", OUTPUT_FILE)
-    raw_scores.to_csv(OUTPUT_FILE, index=False)
+    team_scores.to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
     main()
