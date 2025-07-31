@@ -1,49 +1,51 @@
-
 import pandas as pd
 from pathlib import Path
+from projection_formulas import project_final_score
 
 # File paths
-BATTER_FILE = Path("data/_projections/batter_props_projected.csv")
-PITCHER_FILE = Path("data/_projections/pitcher_props_projected.csv")
+BATTER_PROPS_FILE = Path("data/_projections/batter_props_projected.csv")
 OUTPUT_FILE = Path("data/_projections/final_scores_projected.csv")
 
 def main():
-    print("🔄 Loading projected batter and pitcher data...")
-    batters = pd.read_csv(BATTER_FILE)
-    pitchers = pd.read_csv(PITCHER_FILE)
+    print("\n--- DEBUG START ---")
+    print(f"DEBUG: Script started at {pd.Timestamp.now()}")
+    print(f"DEBUG: Input file path: {BATTER_PROPS_FILE}")
+    print(f"DEBUG: Output file path: {OUTPUT_FILE}")
 
-    # Normalize join keys
-    batters["team"] = batters["team"].str.upper().str.strip()
-    batters["opponent"] = batters["opponent"].str.upper().str.strip()
-    pitchers["team"] = pitchers["team"].str.upper().str.strip()
+    print("\n🔄 Loading projected batter data...")
+    try:
+        df = pd.read_csv(BATTER_PROPS_FILE)
+        print(f"DEBUG: Successfully loaded '{BATTER_PROPS_FILE}'.")
+        print(f"DEBUG: DataFrame head after loading:\n{df.head()}")
+        print(f"DEBUG: DataFrame shape after loading: {df.shape}")
+        if df.empty:
+            print("DEBUG: WARNING: Loaded DataFrame is empty!")
+    except FileNotFoundError:
+        print(f"❌ Error: File not found: {BATTER_PROPS_FILE}")
+        return
+    except Exception as e:
+        print(f"❌ Error loading file: {e}")
+        return
 
-    # Join each batter row to opposing pitcher
-    merged = batters.merge(
-        pitchers,
-        left_on="opponent",
-        right_on="team",
-        suffixes=("", "_opp"),
-        how="left"
-    )
+    # Detect valid team column
+    team_col = None
+    for col in ["home_team", "away_team", "team"]:
+        if col in df.columns:
+            team_col = col
+            break
 
-    print("🧮 Computing final team-level score projection...")
+    if team_col is None:
+        print("❌ Error: No team column found in batter props file.")
+        return
 
-    # Suppression factor already baked into batter projections
-    merged["adjusted_score"] = (
-        merged["total_hits_projection"].fillna(0)
-        + merged["avg_hr"].fillna(0) * 1.5
-        + merged["total_bases_projection"].fillna(0) * 0.25
-    )
+    df[team_col] = df[team_col].str.upper().str.strip()
 
-    team_scores = (
-        merged.groupby(["game_id", "team"])["adjusted_score"]
-        .sum()
-        .reset_index()
-        .rename(columns={"adjusted_score": "projected_team_score"})
-    )
+    print("📊 Running final score projections...")
+    result = project_final_score(df)
 
-    print("💾 Saving final score output to:", OUTPUT_FILE)
-    team_scores.to_csv(OUTPUT_FILE, index=False)
+    print(f"💾 Saving results to {OUTPUT_FILE}")
+    result.to_csv(OUTPUT_FILE, index=False)
+    print("✅ Done.")
 
 if __name__ == "__main__":
     main()

@@ -1,22 +1,35 @@
-
 import pandas as pd
 from pathlib import Path
-from projection_formulas import calculate_all_projections
-from utils import safe_col
+from projection_formulas import project_batter_props
 
 # File paths
-FINAL_FILE = Path("data/end_chain/final/batter_props_input.csv")
-OUTPUT_FILE = Path("data/_projections/batter_props_projected.csv")
+BAT_HOME_FILE = Path("data/end_chain/final/batter_home_final.csv")
+BAT_AWAY_FILE = Path("data/end_chain/final/batter_away_final.csv")
+PITCHERS_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
+FALLBACK_FILE = Path("data/end_chain/final/bat_today_final.csv")
+OUTPUT_FILE = Path("data/end_chain/complete/batter_props_projected.csv")
+
+def load_csv(path):
+    if not path.exists():
+        raise FileNotFoundError(f"Missing file: {path}")
+    return pd.read_csv(path)
 
 def main():
-    print("🔄 Loading batter input file...")
-    df = pd.read_csv(FINAL_FILE)
+    print("🔄 Loading input files...")
+    df_home = load_csv(BAT_HOME_FILE)
+    df_away = load_csv(BAT_AWAY_FILE)
+    pitchers = load_csv(PITCHERS_FILE)
+    fallback = load_csv(FALLBACK_FILE)
 
-    print("🧮 Running projection formulas...")
-    df = calculate_all_projections(df)
+    print("🧠 Projecting batter props...")
+    projected_home = project_batter_props(df_home, pitchers, "home", fallback)
+    projected_away = project_batter_props(df_away, pitchers, "away", fallback)
 
-    print("💾 Saving to:", OUTPUT_FILE)
-    df.to_csv(OUTPUT_FILE, index=False)
+    combined = pd.concat([projected_home, projected_away], ignore_index=True)
+
+    print(f"💾 Saving results to {OUTPUT_FILE}")
+    combined.to_csv(OUTPUT_FILE, index=False)
+    print("✅ Done.")
 
 if __name__ == "__main__":
     main()
