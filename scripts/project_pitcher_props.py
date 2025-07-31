@@ -9,15 +9,11 @@ CLEANED_FILE = Path("data/cleaned/pitchers_normalized_cleaned.csv")
 XTRA_FILE = Path("data/end_chain/pitchers_xtra.csv")
 OUTPUT_FILE = Path("data/_projections/pitcher_props_projected.csv")
 
-def normalize(df):
-    df["last_name, first_name"] = df["last_name, first_name"].astype(str).str.strip().str.title()
-    return df
-
 def main():
     print("🔄 Loading pitcher base + enriched files...")
-    df_final = normalize(pd.read_csv(FINAL_FILE))
-    df_cleaned = normalize(pd.read_csv(CLEANED_FILE))
-    df_xtra = normalize(pd.read_csv(XTRA_FILE))
+    df_final = pd.read_csv(FINAL_FILE)
+    df_cleaned = pd.read_csv(CLEANED_FILE)
+    df_xtra = pd.read_csv(XTRA_FILE)
 
     # Rename mapped fields
     df_cleaned.rename(columns={
@@ -25,9 +21,11 @@ def main():
         "slg_percent": "slg"
     }, inplace=True)
 
-    print("🔗 Merging normalized stats...")
-    df = df_final.merge(df_cleaned, on="last_name, first_name", how="left")
-    df = df.merge(df_xtra[["last_name, first_name", "p_earned_run", "p_formatted_ip"]], on="last_name, first_name", how="left")
+    print("🔗 Merging cleaned stats on player_id...")
+    df = df_final.merge(df_cleaned, on="player_id", how="left")
+
+    print("🔗 Merging xtra stats (IP + ER) on player_id...")
+    df = df.merge(df_xtra[["player_id", "p_earned_run", "p_formatted_ip"]], on="player_id", how="left")
 
     print("🧮 Calculating ERA from earned runs and IP...")
     df["era"] = (df["p_earned_run"] / df["p_formatted_ip"]) * 9
