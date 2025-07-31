@@ -1,7 +1,6 @@
 
 import pandas as pd
 from pathlib import Path
-from projection_formulas import project_final_score
 
 # File paths
 BATTER_FILE = Path("data/_projections/batter_props_projected.csv")
@@ -9,38 +8,42 @@ PITCHER_FILE = Path("data/_projections/pitcher_props_projected.csv")
 OUTPUT_FILE = Path("data/_projections/final_scores_projected.csv")
 
 def main():
-    print("🔄 Loading batter and pitcher projections...")
-    bat = pd.read_csv(BATTER_FILE)
-    pit = pd.read_csv(PITCHER_FILE)
+    print("🔄 Loading projected batter and pitcher data...")
+    batters = pd.read_csv(BATTER_FILE)
+    pitchers = pd.read_csv(PITCHER_FILE)
 
-    for col in ["game_id", "team", "opponent", "projected_final_score"]:
-        if col in bat.columns:
-            bat[col] = bat[col].astype(str).str.strip()
-        if col in pit.columns:
-            pit[col] = pit[col].astype(str).str.strip()
+    # Normalize join keys
+    batters["team"] = batters["team"].str.upper().str.strip()
+    batters["opponent"] = batters["opponent"].str.upper().str.strip()
+    pitchers["team"] = pitchers["team"].str.upper().str.strip()
 
-    print("🔁 Merging each batter with their opposing pitcher by game_id + opponent...")
-    merged = bat.merge(
-        pit,
-        left_on=["game_id", "opponent"],
-        right_on=["game_id", "team"],
-        suffixes=("_batter", "_pitcher"),
+    # Join each batter row to opposing pitcher
+    merged = batters.merge(
+        pitchers,
+        left_on="opponent",
+        right_on="team",
+        suffixes=("", "_opp"),
         how="left"
     )
 
-    print("✅ Applying final score projection formula...")
-    merged = project_final_score(merged)
+    print("🧮 Computing final team-level score projection...")
 
-    print("📊 Aggregating projected scores by game_id + batter's team...")
-    output = (
-        merged.groupby(["game_id", "team_batter"])["projected_final_score"]
-        .mean()
-        .reset_index()
-        .rename(columns={"team_batter": "team"})
+    # Suppression factor already baked into batter projections
+    merged["adjusted_score"] = (
+        merged["total_hits_projection"].fillna(0)
+        + merged["avg_hr"].fillna(0) * 1.5
+        + merged["total_bases_projection"].fillna(0) * 0.25
     )
 
-    print("💾 Saving to:", OUTPUT_FILE)
-    output.to_csv(OUTPUT_FILE, index=False)
+    team_scores = (
+        merged.groupby(["game_id", "team"])["adjusted_score"]
+        .sum()
+        .reset_index()
+        .rename(columns={"adjusted_score": "projected_team_score"})
+    )
+
+    print("💾 Saving final score output to:", OUTPUT_FILE)
+    team_scores.to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
     main()
