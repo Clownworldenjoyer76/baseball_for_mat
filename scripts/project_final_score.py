@@ -13,32 +13,34 @@ def main():
     bat = pd.read_csv(BATTER_FILE)
     pit = pd.read_csv(PITCHER_FILE)
 
-    print("✅ Applying final score projection formula...")
-    bat = project_final_score(bat)
+    for col in ["game_id", "team", "opponent", "projected_final_score"]:
+        if col in bat.columns:
+            bat[col] = bat[col].astype(str).str.strip()
+        if col in pit.columns:
+            pit[col] = pit[col].astype(str).str.strip()
 
-    print("📊 Aggregating by team and game_id...")
-    required_cols = ["game_id", "team", "projected_final_score"]
-    if not all(col in bat.columns for col in required_cols):
-        missing = [col for col in required_cols if col not in bat.columns]
-        raise ValueError(f"Missing required columns in batter file: {missing}")
-
-    team_scores = (
-        bat.groupby(["game_id", "team"])["projected_final_score"]
-        .mean()
-        .reset_index()
-        .rename(columns={"projected_final_score": "team_avg_score"})
+    print("🔁 Merging each batter with their opposing pitcher by game_id + opponent...")
+    merged = bat.merge(
+        pit,
+        left_on=["game_id", "opponent"],
+        right_on=["game_id", "team"],
+        suffixes=("_batter", "_pitcher"),
+        how="left"
     )
 
-    print("⚾ Merging with pitcher props for reference...")
-    if "game_id" in pit.columns and "team" in pit.columns:
-        team_scores = team_scores.merge(
-            pit[["game_id", "team"]].drop_duplicates(),
-            on=["game_id", "team"],
-            how="left"
-        )
+    print("✅ Applying final score projection formula...")
+    merged = project_final_score(merged)
 
-    print("💾 Saving final score projections to:", OUTPUT_FILE)
-    team_scores.to_csv(OUTPUT_FILE, index=False)
+    print("📊 Aggregating projected scores by game_id + batter's team...")
+    output = (
+        merged.groupby(["game_id", "team_batter"])["projected_final_score"]
+        .mean()
+        .reset_index()
+        .rename(columns={"team_batter": "team"})
+    )
+
+    print("💾 Saving to:", OUTPUT_FILE)
+    output.to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
     main()
