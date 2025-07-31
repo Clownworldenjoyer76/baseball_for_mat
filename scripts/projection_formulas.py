@@ -12,33 +12,27 @@ def calculate_all_projections(df: pd.DataFrame) -> pd.DataFrame:
     ]:
         df[col] = safe_col(df, col, 0)
 
-    # Estimated plate appearances per game
+    # Estimated plate appearances and ABs per game
     df["estimated_pa"] = 4.1
+    df["estimated_ab"] = 3.6
 
-    # Projected per-game hits vs specific pitcher
-    df["total_hits_projection"] = (
-        df["hit"] / df["estimated_pa"] * (1 - df["k_percent"] / 100)
-        * (1 - df["whip"] / 10)
-        * df["estimated_pa"]
-    ).round(2)
+    # Normalize batter season stats to per-PA rates
+    df["hit_rate"] = df["hit"] / 600  # assume 600 PA season
+    df["hr_rate"] = df["hr"] / 600
+    df["slg_rate"] = df["slg"]  # already a rate
+    df["woba_rate"] = df["woba"]  # already a rate
 
-    # Projected per-game total bases
-    df["total_bases_projection"] = (
-        df["slg"] * (1 - df["era"] / 10)
-        * df["estimated_pa"] / 4.0
-    ).round(2)
+    # Adjusted rates with pitcher suppression
+    df["hit_rate_adj"] = df["hit_rate"] * (1 - df["k_percent"] / 100) * (1 - df["whip"] / 10)
+    df["hr_rate_adj"] = df["hr_rate"] * (1 - df["xfip"] / 10)
+    df["slg_rate_adj"] = df["slg_rate"] * (1 - df["era"] / 10)
+    df["woba_rate_adj"] = df["woba_rate"] * (1 - df["era"] / 10) * (1 - df["whip"] / 10)
 
-    # Projected per-game home runs
-    df["avg_hr"] = (
-        df["hr"] / df["estimated_pa"]
-        * (1 - df["xfip"] / 10)
-        * df["estimated_pa"]
-    ).round(2)
-
-    # Projected per-game wOBA adjusted by pitcher effectiveness
-    df["avg_woba"] = (
-        df["woba"] * (1 - df["era"] / 10) * (1 - df["whip"] / 10)
-    ).round(3)
+    # Project per-game outputs
+    df["total_hits_projection"] = df["hit_rate_adj"] * df["estimated_pa"]
+    df["avg_hr"] = df["hr_rate_adj"] * df["estimated_pa"]
+    df["total_bases_projection"] = df["slg_rate_adj"] * df["estimated_ab"]
+    df["avg_woba"] = df["woba_rate_adj"]
 
     return df
 
