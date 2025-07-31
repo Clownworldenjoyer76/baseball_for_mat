@@ -1,7 +1,7 @@
 
 import pandas as pd
 from pathlib import Path
-from projection_formulas import calculate_all_projections
+from projection_formulas import calculate_all_projections, project_final_score
 
 # File paths
 AWAY_FILE = Path("data/end_chain/final/batter_away_final.csv")
@@ -20,8 +20,18 @@ def main():
     print("🧬 Concatenating home + away batters...")
     df = pd.concat([df_home, df_away], ignore_index=True)
 
+    # Ensure all required numeric fields exist
+    required_cols = ["hit", "hr", "rbi", "bb_percent", "obp", "slg", "woba"]
+    for col in required_cols:
+        if col not in df.columns:
+            print(f"⚠️ WARNING: Column '{col}' missing — filling with 0s")
+            df[col] = 0
+        else:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+
     print("✅ Running projection formulas...")
     df = calculate_all_projections(df)
+    df = project_final_score(df)
 
     print("💾 Saving output to:", OUTPUT_FILE)
     df.to_csv(OUTPUT_FILE, index=False)
