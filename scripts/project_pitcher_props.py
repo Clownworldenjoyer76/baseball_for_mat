@@ -27,6 +27,12 @@ def main():
     print("🔗 Merging xtra stats (IP + ER) on player_id...")
     df = df.merge(df_xtra[["player_id", "p_earned_run", "p_formatted_ip"]], on="player_id", how="left")
 
+    # Validate ERA source columns
+    if "p_formatted_ip" not in df.columns:
+        raise KeyError("'p_formatted_ip' not in merged DataFrame columns")
+    if df["p_formatted_ip"].isnull().all():
+        raise ValueError("All p_formatted_ip values are NaN after merge")
+
     print("🧮 Calculating ERA from earned runs and IP...")
     df["era"] = (df["p_earned_run"] / df["p_formatted_ip"]) * 9
     df["era"] = df["era"].fillna(0).round(2)
