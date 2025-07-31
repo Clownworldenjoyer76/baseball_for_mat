@@ -15,7 +15,7 @@ def main():
     df_cleaned = pd.read_csv(CLEANED_FILE)
     df_xtra = pd.read_csv(XTRA_FILE)
 
-    # Standardize player_id format
+    # Standardize player_id
     df_final["player_id"] = df_final["player_id"].astype(str).str.replace(".0", "", regex=False)
     df_cleaned["player_id"] = df_cleaned["player_id"].astype(str)
     df_xtra["player_id"] = df_xtra["player_id"].astype(str)
@@ -27,7 +27,7 @@ def main():
     }, inplace=True)
 
     print("🔗 Merging cleaned stats on player_id...")
-    df = df_final.merge(df_cleaned, on="player_id", how="left")
+    df = df_final.merge(df_cleaned, on="player_id", how="left", suffixes=("", "_dup"))
 
     print("🔗 Merging earned runs on player_id...")
     df = df.merge(df_xtra[["player_id", "p_earned_run"]], on="player_id", how="left")
@@ -35,6 +35,16 @@ def main():
     print("🧮 Calculating ERA using innings_pitched...")
     df["era"] = (df["p_earned_run"] / df["innings_pitched"]) * 9
     df["era"] = df["era"].fillna(0).round(2)
+
+    # Remove exact duplicate rows by player_id
+    df = df.drop_duplicates(subset=["player_id"], keep="first")
+
+    # Clean duplicate columns (_x/_y style suffixes)
+    for col in df.columns:
+        if col.endswith("_dup"):
+            base = col.replace("_dup", "")
+            df[base] = df[base].combine_first(df[col])
+            df.drop(columns=[col], inplace=True)
 
     print("✅ Running projection formulas...")
     df = calculate_all_projections(df)
