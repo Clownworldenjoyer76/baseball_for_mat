@@ -24,8 +24,8 @@ def main():
     ]
     df_xtra = df_xtra[[col for col in required_cols if col in df_xtra.columns]]
 
-    print("🔗 Merging xtra stats into final...")
-    df = df_final.merge(df_xtra, on="last_name, first_name", how="left", validate="one_to_one")
+    print("🔗 Merging xtra stats into final (many-to-one)...")
+    df = df_final.merge(df_xtra, on="last_name, first_name", how="left", validate="many_to_one")
 
     print("✅ Running projection formulas...")
     df = calculate_all_projections(df)
