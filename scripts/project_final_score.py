@@ -12,7 +12,11 @@ def main():
     batters = pd.read_csv(BATTER_FILE)
     pitchers = pd.read_csv(PITCHER_FILE)
 
-    # Join each batter row to opposing pitcher (batters['team'] vs pitchers['team_x'])
+    # Normalize team join keys
+    batters["team"] = batters["team"].str.strip().str.upper()
+    pitchers["team_x"] = pitchers["team_x"].str.strip().str.upper()
+
+    # Join each batter with the opposing pitcher
     merged = batters.merge(
         pitchers,
         left_on="team",
