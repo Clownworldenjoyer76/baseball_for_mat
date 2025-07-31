@@ -15,6 +15,10 @@ def main():
     df_cleaned = pd.read_csv(CLEANED_FILE)
     df_xtra = pd.read_csv(XTRA_FILE)
 
+    # Force player_id to string for safe merge
+    for df in [df_final, df_cleaned, df_xtra]:
+        df["player_id"] = df["player_id"].astype(str)
+
     # Rename mapped fields
     df_cleaned.rename(columns={
         "home_run": "hr",
