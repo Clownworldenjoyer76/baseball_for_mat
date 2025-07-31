@@ -12,17 +12,12 @@ def main():
     batters = pd.read_csv(BATTER_FILE)
     pitchers = pd.read_csv(PITCHER_FILE)
 
-    # Normalize join keys
-    batters["team"] = batters["team"].str.upper().str.strip()
-    batters["opponent"] = batters["opponent"].str.upper().str.strip()
-    pitchers["team"] = pitchers["team"].str.upper().str.strip()
-
-    # Join each batter row to opposing pitcher
+    # Join each batter row to opposing pitcher (batters['team'] vs pitchers['team_x'])
     merged = batters.merge(
         pitchers,
-        left_on="opponent",
-        right_on="team",
-        suffixes=("", "_opp"),
+        left_on="team",
+        right_on="team_x",
+        suffixes=("", "_pitch"),
         how="left"
     )
 
@@ -34,7 +29,7 @@ def main():
     )
 
     team_scores = (
-        merged.groupby(["game_id", "team"])["adjusted_score"]
+        merged.groupby("team")["adjusted_score"]
         .sum()
         .reset_index()
         .rename(columns={"adjusted_score": "projected_team_score"})
