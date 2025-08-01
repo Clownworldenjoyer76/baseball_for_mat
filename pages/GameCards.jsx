@@ -21,40 +21,50 @@ export default function GameCards() {
   }, []);
 
   return (
-    <div className="bg-black text-white min-h-screen p-4">
-      <h1 className="text-3xl font-bold mb-6">Today's Matchups</h1>
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', padding: '1rem' }}>
+      <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Today's Matchups</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
         {cards.map((card, i) => (
-          <div key={i} className="bg-gray-800 text-white p-4 rounded-lg shadow">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <img src={card.away_logo} className="w-6 h-6" alt="away logo" />
-                <span className="text-md font-semibold">{card.away_team}</span>
-                <span className="text-md font-semibold">@</span>
-                <span className="text-md font-semibold">{card.home_team}</span>
-                <img src={card.home_logo} className="w-6 h-6" alt="home logo" />
-              </div>
+          <div key={i} style={{
+            backgroundColor: '#1f2937', // Tailwind gray-800
+            color: '#fff',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            boxShadow: '0 0 10px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <img src={card.away_logo} style={{ maxHeight: '24px', width: 'auto' }} alt="away logo" />
+              <span style={{ fontWeight: '600' }}>{card.away_team}</span>
+              <span style={{ fontWeight: '600' }}>@</span>
+              <span style={{ fontWeight: '600' }}>{card.home_team}</span>
+              <img src={card.home_logo} style={{ maxHeight: '24px', width: 'auto' }} alt="home logo" />
             </div>
-            <p className="text-sm mb-1">Game Time: {card.game_time}</p>
-            <p className="text-sm mb-3">Temp: {card.temperature}</p>
+            <p style={{ fontSize: '0.875rem', marginBottom: '0.25rem' }}>Game Time: {card.game_time}</p>
+            <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem' }}>Temp: {card.temperature}</p>
 
-            <h3 className="font-semibold mb-1">Top Props</h3>
+            <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>Top Props</h3>
             {card.props.map((p, j) => {
               const [left, stat] = (p.display || "").split(" – ");
               const icon = STAT_ICONS[stat] || "📈";
               const val = p.stat_value ? parseFloat(p.stat_value).toFixed(2) : "";
               return (
-                <div key={j} className="text-sm py-2 flex items-center border-b border-gray-700">
+                <div key={j} style={{
+                  fontSize: '0.875rem',
+                  padding: '0.5rem 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #374151' // Tailwind gray-700
+                }}>
                   <img
                     src={p.img_url}
                     alt="headshot"
-                    className="w-8 h-8 rounded-full mr-3 bg-white border"
+                    style={{ height: '32px', width: '32px', borderRadius: '9999px', marginRight: '0.75rem', backgroundColor: '#fff' }}
                     onError={(e) => { e.target.style.display = 'none'; }}
                   />
-                  <div className="flex justify-between items-center w-full">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
                     <span>{left}</span>
-                    <span className="ml-2 font-mono">{icon} {val}</span>
+                    <span style={{ fontFamily: 'monospace' }}>{icon} {val}</span>
                   </div>
                 </div>
               );
