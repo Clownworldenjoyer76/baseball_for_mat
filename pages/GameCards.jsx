@@ -27,9 +27,9 @@ export default function GameCards() {
       });
   }, []);
 
-  const allTeams = Array.from(new Set(cards.flatMap(c => 
-    c.props.map(p => p.split(", ")[1].split(" –")[0])
-  ))).sort();
+  const allTeams = Array.from(new Set(cards.flatMap(c =>
+    c.props.map(p => p.split(", ")[1]?.split(" –")[0])
+  ).filter(Boolean))).sort();
 
   const handleFilter = () => {
     let result = [...cards];
@@ -43,9 +43,9 @@ export default function GameCards() {
       result = result.map(card => ({
         ...card,
         props: card.props.filter(p => {
-          if (typeFilter === "Batter") return !p.toLowerCase().includes("era") && !p.toLowerCase().includes("xfip") && !p.toLowerCase().includes("strikeout");
-          if (typeFilter === "Pitcher") return p.toLowerCase().includes("era") || p.toLowerCase().includes("xfip") || p.toLowerCase().includes("strikeout");
-          return true;
+          const stat = p.split(" – ")[1] || "";
+          const isPitcher = ["Strikeouts", "ERA", "xFIP", "Expected wOBA"].includes(stat);
+          return (typeFilter === "Pitcher" && isPitcher) || (typeFilter === "Batter" && !isPitcher);
         })
       })).filter(card => card.props.length > 0);
     }
@@ -65,14 +65,14 @@ export default function GameCards() {
         <h1 className="text-3xl font-bold mr-auto">Today's Matchups</h1>
         <label className="text-sm">
           Team:
-          <select value={teamFilter} onChange={e => setTeamFilter(e.target.value)} className="ml-2 p-1 text-sm rounded">
+          <select value={teamFilter} onChange={e => setTeamFilter(e.target.value)} className="ml-2 p-1 text-sm rounded text-black">
             <option>All</option>
             {allTeams.map(team => <option key={team}>{team}</option>)}
           </select>
         </label>
         <label className="text-sm">
           Type:
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="ml-2 p-1 text-sm rounded">
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="ml-2 p-1 text-sm rounded text-black">
             <option>All</option>
             <option>Batter</option>
             <option>Pitcher</option>
@@ -95,14 +95,11 @@ export default function GameCards() {
             </p>
             <h3 className="font-semibold mb-1">Top Props</h3>
             {card.props.map((text, j) => {
-              const stat = text.split(" – ")[1];
+              const [left, stat] = text.split(" – ");
               const icon = STAT_ICONS[stat] || "📈";
               return (
-                <div
-                  key={j}
-                  className="text-sm py-1 flex justify-between items-center border-b border-gray-300"
-                >
-                  <span>{text.split(" – ")[0]}</span>
+                <div key={j} className="text-sm py-1 flex justify-between items-center border-b border-gray-300">
+                  <span>{left}</span>
                   <span className="ml-2 font-mono">{icon}</span>
                 </div>
               );
