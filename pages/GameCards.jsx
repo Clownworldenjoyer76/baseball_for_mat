@@ -28,7 +28,7 @@ export default function GameCards() {
   }, []);
 
   const allTeams = Array.from(new Set(cards.flatMap(c =>
-    c.props.map(p => p.split(", ")[1]?.split(" –")[0])
+    c.props.map(p => (p.display || "").split(", ")[1]?.split(" –")[0])
   ).filter(Boolean))).sort();
 
   const handleFilter = () => {
@@ -36,14 +36,14 @@ export default function GameCards() {
     if (teamFilter !== "All") {
       result = result.map(card => ({
         ...card,
-        props: card.props.filter(p => p.includes(`, ${teamFilter} –`))
+        props: card.props.filter(p => p.display.includes(`, ${teamFilter} –`))
       })).filter(card => card.props.length > 0);
     }
     if (typeFilter !== "All") {
       result = result.map(card => ({
         ...card,
         props: card.props.filter(p => {
-          const stat = p.split(" – ")[1] || "";
+          const stat = (p.display || "").split(" – ")[1] || "";
           const isPitcher = ["Strikeouts", "ERA", "xFIP", "Expected wOBA"].includes(stat);
           return (typeFilter === "Pitcher" && isPitcher) || (typeFilter === "Batter" && !isPitcher);
         })
@@ -94,13 +94,21 @@ export default function GameCards() {
               Temp: {card.temperature} | Precip: {card.precipitation}
             </p>
             <h3 className="font-semibold mb-1">Top Props</h3>
-            {card.props.map((text, j) => {
-              const [left, stat] = text.split(" – ");
+            {card.props.map((p, j) => {
+              const [left, stat] = (p.display || "").split(" – ");
               const icon = STAT_ICONS[stat] || "📈";
               return (
-                <div key={j} className="text-sm py-1 flex justify-between items-center border-b border-gray-300">
-                  <span>{left}</span>
-                  <span className="ml-2 font-mono">{icon}</span>
+                <div key={j} className="text-sm py-2 flex items-center border-b border-gray-300">
+                  <img
+                    src={p.img_url}
+                    alt="headshot"
+                    className="w-8 h-8 rounded-full mr-3 bg-white border"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <div className="flex justify-between w-full">
+                    <span>{left}</span>
+                    <span className="ml-2 font-mono">{icon}</span>
+                  </div>
                 </div>
               );
             })}
