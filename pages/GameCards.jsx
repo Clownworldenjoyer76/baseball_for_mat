@@ -21,18 +21,18 @@ export default function GameCards() {
   }, []);
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen p-4">
+    <div className="bg-black text-white min-h-screen p-4">
       <h1 className="text-3xl font-bold mb-6">Today's Matchups</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {cards.map((card, i) => (
-          <div key={i} className="bg-gray-800 text-white p-4 rounded shadow">
+          <div key={i} className="bg-gray-800 text-white p-4 rounded-lg shadow">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <img src={card.away_logo} className="w-6 h-6" alt="away logo" />
-                <span className="text-lg font-semibold">{card.away_team}</span>
-                <span>@</span>
-                <span className="text-lg font-semibold">{card.home_team}</span>
+                <span className="text-md font-semibold">{card.away_team}</span>
+                <span className="text-md font-semibold">@</span>
+                <span className="text-md font-semibold">{card.home_team}</span>
                 <img src={card.home_logo} className="w-6 h-6" alt="home logo" />
               </div>
             </div>
