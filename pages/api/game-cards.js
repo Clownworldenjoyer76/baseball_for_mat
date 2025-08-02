@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { parse } from 'csv-parse/sync';
+import { parse } from 'csv-parse/sync.js';
 
 export const config = {
   api: {
