@@ -16,9 +16,9 @@ export default function handler(req, res) {
     const pitcherCsv = fs.readFileSync(path.join(projectionsPath, 'pitcher_props_projected.csv'), 'utf8');
     const weatherCsv = fs.readFileSync(path.join(projectionsPath, 'weather_adjustments.csv'), 'utf8');
 
-    const batters = parse(batterCsv, { columns: true });
-    const pitchers = parse(pitcherCsv, { columns: true });
-    const weather = parse(weatherCsv, { columns: true });
+    const batters = parse(batterCsv, { columns: true, skip_empty_lines: true });
+    const pitchers = parse(pitcherCsv, { columns: true, skip_empty_lines: true });
+    const weather = parse(weatherCsv, { columns: true, skip_empty_lines: true });
 
     const games = {};
 
