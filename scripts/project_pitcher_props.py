@@ -1,4 +1,3 @@
-
 import pandas as pd
 from pathlib import Path
 from projection_formulas import calculate_all_projections
@@ -52,6 +51,15 @@ def main():
 
     print("✅ Running projection formulas...")
     df = calculate_all_projections(df)
+
+    print("🔎 Selecting top prop columns...")
+    prop_cols = [
+        "player_id", "name", "team", "opp", "is_home", "game_time",
+        "k_prop", "k_z", "p_outs_prop", "p_outs_z", "p_hits_prop", "p_hits_z",
+        "p_walks_prop", "p_walks_z", "p_earned_runs_prop", "p_earned_runs_z",
+        "era", "whip"
+    ]
+    df = df.loc[:, [col for col in prop_cols if col in df.columns]]
 
     print("💾 Saving output to:", OUTPUT_FILE)
     df.to_csv(OUTPUT_FILE, index=False)
