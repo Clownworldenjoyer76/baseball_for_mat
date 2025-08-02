@@ -22,7 +22,6 @@ export default function handler(req, res) {
 
     const games = {};
 
-    // Combine data by game
     weather.forEach((w) => {
       const key = `${w.away_team} @ ${w.home_team}`;
       games[key] = {
@@ -47,4 +46,32 @@ export default function handler(req, res) {
         value: b[`b_${b.top_stat}`],
         z: zScore(b, batterKeys),
         headshot: b.headshot || '',
-     
+      });
+    });
+
+    const pitcherKeys = ['strikeouts', 'outs'];
+    pitchers.forEach((p) => {
+      const gameKey = `${p.away_team} @ ${p.home_team}`;
+      if (!games[gameKey]) return;
+      games[gameKey].props.push({
+        type: 'pitcher',
+        name: p.name,
+        stat: p.top_stat,
+        value: p[`p_${p.top_stat}`],
+        z: zScore(p, pitcherKeys),
+        headshot: p.headshot || '',
+      });
+    });
+
+    const final = Object.values(games).map(game => {
+      game.props.sort((a, b) => b.z - a.z);
+      game.props = game.props.slice(0, 5);
+      return game;
+    });
+
+    res.status(200).json(final);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to process game card data' });
+  }
+}
