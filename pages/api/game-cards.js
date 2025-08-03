@@ -42,8 +42,8 @@ export default function handler(req, res) {
       games[gameKey].props.push({
         type: 'batter',
         name: b.name,
-        stat: b.top_stat,
-        value: b[`b_${b.top_stat}`],
+        stat: 'hit',
+        value: b['hit'],
         z: zScore(b, batterKeys),
         headshot: b.headshot || '',
       });
@@ -56,8 +56,8 @@ export default function handler(req, res) {
       games[gameKey].props.push({
         type: 'pitcher',
         name: p.name,
-        stat: p.top_stat,
-        value: p[`p_${p.top_stat}`],
+        stat: 'strikeouts',
+        value: p['strikeouts'],
         z: zScore(p, pitcherKeys),
         headshot: p.headshot || '',
       });
