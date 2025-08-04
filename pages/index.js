@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import GameCard from '../components/GameCards.jsx'  // ✅ THIS IS THE FIXED LINE
+import GameCard from '../components/GameCards.jsx'  // ✅ correct import
 
 export default function Home({ cards }) {
   return (
@@ -28,14 +28,11 @@ export async function getServerSideProps(context) {
   const baseUrl = `${protocol}://${host}`;
 
   try {
-    const res = await fetch(`${baseUrl}/api/game_cards_data`);
+    const res = await fetch(`${baseUrl}/api/game-cards`); // ✅ correct endpoint
     const data = await res.json();
     return { props: { cards: data || [] } };
-  } catch {
+  } catch (err) {
+    console.error("Fetch failed:", err);
     return { props: { cards: [] } };
   }
 }
-
-
-
-// Trigger deploy
