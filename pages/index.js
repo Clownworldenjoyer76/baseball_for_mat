@@ -1,5 +1,5 @@
 import Head from 'next/head'
-import GameCard from '../components/GameCards.jsx'
+import GameCard from '../components/GameCards.jsx'  // ✅ THIS IS THE FIXED LINE
 
 export default function Home({ cards }) {
   return (
