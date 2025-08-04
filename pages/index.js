@@ -1,5 +1,3 @@
-// frontend/pages/index.js
-
 import Head from 'next/head'
 import GameCard from '../components/GameCard'
 
@@ -7,13 +5,17 @@ export default function Home({ cards }) {
   return (
     <>
       <Head>
-        <title>Game Props</title>
+        <title>Game Cards</title>
       </Head>
       <main className="bg-black min-h-screen p-4 text-white">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {cards.map((card, index) => (
-            <GameCard key={index} data={card} />
-          ))}
+          {cards?.length ? (
+            cards.map((card, index) => (
+              <GameCard key={index} data={card} />
+            ))
+          ) : (
+            <p className="text-red-500">⚠️ No props loaded.</p>
+          )}
         </div>
       </main>
     </>
