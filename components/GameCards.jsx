@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import styles from '../styles/globals.css';
 
 export default function GameCards() {
   const [data, setData] = useState(null);
