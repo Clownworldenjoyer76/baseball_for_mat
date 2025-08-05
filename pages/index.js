@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import GameCard from '../components/GameCard';
 
@@ -11,8 +12,13 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ backgroundColor: '#111', padding: '24px', minHeight: '100vh' }}>
-      <h1 style={{ color: 'white' }}>Game Cards</h1>
+    <div style={{
+      backgroundColor: '#111',
+      padding: '16px',
+      minHeight: '100vh',
+      fontFamily: 'system-ui, sans-serif'
+    }}>
+      <h1 style={{ color: 'white', fontSize: '20px', marginBottom: '20px' }}>🔥 Top Props by Game</h1>
       {cards.map((card, idx) => (
         <GameCard key={idx} {...card} />
       ))}
