@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { parse } from 'csv-parse/sync';
+import fs from "fs";
+import path from "path";
+import { parse } from "csv-parse/sync";
 
 export const config = {
   api: {
@@ -8,82 +8,79 @@ export const config = {
   },
 };
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   try {
-    const projectionsPath = path.resolve('./data/_projections');
+    // Use absolute paths for Vercel compatibility
+    const weatherPath = path.join(process.cwd(), "data", "weather_adjustments.csv");
+    const batterPath = path.join(process.cwd(), "data", "_projections", "batter_props_projected.csv");
+    const pitcherPath = path.join(process.cwd(), "data", "_projections", "pitcher_props_projected.csv");
 
-    const batterCsv = fs.readFileSync(path.join(projectionsPath, 'batter_props_projected.csv'), 'utf8');
-    const pitcherCsv = fs.readFileSync(path.join(projectionsPath, 'pitcher_props_projected.csv'), 'utf8');
-    const weatherCsv = fs.readFileSync(path.resolve('./data/weather_adjustments.csv'), 'utf8');
+    const rawWeather = fs.readFileSync(weatherPath, "utf8");
+    const rawBatters = fs.readFileSync(batterPath, "utf8");
+    const rawPitchers = fs.readFileSync(pitcherPath, "utf8");
 
-    const batters = parse(batterCsv, { columns: true, skip_empty_lines: true });
-    const pitchers = parse(pitcherCsv, { columns: true, skip_empty_lines: true });
-    const weather = parse(weatherCsv, { columns: true, skip_empty_lines: true });
-
-    // 🔍 Log parsed data for debugging
-    console.log("✅ WEATHER", weather.length, weather.slice(0, 2));
-    console.log("✅ BATTERS", batters.length, batters.slice(0, 2));
-    console.log("✅ PITCHERS", pitchers.length, pitchers.slice(0, 2));
-
-    const games = {};
-
-    // Build game objects using weather
-    weather.forEach((w) => {
-      const key = `${w.away_team} @ ${w.home_team}`;
-      games[key] = {
-        matchup: key,
-        temp: Math.round(Number(w.temperature)),
-        time: w.game_time || '',
-        props: [],
-      };
+    const weather = parse(rawWeather, {
+      columns: true,
+      skip_empty_lines: true,
     });
 
-    const batterKeys = ['hit', 'home_run', 'total_bases', 'rbi'];
-    const zScore = (row, keys) =>
-      Math.max(...keys.map(k => Number(row[`${k}_z`]) || -Infinity));
+    const batters = parse(rawBatters, {
+      columns: true,
+      skip_empty_lines: true,
+    });
 
-    batters.forEach((b) => {
-      const gameKey = `${b.away_team} @ ${b.home_team}`;
-      if (!games[gameKey]) {
-        console.log(`⚠️ No weather entry for batter gameKey: ${gameKey}`);
-        return;
+    const pitchers = parse(rawPitchers, {
+      columns: true,
+      skip_empty_lines: true,
+    });
+
+    const games = weather.map((row) => ({
+      matchup: row.matchup,
+      temp: parseFloat(row.temp).toFixed(0),
+      time: row.time,
+      props: [],
+    }));
+
+    const zscore = (val, mean, std) => {
+      if (!val || !mean || !std || std == 0) return 0;
+      return (val - mean) / std;
+    };
+
+    for (const b of batters) {
+      const z = zscore(Number(b.hit), Number(b.hit_mean), Number(b.hit_std));
+      const gameKey = games.find((g) => g.matchup === b.matchup);
+      if (gameKey) {
+        gameKey.props.push({
+          name: b.name,
+          stat: "H",
+          value: b.hit,
+          z,
+          headshot: b.headshot_url || "/fallback_headshot.png",
+        });
       }
-      games[gameKey].props.push({
-        type: 'batter',
-        name: b.name,
-        stat: 'hit',
-        value: b['hit'],
-        z: zScore(b, batterKeys),
-        headshot: b.headshot || '',
-      });
-    });
+    }
 
-    const pitcherKeys = ['strikeouts', 'outs'];
-    pitchers.forEach((p) => {
-      const gameKey = `${p.away_team} @ ${p.home_team}`;
-      if (!games[gameKey]) {
-        console.log(`⚠️ No weather entry for pitcher gameKey: ${gameKey}`);
-        return;
+    for (const p of pitchers) {
+      const z = zscore(Number(p.strikeouts), Number(p.k_mean), Number(p.k_std));
+      const gameKey = games.find((g) => g.matchup === p.matchup);
+      if (gameKey) {
+        gameKey.props.push({
+          name: p.name,
+          stat: "K",
+          value: p.strikeouts,
+          z,
+          headshot: p.headshot_url || "/fallback_headshot.png",
+        });
       }
-      games[gameKey].props.push({
-        type: 'pitcher',
-        name: p.name,
-        stat: 'strikeouts',
-        value: p['strikeouts'],
-        z: zScore(p, pitcherKeys),
-        headshot: p.headshot || '',
-      });
-    });
+    }
 
-    const final = Object.values(games).map(game => {
-      game.props.sort((a, b) => b.z - a.z);
-      game.props = game.props.slice(0, 5);
-      return game;
-    });
+    for (const g of games) {
+      g.props = g.props.sort((a, b) => b.z - a.z).slice(0, 5);
+    }
 
-    res.status(200).json(final);
+    res.status(200).json(games);
   } catch (err) {
-    console.error("❌ API Error:", err);
-    res.status(500).json({ error: 'Failed to process game card data' });
+    console.error("❌ Error in /api/game-cards:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 }
