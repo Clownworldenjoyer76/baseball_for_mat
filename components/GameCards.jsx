@@ -4,7 +4,8 @@ export default function GameCards() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    fetch('https://sports-betting-site.vercel.app/api/game-cards')
+    // ✅ RELATIVE PATH: works in all environments
+    fetch('/api/game-cards')
       .then((res) => res.json())
       .then(setData)
       .catch(console.error);
