@@ -1,21 +1,10 @@
-import { useEffect, useState } from 'react';
-
-export default function GameCards() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    // ✅ RELATIVE PATH: works in all environments
-    fetch('/api/game-cards')
-      .then((res) => res.json())
-      .then(setData)
-      .catch(console.error);
-  }, []);
-
-  if (!data) return <div className="loading-spinner">Loading...</div>;
+// components/GameCards.jsx
+export default function GameCards({ cards }) {
+  if (!cards?.length) return <p className="text-red-500">⚠️ No props loaded.</p>;
 
   return (
     <div className="game-cards">
-      {data.map((game) => (
+      {cards.map((game) => (
         <div key={game.matchup} className="card">
           <h2>{game.matchup}</h2>
           <p>{game.time} • {game.temp}°F</p>
