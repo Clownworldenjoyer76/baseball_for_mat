@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 
 export default function Refresh() {
@@ -16,25 +17,26 @@ export default function Refresh() {
 
   return (
     <div style={{
-      backgroundColor: '#111',
+      background: 'linear-gradient(180deg, #0f0f0f, #1a1a1a)',
       color: 'white',
-      padding: '40px',
+      padding: '40px 20px',
       fontFamily: 'system-ui, sans-serif',
       minHeight: '100vh'
     }}>
-      <h1>Refresh Game Cards</h1>
+      <h1 style={{ fontSize: '20px', marginBottom: '20px' }}>🔁 Refresh Game Props</h1>
       <button onClick={handleRefresh} style={{
-        padding: '12px 24px',
+        padding: '14px 24px',
         fontSize: '16px',
-        backgroundColor: '#28a745',
-        color: 'white',
+        background: 'linear-gradient(90deg, #4ade80, #22c55e)',
+        color: '#000',
         border: 'none',
-        borderRadius: '6px',
-        cursor: 'pointer'
+        borderRadius: '10px',
+        cursor: 'pointer',
+        fontWeight: 'bold'
       }}>
-        🔁 Regenerate Props
+        Regenerate Props
       </button>
-      <p style={{ marginTop: '20px' }}>{status}</p>
+      <p style={{ marginTop: '20px', fontSize: '14px', color: '#ccc' }}>{status}</p>
     </div>
   );
 }
