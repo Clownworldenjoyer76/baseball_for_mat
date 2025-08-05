@@ -9,16 +9,18 @@ export default function GameCard({ game, temperature, top_props }) {
 
   return (
     <div style={{
-      background: 'linear-gradient(135deg, #1c1c1e, #2c2c2e)',
+      background: 'rgba(255, 255, 255, 0.05)',
+      border: '1px solid rgba(255,255,255,0.1)',
       borderRadius: '16px',
-      padding: '18px',
+      padding: '20px',
       marginBottom: '20px',
-      color: '#f9f9f9',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+      color: '#ffffff',
+      backdropFilter: 'blur(12px)',
+      boxShadow: '0 4px 30px rgba(0,0,0,0.2)',
       fontFamily: 'system-ui, sans-serif'
     }}>
-      <h2 style={{ fontSize: '18px', marginBottom: '4px' }}>{game}</h2>
-      <p style={{ fontSize: '14px', color: '#aaa', marginBottom: '12px' }}>🌡 {temperature}°F</p>
+      <h2 style={{ fontSize: '20px', marginBottom: '6px' }}>{game}</h2>
+      <p style={{ fontSize: '14px', marginBottom: '12px', color: '#ccc' }}>🌡 {temperature}°F</p>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {top_props.map((prop, idx) => {
           const icon = statIcons[prop.stat] || '📊';
@@ -28,7 +30,7 @@ export default function GameCard({ game, temperature, top_props }) {
               padding: '6px 0',
               borderBottom: idx < top_props.length - 1 ? '1px solid #333' : 'none'
             }}>
-              {icon} <strong>{prop.player}</strong> — {prop.stat.toUpperCase()} <span style={{ color: '#aaa' }}>(z={prop.z_score})</span>
+              {icon} <strong>{prop.player}</strong> — <span style={{ color: '#bbb' }}>{prop.stat.toUpperCase()}</span> <span style={{ color: '#777' }}>(z={prop.z_score})</span>
             </li>
           );
         })}
