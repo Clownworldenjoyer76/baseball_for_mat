@@ -37,25 +37,21 @@ export default function handler(req, res) {
   const batterPath = path.resolve('data/_projections/batter_props_projected.csv');
   const pitcherPath = path.resolve('data/_projections/pitcher_props_projected.csv');
   const weatherPath = path.resolve('data/weather_adjustments.csv');
-  const scoresPath = path.resolve('data/_projections/final_scores_projected.csv');
 
   const batters = readCSV(batterPath);
   const pitchers = readCSV(pitcherPath);
   const weather = readCSV(weatherPath);
-  const scores = readCSV(scoresPath);
 
-  const games = scores.map(row => {
-    const game = `${row.away_team} @ ${row.home_team}`;
-    const weatherEntry = weather.find(w =>
-      w.home_team === row.home_team && w.away_team === row.away_team
-    );
-
-    const temp = weatherEntry?.temperature || '';
-    const rawTime = weatherEntry?.game_time || '';
+  const games = weather.map(row => {
+    const home = row.home_team;
+    const away = row.away_team;
+    const game = `${away} @ ${home}`;
+    const temp = row.temperature || '';
+    const rawTime = row.game_time || '';
     const formattedTime = formatGameTime(rawTime);
 
     const batterProps = batters.filter(p =>
-      p.home_team === row.home_team && p.away_team === row.away_team
+      p.home_team === home && p.away_team === away
     ).map(p => ({
       player: p.name,
       stat: p.stat_type,
@@ -63,7 +59,7 @@ export default function handler(req, res) {
     }));
 
     const pitcherProps = pitchers.filter(p =>
-      p.home_team === row.home_team && p.away_team === row.away_team
+      p.home_team === home && p.away_team === away
     ).map(p => ({
       player: p.name,
       stat: p.stat_type,
@@ -77,8 +73,8 @@ export default function handler(req, res) {
 
     return {
       game,
-      home_team: row.home_team,
-      away_team: row.away_team,
+      home_team: home,
+      away_team: away,
       temperature: temp,
       game_time: formattedTime,
       top_props: allProps
