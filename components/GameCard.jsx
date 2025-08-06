@@ -6,7 +6,6 @@ function GameCard({ game, topProps, projectedScore }) {
     return `/logos/${imageName}.png`;
   };
 
-  // Corrected function to use the new headshot URL
   const getHeadshotUrl = (playerId) => {
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
@@ -40,7 +39,14 @@ function GameCard({ game, topProps, projectedScore }) {
                 <img 
                   src={getHeadshotUrl(prop.playerId)} 
                   alt={prop.name} 
-                  style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#444' }} 
+                  style={{ 
+                    height: '50px', 
+                    width: '50px', 
+                    borderRadius: '50%', 
+                    marginRight: '15px', 
+                    backgroundColor: '#444',
+                    objectFit: 'cover' // This is the new line that fixes the issue
+                  }} 
                 />
                 <div>
                   <div style={{ fontSize: '1em' }}>{prop.name}</div>
