@@ -45,7 +45,7 @@ function GameCard({ game, topProps, projectedScore }) {
                     borderRadius: '50%', 
                     marginRight: '15px', 
                     backgroundColor: '#444',
-                    objectFit: 'cover' // This is the new line that fixes the issue
+                    objectFit: 'cover'
                   }} 
                 />
                 <div>
@@ -59,9 +59,19 @@ function GameCard({ game, topProps, projectedScore }) {
 
         <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
           <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6' }}>Projected Score</h4>
-          <p style={{ margin: 0, fontSize: '1.2em', color: '#F5F5F5' }}>
-            {projectedScore ? `${game.away_team} ${projectedScore.away} - ${projectedScore.home} ${game.home_team}` : 'N/A'}
-          </p>
+          {projectedScore ? (
+            <div>
+              <div style={{ fontSize: '1.2em', color: '#F5F5F5', lineHeight: '1.5' }}>
+                <div>{game.away_team} {projectedScore.away}</div>
+                <div>{game.home_team} {projectedScore.home}</div>
+              </div>
+              <div style={{ fontSize: '0.9em', color: '#BDBDBD', marginTop: '10px' }}>
+                Total Run Projection: {projectedScore.total}
+              </div>
+            </div>
+          ) : (
+            <p style={{ margin: 0, fontSize: '1.2em', color: '#F5F5F5' }}>N/A</p>
+          )}
         </div>
       </div>
     </div>
