@@ -81,8 +81,15 @@ function GameDetailPage() {
       [normalized(game.away_team), normalized(game.home_team)].includes(normalized(p.team));
   });
 
+  const formatName = (fullName) => {
+    const [last, first] = fullName.split(', ');
+    return `${first} ${last}`;
+  };
+
   const startersLine = starters.length === 2
-    ? `${starters[0].name} ${starters[0].team} vs ${starters[1].name} ${starters[1].team}`
+    ? `${formatName(starters[0].name)}, ${starters[0].team}, ${starters[0].era}
+@
+${formatName(starters[1].name)}, ${starters[1].team}, ${starters[1].era}`
     : 'Starting pitchers TBD';
 
   const filteredPicks = batters
@@ -108,7 +115,9 @@ function GameDetailPage() {
       <p style={{ color: '#B0B0B0', marginBottom: '4px' }}>{conditions}</p>
       <p style={{ color: '#B0B0B0', marginBottom: '10px' }}>{gameTime}</p>
 
-      <p style={{ fontWeight: 'bold', color: '#F59E0B', marginBottom: '10px' }}>{startersLine}</p>
+      <p style={{ fontWeight: 'bold', color: '#F59E0B', marginBottom: '10px', whiteSpace: 'pre-line' }}>
+        {startersLine}
+      </p>
 
       <h3 style={{ color: '#D4AF37', marginTop: '20px', marginBottom: '10px' }}>Top 5 Picks</h3>
       {topPicks.length === 0 ? (
