@@ -1,101 +1,89 @@
+// pages/api/game-cards.js
 
 import fs from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
 
-function zScore(series) {
-  const valid = series.map(Number).filter(n => !isNaN(n));
-  const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
-  const std = Math.sqrt(valid.reduce((acc, x) => acc + (x - mean) ** 2, 0) / valid.length);
-  return series.map(x => std ? (x - mean) / std : 0);
+function readCSV(filepath) {
+  const file = fs.readFileSync(filepath, 'utf8');
+  return Papa.parse(file, { header: true }).data;
+}
+
+function zScoreToProbability(z) {
+  const erf = x => {
+    const sign = x >= 0 ? 1 : -1;
+    x = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = 1 - (((((
+      +1.061405429 * t
+      - 1.453152027) * t)
+      + 1.421413741) * t
+      - 0.284496736) * t
+      + 0.254829592) * t * Math.exp(-x * x);
+    return sign * y;
+  };
+  return Math.round((0.5 * (1 + erf(z / Math.sqrt(2))) * 100));
+}
+
+function formatGameTime(raw) {
+  if (!raw) return '';
+  const match = raw.trim().match(/^0?(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!match) return raw;
+  const [, h, m, meridian] = match;
+  return `${h}:${m} ${meridian.toUpperCase().replace('AM', 'A.M.').replace('PM', 'P.M.')}`;
 }
 
 export default function handler(req, res) {
-  try {
-    const root = process.cwd();
-    const batterPath = path.join(root, 'data/_projections/batter_props_projected.csv');
-    const pitcherPath = path.join(root, 'data/_projections/pitcher_props_projected.csv');
-    const weatherPath = path.join(root, 'data/weather_adjustments.csv');
+  const batterPath = path.resolve('data/_projections/batter_props_projected.csv');
+  const pitcherPath = path.resolve('data/_projections/pitcher_props_projected.csv');
+  const weatherPath = path.resolve('data/weather_adjustments.csv');
+  const scoresPath = path.resolve('data/_projections/final_scores_projected.csv');
 
-    if (!fs.existsSync(batterPath) || !fs.existsSync(pitcherPath) || !fs.existsSync(weatherPath)) {
-      return res.status(500).json({ error: 'Missing CSV input files.' });
-    }
+  const batters = readCSV(batterPath);
+  const pitchers = readCSV(pitcherPath);
+  const weather = readCSV(weatherPath);
+  const scores = readCSV(scoresPath);
 
-    const batterCSV = fs.readFileSync(batterPath, 'utf8');
-    const pitcherCSV = fs.readFileSync(pitcherPath, 'utf8');
-    const weatherCSV = fs.readFileSync(weatherPath, 'utf8');
+  const games = scores.map(row => {
+    const game = `${row.away_team} @ ${row.home_team}`;
+    const weatherEntry = weather.find(w =>
+      w.home_team === row.home_team && w.away_team === row.away_team
+    );
 
-    const batter = Papa.parse(batterCSV, { header: true }).data;
-    const pitcher = Papa.parse(pitcherCSV, { header: true }).data;
-    const weather = Papa.parse(weatherCSV, { header: true }).data;
+    const temp = weatherEntry?.temperature || '';
+    const rawTime = weatherEntry?.game_time || '';
+    const formattedTime = formatGameTime(rawTime);
 
-    const weatherMap = {};
-    for (const w of weather) {
-      const key = `${w.away_team} @ ${w.home_team}`;
-      weatherMap[key] = w;
-    }
+    const batterProps = batters.filter(p =>
+      p.home_team === row.home_team && p.away_team === row.away_team
+    ).map(p => ({
+      player: p.name,
+      stat: p.stat_type,
+      z_score: parseFloat(p.z_score || 0)
+    }));
 
-    const batterGames = [];
-    for (const b of batter) {
-      const game = Object.keys(weatherMap).find(key => key.includes(b.team));
-      if (!game) continue;
-      batterGames.push({
-        name: b.name,
-        game_key: game,
-        hit: parseFloat(b.total_hits_projection),
-        hr: parseFloat(b.avg_hr)
-      });
-    }
+    const pitcherProps = pitchers.filter(p =>
+      p.home_team === row.home_team && p.away_team === row.away_team
+    ).map(p => ({
+      player: p.name,
+      stat: p.stat_type,
+      z_score: parseFloat(p.z_score || 0)
+    }));
 
-    const pitcherGames = [];
-    for (const p of pitcher) {
-      const game = Object.keys(weatherMap).find(key => key.includes(p.team));
-      if (!game) continue;
-      pitcherGames.push({
-        name: p.name,
-        game_key: game,
-        era: parseFloat(p.era)
-      });
-    }
+    const allProps = [...batterProps, ...pitcherProps]
+      .filter(p => !isNaN(p.z_score))
+      .sort((a, b) => b.z_score - a.z_score)
+      .slice(0, 5);
 
-    const zHit = zScore(batterGames.map(x => x.hit));
-    const zHr = zScore(batterGames.map(x => x.hr));
-    const zEra = zScore(pitcherGames.map(x => -x.era));
+    return {
+      game,
+      home_team: row.home_team,
+      away_team: row.away_team,
+      temperature: temp,
+      game_time: formattedTime,
+      top_props: allProps
+    };
+  });
 
-    const props = [];
-
-    batterGames.forEach((b, i) => {
-      props.push({ name: b.name, stat: 'hit', z: zHit[i], game_key: b.game_key });
-      props.push({ name: b.name, stat: 'hr', z: zHr[i], game_key: b.game_key });
-    });
-
-    pitcherGames.forEach((p, i) => {
-      props.push({ name: p.name, stat: 'era', z: zEra[i], game_key: p.game_key });
-    });
-
-    const grouped = {};
-    for (const p of props) {
-      if (!grouped[p.game_key]) grouped[p.game_key] = [];
-      grouped[p.game_key].push(p);
-    }
-
-    const final = Object.entries(grouped).map(([game_key, propList]) => {
-      const weatherRow = weatherMap[game_key];
-      if (!weatherRow || !weatherRow.temperature) return null;
-      const sorted = propList.sort((a, b) => b.z - a.z).slice(0, 5);
-      return {
-        game: game_key,
-        temperature: Math.round(parseFloat(weatherRow.temperature)),
-        top_props: sorted.map(row => ({
-          player: row.name,
-          stat: row.stat,
-          z_score: +row.z.toFixed(2)
-        }))
-      };
-    }).filter(Boolean);
-
-    res.status(200).json(final);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.status(200).json(games);
 }
