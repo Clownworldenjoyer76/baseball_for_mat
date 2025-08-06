@@ -8,12 +8,14 @@ function HomePage({ games }) {
   return (
     <div style={{ 
       padding: '15px', 
-      fontFamily: "'Inter', sans-serif", 
+      fontFamily: "'Inter', sans-serif",
+      fontWeight: '200',
+      fontStyle: 'italic',
       color: '#F5F5F5', 
-      backgroundColor: '#000000', // Pure black background
+      backgroundColor: '#000000', 
       minHeight: '100vh' 
     }}>
-      <h1 style={{ textAlign: 'center', fontWeight: '700' }}>Today's Top MLB Picks and Props</h1>
+      <h1 style={{ textAlign: 'center' }}>Today's Top MLB Picks and Props</h1>
       {games.map((gameData, index) => (
         <GameCard 
           key={index}
