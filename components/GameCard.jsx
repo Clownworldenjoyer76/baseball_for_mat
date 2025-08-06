@@ -1,5 +1,3 @@
-import Image from "next/image";
-
 export default function GameCard({ game }) {
   return (
     <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-md p-4 mb-6 transition-all duration-150 active:scale-[0.97] hover:brightness-110">
@@ -8,17 +6,19 @@ export default function GameCard({ game }) {
       </h2>
 
       <div className="flex justify-center items-center space-x-4 mb-4">
-        <Image
+        <img
           src={`/logos/${game.away_team.toLowerCase()}.png`}
           alt={game.away_team}
           width={24}
           height={24}
+          className="w-6 h-6"
         />
-        <Image
+        <img
           src={`/logos/${game.home_team.toLowerCase()}.png`}
           alt={game.home_team}
           width={24}
           height={24}
+          className="w-6 h-6"
         />
       </div>
 
@@ -32,12 +32,12 @@ export default function GameCard({ game }) {
       <div className="space-y-2 mb-4">
         {game.top_props.map((prop, idx) => (
           <div key={idx} className="flex items-center space-x-3">
-            <Image
+            <img
               src={prop.headshot_url || "/fallback_headshot.png"}
               alt={prop.name}
               width={32}
               height={32}
-              className="rounded-full border border-white/20"
+              className="w-8 h-8 rounded-full border border-white/20"
             />
             <div className="text-sm text-white">
               <div className="font-medium">{prop.name}</div>
