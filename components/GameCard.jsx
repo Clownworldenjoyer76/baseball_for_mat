@@ -1,59 +1,76 @@
-export default function GameCard({ game }) {
+import React from 'react';
+
+function GameCard({ game, topProps, projectedScore, animationDelay }) {
+  const getLogoUrl = (teamName) => {
+    const imageName = teamName.toLowerCase().replace(/\s+/g, '');
+    return `/logos/${imageName}.png`;
+  };
+
+  const getHeadshotUrl = (playerId) => {
+    return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
+  };
+
   return (
-    <div className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-md p-4 mb-6 transition-all duration-150 active:scale-[0.97] hover:brightness-110">
-      <h2 className="text-2xl font-semibold text-white mb-2 text-center">
-        {game.away_team} <span className="text-gray-400">at</span> {game.home_team}
-      </h2>
-
-      <div className="flex justify-center items-center space-x-4 mb-4">
-        <img
-          src={`/logos/${game.away_team.toLowerCase()}.png`}
-          alt={game.away_team}
-          width={24}
-          height={24}
-          className="w-6 h-6"
-        />
-        <img
-          src={`/logos/${game.home_team.toLowerCase()}.png`}
-          alt={game.home_team}
-          width={24}
-          height={24}
-          className="w-6 h-6"
-        />
-      </div>
-
-      <div className="text-xs text-gray-400 flex justify-center gap-2 mb-4">
-        <span>🕒 {game.game_time}</span>
-        <span>🌡️ {game.temperature}°</span>
-        <span>📍 {game.venue}</span>
-      </div>
-
-      <h3 className="text-sm text-gray-300 uppercase tracking-wide mb-2">Top Props</h3>
-
-      {Array.isArray(game.top_props) && game.top_props.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {game.top_props.map((prop, idx) => (
-            <div key={idx} className="flex items-center space-x-3">
-              <img
-                src={prop.headshot_url || "/fallback_headshot.png"}
-                alt={prop.name}
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded-full border border-white/20"
-              />
-              <div className="text-sm text-white">
-                <div className="font-medium">{prop.name}</div>
-                <div className="text-gray-400 text-xs">{prop.prop_description}</div>
-              </div>
-            </div>
-          ))}
+    <div 
+      className="fade-in-card card-interactive" 
+      style={{ 
+        backgroundColor: '#1F2937', // Card Background
+        margin: '20px 0', 
+        borderRadius: '12px', 
+        overflow: 'hidden',
+        animationDelay: animationDelay // Staggered fade-in
+      }}
+    >
+      <div style={{ padding: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: 0, fontSize: '1.2em', color: '#D1D5DB' }}>{game.away_team}</h2>
+            <p style={{ margin: '4px 0', fontSize: '0.8em', color: '#9CA3AF' }}>at</p>
+            <h2 style={{ margin: 0, fontSize: '1.2em', color: '#D1D5DB' }}>{game.home_team}</h2>
+          </div>
+          <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
         </div>
-      )}
+        <div style={{ display: 'flex', justifyContent: 'space-around', color: '#9CA3AF', paddingTop: '15px' }}>
+          <span>{game.game_time}</span>
+          <span>{Math.round(game.temperature)}Â°</span>
+          <span>{game.venue}</span>
+        </div>
+      </div>
 
-      <h3 className="text-sm text-gray-300 uppercase tracking-wide mb-1">Projected Score</h3>
-      <div className="text-center text-white text-sm">
-        {game.away_team} {game.away_score} <span className="text-gray-400">vs</span> {game.home_team} {game.home_score}
+      <div style={{ padding: '20px', borderTop: '1px solid #374151' }}>
+        <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #374151' }}>
+          <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#F59E0B' }}>Top Props</h4>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#D1D5DB' }}>
+            {topProps.map((prop, index) => (
+              <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                <img src={getHeadshotUrl(prop.playerId)} alt={prop.name} style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#374151', objectFit: 'cover' }} />
+                <div>
+                  <div style={{ fontSize: '1em' }}>{prop.name}</div>
+                  <div style={{ fontSize: '0.9em', color: '#9CA3AF', marginLeft: '10px' }}>{prop.line}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
+          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#F59E0B' }}>Projected Score</h4>
+          <div style={{ fontSize: '1.2em', color: '#D1D5DB', lineHeight: '1.5' }}>
+            {projectedScore ? (
+              <>
+                <div>{game.away_team} {projectedScore.away}</div>
+                <div>{game.home_team} {projectedScore.home}</div>
+                <div style={{ fontSize: '0.9em', color: '#9CA3AF', marginTop: '10px' }}>
+                  Total Run Projection: {projectedScore.total}
+                </div>
+              </>
+            ) : <p>N/A</p>}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
+export default GameCard;
