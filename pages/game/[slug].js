@@ -72,18 +72,17 @@ function GameDetailPage() {
     game.precipitation,
     game.condition
   ].filter(Boolean).join(', ');
-
   const gameTime = game.game_time;
 
   const normalized = str => str?.toLowerCase().replace(/\s+/g, '').trim();
 
   const starters = pitchers.filter(p => {
-    return p.team && p.pitcher &&
+    return p.team && p.name &&
       [normalized(game.away_team), normalized(game.home_team)].includes(normalized(p.team));
   });
 
   const startersLine = starters.length === 2
-    ? `${starters[0].pitcher} ${starters[0].team} vs ${starters[1].pitcher} ${starters[1].team}`
+    ? `${starters[0].name} ${starters[0].team} vs ${starters[1].name} ${starters[1].team}`
     : 'Starting pitchers TBD';
 
   const filteredPicks = batters
