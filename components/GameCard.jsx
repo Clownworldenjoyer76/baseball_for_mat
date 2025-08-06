@@ -1,3 +1,4 @@
+
 const teamLogos = {
   "braves": "/logos/braves.png",
   "orioles": "/logos/orioles.png",
@@ -32,9 +33,14 @@ const teamLogos = {
 };
 
 export default function GameCard({ game, temperature, top_props }) {
-  const [awayTeam, homeTeam] = game.toLowerCase().split(" @ ");
-  const awayLogo = teamLogos[awayTeam];
-  const homeLogo = teamLogos[homeTeam];
+  let awayTeam = '', homeTeam = '';
+  let awayLogo = '', homeLogo = '';
+
+  if (typeof game === 'string' && game.includes(' @ ')) {
+    [awayTeam, homeTeam] = game.toLowerCase().split(' @ ');
+    awayLogo = teamLogos[awayTeam];
+    homeLogo = teamLogos[homeTeam];
+  }
 
   return (
     <div style={{
@@ -62,7 +68,7 @@ export default function GameCard({ game, temperature, top_props }) {
       <p style={{ fontSize: '13px', color: '#bbb', marginBottom: '12px' }}>🌡 {temperature}°F</p>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {top_props.map((prop, idx) => (
+        {top_props && top_props.map((prop, idx) => (
           <li key={idx} style={{
             fontSize: '13px',
             padding: '5px 0',
