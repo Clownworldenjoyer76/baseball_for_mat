@@ -1,0 +1,29 @@
+/* Define the fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Class to apply the animation */
+.fade-in-card {
+  /* Start with card hidden */
+  opacity: 0;
+  /* Apply the animation */
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Class for the tap/interaction effect */
+.card-interactive {
+  transition: transform 0.15s ease-out;
+}
+
+.card-interactive:active {
+  /* Briefly scale up the card when tapped */
+  transform: scale(1.02);
+}
