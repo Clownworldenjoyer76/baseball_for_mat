@@ -10,13 +10,20 @@ function zScore(series) {
   return series.map(x => std ? (x - mean) / std : 0);
 }
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   try {
     const root = process.cwd();
+    const batterPath = path.join(root, 'data/_projections/batter_props_projected.csv');
+    const pitcherPath = path.join(root, 'data/_projections/pitcher_props_projected.csv');
+    const weatherPath = path.join(root, 'data/weather_adjustments.csv');
 
-    const batterCSV = fs.readFileSync(path.join(root, 'data/_projections/batter_props_projected.csv'), 'utf8');
-    const pitcherCSV = fs.readFileSync(path.join(root, 'data/_projections/pitcher_props_projected.csv'), 'utf8');
-    const weatherCSV = fs.readFileSync(path.join(root, 'data/weather_adjustments.csv'), 'utf8');
+    if (!fs.existsSync(batterPath) || !fs.existsSync(pitcherPath) || !fs.existsSync(weatherPath)) {
+      return res.status(500).json({ error: 'Missing CSV input files.' });
+    }
+
+    const batterCSV = fs.readFileSync(batterPath, 'utf8');
+    const pitcherCSV = fs.readFileSync(pitcherPath, 'utf8');
+    const weatherCSV = fs.readFileSync(weatherPath, 'utf8');
 
     const batter = Papa.parse(batterCSV, { header: true }).data;
     const pitcher = Papa.parse(pitcherCSV, { header: true }).data;
@@ -53,7 +60,7 @@ export default async function handler(req, res) {
 
     const zHit = zScore(batterGames.map(x => x.hit));
     const zHr = zScore(batterGames.map(x => x.hr));
-    const zEra = zScore(pitcherGames.map(x => -x.era)); // lower is better
+    const zEra = zScore(pitcherGames.map(x => -x.era));
 
     const props = [];
 
@@ -72,9 +79,10 @@ export default async function handler(req, res) {
       grouped[p.game_key].push(p);
     }
 
-    const final = Object.entries(grouped).map(([game_key, props]) => {
+    const final = Object.entries(grouped).map(([game_key, propList]) => {
       const weatherRow = weatherMap[game_key];
-      const sorted = props.sort((a, b) => b.z - a.z).slice(0, 5);
+      if (!weatherRow || !weatherRow.temperature) return null;
+      const sorted = propList.sort((a, b) => b.z - a.z).slice(0, 5);
       return {
         game: game_key,
         temperature: Math.round(parseFloat(weatherRow.temperature)),
@@ -84,18 +92,10 @@ export default async function handler(req, res) {
           z_score: +row.z.toFixed(2)
         }))
       };
-    });
-
-    const date = new Date().toISOString().split("T")[0];
-    const historyPath = path.join(root, 'data/history');
-    if (!fs.existsSync(historyPath)) {
-      fs.mkdirSync(historyPath, { recursive: true });
-    }
-    const savePath = path.join(historyPath, `${date}.json`);
-    fs.writeFileSync(savePath, JSON.stringify(final, null, 2), 'utf8');
+    }).filter(Boolean);
 
     res.status(200).json(final);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.toString() });
+    res.status(500).json({ error: err.message });
   }
 }
