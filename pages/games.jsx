@@ -57,7 +57,7 @@ function GamesPage() {
                 alignItems: 'center'
               }}>
                 <span>{game.away_team} @ {game.home_team}</span>
-                <span style={{ fontSize: '0.8em', color: '#B0B0B0' }}>{Math.round(game.temperature)}°</span>
+                <span style={{ fontSize: '0.8em', color: '#B0B0B0' }}>{game.game_time}</span>
               </div>
             </a>
           </Link>
