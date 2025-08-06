@@ -1,75 +1,102 @@
 // components/GameCard.jsx
 import React from 'react';
 
-function zToPercent(z) {
-  const cdf = 0.5 * (1 + Math.tanh(z / Math.sqrt(2)));
-  return Math.round(cdf * 100);
-}
+const getTeamLogo = (team) => {
+  const fileName = team.toLowerCase().replace(/ /g, '-') + '.png';
+  return `/logos/${fileName}`;
+};
 
-export default function GameCard({ game }) {
+const zScoreToPercentage = (z) => {
+  const p = 100 / (1 + Math.exp(-z));
+  return Math.min(99, Math.max(1, Math.round(p)));
+};
+
+const GameCard = ({ game }) => {
+  const { matchup, temperature, topProps } = game;
+
   return (
-    <div className="game-card">
+    <div className="card">
       <div className="header">
-        <div className="matchup">{game.game}</div>
-        <div className="temperature">{game.temperature}&deg;F</div>
+        <div className="teams">
+          <img src={getTeamLogo(game.away_team)} alt={game.away_team} className="logo" />
+          <span>{game.away_team} @ {game.home_team}</span>
+          <img src={getTeamLogo(game.home_team)} alt={game.home_team} className="logo" />
+        </div>
+        <div className="temp">{Math.round(temperature)}°F</div>
       </div>
       <div className="props">
-        {game.top_props.map((prop, index) => (
-          <div className="prop-bar" key={index}>
-            <span className="label">{prop.stat.toUpperCase()}</span>
-            <div className="bar-wrapper">
-              <div
-                className="bar-fill"
-                style={{ width: `${zToPercent(prop.z_score)}%` }}
-              />
+        {topProps.map((prop, idx) => (
+          <div className="prop" key={idx}>
+            <div className="label">{prop.player} – {prop.stat}</div>
+            <div className="bar-container">
+              <div className="bar" style={{ width: `${zScoreToPercentage(prop.z)}%` }} />
             </div>
-            <span className="value">{zToPercent(prop.z_score)}%</span>
+            <div className="value">{zScoreToPercentage(prop.z)}%</div>
           </div>
         ))}
       </div>
       <style jsx>{`
-        .game-card {
+        .card {
           background: #1e1e1e;
           border-radius: 12px;
           padding: 16px;
-          margin-bottom: 16px;
-          box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+          margin: 12px 0;
+          box-shadow: 0 0 8px rgba(0,0,0,0.4);
         }
         .header {
           display: flex;
           justify-content: space-between;
-          font-weight: 600;
+          align-items: center;
           margin-bottom: 12px;
+        }
+        .teams {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 600;
+        }
+        .logo {
+          width: 24px;
+          height: 24px;
+        }
+        .temp {
+          font-weight: bold;
         }
         .props {
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 10px;
         }
-        .prop-bar {
+        .prop {
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 8px;
         }
         .label {
-          width: 30px;
+          flex: 1;
+          font-size: 14px;
         }
-        .bar-wrapper {
-          flex-grow: 1;
+        .bar-container {
+          flex: 2;
+          background: #333;
           height: 8px;
-          background: #444;
           border-radius: 4px;
           overflow: hidden;
         }
-        .bar-fill {
+        .bar {
           height: 100%;
-          background: linear-gradient(to right, #00ff7f, #0077ff);
+          background: linear-gradient(to right, #00ffa3, #007bff);
         }
         .value {
-          width: 40px;
+          width: 36px;
           text-align: right;
+          font-size: 13px;
+          font-weight: 600;
         }
       `}</style>
     </div>
   );
-}
+};
+
+export default GameCard;
