@@ -1,83 +1,75 @@
+// components/GameCard.jsx
+import React from 'react';
 
-const teamLogos = {
-  "braves": "/logos/braves.png",
-  "orioles": "/logos/orioles.png",
-  "mets": "/logos/mets.png",
-  "redsox": "/logos/redsox.png",
-  "cubs": "/logos/cubs.png",
-  "reds": "/logos/reds.png",
-  "guardians": "/logos/guardians.png",
-  "rangers": "/logos/rangers.png",
-  "rockies": "/logos/rockies.png",
-  "tigers": "/logos/tigers.png",
-  "astros": "/logos/astros.png",
-  "whitesox": "/logos/whitesox.png",
-  "royals": "/logos/royals.png",
-  "angels": "/logos/angels.png",
-  "dodgers": "/logos/dodgers.png",
-  "marlins": "/logos/marlins.png",
-  "brewers": "/logos/brewers.png",
-  "twins": "/logos/twins.png",
-  "yankees": "/logos/yankees.png",
-  "athletics": "/logos/athletics.png",
-  "phillies": "/logos/phillies.png",
-  "diamondbacks": "/logos/diamondbacks.png",
-  "pirates": "/logos/pirates.png",
-  "padres": "/logos/padres.png",
-  "mariners": "/logos/mariners.png",
-  "giants": "/logos/giants.png",
-  "cardinals": "/logos/cardinals.png",
-  "bluejays": "/logos/bluejays.png",
-  "rays": "/logos/rays.png",
-  "nationals": "/logos/nationals.png"
-};
+function zToPercent(z) {
+  const cdf = 0.5 * (1 + Math.tanh(z / Math.sqrt(2)));
+  return Math.round(cdf * 100);
+}
 
-export default function GameCard({ game, temperature, top_props }) {
-  let awayTeam = '', homeTeam = '';
-  let awayLogo = '', homeLogo = '';
-
-  if (typeof game === 'string' && game.includes(' @ ')) {
-    [awayTeam, homeTeam] = game.toLowerCase().split(' @ ');
-    awayLogo = teamLogos[awayTeam];
-    homeLogo = teamLogos[homeTeam];
-  }
-
+export default function GameCard({ game }) {
   return (
-    <div style={{
-      background: 'rgba(255, 255, 255, 0.03)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderImage: 'linear-gradient(135deg, #3a3a3a, #2e2e2e) 1',
-      borderRadius: '16px',
-      padding: '20px',
-      marginBottom: '20px',
-      color: '#ffffff',
-      backdropFilter: 'blur(10px)',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif'
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '10px'
-      }}>
-        {awayLogo && <img src={awayLogo} alt={awayTeam} style={{ width: 24, height: 24, marginRight: 8 }} />}
-        <h2 style={{ fontSize: '16px', margin: 0 }}>{game}</h2>
-        {homeLogo && <img src={homeLogo} alt={homeTeam} style={{ width: 24, height: 24, marginLeft: 8 }} />}
+    <div className="game-card">
+      <div className="header">
+        <div className="matchup">{game.game}</div>
+        <div className="temperature">{game.temperature}&deg;F</div>
       </div>
-
-      <p style={{ fontSize: '13px', color: '#bbb', marginBottom: '12px' }}>🌡 {temperature}°F</p>
-
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {top_props && top_props.map((prop, idx) => (
-          <li key={idx} style={{
-            fontSize: '13px',
-            padding: '5px 0',
-            borderBottom: idx < top_props.length - 1 ? '1px solid #333' : 'none'
-          }}>
-            <strong>{prop.player}</strong> — {prop.stat.toUpperCase()} <span style={{ color: '#888' }}>(z={prop.z_score})</span>
-          </li>
+      <div className="props">
+        {game.top_props.map((prop, index) => (
+          <div className="prop-bar" key={index}>
+            <span className="label">{prop.stat.toUpperCase()}</span>
+            <div className="bar-wrapper">
+              <div
+                className="bar-fill"
+                style={{ width: `${zToPercent(prop.z_score)}%` }}
+              />
+            </div>
+            <span className="value">{zToPercent(prop.z_score)}%</span>
+          </div>
         ))}
-      </ul>
+      </div>
+      <style jsx>{`
+        .game-card {
+          background: #1e1e1e;
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 16px;
+          box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+        .props {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .prop-bar {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .label {
+          width: 30px;
+        }
+        .bar-wrapper {
+          flex-grow: 1;
+          height: 8px;
+          background: #444;
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .bar-fill {
+          height: 100%;
+          background: linear-gradient(to right, #00ff7f, #0077ff);
+        }
+        .value {
+          width: 40px;
+          text-align: right;
+        }
+      `}</style>
     </div>
   );
 }
