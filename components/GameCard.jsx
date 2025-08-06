@@ -29,23 +29,26 @@ export default function GameCard({ game }) {
       </div>
 
       <h3 className="text-sm text-gray-300 uppercase tracking-wide mb-2">Top Props</h3>
-      <div className="space-y-2 mb-4">
-        {game.top_props.map((prop, idx) => (
-          <div key={idx} className="flex items-center space-x-3">
-            <img
-              src={prop.headshot_url || "/fallback_headshot.png"}
-              alt={prop.name}
-              width={32}
-              height={32}
-              className="w-8 h-8 rounded-full border border-white/20"
-            />
-            <div className="text-sm text-white">
-              <div className="font-medium">{prop.name}</div>
-              <div className="text-gray-400 text-xs">{prop.prop_description}</div>
+
+      {Array.isArray(game.top_props) && game.top_props.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {game.top_props.map((prop, idx) => (
+            <div key={idx} className="flex items-center space-x-3">
+              <img
+                src={prop.headshot_url || "/fallback_headshot.png"}
+                alt={prop.name}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-full border border-white/20"
+              />
+              <div className="text-sm text-white">
+                <div className="font-medium">{prop.name}</div>
+                <div className="text-gray-400 text-xs">{prop.prop_description}</div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       <h3 className="text-sm text-gray-300 uppercase tracking-wide mb-1">Projected Score</h3>
       <div className="text-center text-white text-sm">
