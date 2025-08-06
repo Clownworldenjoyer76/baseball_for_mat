@@ -7,31 +7,34 @@ function GameCard({ game, topProps, projectedScore }) {
   };
 
   return (
-    // This outer container for the card remains dark
     <div style={{ backgroundColor: '#2C2C2C', padding: '0', margin: '20px 0', borderRadius: '12px', overflow: 'hidden' }}>
       
-      {/* This new div is for the light-colored top section */}
       <div style={{ backgroundColor: '#F9F9F9', color: '#212121', padding: '20px' }}>
-        {/* Team matchup section */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+        {/* New Team matchup section */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
-          <h2 style={{ margin: 0, fontSize: '1.2em', textAlign: 'center', fontWeight: '700' }}>{game.away_team} vs {game.home_team}</h2>
+          
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: 0, fontSize: '1.2em' }}>{game.away_team}</h2>
+            <p style={{ margin: '4px 0', fontSize: '0.9em', color: '#555' }}>at</p>
+            <h2 style={{ margin: 0, fontSize: '1.2em' }}>{game.home_team}</h2>
+          </div>
+          
           <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
         </div>
 
         {/* Game info section */}
-        <div style={{ display: 'flex', justifyContent: 'space-around', color: '#555', padding: '15px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-around', color: '#555', paddingTop: '15px' }}>
           <span>{game.game_time}</span>
           <span>{Math.round(game.temperature)}°</span>
           <span>{game.venue}</span>
         </div>
       </div>
 
-      {/* The bottom sections remain dark-themed */}
       <div style={{ padding: '20px' }}>
         {/* Top props section */}
         <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #444' }}>
-          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6', fontWeight: '700' }}>Top Props</h4>
+          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6' }}>Top Props</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, textAlign: 'center', color: '#F5F5F5' }}>
             {topProps.map((prop, index) => (
               <li key={index} style={{ padding: '5px 0' }}>
@@ -43,7 +46,7 @@ function GameCard({ game, topProps, projectedScore }) {
 
         {/* Projected score section */}
         <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
-          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6', fontWeight: '700' }}>Projected Score</h4>
+          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6' }}>Projected Score</h4>
           <p style={{ margin: 0, fontSize: '1.2em', color: '#F5F5F5' }}>
             {projectedScore ? `${game.away_team} ${projectedScore.away} - ${projectedScore.home} ${game.home_team}` : 'N/A'}
           </p>
