@@ -38,12 +38,7 @@ function zScoreToProbability(z) {
     const sign = x >= 0 ? 1 : -1;
     x = Math.abs(x);
     const t = 1 / (1 + 0.3275911 * x);
-    const y = 1 - (((((
-      +1.061405429 * t
-      - 1.453152027) * t)
-      + 1.421413741) * t
-      - 0.284496736) * t
-      + 0.254829592) * t * Math.exp(-x * x);
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x));
     return sign * y;
   };
   return Math.round((0.5 * (1 + erf(z / Math.sqrt(2))) * 100));
@@ -85,7 +80,7 @@ export default function GameCard({ game, temperature, game_time, top_props }) {
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {top_props.map((prop, idx) => {
           const prob = zScoreToProbability(prop.z_score);
-          const label = `${prop.stat?.toUpperCase?.() || 'STAT'}${prop.player ? ` — ${prop.player}` : ''}`;
+          const label = `${prop.stat.toUpperCase()}${prop.player ? ` — ${prop.player}` : ''}`;
           return (
             <li key={idx} style={{ marginBottom: '6px' }}>
               <div style={{ fontSize: '13px', marginBottom: '4px' }}>{label}</div>
