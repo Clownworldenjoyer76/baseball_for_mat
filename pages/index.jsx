@@ -27,7 +27,7 @@ function HomePage({ games }) {
   );
 }
 
-// getStaticProps is updated to include player_id
+// getStaticProps has been updated with the score tie-breaker logic
 export async function getStaticProps() {
   const parseCsv = (filePath) => {
     const csvFile = fs.readFileSync(filePath, 'utf-8');
@@ -52,16 +52,34 @@ export async function getStaticProps() {
     const homeScoreEntry = scoresList.find(s => s.team === homeTeamUpper);
     const awayScoreEntry = scoresList.find(s => s.team === awayTeamUpper);
     
-    const projectedScore = homeScoreEntry && awayScoreEntry ? {
-      home: Math.round(parseFloat(homeScoreEntry.projected_team_score)),
-      away: Math.round(parseFloat(awayScoreEntry.projected_team_score)),
-    } : null;
+    let projectedScore = null;
+    if (homeScoreEntry && awayScoreEntry) {
+      const rawHome = parseFloat(homeScoreEntry.projected_team_score);
+      const rawAway = parseFloat(awayScoreEntry.projected_team_score);
+
+      let roundedHome = Math.round(rawHome);
+      let roundedAway = Math.round(rawAway);
+
+      // Tie-breaker logic
+      if (roundedHome === roundedAway) {
+        if (rawHome >= rawAway) { // Home team wins exact ties
+          roundedHome++;
+        } else {
+          roundedAway++;
+        }
+      }
+
+      projectedScore = {
+        home: roundedHome,
+        away: roundedAway,
+        total: (rawHome + rawAway).toFixed(2)
+      };
+    }
 
     const gameBatters = batterProps.filter(prop => 
       prop.team === game.home_team || prop.team === game.away_team
     );
     
-    // This function now returns a full object for each prop
     const findTopProp = (props, key, line) => {
       if (props.length === 0) return null;
       const topPlayer = props.reduce((prev, current) => 
