@@ -6,9 +6,9 @@ function GameCard({ game, topProps, projectedScore }) {
     return `/logos/${imageName}.png`;
   };
 
-  // Constructs the URL for player headshots
+  // Corrected function to use the new headshot URL
   const getHeadshotUrl = (playerId) => {
-    return `https://img.mlbstatic.com/mlb-photos/image/upload/v1/people/${playerId}/headshot_67x67.png`;
+    return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
   return (
@@ -40,7 +40,7 @@ function GameCard({ game, topProps, projectedScore }) {
                 <img 
                   src={getHeadshotUrl(prop.playerId)} 
                   alt={prop.name} 
-                  style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px' }} 
+                  style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#444' }} 
                 />
                 <div>
                   <div style={{ fontSize: '1em' }}>{prop.name}</div>
