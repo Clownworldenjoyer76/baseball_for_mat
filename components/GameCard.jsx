@@ -1,5 +1,4 @@
 // components/GameCard.jsx
-// components/GameCard.jsx
 
 const teamLogos = {
   braves: "/logos/braves.png",
@@ -97,7 +96,7 @@ export default function GameCard({ game, temperature, top_props }) {
               }}>
                 <div style={{
                   width: `${prob}%`,
-                  background: 'linear-gradient(90deg, #00f260, #0575e6)',
+                  background: 'linear-gradient(90deg, red, orange, limegreen)',
                   height: '100%'
                 }}></div>
               </div>
