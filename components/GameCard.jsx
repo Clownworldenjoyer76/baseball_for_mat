@@ -85,7 +85,7 @@ export default function GameCard({ game, temperature, game_time, top_props }) {
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {top_props.map((prop, idx) => {
           const prob = zScoreToProbability(prop.z_score);
-          const label = `${prop.stat.toUpperCase()}${prop.player ? ` — ${prop.player}` : ''}`;
+          const label = `${prop.stat.toUpperCase()} — ${prop.player}`;
           return (
             <li key={idx} style={{ marginBottom: '6px' }}>
               <div style={{ fontSize: '13px', marginBottom: '4px' }}>{label}</div>
