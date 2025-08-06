@@ -38,27 +38,28 @@ function GamesPage() {
       {games.map((game, index) => {
         const slug = generateSlug(game.away_team, game.home_team);
         return (
-          <Link href={`/game/${slug}`} key={index}>
-            <div
-              role="link"
-              style={{
-                backgroundColor: '#1F1F1F',
-                padding: '12px 16px',
-                marginBottom: '10px',
-                borderRadius: '8px',
-                border: '1px solid #2F2F30',
-                color: '#E0E0E0',
-                fontSize: '1em',
+          <Link href={`/game/${slug}`} passHref key={index}>
+            <a style={{
+              display: 'block',
+              textDecoration: 'none',
+              backgroundColor: '#1F1F1F',
+              padding: '12px 16px',
+              marginBottom: '10px',
+              borderRadius: '8px',
+              border: '1px solid #2F2F30',
+              color: '#E0E0E0',
+              fontSize: '1em',
+              WebkitTapHighlightColor: 'transparent'
+            }}>
+              <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center',
-                cursor: 'pointer',
-                WebkitTapHighlightColor: 'transparent'
-              }}
-            >
-              <span>{game.away_team} @ {game.home_team}</span>
-              <span style={{ fontSize: '0.8em', color: '#B0B0B0' }}>{Math.round(game.temperature)}°</span>
-            </div>
+                alignItems: 'center'
+              }}>
+                <span>{game.away_team} @ {game.home_team}</span>
+                <span style={{ fontSize: '0.8em', color: '#B0B0B0' }}>{Math.round(game.temperature)}°</span>
+              </div>
+            </a>
           </Link>
         );
       })}
