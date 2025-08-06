@@ -10,13 +10,13 @@ function GameCard({ game, topProps, projectedScore }) {
     <div style={{ backgroundColor: '#2C2C2C', padding: '0', margin: '20px 0', borderRadius: '12px', overflow: 'hidden' }}>
       
       <div style={{ backgroundColor: '#F9F9F9', color: '#212121', padding: '20px' }}>
-        {/* New Team matchup section */}
+        {/* Team matchup section */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
           
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ margin: 0, fontSize: '1.2em' }}>{game.away_team}</h2>
-            <p style={{ margin: '4px 0', fontSize: '0.9em', color: '#555' }}>at</p>
+            <p style={{ margin: '4px 0', fontSize: '0.8em', color: '#888888' }}>at</p>
             <h2 style={{ margin: 0, fontSize: '1.2em' }}>{game.home_team}</h2>
           </div>
           
