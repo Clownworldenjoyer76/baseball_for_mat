@@ -9,8 +9,7 @@ function HomePage({ games }) {
     <div style={{ 
       padding: '15px', 
       fontFamily: "'Inter', sans-serif",
-      fontWeight: '200',
-      fontStyle: 'italic',
+      fontWeight: '400',
       color: '#F5F5F5', 
       backgroundColor: '#000000', 
       minHeight: '100vh' 
