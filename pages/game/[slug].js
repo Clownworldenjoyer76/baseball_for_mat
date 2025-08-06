@@ -71,20 +71,28 @@ function GameDetailPage() {
     `${game.humidity}%`,
     game.precipitation,
     game.condition
-  ].join(', ');
+  ].filter(Boolean).join(', ');
 
   const gameTime = game.game_time;
 
-  const starters = pitchers.filter(p =>
-    [game.home_team, game.away_team].includes(p.team)
-  );
+  const normalized = str => str?.toLowerCase().replace(/\s+/g, '').trim();
+
+  const starters = pitchers.filter(p => {
+    return p.team && p.pitcher &&
+      [normalized(game.away_team), normalized(game.home_team)].includes(normalized(p.team));
+  });
+
   const startersLine = starters.length === 2
     ? `${starters[0].pitcher} ${starters[0].team} vs ${starters[1].pitcher} ${starters[1].team}`
     : 'Starting pitchers TBD';
 
   const filteredPicks = batters
-    .filter(b => [game.away_team, game.home_team].includes(b.team))
-    .filter(b => ['total_bases', 'hits', 'home_runs'].includes(b.prop_type))
+    .filter(b =>
+      b.team &&
+      [normalized(game.away_team), normalized(game.home_team)].includes(normalized(b.team)) &&
+      ['total_bases', 'hits', 'home_runs'].includes(b.prop_type) &&
+      b.z_score && b.line && b.name
+    )
     .sort((a, b) => parseFloat(b.z_score) - parseFloat(a.z_score));
 
   const topPicks = [
@@ -104,13 +112,17 @@ function GameDetailPage() {
       <p style={{ fontWeight: 'bold', color: '#F59E0B', marginBottom: '10px' }}>{startersLine}</p>
 
       <h3 style={{ color: '#D4AF37', marginTop: '20px', marginBottom: '10px' }}>Top 5 Picks</h3>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {topPicks.map((pick, i) => (
-          <li key={i} style={{ marginBottom: '12px' }}>
-            <strong>{pick.name}</strong> – {pick.prop_type.replace('_', ' ')} over {pick.line} (<span style={{ color: '#9CA3AF' }}>z: {pick.z_score}</span>)
-          </li>
-        ))}
-      </ul>
+      {topPicks.length === 0 ? (
+        <p style={{ color: '#888' }}>No props available for this game.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {topPicks.map((pick, i) => (
+            <li key={i} style={{ marginBottom: '12px' }}>
+              <strong>{pick.name}</strong> – {pick.prop_type.replace('_', ' ')} over {pick.line} (<span style={{ color: '#9CA3AF' }}>z: {pick.z_score}</span>)
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
