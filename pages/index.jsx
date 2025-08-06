@@ -27,46 +27,64 @@ function HomePage({ games }) {
   );
 }
 
-// getStaticProps function remains the same
+// getStaticProps has been updated with the new prop logic
 export async function getStaticProps() {
   const parseCsv = (filePath) => {
     const csvFile = fs.readFileSync(filePath, 'utf-8');
     return Papa.parse(csvFile, { header: true, skipEmptyLines: true }).data;
   };
+
   const dataDir = path.join(process.cwd(), 'data');
   const gamesList = parseCsv(path.join(dataDir, 'weather_adjustments.csv'));
   const scoresList = parseCsv(path.join(dataDir, '_projections', 'final_scores_projected.csv'));
   const batterProps = parseCsv(path.join(dataDir, '_projections', 'batter_props_projected.csv'));
+
+  // Helper to reformat "Last, First" to "First Last"
+  const formatPlayerName = (name) => {
+    if (!name || !name.includes(',')) return name;
+    const parts = name.split(',');
+    return `${parts[1].trim()} ${parts[0].trim()}`;
+  };
+  
   const gamesWithData = gamesList.map(game => {
     const homeTeamUpper = game.home_team.toUpperCase();
     const awayTeamUpper = game.away_team.toUpperCase();
+    
     const homeScoreEntry = scoresList.find(s => s.team === homeTeamUpper);
     const awayScoreEntry = scoresList.find(s => s.team === awayTeamUpper);
+    
     const projectedScore = homeScoreEntry && awayScoreEntry ? {
       home: Math.round(parseFloat(homeScoreEntry.projected_team_score)),
       away: Math.round(parseFloat(awayScoreEntry.projected_team_score)),
     } : null;
+
     const gameBatters = batterProps.filter(prop => 
       prop.team === game.home_team || prop.team === game.away_team
     );
-    const findTopProp = (props, key, typeName) => {
+    
+    // Updated function to find top prop and format the output
+    const findTopProp = (props, key, line) => {
       if (props.length === 0) return null;
       const topPlayer = props.reduce((prev, current) => 
         (parseFloat(prev[key]) > parseFloat(current[key])) ? prev : current
       );
-      return { name: topPlayer.name, type: typeName };
+      // Create the final prop string here
+      return `${formatPlayerName(topPlayer.name)} ${line}`;
     };
+
     const topProps = [
-      findTopProp(gameBatters, 'total_bases_projection', 'Total Bases'),
-      findTopProp(gameBatters, 'total_hits_projection', 'Total Hits'),
-      findTopProp(gameBatters, 'avg_hr', 'Home Runs')
-    ].filter(p => p);
+      findTopProp(gameBatters, 'total_bases_projection', 'Total Bases Over 1.5'),
+      findTopProp(gameBatters, 'total_hits_projection', 'Total Hits Over 1.5'),
+      findTopProp(gameBatters, 'avg_hr', 'Home Runs Over 0.5')
+    ].filter(p => p); // Filter out nulls
+
     return {
       gameInfo: game,
       topProps: topProps,
       projectedScore: projectedScore,
     };
   });
+
   return {
     props: {
       games: gamesWithData,
