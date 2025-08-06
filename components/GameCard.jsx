@@ -49,7 +49,7 @@ function zScoreToProbability(z) {
   return Math.round((0.5 * (1 + erf(z / Math.sqrt(2))) * 100));
 }
 
-export default function GameCard({ game, temperature, top_props }) {
+export default function GameCard({ game, temperature, game_time, top_props }) {
   const [awayTeam, homeTeam] = game.toLowerCase().split(" @ ");
   const awayLogo = teamLogos[awayTeam];
   const homeLogo = teamLogos[homeTeam];
@@ -77,7 +77,9 @@ export default function GameCard({ game, temperature, top_props }) {
           <h2 style={{ fontSize: '15px', margin: 0 }}>{game}</h2>
           {homeLogo && <img src={homeLogo} alt={homeTeam} style={{ width: 20, height: 20, marginLeft: 8 }} />}
         </div>
-        <span style={{ fontSize: '13px', color: '#ccc' }}>{temperature}°F</span>
+        <span style={{ fontSize: '13px', color: '#ccc' }}>
+          {temperature}°F · {game_time}
+        </span>
       </div>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
