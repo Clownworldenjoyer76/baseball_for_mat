@@ -32,8 +32,19 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
         </div>
 
-        <div className="text-center pt-4" style={{ fontSize: '10px', lineHeight: '1', color: '#B0B0B0' }}>
-          🕒 {game.game_time}&nbsp;&nbsp;🌡️ {Math.round(game.temperature)}°&nbsp;&nbsp;📍 {game.venue}
+        <div
+          style={{
+            fontSize: '12px',
+            lineHeight: '1',
+            color: '#B0B0B0',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            textAlign: 'center',
+            paddingTop: '12px'
+          }}
+        >
+          🕒 {game.game_time}&nbsp;&nbsp;&nbsp;🌡️ {Math.round(game.temperature)}°&nbsp;&nbsp;&nbsp;📍 {game.venue}
         </div>
       </div>
 
