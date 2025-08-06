@@ -1,30 +1,28 @@
 // pages/index.js
-// pages/index.js
 
 import { useEffect, useState } from 'react';
 import GameCard from '../components/GameCard';
 
 export default function Home() {
-  const [cards, setCards] = useState([]);
+  const [games, setGames] = useState([]);
 
   useEffect(() => {
     fetch('/api/game-cards')
       .then(res => res.json())
-      .then(data => setCards(data));
+      .then(data => setGames(data))
+      .catch(err => console.error('Failed to load game cards:', err));
   }, []);
 
   return (
-    <div style={{
-      background: 'linear-gradient(180deg, #0f0f0f, #1a1a1a)',
-      padding: '24px',
-      minHeight: '100vh',
-      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif'
-    }}>
-      <h1 style={{ color: 'white', fontSize: '20px', marginBottom: '24px' }}>
-        📊 Most Likely Props – Today’s Games
-      </h1>
-      {cards.map((card, idx) => (
-        <GameCard key={idx} {...card} />
+    <div style={{ padding: '20px' }}>
+      {games.map((gameData, index) => (
+        <GameCard
+          key={index}
+          game={gameData.game}
+          temperature={gameData.temperature}
+          game_time={gameData.game_time}
+          top_props={gameData.top_props}
+        />
       ))}
     </div>
   );
