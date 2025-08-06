@@ -2,57 +2,115 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Papa from 'papaparse';
 
-const CSV_URL = 'https://raw.githubusercontent.com/Clownworldenjoyer76/sports-betting-site/main/data/weather_adjustments.csv';
+const weatherCSV = 'https://raw.githubusercontent.com/Clownworldenjoyer76/sports-betting-site/main/data/weather_adjustments.csv';
+const battersCSV = 'https://raw.githubusercontent.com/Clownworldenjoyer76/sports-betting-site/main/data/_projections/batter_props_projected.csv';
+const pitchersCSV = 'https://raw.githubusercontent.com/Clownworldenjoyer76/sports-betting-site/main/data/_projections/pitcher_props_projected.csv';
 
 function GameDetailPage() {
-  const router = useRouter();
-  const { slug } = router.query;
+  const { query } = useRouter();
+  const slug = query.slug;
 
   const [game, setGame] = useState(null);
+  const [pitchers, setPitchers] = useState([]);
+  const [batters, setBatters] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!slug) return;
 
-    fetch(CSV_URL)
-      .then(res => res.text())
-      .then(csvText => {
-        Papa.parse(csvText, {
+    const fetchData = async () => {
+      try {
+        const [weatherText, battersText, pitchersText] = await Promise.all([
+          fetch(weatherCSV).then(r => r.text()),
+          fetch(battersCSV).then(r => r.text()),
+          fetch(pitchersCSV).then(r => r.text())
+        ]);
+
+        Papa.parse(weatherText, {
           header: true,
           skipEmptyLines: true,
-          complete: (results) => {
-            const match = results.data.find(row => {
-              const generatedSlug = `${row.away_team}-vs-${row.home_team}`.toLowerCase().replace(/\s+/g, '-');
-              return generatedSlug === slug;
+          complete: ({ data: weatherData }) => {
+            const match = weatherData.find(row => {
+              const testSlug = `${row.away_team}-vs-${row.home_team}`.toLowerCase().replace(/\s+/g, '-');
+              return testSlug === slug;
             });
-            if (match) {
-              setGame(match);
-            } else {
-              setError('Game not found');
-            }
-          },
-          error: (err) => setError('Error parsing CSV: ' + err.message),
+            if (!match) return setError('Game not found');
+            setGame(match);
+          }
         });
-      })
-      .catch(err => setError('Error fetching data: ' + err.message));
+
+        Papa.parse(battersText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: ({ data }) => setBatters(data)
+        });
+
+        Papa.parse(pitchersText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: ({ data }) => setPitchers(data)
+        });
+
+      } catch (err) {
+        setError('Error loading data');
+      }
+    };
+
+    fetchData();
   }, [slug]);
 
-  if (error) {
-    return <div style={{ color: 'red', padding: '20px' }}>{error}</div>;
-  }
+  if (error) return <div style={{ color: 'red', padding: '20px' }}>{error}</div>;
+  if (!game) return <div style={{ padding: '20px', color: '#fff' }}>Loading...</div>;
 
-  if (!game) {
-    return <div style={{ color: '#fff', padding: '20px' }}>Loading game data...</div>;
-  }
+  const title = `${game.away_team} @ ${game.home_team}`;
+  const venue = game.venue;
+  const conditions = [
+    `${Math.round(game.temperature)}°`,
+    game.wind_direction,
+    `${game.wind_speed} mph`,
+    `${game.humidity}%`,
+    game.precipitation,
+    game.condition
+  ].join(', ');
+
+  const gameTime = game.game_time;
+
+  const starters = pitchers.filter(p =>
+    [game.home_team, game.away_team].includes(p.team)
+  );
+  const startersLine = starters.length === 2
+    ? `${starters[0].pitcher} ${starters[0].team} vs ${starters[1].pitcher} ${starters[1].team}`
+    : 'Starting pitchers TBD';
+
+  const filteredPicks = batters
+    .filter(b => [game.away_team, game.home_team].includes(b.team))
+    .filter(b => ['total_bases', 'hits', 'home_runs'].includes(b.prop_type))
+    .sort((a, b) => parseFloat(b.z_score) - parseFloat(a.z_score));
+
+  const topPicks = [
+    ...filteredPicks.filter(p => p.prop_type === 'total_bases').slice(0, 2),
+    ...filteredPicks.filter(p => p.prop_type === 'hits').slice(0, 2),
+    ...filteredPicks.filter(p => p.prop_type === 'home_runs').slice(0, 1)
+  ];
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#121212', minHeight: '100vh', color: '#fff', fontFamily: 'sans-serif' }}>
-      <h1 style={{ fontSize: '1.5em', marginBottom: '10px' }}>
-        {game.away_team} @ {game.home_team}
-      </h1>
-      <p style={{ color: '#B0B0B0' }}>Venue: {game.venue}</p>
-      <p style={{ color: '#B0B0B0' }}>Temperature: {Math.round(game.temperature)}°</p>
-      {/* More data sections can go here later */}
+    <div style={{ backgroundColor: '#121212', color: '#fff', padding: '20px', fontFamily: 'sans-serif', minHeight: '100vh' }}>
+      <h1 style={{ fontSize: '1.5em', marginBottom: '10px' }}>{title}</h1>
+
+      <p style={{ color: '#B0B0B0', marginBottom: '4px' }}>{venue}</p>
+      <p style={{ color: '#B0B0B0', marginBottom: '4px' }}>{conditions}</p>
+      <p style={{ color: '#B0B0B0', marginBottom: '10px' }}>{gameTime}</p>
+
+      <p style={{ fontWeight: 'bold', color: '#F59E0B', marginBottom: '10px' }}>{startersLine}</p>
+
+      <h3 style={{ color: '#D4AF37', marginTop: '20px', marginBottom: '10px' }}>Top 5 Picks</h3>
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {topPicks.map((pick, i) => (
+          <li key={i} style={{ marginBottom: '12px' }}>
+            <strong>{pick.name}</strong> – {pick.prop_type.replace('_', ' ')} over {pick.line} (<span style={{ color: '#9CA3AF' }}>z: {pick.z_score}</span>)
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
