@@ -14,11 +14,11 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     <div 
       className="fade-in-card card-interactive" 
       style={{ 
-        backgroundColor: '#1F2937', // Card Background
+        backgroundColor: '#1F2937',
         margin: '20px 0', 
         borderRadius: '12px', 
         overflow: 'hidden',
-        animationDelay: animationDelay // Staggered fade-in
+        animationDelay: animationDelay
       }}
     >
       <div style={{ padding: '20px' }}>
@@ -31,10 +31,11 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
           <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', color: '#9CA3AF', paddingTop: '15px' }}>
-          <span>{game.game_time}</span>
-          <span>{Math.round(game.temperature)}Â°</span>
-          <span>{game.venue}</span>
+
+        <div className="text-xs text-gray-400 flex items-center gap-2" style={{ justifyContent: 'center', paddingTop: '15px' }}>
+          <span>🕒 {game.game_time}</span>
+          <span>🌡️ {Math.round(game.temperature)}°</span>
+          <span>📍 {game.venue}</span>
         </div>
       </div>
 
