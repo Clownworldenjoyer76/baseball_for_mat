@@ -18,7 +18,8 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
         margin: '20px 0', 
         borderRadius: '12px', 
         overflow: 'hidden',
-        animationDelay: animationDelay
+        animationDelay: animationDelay,
+        border: '1px solid #2F2F30'
       }}
     >
       <div style={{ padding: '20px' }}>
