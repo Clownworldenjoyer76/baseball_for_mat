@@ -27,7 +27,7 @@ function HomePage({ games }) {
   );
 }
 
-// getStaticProps has been updated with the new prop logic
+// getStaticProps is updated to include player_id
 export async function getStaticProps() {
   const parseCsv = (filePath) => {
     const csvFile = fs.readFileSync(filePath, 'utf-8');
@@ -39,7 +39,6 @@ export async function getStaticProps() {
   const scoresList = parseCsv(path.join(dataDir, '_projections', 'final_scores_projected.csv'));
   const batterProps = parseCsv(path.join(dataDir, '_projections', 'batter_props_projected.csv'));
 
-  // Helper to reformat "Last, First" to "First Last"
   const formatPlayerName = (name) => {
     if (!name || !name.includes(',')) return name;
     const parts = name.split(',');
@@ -62,21 +61,24 @@ export async function getStaticProps() {
       prop.team === game.home_team || prop.team === game.away_team
     );
     
-    // Updated function to find top prop and format the output
+    // This function now returns a full object for each prop
     const findTopProp = (props, key, line) => {
       if (props.length === 0) return null;
       const topPlayer = props.reduce((prev, current) => 
         (parseFloat(prev[key]) > parseFloat(current[key])) ? prev : current
       );
-      // Create the final prop string here
-      return `${formatPlayerName(topPlayer.name)} ${line}`;
+      return {
+        name: formatPlayerName(topPlayer.name),
+        line: line,
+        playerId: topPlayer.player_id 
+      };
     };
 
     const topProps = [
       findTopProp(gameBatters, 'total_bases_projection', 'Total Bases Over 1.5'),
       findTopProp(gameBatters, 'total_hits_projection', 'Total Hits Over 1.5'),
       findTopProp(gameBatters, 'avg_hr', 'Home Runs Over 0.5')
-    ].filter(p => p); // Filter out nulls
+    ].filter(p => p);
 
     return {
       gameInfo: game,
