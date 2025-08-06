@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Papa from 'papaparse';
+import Link from 'next/link';
 
-// The full URL to the raw CSV file on your GitHub.
 const CSV_URL = 'https://raw.githubusercontent.com/Clownworldenjoyer76/sports-betting-site/main/data/weather_adjustments.csv';
 
 function GamesPage() {
@@ -11,56 +11,55 @@ function GamesPage() {
   useEffect(() => {
     fetch(CSV_URL)
       .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.text();
       })
       .then(csvText => {
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
-          complete: (results) => {
-            setGames(results.data);
-          },
-          error: (err) => {
-            setError('Error parsing CSV file: ' + err.message);
-          }
+          complete: (results) => setGames(results.data),
+          error: (err) => setError('Error parsing CSV: ' + err.message)
         });
       })
-      .catch(err => {
-        setError('Error fetching the CSV file: ' + err.message);
-      });
+      .catch(err => setError('Error fetching CSV: ' + err.message));
   }, []);
 
+  const generateSlug = (away, home) => {
+    return `${away}-vs-${home}`.toLowerCase().replace(/\s+/g, '-');
+  };
+
   return (
-    <div style={{ padding: '15px', fontFamily: 'sans-serif', color: '#fff', backgroundColor: '#121212' }}>
-      <h1>Game Conditions</h1>
-      
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', color: '#fff', backgroundColor: '#121212', minHeight: '100vh' }}>
+      <h1 style={{ fontSize: '1.5em', marginBottom: '20px' }}>All Games</h1>
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #444' }}>
-              <th style={{ padding: '10px', textAlign: 'left' }}>Away</th>
-              <th style={{ padding: '10px', textAlign: 'left' }}>Home</th>
-              <th style={{ padding: '10px', textAlign: 'left' }}>Venue</th>
-              <th style={{ padding: '10px', textAlign: 'left' }}>Temp</th>
-            </tr>
-          </thead>
-          <tbody>
-            {games.map((game, index) => (
-              <tr key={index} style={{ borderBottom: '1px solid #333' }}>
-                <td style={{ padding: '10px' }}>{game.away_team}</td>
-                <td style={{ padding: '10px' }}>{game.home_team}</td>
-                <td style={{ padding: '10px' }}>{game.venue}</td>
-                <td style={{ padding: '10px' }}>{game.temperature}°</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+
+      {games.map((game, index) => {
+        const slug = generateSlug(game.away_team, game.home_team);
+        return (
+          <Link href={`/game/${slug}`} key={index}>
+            <div
+              style={{
+                backgroundColor: '#1F1F1F',
+                padding: '12px 16px',
+                marginBottom: '10px',
+                borderRadius: '8px',
+                border: '1px solid #2F2F30',
+                color: '#E0E0E0',
+                fontSize: '1em',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <span>{game.away_team} @ {game.home_team}</span>
+              <span style={{ fontSize: '0.8em', color: '#B0B0B0' }}>{Math.round(game.temperature)}°</span>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
