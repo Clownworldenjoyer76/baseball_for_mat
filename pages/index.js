@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import GameCard from '../components/GameCard';
 
@@ -16,9 +15,11 @@ export default function Home() {
       background: 'linear-gradient(180deg, #0f0f0f, #1a1a1a)',
       padding: '24px',
       minHeight: '100vh',
-      fontFamily: 'system-ui, sans-serif'
+      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif'
     }}>
-      <h1 style={{ color: 'white', fontSize: '22px', marginBottom: '24px' }}>📊 Most Likely Props – Today’s Games</h1>
+      <h1 style={{ color: 'white', fontSize: '20px', marginBottom: '24px' }}>
+        📊 Most Likely Props – Today’s Games
+      </h1>
       {cards.map((card, idx) => (
         <GameCard key={idx} {...card} />
       ))}
