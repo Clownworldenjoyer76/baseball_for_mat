@@ -1,102 +1,111 @@
 // components/GameCard.jsx
-import React from 'react';
+// components/GameCard.jsx
 
-const getTeamLogo = (team) => {
-  const fileName = team.toLowerCase().replace(/ /g, '-') + '.png';
-  return `/logos/${fileName}`;
+const teamLogos = {
+  braves: "/logos/braves.png",
+  orioles: "/logos/orioles.png",
+  mets: "/logos/mets.png",
+  redsox: "/logos/redsox.png",
+  cubs: "/logos/cubs.png",
+  reds: "/logos/reds.png",
+  guardians: "/logos/guardians.png",
+  rangers: "/logos/rangers.png",
+  rockies: "/logos/rockies.png",
+  tigers: "/logos/tigers.png",
+  astros: "/logos/astros.png",
+  whitesox: "/logos/whitesox.png",
+  royals: "/logos/royals.png",
+  angels: "/logos/angels.png",
+  dodgers: "/logos/dodgers.png",
+  marlins: "/logos/marlins.png",
+  brewers: "/logos/brewers.png",
+  twins: "/logos/twins.png",
+  yankees: "/logos/yankees.png",
+  athletics: "/logos/athletics.png",
+  phillies: "/logos/phillies.png",
+  diamondbacks: "/logos/diamondbacks.png",
+  pirates: "/logos/pirates.png",
+  padres: "/logos/padres.png",
+  mariners: "/logos/mariners.png",
+  giants: "/logos/giants.png",
+  cardinals: "/logos/cardinals.png",
+  bluejays: "/logos/bluejays.png",
+  rays: "/logos/rays.png",
+  nationals: "/logos/nationals.png",
 };
 
-const zScoreToPercentage = (z) => {
-  const p = 100 / (1 + Math.exp(-z));
-  return Math.min(99, Math.max(1, Math.round(p)));
-};
+function zScoreToProbability(z) {
+  const erf = x => {
+    const sign = x >= 0 ? 1 : -1;
+    x = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = 1 - (((((
+      +1.061405429 * t
+      - 1.453152027) * t)
+      + 1.421413741) * t
+      - 0.284496736) * t
+      + 0.254829592) * t * Math.exp(-x * x);
+    return sign * y;
+  };
+  return Math.round((0.5 * (1 + erf(z / Math.sqrt(2))) * 100));
+}
 
-const GameCard = ({ game }) => {
-  const { matchup, temperature, topProps } = game;
+export default function GameCard({ game, temperature, top_props }) {
+  const [awayTeam, homeTeam] = game.toLowerCase().split(" @ ");
+  const awayLogo = teamLogos[awayTeam];
+  const homeLogo = teamLogos[homeTeam];
 
   return (
-    <div className="card">
-      <div className="header">
-        <div className="teams">
-          <img src={getTeamLogo(game.away_team)} alt={game.away_team} className="logo" />
-          <span>{game.away_team} @ {game.home_team}</span>
-          <img src={getTeamLogo(game.home_team)} alt={game.home_team} className="logo" />
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.03)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '16px',
+      padding: '20px',
+      marginBottom: '20px',
+      color: '#ffffff',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+      fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '10px',
+        justifyContent: 'space-between'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          {awayLogo && <img src={awayLogo} alt={awayTeam} style={{ width: 20, height: 20, marginRight: 8 }} />}
+          <h2 style={{ fontSize: '15px', margin: 0 }}>{game}</h2>
+          {homeLogo && <img src={homeLogo} alt={homeTeam} style={{ width: 20, height: 20, marginLeft: 8 }} />}
         </div>
-        <div className="temp">{Math.round(temperature)}°F</div>
+        <span style={{ fontSize: '13px', color: '#ccc' }}>{temperature}°F</span>
       </div>
-      <div className="props">
-        {topProps.map((prop, idx) => (
-          <div className="prop" key={idx}>
-            <div className="label">{prop.player} – {prop.stat}</div>
-            <div className="bar-container">
-              <div className="bar" style={{ width: `${zScoreToPercentage(prop.z)}%` }} />
-            </div>
-            <div className="value">{zScoreToPercentage(prop.z)}%</div>
-          </div>
-        ))}
-      </div>
-      <style jsx>{`
-        .card {
-          background: #1e1e1e;
-          border-radius: 12px;
-          padding: 16px;
-          margin: 12px 0;
-          box-shadow: 0 0 8px rgba(0,0,0,0.4);
-        }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-        .teams {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-weight: 600;
-        }
-        .logo {
-          width: 24px;
-          height: 24px;
-        }
-        .temp {
-          font-weight: bold;
-        }
-        .props {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-        .prop {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-        .label {
-          flex: 1;
-          font-size: 14px;
-        }
-        .bar-container {
-          flex: 2;
-          background: #333;
-          height: 8px;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        .bar {
-          height: 100%;
-          background: linear-gradient(to right, #00ffa3, #007bff);
-        }
-        .value {
-          width: 36px;
-          text-align: right;
-          font-size: 13px;
-          font-weight: 600;
-        }
-      `}</style>
+
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {top_props.map((prop, idx) => {
+          const prob = zScoreToProbability(prop.z_score);
+          const label = `${prop.stat.toUpperCase()}${prop.player ? ` — ${prop.player}` : ''}`;
+          return (
+            <li key={idx} style={{ marginBottom: '6px' }}>
+              <div style={{ fontSize: '13px', marginBottom: '4px' }}>{label}</div>
+              <div style={{
+                height: '8px',
+                background: '#333',
+                borderRadius: '4px',
+                overflow: 'hidden',
+                position: 'relative'
+              }}>
+                <div style={{
+                  width: `${prob}%`,
+                  background: 'linear-gradient(90deg, #00f260, #0575e6)',
+                  height: '100%'
+                }}></div>
+              </div>
+              <div style={{ fontSize: '12px', color: '#aaa', marginTop: '2px' }}>{prob}%</div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
-};
-
-export default GameCard;
+}
