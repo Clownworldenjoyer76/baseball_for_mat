@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 function GameCard({ game, topProps, projectedScore }) {
   // Converts "Team Name" to "/logos/teamname.png"
@@ -12,9 +11,9 @@ function GameCard({ game, topProps, projectedScore }) {
     <div style={{ border: '1px solid #e0e0e0', padding: '16px', margin: '16px 0', borderRadius: '8px' }}>
       {/* Team matchup section */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
-        <Image src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} width={40} height={40} unoptimized />
+        <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
         <h2 style={{ margin: 0, fontSize: '1.2em', textAlign: 'center' }}>{game.away_team} vs {game.home_team}</h2>
-        <Image src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} width={40} height={40} unoptimized />
+        <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
       </div>
 
       {/* Game info section */}
