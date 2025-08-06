@@ -1,46 +1,53 @@
 import React from 'react';
 
 function GameCard({ game, topProps, projectedScore }) {
-  // Converts "Team Name" to "/logos/teamname.png"
   const getLogoUrl = (teamName) => {
     const imageName = teamName.toLowerCase().replace(/\s+/g, '');
     return `/logos/${imageName}.png`;
   };
 
   return (
-    <div style={{ border: '1px solid #e0e0e0', padding: '16px', margin: '16px 0', borderRadius: '8px' }}>
-      {/* Team matchup section */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
-        <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
-        <h2 style={{ margin: 0, fontSize: '1.2em', textAlign: 'center' }}>{game.away_team} vs {game.home_team}</h2>
-        <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
+    // This outer container for the card remains dark
+    <div style={{ backgroundColor: '#2C2C2C', padding: '0', margin: '20px 0', borderRadius: '12px', overflow: 'hidden' }}>
+      
+      {/* This new div is for the light-colored top section */}
+      <div style={{ backgroundColor: '#F9F9F9', color: '#212121', padding: '20px' }}>
+        {/* Team matchup section */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+          <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
+          <h2 style={{ margin: 0, fontSize: '1.2em', textAlign: 'center', fontWeight: '700' }}>{game.away_team} vs {game.home_team}</h2>
+          <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
+        </div>
+
+        {/* Game info section */}
+        <div style={{ display: 'flex', justifyContent: 'space-around', color: '#555', padding: '15px 0' }}>
+          <span>{game.game_time}</span>
+          <span>{Math.round(game.temperature)}°</span>
+          <span>{game.venue}</span>
+        </div>
       </div>
 
-      {/* Game info section */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', color: '#555', padding: '15px 0', borderBottom: '1px solid #eee' }}>
-        <span>{game.game_time}</span>
-        <span>{Math.round(game.temperature)}°</span>
-        <span>{game.venue}</span>
-      </div>
+      {/* The bottom sections remain dark-themed */}
+      <div style={{ padding: '20px' }}>
+        {/* Top props section */}
+        <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #444' }}>
+          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6', fontWeight: '700' }}>Top Props</h4>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, textAlign: 'center', color: '#F5F5F5' }}>
+            {topProps.map((prop, index) => (
+              <li key={index} style={{ padding: '5px 0' }}>
+                {prop.name} ({prop.type})
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      {/* Top props section */}
-      <div style={{ padding: '15px 0', borderBottom: '1px solid #eee' }}>
-        <h4 style={{ margin: '0 0 10px 0', textAlign: 'center' }}>Top Props</h4>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, textAlign: 'center' }}>
-          {topProps.map((prop, index) => (
-            <li key={index} style={{ padding: '5px 0' }}>
-              {prop.name} ({prop.type})
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Projected score section */}
-      <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
-        <h4 style={{ margin: '0 0 10px 0' }}>Projected Score</h4>
-        <p style={{ margin: 0, fontSize: '1.2em' }}>
-          {projectedScore ? `${game.away_team} ${projectedScore.away} - ${projectedScore.home} ${game.home_team}` : 'N/A'}
-        </p>
+        {/* Projected score section */}
+        <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
+          <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#3B82F6', fontWeight: '700' }}>Projected Score</h4>
+          <p style={{ margin: 0, fontSize: '1.2em', color: '#F5F5F5' }}>
+            {projectedScore ? `${game.away_team} ${projectedScore.away} - ${projectedScore.home} ${game.home_team}` : 'N/A'}
+          </p>
+        </div>
       </div>
     </div>
   );
