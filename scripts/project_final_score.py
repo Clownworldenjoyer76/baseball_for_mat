@@ -1,46 +1,48 @@
-
 import pandas as pd
 from pathlib import Path
 
-# File paths
-BATTER_FILE = Path("data/_projections/batter_props_projected.csv")
-PITCHER_FILE = Path("data/_projections/pitcher_props_projected.csv")
+# Input files
+BATTER_FILE = Path("data/_projections/batter_props_z_expanded.csv")
+PITCHER_FILE = Path("data/_projections/pitcher_mega_z.csv")
+WEATHER_FILE = Path("data/weather_adjustments.csv")
 OUTPUT_FILE = Path("data/_projections/final_scores_projected.csv")
 
 def main():
-    print("🔄 Loading projected batter and pitcher data...")
+    # Load data
     batters = pd.read_csv(BATTER_FILE)
     pitchers = pd.read_csv(PITCHER_FILE)
+    weather = pd.read_csv(WEATHER_FILE)
 
-    # Normalize join keys
-    batters["team"] = batters["team"].str.strip().str.upper()
-    pitchers["team"] = pitchers["team"].str.strip().str.upper()
+    # Aggregate team scores
+    batter_team_scores = batters.groupby("team")["ultimate_z"].sum().reset_index(name="batter_score")
+    pitcher_team_scores = pitchers.groupby("team")["mega_z"].sum().reset_index(name="pitcher_score")
 
-    # Merge on team
-    merged = batters.merge(pitchers, on="team", suffixes=("", "_pitch"), how="left")
+    # Merge into game-level
+    merged = weather[["home_team", "away_team", "weather_factor"]].copy()
 
-    # Deduplicate on name + team to prevent inflated scoring
-    merged = merged.drop_duplicates(subset=["name", "team"])
+    def compute_team_score(team, batter_df, pitcher_df):
+        b_score = batter_df.get(team, 0)
+        p_score = pitcher_df.get(team, 0)
+        return (b_score + p_score) / 2
 
-    # Compute rebalanced adjusted score
-    merged["adjusted_score"] = (
-        merged["total_hits_projection"].fillna(0)
-        + merged["avg_hr"].fillna(0) * 1.1
-        + merged["total_bases_projection"].fillna(0) * 0.1
+    # Create dicts for lookup
+    batter_dict = dict(zip(batter_team_scores["team"], batter_team_scores["batter_score"]))
+    pitcher_dict = dict(zip(pitcher_team_scores["team"], pitcher_team_scores["pitcher_score"]))
+
+    # Compute projected scores
+    merged["home_score"] = merged.apply(
+        lambda row: round(compute_team_score(row["home_team"], batter_dict, pitcher_dict) * row["weather_factor"], 2),
+        axis=1
+    )
+    merged["away_score"] = merged.apply(
+        lambda row: round(compute_team_score(row["away_team"], batter_dict, pitcher_dict) * row["weather_factor"], 2),
+        axis=1
     )
 
-    # Aggregate and normalize to 137.5 total runs
-    team_scores = (
-        merged.groupby("team")["adjusted_score"]
-        .sum()
-        .reset_index()
-    )
-    scale = 137.5 / team_scores["adjusted_score"].sum()
-    team_scores["projected_team_score"] = (team_scores["adjusted_score"] * scale).round(2)
-    team_scores.drop(columns="adjusted_score", inplace=True)
-
-    print("💾 Saving final score output to:", OUTPUT_FILE)
-    team_scores.to_csv(OUTPUT_FILE, index=False)
+    # Final columns
+    final = merged[["home_team", "away_team", "home_score", "away_score", "weather_factor"]]
+    final.to_csv(OUTPUT_FILE, index=False)
+    print("✅ Final score projections saved:", OUTPUT_FILE)
 
 if __name__ == "__main__":
     main()
