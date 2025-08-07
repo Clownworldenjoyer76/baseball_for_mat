@@ -5,7 +5,6 @@ from pathlib import Path
 BATTER_FILE = Path("data/_projections/batter_props_z_expanded.csv")
 PITCHER_FILE = Path("data/_projections/pitcher_mega_z.csv")
 WEATHER_FILE = Path("data/weather_adjustments.csv")
-# NEW: File with today's games and starting pitchers
 GAMES_TODAY_FILE = Path("data/end_chain/cleaned/games_today_cleaned.csv")
 OUTPUT_FILE = Path("data/_projections/final_scores_projected.csv")
 
@@ -18,16 +17,17 @@ def main():
 
     # --- Data Preparation ---
     # Merge weather data with today's game data to get pitchers and weather factor in one place
-    # This will only include games that appear in both files.
     game_data = pd.merge(
         weather,
         games_today[["home_team", "away_team", "pitcher_home", "pitcher_away"]],
         on=["home_team", "away_team"],
-        how="inner" # Use "inner" to ensure we only project for games with all data
+        how="inner"
     )
 
-    # Create a dictionary for batter scores, summed by team
-    batter_scores = batters.groupby("team")["ultimate_z"].sum().to_dict()
+    # --- FIX APPLIED ---
+    # Create a dictionary for batter scores using the MEAN (average) of the team's players.
+    # This keeps the batter score on the same scale as the pitcher score.
+    batter_scores = batters.groupby("team")["ultimate_z"].mean().to_dict()
 
     # Create a dictionary mapping each pitcher's name to their individual score
     if 'name' not in pitchers.columns or 'mega_z' not in pitchers.columns:
@@ -40,6 +40,7 @@ def main():
         return max(val, 1.0)
 
     def project_score(batter_team, pitcher_name, weather_factor):
+        # Get the team's average batter score
         batter = normalize(batter_scores.get(batter_team, 0))
         # Look up the specific pitcher's score by their name
         pitcher = normalize(pitcher_scores.get(pitcher_name, 0))
