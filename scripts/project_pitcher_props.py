@@ -1,25 +1,69 @@
 import pandas as pd
 from pathlib import Path
+from projection_formulas import calculate_all_projections
 
-# ✅ Ensure we load the correct input file
-INPUT = Path("data/end_chain/pitchers_xtra.csv")
-OUTPUT = Path("data/_projections/pitcher_props_projected.csv")
+# File paths
+FINAL_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
+CLEANED_FILE = Path("data/cleaned/pitchers_normalized_cleaned.csv")
+XTRA_FILE = Path("data/end_chain/pitchers_xtra.csv")
+OUTPUT_FILE = Path("data/_projections/pitcher_props_projected.csv")
 
 def main():
-    df = pd.read_csv(INPUT)
+    print("🔄 Loading pitcher base + enriched files...")
+    df_final = pd.read_csv(FINAL_FILE)
+    df_cleaned = pd.read_csv(CLEANED_FILE)
+    df_xtra = pd.read_csv(XTRA_FILE)
 
-    # ✅ Clean column names for safety
-    df.columns = df.columns.str.strip().str.lower()
+    # Clean and standardize player_id formats
+    for df in [df_final, df_cleaned, df_xtra]:
+        df["player_id"] = df["player_id"].astype(str).str.replace(".0", "", regex=False).str.strip()
 
-    # ✅ Check required columns exist
-    if "p_earned_run" not in df.columns or "innings_pitched" not in df.columns:
-        raise ValueError("Required columns 'p_earned_run' and/or 'innings_pitched' not found in input CSV.")
+    # Rename mapped fields
+    df_cleaned.rename(columns={
+        "home_run": "hr",
+        "slg_percent": "slg"
+    }, inplace=True)
 
-    # ✅ Calculate ERA
+    print("🔗 Merging cleaned stats on player_id...")
+    df = df_final.merge(df_cleaned, on="player_id", how="left", suffixes=("", "_dup"))
+
+    print("🔗 Merging earned runs on player_id...")
+    if "p_earned_run" not in df_xtra.columns:
+        raise ValueError("Missing column: p_earned_run in pitchers_xtra.csv")
+    df = df.merge(df_xtra[["player_id", "p_earned_run"]], on="player_id", how="left")
+
+    print("🧮 Calculating ERA using innings_pitched...")
     df["era"] = (df["p_earned_run"] / df["innings_pitched"]) * 9
+    df["era"] = df["era"].fillna(0).round(2)
 
-    # ✅ Output to projections directory
-    df.to_csv(OUTPUT, index=False)
+    print("🧮 Calculating WHIP from walk + hit / innings_pitched...")
+    df["whip"] = (df["walk"] + df["hit"]) / df["innings_pitched"]
+    df["whip"] = df["whip"].fillna(0).round(2)
+
+    # Drop duplicates
+    df = df.drop_duplicates(subset=["player_id"], keep="first")
+
+    # Resolve _dup columns
+    for col in df.columns:
+        if col.endswith("_dup"):
+            base = col.replace("_dup", "")
+            df[base] = df[base].combine_first(df[col])
+            df.drop(columns=[col], inplace=True)
+
+    print("✅ Running projection formulas...")
+    df = calculate_all_projections(df)
+
+    print("🔎 Selecting top prop columns...")
+    prop_cols = [
+        "player_id", "name", "team", "opp", "is_home", "game_time",
+        "k_prop", "k_z", "p_outs_prop", "p_outs_z", "p_hits_prop", "p_hits_z",
+        "p_walks_prop", "p_walks_z", "p_earned_runs_prop", "p_earned_runs_z",
+        "era", "whip"
+    ]
+    df = df.loc[:, [col for col in prop_cols if col in df.columns]]
+
+    print("💾 Saving output to:", OUTPUT_FILE)
+    df.to_csv(OUTPUT_FILE, index=False)
 
 if __name__ == "__main__":
     main()
