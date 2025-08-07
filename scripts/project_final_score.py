@@ -8,40 +8,40 @@ WEATHER_FILE = Path("data/weather_adjustments.csv")
 OUTPUT_FILE = Path("data/_projections/final_scores_projected.csv")
 
 def main():
-    # Load data
     batters = pd.read_csv(BATTER_FILE)
     pitchers = pd.read_csv(PITCHER_FILE)
     weather = pd.read_csv(WEATHER_FILE)
 
-    # Aggregate team scores
-    batter_team_scores = batters.groupby("team")["ultimate_z"].sum().reset_index(name="batter_score")
-    pitcher_team_scores = pitchers.groupby("team")["mega_z"].sum().reset_index(name="pitcher_score")
+    # Sum batter score by team
+    batter_scores = batters.groupby("team")["ultimate_z"].sum().to_dict()
+    # Sum pitcher score by team
+    pitcher_scores = pitchers.groupby("team")["mega_z"].sum().to_dict()
 
-    # Merge into game-level
-    merged = weather[["home_team", "away_team", "weather_factor"]].copy()
+    # Use scores to compute home/away projected runs
+    def project_score(batter_team, pitcher_team, weather_factor):
+        batter_score = batter_scores.get(batter_team, 0)
+        pitcher_score = pitcher_scores.get(pitcher_team, 0)
+        raw = batter_score + pitcher_score  # pitcher_score is opponent’s weakness
+        return round(raw * weather_factor, 2)
 
-    def compute_team_score(team, batter_df, pitcher_df):
-        b_score = batter_df.get(team, 0)
-        p_score = pitcher_df.get(team, 0)
-        return (b_score + p_score) / 2
+    rows = []
+    for _, row in weather.iterrows():
+        home = row["home_team"]
+        away = row["away_team"]
+        factor = row["weather_factor"]
 
-    # Create dicts for lookup
-    batter_dict = dict(zip(batter_team_scores["team"], batter_team_scores["batter_score"]))
-    pitcher_dict = dict(zip(pitcher_team_scores["team"], pitcher_team_scores["pitcher_score"]))
+        home_score = project_score(home, away, factor)
+        away_score = project_score(away, home, factor)
 
-    # Compute projected scores
-    merged["home_score"] = merged.apply(
-        lambda row: round(compute_team_score(row["home_team"], batter_dict, pitcher_dict) * row["weather_factor"], 2),
-        axis=1
-    )
-    merged["away_score"] = merged.apply(
-        lambda row: round(compute_team_score(row["away_team"], batter_dict, pitcher_dict) * row["weather_factor"], 2),
-        axis=1
-    )
+        rows.append({
+            "home_team": home,
+            "away_team": away,
+            "home_score": home_score,
+            "away_score": away_score,
+            "weather_factor": factor,
+        })
 
-    # Final columns
-    final = merged[["home_team", "away_team", "home_score", "away_score", "weather_factor"]]
-    final.to_csv(OUTPUT_FILE, index=False)
+    pd.DataFrame(rows).to_csv(OUTPUT_FILE, index=False)
     print("✅ Final score projections saved:", OUTPUT_FILE)
 
 if __name__ == "__main__":
