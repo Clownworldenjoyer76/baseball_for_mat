@@ -64,13 +64,12 @@ function GameDetailPage() {
 
   const title = `${game.away_team} @ ${game.home_team}`;
   const venue = game.venue;
+  const gameTime = game.game_time;
 
   const formatERA = (era) => {
     const n = parseFloat(era);
     return isNaN(n) ? '—' : `${n.toFixed(2)} ERA`;
   };
-
-  const gameTime = game.game_time;
 
   const normalized = str => str?.toLowerCase().replace(/\s+/g, '').trim();
 
@@ -100,20 +99,20 @@ ${formatName(starters[1].name)}, ${starters[1].team}, ${formatERA(starters[1].er
   const getHeadshotUrl = (playerId) =>
     `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
 
-  const filteredPicks = batters
+  const topPicks = batters
     .filter(b =>
       b.team &&
       [normalized(game.away_team), normalized(game.home_team)].includes(normalized(b.team)) &&
-      ['total_bases', 'hits', 'home_runs'].includes(b.prop_type) &&
-      b.z_score && b.line && b.name
+      b.prop_type &&
+      b.z_score && b.line && b.name && b.player_id
     )
-    .sort((a, b) => parseFloat(b.z_score) - parseFloat(a.z_score));
-
-  const topPicks = [
-    ...filteredPicks.filter(p => p.prop_type === 'total_bases').slice(0, 2),
-    ...filteredPicks.filter(p => p.prop_type === 'hits').slice(0, 2),
-    ...filteredPicks.filter(p => p.prop_type === 'home_runs').slice(0, 1)
-  ];
+    .sort((a, b) => parseFloat(b.z_score) - parseFloat(a.z_score))
+    .slice(0, 5)
+    .map(prop => ({
+      name: formatName(prop.name),
+      line: `Over ${prop.line} ${formatLabel(prop.prop_type)}`,
+      playerId: prop.player_id
+    }));
 
   return (
     <div style={{ backgroundColor: '#121212', color: '#fff', padding: '20px', fontFamily: 'sans-serif', minHeight: '100vh' }}>
@@ -157,7 +156,7 @@ ${formatName(starters[1].name)}, ${starters[1].team}, ${formatERA(starters[1].er
               <div>
                 <div style={{ fontSize: '1em' }}>{prop.name}</div>
                 <div style={{ fontSize: '0.9em', color: '#B0B0B0', marginLeft: '10px' }}>
-                  Over {prop.line} {formatLabel(prop.prop_type)}
+                  {prop.line}
                 </div>
               </div>
             </li>
