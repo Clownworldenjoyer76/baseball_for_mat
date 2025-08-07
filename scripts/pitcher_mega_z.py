@@ -11,25 +11,27 @@ OUTPUT_FILE = Path("data/_projections/pitcher_mega_z.csv")
 df_base = pd.read_csv(INPUT_PROPS)
 df_xtra = pd.read_csv(XTRA_STATS)
 
-# Normalize names
-df_xtra["last_name, first_name"] = df_xtra["last_name, first_name"].astype(str).str.strip()
-df_base["name"] = df_base["name"].astype(str).str.strip()
+# Ensure consistent ID types
+df_base["player_id"] = df_base["player_id"].astype(str).str.strip()
+df_xtra["player_id"] = df_xtra["player_id"].astype(str).str.strip()
 
-# Merge by name
+# Merge on player_id
 df = df_base.merge(
-    df_xtra[["last_name, first_name", "strikeouts", "walks"]],
-    left_on="name",
-    right_on="last_name, first_name",
+    df_xtra[["player_id", "strikeouts", "walks"]],
+    on="player_id",
     how="left"
-).drop(columns=["last_name, first_name"])
+)
 
-# Z-score components
+# Drop rows with missing values
+df.dropna(subset=["strikeouts", "walks"], inplace=True)
+
+# Compute z-scores (lower is better for ERA, WHIP, Walks; higher for Ks)
 df["era_z"] = -zscore(df["era"])
 df["whip_z"] = -zscore(df["whip"])
 df["strikeouts_z"] = zscore(df["strikeouts"])
 df["walks_z"] = -zscore(df["walks"])
 
-# Composite score
+# Composite mega_z
 df["mega_z"] = df[["era_z", "whip_z", "strikeouts_z", "walks_z"]].mean(axis=1)
 
 # Build prop rows
@@ -52,8 +54,7 @@ for _, row in df.iterrows():
                 "mega_z": row["mega_z"]
             })
 
-# Create output DataFrame
+# Convert to DataFrame and save
 props_df = pd.DataFrame(props)
-
-# Save to CSV
 props_df.to_csv(OUTPUT_FILE, index=False)
+print(f"✅ Wrote: {OUTPUT_FILE}")
