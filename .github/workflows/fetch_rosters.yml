@@ -1,0 +1,33 @@
+name: Fetch MLB Rosters
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run roster fetch script
+        run: |
+          python scripts/fetch_rosters.py
+
+      - name: Commit and push updated rosters
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/rosters/*.csv
+          git commit -m "Update MLB rosters"
+          git push
+        continue-on-error: true
