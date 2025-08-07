@@ -169,6 +169,7 @@ jobs:
           run_step fix_missing_batter_stats.py
           run_step project_batter_props.py
           run_step project_pitcher_props.py
+          run_step build_expanded_batter_props.py
           run_step project_final_score.py
 
           {
@@ -195,6 +196,7 @@ jobs:
           git add data/end_chain/**/*.csv || echo "No end_chain files changed"
           git add data/_projections/batter_props_projected.csv || echo "batter_props_projected.csv not found or no changes"
           git add data/_projections/pitcher_props_projected.csv || echo "pitcher_props_projected.csv not found or no changes"
+          git add data/_projections/batter_props_z_expanded.csv || echo "batter_props_z_expanded.csv not found or no changes"
           git add data/_projections/final_scores_projected.csv || echo "final_scores_projected.csv not found or no changes"
           git add summaries/summary.txt || echo "summary not found"
           git commit -m "Commit processed data + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
