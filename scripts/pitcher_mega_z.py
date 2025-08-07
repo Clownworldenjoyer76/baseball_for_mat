@@ -2,68 +2,76 @@ import pandas as pd
 from pathlib import Path
 from scipy.stats import zscore
 
-# File paths
-PROPS_PATH = Path("data/_projections/pitcher_props_projected.csv")
-XTRA_PATH = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
-OUTPUT_PATH = Path("data/_projections/pitcher_mega_z.csv")
+# Input files
+XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
+PROPS_FILE = Path("data/_projections/pitcher_props_projected.csv")
+OUTPUT_FILE = Path("data/_projections/pitcher_props_z_expanded.csv")
 
-def load_and_merge():
-    props = pd.read_csv(PROPS_PATH)
-    xtra = pd.read_csv(XTRA_PATH)
+# Load data
+df_xtra = pd.read_csv(XTRA_FILE)
+df_props = pd.read_csv(PROPS_FILE)
 
-    props["player_id"] = props["player_id"].astype(str).str.strip()
-    xtra["player_id"] = xtra["player_id"].astype(str).str.strip()
+# Standardize player_id as string
+df_xtra["player_id"] = df_xtra["player_id"].astype(str)
+df_props["player_id"] = df_props["player_id"].astype(str)
 
-    df = props.merge(xtra, on="player_id", how="inner", suffixes=("_x", "_y"))
-    return df
+# Use the correct column names from your files, assuming 'k' for strikeouts and 'bb' for walks
+id_vars = ["player_id", "name", "team"]
+stat_vars = ["k", "bb"] # Using 'k' and 'bb' as found in the data files
+merged = pd.merge(df_props[id_vars + stat_vars], df_xtra[["player_id"]], on="player_id", how="inner")
 
-def compute_z(df):
-    # Select relevant stat columns to z-score
-    stat_cols = [
-        "strikeouts", 
-        "walks", 
-        "innings_pitched", 
-        "earned_runs", 
-        "era", 
-        "whip"
-    ]
+# Clean column names
+merged.columns = merged.columns.str.strip().str.lower()
 
-    # Drop rows with missing required data
-    df_clean = df.dropna(subset=stat_cols).copy()
+# Melt to 1 row per prop
+expanded = pd.melt(
+    merged,
+    id_vars=["player_id", "name", "team"],
+    value_vars=["k", "bb"],
+    var_name="prop_type",
+    value_name="projection"
+)
 
-    # Normalize relevant stats
-    for col in stat_cols:
-        df_clean[col + "_z"] = zscore(df_clean[col])
+# Map to proper prop_type names
+expanded["prop_type"] = expanded["prop_type"].map({
+    "k": "strikeouts",
+    "bb": "walks"
+})
 
-    # Compute composite z-score (lower ERA/WHIP/ER/BB = better; higher IP/K = better)
-    df_clean["composite_z"] = (
-        df_clean["strikeouts_z"] +
-        df_clean["innings_pitched_z"] -
-        df_clean["earned_runs_z"] -
-        df_clean["walks_z"] -
-        df_clean["era_z"] -
-        df_clean["whip_z"]
-    )
+# Define the lines for each prop
+lines = {
+    "strikeouts": [5.5, 6.5, 7.5],
+    "walks": [1.5, 2.5, 3.5]
+}
 
-    return df_clean
+# Create a list of DataFrames, one for each prop and line
+dfs_to_concat = []
+for prop, line_values in lines.items():
+    prop_df = expanded[expanded["prop_type"] == prop].copy()
+    for line in line_values:
+        line_df = prop_df.copy()
+        line_df["line"] = line
+        dfs_to_concat.append(line_df)
 
-def export(df):
-    out = df[[
-        "player_id",
-        "name_x",
-        "team_x",
-        "composite_z"
-    ]].rename(columns={
-        "name_x": "name",
-        "team_x": "team",
-        "composite_z": "z_score"
-    })
+# Combine all the new prop-line dataframes
+final_expanded = pd.concat(dfs_to_concat, ignore_index=True)
 
-    out = out.sort_values(by="z_score", ascending=False).reset_index(drop=True)
-    out.to_csv(OUTPUT_PATH, index=False)
-    print(f"✅ Exported: {OUTPUT_PATH}")
+# Compute z-score (per prop_type and line)
+final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(zscore)
 
-if __name__ == "__main__":
-    df_merged = load_and_merge()
-    df_scored = compute_z(df_merged)
-    export(df_scored)
+# Invert z-score for walks (so a lower walk projection gets a better z-score)
+final_expanded.loc[final_expanded["prop_type"] == "walks", "ultimate_z"] *= -1
+
+# Round for frontend use
+final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
+final_expanded["projection"] = final_expanded["projection"].round(3)
+
+# Final column order and sort
+final = final_expanded[["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z"]]
+final = final.sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
+
+# Save
+OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+final.to_csv(OUTPUT_FILE, index=False)
+
+print(f"✅ Wrote pitcher props to: {OUTPUT_FILE}")
