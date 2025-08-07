@@ -16,14 +16,14 @@ def main():
     batter_scores = batters.groupby("team")["ultimate_z"].sum().to_dict()
     pitcher_scores = pitchers.groupby("team")["mega_z"].sum().to_dict()
 
+    # Floor all values to 1.0 to ensure minimum contribution
     def normalize(val):
         return max(val, 1.0)
 
     def project_score(batter_team, pitcher_team, weather_factor):
         batter = normalize(batter_scores.get(batter_team, 0))
         pitcher = normalize(pitcher_scores.get(pitcher_team, 0))
-        raw = batter - pitcher
-        return round(max(raw * weather_factor, 0), 2)
+        return round((batter + pitcher) * weather_factor, 2)
 
     rows = []
     for _, row in weather.iterrows():
