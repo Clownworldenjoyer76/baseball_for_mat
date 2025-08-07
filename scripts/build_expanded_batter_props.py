@@ -14,7 +14,11 @@ df.columns = df.columns.str.strip().str.lower()
 df = df[df["type"] == "batter"].copy()
 
 # Ensure required fields exist
-required_fields = ["player_id", "name", "team", "total_bases_projection", "total_hits_projection", "avg_hr", "walk", "strikeout"]
+required_fields = [
+    "player_id", "name", "team",
+    "total_bases_projection", "total_hits_projection", "avg_hr",
+    "walk", "strikeout"
+]
 for field in required_fields:
     if field not in df.columns:
         raise ValueError(f"Missing required column: {field}")
@@ -50,13 +54,13 @@ expanded["line"] = expanded["prop_type"].map({
     "strikeouts": 0.5
 })
 
-# Combine with hits 1.5
+# Combine hits 1.5 with original
 final_expanded = pd.concat([expanded, hits_1_5], ignore_index=True)
 
 # Z-score per prop_type + line
 final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(zscore)
 
-# Add probability column
+# Standard deviations (tuned for per-game logic)
 std_devs = {
     "total_bases": 0.5,
     "hits": 0.3,
@@ -65,6 +69,10 @@ std_devs = {
     "strikeouts": 0.4
 }
 
+# ⚠️ Convert strikeouts to per-game (assumes 150 games)
+final_expanded.loc[final_expanded["prop_type"] == "strikeouts", "projection"] /= 150
+
+# Compute over/under probability
 def compute_prob(row):
     sigma = std_devs.get(row["prop_type"], 0.5)
     z = (row["projection"] - row["line"]) / sigma
@@ -77,8 +85,12 @@ final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
 final_expanded["projection"] = final_expanded["projection"].round(3)
 
 # Final sort/order
-final = final_expanded[["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z", "over_probability"]]
-final = final.sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
+final = final_expanded[[
+    "player_id", "name", "team",
+    "prop_type", "line", "projection",
+    "ultimate_z", "over_probability"
+]].sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
 
+# Save
 final.to_csv(OUTPUT_FILE, index=False)
 print(f"✅ Wrote: {OUTPUT_FILE}")
