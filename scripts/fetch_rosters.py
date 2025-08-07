@@ -48,6 +48,9 @@ for team in teams:
         'status_description': 'status_description'
     })
 
+    # Force content change for Git to detect
+    df['timestamp'] = pd.Timestamp.now().isoformat()
+
     df.to_csv(f"data/rosters/{name}_roster.csv", index=False)
 
 print("Flattened rosters saved.")
