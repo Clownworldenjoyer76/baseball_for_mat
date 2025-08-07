@@ -74,10 +74,10 @@ function GameDetailPage() {
 
   const normalized = str => str?.toLowerCase().replace(/\s+/g, '').trim();
 
-  const starters = pitchers.filter(p => {
-    return p.team && p.name &&
-      [normalized(game.away_team), normalized(game.home_team)].includes(normalized(p.team));
-  });
+  const starters = pitchers.filter(p =>
+    p.team && p.name &&
+    [normalized(game.away_team), normalized(game.home_team)].includes(normalized(p.team))
+  );
 
   const formatName = (fullName) => {
     const [last, first] = fullName.split(', ');
@@ -89,6 +89,16 @@ function GameDetailPage() {
 @
 ${formatName(starters[1].name)}, ${starters[1].team}, ${formatERA(starters[1].era)}`
     : 'Starting pitchers TBD';
+
+  const formatLabel = (type) => {
+    if (type === 'total_bases') return 'Total Bases';
+    if (type === 'hits') return 'Hits';
+    if (type === 'home_runs') return 'Home Runs';
+    return type;
+  };
+
+  const getHeadshotUrl = (playerId) =>
+    `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
 
   const filteredPicks = batters
     .filter(b =>
@@ -125,14 +135,31 @@ ${formatName(starters[1].name)}, ${starters[1].team}, ${formatERA(starters[1].er
         {startersLine}
       </p>
 
-      <h3 style={{ color: '#D4AF37', marginTop: '20px', marginBottom: '10px' }}>Top 5 Picks</h3>
+      <h3 style={{ color: '#D4AF37', marginTop: '20px', marginBottom: '15px', textAlign: 'center' }}>Top Props</h3>
       {topPicks.length === 0 ? (
         <p style={{ color: '#888' }}>No props available for this game.</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {topPicks.map((pick, i) => (
-            <li key={i} style={{ marginBottom: '12px' }}>
-              <strong>{pick.name}</strong> – {pick.prop_type.replace('_', ' ')} over {pick.line} (<span style={{ color: '#9CA3AF' }}>z: {pick.z_score}</span>)
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
+          {topPicks.map((prop, index) => (
+            <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              <img
+                src={getHeadshotUrl(prop.playerId)}
+                alt={prop.name}
+                style={{
+                  height: '50px',
+                  width: '50px',
+                  borderRadius: '50%',
+                  marginRight: '15px',
+                  backgroundColor: '#2F2F30',
+                  objectFit: 'cover'
+                }}
+              />
+              <div>
+                <div style={{ fontSize: '1em' }}>{prop.name}</div>
+                <div style={{ fontSize: '0.9em', color: '#B0B0B0', marginLeft: '10px' }}>
+                  Over {prop.line} {formatLabel(prop.prop_type)}
+                </div>
+              </div>
             </li>
           ))}
         </ul>
