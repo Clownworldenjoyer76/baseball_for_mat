@@ -16,7 +16,6 @@ def main():
     games_today = pd.read_csv(GAMES_TODAY_FILE)
 
     # --- Data Preparation ---
-    # Merge weather data with today's game data to get pitchers and weather factor in one place
     game_data = pd.merge(
         weather,
         games_today[["home_team", "away_team", "pitcher_home", "pitcher_away"]],
@@ -24,31 +23,36 @@ def main():
         how="inner"
     )
 
-    # --- FIX APPLIED ---
-    # Create a dictionary for batter scores using the MEAN (average) of the team's players.
-    # This keeps the batter score on the same scale as the pitcher score.
     batter_scores = batters.groupby("team")["ultimate_z"].mean().to_dict()
-
-    # Create a dictionary mapping each pitcher's name to their individual score
+    
     if 'name' not in pitchers.columns or 'mega_z' not in pitchers.columns:
         raise ValueError("PITCHER_FILE must contain 'name' and 'mega_z' columns.")
     pitcher_scores = pitchers.set_index("name")["mega_z"].to_dict()
 
-    # --- Projection Logic ---
-    def normalize(val):
-        # Floor all values to 1.0 to ensure minimum contribution
-        return max(val, 1.0)
 
+    # ---vvv--- REPLACE THIS FUNCTION ---vvv---
     def project_score(batter_team, pitcher_name, weather_factor):
-        # Get the team's average batter score
+        # --- Start Debug Block ---
+        # This section will print a message if a name or team is not found.
+        batter_val = batter_scores.get(batter_team)
+        pitcher_val = pitcher_scores.get(pitcher_name)
+        if batter_val is None:
+            print(f"DEBUG: Could not find team '{batter_team}' in batter scores.")
+        if pitcher_val is None:
+            print(f"DEBUG: Could not find pitcher '{pitcher_name}' in pitcher scores.")
+        # --- End Debug Block ---
+
         batter = normalize(batter_scores.get(batter_team, 0))
-        # Look up the specific pitcher's score by their name
         pitcher = normalize(pitcher_scores.get(pitcher_name, 0))
         return (batter + pitcher) * weather_factor
+    # ---^^^--- REPLACE THIS FUNCTION ---^^^---
+
+
+    def normalize(val):
+        return max(val, 1.0)
 
     # --- Main Loop ---
     rows = []
-    # Loop over the merged dataframe which contains all necessary game info
     for _, row in game_data.iterrows():
         home_team = row["home_team"]
         away_team = row["away_team"]
@@ -56,9 +60,7 @@ def main():
         home_pitcher = row["pitcher_home"]
         away_pitcher = row["pitcher_away"]
 
-        # Home team's score depends on their batters vs. the away team's starting pitcher
         home_score = project_score(home_team, away_pitcher, factor)
-        # Away team's score depends on their batters vs. the home team's starting pitcher
         away_score = project_score(away_team, home_pitcher, factor)
 
         rows.append({
@@ -72,7 +74,6 @@ def main():
         })
 
     # --- Finalization and Output ---
-    # Normalize all scores to average 9 total runs per game
     df = pd.DataFrame(rows)
     if not df.empty:
         current_avg = (df["home_score"] + df["away_score"]).mean()
@@ -86,3 +87,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
