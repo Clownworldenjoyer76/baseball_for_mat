@@ -49,3 +49,16 @@ jobs:
           git diff --quiet && git diff --staged --quiet || git commit -m "Update team CSVs"
           git push --force || echo "Nothing to push"
         continue-on-error: true
+
+      - name: Build player-team master list
+        run: |
+          python scripts/build_player_team_master.py
+
+      - name: Force commit and push player_team_master
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/processed/player_team_master.csv
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update player_team_master"
+          git push --force || echo "Nothing to push"
+        continue-on-error: true
