@@ -21,11 +21,13 @@ def load_csv(path):
     return pd.read_csv(path)
 
 def enforce_last_first(name):
-    if not isinstance(name, str) or "," not in name:
+    if not isinstance(name, str) or not name.strip():
+        return "Undecided"
+    if "," not in name:
         parts = name.strip().split()
         if len(parts) >= 2:
             return f"{parts[-1].capitalize()}, {' '.join(p.capitalize() for p in parts[:-1])}"
-        return name
+        return name.strip().capitalize()
     return name.strip()
 
 def main():
