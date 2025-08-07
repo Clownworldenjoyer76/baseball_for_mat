@@ -12,8 +12,11 @@ df = pd.read_csv(INPUT_FILE)
 # Clean column names
 df.columns = df.columns.str.strip().str.lower()
 
-# Ensure required fields exist
-required_fields = ["player_id", "name", "team", "total_bases_projection", "total_hits_projection", "avg_hr"]
+# --- NEW: Filter for only batters ---
+df = df[df["type"] == "batter"].copy()
+
+# Ensure required fields exist (now including walk and strikeout)
+required_fields = ["player_id", "name", "team", "total_bases_projection", "total_hits_projection", "avg_hr", "walk", "strikeout"]
 for field in required_fields:
     if field not in df.columns:
         raise ValueError(f"Missing required column: {field}")
@@ -22,31 +25,52 @@ for field in required_fields:
 expanded = pd.melt(
     df,
     id_vars=["player_id", "name", "team"],
-    value_vars=["total_bases_projection", "total_hits_projection", "avg_hr"],
+    value_vars=["total_bases_projection", "total_hits_projection", "avg_hr", "walk", "strikeout"],
     var_name="prop_type",
     value_name="projection"
 )
 
-# Map to proper prop_type and assumed line
+# Map to proper prop_type
 expanded["prop_type"] = expanded["prop_type"].map({
     "total_bases_projection": "total_bases",
     "total_hits_projection": "hits",
-    "avg_hr": "home_runs"
+    "avg_hr": "home_runs",
+    "walk": "walks",
+    "strikeout": "strikeouts"
 })
+
+# --- UPDATED: Handle dual hits line and add new props ---
+
+# Create a copy for the second hits line
+hits_1_5 = expanded[expanded["prop_type"] == "hits"].copy()
+hits_1_5["line"] = 1.5
+
+# Assign the default lines
 expanded["line"] = expanded["prop_type"].map({
     "total_bases": 1.5,
     "hits": 0.5,
-    "home_runs": 0.5
+    "home_runs": 0.5,
+    "walks": 0.5,
+    "strikeouts": 0.5
 })
 
-# Compute z-score (per prop_type)
-expanded["ultimate_z"] = expanded.groupby("prop_type")["projection"].transform(zscore)
+# Combine the original data with the new 1.5 hits line data
+final_expanded = pd.concat([expanded, hits_1_5], ignore_index=True)
+
+
+# Compute z-score (per prop_type and now per line for hits)
+final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(zscore)
+
 
 # Round for frontend use
-expanded["ultimate_z"] = expanded["ultimate_z"].round(4)
-expanded["projection"] = expanded["projection"].round(3)
+final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
+final_expanded["projection"] = final_expanded["projection"].round(3)
 
-# Final column order
-final = expanded[["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z"]]
+# Final column order and sort
+final = final_expanded[["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z"]]
+final = final.sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
+
+
 final.to_csv(OUTPUT_FILE, index=False)
 print(f"✅ Wrote: {OUTPUT_FILE}")
+
