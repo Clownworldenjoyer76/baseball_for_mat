@@ -75,9 +75,17 @@ export async function getStaticProps() {
     return `${parts[1].trim()} ${parts[0].trim()}`;
   };
 
+  const formatLabel = (type) => {
+    if (type === 'total_bases') return 'Total Bases';
+    if (type === 'hits') return 'Hits';
+    if (type === 'home_runs') return 'Home Runs';
+    return type;
+  };
+
   const gamesWithData = gamesList.map(game => {
     const homeTeamUpper = game.home_team.toUpperCase();
     const awayTeamUpper = game.away_team.toUpperCase();
+
     const homeScoreEntry = scoresList.find(s => s.team === homeTeamUpper);
     const awayScoreEntry = scoresList.find(s => s.team === awayTeamUpper);
 
@@ -88,11 +96,7 @@ export async function getStaticProps() {
       let roundedHome = Math.round(rawHome);
       let roundedAway = Math.round(rawAway);
       if (roundedHome === roundedAway) {
-        if (rawHome >= rawAway) {
-          roundedHome++;
-        } else {
-          roundedAway++;
-        }
+        if (rawHome >= rawAway) { roundedHome++; } else { roundedAway++; }
       }
       projectedScore = {
         home: roundedHome,
@@ -101,41 +105,29 @@ export async function getStaticProps() {
       };
     }
 
-    const gameBatters = batterProps.filter(
-      prop => prop.team === game.home_team || prop.team === game.away_team
+    const normalized = (str) => str?.toLowerCase().replace(/\s+/g, '').trim();
+
+    const gameBatters = batterProps.filter(b =>
+      b.team &&
+      [normalized(game.home_team), normalized(game.away_team)].includes(normalized(b.team)) &&
+      b.prop_type &&
+      b.z_score && b.line && b.name && b.player_id &&
+      parseFloat(b.line) >= 0.5
     );
 
-    const zScoreProps = gameBatters.filter(b =>
-      (b.prop_type === 'total_bases' && parseFloat(b.line) >= 0.5) ||
-      (b.prop_type === 'hits' && parseFloat(b.line) >= 0.5) ||
-      (b.prop_type === 'home_runs' && parseFloat(b.line) >= 0.5)
-    );
-
-    const grouped = {
-      total_bases: null,
-      hits: null,
-      home_runs: null
-    };
-
-    zScoreProps.forEach(p => {
-      const type = p.prop_type;
-      if (!grouped[type] || parseFloat(p.z_score) > parseFloat(grouped[type].z_score)) {
-        grouped[type] = p;
-      }
-    });
-
-    const topProps = Object.entries(grouped)
-      .filter(([_, p]) => p)
-      .map(([type, p]) => ({
-        name: formatPlayerName(p.name),
-        line: `Over ${p.line} ${type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
-        playerId: p.player_id
+    const topProps = gameBatters
+      .sort((a, b) => parseFloat(b.z_score) - parseFloat(a.z_score))
+      .slice(0, 5)
+      .map(prop => ({
+        name: formatPlayerName(prop.name),
+        line: `Over ${prop.line} ${formatLabel(prop.prop_type)}`,
+        playerId: prop.player_id
       }));
 
     return {
       gameInfo: game,
-      topProps: topProps,
-      projectedScore: projectedScore
+      topProps,
+      projectedScore
     };
   });
 
