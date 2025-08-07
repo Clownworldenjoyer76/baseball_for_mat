@@ -12,18 +12,18 @@ def main():
     pitchers = pd.read_csv(PITCHER_FILE)
     weather = pd.read_csv(WEATHER_FILE)
 
-    # Sum batter score by team
+    # Sum batter and pitcher scores by team
     batter_scores = batters.groupby("team")["ultimate_z"].sum().to_dict()
-    # Sum pitcher score by team
     pitcher_scores = pitchers.groupby("team")["mega_z"].sum().to_dict()
 
-    # Use scores to compute home/away projected runs
+    # Compute final score: batter score minus opposing pitcher score
     def project_score(batter_team, pitcher_team, weather_factor):
         batter_score = batter_scores.get(batter_team, 0)
         pitcher_score = pitcher_scores.get(pitcher_team, 0)
-        raw = batter_score + pitcher_score  # pitcher_score is opponent’s weakness
-        return round(raw * weather_factor, 2)
+        raw = batter_score - pitcher_score
+        return round(max(raw * weather_factor, 0), 2)
 
+    # Generate per-game score projections
     rows = []
     for _, row in weather.iterrows():
         home = row["home_team"]
@@ -41,6 +41,7 @@ def main():
             "weather_factor": factor,
         })
 
+    # Output CSV
     pd.DataFrame(rows).to_csv(OUTPUT_FILE, index=False)
     print("✅ Final score projections saved:", OUTPUT_FILE)
 
