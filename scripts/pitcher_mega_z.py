@@ -11,19 +11,29 @@ OUTPUT_FILE = Path("data/_projections/pitcher_props_z_expanded.csv")
 df_xtra = pd.read_csv(XTRA_FILE)
 df_props = pd.read_csv(PROPS_FILE)
 
-# Standardize player_id as string
+# Standardize player_id as string to ensure successful merges
 df_xtra["player_id"] = df_xtra["player_id"].astype(str)
 df_props["player_id"] = df_props["player_id"].astype(str)
 
-# Use the correct column names from your files, assuming 'k' for strikeouts and 'bb' for walks
+# Define columns for merging
+# Player info comes from PROPS_FILE
 id_vars = ["player_id", "name", "team"]
-stat_vars = ["k", "bb"] # Using 'k' and 'bb' as found in the data files
-merged = pd.merge(df_props[id_vars + stat_vars], df_xtra[["player_id"]], on="player_id", how="inner")
+# Stats (k, bb) come from XTRA_FILE
+stat_vars = ["k", "bb"] 
+
+# Correctly merge the two DataFrames
+# This takes player info from df_props and stats from df_xtra
+merged = pd.merge(
+    df_props[id_vars],
+    df_xtra[["player_id"] + stat_vars],
+    on="player_id",
+    how="inner"
+)
 
 # Clean column names
 merged.columns = merged.columns.str.strip().str.lower()
 
-# Melt to 1 row per prop
+# Melt to 1 row per prop for easier processing
 expanded = pd.melt(
     merged,
     id_vars=["player_id", "name", "team"],
@@ -32,45 +42,41 @@ expanded = pd.melt(
     value_name="projection"
 )
 
-# Map to proper prop_type names
+# Map internal stat names to user-friendly prop names
 expanded["prop_type"] = expanded["prop_type"].map({
     "k": "strikeouts",
     "bb": "walks"
 })
 
-# Define the lines for each prop
+# Define the betting lines for each prop type
 lines = {
     "strikeouts": [5.5, 6.5, 7.5],
     "walks": [1.5, 2.5, 3.5]
 }
 
-# Create a list of DataFrames, one for each prop and line
-dfs_to_concat = []
-for prop, line_values in lines.items():
-    prop_df = expanded[expanded["prop_type"] == prop].copy()
-    for line in line_values:
-        line_df = prop_df.copy()
-        line_df["line"] = line
-        dfs_to_concat.append(line_df)
+# Efficiently expand the data to include all lines for each player/prop
+# This creates a DataFrame of lines and merges it with the player data
+lines_df = pd.DataFrame(lines.items(), columns=['prop_type', 'line']).explode('line')
+final_expanded = pd.merge(expanded, lines_df, on='prop_type')
 
-# Combine all the new prop-line dataframes
-final_expanded = pd.concat(dfs_to_concat, ignore_index=True)
-
-# Compute z-score (per prop_type and line)
+# Compute z-score, grouped by prop_type and line
+# This compares each player's projection to the mean for that specific line
 final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(zscore)
 
-# Invert z-score for walks (so a lower walk projection gets a better z-score)
+# Invert z-score for walks, so a higher score is always better
+# (since lower walk projections are favorable)
 final_expanded.loc[final_expanded["prop_type"] == "walks", "ultimate_z"] *= -1
 
-# Round for frontend use
+# Round values for cleaner output
 final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
 final_expanded["projection"] = final_expanded["projection"].round(3)
 
-# Final column order and sort
-final = final_expanded[["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z"]]
+# Select and order final columns for the output file
+final_cols = ["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z"]
+final = final_expanded[final_cols]
 final = final.sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
 
-# Save
+# Save the final DataFrame to a CSV file
 OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 final.to_csv(OUTPUT_FILE, index=False)
 
