@@ -1,7 +1,7 @@
 import pandas as pd
 from pathlib import Path
 
-# Input files
+# File paths
 BATTER_FILE = Path("data/_projections/batter_props_z_expanded.csv")
 PITCHER_FILE = Path("data/_projections/pitcher_mega_z.csv")
 WEATHER_FILE = Path("data/weather_adjustments.csv")
@@ -16,11 +16,13 @@ def main():
     batter_scores = batters.groupby("team")["ultimate_z"].sum().to_dict()
     pitcher_scores = pitchers.groupby("team")["mega_z"].sum().to_dict()
 
+    def normalize(val):
+        return max(val, 1.0)
+
     def project_score(batter_team, pitcher_team, weather_factor):
-        # Clip below 0 to avoid invalid scoring
-        batter_score = max(batter_scores.get(batter_team, 0), 0)
-        pitcher_score = max(pitcher_scores.get(pitcher_team, 0), 0)
-        raw = batter_score - pitcher_score
+        batter = normalize(batter_scores.get(batter_team, 0))
+        pitcher = normalize(pitcher_scores.get(pitcher_team, 0))
+        raw = batter - pitcher
         return round(max(raw * weather_factor, 0), 2)
 
     rows = []
