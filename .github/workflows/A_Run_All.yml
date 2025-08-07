@@ -189,6 +189,14 @@ jobs:
       - name: Show current Git branch
         run: git rev-parse --abbrev-ref HEAD
 
+      - name: Commit pitchers_xtra.csv
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/end_chain/pitchers_xtra.csv || echo "pitchers_xtra.csv not found or no changes"
+          git commit -m "Update pitchers_xtra.csv" || echo "Nothing to commit"
+          git push --force || echo "Nothing to push"
+
       - name: Commit all output files
         run: |
           git config user.name "github-actions"
