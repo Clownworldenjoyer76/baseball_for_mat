@@ -23,7 +23,7 @@ def main():
     def project_score(batter_team, pitcher_team, weather_factor):
         batter = normalize(batter_scores.get(batter_team, 0))
         pitcher = normalize(pitcher_scores.get(pitcher_team, 0))
-        return round((batter + pitcher) * weather_factor, 2)
+        return (batter + pitcher) * weather_factor
 
     rows = []
     for _, row in weather.iterrows():
@@ -42,7 +42,15 @@ def main():
             "weather_factor": factor,
         })
 
-    pd.DataFrame(rows).to_csv(OUTPUT_FILE, index=False)
+    # Normalize all scores to average 9 total runs per game
+    df = pd.DataFrame(rows)
+    current_avg = (df["home_score"] + df["away_score"]).mean()
+    scale = 9.0 / current_avg
+
+    df["home_score"] = (df["home_score"] * scale).round(2)
+    df["away_score"] = (df["away_score"] * scale).round(2)
+
+    df.to_csv(OUTPUT_FILE, index=False)
     print("✅ Final score projections saved:", OUTPUT_FILE)
 
 if __name__ == "__main__":
