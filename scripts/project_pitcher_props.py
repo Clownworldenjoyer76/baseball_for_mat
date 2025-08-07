@@ -30,7 +30,9 @@ def main():
     print("🔗 Merging earned runs on player_id...")
     if "p_earned_run" not in df_xtra.columns:
         raise ValueError("Missing column: p_earned_run in pitchers_xtra.csv")
-    df = df.merge(df_xtra[["player_id", "p_earned_run"]], on="player_id", how="left")
+    # FIX APPLIED: Added suffixes to handle potential duplicate 'p_earned_run' columns.
+    # The column from df_xtra will be named 'p_earned_run', and any existing column will be renamed 'p_earned_run_old'.
+    df = df.merge(df_xtra[["player_id", "p_earned_run"]], on="player_id", how="left", suffixes=("_old", ""))
 
     print("🧮 Calculating ERA using innings_pitched...")
     df["era"] = (df["p_earned_run"] / df["innings_pitched"]) * 9
