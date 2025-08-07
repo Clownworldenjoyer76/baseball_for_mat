@@ -64,14 +64,19 @@ function GameDetailPage() {
 
   const title = `${game.away_team} @ ${game.home_team}`;
   const venue = game.venue;
-  const conditions = [
-    `${Math.round(game.temperature)}°`,
-    game.wind_direction,
-    `${game.wind_speed} mph`,
-    `${game.humidity}%`,
-    game.precipitation,
-    game.condition
-  ].filter(Boolean).join(', ');
+
+  const formatERA = (era) => {
+    const n = parseFloat(era);
+    return isNaN(n) ? '—' : n.toFixed(2);
+  };
+
+  const temperature = `${Math.round(game.temperature)}°`;
+  const wind = `Wind ${game.wind_speed} ${game.wind_direction}`;
+  const humidity = `${game.humidity}% Humidity`;
+  const precipitation = `${parseFloat(game.precipitation || 0).toFixed(2)}% Chance of Rain`;
+  const condition = game.condition;
+
+  const conditions = `${temperature}, ${wind}, ${humidity}, ${precipitation}, ${condition}`;
   const gameTime = game.game_time;
 
   const normalized = str => str?.toLowerCase().replace(/\s+/g, '').trim();
@@ -87,9 +92,9 @@ function GameDetailPage() {
   };
 
   const startersLine = starters.length === 2
-    ? `${formatName(starters[0].name)}, ${starters[0].team}, ${starters[0].era}
+    ? `${formatName(starters[0].name)}, ${starters[0].team}, ${formatERA(starters[0].era)}
 @
-${formatName(starters[1].name)}, ${starters[1].team}, ${starters[1].era}`
+${formatName(starters[1].name)}, ${starters[1].team}, ${formatERA(starters[1].era)}`
     : 'Starting pitchers TBD';
 
   const filteredPicks = batters
