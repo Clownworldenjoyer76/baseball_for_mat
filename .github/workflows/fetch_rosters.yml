@@ -23,7 +23,11 @@ jobs:
         run: |
           python scripts/fetch_rosters.py
 
-      - name: Force commit and push only roster CSVs
+      - name: Normalize roster CSVs to team files
+        run: |
+          python scripts/normalize_rosters_to_team_csvs.py
+
+      - name: Force commit and push updated roster CSVs
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
