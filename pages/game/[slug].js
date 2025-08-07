@@ -67,16 +67,9 @@ function GameDetailPage() {
 
   const formatERA = (era) => {
     const n = parseFloat(era);
-    return isNaN(n) ? '—' : n.toFixed(2);
+    return isNaN(n) ? '—' : `${n.toFixed(2)} ERA`;
   };
 
-  const temperature = `${Math.round(game.temperature)}°`;
-  const wind = `Wind ${game.wind_speed} ${game.wind_direction}`;
-  const humidity = `${game.humidity}% Humidity`;
-  const precipitation = `${parseFloat(game.precipitation || 0).toFixed(2)}% Chance of Rain`;
-  const condition = game.condition;
-
-  const conditions = `${temperature}, ${wind}, ${humidity}, ${precipitation}, ${condition}`;
   const gameTime = game.game_time;
 
   const normalized = str => str?.toLowerCase().replace(/\s+/g, '').trim();
@@ -117,7 +110,15 @@ ${formatName(starters[1].name)}, ${starters[1].team}, ${formatERA(starters[1].er
       <h1 style={{ fontSize: '1.5em', marginBottom: '10px' }}>{title}</h1>
 
       <p style={{ color: '#B0B0B0', marginBottom: '4px' }}>{venue}</p>
-      <p style={{ color: '#B0B0B0', marginBottom: '4px' }}>{conditions}</p>
+
+      <div style={{ color: '#B0B0B0', marginBottom: '10px', lineHeight: '1.6' }}>
+        <div>{Math.round(game.temperature)}°</div>
+        <div>Wind {game.wind_speed} MPH Blowing {game.wind_direction}</div>
+        <div>{game.humidity}% Humidity</div>
+        <div>{parseFloat(game.precipitation || 0).toFixed(2)}% Chance of Rain</div>
+        <div>{game.condition}</div>
+      </div>
+
       <p style={{ color: '#B0B0B0', marginBottom: '10px' }}>{gameTime}</p>
 
       <p style={{ fontWeight: 'bold', color: '#F59E0B', marginBottom: '10px', whiteSpace: 'pre-line' }}>
