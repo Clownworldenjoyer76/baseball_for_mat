@@ -10,6 +10,16 @@ function TopPropsCard({ bestProps }) {
     return null;
   }
 
+  // Logic to only show each player once
+  const uniquePlayers = [];
+  const playerIds = new Set();
+  bestProps.forEach(prop => {
+    if (!playerIds.has(prop.playerId)) {
+      playerIds.add(prop.playerId);
+      uniquePlayers.push(prop);
+    }
+  });
+
   return (
     <div
       className="fade-in-card card-interactive"
@@ -24,7 +34,7 @@ function TopPropsCard({ bestProps }) {
       <div style={{ padding: '20px' }}>
         <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Today’s Best Props</h4>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-          {bestProps.map((prop, index) => (
+          {uniquePlayers.map((prop, index) => (
             <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
               <img
                 alt={prop.name}
@@ -40,8 +50,16 @@ function TopPropsCard({ bestProps }) {
                 }}
               />
               <div>
-                <div style={{ fontSize: '1em' }}>{prop.name}</div>
-                <div style={{ fontSize: '0.9em', color: '#B0B0B0' }}>{prop.line} - {prop.probability}%</div>
+                <div style={{ fontSize: '1em', display: 'flex', alignItems: 'center' }}>
+                  {prop.name} <span role="img" aria-label="fire" style={{ marginLeft: '8px', fontSize: '1.2em' }}>🔥</span>
+                </div>
+                {/* New line for the player's team */}
+                <div style={{ fontSize: '0.8em', color: '#B0B0B0', marginTop: '4px' }}>
+                  {prop.team}
+                </div>
+                <div style={{ fontSize: '0.9em', color: '#E0E0E0', marginTop: '4px' }}>
+                  {prop.line}
+                </div>
               </div>
             </li>
           ))}
