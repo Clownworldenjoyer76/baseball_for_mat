@@ -16,10 +16,13 @@ def main():
 
     game_data = pd.merge(
         weather,
-        games_today[["home_team", "away_team", "pitcher_home", "pitcher_away"]],
+        games_today[["home_team", "away_team", "pitcher_home", "pitcher_away", "game_time"]],
         on=["home_team", "away_team"],
         how="inner"
     )
+
+    # Extract the date from the 'game_time' column
+    game_data['date'] = game_data['game_time'].str.split(' ').str[0]
 
     batter_scores = batters.groupby("team")["ultimate_z"].mean().to_dict()
     pitcher_scores = pitchers.set_index("name")["mega_z"].to_dict()
@@ -28,7 +31,6 @@ def main():
         batter_z = batter_scores.get(batter_team, 0)
         pitcher_z = pitcher_scores.get(pitcher_name, 0)
 
-        # --- KEY CHANGE ---
         # A good pitcher REDUCES the score, so we SUBTRACT their Z-score.
         combined_z = batter_z - pitcher_z
 
@@ -44,6 +46,7 @@ def main():
         factor = row["weather_factor"]
         home_pitcher = row["pitcher_home"]
         away_pitcher = row["pitcher_away"]
+        date = row["date"]
 
         # Home team's score depends on their batters vs. the AWAY pitcher
         home_score = project_score(home_team, away_pitcher, factor)
@@ -52,9 +55,13 @@ def main():
         away_score = project_score(away_team, home_pitcher, factor)
 
         rows.append({
-            "home_team": home_team, "away_team": away_team,
-            "home_pitcher": home_pitcher, "away_pitcher": away_pitcher,
-            "home_score": home_score, "away_score": away_score,
+            "date": date,
+            "home_team": home_team,
+            "away_team": away_team,
+            "home_pitcher": home_pitcher,
+            "away_pitcher": away_pitcher,
+            "home_score": home_score,
+            "away_score": away_score,
             "weather_factor": factor,
         })
 
