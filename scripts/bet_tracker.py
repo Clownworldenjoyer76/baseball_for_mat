@@ -65,33 +65,34 @@ def run_bet_tracker():
     pitcher_df['source'] = 'pitcher'
     combined = pd.concat([batter_df, pitcher_df], ignore_index=True)
 
-    # Only keep one prop per player: highest over_probability
-    combined = combined.sort_values(by='over_probability', ascending=False)
-    combined = combined.drop_duplicates(subset=['name'], keep='first')
+    # Smart filtering: remove junk projections
+    filtered = combined[
+        (combined['over_probability'] < 0.98) &
+        (combined['projection'] > 0.2)
+    ]
 
-    # Filter to only teams playing today
-    teams_today = set(games_df['home_team'].unique()) | set(games_df['away_team'].unique())
-    combined = combined[combined['team'].isin(teams_today)]
+    # One best prop per player based on over_probability
+    filtered = filtered.sort_values(by='over_probability', ascending=False)
+    filtered = filtered.drop_duplicates(subset='name')
 
-    # Assign bet_type and limit to 5 props per game
-    final_props = []
+    # Limit to 5 props per game
+    games_df['game_id'] = games_df['home_team'] + ' vs ' + games_df['away_team']
+    all_props = []
+    for _, game in games_df.iterrows():
+        home, away = game['home_team'], game['away_team']
+        game_props = filtered[(filtered['team'] == home) | (filtered['team'] == away)]
+        game_props = game_props.head(5)
+        all_props.append(game_props)
 
-    for _, row in games_df.iterrows():
-        home, away = row['home_team'], row['away_team']
-        game_props = combined[(combined['team'] == home) | (combined['team'] == away)]
-        top_5 = game_props.sort_values(by='over_probability', ascending=False).head(5).copy()
-        top_5['bet_type'] = 'Individual Game'
-        final_props.append(top_5)
+    if all_props:
+        final_props_df = pd.concat(all_props, ignore_index=True)
+    else:
+        final_props_df = pd.DataFrame(columns=filtered.columns)
 
-    if not final_props:
-        print("No valid props found.")
-        return
+    final_props_df['bet_type'] = 'Best Prop'
+    final_props_df['date'] = current_date
 
-    all_props = pd.concat(final_props, ignore_index=True)
-
-    # Add date and prepare for output
-    all_props['date'] = current_date
-    player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
+    player_props_to_save = final_props_df[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
     player_props_to_save['prop_correct'] = ''
 
     ensure_directory_exists(PLAYER_PROPS_OUT)
