@@ -11,18 +11,13 @@ OUTPUT_FILE = Path("data/_projections/pitcher_props_z_expanded.csv")
 df_xtra = pd.read_csv(XTRA_FILE)
 df_props = pd.read_csv(PROPS_FILE)
 
-# Standardize player_id as string to ensure successful merges
+# Ensure player_id is string in both
 df_xtra["player_id"] = df_xtra["player_id"].astype(str)
 df_props["player_id"] = df_props["player_id"].astype(str)
 
-# Define columns for merging
-# Player info comes from PROPS_FILE
+# Merge to get projection stats per player
 id_vars = ["player_id", "name", "team"]
-# Stats (k, bb) come from XTRA_FILE
-stat_vars = ["k", "bb"] 
-
-# Correctly merge the two DataFrames
-# This takes player info from df_props and stats from df_xtra
+stat_vars = ["k", "bb"]
 merged = pd.merge(
     df_props[id_vars],
     df_xtra[["player_id"] + stat_vars],
@@ -30,10 +25,10 @@ merged = pd.merge(
     how="inner"
 )
 
-# Clean column names
+# Normalize column names
 merged.columns = merged.columns.str.strip().str.lower()
 
-# Melt to 1 row per prop for easier processing
+# Reshape to long format (1 row per player per prop type)
 expanded = pd.melt(
     merged,
     id_vars=["player_id", "name", "team"],
@@ -42,45 +37,43 @@ expanded = pd.melt(
     value_name="projection"
 )
 
-# Map internal stat names to user-friendly prop names
+# Rename prop_type from internal names
 expanded["prop_type"] = expanded["prop_type"].map({
     "k": "strikeouts",
     "bb": "walks"
 })
 
-# Define the betting lines for each prop type
+# Define betting lines
 lines = {
     "strikeouts": [5.5, 6.5, 7.5],
     "walks": [1.5, 2.5, 3.5]
 }
+lines_df = pd.DataFrame(lines.items(), columns=["prop_type", "line"]).explode("line")
 
-# Efficiently expand the data to include all lines for each player/prop
-# This creates a DataFrame of lines and merges it with the player data
-lines_df = pd.DataFrame(lines.items(), columns=['prop_type', 'line']).explode('line')
-final_expanded = pd.merge(expanded, lines_df, on='prop_type')
+# Combine player projections with line values
+final_expanded = pd.merge(expanded, lines_df, on="prop_type")
 
-# Compute z-score, grouped by prop_type and line
-# This compares each player's projection to the mean for that specific line
-final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(zscore)
+# Compute z_score safely (fallback to 0 if constant)
+final_expanded["z_score"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(
+    lambda x: zscore(x, ddof=0) if x.nunique() > 1 else pd.Series([0] * len(x), index=x.index)
+)
 
-# Invert z-score for walks, so a higher score is always better
-# (since lower walk projections are favorable)
-final_expanded.loc[final_expanded["prop_type"] == "walks", "ultimate_z"] *= -1
+# Invert z_score for walks (lower is better)
+final_expanded.loc[final_expanded["prop_type"] == "walks", "z_score"] *= -1
 
-# Add the over_probability column using the imported norm function
-final_expanded['over_probability'] = 1 - norm.cdf(final_expanded['ultimate_z'])
+# Calculate over probability
+final_expanded["over_probability"] = 1 - norm.cdf(final_expanded["z_score"])
 
-# Round values for cleaner output
-final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
+# Round outputs
 final_expanded["projection"] = final_expanded["projection"].round(3)
+final_expanded["z_score"] = final_expanded["z_score"].round(4)
 final_expanded["over_probability"] = final_expanded["over_probability"].round(4)
 
-# Select and order final columns for the output file
-final_cols = ["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z", "over_probability"]
-final = final_expanded[final_cols]
-final = final.sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
+# Final output
+final_cols = ["player_id", "name", "team", "prop_type", "line", "projection", "z_score", "over_probability"]
+final = final_expanded[final_cols].sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
 
-# Save the final DataFrame to a CSV file
+# Save
 OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 final.to_csv(OUTPUT_FILE, index=False)
 
