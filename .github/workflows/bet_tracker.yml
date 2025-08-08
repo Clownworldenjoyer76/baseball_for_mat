@@ -5,7 +5,7 @@ on:
 
 jobs:
   run-bet-tracker:
-    name: Daily Bet Tracker
+    name: Run Daily Bet Tracker
     runs-on: ubuntu-latest
 
     steps:
@@ -16,13 +16,17 @@ jobs:
         run: pip install pandas
 
       - name: Execute Script
-        run: python scripts/bet_tracker.py
+        run: python bet_tracker.py
 
       - name: Commit and Push Changes
         run: |
           git config --global user.name "Your Name"
           git config --global user.email "your-email@example.com"
-          git add data/bets/game_props_history.csv
-          git add data/bets/player_props_history.csv
-          git commit -m "Automated update of bet tracker data"
-          git push
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add data/bets/game_props_history.csv
+            git add data/bets/player_props_history.csv
+            git commit -m "Automated update of bet tracker data"
+            git push
+          else
+            echo "No changes to commit. Exiting successfully."
+          fi
