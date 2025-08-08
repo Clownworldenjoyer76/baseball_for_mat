@@ -14,15 +14,15 @@ def main():
     weather = pd.read_csv(WEATHER_FILE)
     games_today = pd.read_csv(GAMES_TODAY_FILE)
 
+    # Extract only the date from game_time
+    games_today["date"] = pd.to_datetime(games_today["game_time"]).dt.date.astype(str)
+
     game_data = pd.merge(
         weather,
-        games_today[["home_team", "away_team", "pitcher_home", "pitcher_away", "game_time"]],
+        games_today[["home_team", "away_team", "pitcher_home", "pitcher_away", "date"]],
         on=["home_team", "away_team"],
         how="inner"
     )
-
-    # Extract the date from the 'game_time' column
-    game_data['date'] = game_data['game_time'].str.split(' ').str[0]
 
     batter_scores = batters.groupby("team")["ultimate_z"].mean().to_dict()
     pitcher_scores = pitchers.set_index("name")["mega_z"].to_dict()
@@ -30,13 +30,8 @@ def main():
     def project_score(batter_team, pitcher_name, weather_factor):
         batter_z = batter_scores.get(batter_team, 0)
         pitcher_z = pitcher_scores.get(pitcher_name, 0)
-
-        # A good pitcher REDUCES the score, so we SUBTRACT their Z-score.
         combined_z = batter_z - pitcher_z
-
-        # Shift the score to be positive. Using 5 as a baseline for Z-scores.
         adjusted_score = max(1.0, combined_z + 5)
-
         return adjusted_score * weather_factor
 
     rows = []
@@ -48,14 +43,10 @@ def main():
         away_pitcher = row["pitcher_away"]
         date = row["date"]
 
-        # Home team's score depends on their batters vs. the AWAY pitcher
         home_score = project_score(home_team, away_pitcher, factor)
-        
-        # Away team's score depends on their batters vs. the HOME pitcher
         away_score = project_score(away_team, home_pitcher, factor)
 
         rows.append({
-            "date": date,
             "home_team": home_team,
             "away_team": away_team,
             "home_pitcher": home_pitcher,
@@ -63,6 +54,7 @@ def main():
             "home_score": home_score,
             "away_score": away_score,
             "weather_factor": factor,
+            "date": date
         })
 
     df = pd.DataFrame(rows)
