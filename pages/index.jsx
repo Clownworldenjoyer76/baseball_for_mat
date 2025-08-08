@@ -116,29 +116,28 @@ export async function getStaticProps() {
       prop.team?.trim() === game.away_team.trim()
     );
 
-    const formatProp = (prop, probability) => {
-        // This is a temporary line to check the raw data
-        console.log(`Raw probability for ${prop.name}: ${prop.over_probability}`);
-
+    // This function is now used for both batters and pitchers
+    const formatProp = (prop, probability, type) => {
         const propTypeClean = prop.prop_type.replace(/_/g, ' ');
         const propTypeCapitalized = propTypeClean.charAt(0).toUpperCase() + propTypeClean.slice(1);
         return {
             name: formatPlayerName(prop.name),
             line: `${propTypeCapitalized} Over ${prop.line}`,
             playerId: prop.player_id,
-            probability: probability
+            probability: probability,
+            type: type // Added type for sorting
         };
     };
 
     const topBatterProps = gameBatters
       .sort((a, b) => (parseFloat(b.over_probability) || 0) - (parseFloat(a.over_probability) || 0))
       .slice(0, 2)
-      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0)));
+      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0), 'batter'));
 
     const topPitcherProps = gamePitchers
       .sort((a, b) => (parseFloat(b.z_score) || 0) - (parseFloat(a.z_score) || 0))
       .slice(0, 1)
-      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0)));
+      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0), 'pitcher'));
 
     const topProps = [...topBatterProps, ...topPitcherProps];
     allProps.push(...topProps);
@@ -150,10 +149,15 @@ export async function getStaticProps() {
     };
   });
 
+  // Updated sorting logic to correctly handle both probabilities and z-scores
   const bestProps = allProps
-    .sort((a, b) => (b.probability || 0) - (a.probability || 0))
+    .sort((a, b) => {
+        const aValue = a.type === 'batter' ? parseFloat(a.probability) : parseFloat(a.z_score);
+        const bValue = b.type === 'batter' ? parseFloat(b.probability) : parseFloat(b.z_score);
+        return (bValue || 0) - (aValue || 0);
+    })
     .slice(0, 3);
-
+    
   return {
     props: { 
         games: gamesWithData,
