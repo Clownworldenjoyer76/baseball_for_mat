@@ -63,7 +63,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
             paddingTop: '12px'
           }}
         >
-          🕰️{game.game_time}&nbsp;&nbsp;&nbsp;🌡️{game.temperature ? `${Math.round(game.temperature)}°` : 'N/A'}&nbsp;&nbsp;&nbsp;📍{game.venue}
+          🕰️  {game.game_time}&nbsp;&nbsp;&nbsp;🌡️  {game.temperature ? `${Math.round(game.temperature)}°` : 'N/A'}&nbsp;&nbsp;&nbsp;📍 {game.venue}
         </div>
       </div>
 
