@@ -1,4 +1,4 @@
-name: Run Bet Tracker
+Name: Run Bet Tracker
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
         run: pip install pandas
 
       - name: Execute Script
-        run: python bet_tracker.py
+        run: python scripts/bet_tracker.py
 
       - name: Commit and Push Changes
         run: |
