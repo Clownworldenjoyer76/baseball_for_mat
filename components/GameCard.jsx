@@ -1,15 +1,22 @@
 import React from 'react';
 
-function GameCard({ Game, TopProps, ProjectedScore, AnimationDelay }) {
+// Renamed props to lowercase to match standard convention
+function GameCard({ game, topProps, projectedScore, animationDelay }) {
   const getLogoUrl = (teamName) => {
+    if (!teamName) return '/images/default_logo.png';
     const imageName = teamName.toLowerCase().replace(/\s+/g, '');
     return `/logos/${imageName}.png`;
   };
 
   const getHeadshotUrl = (playerId) => {
-    if (!playerId) return '';
+    if (!playerId) return '/images/default_player.png';
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
+
+  // Add a check to ensure 'game' exists before rendering
+  if (!game) {
+    return null;
+  }
 
   return (
     <div 
@@ -19,26 +26,26 @@ function GameCard({ Game, TopProps, ProjectedScore, AnimationDelay }) {
         margin: '20px 0', 
         borderRadius: '12px', 
         overflow: 'hidden',
-        animationDelay: AnimationDelay,
+        animationDelay: animationDelay,
         border: '1px solid #2F2F30'
       }}
     >
       <div style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <img 
-            src={getLogoUrl(Game.away_team)} 
-            alt={`${Game.away_team} logo`} 
+            src={getLogoUrl(game.away_team)} 
+            alt={`${game.away_team} logo`} 
             style={{ height: '40px', width: 'auto' }}
             onError={(e) => { e.target.onerror = null; e.target.src='/images/default_logo.png'; }}
           />
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2em', color: '#E0E0E0' }}>{Game.away_team}</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2em', color: '#E0E0E0' }}>{game.away_team}</h2>
             <p style={{ margin: '4px 0', fontSize: '0.8em', color: '#B0B0B0' }}>at</p>
-            <h2 style={{ margin: 0, fontSize: '1.2em', color: '#E0E0E0' }}>{Game.home_team}</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2em', color: '#E0E0E0' }}>{game.home_team}</h2>
           </div>
           <img 
-            src={getLogoUrl(Game.home_team)} 
-            alt={`${Game.home_team} logo`} 
+            src={getLogoUrl(game.home_team)} 
+            alt={`${game.home_team} logo`} 
             style={{ height: '40px', width: 'auto' }}
             onError={(e) => { e.target.onerror = null; e.target.src='/images/default_logo.png'; }}
           />
@@ -56,20 +63,21 @@ function GameCard({ Game, TopProps, ProjectedScore, AnimationDelay }) {
             paddingTop: '12px'
           }}
         >
-          ð {Game.game_time}&nbsp;&nbsp;&nbsp;ð¡ï¸ {Game.temperature ? `${Math.round(Game.temperature)}Â°` : 'N/A'}&nbsp;&nbsp;&nbsp;ð {Game.venue}
+          ð {game.game_time}&nbsp;&nbsp;&nbsp;ð¡ï¸ {game.temperature ? `${Math.round(game.temperature)}Â°` : 'N/A'}&nbsp;&nbsp;&nbsp;ð {game.venue}
         </div>
       </div>
 
       <div style={{ padding: '20px', borderTop: '1px solid #2F2F30' }}>
-        {TopProps && TopProps.length > 0 && (
+        {/* Use the lowercase prop name here */}
+        {Array.isArray(topProps) && topProps.length > 0 && (
           <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #2F2F30' }}>
             <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Top Props</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-              {TopProps.map((prop) => (
-                <li key={prop.playerId + prop.line} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              {topProps.map((prop, index) => (
+                <li key={prop?.playerId || index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                   <img
-                    alt={prop.name}
-                    src={getHeadshotUrl(prop.playerId)}
+                    alt={prop?.name}
+                    src={getHeadshotUrl(prop?.playerId)}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
                     style={{
                       height: '50px',
@@ -81,9 +89,8 @@ function GameCard({ Game, TopProps, ProjectedScore, AnimationDelay }) {
                     }}
                   />
                   <div>
-                    {/* Player name is now displayed directly */}
-                    <div style={{ fontSize: '1em' }}>{prop.name}</div>
-                    <div style={{ fontSize: '0.9em', color: '#B0B0B0' }}>{prop.line}</div>
+                    <div style={{ fontSize: '1em' }}>{prop?.name}</div>
+                    <div style={{ fontSize: '0.9em', color: '#B0B0B0' }}>{prop?.line}</div>
                   </div>
                 </li>
               ))}
@@ -91,15 +98,15 @@ function GameCard({ Game, TopProps, ProjectedScore, AnimationDelay }) {
           </div>
         )}
 
-        {ProjectedScore && (
+        {/* Use the lowercase prop name here */}
+        {projectedScore && typeof projectedScore === 'object' && (
           <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
             <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#D4AF37' }}>Projected Score</h4>
             <div style={{ fontSize: '1.2em', color: '#E0E0E0', lineHeight: '1.5' }}>
-              <div>{Game.away_team} {ProjectedScore.away}</div>
-              <div>{Game.home_team} {ProjectedScore.home}</div>
-              {/* Title changed here */}
+              <div>{game.away_team} {projectedScore.away}</div>
+              <div>{game.home_team} {projectedScore.home}</div>
               <div style={{ fontSize: '0.9em', color: '#B0B0B0', marginTop: '10px' }}>
-                Real Run Total Projection: {ProjectedScore.total}
+                Real Run Total Projection: {projectedScore.total}
               </div>
             </div>
           </div>
