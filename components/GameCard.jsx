@@ -22,6 +22,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
         border: '1px solid #2F2F30'
       }}
     >
+      {/* --- The rest of your card code is here and unchanged --- */}
       <div style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <img src={getLogoUrl(game.away_team)} alt={`${game.away_team} logo`} style={{ height: '40px', width: 'auto' }} />
@@ -32,41 +33,17 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
           <img src={getLogoUrl(game.home_team)} alt={`${game.home_team} logo`} style={{ height: '40px', width: 'auto' }} />
         </div>
-
-        <div
-          style={{
-            fontSize: '12px',
-            lineHeight: '1',
-            color: '#B0B0B0',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            textAlign: 'center',
-            paddingTop: '12px'
-          }}
-        >
+        <div style={{ fontSize: '12px', lineHeight: '1', color: '#B0B0B0', display: 'flex', justifyContent: 'center', alignItems: 'center', textAlign: 'center', paddingTop: '12px' }}>
           🕒 {game.game_time}&nbsp;&nbsp;&nbsp;🌡️ {Math.round(game.temperature)}°&nbsp;&nbsp;&nbsp;📍 {game.venue}
         </div>
       </div>
-
       <div style={{ padding: '20px', borderTop: '1px solid #2F2F30' }}>
         <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #2F2F30' }}>
           <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Top Props</h4>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-            {topProps.map((prop, index) => (
-              <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
-                <img
-                  src={getHeadshotUrl(prop.playerId)}
-                  alt={prop.name}
-                  style={{
-                    height: '50px',
-                    width: '50px',
-                    borderRadius: '50%',
-                    marginRight: '15px',
-                    backgroundColor: '#2F2F30',
-                    objectFit: 'cover'
-                  }}
-                />
+            {topProps.map((prop) => (
+              <li key={prop.playerId} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                <img src={getHeadshotUrl(prop.playerId)} alt={prop.name} style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#2F2F30', objectFit: 'cover' }} />
                 <div>
                   <div style={{ fontSize: '1em' }}>{prop.name}</div>
                   <div style={{ fontSize: '0.9em', color: '#B0B0B0', marginLeft: '10px' }}>{prop.line}</div>
@@ -75,7 +52,6 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
             ))}
           </ul>
         </div>
-
         <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
           <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#D4AF37' }}>Projected Score</h4>
           <div style={{ fontSize: '1.2em', color: '#E0E0E0', lineHeight: '1.5' }}>
@@ -91,6 +67,32 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
         </div>
       </div>
+
+      {/* ---vvv--- START OF NEW DEBUG BLOCK ---vvv--- */}
+      {game.home_team === 'Mariners' && (
+        <div style={{ 
+          backgroundColor: 'black', 
+          color: 'lime', 
+          padding: '10px', 
+          margin: '20px', 
+          textAlign: 'left', 
+          whiteSpace: 'pre-wrap', 
+          fontFamily: 'monospace',
+          border: '1px solid lime',
+          borderRadius: '8px',
+          fontSize: '10px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: 'lime' }}>--- DEBUG INFO ---</h4>
+          
+          <p style={{ margin: '5px 0', color: 'white' }}>-- Game Object Passed to Card --</p>
+          <p>{JSON.stringify(game, null, 2)}</p>
+          
+          <p style={{ margin: '15px 0 5px 0', color: 'white' }}>-- Projected Score Object Passed to Card --</p>
+          <p>{JSON.stringify(projectedScore, null, 2)}</p>
+        </div>
+      )}
+      {/* ---^^^--- END OF NEW DEBUG BLOCK ---^^^--- */}
+      
     </div>
   );
 }
