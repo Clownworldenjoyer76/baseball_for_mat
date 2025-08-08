@@ -1,13 +1,11 @@
 import React from 'react';
 
-// This component displays the top props of the day.
 function TopPropsCard({ bestProps }) {
   const getHeadshotUrl = (playerId) => {
     if (!playerId) return '/images/default_player.png';
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
-  // Add a check to ensure there are props to display
   if (!bestProps || bestProps.length === 0) {
     return null;
   }
