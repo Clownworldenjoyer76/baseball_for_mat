@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import Papa from 'papaparse';
 import GameCard from '../components/GameCard';
+import TopPropsCard from '../components/TopPropsCard'; // New import
 
 const SkeletonCard = () => (
   <div style={{ 
@@ -14,7 +15,8 @@ const SkeletonCard = () => (
   }}></div>
 );
 
-function HomePage({ games }) {
+// The component now accepts a new prop called 'bestProps'
+function HomePage({ games, bestProps }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,15 +46,20 @@ function HomePage({ games }) {
           <SkeletonCard />
         </>
       ) : (
-        games.map((gameData, index) => (
-          <GameCard 
-            key={index}
-            game={gameData.gameInfo}
-            topProps={gameData.topProps}
-            projectedScore={gameData.projectedScore}
-            animationDelay={`${index * 100}ms`}
-          />
-        ))
+        <>
+          {/* New component added here at the top */}
+          <TopPropsCard bestProps={bestProps} />
+
+          {games.map((gameData, index) => (
+            <GameCard 
+              key={index}
+              game={gameData.gameInfo}
+              topProps={gameData.topProps}
+              projectedScore={gameData.projectedScore}
+              animationDelay={`${index * 100}ms`}
+            />
+          ))}
+        </>
       )}
     </div>
   );
@@ -81,6 +88,8 @@ export async function getStaticProps() {
   const scoresList = parseCsv(path.join(dataDir, '_projections', 'final_scores_projected.csv'));
   const batterProps = parseCsv(path.join(dataDir, '_projections', 'batter_props_z_expanded.csv'));
   const pitcherProps = parseCsv(path.join(dataDir, '_projections', 'pitcher_mega_z.csv'));
+
+  const allProps = []; // New list to hold all props from all games
 
   const gamesWithData = gamesList.map(game => {
     let projectedScore = null;
@@ -112,27 +121,30 @@ export async function getStaticProps() {
       prop.team?.trim() === game.away_team.trim()
     );
 
-    const formatProp = (prop) => {
+    // Updated to also pass probability to the formatProp function
+    const formatProp = (prop, probability) => { 
         const propTypeClean = prop.prop_type.replace(/_/g, ' ');
         const propTypeCapitalized = propTypeClean.charAt(0).toUpperCase() + propTypeClean.slice(1);
         return {
             name: formatPlayerName(prop.name),
             line: `${propTypeCapitalized} Over ${prop.line}`,
-            playerId: prop.player_id
+            playerId: prop.player_id,
+            probability: probability // Added probability
         };
     };
 
     const topBatterProps = gameBatters
       .sort((a, b) => (parseFloat(b.over_probability) || 0) - (parseFloat(a.over_probability) || 0))
       .slice(0, 2)
-      .map(formatProp);
+      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0))); // Passed probability
 
     const topPitcherProps = gamePitchers
       .sort((a, b) => (parseFloat(b.z_score) || 0) - (parseFloat(a.z_score) || 0))
       .slice(0, 1)
-      .map(formatProp);
+      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0))); // Passed probability
 
     const topProps = [...topBatterProps, ...topPitcherProps];
+    allProps.push(...topProps); // Added all the props to the new list
 
     return {
       gameInfo: game,
@@ -141,8 +153,16 @@ export async function getStaticProps() {
     };
   });
 
+  // New code to find the top 3 props from the combined list
+  const bestProps = allProps
+    .sort((a, b) => (b.probability || 0) - (a.probability || 0))
+    .slice(0, 3);
+
   return {
-    props: { games: gamesWithData },
+    props: { 
+        games: gamesWithData,
+        bestProps: bestProps // New prop passed to the component
+    },
     revalidate: 3600
   };
 }
