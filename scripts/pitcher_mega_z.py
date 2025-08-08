@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from scipy.stats import zscore
+from scipy.stats import zscore, norm
 
 # File paths
 INPUT_PROPS = Path("data/_projections/pitcher_props_projected.csv")
@@ -25,24 +25,22 @@ df = df_base.merge(
 # Drop rows with missing values
 df.dropna(subset=["strikeouts", "walks"], inplace=True)
 
-# Compute z-scores (lower is better for ERA, WHIP, Walks; higher for Ks)
+# Compute z-scores
 df["era_z"] = -zscore(df["era"])
 df["whip_z"] = -zscore(df["whip"])
 df["strikeouts_z"] = zscore(df["strikeouts"])
 df["walks_z"] = -zscore(df["walks"])
-
-# Composite mega_z
 df["mega_z"] = df[["era_z", "whip_z", "strikeouts_z", "walks_z"]].mean(axis=1)
 
 # Build prop rows
 props = []
-
 for _, row in df.iterrows():
     for prop_type, stat_value, lines in [
         ("strikeouts", row["strikeouts"], [4.5, 5.5, 6.5]),
         ("walks", row["walks"], [1.5, 2.5])
     ]:
         for line in lines:
+            z = row[f"{prop_type}_z"]
             props.append({
                 "player_id": row["player_id"],
                 "name": row["name"],
@@ -50,11 +48,13 @@ for _, row in df.iterrows():
                 "prop_type": prop_type,
                 "line": line,
                 "value": stat_value,
-                "z_score": row[f"{prop_type}_z"],
-                "mega_z": row["mega_z"]
+                "z_score": round(z, 4),
+                "mega_z": round(row["mega_z"], 4),
+                "over_probability": round(1 - norm.cdf(z), 4)
             })
 
 # Convert to DataFrame and save
 props_df = pd.DataFrame(props)
+OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 props_df.to_csv(OUTPUT_FILE, index=False)
 print(f"✅ Wrote: {OUTPUT_FILE}")
