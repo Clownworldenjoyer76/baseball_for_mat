@@ -1,3 +1,4 @@
+
 import pandas as pd
 import os
 import csv
@@ -26,7 +27,6 @@ def run_bet_tracker():
         print(f"Error: Required input file not found - {e}")
         return
 
-    # Get date
     date_columns = ['date', 'Date', 'game_date']
     current_date_column = next((col for col in date_columns if col in games_df.columns), None)
     if not current_date_column:
@@ -34,11 +34,10 @@ def run_bet_tracker():
         return
     current_date = games_df[current_date_column].iloc[0]
 
-    # --- Sanity Filter: Batters (by percentage)
+    # --- Sanity Filter: Batters
     batter_stats["player_id"] = batter_stats["player_id"].astype(str).str.strip()
     batter_df["player_id"] = batter_df["player_id"].astype(str).str.strip()
     batter_df = batter_df.merge(batter_stats[["player_id", "ab", "hit", "home_run"]], on="player_id", how="left")
-
     batter_df["hr_rate"] = batter_df["home_run"] / batter_df["ab"]
     batter_df["hit_rate"] = batter_df["hit"] / batter_df["ab"]
 
@@ -51,49 +50,44 @@ def run_bet_tracker():
 
     batter_df = batter_df[batter_df.apply(is_batter_valid, axis=1)]
 
-    # --- Sanity Filter: Pitchers (by percentage)
+    # --- Sanity Filter: Pitchers
     pitcher_stats["player_id"] = pitcher_stats["player_id"].astype(str).str.strip()
     pitcher_df["player_id"] = pitcher_df["player_id"].astype(str).str.strip()
-
     pitcher_stats["k_rate"] = pitcher_stats["strikeouts"] / pitcher_stats["innings_pitched"]
     pitcher_df = pitcher_df.merge(pitcher_stats[["player_id", "k_rate"]], on="player_id", how="left")
-
     pitcher_df = pitcher_df[pitcher_df["k_rate"] >= 1.0]
 
-    # Combine batter + pitcher props
-    batter_df['source'] = 'batter'
-    pitcher_df['source'] = 'pitcher'
+    # Combine and de-dupe by player
+    batter_df["source"] = "batter"
+    pitcher_df["source"] = "pitcher"
     combined = pd.concat([batter_df, pitcher_df], ignore_index=True)
+    combined = combined[combined["projection"] > 0.2]
+    combined = combined[combined["over_probability"] < 0.98]
+    combined = combined.sort_values("over_probability", ascending=False)
+    combined = combined.drop_duplicates(subset=["name"], keep="first")
 
-    # Smart filtering: remove junk projections
-    filtered = combined[
-        (combined['over_probability'] < 0.98) &
-        (combined['projection'] > 0.2)
-    ]
+    # Step 1: Top 3 props overall (Best Prop)
+    best_props_df = combined.head(3).copy()
+    best_props_df["bet_type"] = "Best Prop"
+    best_players = set(best_props_df["name"])
 
-    # One best prop per player based on over_probability
-    filtered = filtered.sort_values(by='over_probability', ascending=False)
-    filtered = filtered.drop_duplicates(subset='name')
+    # Step 2: Filter rest, assign up to 5 props per game
+    remaining = combined[~combined["name"].isin(best_players)]
+    games_df = games_df.drop_duplicates(subset=["home_team", "away_team"])
+    individual_props_list = []
 
-    # Limit to 5 props per game
-    games_df['game_id'] = games_df['home_team'] + ' vs ' + games_df['away_team']
-    all_props = []
     for _, game in games_df.iterrows():
         home, away = game['home_team'], game['away_team']
-        game_props = filtered[(filtered['team'] == home) | (filtered['team'] == away)]
-        game_props = game_props.head(5)
-        all_props.append(game_props)
+        game_props = remaining[(remaining["team"] == home) | (remaining["team"] == away)]
+        game_props = game_props.sort_values("over_probability", ascending=False).head(5)
+        game_props["bet_type"] = "Individual Game"
+        individual_props_list.append(game_props)
 
-    if all_props:
-        final_props_df = pd.concat(all_props, ignore_index=True)
-    else:
-        final_props_df = pd.DataFrame(columns=filtered.columns)
-
-    final_props_df['bet_type'] = 'Best Prop'
-    final_props_df['date'] = current_date
-
-    player_props_to_save = final_props_df[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
-    player_props_to_save['prop_correct'] = ''
+    individual_props_df = pd.concat(individual_props_list, ignore_index=True) if individual_props_list else pd.DataFrame()
+    all_props = pd.concat([best_props_df, individual_props_df], ignore_index=True)
+    all_props["date"] = current_date
+    player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
+    player_props_to_save["prop_correct"] = ""
 
     ensure_directory_exists(PLAYER_PROPS_OUT)
     if not os.path.exists(PLAYER_PROPS_OUT):
