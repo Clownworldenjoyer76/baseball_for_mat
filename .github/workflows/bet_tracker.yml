@@ -1,0 +1,23 @@
+# bet_tracker_workflow.yml
+
+jobs:
+  run-bet-tracker:
+    name: Run Daily Bet Tracker
+    steps:
+      # Step 1: Install the necessary Python library (pandas)
+      - name: Install Dependencies
+        run: pip install pandas
+
+      # Step 2: Run your script
+      - name: Execute Script
+        run: python bet_tracker.py
+
+      # Step 3: Commit and push the updated files to the repository
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "Your Name"
+          git config --global user.email "your-email@example.com"
+          git add data/bets/game_props_history.csv
+          git add data/bets/player_props_history.csv
+          git commit -m "Automated update of bet tracker data"
+          git push
