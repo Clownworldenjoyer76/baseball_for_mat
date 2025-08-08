@@ -32,7 +32,7 @@ expanded = pd.melt(
     value_name="projection"
 )
 
-# Map to proper prop_type
+# Map to standardized prop types
 expanded["prop_type"] = expanded["prop_type"].map({
     "total_bases_projection": "total_bases",
     "total_hits_projection": "hits",
@@ -60,7 +60,7 @@ final_expanded = pd.concat([expanded, hits_1_5], ignore_index=True)
 # Z-score per prop_type + line
 final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["projection"].transform(zscore)
 
-# Standard deviations (tuned for per-game logic)
+# Standard deviations (tuned per prop type)
 std_devs = {
     "total_bases": 0.5,
     "hits": 0.3,
@@ -69,22 +69,22 @@ std_devs = {
     "strikeouts": 0.4
 }
 
-# ⚠️ Convert strikeouts to per-game (assumes 150 games)
+# Adjust strikeouts from season total to per-game (assumes 150 games)
 final_expanded.loc[final_expanded["prop_type"] == "strikeouts", "projection"] /= 150
 
-# Compute over/under probability
+# Compute over_probability correctly
 def compute_prob(row):
     sigma = std_devs.get(row["prop_type"], 0.5)
     z = (row["projection"] - row["line"]) / sigma
-    return round(1 - norm.cdf(z), 4)
+    return round(norm.sf(z), 4)  # Corrected: P(X > line)
 
 final_expanded["over_probability"] = final_expanded.apply(compute_prob, axis=1)
 
-# Round for frontend
+# Round values
 final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
 final_expanded["projection"] = final_expanded["projection"].round(3)
 
-# Final sort/order
+# Final output
 final = final_expanded[[
     "player_id", "name", "team",
     "prop_type", "line", "projection",
