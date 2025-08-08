@@ -33,8 +33,19 @@ def run_bet_tracker():
         print(f"Error: Required input file not found - {e}")
         return
 
-    # Find the single date for today's data
-    current_date = games_df['date'].iloc[0]
+    # Find the single date for today's data. This section is updated to fix the KeyError.
+    date_columns = ['date', 'Date', 'game_date']
+    current_date_column = None
+    for col in date_columns:
+        if col in games_df.columns:
+            current_date_column = col
+            break
+
+    if not current_date_column:
+        print("Error: Could not find a date column in final_scores_projected.csv. Please check the column headers.")
+        return
+
+    current_date = games_df[current_date_column].iloc[0]
 
     # Find the overall best props
     # Top 2 batters with highest over_probability
@@ -126,4 +137,3 @@ def run_bet_tracker():
 
 if __name__ == '__main__':
     run_bet_tracker()
-
