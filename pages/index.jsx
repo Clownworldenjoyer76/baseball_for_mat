@@ -121,7 +121,7 @@ export async function getStaticProps() {
         const propTypeCapitalized = propTypeClean.charAt(0).toUpperCase() + propTypeClean.slice(1);
         return {
             name: formatPlayerName(prop.name),
-            team: prop.team, // Added team name here
+            team: prop.team,
             line: `${propTypeCapitalized} Over ${prop.line}`,
             playerId: prop.player_id,
             probability: probability,
@@ -137,7 +137,7 @@ export async function getStaticProps() {
     const topPitcherProps = gamePitchers
       .sort((a, b) => (parseFloat(b.z_score) || 0) - (parseFloat(a.z_score) || 0))
       .slice(0, 1)
-      .map(prop => formatProp(prop, (parseFloat(prop.over_probability) * 100).toFixed(0), 'pitcher'));
+      .map(prop => formatProp(prop, (parseFloat(prop.over_score_probability) * 100).toFixed(0), 'pitcher'));
 
     const topProps = [...topBatterProps, ...topPitcherProps];
     allProps.push(...topProps);
@@ -149,14 +149,13 @@ export async function getStaticProps() {
     };
   });
 
-  // Updated sorting logic to correctly handle both probabilities and z-scores
   const bestProps = allProps
     .sort((a, b) => {
         const aValue = a.type === 'batter' ? parseFloat(a.probability) : parseFloat(a.z_score);
         const bValue = b.type === 'batter' ? parseFloat(b.probability) : parseFloat(b.z_score);
         return (bValue || 0) - (aValue || 0);
     })
-    .slice(0, 3);
+    .slice(0, 5); // Changed from 3 to 5 to give a larger pool to choose from
     
   return {
     props: { 
