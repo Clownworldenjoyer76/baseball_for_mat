@@ -67,7 +67,7 @@ final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["pr
 # (since lower walk projections are favorable)
 final_expanded.loc[final_expanded["prop_type"] == "walks", "ultimate_z"] *= -1
 
-# Add the over_probability column
+# Add the over_probability column using the imported norm function
 final_expanded['over_probability'] = 1 - norm.cdf(final_expanded['ultimate_z'])
 
 # Round values for cleaner output
