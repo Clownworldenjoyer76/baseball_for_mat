@@ -1,0 +1,46 @@
+name: Run_Pitcher_Mega_Z
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run_pitcher_mega_z:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt unidecode
+
+      - name: Run pitcher_mega_z.py
+        run: |
+          python scripts/pitcher_mega_z.py
+
+      - name: Show Git Status and CSV Preview
+        run: |
+          echo "📂 Git Status:"
+          git status
+          echo "📁 Projection directory:"
+          ls -lh data/_projections
+          echo "🔍 CSV Preview:"
+          head -n 10 data/_projections/pitcher_props_z_expanded.csv
+
+      - name: Commit and Push pitcher_props_z_expanded.csv
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -f data/_projections/pitcher_props_z_expanded.csv || echo "File not found or unchanged"
+          git commit -m "Update pitcher_props_z_expanded.csv $(date)" || echo "Nothing to commit"
+          git push --force || echo "Nothing to push"
