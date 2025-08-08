@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import csv
 
 # File paths
 BATTER_PROPS_FILE = 'data/_projections/batter_props_z_expanded.csv'
@@ -21,7 +22,7 @@ def run_bet_tracker():
         print(f"Error: Required input file not found - {e}")
         return
 
-    # Identify date column in games_df
+    # Identify date column
     date_columns = ['date', 'Date', 'game_date']
     current_date_column = next((col for col in date_columns if col in games_df.columns), None)
     if not current_date_column:
@@ -30,12 +31,11 @@ def run_bet_tracker():
 
     current_date = games_df[current_date_column].iloc[0]
 
-    # --- Add bet_type column to batter and pitcher props ---
+    # Combine props to identify top 3
     batter_df['source'] = 'batter'
     pitcher_df['source'] = 'pitcher'
     combined = pd.concat([batter_df, pitcher_df], ignore_index=True)
 
-    # Identify top 3 props by over_probability
     top_props = combined.sort_values(by='over_probability', ascending=False).head(3)
     top_keys = set(zip(top_props['name'], top_props['team'], top_props['line'], top_props['prop_type']))
 
@@ -46,14 +46,13 @@ def run_bet_tracker():
     batter_df['bet_type'] = batter_df.apply(assign_bet_type, axis=1)
     pitcher_df['bet_type'] = pitcher_df.apply(assign_bet_type, axis=1)
 
-    # Pull the 3 best prop entries from batter/pitcher
     best_props_df = pd.concat([
         batter_df[batter_df['bet_type'] == 'Best Prop'],
         pitcher_df[pitcher_df['bet_type'] == 'Best Prop']
     ], ignore_index=True)
     best_players = best_props_df['name'].unique()
 
-    # --- Individual game props ---
+    # Gather individual game props
     individual_props_list = []
     games = games_df[['home_team', 'away_team']].drop_duplicates()
 
@@ -85,12 +84,24 @@ def run_bet_tracker():
 
     ensure_directory_exists(PLAYER_PROPS_OUT)
     if not os.path.exists(PLAYER_PROPS_OUT):
-        player_props_to_save.to_csv(PLAYER_PROPS_OUT, index=False, header=True)
+        player_props_to_save.to_csv(
+            PLAYER_PROPS_OUT,
+            index=False,
+            header=True,
+            quoting=csv.QUOTE_ALL
+        )
     else:
-        player_props_to_save.to_csv(PLAYER_PROPS_OUT, index=False, header=False, mode='a')
+        player_props_to_save.to_csv(
+            PLAYER_PROPS_OUT,
+            index=False,
+            header=False,
+            mode='a',
+            quoting=csv.QUOTE_ALL
+        )
 
-    # --- Game props section ---
+    # --- Game Props ---
     game_props_to_save = games_df[['date', 'home_team', 'away_team']].copy()
+
     game_props_to_save['favorite'] = games_df.apply(
         lambda row: row['home_team'] if row['home_score'] > row['away_score'] else row['away_team'], axis=1
     )
