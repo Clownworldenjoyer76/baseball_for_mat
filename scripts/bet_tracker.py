@@ -1,17 +1,13 @@
-# bet_tracker.py
-
 import pandas as pd
 import os
 
-# Define file paths
-# Input
+# File paths
 BATTER_PROPS_FILE = 'data/_projections/batter_props_z_expanded.csv'
 PITCHER_PROPS_FILE = 'data/_projections/pitcher_mega_z.csv'
 FINAL_SCORES_FILE = 'data/_projections/final_scores_projected.csv'
 
-# Output
-GAME_PROPS_OUT = 'data/bets/game_props_history.csv'
 PLAYER_PROPS_OUT = 'data/bets/player_props_history.csv'
+GAME_PROPS_OUT = 'data/bets/game_props_history.csv'
 
 def ensure_directory_exists(file_path):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -25,7 +21,7 @@ def run_bet_tracker():
         print(f"Error: Required input file not found - {e}")
         return
 
-    # Extract the date from final_scores_projected
+    # Get date column
     date_columns = ['date', 'Date', 'game_date']
     current_date_column = next((col for col in date_columns if col in games_df.columns), None)
 
@@ -35,15 +31,13 @@ def run_bet_tracker():
 
     current_date = games_df[current_date_column].iloc[0]
 
-    # Top 2 batters by over_probability
+    # --- Player Props ---
     best_batters = batter_df.sort_values(by='over_probability', ascending=False).head(2).copy()
     best_batters['prop_type'] = 'Best Prop'
 
-    # Top 1 pitcher by over_probability
     best_pitcher = pitcher_df.sort_values(by='over_probability', ascending=False).head(1).copy()
     best_pitcher['prop_type'] = 'Best Prop'
 
-    # Combine best props
     best_props_df = pd.concat([best_batters, best_pitcher], ignore_index=True)
     best_prop_players = best_props_df['name'].unique()
 
@@ -74,7 +68,7 @@ def run_bet_tracker():
     else:
         all_props = best_props_df
 
-    # Final player props output
+    # Add date and save player props
     all_props['date'] = current_date
     player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type']].copy()
     player_props_to_save['prop_correct'] = ''
@@ -85,15 +79,28 @@ def run_bet_tracker():
     else:
         player_props_to_save.to_csv(PLAYER_PROPS_OUT, index=False, header=False, mode='a')
 
-    # Final game props output
+    # --- Game Props ---
     game_props_to_save = games_df[['date', 'home_team', 'away_team']].copy()
+
     game_props_to_save['favorite'] = games_df.apply(
         lambda row: row['home_team'] if row['home_score'] > row['away_score'] else row['away_team'], axis=1
     )
-    game_props_to_save['projected_real_run_total'] = games_df['home_score'] + games_df['away_score']
     game_props_to_save['favorite_correct'] = ''
+    game_props_to_save['projected_real_run_total'] = (games_df['home_score'] + games_df['away_score']).round(2)
     game_props_to_save['actual_real_run_total'] = ''
     game_props_to_save['run_total_diff'] = ''
+
+    # Reorder columns to match schema exactly
+    game_props_to_save = game_props_to_save[[
+        'date',
+        'home_team',
+        'away_team',
+        'favorite',
+        'favorite_correct',
+        'projected_real_run_total',
+        'actual_real_run_total',
+        'run_total_diff'
+    ]]
 
     ensure_directory_exists(GAME_PROPS_OUT)
     if not os.path.exists(GAME_PROPS_OUT):
