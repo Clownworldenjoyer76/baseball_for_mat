@@ -28,19 +28,15 @@ jobs:
         run: |
           python scripts/pitcher_mega_z.py
 
-      - name: Show Git Status and CSV Preview
+      - name: Preview pitcher_mega_z.csv
         run: |
-          echo "📂 Git Status:"
-          git status
-          echo "📁 Projection directory:"
-          ls -lh data/_projections
-          echo "🔍 CSV Preview:"
-          head -n 10 data/_projections/pitcher_props_z_expanded.csv
+          echo "🔍 Previewing pitcher_mega_z.csv"
+          cat data/_projections/pitcher_mega_z.csv | head -n 10
 
-      - name: Commit and Push pitcher_props_z_expanded.csv
+      - name: Commit pitcher_mega_z.csv
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -f data/_projections/pitcher_props_z_expanded.csv || echo "File not found or unchanged"
-          git commit -m "Update pitcher_props_z_expanded.csv $(date)" || echo "Nothing to commit"
+          git add -f data/_projections/pitcher_mega_z.csv || echo "file missing or unchanged"
+          git commit -m "Update pitcher_mega_z.csv $(date)" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
