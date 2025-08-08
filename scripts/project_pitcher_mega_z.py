@@ -78,3 +78,8 @@ OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 final.to_csv(OUTPUT_FILE, index=False)
 
 print(f"✅ Wrote pitcher props to: {OUTPUT_FILE}")
+
+
+import os
+print("✅ File exists:", os.path.exists("data/_projections/pitcher_props_z_expanded.csv"))
+print("✅ Preview:\n", final.head())
