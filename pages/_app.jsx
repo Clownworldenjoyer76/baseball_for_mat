@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import '../styles/globals.css'; // Optional if used
+import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,7 +60,7 @@ function MyApp({ Component, pageProps }) {
             <nav style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <a href="/" onClick={closeMenu} style={linkStyle}>⚾ Home</a>
               <a href="/games" onClick={closeMenu} style={linkStyle}>📅 Games</a>
-              <a href="/bets" onClick={closeMenu} style={linkStyle}>💸 Bets</a>
+              <a href="/bets" onClick={closeMenu} style={linkStyle}>💸 Bet History</a>
             </nav>
           </div>
         </>
