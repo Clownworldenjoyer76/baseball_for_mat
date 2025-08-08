@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import GameCard from './GameCard';
-import TopPropsCard from './TopPropsCard'; // Import the new component
+import GameCard from './GameCard'; // Make sure this path is correct
+import TopPropsCard from './TopPropsCard'; // Make sure this path is correct
 
 function App() {
   const [gamesData, setGamesData] = useState([]);
   const [bestProps, setBestProps] = useState([]);
 
   useEffect(() => {
-    // In a real app, you would fetch your data here.
-    // This is example data for demonstration.
+    // This is where your app gets the data. This example uses fake data.
+    // In your real app, this would be a call to an API.
     const fetchedData = [
       {
         game_id: 1,
@@ -40,7 +40,7 @@ function App() {
 
     setGamesData(fetchedData);
 
-    // Logic to find the top 3 props
+    // This is the code that finds the top 3 props from all games.
     const allProps = fetchedData.flatMap(game => game.topProps);
     const sortedProps = allProps.sort((a, b) => b.probability - a.probability);
     const top3Props = sortedProps.slice(0, 3);
@@ -50,10 +50,10 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Add the new card at the top */}
+      {/* This line displays the new card at the very top. */}
       <TopPropsCard bestProps={bestProps} />
 
-      {/* Map over the games data to display the individual game cards */}
+      {/* These lines loop through all your games and display a GameCard for each one. */}
       {gamesData.map((game, index) => (
         <GameCard
           key={game.game_id}
