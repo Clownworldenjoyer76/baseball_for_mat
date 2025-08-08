@@ -116,16 +116,16 @@ export async function getStaticProps() {
       prop.team?.trim() === game.away_team.trim()
     );
 
-    // This function is now used for both batters and pitchers
     const formatProp = (prop, probability, type) => {
         const propTypeClean = prop.prop_type.replace(/_/g, ' ');
         const propTypeCapitalized = propTypeClean.charAt(0).toUpperCase() + propTypeClean.slice(1);
         return {
             name: formatPlayerName(prop.name),
+            team: prop.team, // Added team name here
             line: `${propTypeCapitalized} Over ${prop.line}`,
             playerId: prop.player_id,
             probability: probability,
-            type: type // Added type for sorting
+            type: type
         };
     };
 
