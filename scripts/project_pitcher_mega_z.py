@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from scipy.stats import zscore
+from scipy.stats import zscore, norm
 
 # Input files
 XTRA_FILE = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
@@ -67,12 +67,16 @@ final_expanded["ultimate_z"] = final_expanded.groupby(["prop_type", "line"])["pr
 # (since lower walk projections are favorable)
 final_expanded.loc[final_expanded["prop_type"] == "walks", "ultimate_z"] *= -1
 
+# Add the over_probability column
+final_expanded['over_probability'] = 1 - norm.cdf(final_expanded['ultimate_z'])
+
 # Round values for cleaner output
 final_expanded["ultimate_z"] = final_expanded["ultimate_z"].round(4)
 final_expanded["projection"] = final_expanded["projection"].round(3)
+final_expanded["over_probability"] = final_expanded["over_probability"].round(4)
 
 # Select and order final columns for the output file
-final_cols = ["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z"]
+final_cols = ["player_id", "name", "team", "prop_type", "line", "projection", "ultimate_z", "over_probability"]
 final = final_expanded[final_cols]
 final = final.sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
 
@@ -81,4 +85,3 @@ OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 final.to_csv(OUTPUT_FILE, index=False)
 
 print(f"✅ Wrote pitcher props to: {OUTPUT_FILE}")
-
