@@ -117,6 +117,9 @@ export async function getStaticProps() {
     );
 
     const formatProp = (prop, probability) => {
+        // This is a temporary line to check the raw data
+        console.log(`Raw probability for ${prop.name}: ${prop.over_probability}`);
+
         const propTypeClean = prop.prop_type.replace(/_/g, ' ');
         const propTypeCapitalized = propTypeClean.charAt(0).toUpperCase() + propTypeClean.slice(1);
         return {
