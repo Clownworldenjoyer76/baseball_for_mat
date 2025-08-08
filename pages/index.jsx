@@ -68,6 +68,13 @@ export async function getStaticProps() {
       return [];
     }
   };
+  
+  // Helper function to format player names from "Last, First" to "First Last"
+  const formatPlayerName = (name) => {
+    if (!name || !name.includes(',')) return name;
+    const parts = name.split(',');
+    return `${parts[1].trim()} ${parts[0].trim()}`;
+  };
 
   const dataDir = path.join(process.cwd(), 'data');
   const gamesList = parseCsv(path.join(dataDir, 'weather_adjustments.csv'));
@@ -76,7 +83,6 @@ export async function getStaticProps() {
   const pitcherProps = parseCsv(path.join(dataDir, '_projections', 'pitcher_mega_z.csv'));
 
   const gamesWithData = gamesList.map(game => {
-    // 1. PROJECTED SCORE LOGIC
     let projectedScore = null;
     const scoreEntry = scoresList.find(s =>
       s.home_team.trim() === game.home_team.trim() &&
@@ -90,18 +96,13 @@ export async function getStaticProps() {
       let awayRounded = Math.round(awayRaw);
 
       if (homeRounded === awayRounded) {
-        if (homeRaw > awayRaw) {
-          homeRounded++;
-        } else if (awayRaw > homeRaw) {
-          awayRounded++;
-        } else {
-          homeRounded++; // Absolute tie, home team wins
-        }
+        if (homeRaw > awayRaw) { homeRounded++; } 
+        else if (awayRaw > homeRaw) { awayRounded++; } 
+        else { homeRounded++; }
       }
       projectedScore = { home: homeRounded, away: awayRounded, total: (homeRaw + awayRaw).toFixed(2) };
     }
 
-    // 2. TOP PROPS LOGIC
     const gameBatters = batterProps.filter(prop => 
       prop.team?.trim() === game.home_team.trim() || 
       prop.team?.trim() === game.away_team.trim()
@@ -111,25 +112,25 @@ export async function getStaticProps() {
       prop.team?.trim() === game.away_team.trim()
     );
 
-    // Find top 2 batter props by 'over_probability'
+    const formatProp = (prop) => {
+        const propTypeClean = prop.prop_type.replace(/_/g, ' ');
+        const propTypeCapitalized = propTypeClean.charAt(0).toUpperCase() + propTypeClean.slice(1);
+        return {
+            name: formatPlayerName(prop.name),
+            line: `${propTypeCapitalized} Over ${prop.line}`,
+            playerId: prop.player_id
+        };
+    };
+
     const topBatterProps = gameBatters
       .sort((a, b) => (parseFloat(b.over_probability) || 0) - (parseFloat(a.over_probability) || 0))
       .slice(0, 2)
-      .map(prop => ({
-        name: prop.name,
-        line: `${prop.prop_type.replace(/_/g, ' ')} Over ${prop.line}`,
-        playerId: prop.player_id
-      }));
+      .map(formatProp);
 
-    // Find top 1 pitcher prop by 'z_score'
     const topPitcherProps = gamePitchers
       .sort((a, b) => (parseFloat(b.z_score) || 0) - (parseFloat(a.z_score) || 0))
       .slice(0, 1)
-      .map(prop => ({
-        name: prop.name,
-        line: `${prop.prop_type.replace(/_/g, ' ')} Over ${prop.line}`,
-        playerId: prop.player_id
-      }));
+      .map(formatProp);
 
     const topProps = [...topBatterProps, ...topPitcherProps];
 
