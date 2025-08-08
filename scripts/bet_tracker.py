@@ -32,13 +32,27 @@ def run_bet_tracker():
     current_date = games_df[current_date_column].iloc[0]
 
     # --- Player Props ---
-    best_batters = batter_df.sort_values(by='over_probability', ascending=False).head(2).copy()
-    best_batters['prop_type'] = 'Best Prop'
 
-    best_pitcher = pitcher_df.sort_values(by='over_probability', ascending=False).head(1).copy()
-    best_pitcher['prop_type'] = 'Best Prop'
+    # Combine and get top 3 props by over_probability
+    combined_props = pd.concat([batter_df, pitcher_df], ignore_index=True)
+    best_props = combined_props.sort_values(by='over_probability', ascending=False).head(3).copy()
+    best_keys = set(zip(best_props['name'], best_props['team'], best_props['line'], best_props['prop_type']))
 
-    best_props_df = pd.concat([best_batters, best_pitcher], ignore_index=True)
+    # Assign bet_type in source files
+    batter_df['bet_type'] = batter_df.apply(
+        lambda row: 'Best Prop' if (row['name'], row['team'], row['line'], row['prop_type']) in best_keys else 'Individual Game',
+        axis=1
+    )
+    pitcher_df['bet_type'] = pitcher_df.apply(
+        lambda row: 'Best Prop' if (row['name'], row['team'], row['line'], row['prop_type']) in best_keys else 'Individual Game',
+        axis=1
+    )
+
+    best_props_df = pd.concat([
+        batter_df[batter_df['bet_type'] == 'Best Prop'],
+        pitcher_df[pitcher_df['bet_type'] == 'Best Prop']
+    ], ignore_index=True)
+
     best_prop_players = best_props_df['name'].unique()
 
     individual_props_list = []
@@ -52,14 +66,12 @@ def run_bet_tracker():
             ((batter_df['team'] == home) | (batter_df['team'] == away)) &
             (~batter_df['name'].isin(best_prop_players))
         ].sort_values(by='over_probability', ascending=False).head(2)
-        game_batters['prop_type'] = 'Individual Game'
         individual_props_list.append(game_batters)
 
         game_pitchers = pitcher_df[
             ((pitcher_df['team'] == home) | (pitcher_df['team'] == away)) &
             (~pitcher_df['name'].isin(best_prop_players))
         ].sort_values(by='over_probability', ascending=False).head(1)
-        game_pitchers['prop_type'] = 'Individual Game'
         individual_props_list.append(game_pitchers)
 
     if individual_props_list:
@@ -68,9 +80,9 @@ def run_bet_tracker():
     else:
         all_props = best_props_df
 
-    # Add date and save player props
+    # Add date and output player props
     all_props['date'] = current_date
-    player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type']].copy()
+    player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
     player_props_to_save['prop_correct'] = ''
 
     ensure_directory_exists(PLAYER_PROPS_OUT)
@@ -90,7 +102,7 @@ def run_bet_tracker():
     game_props_to_save['actual_real_run_total'] = ''
     game_props_to_save['run_total_diff'] = ''
 
-    # Reorder columns to match schema exactly
+    # Enforce output order
     game_props_to_save = game_props_to_save[[
         'date',
         'home_team',
