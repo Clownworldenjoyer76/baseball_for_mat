@@ -34,7 +34,7 @@ function TopPropsCard({ bestProps }) {
       <div style={{ padding: '20px' }}>
         <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Today’s Best Props</h4>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-          {uniquePlayers.map((prop, index) => (
+          {uniquePlayers.slice(0, 3).map((prop, index) => (
             <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
               <img
                 alt={prop.name}
@@ -53,7 +53,6 @@ function TopPropsCard({ bestProps }) {
                 <div style={{ fontSize: '1em', display: 'flex', alignItems: 'center' }}>
                   {prop.name} <span role="img" aria-label="fire" style={{ marginLeft: '8px', fontSize: '1.2em' }}>🔥</span>
                 </div>
-                {/* New line for the player's team */}
                 <div style={{ fontSize: '0.8em', color: '#B0B0B0', marginTop: '4px' }}>
                   {prop.team}
                 </div>
