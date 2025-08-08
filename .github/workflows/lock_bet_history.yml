@@ -1,9 +1,6 @@
 name: Lock Bet History
 
 on:
-  schedule:
-    # This schedule runs every day at 11:59 PM
-    - cron: '59 23 * * *'
   workflow_dispatch:
 
 jobs:
@@ -25,7 +22,7 @@ jobs:
         pip install pandas
 
     - name: Run script to lock bet history
-      run: python lock_bet_history.py
+      run: python scripts/lock_bet_history.py
     
     - name: Commit and push changes
       run: |
