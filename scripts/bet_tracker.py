@@ -31,12 +31,18 @@ def run_bet_tracker():
 
     current_date = games_df[current_date_column].iloc[0]
 
-    # Combine props to identify top 3
+    # Combine batter + pitcher props to select top 3
     batter_df['source'] = 'batter'
     pitcher_df['source'] = 'pitcher'
     combined = pd.concat([batter_df, pitcher_df], ignore_index=True)
 
-    top_props = combined.sort_values(by='over_probability', ascending=False).head(3)
+    # ✅ Sanity filter: remove junk projections
+    filtered = combined[
+        (combined['over_probability'] < 0.98) &
+        (combined['projection'] > 0.2)
+    ]
+
+    top_props = filtered.sort_values(by='over_probability', ascending=False).head(3)
     top_keys = set(zip(top_props['name'], top_props['team'], top_props['line'], top_props['prop_type']))
 
     def assign_bet_type(row):
@@ -52,7 +58,7 @@ def run_bet_tracker():
     ], ignore_index=True)
     best_players = best_props_df['name'].unique()
 
-    # Gather individual game props
+    # --- Individual props per game ---
     individual_props_list = []
     games = games_df[['home_team', 'away_team']].drop_duplicates()
 
@@ -77,7 +83,7 @@ def run_bet_tracker():
     else:
         all_props = best_props_df.copy()
 
-    # Add date and write player props
+    # Add date and export player props
     all_props['date'] = current_date
     player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
     player_props_to_save['prop_correct'] = ''
@@ -99,9 +105,8 @@ def run_bet_tracker():
             quoting=csv.QUOTE_ALL
         )
 
-    # --- Game Props ---
+    # --- Game props ---
     game_props_to_save = games_df[['date', 'home_team', 'away_team']].copy()
-
     game_props_to_save['favorite'] = games_df.apply(
         lambda row: row['home_team'] if row['home_score'] > row['away_score'] else row['away_team'], axis=1
     )
