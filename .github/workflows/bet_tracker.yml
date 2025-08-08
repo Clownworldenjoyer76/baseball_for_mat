@@ -1,32 +1,23 @@
-# bet_tracker_workflow.yml
-
 name: Run Bet Tracker
 
 on:
   workflow_dispatch:
-  # To run on a schedule, uncomment the following lines and set a cron schedule
-  # schedule:
-  #   - cron: '0 12 * * *' # Example: Runs every day at 12:00 PM UTC
 
 jobs:
   run-bet-tracker:
-    name: Run Daily Bet Tracker
+    name: Daily Bet Tracker
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository's files
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      # Step 2: Install the necessary Python library (pandas)
       - name: Install Dependencies
         run: pip install pandas
 
-      # Step 3: Run your script
       - name: Execute Script
         run: python bet_tracker.py
 
-      # Step 4: Commit and push the updated files to the repository
       - name: Commit and Push Changes
         run: |
           git config --global user.name "Your Name"
