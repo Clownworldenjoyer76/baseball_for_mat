@@ -1,22 +1,38 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
-// Renamed props to lowercase to match standard convention
 function GameCard({ game, topProps, projectedScore, animationDelay }) {
+  const [autoProps, setAutoProps] = useState([]);
+
   const getLogoUrl = (teamName) => {
     if (!teamName) return '/images/default_logo.png';
     const imageName = teamName.toLowerCase().replace(/\s+/g, '');
     return `/logos/${imageName}.png`;
   };
-
   const getHeadshotUrl = (playerId) => {
     if (!playerId) return '/images/default_player.png';
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
-  // Add a check to ensure 'game' exists before rendering
-  if (!game) {
-    return null;
-  }
+  // fetch top props for this game if not provided
+  useEffect(() => {
+    let cancel = false;
+    if (!game || (Array.isArray(topProps) && topProps.length)) return;
+    (async () => {
+      try {
+        const params = new URLSearchParams({ home: game.home_team, away: game.away_team });
+        const r = await fetch(`/api/game-top-props?${params.toString()}`, { cache: 'no-store' });
+        const data = r.ok ? await r.json() : [];
+        if (!cancel) setAutoProps(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancel) setAutoProps([]);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [game, topProps]);
+
+  if (!game) return null;
+
+  const propsToShow = (Array.isArray(topProps) && topProps.length) ? topProps : autoProps;
 
   return (
     <div 
@@ -68,25 +84,18 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
       </div>
 
       <div style={{ padding: '20px', borderTop: '1px solid #2F2F30' }}>
-        {/* Use the lowercase prop name here */}
-        {Array.isArray(topProps) && topProps.length > 0 && (
+        {/* Top Props */}
+        {Array.isArray(propsToShow) && propsToShow.length > 0 && (
           <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #2F2F30' }}>
             <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Top Props</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-              {topProps.map((prop, index) => (
-                <li key={prop?.playerId || index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+              {propsToShow.map((prop, index) => (
+                <li key={prop?.playerId || prop?.name || index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                   <img
                     alt={prop?.name}
                     src={getHeadshotUrl(prop?.playerId)}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
-                    style={{
-                      height: '50px',
-                      width: '50px',
-                      borderRadius: '50%',
-                      marginRight: '15px',
-                      backgroundColor: '#2F2F30',
-                      objectFit: 'cover'
-                    }}
+                    style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#2F2F30', objectFit: 'cover' }}
                   />
                   <div>
                     <div style={{ fontSize: '1em' }}>{prop?.name}</div>
@@ -98,7 +107,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
         )}
 
-        {/* Use the lowercase prop name here */}
+        {/* Projected Score (unchanged) */}
         {projectedScore && typeof projectedScore === 'object' && (
           <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
             <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#D4AF37' }}>Projected Score</h4>
