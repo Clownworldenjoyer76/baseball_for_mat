@@ -1,6 +1,7 @@
 // components/GameCard.jsx
 import React, { useEffect, useState } from 'react';
 
+// Renamed props to lowercase to match standard convention
 function GameCard({ game, topProps, projectedScore, animationDelay }) {
   const [autoProps, setAutoProps] = useState([]);
   const [autoProj, setAutoProj] = useState(null);
@@ -16,6 +17,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
+  // Load Top Props (prefer API)
   useEffect(() => {
     let cancel = false;
     if (!game) return;
@@ -24,7 +26,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
         const params = new URLSearchParams({
           home: game.home_team || '',
           away: game.away_team || '',
-          t: String(Date.now()),
+          t: String(Date.now())
         });
         const r = await fetch(`/api/game-top-props?${params.toString()}`, { cache: 'no-store' });
         const data = r.ok ? await r.json() : [];
@@ -36,6 +38,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     return () => { cancel = true; };
   }, [game?.home_team, game?.away_team]);
 
+  // Load Projected Score from game_props_history.csv via API
   useEffect(() => {
     let cancel = false;
     if (!game) return;
@@ -44,7 +47,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
         const params = new URLSearchParams({
           home: game.home_team || '',
           away: game.away_team || '',
-          t: String(Date.now()),
+          t: String(Date.now())
         });
         const r = await fetch(`/api/game-projection?${params.toString()}`, { cache: 'no-store' });
         const data = r.ok ? await r.json() : null;
@@ -56,6 +59,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     return () => { cancel = true; };
   }, [game?.home_team, game?.away_team]);
 
+  // Prefer API results over any passed-in props
   const propsToShow = (autoProps && autoProps.length)
     ? autoProps
     : (Array.isArray(topProps) ? topProps : []);
@@ -66,23 +70,32 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
 
   if (!game) return null;
 
+  const toFirstLast = (lastFirst) => {
+    if (!lastFirst) return '';
+    const s = String(lastFirst).trim();
+    if (!s.includes(',')) return s;
+    const [last, rest] = [s.split(',')[0], s.split(',').slice(1).join(',')];
+    const first = (rest || '').trim().split(/\s+/)[0] || '';
+    return [first, last].filter(Boolean).join(' ');
+  };
+
   const prettifyPropType = (t) =>
     t ? String(t).replace(/_/g,' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
 
-  const renderLine = (prop) => {
-    // Support either 'line' from API or prop_line/prop_type combo
-    if (prop?.line) return prop.line;
-    if (prop?.prop_line) return `${prettifyPropType(prop.prop_type)} Over ${prop.prop_line}`;
-    return '';
+  const lineText = (prop) => {
+    if (!prop) return '';
+    const type = prettifyPropType(prop.prop_type);
+    const ln = prop.line ?? prop.prop_line;
+    return ln != null && ln !== '' ? `${type} Over ${ln}` : type;
   };
 
   return (
-    <div
-      className="fade-in-card card-interactive"
-      style={{
+    <div 
+      className="fade-in-card card-interactive" 
+      style={{ 
         backgroundColor: '#1C1C1E',
-        margin: '20px 0',
-        borderRadius: '12px',
+        margin: '20px 0', 
+        borderRadius: '12px', 
         overflow: 'hidden',
         animationDelay: animationDelay,
         border: '1px solid #2F2F30'
@@ -90,9 +103,9 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     >
       <div style={{ padding: '20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <img
-            src={getLogoUrl(game.away_team)}
-            alt={`${game.away_team} logo`}
+          <img 
+            src={getLogoUrl(game.away_team)} 
+            alt={`${game.away_team} logo`} 
             style={{ height: '40px', width: 'auto' }}
             onError={(e) => { e.target.onerror = null; e.target.src='/images/default_logo.png'; }}
           />
@@ -101,9 +114,9 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
             <p style={{ margin: '4px 0', fontSize: '0.8em', color: '#B0B0B0' }}>at</p>
             <h2 style={{ margin: 0, fontSize: '1.2em', color: '#E0E0E0' }}>{game.home_team}</h2>
           </div>
-          <img
-            src={getLogoUrl(game.home_team)}
-            alt={`${game.home_team} logo`}
+          <img 
+            src={getLogoUrl(game.home_team)} 
+            alt={`${game.home_team} logo`} 
             style={{ height: '40px', width: 'auto' }}
             onError={(e) => { e.target.onerror = null; e.target.src='/images/default_logo.png'; }}
           />
@@ -132,14 +145,14 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
             <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Top Props</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
               {propsToShow.map((prop, index) => {
-                const pid = prop?.player_id || prop?.playerId; // <-- accept either key
-                const name = prop?.name || prop?.player_name;
+                const pid = prop?.playerId || prop?.player_id; // <-- accept either key
+                const nm  = toFirstLast(prop?.name || prop?.player_name);
                 return (
-                  <li key={pid || name || index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                  <li key={pid || nm || index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                     <img
-                      alt={name}
+                      alt={nm}
                       src={getHeadshotUrl(pid)}
-                      onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
+                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/default_player.png'; }}
                       style={{
                         height: '50px',
                         width: '50px',
@@ -150,8 +163,8 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
                       }}
                     />
                     <div>
-                      <div style={{ fontSize: '1em' }}>{name}</div>
-                      <div style={{ fontSize: '0.9em', color: '#B0B0B0' }}>{renderLine(prop)}</div>
+                      <div style={{ fontSize: '1em' }}>{nm}</div>
+                      <div style={{ fontSize: '0.9em', color: '#B0B0B0' }}>{lineText(prop)}</div>
                     </div>
                   </li>
                 );
