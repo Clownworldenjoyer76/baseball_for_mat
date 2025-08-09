@@ -35,81 +35,96 @@ def _as_float(s):
 
 def _explode_pitcher_props(pitcher_df_raw: pd.DataFrame) -> pd.DataFrame:
     """
-    Normalize/expand pitcher model rows into standardized bet rows:
+    Normalize pitcher props into standardized rows:
       name, team, prop_type, line, over_probability, projection, player_id
-    Supports common variants for Ks and Walks (allowed).
+
+    Works with BOTH:
+      1) Long/narrow files already on a per-prop basis (your current pitcher_mega_z.csv)
+      2) Wide files (fallbacks for k_line/bb_line etc.)
     """
+    import numpy as np
     if pitcher_df_raw is None or pitcher_df_raw.empty:
         return pd.DataFrame(columns=['name','team','prop_type','line','over_probability','projection','player_id'])
 
     df = pitcher_df_raw.copy()
+    df.columns = [c.strip() for c in df.columns]
 
-    # normalize typical id/name/team columns
+    # --- CASE 1: already long (preferred path) ---
+    long_cols = {'name','team','prop_type','line','over_probability'}
+    if long_cols.issubset(set(df.columns)):
+        out = df[list(long_cols | {'player_id','projection','mega_z'})].copy()
+
+        # standardize prop_type naming for UI
+        out['prop_type'] = (
+            out['prop_type']
+            .astype(str).str.strip().str.lower()
+            .map({'strikeouts': 'pitcher_strikeouts', 'walks': 'walks_allowed'})
+            .fillna(out['prop_type'])
+        )
+
+        # coerce numerics
+        out['line'] = pd.to_numeric(out['line'], errors='coerce')
+        out['over_probability'] = pd.to_numeric(out['over_probability'], errors='coerce')
+
+        # ensure a projection exists (prefer 'projection', else |mega_z|, else 1.0)
+        if 'projection' not in out.columns:
+            out['projection'] = pd.NA
+        out['projection'] = pd.to_numeric(out['projection'], errors='coerce')
+        if 'mega_z' in out.columns:
+            out['projection'] = out['projection'].fillna(pd.to_numeric(out['mega_z'], errors='coerce').abs())
+        out['projection'] = out['projection'].fillna(1.0)
+
+        out['player_id'] = out.get('player_id', '').astype(str).str.strip()
+
+        out = out[['name','team','prop_type','line','over_probability','projection','player_id']]
+        out = out.dropna(subset=['name','team','prop_type','line','over_probability','projection'])
+        return out
+
+    # --- CASE 2: wide (fallback – older format) ---
     c_id   = _first_col(df, ['player_id','mlb_id','id'])
     c_name = _first_col(df, ['name','player_name','last_name, first_name','full_name'])
     c_team = _first_col(df, ['team','team_name','team_code'])
 
-    # ---- Strikeouts (Ks) ----
+    # Strikeouts
     c_k_line = _first_col(df, ['k_line','strikeouts_line','ks_line','pitcher_strikeouts_line','line_k'])
     c_k_prob = _first_col(df, ['k_over_prob','k_over_probability','strikeouts_over_prob',
                                'over_probability_k','over_probability_strikeouts','prob_k_over'])
-    c_k_proj = _first_col(df, ['k_projection','strikeouts_projection','projection_k','k_proj'])
+    c_k_proj = _first_col(df, ['k_projection','strikeouts_projection','projection_k','k_proj','mega_z'])
 
-    k_rows = []
+    parts = []
     if c_k_line:
         sub = df[[col for col in [c_name, c_team, c_k_line, c_k_prob, c_k_proj, c_id] if col]].copy()
         sub.rename(columns={
-            c_name: 'name',
-            c_team: 'team',
-            c_k_line: 'line',
-            c_k_prob: 'over_probability',
-            c_k_proj: 'projection',
-            c_id: 'player_id'
+            c_name:'name', c_team:'team', c_k_line:'line',
+            c_k_prob:'over_probability', c_k_proj:'projection', c_id:'player_id'
         }, inplace=True)
         sub['prop_type'] = 'pitcher_strikeouts'
-        k_rows.append(sub)
+        parts.append(sub)
 
-    # ---- Walks Allowed (BB) ----
+    # Walks Allowed
     c_bb_line = _first_col(df, ['bb_line','walks_line','walks_allowed_line','pitcher_walks_allowed_line','line_bb'])
     c_bb_prob = _first_col(df, ['bb_over_prob','walks_over_prob','walks_allowed_over_prob',
                                 'over_probability_bb','over_probability_walks','prob_bb_over'])
-    c_bb_proj = _first_col(df, ['bb_projection','walks_projection','walks_allowed_projection','projection_bb','bb_proj'])
+    c_bb_proj = _first_col(df, ['bb_projection','walks_projection','walks_allowed_projection','projection_bb','bb_proj','mega_z'])
 
-    bb_rows = []
     if c_bb_line:
         sub = df[[col for col in [c_name, c_team, c_bb_line, c_bb_prob, c_bb_proj, c_id] if col]].copy()
         sub.rename(columns={
-            c_name: 'name',
-            c_team: 'team',
-            c_bb_line: 'line',
-            c_bb_prob: 'over_probability',
-            c_bb_proj: 'projection',
-            c_id: 'player_id'
+            c_name:'name', c_team:'team', c_bb_line:'line',
+            c_bb_prob:'over_probability', c_bb_proj:'projection', c_id:'player_id'
         }, inplace=True)
         sub['prop_type'] = 'walks_allowed'
-        bb_rows.append(sub)
+        parts.append(sub)
 
-    pieces = []
-    if k_rows: pieces.append(pd.concat(k_rows, ignore_index=True))
-    if bb_rows: pieces.append(pd.concat(bb_rows, ignore_index=True))
-    if not pieces:
+    if not parts:
         return pd.DataFrame(columns=['name','team','prop_type','line','over_probability','projection','player_id'])
 
-    out = pd.concat(pieces, ignore_index=True)
-
-    # Coerce numeric fields and drop rows missing essentials
-    out['line'] = out['line'].apply(_as_float)
-    out['over_probability'] = out['over_probability'].apply(_as_float)
-    out['projection'] = out['projection'].apply(_as_float)
-
-    out = out[out['name'].astype(str).str.strip().ne('')]
-    out = out[out['team'].astype(str).str.strip().ne('')]
-    out = out[out['line'].apply(lambda x: x is not None)]
-    out = out[out['over_probability'].apply(lambda x: x is not None)]
-    out = out[out['projection'].apply(lambda x: x is not None)]
-
+    out = pd.concat(parts, ignore_index=True)
+    out['line'] = pd.to_numeric(out['line'], errors='coerce')
+    out['over_probability'] = pd.to_numeric(out['over_probability'], errors='coerce')
+    out['projection'] = pd.to_numeric(out['projection'], errors='coerce').fillna(1.0)
     out['player_id'] = out.get('player_id', '').astype(str).str.strip()
-
+    out = out.dropna(subset=['name','team','prop_type','line','over_probability','projection'])
     return out[['name','team','prop_type','line','over_probability','projection','player_id']]
 
 def run_bet_tracker():
@@ -195,7 +210,7 @@ def run_bet_tracker():
     best_players_props = set(zip(best_props_df["name"], best_props_df["prop_type"]))
 
     # ---- Remaining → per-game Individual Game props ----
-    # FIXED filter: exclude already-picked (name, prop_type) tuples
+    # Exclude already-picked (name, prop_type) tuples
     remaining = combined[~combined.apply(lambda r: (r["name"], r["prop_type"]) in best_players_props, axis=1)]
 
     games_df = games_df.drop_duplicates(subset=["home_team", "away_team"])
