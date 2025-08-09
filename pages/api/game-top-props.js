@@ -37,52 +37,49 @@ export default function handler(req,res){
     const away = (req.query.away||'').trim().toLowerCase();
     if(!home || !away) return res.status(400).json({error:'Missing ?home= and ?away='});
 
-    // Read required CSVs
     const root = process.cwd();
     const playersCsv = path.join(root,'data','bets','player_props_history.csv');
-    const gamesCsv   = path.join(root,'data','bets','game_props_history.csv'); // not used yet, but available
-    const players = parseCSV(playersCsv);
-    parseCSV(gamesCsv); // parsed for future use; no-op here
+    const { headers, rows } = parseCSV(playersCsv);
+    if(!rows.length) return res.status(200).json([]);
 
-    // Build lowercase header map
-    const H = players.headers.map(h=>h.toLowerCase());
-    const iBet  = H.indexOf('bet_type');
+    // Build lowercase header map (supports your known columns)
+    const H = headers.map(h=>h.toLowerCase());
     const iName = H.findIndex(h=>['player_name','name','last_name, first_name'].includes(h));
     const iTeam = H.findIndex(h=>['team','team_code','team_name'].includes(h));
     const iType = H.findIndex(h=>['prop_type','market','bet'].includes(h));
     const iLine = H.findIndex(h=>['prop_line','line','threshold','total','number'].includes(h));
-    if(iBet===-1 || iName===-1 || iTeam===-1) {
-      return res.status(500).json({error:'Expected columns not found in player_props_history.csv', headers: players.headers});
+    if(iName===-1 || iTeam===-1) {
+      return res.status(500).json({error:'Expected columns not found in player_props_history.csv', headers});
     }
 
-    // Filter: this game’s teams + Best Prop
-    const best = players.rows.filter(r=>{
-      const team = (r[players.headers[iTeam]]||'').trim().toLowerCase();
-      const bet  = (r[players.headers[iBet]] || '').trim().toLowerCase();
-      return bet === 'best prop' && (team === home || team === away);
+    // Filter by team ONLY (first 3 in file order = highest probability)
+    const filtered = rows.filter(r=>{
+      const team = (r[headers[iTeam]]||'').trim().toLowerCase();
+      return team === home || team === away;
     });
 
-    // Map for card (name First Last, "Prop Over N")
-    const mapped = best.map(r=>{
-      const rawName = r[players.headers[iName]] || '';
-      const team    = r[players.headers[iTeam]] || '';
-      const type    = r[players.headers[iType]] || '';
-      const line    = r[players.headers[iLine]] || '';
+    // Map to card shape
+    const mapped = filtered.map(r=>{
+      const rawName = r[headers[iName]] || '';
+      const team    = r[headers[iTeam]] || '';
+      const type    = iType>-1 ? r[headers[iType]] : '';
+      const line    = iLine>-1 ? r[headers[iLine]] : '';
       return {
-        playerId: '', // no id here (headshot fallback), can add later if needed
+        playerId: '', // no ID mapping here
         name: toFirstLast(rawName),
         team,
         line: line ? `${prettify(type)} Over ${line}` : prettify(type),
       };
     });
 
-    // Dedupe by name; take top 3 (file order)
+    // Dedupe by name; take first 3
     const out=[], seen=new Set();
     for(const m of mapped){
       const k = m.name || m.team+m.line;
       if(!seen.has(k)){ seen.add(k); out.push(m); }
       if(out.length===3) break;
     }
+
     return res.status(200).json(out);
   }catch(e){
     return res.status(500).json({error:e.message||'Failed'});
