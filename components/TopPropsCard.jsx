@@ -23,7 +23,7 @@ export default function TopPropsCard() {
     let cancel = false;
     (async () => {
       try {
-        const r = await fetch('/api/best-props', { cache: 'no-store' });
+        const r = await fetch('/api/best-props?t=' + Date.now(), { cache: 'no-store' });
         const data = r.ok ? await r.json() : [];
         if (!cancel) setRows(Array.isArray(data) ? data.slice(0, 3) : []);
       } catch {
@@ -55,15 +55,16 @@ export default function TopPropsCard() {
         ) : (
           <ul style={{ listStyle:'none', padding:0, margin:0, color:'#E0E0E0' }}>
             {rows.map((r, i) => {
-              const name = toFirstLast(r.player_name);
-              const line = r.prop_line
+              const name = toFirstLast(r.player_name || r.name);
+              const lineTxt = r.prop_line
                 ? `${prettifyPropType(r.prop_type)} Over ${r.prop_line}`
                 : prettifyPropType(r.prop_type);
+              const pid = r.player_id || r.playerId; // <-- accept either key
               return (
-                <li key={i} style={{ display:'flex', alignItems:'center', marginBottom:15 }}>
+                <li key={pid || name || i} style={{ display:'flex', alignItems:'center', marginBottom:15 }}>
                   <img
                     alt={name}
-                    src={headshot(r.playerId)}
+                    src={headshot(pid)}
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/default_player.png'; }}
                     style={{ height:50, width:50, borderRadius:'50%', marginRight:15, backgroundColor:'#2F2F30', objectFit:'cover' }}
                   />
@@ -72,7 +73,7 @@ export default function TopPropsCard() {
                       {name} <span style={{ marginLeft:8, fontSize:'1.2em' }}>🔥</span>
                     </div>
                     <div style={{ fontSize:12, color:'#B0B0B0', marginTop:4 }}>{r.team}</div>
-                    <div style={{ fontSize:14, color:'#E0E0E0', marginTop:4 }}>{line}</div>
+                    <div style={{ fontSize:14, color:'#E0E0E0', marginTop:4 }}>{lineTxt}</div>
                   </div>
                 </li>
               );
