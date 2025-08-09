@@ -59,7 +59,7 @@ export default function TopPropsCard() {
               const lineTxt = r.prop_line
                 ? `${prettifyPropType(r.prop_type)} Over ${r.prop_line}`
                 : prettifyPropType(r.prop_type);
-              const pid = r.player_id || r.playerId; // <-- accept either key
+              const pid = r.playerId || r.player_id; // <-- accept either key
               return (
                 <li key={pid || name || i} style={{ display:'flex', alignItems:'center', marginBottom:15 }}>
                   <img
