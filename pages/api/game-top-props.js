@@ -32,6 +32,11 @@ const toFirstLast = (lastFirst)=>{
 const prettify = (t)=> String(t||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 
 export default function handler(req,res){
+  // ✅ Cache‑busting headers (Vercel + browser)
+  res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+
   try{
     const home = (req.query.home||'').trim().toLowerCase();
     const away = (req.query.away||'').trim().toLowerCase();
@@ -52,7 +57,7 @@ export default function handler(req,res){
       return res.status(500).json({error:'Expected columns not found in player_props_history.csv', headers});
     }
 
-    // Filter by team ONLY (first 3 in file order = highest probability)
+    // ✅ Filter ONLY by team; take first 3 in file order (highest probability)
     const filtered = rows.filter(r=>{
       const team = (r[headers[iTeam]]||'').trim().toLowerCase();
       return team === home || team === away;
@@ -65,7 +70,7 @@ export default function handler(req,res){
       const type    = iType>-1 ? r[headers[iType]] : '';
       const line    = iLine>-1 ? r[headers[iLine]] : '';
       return {
-        playerId: '', // no ID mapping here
+        playerId: '', // (optional) add mapping later
         name: toFirstLast(rawName),
         team,
         line: line ? `${prettify(type)} Over ${line}` : prettify(type),
