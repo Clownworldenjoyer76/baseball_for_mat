@@ -2,77 +2,44 @@ name: Score Bets (MLB API)
 
 on:
   workflow_dispatch:
-    inputs:
-      date:
-        description: "Date to score (YYYY-MM-DD). Leave blank = yesterday."
-        required: false
-        type: string
-
-permissions:
-  contents: write
-
-env:
-  MLB_API_BASE: "https://statsapi.mlb.com/api/v1"
 
 jobs:
   score-bets:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: '3.10'
 
       - name: Install deps
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt
 
-      - name: Compute target date (default = yesterday)
-        id: dates
-        shell: bash
-        run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            D="${{ github.event.inputs.date }}"
-          else
-            D="$(date -u -d 'yesterday' +%Y-%m-%d)"
-          fi
-          echo "date=$D" >> "$GITHUB_OUTPUT"
-          echo "Using date: $D"
+      - name: Compute target date (yesterday)
+        id: get-date
+        run: echo "date=$(date -d 'yesterday' +%F)" >> $GITHUB_ENV
 
-      - name: Score GAME bets (range=that day via MLB API)
-        shell: bash
+      - name: Score GAME bets (that day via MLB API)
         run: |
           python scripts/score_game_bets_range.py \
-            --api "$MLB_API_BASE" \
-            --start "${{ steps.dates.outputs.date }}" \
-            --end   "${{ steps.dates.outputs.date }}"
+            --date ${{ env.date }} \
+            --api "MLB_API_BASE"
 
       - name: Score PLAYER bets (MLB API)
-        shell: bash
         run: |
           python scripts/score_player_bets.py \
-            --api "$MLB_API_BASE" \
-            --date "${{ steps.dates.outputs.date }}" || \
-          python scripts/score_player_bets.py \
-            --api "$MLB_API_BASE" \
-            --start "${{ steps.dates.outputs.date }}" \
-            --end "${{ steps.dates.outputs.date }}"
+            --date ${{ env.date }} \
+            --api "MLB_API_BASE"
 
       - name: Commit and push results
-        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "Score bets for ${{ steps.dates.outputs.date }}"
-            git push
-          fi
+          git add data/bets/bet_history/*.csv
+          git commit -m "Scored bets for ${{ env.date }}" || echo "No changes to commit"
+          git push
