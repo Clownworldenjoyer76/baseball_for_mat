@@ -49,22 +49,22 @@ jobs:
         run: |
           python scripts/score_game_bets_range.py \
             --date "${{ env.DATE }}" \
-            --api "https://statsapi.mlb.com/api/v1"
+            --api "https://statsapi.mlb.com/api/v1/schedule"
 
       - name: Score PLAYER bets (MLB API)
         run: |
           python scripts/score_player_bets.py \
             --date "${{ env.DATE }}" \
-            --api "https://statsapi.mlb.com/api/v1" || \
+            --api "https://statsapi.mlb.com/api/v1/schedule" || \
           python scripts/score_player_bets.py \
-            --api "https://statsapi.mlb.com/api/v1" \
+            --api "https://statsapi.mlb.com/api/v1/schedule" \
             --start "${{ env.DATE }}" --end "${{ env.DATE }}"
 
       - name: Commit and push results
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/bets/**/*.csv data/bets/bet_history/**/*.csv || true
+          git add data/bets
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
