@@ -1,44 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import Papa from 'papaparse';
+import React from 'react';
 
-function TopPropsCard() {
-  const [bestProps, setBestProps] = useState([]);
-
-  useEffect(() => {
-    const fetchProps = async () => {
-      try {
-        const response = await fetch('/data/bets/player_props_history.csv');
-        const csvText = await response.text();
-
-        const parsedData = Papa.parse(csvText, { header: true, dynamicTyping: true }).data;
-
-        // Get today's date in YYYY-MM-DD format
-        const today = new Date().toISOString().slice(0, 10);
-
-        // Filter the data for today's date and "Best Prop"
-        const filteredData = parsedData.filter(
-          (row) => row.date === today && row.bet_type === 'Best Prop'
-        );
-
-        // Logic to only show each player once
-        const uniquePlayers = [];
-        const playerIds = new Set();
-        filteredData.forEach(prop => {
-          if (!playerIds.has(prop.playerId)) {
-            playerIds.add(prop.playerId);
-            uniquePlayers.push(prop);
-          }
-        });
-
-        setBestProps(uniquePlayers);
-      } catch (error) {
-        console.error('Failed to fetch or parse CSV:', error);
-      }
-    };
-
-    fetchProps();
-  }, []);
-
+function TopPropsCard({ bestProps }) {
   const getHeadshotUrl = (playerId) => {
     if (!playerId) return '/images/default_player.png';
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
@@ -47,6 +9,16 @@ function TopPropsCard() {
   if (!bestProps || bestProps.length === 0) {
     return null;
   }
+
+  // Logic to only show each player once
+  const uniquePlayers = [];
+  const playerIds = new Set();
+  bestProps.forEach(prop => {
+    if (!playerIds.has(prop.playerId)) {
+      playerIds.add(prop.playerId);
+      uniquePlayers.push(prop);
+    }
+  });
 
   return (
     <div
@@ -62,7 +34,7 @@ function TopPropsCard() {
       <div style={{ padding: '20px' }}>
         <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Today’s Best Props</h4>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-          {bestProps.slice(0, 3).map((prop, index) => (
+          {uniquePlayers.slice(0, 3).map((prop, index) => (
             <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
               <img
                 alt={prop.name}
