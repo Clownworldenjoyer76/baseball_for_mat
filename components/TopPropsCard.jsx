@@ -1,33 +1,39 @@
+// components/TopPropsCard.jsx
 import React, { useEffect, useState } from 'react';
 
-function TopPropsCard({ bestProps }) {
-  const [rows, setRows] = useState(bestProps || []);
-  const [ready, setReady] = useState(!!bestProps);
+export default function TopPropsCard() {
+  const [rows, setRows] = useState([]);
+  const [ready, setReady] = useState(false);
 
-  // Tiny CSV parser (handles quotes)
+  // Minimal CSV parser with quoted-field support
   const parseCSV = (text) => {
     const lines = text.trim().split(/\r?\n/);
     if (!lines.length) return [];
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-    return lines.slice(1).map(line => {
-      const cols = [];
-      let cur = '', inQ = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; continue; }
-        if (ch === '"') { inQ = !inQ; continue; }
-        if (ch === ',' && !inQ) { cols.push(cur); cur = ''; continue; }
-        cur += ch;
-      }
-      cols.push(cur);
+    const headers = splitCSVLine(lines[0]).map(h => h.trim().replace(/^"|"$/g, ''));
+    return lines.slice(1).map((line) => {
+      const cols = splitCSVLine(line).map(c => c.trim().replace(/^"|"$/g, ''));
       const obj = {};
-      headers.forEach((h, i) => { obj[h] = (cols[i] ?? '').trim().replace(/^"|"$/g, ''); });
+      headers.forEach((h, i) => (obj[h] = cols[i] ?? ''));
       return obj;
     });
   };
 
+  const splitCSVLine = (line) => {
+    const cols = [];
+    let cur = '';
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; continue; }
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { cols.push(cur); cur = ''; continue; }
+      cur += ch;
+    }
+    cols.push(cur);
+    return cols;
+  };
+
   useEffect(() => {
-    if (bestProps) return; // use provided data
     let cancel = false;
     (async () => {
       try {
@@ -36,29 +42,25 @@ function TopPropsCard({ bestProps }) {
         const text = await res.text();
         const all = parseCSV(text);
 
-        // Filter where bet_type === "Best Prop"
-        const filtered = all.filter(r => (r.bet_type || r.betType) === 'Best Prop');
-
-        // Sort if helpful columns exist (else keep file order)
-        const sorted = [...filtered].sort((a, b) => {
-          const keys = ['probability', 'edge', 'value', 'mega_z', 'z_score'];
-          for (const k of keys) {
-            const av = parseFloat(a[k]);
-            const bv = parseFloat(b[k]);
-            if (!Number.isNaN(av) && !Number.isNaN(bv) && av !== bv) return bv - av;
-          }
-          return 0;
+        // Normalize keys to lowercase for robust access
+        const rowsNorm = all.map(r => {
+          const obj = {};
+          Object.keys(r).forEach(k => obj[k.toLowerCase()] = r[k]);
+          return obj;
         });
 
-        // Map to the fields this card expects
-        const mapped = sorted.map(r => ({
-          playerId: r.player_id || r.playerId || '',
-          name: r.name || '',
-          team: r.team || r.team_code || '',
-          line: r.line ?? r.prop_type ?? r.propType ?? '',
+        // Filter to Best Prop (keep file order)
+        const filtered = rowsNorm.filter(r => (r['bet_type'] || '') === 'Best Prop');
+
+        // Map to fields used by the card
+        const mapped = filtered.map(r => ({
+          playerId: r['player_id'] || r['playerid'] || '',
+          name: r['name'] || '',
+          team: r['team'] || r['team_code'] || '',
+          line: r['line'] || r['prop_type'] || r['proptype'] || '',
         }));
 
-        // Dedupe by playerId (fallback to name)
+        // Dedupe by playerId (fallback to name) and keep first 3
         const unique = [];
         const seen = new Set();
         for (const r of mapped) {
@@ -72,31 +74,23 @@ function TopPropsCard({ bestProps }) {
 
         if (!cancel) setRows(unique);
       } catch {
-        if (!cancel) setRows([]); // fail silent per current UX
+        if (!cancel) setRows([]);
       } finally {
         if (!cancel) setReady(true);
       }
     })();
     return () => { cancel = true; };
-  }, [bestProps]);
+  }, []);
 
   const getHeadshotUrl = (playerId) => {
     if (!playerId) return '/images/default_player.png';
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
-  if (!ready || !rows || rows.length === 0) return null;
+  if (!ready || rows.length === 0) return null;
 
-  // Keep your exact styling/markup, just swap data source to `rows`
-  const uniquePlayers = [];
-  const playerIds = new Set();
-  rows.forEach(prop => {
-    const pid = prop.playerId || prop.name;
-    if (!playerIds.has(pid)) {
-      playerIds.add(pid);
-      uniquePlayers.push(prop);
-    }
-  });
+  // Keep your original markup/styles
+  const uniquePlayers = rows;
 
   return (
     <div
@@ -112,12 +106,12 @@ function TopPropsCard({ bestProps }) {
       <div style={{ padding: '20px' }}>
         <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Today’s Best Props</h4>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
-          {uniquePlayers.slice(0, 3).map((prop, index) => (
+          {uniquePlayers.map((prop, index) => (
             <li key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
               <img
                 alt={prop.name}
                 src={getHeadshotUrl(prop.playerId)}
-                onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/images/default_player.png'; }}
                 style={{
                   height: '50px',
                   width: '50px',
@@ -145,5 +139,3 @@ function TopPropsCard({ bestProps }) {
     </div>
   );
 }
-
-export default TopPropsCard;
