@@ -34,6 +34,15 @@ import re
 from pathlib import Path
 from datetime import datetime, date, timedelta, timezone
 import pandas as pd
+def _normalize_api_base(api: str, endpoint: str) -> str:
+    """If 'api' is just the MLB base (.../api/v1), append the endpoint."""
+    if not api:
+        return api
+    a = api.rstrip('/')
+    if a.endswith('/api/v1'):
+        return f"{a}/{endpoint.lstrip('/')}"
+    return api
+
 
 try:
     # Python 3.9+: use zoneinfo (no external deps)

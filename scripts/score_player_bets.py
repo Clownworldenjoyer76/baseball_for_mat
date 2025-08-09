@@ -27,6 +27,15 @@ import argparse
 from pathlib import Path
 import math
 import pandas as pd
+def _normalize_api_base(api: str, endpoint: str) -> str:
+    """If 'api' is just the MLB base (.../api/v1), append the endpoint."""
+    if not api:
+        return api
+    a = api.rstrip('/')
+    if a.endswith('/api/v1'):
+        return f"{a}/{endpoint.lstrip('/')}"
+    return api
+
 
 BET_DIR = Path("data/bets/bet_history")
 
