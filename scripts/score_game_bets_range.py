@@ -1,258 +1,185 @@
 #!/usr/bin/env python3
-"""
-Score locked daily *team* bet files in data/bets/bet_history:
-
-  data/bets/bet_history/YYYY-MM-DD_game_props.csv
-
-It fills:
-- actual_real_run_total = home_score + away_score
-- favorite_correct = TRUE/FALSE when scores exist
-- run_total_diff = actual_real_run_total - projected_real_run_total
-
-You supply finals via:
-  A) --api <URL returning JSON [{date,home_team,away_team,home_score,away_score}, ...]>
-  B) --results <CSV with columns date,home_team,away_team,home_score,away_score>
-
-## Modes (pick ONE)
---auto        (default) Update:
-               • yesterday (America/New_York), AND
-               • any files missing actuals (catch-up)
---date YYYY-MM-DD       Update that single day
---range YYYY-MM-DD:YYYY-MM-DD
-                         Update all days inclusive
---since YYYY-MM-DD       Update all days from this date forward
-
-Examples:
-  python scripts/score_game_bets_range.py --api https://example.com/finals
-  python scripts/score_game_bets_range.py --date 2025-08-08 --results data/results/2025-08-08.csv
-  python scripts/score_game_bets_range.py --range 2025-08-06:2025-08-08 --api $SCORES_API
-  python scripts/score_game_bets_range.py --since 2025-08-01 --api $SCORES_API
-"""
-
 import argparse
-import re
+import csv
+import datetime as dt
 from pathlib import Path
-from datetime import datetime, date, timedelta, timezone
+from typing import Optional, Tuple, Dict, Any, List
+
+import requests
 import pandas as pd
-def _normalize_api_base(api: str, endpoint: str) -> str:
-    """If 'api' is just the MLB base (.../api/v1), append the endpoint."""
-    if not api:
-        return api
-    a = api.rstrip('/')
-    if a.endswith('/api/v1'):
-        return f"{a}/{endpoint.lstrip('/')}"
-    return api
 
 
-try:
-    # Python 3.9+: use zoneinfo (no external deps)
-    from zoneinfo import ZoneInfo
-    TZ_NY = ZoneInfo("America/New_York")
-except Exception:
-    TZ_NY = None  # fallback to UTC below if needed
+# ------------------------
+# Helpers
+# ------------------------
 
-BET_DIR = Path("data/bets/bet_history")
-FNAME_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})_game_props\.csv$")
+def _parse_date(s: str) -> dt.date:
+    return dt.datetime.strptime(s, "%Y-%m-%d").date()
 
-# ---------- IO helpers ----------
-def _read_csv(path: Path) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    df.columns = [c.strip() for c in df.columns]
-    return df
+def _date_range_for_args(args) -> Tuple[dt.date, dt.date]:
+    """Resolve a single date, a start/end (--range or --start/--end), or --since."""
+    if getattr(args, "date", None):
+        d = _parse_date(args.date)
+        return d, d
 
-def _load_results_from_api(url: str) -> pd.DataFrame:
-    import requests
-    r = requests.get(url, timeout=30)
+    # --range YYYY-MM-DD:YYYY-MM-DD
+    if getattr(args, "range", None):
+        a, b = args.range.split(":")
+        return _parse_date(a), _parse_date(b)
+
+    # --start/--end pair
+    if getattr(args, "start", None) and getattr(args, "end", None):
+        return _parse_date(args.start), _parse_date(args.end)
+
+    # --since YYYY-MM-DD  (until yesterday)
+    if getattr(args, "since", None):
+        a = _parse_date(args.since)
+        b = dt.date.today() - dt.timedelta(days=1)
+        return a, b
+
+    # default: yesterday
+    y = dt.date.today() - dt.timedelta(days=1)
+    return y, y
+
+
+def _build_schedule_url(base_api: str, start_date: dt.date, end_date: dt.date) -> Tuple[str, Dict[str, Any]]:
+    """
+    Accepts base like 'https://statsapi.mlb.com/api/v1' OR an existing schedule URL.
+    Returns (url, params) where params contains sportId + date or startDate/endDate as required.
+    """
+    if not base_api:
+        raise ValueError("API base is required when not using --results")
+
+    base = base_api.rstrip("/")
+    # If caller already passed a schedule endpoint, keep it; else append /schedule
+    if not base.endswith("/schedule"):
+        if base.endswith("/api/v1"):
+            base = f"{base}/schedule"
+        else:
+            # user gave some other path; leave as-is
+            pass
+
+    params: Dict[str, Any] = {"sportId": 1}
+    if start_date == end_date:
+        params["date"] = start_date.strftime("%Y-%m-%d")
+    else:
+        params["startDate"] = start_date.strftime("%Y-%m-%d")
+        params["endDate"] = end_date.strftime("%Y-%m-%d")
+
+    # common filters to reduce payload noise; safe even if API ignores them
+    params.update({
+        "hydrate": "team,linescore,decisions,flags,weather",
+        "gameType": "R",  # regular season
+    })
+    return base, params
+
+
+def _fetch_schedule(api_base: str, start_date: dt.date, end_date: dt.date) -> Dict[str, Any]:
+    url, params = _build_schedule_url(api_base, start_date, end_date)
+    r = requests.get(url, params=params, timeout=30)
     r.raise_for_status()
-    data = r.json()
-    if isinstance(data, dict) and "data" in data:
-        data = data["data"]
-    df = pd.DataFrame(data)
-    # normalize
-    need = ["date","home_team","away_team","home_score","away_score"]
-    df = df.rename(columns={k:k for k in need})  # no-op; clarity
-    missing = [c for c in need if c not in df.columns]
-    if missing:
-        raise SystemExit(f"API JSON missing required fields: {missing}")
-    return df[need]
+    return r.json()
 
-def _load_results_from_csv(path: Path) -> pd.DataFrame:
-    df = _read_csv(path)
-    lower = {c.lower(): c for c in df.columns}
-    need = {
-        "date": ["date","game_date"],
-        "home_team": ["home_team","hometeam","home"],
-        "away_team": ["away_team","awayteam","away","visitor"],
-        "home_score": ["home_score","home_runs","homescore","homefinal"],
-        "away_score": ["away_score","away_runs","awayscore","awayfinal"],
-    }
-    col = {}
-    for want, cands in need.items():
-        for c in cands:
-            if c in lower:
-                col[want] = lower[c]; break
-        if want not in col:
-            raise SystemExit(f"Results CSV missing column for {want}. Tried: {cands}")
-    out = df[[col["date"], col["home_team"], col["away_team"], col["home_score"], col["away_score"]]].copy()
-    out.columns = ["date","home_team","away_team","home_score","away_score"]
+
+def _rows_from_schedule(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Transform MLB schedule JSON into minimal rows this scorer expects."""
+    rows: List[Dict[str, Any]] = []
+    dates = data.get("dates", [])
+    for d in dates:
+        for g in d.get("games", []):
+            home = g.get("teams", {}).get("home", {}).get("team", {}).get("name", "")
+            away = g.get("teams", {}).get("away", {}).get("team", {}).get("name", "")
+            home_score = g.get("teams", {}).get("home", {}).get("score", None)
+            away_score = g.get("teams", {}).get("away", {}).get("score", None)
+            game_date = g.get("officialDate") or d.get("date")
+            rows.append({
+                "date": game_date,
+                "home_team": home,
+                "away_team": away,
+                "home_score": home_score,
+                "away_score": away_score,
+                "game_pk": g.get("gamePk"),
+                "status": g.get("status", {}).get("detailedState"),
+                "venue": (g.get("venue") or {}).get("name", ""),
+            })
+    return rows
+
+
+def _load_results_from_csv(p: Path) -> pd.DataFrame:
+    if not p.exists():
+        raise FileNotFoundError(f"Results CSV not found: {p}")
+    return pd.read_csv(p)
+
+def _load_results_from_api(api_base: str, start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
+    data = _fetch_schedule(api_base, start_date, end_date)
+    rows = _rows_from_schedule(data)
+    return pd.DataFrame(rows)
+
+
+def _score_game_props(games_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Minimal scoring:
+      - favorite = team with higher actual total if scores present, else ''
+      - actual_real_run_total if scores present
+    Keeps prior column names used by your pipeline.
+    """
+    out = games_df.copy()
+    # keep date as YYYY-MM-DD
+    out["date"] = pd.to_datetime(out["date"]).dt.strftime("%Y-%m-%d")
+
+    # totals if we have scores
+    if {"home_score", "away_score"}.issubset(out.columns):
+        mask = out["home_score"].notna() & out["away_score"].notna()
+        out.loc[mask, "actual_real_run_total"] = (out.loc[mask, "home_score"].astype(float)
+                                                  + out.loc[mask, "away_score"].astype(float)).round(2)
+    # favorite (if scores known)
+    def _fav(row):
+        hs, as_ = row.get("home_score"), row.get("away_score")
+        if pd.notna(hs) and pd.notna(as_):
+            return row["home_team"] if float(hs) > float(as_) else row["away_team"]
+        return ""
+    out["favorite"] = out.apply(_fav, axis=1)
     return out
 
-# ---------- scoring for one file ----------
-def score_file(game_csv: Path, results_df: pd.DataFrame) -> int:
-    """Return number of rows updated."""
-    bets = _read_csv(game_csv)
 
-    # Build keys (and swapped) for robust joins
-    def keyify(df, home_col, away_col):
-        return (
-            df["date"].astype(str).str.strip().str.lower() + "|" +
-            df[home_col].astype(str).str.strip().str.lower() + "|" +
-            df[away_col].astype(str).str.strip().str.lower()
-        )
+# ------------------------
+# CLI
+# ------------------------
 
-    # Results: normal and swapped
-    res = results_df.copy()
-    res["_key_norm"] = keyify(res, "home_team", "away_team")
-    res["_key_swap"] = keyify(res, "away_team", "home_team")
-
-    bets["_key"] = keyify(bets, "home_team", "away_team")
-
-    norm = res[["_key_norm","home_score","away_score"]].rename(columns={"_key_norm":"_key"})
-    swap = res[["_key_swap","away_score","home_score"]].rename(columns={"_key_swap":"_key","away_score":"home_score","home_score":"away_score"})
-    joined = bets.merge(pd.concat([norm, swap], ignore_index=True), on="_key", how="left")
-
-    # Ensure target cols exist
-    for c in ["actual_real_run_total","favorite_correct","run_total_diff"]:
-        if c not in joined.columns:
-            joined[c] = pd.NA
-
-    # Compute fields
-    hs = pd.to_numeric(joined["home_score"], errors="coerce")
-    as_ = pd.to_numeric(joined["away_score"], errors="coerce")
-    actual_total = (hs + as_).round(2)
-
-    proj = pd.to_numeric(joined.get("projected_real_run_total"), errors="coerce")
-    run_total_diff = (actual_total - proj).where(actual_total.notna()).round(2)
-
-    fav = joined.get("favorite", pd.Series([None]*len(joined)))
-    fav = fav.astype(str).str.strip().str.lower()
-    home = joined["home_team"].astype(str).str.strip().str.lower()
-    away = joined["away_team"].astype(str).str.strip().str.lower()
-
-    winner = pd.Series(pd.NA, index=joined.index, dtype="object")
-    winner = winner.mask(hs.gt(as_), joined["home_team"])
-    winner = winner.mask(as_.gt(hs), joined["away_team"])
-    favorite_correct = (fav == winner.astype(str).str.lower()).where(hs.notna() & as_.notna())
-    favorite_correct = favorite_correct.map({True:"TRUE", False:"FALSE"})
-
-    # Write values
-    before = joined["actual_real_run_total"].notna().sum()
-    joined["actual_real_run_total"] = actual_total
-    joined["favorite_correct"] = favorite_correct
-    joined["run_total_diff"] = run_total_diff
-    after = joined["actual_real_run_total"].notna().sum()
-
-    # Overwrite same file (with a quick .bak)
-    bak = game_csv.with_suffix(".bak.csv")
-    joined.to_csv(bak, index=False)
-    joined.to_csv(game_csv, index=False)
-
-    return int(after - before)
-
-# ---------- date selection ----------
-def list_game_files() -> dict[date, Path]:
-    out = {}
-    if not BET_DIR.exists():
-        return out
-    for p in BET_DIR.iterdir():
-        m = FNAME_RE.match(p.name)
-        if m:
-            try:
-                d = date.fromisoformat(m.group(1))
-                out[d] = p
-            except Exception:
-                continue
-    return dict(sorted(out.items()))
-
-def yesterday_ny() -> date:
-    if TZ_NY:
-        now = datetime.now(TZ_NY)
-    else:
-        now = datetime.now(timezone.utc)
-    return (now - timedelta(days=1)).date()
-
-def needs_scoring(path: Path) -> bool:
-    try:
-        df = _read_csv(path)
-        if "actual_real_run_total" not in df.columns:
-            return True
-        # Any missing actuals → needs scoring
-        return df["actual_real_run_total"].isna().any()
-    except Exception:
-        return True
-
-# ---------- main ----------
 def main():
-    ap = argparse.ArgumentParser()
-    g = ap.add_mutually_exclusive_group()
-    g.add_argument("--auto", action="store_true", help="(default) Score yesterday + any unscored files")
-    g.add_argument("--date", help="Score a single day YYYY-MM-DD")
-    g.add_argument("--range", help="Score an inclusive range YYYY-MM-DD:YYYY-MM-DD")
-    g.add_argument("--since", help="Score from this date YYYY-MM-DD to the latest available")
-    ap.add_argument("--api", help="Finals API URL returning JSON")
-    ap.add_argument("--results", help="Finals CSV path")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser(description="Score game bets over a date or range.")
+    parser.add_argument("--date", help="YYYY-MM-DD")
+    parser.add_argument("--range", help="YYYY-MM-DD:YYYY-MM-DD")
+    parser.add_argument("--since", help="YYYY-MM-DD (until yesterday)")
+    parser.add_argument("--start", help="YYYY-MM-DD")
+    parser.add_argument("--end", help="YYYY-MM-DD")
+    parser.add_argument("--api", help="MLB Stats API base or schedule endpoint")
+    parser.add_argument("--results", help="Optional pre-fetched results CSV instead of API")
+    parser.add_argument("--out", default="data/bets/game_props_scored.csv",
+                        help="Output CSV (default: data/bets/game_props_scored.csv)")
+    args = parser.parse_args()
 
-    # finals source
-    if not args.api and not args.results:
-        raise SystemExit("Provide --api URL or --results CSV")
+    start_date, end_date = _date_range_for_args(args)
 
-    results_df = _load_results_from_api(args.api) if args.api else _load_results_from_csv(Path(args.results))
-
-    files = list_game_files()
-    if not files:
-        raise SystemExit(f"No *_game_props.csv files found in {BET_DIR}")
-
-    targets: list[Path] = []
-
-    if args.date:
-        d = date.fromisoformat(args.date)
-        if d in files: targets = [files[d]]
-        else: raise SystemExit(f"No file for {d} under {BET_DIR}")
-    elif args.range:
-        try:
-            start_s, end_s = args.range.split(":")
-            start_d = date.fromisoformat(start_s)
-            end_d = date.fromisoformat(end_s)
-        except Exception:
-            raise SystemExit("Invalid --range. Use YYYY-MM-DD:YYYY-MM-DD")
-        targets = [p for d,p in files.items() if start_d <= d <= end_d]
-        if not targets: raise SystemExit(f"No files in range {start_d}..{end_d}")
-    elif args.since:
-        start_d = date.fromisoformat(args.since)
-        targets = [p for d,p in files.items() if d >= start_d]
-        if not targets: raise SystemExit(f"No files on/after {start_d}")
+    # Load results either from API (with auto endpoint + params) or from CSV
+    if args.api:
+        results_df = _load_results_from_api(args.api, start_date, end_date)
     else:
-        # --auto (default): yesterday + any unscored
-        y = yesterday_ny()
-        if y in files:
-            targets.append(files[y])
-        # add any unscored (catch-up)
-        for d, p in files.items():
-            if needs_scoring(p) and p not in targets:
-                targets.append(p)
+        if not args.results:
+            raise SystemExit("Provide --api or --results")
+        results_df = _load_results_from_csv(Path(args.results))
 
-    if not targets:
-        print("Nothing to score. All files are up to date.")
+    if results_df.empty:
+        print("No games found in the given range.")
         return
 
-    total_updated = 0
-    for csv_path in targets:
-        updated = score_file(csv_path, results_df)
-        print(f"✔ {csv_path.name}: updated rows = {updated}")
-        total_updated += updated
+    scored = _score_game_props(results_df)
 
-    print(f"✅ Done. Total rows updated across files: {total_updated}")
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    scored.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
+    print(f"✅ Saved game scoring: {out_path} (rows: {len(scored)})")
+
 
 if __name__ == "__main__":
     main()
