@@ -1,3 +1,4 @@
+// components/TopPropsCard.jsx
 import React, { useEffect, useState } from 'react';
 
 const toFirstLast = (lastFirst) => {
@@ -55,7 +56,9 @@ export default function TopPropsCard() {
           <ul style={{ listStyle:'none', padding:0, margin:0, color:'#E0E0E0' }}>
             {rows.map((r, i) => {
               const name = toFirstLast(r.player_name);
-              const line = [prettifyPropType(r.prop_type), r.prop_line].filter(Boolean).join(' ');
+              const line = r.prop_line
+                ? `${prettifyPropType(r.prop_type)} Over ${r.prop_line}`
+                : prettifyPropType(r.prop_type);
               return (
                 <li key={i} style={{ display:'flex', alignItems:'center', marginBottom:15 }}>
                   <img
