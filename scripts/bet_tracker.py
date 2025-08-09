@@ -17,11 +17,10 @@ def ensure_directory_exists(file_path):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
 def _first_col(df, candidates):
-    """Return the first existing column (exact match) from candidates; else ''."""
+    """Return the first existing column from candidates (case-insensitive)."""
     for c in candidates:
         if c in df.columns:
             return c
-    # case-insensitive fallback
     lower = {c.lower(): c for c in df.columns}
     for c in candidates:
         if c.lower() in lower:
@@ -44,17 +43,17 @@ def _explode_pitcher_props(pitcher_df_raw: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame(columns=['name','team','prop_type','line','over_probability','projection','player_id'])
 
     df = pitcher_df_raw.copy()
+
     # normalize typical id/name/team columns
     c_id   = _first_col(df, ['player_id','mlb_id','id'])
     c_name = _first_col(df, ['name','player_name','last_name, first_name','full_name'])
     c_team = _first_col(df, ['team','team_name','team_code'])
 
     # ---- Strikeouts (Ks) ----
-    # lines/probabilities/projections often named variously; check a wide set
-    c_k_line   = _first_col(df, ['k_line','strikeouts_line','ks_line','pitcher_strikeouts_line','line_k'])
-    c_k_prob   = _first_col(df, ['k_over_prob','k_over_probability','strikeouts_over_prob',
-                                 'over_probability_k','over_probability_strikeouts','prob_k_over'])
-    c_k_proj   = _first_col(df, ['k_projection','strikeouts_projection','projection_k','k_proj'])
+    c_k_line = _first_col(df, ['k_line','strikeouts_line','ks_line','pitcher_strikeouts_line','line_k'])
+    c_k_prob = _first_col(df, ['k_over_prob','k_over_probability','strikeouts_over_prob',
+                               'over_probability_k','over_probability_strikeouts','prob_k_over'])
+    c_k_proj = _first_col(df, ['k_projection','strikeouts_projection','projection_k','k_proj'])
 
     k_rows = []
     if c_k_line:
@@ -94,29 +93,24 @@ def _explode_pitcher_props(pitcher_df_raw: pd.DataFrame) -> pd.DataFrame:
     if k_rows: pieces.append(pd.concat(k_rows, ignore_index=True))
     if bb_rows: pieces.append(pd.concat(bb_rows, ignore_index=True))
     if not pieces:
-        # No recognized pitcher markets; return empty standardized frame
         return pd.DataFrame(columns=['name','team','prop_type','line','over_probability','projection','player_id'])
 
     out = pd.concat(pieces, ignore_index=True)
 
-    # Sanity: coerce numeric fields and drop rows without essential data
+    # Coerce numeric fields and drop rows missing essentials
     out['line'] = out['line'].apply(_as_float)
     out['over_probability'] = out['over_probability'].apply(_as_float)
     out['projection'] = out['projection'].apply(_as_float)
 
-    # Drop rows missing name/team/line/over_probability/projection
-    out = out[ out['name'].astype(str).str.strip().ne('') ]
-    out = out[ out['team'].astype(str).str.strip().ne('') ]
-    out = out[ out['line'].apply(lambda x: x is not None) ]
-    out = out[ out['over_probability'].apply(lambda x: x is not None) ]
-    out = out[ out['projection'].apply(lambda x: x is not None) ]
+    out = out[out['name'].astype(str).str.strip().ne('')]
+    out = out[out['team'].astype(str).str.strip().ne('')]
+    out = out[out['line'].apply(lambda x: x is not None)]
+    out = out[out['over_probability'].apply(lambda x: x is not None)]
+    out = out[out['projection'].apply(lambda x: x is not None)]
 
-    # Standardize dtypes
     out['player_id'] = out.get('player_id', '').astype(str).str.strip()
 
-    # Ensure same columns in the final order we’ll use later
-    out = out[['name','team','prop_type','line','over_probability','projection','player_id']]
-    return out
+    return out[['name','team','prop_type','line','over_probability','projection','player_id']]
 
 def run_bet_tracker():
     try:
@@ -141,7 +135,6 @@ def run_bet_tracker():
     # Expect batter_df to already have: name, team, prop_type, line, over_probability, projection
     batter_stats["player_id"] = batter_stats["player_id"].astype(str).str.strip()
     batter_df["player_id"] = batter_df.get("player_id", "").astype(str).str.strip()
-    # join AB/H/HR for rate screens
     if {'player_id','ab','hit','home_run'}.issubset(batter_stats.columns):
         batter_df = batter_df.merge(batter_stats[["player_id", "ab", "hit", "home_run"]], on="player_id", how="left")
         batter_df["hr_rate"] = batter_df["home_run"] / batter_df["ab"]
@@ -159,57 +152,52 @@ def run_bet_tracker():
 
     batter_df = batter_df[batter_df.apply(is_batter_valid, axis=1)]
 
-    # Keep only needed batter columns (and ensure presence)
     for col in ["name","team","prop_type","line","over_probability","projection"]:
         if col not in batter_df.columns:
             batter_df[col] = pd.NA
     batter_df["source"] = "batter"
-    # -----------------------------
 
     # --- Sanity Filter: Pitchers ---
-    # Explode pitcher model into standardized markets (Ks, Walks)
     pitcher_exp = _explode_pitcher_props(pitcher_df_raw)
 
-    # Merge in k_rate sanity filter if available
     pitcher_stats["player_id"] = pitcher_stats["player_id"].astype(str).str.strip()
     pitcher_exp["player_id"] = pitcher_exp.get("player_id", "").astype(str).str.strip()
-    if 'player_id' in pitcher_exp.columns and 'player_id' in pitcher_stats.columns and 'strikeouts' in pitcher_stats.columns and 'innings_pitched' in pitcher_stats.columns:
+    if {'player_id','strikeouts','innings_pitched'}.issubset(pitcher_stats.columns):
         pitcher_stats = pitcher_stats.copy()
         pitcher_stats["k_rate"] = pitcher_stats["strikeouts"] / pitcher_stats["innings_pitched"]
         pitcher_exp = pitcher_exp.merge(pitcher_stats[["player_id", "k_rate"]], on="player_id", how="left")
         pitcher_exp = pitcher_exp[pitcher_exp["k_rate"].fillna(0) >= 1.0]
-    # If k_rate unavailable, leave as-is
 
     pitcher_exp["source"] = "pitcher"
-    # -------------------------------
 
-    # Combine batter + pitcher standardized rows
-    combined = pd.concat([batter_df[['name','team','prop_type','line','over_probability','projection','source']],
-                          pitcher_exp[['name','team','prop_type','line','over_probability','projection','source']]],
-                         ignore_index=True)
+    # --- Combine batter + pitcher standardized rows ---
+    combined = pd.concat(
+        [
+            batter_df[['name','team','prop_type','line','over_probability','projection','source']],
+            pitcher_exp[['name','team','prop_type','line','over_probability','projection','source']]
+        ],
+        ignore_index=True
+    )
 
-    # Filter/quality gates consistent with your original logic
+    # Filters (same intent as your original)
     combined = combined[combined["projection"].apply(lambda x: _as_float(x) is not None and _as_float(x) > 0.2)]
     combined = combined[combined["over_probability"].apply(lambda x: _as_float(x) is not None and _as_float(x) < 0.98)]
 
-    # Sort by over_probability desc (highest first)
     combined['over_probability'] = combined['over_probability'].astype(float)
     combined = combined.sort_values("over_probability", ascending=False)
 
-    # IMPORTANT: allow multiple markets per player -> de-dupe by (name, prop_type)
+    # Allow multiple markets per player → de-dupe by (name, prop_type)
     combined = combined.drop_duplicates(subset=["name", "prop_type"], keep="first")
 
-    # Step 1: Top 3 overall (Best Prop)
+    # ---- Best Prop (top 3 overall) ----
     best_props_df = combined.head(3).copy()
     best_props_df["bet_type"] = "Best Prop"
     best_players_props = set(zip(best_props_df["name"], best_props_df["prop_type"]))
 
-    # Step 2: Up to 5 props per game for Individual Game (exclude already chosen Best Prop tuples)
-    remaining = combined[~list(zip(combined["name"], combined["prop_type"])).__contains__]
-    # The above trick isn’t directly vectorized; do explicit filter:
+    # ---- Remaining → per-game Individual Game props ----
+    # FIXED filter: exclude already-picked (name, prop_type) tuples
     remaining = combined[~combined.apply(lambda r: (r["name"], r["prop_type"]) in best_players_props, axis=1)]
 
-    # Use unique games; your final_scores_projected has home/away/score
     games_df = games_df.drop_duplicates(subset=["home_team", "away_team"])
     individual_props_list = []
     for _, game in games_df.iterrows():
@@ -227,7 +215,7 @@ def run_bet_tracker():
     all_props = pd.concat([best_props_df, individual_props_df], ignore_index=True)
     all_props["date"] = current_date
 
-    # Shape for history output (keep same columns you already use)
+    # Output (same schema your UI expects)
     player_props_to_save = all_props[['date', 'name', 'team', 'line', 'prop_type', 'bet_type']].copy()
     player_props_to_save["prop_correct"] = ""
 
