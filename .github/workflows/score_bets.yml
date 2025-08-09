@@ -2,6 +2,37 @@ name: Score Bets
 
 on:
   workflow_dispatch:
+    inputs:
+      # ---- Games scoring (range) ----
+      start_date:
+        description: "Start date (YYYY-MM-DD)"
+        required: false
+        type: string
+      end_date:
+        description: "End date (YYYY-MM-DD)"
+        required: false
+        type: string
+      games_results_csv:
+        description: "Path to games results CSV (optional if using API)"
+        required: false
+        type: string
+        default: ""
+      games_api_url:
+        description: "API base or URL for games results (script-specific)"
+        required: false
+        type: string
+        default: ""
+      # ---- Player scoring ----
+      player_results_csv:
+        description: "Path to player results CSV (optional if using API)"
+        required: false
+        type: string
+        default: ""
+      player_api_url:
+        description: "API base or URL for player results (script-specific)"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -12,30 +43,84 @@ jobs:
 
     steps:
       - name: Checkout repository
+      # full history not needed; we just commit CSV updates
         uses: actions/checkout@v4
         with:
           ref: main
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run score_game_bets_range.py
-        run: python scripts/score_game_bets_range.py
+      # ---------- Build args for score_game_bets_range.py ----------
+      - name: Build args (games)
+        id: game_args
+        shell: bash
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.games_api_url }}" ]; then
+            ARGS="$ARGS --api '${{ github.event.inputs.games_api_url }}'"
+          fi
+          if [ -n "${{ github.event.inputs.games_results_csv }}" ]; then
+            ARGS="$ARGS --results '${{ github.event.inputs.games_results_csv }}'"
+          fi
+          if [ -n "${{ github.event.inputs.start_date }}" ]; then
+            ARGS="$ARGS --start '${{ github.event.inputs.start_date }}'"
+          fi
+          if [ -n "${{ github.event.inputs.end_date }}" ]; then
+            ARGS="$ARGS --end '${{ github.event.inputs.end_date }}'"
+          fi
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
 
-      - name: Run score_player_bets.py
-        run: python scripts/score_player_bets.py
+      - name: Run score_game_bets_range.py (if args provided)
+        if: ${{ steps.game_args.outputs.args != '' }}
+        run: |
+          echo "Running: python scripts/score_game_bets_range.py ${{ steps.game_args.outputs.args }}"
+          python scripts/score_game_bets_range.py ${{ steps.game_args.outputs.args }}
 
+      - name: Skip games scoring (no args)
+        if: ${{ steps.game_args.outputs.args == '' }}
+        run: echo "No --api or --results provided for games; skipping scripts/score_game_bets_range.py."
+
+      # ---------- Build args for score_player_bets.py ----------
+      - name: Build args (players)
+        id: player_args
+        shell: bash
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.player_api_url }}" ]; then
+            ARGS="$ARGS --api '${{ github.event.inputs.player_api_url }}'"
+          fi
+          if [ -n "${{ github.event.inputs.player_results_csv }}" ]; then
+            ARGS="$ARGS --results '${{ github.event.inputs.player_results_csv }}'"
+          fi
+          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
+
+      - name: Run score_player_bets.py (if args provided)
+        if: ${{ steps.player_args.outputs.args != '' }}
+        run: |
+          echo "Running: python scripts/score_player_bets.py ${{ steps.player_args.outputs.args }}"
+          python scripts/score_player_bets.py ${{ steps.player_args.outputs.args }}
+
+      - name: Skip player scoring (no args)
+        if: ${{ steps.player_args.outputs.args == '' }}
+        run: echo "No --api or --results provided for players; skipping scripts/score_player_bets.py."
+
+      # ---------- Commit CSV updates ----------
       - name: Commit and push results
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/bets/*.csv
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update bet scoring results"
-          git push
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Score bets: update results"
+            git push
+          fi
