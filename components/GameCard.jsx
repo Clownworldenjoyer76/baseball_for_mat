@@ -68,10 +68,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     ? autoProj
     : (projectedScore || null);
 
-  // Add a check to ensure 'game' exists before rendering
-  if (!game) {
-    return null;
-  }
+  if (!game) return null;
 
   return (
     <div 
@@ -125,7 +122,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
       <div style={{ padding: '20px', borderTop: '1px solid #2F2F30' }}>
         {/* Top Props */}
         {Array.isArray(propsToShow) && propsToShow.length > 0 && (
-          <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid '#2F2F30' }}>
+          <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #2F2F30' }}>
             <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Top Props</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
               {propsToShow.map((prop, index) => (
@@ -134,7 +131,14 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
                     alt={prop?.name}
                     src={getHeadshotUrl(prop?.playerId)}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
-                    style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#2F2F30', objectFit: 'cover' }}
+                    style={{
+                      height: '50px',
+                      width: '50px',
+                      borderRadius: '50%',
+                      marginRight: '15px',
+                      backgroundColor: '#2F2F30',
+                      objectFit: 'cover'
+                    }}
                   />
                   <div>
                     <div style={{ fontSize: '1em' }}>{prop?.name}</div>
@@ -146,7 +150,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
         )}
 
-        {/* Projected Score (now from game_props_history.csv via API) */}
+        {/* Projected Score (from API) */}
         {projToShow && (
           <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
             <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#D4AF37' }}>Projected Score</h4>
