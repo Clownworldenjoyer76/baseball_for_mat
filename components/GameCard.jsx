@@ -1,3 +1,4 @@
+// components/GameCard.jsx
 import React, { useEffect, useState } from 'react';
 
 function GameCard({ game, topProps, projectedScore, animationDelay }) {
@@ -8,18 +9,24 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     const imageName = teamName.toLowerCase().replace(/\s+/g, '');
     return `/logos/${imageName}.png`;
   };
+
   const getHeadshotUrl = (playerId) => {
     if (!playerId) return '/images/default_player.png';
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
-  // fetch top props for this game if not provided
+  // ✅ Always refetch when teams change; add cache‑buster param `t`
   useEffect(() => {
     let cancel = false;
-    if (!game || (Array.isArray(topProps) && topProps.length)) return;
+    if (!game) return;
+
     (async () => {
       try {
-        const params = new URLSearchParams({ home: game.home_team, away: game.away_team });
+        const params = new URLSearchParams({
+          home: game.home_team || '',
+          away: game.away_team || '',
+          t: String(Date.now()) // ✅ cache‑buster
+        });
         const r = await fetch(`/api/game-top-props?${params.toString()}`, { cache: 'no-store' });
         const data = r.ok ? await r.json() : [];
         if (!cancel) setAutoProps(Array.isArray(data) ? data : []);
@@ -27,12 +34,16 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
         if (!cancel) setAutoProps([]);
       }
     })();
+
     return () => { cancel = true; };
-  }, [game, topProps]);
+  }, [game?.home_team, game?.away_team]); // ✅ depend on teams
+
+  // ✅ Prefer API results over any passed-in topProps
+  const propsToShow = (autoProps && autoProps.length)
+    ? autoProps
+    : (Array.isArray(topProps) ? topProps : []);
 
   if (!game) return null;
-
-  const propsToShow = (Array.isArray(topProps) && topProps.length) ? topProps : autoProps;
 
   return (
     <div 
@@ -95,7 +106,14 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
                     alt={prop?.name}
                     src={getHeadshotUrl(prop?.playerId)}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
-                    style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#2F2F30', objectFit: 'cover' }}
+                    style={{
+                      height: '50px',
+                      width: '50px',
+                      borderRadius: '50%',
+                      marginRight: '15px',
+                      backgroundColor: '#2F2F30',
+                      objectFit: 'cover'
+                    }}
                   />
                   <div>
                     <div style={{ fontSize: '1em' }}>{prop?.name}</div>
@@ -107,7 +125,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
         )}
 
-        {/* Projected Score (unchanged) */}
+        {/* Projected Score */}
         {projectedScore && typeof projectedScore === 'object' && (
           <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
             <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#D4AF37' }}>Projected Score</h4>
