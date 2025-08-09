@@ -1,8 +1,10 @@
 // components/GameCard.jsx
 import React, { useEffect, useState } from 'react';
 
+// Renamed props to lowercase to match standard convention
 function GameCard({ game, topProps, projectedScore, animationDelay }) {
   const [autoProps, setAutoProps] = useState([]);
+  const [autoProj, setAutoProj] = useState(null);
 
   const getLogoUrl = (teamName) => {
     if (!teamName) return '/images/default_logo.png';
@@ -15,17 +17,16 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
     return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
   };
 
-  // ✅ Always refetch when teams change; add cache‑buster param `t`
+  // Load Top Props (prefer API)
   useEffect(() => {
     let cancel = false;
     if (!game) return;
-
     (async () => {
       try {
         const params = new URLSearchParams({
           home: game.home_team || '',
           away: game.away_team || '',
-          t: String(Date.now()) // ✅ cache‑buster
+          t: String(Date.now())
         });
         const r = await fetch(`/api/game-top-props?${params.toString()}`, { cache: 'no-store' });
         const data = r.ok ? await r.json() : [];
@@ -34,16 +35,43 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
         if (!cancel) setAutoProps([]);
       }
     })();
-
     return () => { cancel = true; };
-  }, [game?.home_team, game?.away_team]); // ✅ depend on teams
+  }, [game?.home_team, game?.away_team]);
 
-  // ✅ Prefer API results over any passed-in topProps
+  // Load Projected Score from game_props_history.csv via API
+  useEffect(() => {
+    let cancel = false;
+    if (!game) return;
+    (async () => {
+      try {
+        const params = new URLSearchParams({
+          home: game.home_team || '',
+          away: game.away_team || '',
+          t: String(Date.now())
+        });
+        const r = await fetch(`/api/game-projection?${params.toString()}`, { cache: 'no-store' });
+        const data = r.ok ? await r.json() : null;
+        if (!cancel) setAutoProj(data);
+      } catch {
+        if (!cancel) setAutoProj(null);
+      }
+    })();
+    return () => { cancel = true; };
+  }, [game?.home_team, game?.away_team]);
+
+  // Prefer API results over any passed-in props
   const propsToShow = (autoProps && autoProps.length)
     ? autoProps
     : (Array.isArray(topProps) ? topProps : []);
 
-  if (!game) return null;
+  const projToShow = (autoProj && (autoProj.home != null || autoProj.away != null || autoProj.total != null))
+    ? autoProj
+    : (projectedScore || null);
+
+  // Add a check to ensure 'game' exists before rendering
+  if (!game) {
+    return null;
+  }
 
   return (
     <div 
@@ -97,7 +125,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
       <div style={{ padding: '20px', borderTop: '1px solid #2F2F30' }}>
         {/* Top Props */}
         {Array.isArray(propsToShow) && propsToShow.length > 0 && (
-          <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid #2F2F30' }}>
+          <div style={{ padding: '0 0 15px 0', borderBottom: '1px solid '#2F2F30' }}>
             <h4 style={{ margin: '0 0 15px 0', textAlign: 'center', color: '#D4AF37' }}>Top Props</h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: '#E0E0E0' }}>
               {propsToShow.map((prop, index) => (
@@ -106,14 +134,7 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
                     alt={prop?.name}
                     src={getHeadshotUrl(prop?.playerId)}
                     onError={(e) => { e.target.onerror = null; e.target.src = '/images/default_player.png'; }}
-                    style={{
-                      height: '50px',
-                      width: '50px',
-                      borderRadius: '50%',
-                      marginRight: '15px',
-                      backgroundColor: '#2F2F30',
-                      objectFit: 'cover'
-                    }}
+                    style={{ height: '50px', width: '50px', borderRadius: '50%', marginRight: '15px', backgroundColor: '#2F2F30', objectFit: 'cover' }}
                   />
                   <div>
                     <div style={{ fontSize: '1em' }}>{prop?.name}</div>
@@ -125,15 +146,15 @@ function GameCard({ game, topProps, projectedScore, animationDelay }) {
           </div>
         )}
 
-        {/* Projected Score */}
-        {projectedScore && typeof projectedScore === 'object' && (
+        {/* Projected Score (now from game_props_history.csv via API) */}
+        {projToShow && (
           <div style={{ padding: '15px 0 0', textAlign: 'center' }}>
             <h4 style={{ margin: '0 0 10px 0', textAlign: 'center', color: '#D4AF37' }}>Projected Score</h4>
             <div style={{ fontSize: '1.2em', color: '#E0E0E0', lineHeight: '1.5' }}>
-              <div>{game.away_team} {projectedScore.away}</div>
-              <div>{game.home_team} {projectedScore.home}</div>
+              <div>{game.away_team} {projToShow.away ?? '—'}</div>
+              <div>{game.home_team} {projToShow.home ?? '—'}</div>
               <div style={{ fontSize: '0.9em', color: '#B0B0B0', marginTop: '10px' }}>
-                Real Run Total Projection: {projectedScore.total}
+                Real Run Total Projection: {projToShow.total ?? '—'}
               </div>
             </div>
           </div>
