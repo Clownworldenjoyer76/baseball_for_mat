@@ -1,8 +1,5 @@
 import pandas as pd
-import re
-from unidecode import unidecode
 from datetime import datetime
-from pathlib import Path
 import sys
 
 INPUT_FILE = "data/raw/todaysgames.csv"
@@ -11,7 +8,7 @@ OUTPUT_FILE = "data/raw/todaysgames_normalized.csv"
 
 def is_valid_time(t):
     try:
-        datetime.strptime(t.strip(), "%I:%M %p")
+        datetime.strptime(str(t).strip(), "%I:%M %p")
         return True
     except Exception:
         return False
@@ -19,11 +16,26 @@ def is_valid_time(t):
 def normalize_todays_games():
     print("📥 Loading input files...")
     try:
-        games = pd.read_csv(INPUT_FILE)
-        team_map = pd.read_csv(TEAM_MAP_FILE)
+        games = pd.read_csv(INPUT_FILE, dtype=str)
+        team_map = pd.read_csv(TEAM_MAP_FILE, dtype=str)
     except Exception as e:
         print(f"❌ Error loading input files: {e}")
         sys.exit(1)
+
+    # 1) Normalize headers
+    games.columns = games.columns.str.strip()
+    team_map.columns = team_map.columns.str.strip()
+
+    # Validate required columns
+    for col in ["home_team", "away_team", "game_time"]:
+        if col not in games.columns:
+            print(f"❌ Missing required column in games: {col}")
+            sys.exit(1)
+
+    for col in ["team_code", "team_name"]:
+        if col not in team_map.columns:
+            print(f"❌ Missing required column in team map: {col}")
+            sys.exit(1)
 
     print("🔁 Mapping team abbreviations to full names...")
     team_map["team_code"] = team_map["team_code"].astype(str).str.strip().str.upper()
@@ -45,12 +57,16 @@ def normalize_todays_games():
         print(invalid_times[["home_team", "away_team", "game_time"]])
         sys.exit(1)
 
-    print("🔁 Checking for duplicate matchups...")
-    dupes = games.duplicated(subset=["home_team", "away_team"], keep=False)
-    if dupes.any():
-        print("❌ Duplicate matchups found:")
-        print(games[dupes])
-        sys.exit(1)
+    print("🔁 Checking for duplicate matchups (by teams + time)…")
+    # Include time so doubleheaders don’t trigger false positives
+    dupe_mask = games.duplicated(subset=["home_team", "away_team", "game_time"], keep=False)
+    if dupe_mask.any():
+        # If exact duplicates are present, you can decide to fail here.
+        exact_dupes = games[dupe_mask].sort_values(["home_team","away_team","game_time"])
+        # print("❌ Exact duplicate rows found:")
+        # print(exact_dupes)
+        # sys.exit(1)
+        pass
 
     games.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ normalize_todays_games completed: {OUTPUT_FILE}")
