@@ -2,6 +2,14 @@ name: Score Bets (MLB API)
 
 on:
   workflow_dispatch:
+    inputs:
+      date:
+        description: "Date to score (YYYY-MM-DD). Leave blank = yesterday (UTC)."
+        required: false
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   score-bets:
@@ -12,34 +20,54 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install deps
         run: |
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          else
+            python -m pip install pandas requests
+          fi
 
-      - name: Compute target date (yesterday)
-        id: get-date
-        run: echo "date=$(date -d 'yesterday' +%F)" >> $GITHUB_ENV
+      - name: Compute target date (default = yesterday UTC)
+        id: dates
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            D="${{ github.event.inputs.date }}"
+          else
+            D="$(date -u -d 'yesterday' +%Y-%m-%d)"
+          fi
+          echo "DATE=$D" >> "$GITHUB_ENV"
+          echo "Using date: $D"
 
-      - name: Score GAME bets (that day via MLB API)
+      - name: Score GAME bets (MLB API)
         run: |
           python scripts/score_game_bets_range.py \
-            --date ${{ env.date }} \
-            --api "MLB_API_BASE"
+            --date "${{ env.DATE }}" \
+            --api "https://statsapi.mlb.com/api/v1"
 
       - name: Score PLAYER bets (MLB API)
         run: |
           python scripts/score_player_bets.py \
-            --date ${{ env.date }} \
-            --api "MLB_API_BASE"
+            --date "${{ env.DATE }}" \
+            --api "https://statsapi.mlb.com/api/v1" || \
+          python scripts/score_player_bets.py \
+            --api "https://statsapi.mlb.com/api/v1" \
+            --start "${{ env.DATE }}" --end "${{ env.DATE }}"
 
       - name: Commit and push results
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/bets/bet_history/*.csv
-          git commit -m "Scored bets for ${{ env.date }}" || echo "No changes to commit"
-          git push
+          git add data/bets/**/*.csv data/bets/bet_history/**/*.csv || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Score bets for ${{ env.DATE }}"
+            git push
+          fi
