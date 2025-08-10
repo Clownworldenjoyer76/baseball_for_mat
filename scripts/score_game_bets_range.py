@@ -5,6 +5,13 @@ from typing import Dict, Tuple, List
 import requests
 import pandas as pd
 
+print("=== DEBUG START ===")
+import sys
+print("Python version:", sys.version)
+print("Script name:", __file__)
+print("Arguments:", sys.argv)
+print("===================")
+
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
 # ---------- 30-team alias map ----------
