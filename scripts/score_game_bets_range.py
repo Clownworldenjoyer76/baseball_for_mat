@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse, csv, sys, time, re
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 import requests
 import pandas as pd
 
@@ -118,3 +118,66 @@ def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     if k in mapping:
         return mapping[k].lower()
     return k
+
+def find_match(game_bets: List[Dict[str, Any]], game: Dict[str, str], mapping: Dict[str, str]) -> Tuple[Dict[str, Any] | None, str | None, str | None]:
+    
+    # First, try to match both teams
+    for bet in game_bets:
+        home_team_bet = normalize_for_match(bet["HOME"], mapping)
+        away_team_bet = normalize_for_match(bet["AWAY"], mapping)
+
+        if home_team_bet == game["home_team_api"] and away_team_bet == game["away_team_api"]:
+            return bet, bet["HOME"], bet["AWAY"]
+
+    # If no match, try to match just one of the teams
+    for bet in game_bets:
+        home_team_bet = normalize_for_match(bet["HOME"], mapping)
+        away_team_bet = normalize_for_match(bet["AWAY"], mapping)
+
+        if home_team_bet == game["home_team_api"] or away_team_bet == game["away_team_api"]:
+            return bet, bet["HOME"], bet["AWAY"]
+            
+    return None, None, None
+
+def main():
+    args = parse_args()
+    mapping = build_team_mapping()
+    
+    # --- Sample data to demonstrate the new logic ---
+    # In a real script, this would be loaded from your CSV and API
+    
+    # Sample list of bets (from your CSV)
+    game_bets = [
+        {"AWAY": "New York Yankees", "HOME": "Boston Red Sox", "col3": "value"},
+        {"AWAY": "Toronto Blue Jays", "HOME": "Seattle Mariners", "col3": "value"},
+    ]
+
+    # Sample game data (from MLB API)
+    mlb_games = [
+        {"home_team_api": "boston red sox", "away_team_api": "new york yankees", "gamePk": 1},
+        {"home_team_api": "seattle mariners", "away_team_api": "toronto blue jays", "gamePk": 2},
+        {"home_team_api": "baltimore orioles", "away_team_api": "tampa bay rays", "gamePk": 3},
+    ]
+
+    print(f"Scoring bets for {args.date}")
+    scored_bets = []
+
+    for game in mlb_games:
+        bet_match, bet_home, bet_away = find_match(game_bets, game, mapping)
+        
+        if bet_match:
+            print(f"Found a match for game {game['gamePk']}: Bet on {bet_away} vs {bet_home}")
+            # --- Your scoring logic would go here ---
+            # Example of updating the matched bet
+            bet_match["score_home"] = 1
+            bet_match["score_away"] = 0
+            scored_bets.append(bet_match)
+        else:
+            print(f"No match found for game {game['gamePk']}.")
+            
+    # You would then write `scored_bets` to your output file (`args.out`)
+    print("\nCompleted scoring process.")
+
+if __name__ == "__main__":
+    main()
+
