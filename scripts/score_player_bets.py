@@ -1,73 +1,148 @@
-    # --- IN-PLACE UPDATE: only prop_correct in the per-day file ---
-    out_path = Path(args.out)  # e.g., data/bets/bet_history/2025-08-08_player_props.csv
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+#!/usr/bin/env python3
+import argparse, csv, sys, time
+from pathlib import Path
+import requests
+import pandas as pd
 
-    # Expected matching keys in your per‑day file
-    KEYS = ["date", "team", "player_name", "prop_type"]
+def parse_args():
+    p = argparse.ArgumentParser(
+        description="Score daily PLAYER props: computes prop_correct only, based on MLB StatsAPI boxscores for the given date."
+    )
+    p.add_argument("--date", required=True, help="YYYY-MM-DD")
+    p.add_argument("--api", default="https://statsapi.mlb.com/api/v1")
+    p.add_argument("--out", required=True, help="Per-day player props CSV to update")
+    return p.parse_args()
 
-    # Aggregate actual outcomes we need to judge the prop; normalize columns
-    actual = df.copy()
-    # Normalize a few names to match your prop types
-    actual["hits"] = actual.get("hits")
-    actual["home_runs"] = actual.get("home_runs")
-    actual["total_bases"] = actual.get("total_bases")
-    actual["strikeouts"] = actual.get("strikeouts_pitcher").fillna(actual.get("strikeouts_batter"))
-    actual["walks"] = actual.get("walks_pitcher").fillna(actual.get("walks_batter"))
+def _get(url, params=None, tries=3, sleep=0.8):
+    for _ in range(tries):
+        r = requests.get(url, params=params, timeout=20)
+        if r.ok:
+            return r.json()
+        time.sleep(sleep)
+    r.raise_for_status()
 
-    # Keep only fields we need to evaluate “Over line?”
-    actual = actual.groupby(["team", "player_name"], as_index=False).agg({
-        "hits":"max", "home_runs":"max", "total_bases":"max",
-        "strikeouts":"max", "walks":"max"
-    })
+def norm_name_to_last_first(full_name: str) -> str:
+    s = str(full_name or "").strip()
+    if not s:
+        return ""
+    parts = s.split()
+    if len(parts) == 1:
+        return parts[0]
+    last = parts[-1]
+    first = " ".join(parts[:-1])
+    return f"{last}, {first}"
 
-    # Load per‑day picks
+def collect_boxscore_stats_for_date(api_base: str, date: str) -> pd.DataFrame:
+    sched = _get(f"{api_base}/schedule", {"sportId":1, "date":date})
+    game_pks = [g.get("gamePk") for d in sched.get("dates", []) for g in d.get("games", [])]
+    rows = []
+    for pk in game_pks:
+        try:
+            box = _get(f"{api_base}/game/{pk}/boxscore")
+        except Exception:
+            continue
+        teams = []
+        if "teams" in box:
+            teams = [("home", box["teams"].get("home")), ("away", box["teams"].get("away"))]
+        for side, tjs in teams:
+            if not tjs: continue
+            team_name = tjs.get("team", {}).get("name", "")
+            for group in ("batters", "pitchers"):
+                for pid in tjs.get(group, []):
+                    pnode = tjs.get("players", {}).get(f"ID{pid}", {})
+                    info = pnode.get("person", {}) or {}
+                    nm = norm_name_to_last_first(info.get("fullName", ""))
+                    stats = pnode.get("stats", {})
+                    bat = stats.get("batting", {}) or {}
+                    pit = stats.get("pitching", {}) or {}
+
+                    hits = bat.get("hits")
+                    hr = bat.get("homeRuns")
+                    singles = (bat.get("hits") or 0) - (bat.get("doubles") or 0) - (bat.get("triples") or 0) - (bat.get("homeRuns") or 0)
+                    tb = (singles or 0) + 2*(bat.get("doubles") or 0) + 3*(bat.get("triples") or 0) + 4*(bat.get("homeRuns") or 0)
+
+                    k_bat = bat.get("strikeOuts")
+                    k_pit = pit.get("strikeOuts")
+                    bb_bat = bat.get("baseOnBalls")
+                    bb_pit = pit.get("baseOnBalls")
+
+                    rows.append({
+                        "team": team_name,
+                        "player_name": nm,
+                        "hits": hits if hits is not None else 0,
+                        "home_runs": hr if hr is not None else 0,
+                        "total_bases": tb if tb is not None else 0,
+                        "strikeouts": max(k for k in [k_bat, k_pit] if k is not None) if (k_bat is not None or k_pit is not None) else 0,
+                        "walks": max(b for b in [bb_bat, bb_pit] if b is not None) if (bb_bat is not None or bb_pit is not None) else 0,
+                    })
+    if not rows:
+        return pd.DataFrame(columns=["team","player_name","hits","home_runs","total_bases","strikeouts","walks"])
+    df = pd.DataFrame(rows)
+    df = df.groupby(["team","player_name"], as_index=False).max(numeric_only=True)
+    return df
+
+def map_prop_to_metric(ptype: str) -> str:
+    p = str(ptype or "").strip().lower()
+    return {
+        "hits": "hits",
+        "home_runs": "home_runs",
+        "total_bases": "total_bases",
+        "strikeouts": "strikeouts",
+        "pitcher_strikeouts": "strikeouts",
+        "walks": "walks",
+        "walks_allowed": "walks",
+    }.get(p, "")
+
+def main():
+    args = parse_args()
+    out_path = Path(args.out)
     if not out_path.exists():
-        raise SystemExit(f"Per-day player picks not found: {out_path}")
+        print(f"❌ Per-day player props not found: {out_path}", file=sys.stderr)
+        sys.exit(1)
+
     picks = pd.read_csv(out_path)
 
-    # Ensure keys exist
-    for k in KEYS:
-        if k not in picks.columns:
-            picks[k] = ""
+    for col in ["date","team","player_name","prop_type"]:
+        if col not in picks.columns:
+            picks[col] = ""
 
-    # Join to get the actual metric that matches prop_type
-    def value_for(row):
-        ptype = str(row["prop_type"]).strip().lower()
-        metric_map = {
-            "hits": "hits",
-            "home_runs": "home_runs",
-            "total_bases": "total_bases",
-            "strikeouts": "strikeouts",          # batter K props if any
-            "pitcher_strikeouts": "strikeouts",  # pitcher K props
-            "walks": "walks",                    # batter walks if any
-            "walks_allowed": "walks",            # pitcher walks allowed
-        }
-        return metric_map.get(ptype, None)
+    picks["player_name"] = picks["player_name"].fillna("").apply(lambda s: s.strip())
 
-    # Merge picks with actuals
-    merged = picks.merge(actual, on=["team", "player_name"], how="left", suffixes=("", "_actual"))
+    if "prop_line" in picks.columns:
+        line_series = pd.to_numeric(picks["prop_line"], errors="coerce")
+    else:
+        line_series = pd.to_numeric(picks.get("line"), errors="coerce")
 
-    # Decide correctness: Over if actual >= line (line may be 'prop_line' or 'line')
-    ln = merged["prop_line"] if "prop_line" in merged.columns else merged.get("line")
-    # Build actual_value per row based on prop_type
+    actual = collect_boxscore_stats_for_date(args.api, args.date)
+
+    merged = picks.merge(actual, on=["team","player_name"], how="left", suffixes=("", "_actual"))
+
+    need = merged["hits"].isna() & merged["home_runs"].isna() & merged["total_bases"].isna() & merged["strikeouts"].isna() & merged["walks"].isna()
+    if need.any():
+        only_name = picks[need][["player_name"]].merge(actual.drop(columns=["team"]), on="player_name", how="left")
+        merged.loc[need, ["hits","home_runs","total_bases","strikeouts","walks"]] = only_name[["hits","home_runs","total_bases","strikeouts","walks"]].values
+
+    metric_for_row = [map_prop_to_metric(pt) for pt in picks["prop_type"]]
     actual_vals = []
-    for idx, row in merged.iterrows():
-        metric = value_for(row)
-        val = row.get(metric) if metric else None
-        actual_vals.append(val)
-    merged["__actual_value"] = actual_vals
-
-    def decide(actual_value, line):
+    for i, met in enumerate(metric_for_row):
+        val = merged.at[i, met] if met else None
         try:
-            if pd.isna(actual_value) or pd.isna(line):
-                return ""
-            return "Yes" if float(actual_value) >= float(line) else "No"
+            actual_vals.append(float(val) if pd.notna(val) else None)
+        except Exception:
+            actual_vals.append(None)
+
+    def decide(av, ln):
+        if av is None or pd.isna(ln):
+            return ""
+        try:
+            return "Yes" if float(av) >= float(ln) else "No"
         except Exception:
             return ""
 
-    merged["prop_correct"] = [decide(av, l) for av, l in zip(merged["__actual_value"], ln)]
+    picks["prop_correct"] = [decide(av, ln) for av, ln in zip(actual_vals, line_series)]
 
-    # Write back ONLY prop_correct
-    picks["prop_correct"] = merged["prop_correct"]
     picks.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
-    print(f"✅ Updated {out_path} (wrote: prop_correct)")
+    print(f"✅ Player props scored: {out_path}")
+
+if __name__ == "__main__":
+    main()
