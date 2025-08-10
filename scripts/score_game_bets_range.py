@@ -29,7 +29,7 @@ TEAM_ALIASES: Dict[str, str] = {
     "texas rangers":"Texas Rangers","rangers":"Texas Rangers","tex":"Texas Rangers",
     "los angeles angels":"Los Angeles Angels","angels":"Los Angeles Angels","laa":"Los Angeles Angels","ana":"Los Angeles Angels","halos":"Los Angeles Angels",
 
-    # Use MLB API naming: "Athletics"
+    # Athletics mappings
     "oakland athletics":"Athletics","athletics":"Athletics","oak":"Athletics","a's":"Athletics","as":"Athletics","a s":"Athletics",
     
     # NL EAST
@@ -54,7 +54,7 @@ TEAM_ALIASES: Dict[str, str] = {
     "colorado rockies":"Colorado Rockies","rockies":"Colorado Rockies","col":"Colorado Rockies","rox":"Colorado Rockies",
 }
 
-_PUNCT_RE = re.compile(r"[.\u2019'’`-]")  # ., apostrophes, hyphens
+_PUNCT_RE = re.compile(r"[.\u2019'’`-]")
 
 def parse_args():
     p = argparse.ArgumentParser(description="Score daily GAME bets and compute run_total_diff & favorite_correct.")
@@ -72,8 +72,15 @@ def _get(url, params=None, tries=3, sleep=0.8):
         time.sleep(sleep)
     r.raise_for_status()
 
+def _canon_key(s: str) -> str:
+    s = (s or "").strip().lower()
+    return " ".join(s.split())
+
+def _loose_key(s: str) -> str:
+    return _PUNCT_RE.sub("", _canon_key(s))
+
 def build_team_mapping() -> Dict[str, str]:
-    mapping = TEAM_ALIASES.copy()
+    mapping = { _loose_key(k): v for k, v in TEAM_ALIASES.items() }
 
     # Add identity mappings for all 30 full names
     fulls = [
@@ -85,7 +92,7 @@ def build_team_mapping() -> Dict[str, str]:
         "Los Angeles Dodgers","San Francisco Giants","San Diego Padres","Arizona Diamondbacks","Colorado Rockies",
     ]
     for f in fulls:
-        mapping[f.lower()] = f
+        mapping[_loose_key(f)] = f
 
     # Extend from CSV if present
     if TEAM_MAP_FILE.exists():
@@ -97,9 +104,17 @@ def build_team_mapping() -> Dict[str, str]:
             if short_col and api_col:
                 tm["_short"] = tm[short_col].astype(str).str.strip().str.lower()
                 tm["_api"]   = tm[api_col].astype(str).str.strip()
-                mapping.update(dict(zip(tm["_short"], tm["_api"])))
+                for s, a in zip(tm["_short"], tm["_api"]):
+                    mapping[_loose_key(s)] = a
         except Exception as e:
             print(f"⚠️ team_name_master.csv problem: {e}", file=sys.stderr)
     return mapping
 
-# Rest of the code remains unchanged...
+def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
+    s = str(val or "").strip()
+    if not s:
+        return ""
+    k = _loose_key(s)
+    if k in mapping:
+        return mapping[k].lower()
+    return k
