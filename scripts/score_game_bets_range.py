@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, Tuple, List, Any
 import requests
 import pandas as pd
+import numpy as np
 
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
@@ -131,6 +132,11 @@ def main():
         print(f"Error: Bet file not found at '{args.out}'.", file=sys.stderr)
         sys.exit(1)
     
+    # Add a 'game_found' column if it doesn't exist.
+    # This prevents the KeyError shown in your traceback.
+    if "game_found" not in df_bets.columns:
+        df_bets["game_found"] = pd.NA
+        
     # Get the game schedule from MLB API
     try:
         url = f"{args.api}/schedule"
