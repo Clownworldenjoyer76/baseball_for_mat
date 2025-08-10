@@ -8,52 +8,51 @@ import numpy as np
 
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
-# ---------- 30-team alias map ----------
-# All aliases map to a single, canonical name (e.g., "Baltimore Orioles")
+# All aliases now map to a single, consistent lowercase string
 TEAM_ALIASES: Dict[str, str] = {
     # AL EAST
-    "new york yankees":"New York Yankees","yankees":"New York Yankees","nyy":"New York Yankees","ny yankees":"New York Yankees","yanks":"New York Yankees",
-    "boston red sox":"Boston Red Sox","red sox":"Boston Red Sox","bos":"Boston Red Sox","bo sox":"Boston Red Sox","bo-sox":"Boston Red Sox",
-    "toronto blue jays":"Toronto Blue Jays","blue jays":"Toronto Blue Jays","jays":"Toronto Blue Jays","tor":"Toronto Blue Jays",
-    "tampa bay rays":"Tampa Bay Rays","rays":"Tampa Bay Rays","tb":"Tampa Bay Rays","tbr":"Tampa Bay Rays","devil rays":"Tampa Bay Rays",
-    "baltimore orioles":"Baltimore Orioles","orioles": "Baltimore Orioles","o's":"Baltimore Orioles","os":"Baltimore Orioles","bal":"Baltimore Orioles",
+    "new york yankees":"nyyankees","yankees":"nyyankees","nyy":"nyyankees","ny yankees":"nyyankees","yanks":"nyyankees",
+    "boston red sox":"bosredsox","red sox":"bosredsox","bos":"bosredsox","bo sox":"bosredsox","bo-sox":"bosredsox",
+    "toronto blue jays":"torbluejays","blue jays":"torbluejays","jays":"torbluejays","tor":"torbluejays",
+    "tampa bay rays":"tampabaysrays","rays":"tampabaysrays","tb":"tampabaysrays","tbr":"tampabaysrays","devil rays":"tampabaysrays",
+    "baltimore orioles":"balorioles","orioles": "balorioles","o's":"balorioles","os":"balorioles","bal":"balorioles",
 
     # AL CENTRAL
-    "cleveland guardians":"Cleveland Guardians","guardians":"Cleveland Guardians","cle":"Cleveland Guardians","indians":"Cleveland Guardians",
-    "detroit tigers":"Detroit Tigers","tigers":"Detroit Tigers","det":"Detroit Tigers",
-    "minnesota twins":"Minnesota Twins","twins":"Minnesota Twins","min":"Minnesota Twins","twinkies":"Minnesota Twins",
-    "kansas city royals":"Kansas City Royals","royals":"Kansas City Royals","kc":"Kansas City Royals","kcr":"Kansas City Royals",
-    "chicago white sox":"Chicago White Sox","white sox":"Chicago White Sox","whitesox":"Chicago White Sox","chisox":"Chicago White Sox","cws":"Chicago White Sox","chw":"Chicago White Sox",
+    "cleveland guardians":"cleguardians","guardians":"cleguardians","cle":"cleguardians","indians":"cleguardians",
+    "detroit tigers":"dettigers","tigers":"dettigers","det":"dettigers",
+    "minnesota twins":"mintwins","twins":"mintwins","min":"mintwins","twinkies":"mintwins",
+    "kansas city royals":"kcroyals","royals":"kcroyals","kc":"kcroyals","kcr":"kcroyals",
+    "chicago white sox":"chiwhitesox","white sox":"chiwhitesox","whitesox":"chiwhitesox","chisox":"chiwhitesox","cws":"chiwhitesox","chw":"chiwhitesox",
 
     # AL WEST
-    "houston astros":"Houston Astros","astros":"Houston Astros","hou":"Houston Astros","stros":"Houston Astros",
-    "seattle mariners":"Seattle Mariners","mariners":"Seattle Mariners","sea":"Seattle Mariners","m's":"Seattle Mariners","ms":"Seattle Mariners",
-    "texas rangers":"Texas Rangers","rangers":"Texas Rangers","tex":"Texas Rangers",
-    "los angeles angels":"Los Angeles Angels","angels":"Los Angeles Angels","laa":"Los Angeles Angels","ana":"Los Angeles Angels","halos":"Los Angeles Angels",
+    "houston astros":"houastros","astros":"houastros","hou":"houastros","stros":"houastros",
+    "seattle mariners":"seamarins","mariners":"seamarins","sea":"seamarins","m's":"seamarins","ms":"seamarins",
+    "texas rangers":"texrangers","rangers":"texrangers","tex":"texrangers",
+    "los angeles angels":"laangels","angels":"laangels","laa":"laangels","ana":"laangels","halos":"laangels",
 
     # Athletics mappings
-    "oakland athletics": "Oakland Athletics","athletics": "Oakland Athletics","oak":"Oakland Athletics","a's":"Oakland Athletics","as":"Oakland Athletics","a s":"Oakland Athletics",
+    "oakland athletics": "oakathletics","athletics": "oakathletics","oak":"oakathletics","a's":"oakathletics","as":"oakathletics","a s":"oakathletics",
     
     # NL EAST
-    "atlanta braves":"Atlanta Braves","braves":"Atlanta Braves","atl":"Atlanta Braves",
-    "miami marlins":"Miami Marlins","marlins":"Miami Marlins","mia":"Miami Marlins","fish":"Miami Marlins",
-    "new york mets":"New York Mets","mets":"New York Mets","nym":"New York Mets","metropolitans":"New York Mets",
-    "philadelphia phillies":"Philadelphia Phillies","phillies":"Philadelphia Phillies","phils":"Philadelphia Phillies","phi":"Philadelphia Phillies",
-    "washington nationals":"Washington Nationals","nationals":"Washington Nationals","nats":"Washington Nationals","was":"Washington Nationals","wsh":"Washington Nationals",
+    "atlanta braves":"atlbraves","braves":"atlbraves","atl":"atlbraves",
+    "miami marlins":"miamarlins","marlins":"miamarlins","mia":"miamarlins","fish":"miamarlins",
+    "new york mets":"nymets","mets":"nymets","nym":"nymets","metropolitans":"nymets",
+    "philadelphia phillies":"phiphillies","phillies":"phiphillies","phils":"phiphillies","phi":"phiphillies",
+    "washington nationals":"wasnats","nationals":"wasnats","nats":"wasnats","was":"wasnats","wsh":"wasnats",
 
     # NL CENTRAL
-    "chicago cubs":"Chicago Cubs","cubs":"Chicago Cubs","chc":"Chicago Cubs","cubbies":"Chicago Cubs",
-    "st. louis cardinals":"St. Louis Cardinals","st louis cardinals":"St. Louis Cardinals","cardinals":"St. Louis Cardinals","stl":"St. Louis Cardinals","redbirds":"St. Louis Cardinals",
-    "milwaukee brewers":"Milwaukee Brewers","brewers":"Milwaukee Brewers","mil":"Milwaukee Brewers","brew crew":"Milwaukee Brewers",
-    "cincinnati reds":"Cincinnati Reds","reds":"Cincinnati Reds","cin":"Cincinnati Reds","big red machine":"Cincinnati Reds",
-    "pittsburgh pirates":"Pittsburgh Pirates","pirates":"Pittsburgh Pirates","pit":"Pittsburgh Pirates","bucs":"Pittsburgh Pirates","buccos":"Pittsburgh Pirates",
+    "chicago cubs":"chicubs","cubs":"chicubs","chc":"chicubs","cubbies":"chicubs",
+    "st. louis cardinals":"stlcardinals","st louis cardinals":"stlcardinals","cardinals":"stlcardinals","stl":"stlcardinals","redbirds":"stlcardinals",
+    "milwaukee brewers":"milbrewers","brewers":"milbrewers","mil":"milbrewers","brew crew":"milbrewers",
+    "cincinnati reds":"cinreds","reds":"cinreds","cin":"cinreds","big red machine":"cinreds",
+    "pittsburgh pirates":"pitpirates","pirates":"pitpirates","pit":"pitpirates","bucs":"pitpirates","buccos":"pitpirates",
 
     # NL WEST
-    "los angeles dodgers":"Los Angeles Dodgers","la dodgers":"Los Angeles Dodgers","dodgers":"Los Angeles Dodgers","lad":"Los Angeles Dodgers",
-    "san francisco giants":"San Francisco Giants","giants":"San Francisco Giants","sf":"San Francisco Giants","sfg":"San Francisco Giants",
-    "san diego padres":"San Diego Padres","padres":"San Diego Padres","sd":"San Diego Padres","friars":"San Diego Padres",
-    "arizona diamondbacks":"Arizona Diamondbacks","diamondbacks":"Arizona Diamondbacks","dbacks":"Arizona Diamondbacks","d-backs":"Arizona Diamondbacks","ari":"Arizona Diamondbacks","snakes":"Arizona Diamondbacks",
-    "colorado rockies":"Colorado Rockies","rockies":"Colorado Rockies","col":"Colorado Rockies","rox":"Colorado Rockies",
+    "los angeles dodgers":"ladodgers","la dodgers":"ladodgers","dodgers":"ladodgers","lad":"ladodgers",
+    "san francisco giants":"sfgiants","giants":"sfgiants","sf":"sfgiants","sfg":"sfgiants",
+    "san diego padres":"sdpadres","padres":"sdpadres","sd":"sdpadres","friars":"sdpadres",
+    "arizona diamondbacks":"aridbacks","diamondbacks":"aridbacks","dbacks":"aridbacks","d-backs":"aridbacks","ari":"aridbacks","snakes":"aridbacks",
+    "colorado rockies":"colrockies","rockies":"colrockies","col":"colrockies","rox":"colrockies",
 }
 
 _PUNCT_RE = re.compile(r"[.\u2019'’`-]")
@@ -83,20 +82,19 @@ def _loose_key(s: str) -> str:
     return _PUNCT_RE.sub("", _canon_key(s))
 
 def build_team_mapping() -> Dict[str, str]:
-    # Use _loose_key to map all aliases to their canonical, full name
     mapping = { _loose_key(k): v for k, v in TEAM_ALIASES.items() }
 
-    # Add identity mappings for all 30 full names
-    fulls = [
-        "New York Yankees","Boston Red Sox","Toronto Blue Jays","Tampa Bay Rays","Baltimore Orioles",
-        "Cleveland Guardians","Detroit Tigers","Minnesota Twins","Kansas City Royals","Chicago White Sox",
-        "Houston Astros","Seattle Mariners","Texas Rangers","Los Angeles Angels","Oakland Athletics",
-        "Atlanta Braves","Miami Marlins","New York Mets","Philadelphia Phillies","Washington Nationals",
-        "Chicago Cubs","St. Louis Cardinals","Milwaukee Brewers","Cincinnati Reds","Pittsburgh Pirates",
-        "Los Angeles Dodgers","San Francisco Giants","San Diego Padres","Arizona Diamondbacks","Colorado Rockies",
-    ]
-    for f in fulls:
-        mapping[_loose_key(f)] = f
+    # All canonical names, now as consistent keys
+    canonical_keys_map = {
+        "New York Yankees": "nyyankees", "Boston Red Sox": "bosredsox", "Toronto Blue Jays": "torbluejays", "Tampa Bay Rays": "tampabaysrays", "Baltimore Orioles": "balorioles",
+        "Cleveland Guardians": "cleguardians", "Detroit Tigers": "dettigers", "Minnesota Twins": "mintwins", "Kansas City Royals": "kcroyals", "Chicago White Sox": "chiwhitesox",
+        "Houston Astros": "houastros", "Seattle Mariners": "seamarins", "Texas Rangers": "texrangers", "Los Angeles Angels": "laangels", "Athletics": "oakathletics",
+        "Atlanta Braves": "atlbraves", "Miami Marlins": "miamarlins", "New York Mets": "nymets", "Philadelphia Phillies": "phiphillies", "Washington Nationals": "wasnats",
+        "Chicago Cubs": "chicubs", "St. Louis Cardinals": "stlcardinals", "Milwaukee Brewers": "milbrewers", "Cincinnati Reds": "cinreds", "Pittsburgh Pirates": "pitpirates",
+        "Los Angeles Dodgers": "ladodgers", "San Francisco Giants": "sfgiants", "San Diego Padres": "sdpadres", "Arizona Diamondbacks": "aridbacks", "Colorado Rockies": "colrockies",
+    }
+    for full_name, canonical_key in canonical_keys_map.items():
+        mapping[_loose_key(full_name)] = canonical_key
 
     # Extend from CSV if present
     if TEAM_MAP_FILE.exists():
@@ -109,7 +107,8 @@ def build_team_mapping() -> Dict[str, str]:
                 tm["_short"] = tm[short_col].astype(str).str.strip().str.lower()
                 tm["_api"]   = tm[api_col].astype(str).str.strip()
                 for s, a in zip(tm["_short"], tm["_api"]):
-                    mapping[_loose_key(s)] = a
+                    if a in canonical_keys_map:
+                        mapping[_loose_key(s)] = canonical_keys_map[a]
         except Exception as e:
             print(f"⚠️ team_name_master.csv problem: {e}", file=sys.stderr)
     return mapping
@@ -121,8 +120,8 @@ def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     
     k = _loose_key(s)
     if k in mapping:
-        # Return the loose-key of the canonical name for consistent matching
-        return _loose_key(mapping[k])
+        # Return the canonical key for consistent matching
+        return mapping[k]
     
     # If no mapping is found, return the loose-key of the original string
     return k
