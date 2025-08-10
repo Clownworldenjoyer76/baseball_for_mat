@@ -5,10 +5,10 @@ from typing import Dict, Tuple, List, Any
 import requests
 import pandas as pd
 import numpy as np
+import os # Added for path and permission checks
 
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
-# All aliases now map to a single, consistent lowercase string
 TEAM_ALIASES: Dict[str, str] = {
     # AL EAST
     "new york yankees":"nyyankees","yankees":"nyyankees","nyy":"nyyankees","ny yankees":"nyyankees","yanks":"nyyankees",
@@ -16,37 +16,31 @@ TEAM_ALIASES: Dict[str, str] = {
     "toronto blue jays":"torbluejays","blue jays":"torbluejays","jays":"torbluejays","tor":"torbluejays",
     "tampa bay rays":"tampabaysrays","rays":"tampabaysrays","tb":"tampabaysrays","tbr":"tampabaysrays","devil rays":"tampabaysrays",
     "baltimore orioles":"balorioles","orioles": "balorioles","o's":"balorioles","os":"balorioles","bal":"balorioles",
-
     # AL CENTRAL
     "cleveland guardians":"cleguardians","guardians":"cleguardians","cle":"cleguardians","indians":"cleguardians",
     "detroit tigers":"dettigers","tigers":"dettigers","det":"dettigers",
     "minnesota twins":"mintwins","twins":"mintwins","min":"mintwins","twinkies":"mintwins",
     "kansas city royals":"kcroyals","royals":"kcroyals","kc":"kcroyals","kcr":"kcroyals",
     "chicago white sox":"chiwhitesox","white sox":"chiwhitesox","whitesox":"chiwhitesox","chisox":"chiwhitesox","cws":"chiwhitesox","chw":"chiwhitesox",
-
     # AL WEST
     "houston astros":"houastros","astros":"houastros","hou":"houastros","stros":"houastros",
     "seattle mariners":"seamarins","mariners":"seamarins","sea":"seamarins","m's":"seamarins","ms":"seamarins",
     "texas rangers":"texrangers","rangers":"texrangers","tex":"texrangers",
     "los angeles angels":"laangels","angels":"laangels","laa":"laangels","ana":"laangels","halos":"laangels",
-
     # Athletics mappings
     "oakland athletics": "oakathletics","athletics": "oakathletics","oak":"oakathletics","a's":"oakathletics","as":"oakathletics","a s":"oakathletics",
-    
     # NL EAST
     "atlanta braves":"atlbraves","braves":"atlbraves","atl":"atlbraves",
     "miami marlins":"miamarlins","marlins":"miamarlins","mia":"miamarlins","fish":"miamarlins",
     "new york mets":"nymets","mets":"nymets","nym":"nymets","metropolitans":"nymets",
     "philadelphia phillies":"phiphillies","phillies":"phiphillies","phils":"phiphillies","phi":"phiphillies",
     "washington nationals":"wasnats","nationals":"wasnats","nats":"wasnats","was":"wasnats","wsh":"wasnats",
-
     # NL CENTRAL
     "chicago cubs":"chicubs","cubs":"chicubs","chc":"chicubs","cubbies":"chicubs",
     "st. louis cardinals":"stlcardinals","st louis cardinals":"stlcardinals","cardinals":"stlcardinals","stl":"stlcardinals","redbirds":"stlcardinals",
     "milwaukee brewers":"milbrewers","brewers":"milbrewers","mil":"milbrewers","brew crew":"milbrewers",
     "cincinnati reds":"cinreds","reds":"cinreds","cin":"cinreds","big red machine":"cinreds",
     "pittsburgh pirates":"pitpirates","pirates":"pitpirates","pit":"pitpirates","bucs":"pitpirates","buccos":"pitpirates",
-
     # NL WEST
     "los angeles dodgers":"ladodgers","la dodgers":"ladodgers","dodgers":"ladodgers","lad":"ladodgers",
     "san francisco giants":"sfgiants","giants":"sfgiants","sf":"sfgiants","sfg":"sfgiants",
@@ -139,6 +133,27 @@ def find_team_columns(df: pd.DataFrame) -> Tuple[str, str]:
 
 def main():
     args = parse_args()
+    
+    # === START DIAGNOSTIC CHECKS ===
+    out_path = Path(args.out)
+    out_dir = out_path.parent
+    
+    print(f"Diagnostics:")
+    print(f"  - Current working directory: {Path.cwd()}")
+    print(f"  - Output file path: {out_path.resolve()}")
+    print(f"  - Output directory: {out_dir.resolve()}")
+    
+    if not out_dir.is_dir():
+        print(f"  - ERROR: Output directory does not exist. Please create it: {out_dir}")
+        sys.exit(1)
+        
+    if not os.access(out_dir, os.W_OK):
+        print(f"  - ERROR: Cannot write to output directory. Please check permissions: {out_dir}")
+        sys.exit(1)
+        
+    print(f"  - Directory exists and is writable. Proceeding...")
+    # === END DIAGNOSTIC CHECKS ===
+
     mapping = build_team_mapping()
 
     try:
@@ -156,23 +171,7 @@ def main():
     for col in ["home_score", "away_score", "game_found"]:
         if col not in df_bets.columns:
             df_bets[col] = pd.NA
-
-    # Hardcoded fix for the Athletics game
-    ath_index = -1
-    for i, row in df_bets.iterrows():
-        if row[away_col] == "Athletics":
-            ath_index = i
-            break
-            
-    if ath_index != -1 and pd.isna(df_bets.loc[ath_index, "game_found"]):
-        print("💡 Special fix applied for the Athletics game.")
-        # Hardcoding the score and game_found status for the Athletics game
-        # Based on the MLB API data for Orioles vs Athletics on 2025-08-09
-        df_bets.loc[ath_index, "home_score"] = 0 
-        df_bets.loc[ath_index, "away_score"] = 0
-        df_bets.loc[ath_index, "game_found"] = True
-
-    # Continue with the rest of the matching logic for all other games
+        
     try:
         url = f"{args.api}/schedule"
         params = {"sportId": 1, "date": args.date, "hydrate": "linescore,teams"}
@@ -204,23 +203,17 @@ def main():
         sys.exit(1)
 
     matched_bets_indices = []
-    print(f"Scoring {len(df_bets)} bets from '{args.out}' against {len(games_to_score)} games for {args.date}...")
+    print(f"\nScoring {len(df_bets)} bets from '{args.out}' against {len(games_to_score)} games for {args.date}...")
 
     for i, row in df_bets.iterrows():
-        # Skip the hardcoded Athletics row to avoid double-processing
-        if i == ath_index:
-            matched_bets_indices.append(i)
-            continue
-            
-        best_match = None
-        best_match_score = 0
-        
         home_team_bet = normalize_for_match(row.get(home_col, ""), mapping)
         away_team_bet = normalize_for_match(row.get(away_col, ""), mapping)
         
         if args.debug:
             print(f"DEBUG: Processing bet for: '{home_team_bet}' vs '{away_team_bet}'")
 
+        best_match = None
+        best_match_score = 0
         for game in games_to_score:
             game_home = game['home_team_api']
             game_away = game['away_team_api']
