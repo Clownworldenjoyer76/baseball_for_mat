@@ -81,8 +81,14 @@ def _canon_key(s: str) -> str:
 def _loose_key(s: str) -> str:
     return _PUNCT_RE.sub("", _canon_key(s))
 
+def _sanitize_key(s: str) -> str:
+    """A more aggressive key for matching that removes all non-alphanumeric characters."""
+    s = str(s or "").strip().lower()
+    return re.sub(r'[^a-zA-Z0-9]', '', s)
+
 def build_team_mapping() -> Dict[str, str]:
-    mapping = { _loose_key(k): v for k, v in TEAM_ALIASES.items() }
+    # Use the more aggressive sanitization for mapping keys
+    mapping = { _sanitize_key(k): v for k, v in TEAM_ALIASES.items() }
 
     # Add identity mappings for all 30 full names
     fulls = [
@@ -94,7 +100,7 @@ def build_team_mapping() -> Dict[str, str]:
         "Los Angeles Dodgers","San Francisco Giants","San Diego Padres","Arizona Diamondbacks","Colorado Rockies",
     ]
     for f in fulls:
-        mapping[_loose_key(f)] = f
+        mapping[_sanitize_key(f)] = f
 
     # Extend from CSV if present
     if TEAM_MAP_FILE.exists():
@@ -107,7 +113,7 @@ def build_team_mapping() -> Dict[str, str]:
                 tm["_short"] = tm[short_col].astype(str).str.strip().str.lower()
                 tm["_api"]   = tm[api_col].astype(str).str.strip()
                 for s, a in zip(tm["_short"], tm["_api"]):
-                    mapping[_loose_key(s)] = a
+                    mapping[_sanitize_key(s)] = a
         except Exception as e:
             print(f"⚠️ team_name_master.csv problem: {e}", file=sys.stderr)
     return mapping
@@ -117,13 +123,12 @@ def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     if not s:
         return ""
     
-    # Specific exception for "Athletics" to force the name
-    if _loose_key(s) == "athletics":
-        return "athletics"
-        
-    k = _loose_key(s)
+    k = _sanitize_key(s)
     if k in mapping:
-        return mapping[k].lower()
+        # Return the normalized value, which is already a string of alphanumeric chars
+        return _sanitize_key(mapping[k])
+    
+    # If not in the mapping, return the sanitized version of the original string
     return k
 
 def main():
