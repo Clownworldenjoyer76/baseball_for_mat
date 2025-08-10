@@ -1,163 +1,73 @@
-#!/usr/bin/env python3
-import argparse
-import csv
-import datetime as dt
-from pathlib import Path
-from typing import Dict, Any, List, Tuple
-
-import requests
-import pandas as pd
-
-
-# ------------------------
-# Helpers
-# ------------------------
-
-def _parse_date(s: str) -> dt.date:
-    return dt.datetime.strptime(s, "%Y-%m-%d").date()
-
-def _date_from_args(args) -> Tuple[dt.date, dt.date]:
-    if getattr(args, "date", None):
-        d = _parse_date(args.date)
-        return d, d
-    if getattr(args, "start", None) and getattr(args, "end", None):
-        return _parse_date(args.start), _parse_date(args.end)
-    # default yesterday
-    y = dt.date.today() - dt.timedelta(days=1)
-    return y, y
-
-
-def _build_schedule_url(base_api: str, start_date: dt.date, end_date: dt.date) -> Tuple[str, Dict[str, Any]]:
-    base = base_api.rstrip("/")
-    if not base.endswith("/schedule"):
-        if base.endswith("/api/v1"):
-            base = f"{base}/schedule"
-    params: Dict[str, Any] = {"sportId": 1}
-    if start_date == end_date:
-        params["date"] = start_date.strftime("%Y-%m-%d")
-    else:
-        params["startDate"] = start_date.strftime("%Y-%m-%d")
-        params["endDate"] = end_date.strftime("%Y-%m-%d")
-    # request enough to assemble player scoring context
-    params.update({"hydrate": "team,linescore,decisions,flags,weather"})
-    return base, params
-
-
-def _fetch_schedule(api_base: str, start_date: dt.date, end_date: dt.date) -> List[int]:
-    """Return list of gamePks for the day/range."""
-    url, params = _build_schedule_url(api_base, start_date, end_date)
-    r = requests.get(url, params=params, timeout=30)
-    r.raise_for_status()
-    data = r.json()
-    pks: List[int] = []
-    for d in data.get("dates", []):
-        for g in d.get("games", []):
-            gp = g.get("gamePk")
-            if gp:
-                pks.append(int(gp))
-    return pks
-
-
-def _fetch_boxscore(base_api: str, game_pk: int) -> Dict[str, Any]:
-    """Build a valid boxscore endpoint from base; fetch JSON."""
-    base = base_api.rstrip("/")
-    if base.endswith("/schedule"):
-        base = base[:-len("/schedule")]
-    if base.endswith("/api/v1"):
-        url = f"{base}/game/{game_pk}/boxscore"
-    else:
-        # If a full path was supplied, trust caller and append
-        url = f"{base}/game/{game_pk}/boxscore"
-    r = requests.get(url, timeout=30)
-    r.raise_for_status()
-    return r.json()
-
-
-def _rows_from_boxscore(game_pk: int, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Extract minimal player outcomes. Expand to your exact schema as needed."""
-    rows: List[Dict[str, Any]] = []
-
-    teams = data.get("teams", {})
-    for side in ("home", "away"):
-        t = teams.get(side, {})
-        players = (t.get("players") or {})
-        for _, p in players.items():
-            person = p.get("person") or {}
-            batting = (p.get("stats") or {}).get("batting") or {}
-            pitching = (p.get("stats") or {}).get("pitching") or {}
-
-            name = person.get("fullName", "")
-            team_name = (t.get("team") or {}).get("name", "")
-
-            rows.append({
-                "game_pk": game_pk,
-                "player_name": name,
-                "team": team_name,
-                # Useful outcomes for props
-                "hits": batting.get("hits"),
-                "home_runs": batting.get("homeRuns"),
-                "total_bases": batting.get("totalBases"),
-                "strikeouts_batter": batting.get("strikeOuts"),
-                "walks_batter": batting.get("baseOnBalls"),
-                "strikeouts_pitcher": pitching.get("strikeOuts"),
-                "walks_pitcher": pitching.get("baseOnBalls"),
-                "innings_pitched": pitching.get("inningsPitched"),
-            })
-    return rows
-
-
-def _score_player_props(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Placeholder scorer that just passes through outcomes.
-    Merge this against your prop picks to set prop_correct, etc.
-    """
-    out = df.copy()
-    return out
-
-
-# ------------------------
-# CLI
-# ------------------------
-
-def main():
-    parser = argparse.ArgumentParser(description="Score player bets for a date/range.")
-    parser.add_argument("--date", help="YYYY-MM-DD")
-    parser.add_argument("--start", help="YYYY-MM-DD")
-    parser.add_argument("--end", help="YYYY-MM-DD")
-    parser.add_argument("--api", required=True, help="MLB Stats API base or schedule endpoint")
-    parser.add_argument("--out", default="data/bets/player_props_scored.csv",
-                        help="Output CSV (default: data/bets/player_props_scored.csv)")
-    args = parser.parse_args()
-
-    start_date, end_date = _date_from_args(args)
-
-    # 1) find games for the day from schedule (auto constructs params)
-    game_pks = _fetch_schedule(args.api, start_date, end_date)
-    if not game_pks:
-        print("No games found; nothing to score.")
-        return
-
-    # 2) pull boxscore per game and collect rows
-    all_rows: List[Dict[str, Any]] = []
-    for gp in game_pks:
-        try:
-            box = _fetch_boxscore(args.api, gp)
-            all_rows.extend(_rows_from_boxscore(gp, box))
-        except requests.HTTPError as e:
-            print(f"Warning: boxscore for {gp} failed: {e}")
-
-    if not all_rows:
-        print("No player rows collected.")
-        return
-
-    df = pd.DataFrame(all_rows)
-    scored = _score_player_props(df)
-
-    out_path = Path(args.out)
+    # --- IN-PLACE UPDATE: only prop_correct in the per-day file ---
+    out_path = Path(args.out)  # e.g., data/bets/bet_history/2025-08-08_player_props.csv
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    scored.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
-    print(f"✅ Saved player scoring: {out_path} (rows: {len(scored)})")
 
+    # Expected matching keys in your per‑day file
+    KEYS = ["date", "team", "player_name", "prop_type"]
 
-if __name__ == "__main__":
-    main()
+    # Aggregate actual outcomes we need to judge the prop; normalize columns
+    actual = df.copy()
+    # Normalize a few names to match your prop types
+    actual["hits"] = actual.get("hits")
+    actual["home_runs"] = actual.get("home_runs")
+    actual["total_bases"] = actual.get("total_bases")
+    actual["strikeouts"] = actual.get("strikeouts_pitcher").fillna(actual.get("strikeouts_batter"))
+    actual["walks"] = actual.get("walks_pitcher").fillna(actual.get("walks_batter"))
+
+    # Keep only fields we need to evaluate “Over line?”
+    actual = actual.groupby(["team", "player_name"], as_index=False).agg({
+        "hits":"max", "home_runs":"max", "total_bases":"max",
+        "strikeouts":"max", "walks":"max"
+    })
+
+    # Load per‑day picks
+    if not out_path.exists():
+        raise SystemExit(f"Per-day player picks not found: {out_path}")
+    picks = pd.read_csv(out_path)
+
+    # Ensure keys exist
+    for k in KEYS:
+        if k not in picks.columns:
+            picks[k] = ""
+
+    # Join to get the actual metric that matches prop_type
+    def value_for(row):
+        ptype = str(row["prop_type"]).strip().lower()
+        metric_map = {
+            "hits": "hits",
+            "home_runs": "home_runs",
+            "total_bases": "total_bases",
+            "strikeouts": "strikeouts",          # batter K props if any
+            "pitcher_strikeouts": "strikeouts",  # pitcher K props
+            "walks": "walks",                    # batter walks if any
+            "walks_allowed": "walks",            # pitcher walks allowed
+        }
+        return metric_map.get(ptype, None)
+
+    # Merge picks with actuals
+    merged = picks.merge(actual, on=["team", "player_name"], how="left", suffixes=("", "_actual"))
+
+    # Decide correctness: Over if actual >= line (line may be 'prop_line' or 'line')
+    ln = merged["prop_line"] if "prop_line" in merged.columns else merged.get("line")
+    # Build actual_value per row based on prop_type
+    actual_vals = []
+    for idx, row in merged.iterrows():
+        metric = value_for(row)
+        val = row.get(metric) if metric else None
+        actual_vals.append(val)
+    merged["__actual_value"] = actual_vals
+
+    def decide(actual_value, line):
+        try:
+            if pd.isna(actual_value) or pd.isna(line):
+                return ""
+            return "Yes" if float(actual_value) >= float(line) else "No"
+        except Exception:
+            return ""
+
+    merged["prop_correct"] = [decide(av, l) for av, l in zip(merged["__actual_value"], ln)]
+
+    # Write back ONLY prop_correct
+    picks["prop_correct"] = merged["prop_correct"]
+    picks.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
+    print(f"✅ Updated {out_path} (wrote: prop_correct)")
