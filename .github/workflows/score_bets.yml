@@ -48,7 +48,7 @@ jobs:
 
       - name: Score GAME bets (debug always on)
         run: |
-          python -u scripts/score_game_bets_range_debug_start.py \
+          python -u scripts/score_game_bets_range.py \
             --date "${{ env.DATE }}" \
             --api "https://statsapi.mlb.com/api/v1" \
             --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
