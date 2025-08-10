@@ -5,7 +5,51 @@ from typing import Dict, Tuple
 import requests
 import pandas as pd
 
-TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # adjust if different
+TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # used if present
+
+# Built‑in fallback mapping: common short names/aliases -> MLB StatsAPI full team names
+SHORT_TO_API = {
+    # AL East
+    "yankees": "New York Yankees",
+    "red sox": "Boston Red Sox",
+    "blue jays": "Toronto Blue Jays",
+    "rays": "Tampa Bay Rays",
+    "orioles": "Baltimore Orioles",
+    # AL Central
+    "guardians": "Cleveland Guardians",
+    "tigers": "Detroit Tigers",
+    "twins": "Minnesota Twins",
+    "royals": "Kansas City Royals",
+    "white sox": "Chicago White Sox",
+    # AL West
+    "astros": "Houston Astros",
+    "mariners": "Seattle Mariners",
+    "rangers": "Texas Rangers",
+    "angels": "Los Angeles Angels",
+    "athletics": "Oakland Athletics",
+    "a's": "Oakland Athletics",
+    "as": "Oakland Athletics",
+    # NL East
+    "braves": "Atlanta Braves",
+    "marlins": "Miami Marlins",
+    "mets": "New York Mets",
+    "phillies": "Philadelphia Phillies",
+    "nationals": "Washington Nationals",
+    # NL Central
+    "cubs": "Chicago Cubs",
+    "cardinals": "St. Louis Cardinals",
+    "brewers": "Milwaukee Brewers",
+    "reds": "Cincinnati Reds",
+    "pirates": "Pittsburgh Pirates",
+    # NL West
+    "dodgers": "Los Angeles Dodgers",
+    "giants": "San Francisco Giants",
+    "padres": "San Diego Padres",
+    "diamondbacks": "Arizona Diamondbacks",
+    "dbacks": "Arizona Diamondbacks",
+    "d-backs": "Arizona Diamondbacks",
+    "rockies": "Colorado Rockies",
+}
 
 def parse_args():
     p = argparse.ArgumentParser(
@@ -24,121 +68,29 @@ def _get(url, params=None, tries=3, sleep=0.8):
         time.sleep(sleep)
     r.raise_for_status()
 
-def normalize_team_names_df(df: pd.DataFrame, home_col: str, away_col: str) -> pd.DataFrame:
-    """Normalize short names in CSV to API full names using team_name_master.csv if available."""
+def normalize_one_team(val: str, mapping: Dict[str, str]) -> str:
+    s = str(val or "").strip()
+    low = s.lower()
+    # if it's already a full name, keep it
+    for full in mapping.values():
+        if s == full:
+            return s
+    # nickname → full
+    if low in mapping:
+        return mapping[low]
+    return s  # unchanged if unknown
+
+def build_team_mapping() -> Dict[str, str]:
+    # Start with fallback mapping
+    mapping = SHORT_TO_API.copy()
+    # If CSV map exists, augment/override
     if TEAM_MAP_FILE.exists():
         try:
             tm = pd.read_csv(TEAM_MAP_FILE)
-            tm["team_name_short"] = tm["team_name_short"].astype(str).strip().str.lower()
-            tm["team_name_api"]   = tm["team_name_api"].astype(str).str.strip()
-            mapping = dict(zip(tm["team_name_short"], tm["team_name_api"]))
-            df[home_col] = df[home_col].astype(str).str.strip().str.lower().replace(mapping)
-            df[away_col] = df[away_col].astype(str).str.strip().str.lower().replace(mapping)
-        except Exception as e:
-            print(f"⚠️ team map issue: {e}", file=sys.stderr)
-    return df
-
-def load_scores_for_date(api_base: str, date: str) -> Dict[Tuple[str, str], Tuple[int, int]]:
-    """
-    Returns {(away_full.lower(), home_full.lower()): (away_runs, home_runs)}
-    Uses /schedule?hydrate=linescore to ensure runs are present when available.
-    """
-    js = _get(f"{api_base}/schedule", {"sportId": 1, "date": date, "hydrate": "linescore"})
-    mapping: Dict[Tuple[str, str], Tuple[int, int]] = {}
-    for d in js.get("dates", []):
-        for g in d.get("games", []):
-            away_name = (g.get("teams", {}).get("away", {}).get("team", {}) or {}).get("name", "")
-            home_name = (g.get("teams", {}).get("home", {}).get("team", {}) or {}).get("name", "")
-            ls = g.get("linescore", {}) or {}
-            a_runs = ((ls.get("teams", {}) or {}).get("away", {}) or {}).get("runs")
-            h_runs = ((ls.get("teams", {}) or {}).get("home", {}) or {}).get("runs")
-            if a_runs is not None and h_runs is not None:
-                mapping[(away_name.strip().lower(), home_name.strip().lower())] = (int(a_runs), int(h_runs))
-    return mapping
-
-def clean_team(s: str) -> str:
-    return str(s or "").strip().lower()
-
-def main():
-    args = parse_args()
-    out_path = Path(args.out)
-    if not out_path.exists():
-        print(f"❌ File not found: {out_path}", file=sys.stderr)
-        sys.exit(1)
-
-    df = pd.read_csv(out_path)
-
-    # Required columns present?
-    required = ["date", "home_team", "away_team", "projected_real_run_total", "favorite"]
-    missing = [c for c in required if c not in df.columns]
-    if missing:
-        print(f"❌ Missing required columns in {out_path}: {missing}", file=sys.stderr)
-        sys.exit(1)
-
-    # Normalize date
-    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
-
-    # Normalize team names in the CSV to API full names
-    df = normalize_team_names_df(df, "home_team", "away_team")
-
-    # Ensure score columns exist
-    if "home_score" not in df.columns: df["home_score"] = pd.NA
-    if "away_score" not in df.columns: df["away_score"] = pd.NA
-
-    # Fetch scores (with linescore hydrated)
-    scores = load_scores_for_date(args.api, args.date)
-
-    # Try to place scores; support both (away,home) and reversed in case CSV sides are swapped
-    for i, r in df.iterrows():
-        k1 = (clean_team(r.get("away_team", "")), clean_team(r.get("home_team", "")))
-        k2 = (clean_team(r.get("home_team", "")), clean_team(r.get("away_team", "")))  # reversed safety
-        if k1 in scores:
-            a, h = scores[k1]
-            df.at[i, "away_score"] = a
-            df.at[i, "home_score"] = h
-        elif k2 in scores:
-            a, h = scores[k2]
-            # If matched as reversed, swap when assigning
-            df.at[i, "away_score"] = h
-            df.at[i, "home_score"] = a
-
-    # Actual total
-    df["actual_real_run_total"] = (
-        pd.to_numeric(df.get("home_score"), errors="coerce").fillna(pd.NA) +
-        pd.to_numeric(df.get("away_score"), errors="coerce").fillna(pd.NA)
-    )
-
-    # Winner
-    def winner_row(r):
-        try:
-            hs = float(r["home_score"])
-            as_ = float(r["away_score"])
-        except Exception:
-            return ""
-        if pd.isna(hs) or pd.isna(as_):
-            return ""
-        return r["home_team"] if hs > as_ else r["away_team"]
-
-    df["winner"] = df.apply(winner_row, axis=1)
-
-    # Diff vs projected
-    proj = pd.to_numeric(df["projected_real_run_total"], errors="coerce")
-    act  = pd.to_numeric(df["actual_real_run_total"], errors="coerce")
-    df["run_total_diff"] = (act - proj).where(~act.isna() & ~proj.isna(), pd.NA)
-
-    # Favorite correct?
-    def fav_ok(r):
-        w = str(r.get("winner") or "").strip().lower()
-        f = str(r.get("favorite") or "").strip().lower()
-        if not w or not f:
-            return ""
-        return "Yes" if w == f else "No"
-
-    df["favorite_correct"] = df.apply(fav_ok, axis=1)
-
-    # Save
-    df.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
-    print(f"✅ Game bets scored: {out_path}")
-
-if __name__ == "__main__":
-    main()
+            # Accept flexible column names
+            cols = {c.lower().strip(): c for c in tm.columns}
+            short_col = cols.get("team_name_short") or cols.get("short") or cols.get("nickname") or cols.get("team_short")
+            api_col   = cols.get("team_name_api")   or cols.get("api")   or cols.get("full")      or cols.get("team_full")
+            if short_col and api_col:
+                tm["_short"] = tm[short_col].astype(str).str.strip().str.lower()
+                tm["_
