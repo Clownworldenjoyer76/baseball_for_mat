@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: "Date to score (YYYY-MM-DD). Leave blank = yesterday (UTC)."
+        description: "Date to score (YYYY-MM-DD). Blank = yesterday (UTC)."
         required: false
         type: string
 
@@ -45,26 +45,25 @@ jobs:
           echo "DATE=$D" >> "$GITHUB_ENV"
           echo "Using date: $D"
 
-      - name: Score GAME bets (MLB API)
+      - name: Score GAME bets (writes only 3 cols in per-day file)
         run: |
           python scripts/score_game_bets_range.py \
             --date "${{ env.DATE }}" \
-            --api "https://statsapi.mlb.com/api/v1/schedule"
+            --api "https://statsapi.mlb.com/api/v1" \
+            --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
 
-      - name: Score PLAYER bets (MLB API)
+      - name: Score PLAYER bets (writes only prop_correct in per-day file)
         run: |
           python scripts/score_player_bets.py \
             --date "${{ env.DATE }}" \
-            --api "https://statsapi.mlb.com/api/v1/schedule" || \
-          python scripts/score_player_bets.py \
-            --api "https://statsapi.mlb.com/api/v1/schedule" \
-            --start "${{ env.DATE }}" --end "${{ env.DATE }}"
+            --api "https://statsapi.mlb.com/api/v1" \
+            --out "data/bets/bet_history/${{ env.DATE }}_player_props.csv"
 
       - name: Commit and push results
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/bets
+          git add "data/bets/bet_history/${{ env.DATE }}_game_props.csv" "data/bets/bet_history/${{ env.DATE }}_player_props.csv" || true
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
