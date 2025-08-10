@@ -9,6 +9,7 @@ import numpy as np
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
 # ---------- 30-team alias map ----------
+# All aliases map to a single, canonical name (e.g., "Baltimore Orioles")
 TEAM_ALIASES: Dict[str, str] = {
     # AL EAST
     "new york yankees":"New York Yankees","yankees":"New York Yankees","nyy":"New York Yankees","ny yankees":"New York Yankees","yanks":"New York Yankees",
@@ -31,7 +32,7 @@ TEAM_ALIASES: Dict[str, str] = {
     "los angeles angels":"Los Angeles Angels","angels":"Los Angeles Angels","laa":"Los Angeles Angels","ana":"Los Angeles Angels","halos":"Los Angeles Angels",
 
     # Athletics mappings
-    "oakland athletics": "Athletics","athletics": "Athletics","oak":"Athletics","a's":"Athletics","as":"Athletics","a s":"Athletics",
+    "oakland athletics": "Oakland Athletics","athletics": "Oakland Athletics","oak":"Oakland Athletics","a's":"Oakland Athletics","as":"Oakland Athletics","a s":"Oakland Athletics",
     
     # NL EAST
     "atlanta braves":"Atlanta Braves","braves":"Atlanta Braves","atl":"Atlanta Braves",
@@ -82,13 +83,14 @@ def _loose_key(s: str) -> str:
     return _PUNCT_RE.sub("", _canon_key(s))
 
 def build_team_mapping() -> Dict[str, str]:
+    # Use _loose_key to map all aliases to their canonical, full name
     mapping = { _loose_key(k): v for k, v in TEAM_ALIASES.items() }
 
     # Add identity mappings for all 30 full names
     fulls = [
         "New York Yankees","Boston Red Sox","Toronto Blue Jays","Tampa Bay Rays","Baltimore Orioles",
         "Cleveland Guardians","Detroit Tigers","Minnesota Twins","Kansas City Royals","Chicago White Sox",
-        "Houston Astros","Seattle Mariners","Texas Rangers","Los Angeles Angels","Athletics",
+        "Houston Astros","Seattle Mariners","Texas Rangers","Los Angeles Angels","Oakland Athletics",
         "Atlanta Braves","Miami Marlins","New York Mets","Philadelphia Phillies","Washington Nationals",
         "Chicago Cubs","St. Louis Cardinals","Milwaukee Brewers","Cincinnati Reds","Pittsburgh Pirates",
         "Los Angeles Dodgers","San Francisco Giants","San Diego Padres","Arizona Diamondbacks","Colorado Rockies",
@@ -117,15 +119,29 @@ def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     if not s:
         return ""
     
-    # Specific fix for the "Athletics" team to ensure it always matches
-    # This bypasses potential issues with aliases or hidden characters.
-    if "athletics" in s.lower() or "oakland" in s.lower() or "oak" in s.lower() or "a's" in s.lower():
-        return "athletics"
-        
     k = _loose_key(s)
     if k in mapping:
-        return mapping[k].lower()
+        # Return the loose-key of the canonical name for consistent matching
+        return _loose_key(mapping[k])
+    
+    # If no mapping is found, return the loose-key of the original string
     return k
+
+def find_team_columns(df: pd.DataFrame) -> Tuple[str, str]:
+    """Finds the correct column names for home and away teams."""
+    cols = [c.lower().strip() for c in df.columns]
+    
+    home_cols = ['home', 'home_team', 'hometeam']
+    away_cols = ['away', 'away_team', 'awayteam', 'visitor', 'visitorteam']
+    
+    home_col = next((c for c in home_cols if c in cols), None)
+    away_col = next((c for c in away_cols if c in cols), None)
+
+    if not home_col or not away_col:
+        raise ValueError("Could not find suitable home/away team columns in the CSV. Please ensure your CSV has columns like 'HOME'/'AWAY' or 'Home Team'/'Away Team'.")
+    
+    return home_col, away_col
+
 
 def main():
     args = parse_args()
@@ -138,6 +154,12 @@ def main():
         print(f"Error: Bet file not found at '{args.out}'.", file=sys.stderr)
         sys.exit(1)
     
+    try:
+        home_col, away_col = find_team_columns(df_bets)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
     # Ensure necessary columns exist to avoid KeyErrors
     for col in ["home_score", "away_score", "game_found"]:
         if col not in df_bets.columns:
@@ -182,8 +204,8 @@ def main():
         best_match = None
         best_match_score = 0
         
-        home_team_bet = normalize_for_match(row.get("HOME", ""), mapping)
-        away_team_bet = normalize_for_match(row.get("AWAY", ""), mapping)
+        home_team_bet = normalize_for_match(row.get(home_col, ""), mapping)
+        away_team_bet = normalize_for_match(row.get(away_col, ""), mapping)
         
         if args.debug:
             print(f"DEBUG: Processing bet for: '{home_team_bet}' vs '{away_team_bet}'")
@@ -211,7 +233,7 @@ def main():
 
         # If a match was found, process it
         if best_match and i not in matched_bets_indices:
-            print(f"✅ Found match (score {best_match_score}) for gamePk {best_match['gamePk']}: Bet on {row['AWAY']} vs {row['HOME']}.")
+            print(f"✅ Found match (score {best_match_score}) for gamePk {best_match['gamePk']}: Bet on {row[away_col]} vs {row[home_col]}.")
             
             if pd.isna(df_bets.loc[i, "home_score"]):
                 df_bets.loc[i, "home_score"] = best_match["home_score"]
