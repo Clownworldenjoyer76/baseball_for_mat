@@ -64,13 +64,14 @@ def parse_args():
     p.add_argument("--debug", action="store_true", help="Print match diagnostics and write unmatched report")
     return p.parse_args()
 
-def _get(url, params=None, tries=3, sleep=0.8):
+def _get(url: str, params: Dict[str, str] | None = None, tries: int = 3, sleep: float = 0.8) -> Dict[str, Any]:
     for _ in range(tries):
         r = requests.get(url, params=params, timeout=25)
         if r.ok:
             return r.json()
         time.sleep(sleep)
     r.raise_for_status()
+    return {}
 
 def _canon_key(s: str) -> str:
     s = (s or "").strip().lower()
@@ -119,65 +120,92 @@ def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
         return mapping[k].lower()
     return k
 
-def find_match(game_bets: List[Dict[str, Any]], game: Dict[str, str], mapping: Dict[str, str]) -> Tuple[Dict[str, Any] | None, str | None, str | None]:
-    
-    # First, try to match both teams
-    for bet in game_bets:
-        home_team_bet = normalize_for_match(bet["HOME"], mapping)
-        away_team_bet = normalize_for_match(bet["AWAY"], mapping)
-
-        if home_team_bet == game["home_team_api"] and away_team_bet == game["away_team_api"]:
-            return bet, bet["HOME"], bet["AWAY"]
-
-    # If no match, try to match just one of the teams
-    for bet in game_bets:
-        home_team_bet = normalize_for_match(bet["HOME"], mapping)
-        away_team_bet = normalize_for_match(bet["AWAY"], mapping)
-
-        if home_team_bet == game["home_team_api"] or away_team_bet == game["away_team_api"]:
-            return bet, bet["HOME"], bet["AWAY"]
-            
-    return None, None, None
-
 def main():
     args = parse_args()
     mapping = build_team_mapping()
+
+    # Read the existing CSV file into a DataFrame
+    try:
+        df_bets = pd.read_csv(args.out, keep_default_na=False)
+    except FileNotFoundError:
+        print(f"Error: Bet file not found at '{args.out}'.", file=sys.stderr)
+        sys.exit(1)
     
-    # --- Sample data to demonstrate the new logic ---
-    # In a real script, this would be loaded from your CSV and API
-    
-    # Sample list of bets (from your CSV)
-    game_bets = [
-        {"AWAY": "New York Yankees", "HOME": "Boston Red Sox", "col3": "value"},
-        {"AWAY": "Toronto Blue Jays", "HOME": "Seattle Mariners", "col3": "value"},
-    ]
-
-    # Sample game data (from MLB API)
-    mlb_games = [
-        {"home_team_api": "boston red sox", "away_team_api": "new york yankees", "gamePk": 1},
-        {"home_team_api": "seattle mariners", "away_team_api": "toronto blue jays", "gamePk": 2},
-        {"home_team_api": "baltimore orioles", "away_team_api": "tampa bay rays", "gamePk": 3},
-    ]
-
-    print(f"Scoring bets for {args.date}")
-    scored_bets = []
-
-    for game in mlb_games:
-        bet_match, bet_home, bet_away = find_match(game_bets, game, mapping)
+    # Get the game schedule from MLB API
+    try:
+        url = f"{args.api}/schedule"
+        params = {"sportId": 1, "date": args.date, "hydrate": "linescore,teams"}
+        schedule_data = _get(url, params)
+        dates = schedule_data.get("dates", [])
         
-        if bet_match:
-            print(f"Found a match for game {game['gamePk']}: Bet on {bet_away} vs {bet_home}")
-            # --- Your scoring logic would go here ---
-            # Example of updating the matched bet
-            bet_match["score_home"] = 1
-            bet_match["score_away"] = 0
-            scored_bets.append(bet_match)
-        else:
-            print(f"No match found for game {game['gamePk']}.")
+        if not dates:
+            print(f"No games found for {args.date}.", file=sys.stderr)
+            return
+
+        games_to_score = []
+        for game in dates[0]["games"]:
+            home_team = game["teams"]["home"]["team"]["name"]
+            away_team = game["teams"]["away"]["team"]["name"]
             
-    # You would then write `scored_bets` to your output file (`args.out`)
-    print("\nCompleted scoring process.")
+            home_team_api = normalize_for_match(home_team, mapping)
+            away_team_api = normalize_for_match(away_team, mapping)
+            
+            games_to_score.append({
+                "gamePk": game["gamePk"],
+                "home_team_api": home_team_api,
+                "away_team_api": away_team_api,
+                "home_score": game["linescore"]["teams"]["home"]["runs"],
+                "away_score": game["linescore"]["teams"]["away"]["runs"],
+            })
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data from MLB API: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    matched_bets_indices = []
+
+    print(f"Scoring {len(df_bets)} bets from '{args.out}' against {len(games_to_score)} games for {args.date}...")
+
+    # Iterate through the MLB games to find matching bets
+    for i, row in df_bets.iterrows():
+        # Look for a match for the current bet in the list of MLB games
+        for game in games_to_score:
+            home_team_bet = normalize_for_match(row.get("HOME", ""), mapping)
+            away_team_bet = normalize_for_match(row.get("AWAY", ""), mapping)
+
+            # First, try to match both teams
+            is_match = False
+            if home_team_bet == game["home_team_api"] and away_team_bet == game["away_team_api"]:
+                is_match = True
+            # If no match, try to match just one team
+            elif home_team_bet == game["home_team_api"] or away_team_bet == game["away_team_api"]:
+                is_match = True
+
+            if is_match and i not in matched_bets_indices:
+                print(f"✅ Found match for gamePk {game['gamePk']}: Bet on {row['AWAY']} vs {row['HOME']}.")
+                
+                # Update only if the cells are empty or missing
+                if pd.isna(df_bets.loc[i, "home_score"]):
+                    df_bets.loc[i, "home_score"] = game["home_score"]
+                if pd.isna(df_bets.loc[i, "away_score"]):
+                    df_bets.loc[i, "away_score"] = game["away_score"]
+                if pd.isna(df_bets.loc[i, "game_found"]):
+                    df_bets.loc[i, "game_found"] = True
+                
+                matched_bets_indices.append(i)
+                break # Move to the next bet once a match is found
+    
+    # After the loop, explicitly mark all unmatched bets as False
+    unmatched_indices = [i for i in df_bets.index if i not in matched_bets_indices]
+    for i in unmatched_indices:
+         if pd.isna(df_bets.loc[i, "game_found"]):
+            df_bets.loc[i, "game_found"] = False
+
+    # Save the updated DataFrame, overwriting the original file
+    df_bets.to_csv(args.out, index=False)
+    
+    print("\n--- Process complete ---")
+    print(f"Updated {len(matched_bets_indices)} bets and saved to '{args.out}'.")
 
 if __name__ == "__main__":
     main()
-
