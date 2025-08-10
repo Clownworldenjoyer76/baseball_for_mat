@@ -4,67 +4,60 @@ import sys
 from pathlib import Path
 import pandas as pd
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description="Update per-day game bet file with only 3 columns.")
-parser.add_argument("--scored", required=True, help="CSV with scored games data")
-parser.add_argument("--out", required=True, help="Path to per-day game_props.csv to update")
+# Parse arguments
+parser = argparse.ArgumentParser(description="Update daily game props file with actual_real_run_total, run_total_diff, favorite_correct.")
+parser.add_argument(
+    "--out",
+    required=True,
+    help="Path to the per-day game_props.csv to update (e.g., data/bets/bet_history/2025-08-08_game_props.csv)"
+)
 args = parser.parse_args()
 
-# Load the scored games CSV
-scored = pd.read_csv(args.scored)
+out_path = Path(args.out)
+if not out_path.exists():
+    print(f"❌ ERROR: File not found: {out_path}", file=sys.stderr)
+    sys.exit(1)
 
-# --- IN-PLACE UPDATE: only 3 columns in the per-day file ---
-out_path = Path(args.out)  # e.g., data/bets/bet_history/2025-08-08_game_props.csv
-out_path.parent.mkdir(parents=True, exist_ok=True)
+# Load the existing daily game props file
+df = pd.read_csv(out_path)
 
-# Keys to match on
-KEYS = ["date", "home_team", "away_team"]
+# Ensure required columns exist
+required_cols = ["date", "home_team", "away_team", "home_score", "away_score", "projected_real_run_total", "favorite"]
+missing = [c for c in required_cols if c not in df.columns]
+if missing:
+    print(f"❌ ERROR: Missing required columns in {out_path}: {missing}", file=sys.stderr)
+    sys.exit(1)
 
-# Compute just the 3 fields we’re allowed to write
-minimal = scored.copy()
-minimal["date"] = pd.to_datetime(minimal["date"]).dt.strftime("%Y-%m-%d")
-minimal["actual_real_run_total"] = (
-    minimal["home_score"].astype(float) + minimal["away_score"].astype(float)
-).where(minimal["home_score"].notna() & minimal["away_score"].notna(), None)
+# Standardize date
+df["date"] = pd.to_datetime(df["date"]).dt.strftime("%Y-%m-%d")
 
-# favorite_correct depends on who actually won vs ‘favorite’ already in file
-minimal["winner"] = minimal.apply(
+# Compute actual real run total
+df["actual_real_run_total"] = (
+    df["home_score"].astype(float) + df["away_score"].astype(float)
+).where(df["home_score"].notna() & df["away_score"].notna(), None)
+
+# Determine winner
+df["winner"] = df.apply(
     lambda r: r["home_team"] if pd.notna(r["home_score"]) and pd.notna(r["away_score"]) and float(r["home_score"]) > float(r["away_score"])
     else (r["away_team"] if pd.notna(r["home_score"]) and pd.notna(r["away_score"]) else None),
     axis=1
 )
 
-# Load existing per-day file; if not present, we still create it but only with allowed columns
-if out_path.exists():
-    base = pd.read_csv(out_path)
-else:
-    base = minimal[KEYS].drop_duplicates().copy()
-    base["projected_real_run_total"] = None
-    base["favorite"] = None
-
-# Merge to compute run_total_diff and favorite_correct using base's favorite & projected
-merged = base.merge(
-    minimal[KEYS + ["actual_real_run_total", "winner"]],
-    on=KEYS, how="left"
-)
-
-merged["run_total_diff"] = (
-    merged["actual_real_run_total"].astype(float) - merged["projected_real_run_total"].astype(float)
+# Compute run_total_diff
+df["run_total_diff"] = (
+    df["actual_real_run_total"].astype(float) - df["projected_real_run_total"].astype(float)
 ).where(
-    merged["actual_real_run_total"].notna() & merged["projected_real_run_total"].notna(),
+    df["actual_real_run_total"].notna() & df["projected_real_run_total"].notna(),
     None
 )
 
-merged["favorite_correct"] = merged.apply(
+# Compute favorite_correct
+df["favorite_correct"] = df.apply(
     lambda r: ("Yes" if pd.notna(r.get("winner")) and pd.notna(r.get("favorite")) and r["winner"] == r["favorite"]
                else ("No" if pd.notna(r.get("winner")) and pd.notna(r.get("favorite")) else "")),
     axis=1
 )
 
-# Write back ONLY the 3 columns (plus existing untouched columns)
-base.loc[:, "actual_real_run_total"] = merged["actual_real_run_total"]
-base.loc[:, "run_total_diff"] = merged["run_total_diff"]
-base.loc[:, "favorite_correct"] = merged["favorite_correct"]
-
-base.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
+# Save back to same file
+df.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
 print(f"✅ Updated {out_path} (wrote: actual_real_run_total, run_total_diff, favorite_correct)")
