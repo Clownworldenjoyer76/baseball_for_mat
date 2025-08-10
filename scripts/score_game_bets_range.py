@@ -10,45 +10,25 @@ TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 # Fallback map: common nicknames/aliases -> MLB StatsAPI full team names
 SHORT_TO_API = {
     # AL East
-    "yankees": "New York Yankees",
-    "red sox": "Boston Red Sox",
-    "blue jays": "Toronto Blue Jays",
-    "rays": "Tampa Bay Rays",
-    "orioles": "Baltimore Orioles",
+    "yankees":"New York Yankees","red sox":"Boston Red Sox","blue jays":"Toronto Blue Jays",
+    "rays":"Tampa Bay Rays","orioles":"Baltimore Orioles",
     # AL Central
-    "guardians": "Cleveland Guardians",
-    "tigers": "Detroit Tigers",
-    "twins": "Minnesota Twins",
-    "royals": "Kansas City Royals",
-    "white sox": "Chicago White Sox",
+    "guardians":"Cleveland Guardians","tigers":"Detroit Tigers","twins":"Minnesota Twins",
+    "royals":"Kansas City Royals","white sox":"Chicago White Sox",
     # AL West
-    "astros": "Houston Astros",
-    "mariners": "Seattle Mariners",
-    "rangers": "Texas Rangers",
-    "angels": "Los Angeles Angels",
-    "athletics": "Oakland Athletics",
-    "a's": "Oakland Athletics",
-    "as": "Oakland Athletics",
+    "astros":"Houston Astros","mariners":"Seattle Mariners","rangers":"Texas Rangers",
+    "angels":"Los Angeles Angels",
+    "athletics":"Oakland Athletics","a's":"Oakland Athletics","as":"Oakland Athletics",
     # NL East
-    "braves": "Atlanta Braves",
-    "marlins": "Miami Marlins",
-    "mets": "New York Mets",
-    "phillies": "Philadelphia Phillies",
-    "nationals": "Washington Nationals",
+    "braves":"Atlanta Braves","marlins":"Miami Marlins","mets":"New York Mets",
+    "phillies":"Philadelphia Phillies","nationals":"Washington Nationals",
     # NL Central
-    "cubs": "Chicago Cubs",
-    "cardinals": "St. Louis Cardinals",
-    "brewers": "Milwaukee Brewers",
-    "reds": "Cincinnati Reds",
-    "pirates": "Pittsburgh Pirates",
+    "cubs":"Chicago Cubs","cardinals":"St. Louis Cardinals","brewers":"Milwaukee Brewers",
+    "reds":"Cincinnati Reds","pirates":"Pittsburgh Pirates",
     # NL West
-    "dodgers": "Los Angeles Dodgers",
-    "giants": "San Francisco Giants",
-    "padres": "San Diego Padres",
-    "diamondbacks": "Arizona Diamondbacks",
-    "dbacks": "Arizona Diamondbacks",
-    "d-backs": "Arizona Diamondbacks",
-    "rockies": "Colorado Rockies",
+    "dodgers":"Los Angeles Dodgers","giants":"San Francisco Giants","padres":"San Diego Padres",
+    "diamondbacks":"Arizona Diamondbacks","dbacks":"Arizona Diamondbacks","d-backs":"Arizona Diamondbacks",
+    "rockies":"Colorado Rockies",
 }
 
 def parse_args():
@@ -87,7 +67,6 @@ def build_team_mapping() -> Dict[str, str]:
 def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     s = str(val or "").strip()
     low = s.lower()
-    # If already a full name (exact), keep it; else map nickname if possible
     if s in mapping.values():
         return s.lower()
     return (mapping.get(low, s)).lower()
@@ -106,6 +85,28 @@ def load_scores_for_date(api_base: str, date: str) -> Dict[Tuple[str, str], Tupl
             if a_runs is not None and h_runs is not None:
                 out[(away_name.strip().lower(), home_name.strip().lower())] = (int(a_runs), int(h_runs))
     return out
+
+def hydrate_missing_from_linescore(api_base: str, date: str, scores: Dict[Tuple[str,str], Tuple[int,int]]):
+    """If schedule lacked a linescore for some games, fetch /game/{pk}/linescore and fill."""
+    sched = _get(f"{api_base}/schedule", {"sportId":1, "date":date})
+    for d in sched.get("dates", []):
+        for g in d.get("games", []):
+            away = (g.get("teams", {}).get("away", {}).get("team", {}) or {}).get("name","").strip().lower()
+            home = (g.get("teams", {}).get("home", {}).get("team", {}) or {}).get("name","").strip().lower()
+            key = (away, home)
+            if key in scores:
+                continue
+            pk = g.get("gamePk")
+            if not pk:
+                continue
+            try:
+                ls = _get(f"{api_base}/game/{pk}/linescore")
+                a_runs = ((ls.get("teams", {}) or {}).get("away", {}) or {}).get("runs")
+                h_runs = ((ls.get("teams", {}) or {}).get("home", {}) or {}).get("runs")
+                if a_runs is not None and h_runs is not None:
+                    scores[key] = (int(a_runs), int(h_runs))
+            except Exception:
+                pass
 
 def main():
     args = parse_args()
@@ -137,8 +138,9 @@ def main():
     if "home_score" not in df.columns: df["home_score"] = pd.NA
     if "away_score" not in df.columns: df["away_score"] = pd.NA
 
-    # Fetch scores
+    # Fetch scores + per-game fallback
     scores = load_scores_for_date(args.api, args.date)
+    hydrate_missing_from_linescore(args.api, args.date, scores)
 
     # Fill scores (try both orientations just in case)
     for i, r in df.iterrows():

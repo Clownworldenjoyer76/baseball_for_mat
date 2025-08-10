@@ -30,9 +30,7 @@ SHORT_TO_API = {
 }
 
 def parse_args():
-    p = argparse.ArgumentParser(
-        description="Score daily PLAYER props: writes prop_correct only."
-    )
+    p = argparse.ArgumentParser(description="Score daily PLAYER props: writes prop_correct only.")
     p.add_argument("--date", required=True, help="YYYY-MM-DD")
     p.add_argument("--api", default="https://statsapi.mlb.com/api/v1")
     p.add_argument("--out", required=True, help="Per-day player props CSV to update")
@@ -103,7 +101,7 @@ def collect_boxscore_stats_for_date(api_base: str, date: str) -> pd.DataFrame:
             continue
         for side in ("home","away"):
             tjs = box.get("teams", {}).get(side)
-            if not tjs: 
+            if not tjs:
                 continue
             team_name = tjs.get("team", {}).get("name", "")
             players = []
@@ -173,7 +171,7 @@ def main():
         if col not in picks.columns:
             picks[col] = ""
 
-    # Build keys for picks
+    # Keys for picks
     mapping = build_team_mapping()
     picks["team_match"] = picks["team"].apply(lambda v: normalize_team_for_match(v, mapping))
     picks["name_key"] = picks["player_name"].apply(lambda s: make_name_key(str(s).strip()))
@@ -190,7 +188,7 @@ def main():
     # Pass 1: match on (name_key, team_match)
     merged = picks.merge(actual, on=["name_key","team_match"], how="left", suffixes=("", "_actual"))
 
-    # Pass 2: any still missing metrics → match on name_key only (max across teams)
+    # Pass 2: still missing → match on name_key only (max across teams)
     need = merged[["hits","home_runs","total_bases","strikeouts","walks"]].isna().all(axis=1)
     if need.any():
         actual_by_name = (actual.groupby("name_key", as_index=False)
@@ -211,4 +209,21 @@ def main():
     def decide(av, ln, missing):
         if missing:
             if dnp_as == "DNP":   return "DNP"
-            if dnp_as == "NO":    return
+            if dnp_as == "NO":    return "No"
+            return ""  # BLANK
+        if av is None or pd.isna(ln):
+            return ""
+        try:
+            return "Yes" if float(av) >= float(ln) else "No"
+        except Exception:
+            return ""
+
+    missing_mask = merged[["hits","home_runs","total_bases","strikeouts","walks"]].isna().all(axis=1).tolist()
+    picks["prop_correct"] = [decide(av, ln, miss) for av, ln, miss in zip(actual_vals, line_series, missing_mask)]
+
+    # Save
+    picks.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
+    print(f"✅ Player props scored: {out_path}")
+
+if __name__ == "__main__":
+    main()
