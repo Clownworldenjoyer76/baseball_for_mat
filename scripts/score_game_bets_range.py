@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, csv, sys, time
+import argparse, csv, sys, time, re
 from pathlib import Path
 from typing import Dict, Tuple
 import requests
@@ -7,28 +7,112 @@ import pandas as pd
 
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
-# Fallback map: common nicknames/aliases -> MLB StatsAPI full team names
-SHORT_TO_API = {
-    # AL East
-    "yankees":"New York Yankees","red sox":"Boston Red Sox","blue jays":"Toronto Blue Jays",
-    "rays":"Tampa Bay Rays","orioles":"Baltimore Orioles",
-    # AL Central
-    "guardians":"Cleveland Guardians","tigers":"Detroit Tigers","twins":"Minnesota Twins",
-    "royals":"Kansas City Royals","white sox":"Chicago White Sox",
-    # AL West
-    "astros":"Houston Astros","mariners":"Seattle Mariners","rangers":"Texas Rangers",
-    "angels":"Los Angeles Angels",
-    "athletics":"Oakland Athletics","a's":"Oakland Athletics","as":"Oakland Athletics",
-    # NL East
-    "braves":"Atlanta Braves","marlins":"Miami Marlins","mets":"New York Mets",
-    "phillies":"Philadelphia Phillies","nationals":"Washington Nationals",
-    # NL Central
-    "cubs":"Chicago Cubs","cardinals":"St. Louis Cardinals","brewers":"Milwaukee Brewers",
-    "reds":"Cincinnati Reds","pirates":"Pittsburgh Pirates",
-    # NL West
-    "dodgers":"Los Angeles Dodgers","giants":"San Francisco Giants","padres":"San Diego Padres",
+# Full 30-team alias map (lowercased keys) -> MLB StatsAPI full team names
+TEAM_ALIASES: Dict[str, str] = {
+    # ===================== AL EAST =====================
+    # Yankees
+    "yankees":"New York Yankees","nyy":"New York Yankees","new york yankees":"New York Yankees",
+    "ny yankees":"New York Yankees","bronx bombers":"New York Yankees","yanks":"New York Yankees",
+    # Red Sox
+    "red sox":"Boston Red Sox","bos":"Boston Red Sox","boston red sox":"Boston Red Sox",
+    "boston":"Boston Red Sox","sox boston":"Boston Red Sox","bo sox":"Boston Red Sox","bo-sox":"Boston Red Sox",
+    # Blue Jays
+    "blue jays":"Toronto Blue Jays","jays":"Toronto Blue Jays","tor":"Toronto Blue Jays",
+    "toronto":"Toronto Blue Jays","toronto blue jays":"Toronto Blue Jays",
+    # Rays
+    "rays":"Tampa Bay Rays","tb":"Tampa Bay Rays","tbr":"Tampa Bay Rays","tampa bay":"Tampa Bay Rays",
+    "tampa bay rays":"Tampa Bay Rays","tampa":"Tampa Bay Rays","devil rays":"Tampa Bay Rays",
+    # Orioles
+    "orioles":"Baltimore Orioles","o's":"Baltimore Orioles","os":"Baltimore Orioles","bal":"Baltimore Orioles",
+    "baltimore":"Baltimore Orioles","baltimore orioles":"Baltimore Orioles",
+
+    # ===================== AL CENTRAL =====================
+    # Guardians
+    "guardians":"Cleveland Guardians","cle":"Cleveland Guardians","cleveland":"Cleveland Guardians",
+    "cleveland guardians":"Cleveland Guardians","indians":"Cleveland Guardians","cleveland indians":"Cleveland Guardians",
+    # Tigers
+    "tigers":"Detroit Tigers","det":"Detroit Tigers","detroit":"Detroit Tigers",
+    "detroit tigers":"Detroit Tigers","motor city kitties":"Detroit Tigers",
+    # Twins
+    "twins":"Minnesota Twins","min":"Minnesota Twins","minn":"Minnesota Twins",
+    "minnesota":"Minnesota Twins","minnesota twins":"Minnesota Twins","twinkies":"Minnesota Twins",
+    # Royals
+    "royals":"Kansas City Royals","kc":"Kansas City Royals","kcr":"Kansas City Royals",
+    "kansas city":"Kansas City Royals","kansas city royals":"Kansas City Royals",
+    # White Sox
+    "white sox":"Chicago White Sox","whitesox":"Chicago White Sox","chi sox":"Chicago White Sox","chisox":"Chicago White Sox",
+    "cws":"Chicago White Sox","chw":"Chicago White Sox","chicago white sox":"Chicago White Sox",
+    "south siders":"Chicago White Sox","white socks":"Chicago White Sox",
+
+    # ===================== AL WEST =====================
+    # Astros
+    "astros":"Houston Astros","hou":"Houston Astros","houston":"Houston Astros",
+    "houston astros":"Houston Astros","stros":"Houston Astros","’stros":"Houston Astros","stros!":"Houston Astros",
+    # Mariners
+    "mariners":"Seattle Mariners","sea":"Seattle Mariners","seattle":"Seattle Mariners",
+    "seattle mariners":"Seattle Mariners","m's":"Seattle Mariners","ms":"Seattle Mariners","m-s":"Seattle Mariners",
+    # Rangers
+    "rangers":"Texas Rangers","tex":"Texas Rangers","txr":"Texas Rangers",
+    "texas":"Texas Rangers","texas rangers":"Texas Rangers",
+    # Angels
+    "angels":"Los Angeles Angels","laa":"Los Angeles Angels","ana":"Los Angeles Angels",
+    "los angeles angels":"Los Angeles Angels","los angeles angels of anaheim":"Los Angeles Angels",
+    "anaheim angels":"Los Angeles Angels","anaheim":"Los Angeles Angels","halos":"Los Angeles Angels",
+    # Athletics
+    "athletics":"Oakland Athletics","oakland athletics":"Oakland Athletics","oak":"Oakland Athletics",
+    "a's":"Oakland Athletics","as":"Oakland Athletics","a s":"Oakland Athletics","oakland a's":"Oakland Athletics",
+    "oakland as":"Oakland Athletics","oakland":"Oakland Athletics","elephant herd":"Oakland Athletics",
+
+    # ===================== NL EAST =====================
+    # Braves
+    "braves":"Atlanta Braves","atl":"Atlanta Braves","atlanta":"Atlanta Braves","atlanta braves":"Atlanta Braves",
+    # Marlins
+    "marlins":"Miami Marlins","mia":"Miami Marlins","miami":"Miami Marlins","miami marlins":"Miami Marlins",
+    "fish":"Miami Marlins","fishes":"Miami Marlins",
+    # Mets
+    "mets":"New York Mets","nym":"New York Mets","new york mets":"New York Mets",
+    "ny mets":"New York Mets","amazins":"New York Mets","metropolitans":"New York Mets",
+    # Phillies
+    "phillies":"Philadelphia Phillies","phi":"Philadelphia Phillies","phils":"Philadelphia Phillies",
+    "philadelphia":"Philadelphia Phillies","philadelphia phillies":"Philadelphia Phillies",
+    # Nationals
+    "nationals":"Washington Nationals","nats":"Washington Nationals","was":"Washington Nationals","wsh":"Washington Nationals",
+    "washington":"Washington Nationals","washington nationals":"Washington Nationals",
+
+    # ===================== NL CENTRAL =====================
+    # Cubs
+    "cubs":"Chicago Cubs","chc":"Chicago Cubs","chicago cubs":"Chicago Cubs","cubbies":"Chicago Cubs",
+    # Cardinals
+    "cardinals":"St. Louis Cardinals","stl":"St. Louis Cardinals","st. louis":"St. Louis Cardinals",
+    "saint louis":"St. Louis Cardinals","st louis":"St. Louis Cardinals","st. louis cardinals":"St. Louis Cardinals",
+    "st louis cardinals":"St. Louis Cardinals","saint louis cardinals":"St. Louis Cardinals","redbirds":"St. Louis Cardinals",
+    # Brewers
+    "brewers":"Milwaukee Brewers","mil":"Milwaukee Brewers","milwaukee":"Milwaukee Brewers",
+    "milwaukee brewers":"Milwaukee Brewers","brew crew":"Milwaukee Brewers","brew-crew":"Milwaukee Brewers",
+    # Reds
+    "reds":"Cincinnati Reds","cin":"Cincinnati Reds","cincinnati":"Cincinnati Reds","cincinnati reds":"Cincinnati Reds",
+    "big red machine":"Cincinnati Reds",
+    # Pirates
+    "pirates":"Pittsburgh Pirates","pit":"Pittsburgh Pirates","pittsburgh":"Pittsburgh Pirates",
+    "pittsburgh pirates":"Pittsburgh Pirates","bucs":"Pittsburgh Pirates","buccos":"Pittsburgh Pirates",
+
+    # ===================== NL WEST =====================
+    # Dodgers
+    "dodgers":"Los Angeles Dodgers","lad":"Los Angeles Dodgers","la dodgers":"Los Angeles Dodgers",
+    "los angeles dodgers":"Los Angeles Dodgers","dodgers la":"Los Angeles Dodgers","boys in blue":"Los Angeles Dodgers",
+    # Giants
+    "giants":"San Francisco Giants","sf":"San Francisco Giants","sfg":"San Francisco Giants",
+    "san francisco":"San Francisco Giants","san francisco giants":"San Francisco Giants","orange and black":"San Francisco Giants",
+    # Padres
+    "padres":"San Diego Padres","sd":"San Diego Padres","sdg":"San Diego Padres","san diego":"San Diego Padres",
+    "san diego padres":"San Diego Padres","friars":"San Diego Padres",
+    # Diamondbacks
     "diamondbacks":"Arizona Diamondbacks","dbacks":"Arizona Diamondbacks","d-backs":"Arizona Diamondbacks",
-    "rockies":"Colorado Rockies",
+    "dbacks":"Arizona Diamondbacks","d backs":"Arizona Diamondbacks","ari":"Arizona Diamondbacks",
+    "arizona":"Arizona Diamondbacks","arizona diamondbacks":"Arizona Diamondbacks","snakes":"Arizona Diamondbacks",
+    # Rockies
+    "rockies":"Colorado Rockies","col":"Colorado Rockies","colorado":"Colorado Rockies",
+    "colorado rockies":"Colorado Rockies","rox":"Colorado Rockies",
 }
 
 def parse_args():
@@ -49,7 +133,21 @@ def _get(url, params=None, tries=3, sleep=0.8):
     r.raise_for_status()
 
 def build_team_mapping() -> Dict[str, str]:
-    mapping = SHORT_TO_API.copy()
+    mapping = TEAM_ALIASES.copy()
+
+    # Also include exact full names as identity mappings (lowercased key)
+    fulls = {
+        "New York Yankees","Boston Red Sox","Toronto Blue Jays","Tampa Bay Rays","Baltimore Orioles",
+        "Cleveland Guardians","Detroit Tigers","Minnesota Twins","Kansas City Royals","Chicago White Sox",
+        "Houston Astros","Seattle Mariners","Texas Rangers","Los Angeles Angels","Oakland Athletics",
+        "Atlanta Braves","Miami Marlins","New York Mets","Philadelphia Phillies","Washington Nationals",
+        "Chicago Cubs","St. Louis Cardinals","Milwaukee Brewers","Cincinnati Reds","Pittsburgh Pirates",
+        "Los Angeles Dodgers","San Francisco Giants","San Diego Padres","Arizona Diamondbacks","Colorado Rockies",
+    }
+    for f in fulls:
+        mapping[f.lower()] = f
+
+    # Optionally extend from CSV
     if TEAM_MAP_FILE.exists():
         try:
             tm = pd.read_csv(TEAM_MAP_FILE)
@@ -64,12 +162,48 @@ def build_team_mapping() -> Dict[str, str]:
             print(f"⚠️ team_name_master.csv problem: {e}", file=sys.stderr)
     return mapping
 
+# Basic cleanup: lowercase, collapse spaces, strip punctuation that commonly varies
+_PUNCT_RE = re.compile(r"[.\u2019'’`-]")  # periods & common apostrophes/hyphens
+
+def _canon_key(s: str) -> str:
+    s = (s or "").strip().lower()
+    s = " ".join(s.split())  # collapse inner whitespace
+    return s
+
+def _loose_key(s: str) -> str:
+    # remove periods/apostrophes/hyphens to catch "st louis", "a's", "d-backs", "m's"
+    return _PUNCT_RE.sub("", _canon_key(s))
+
 def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     s = str(val or "").strip()
-    low = s.lower()
+    if not s:
+        return ""
+    # if the value is already an exact full name in mapping values, trust it
     if s in mapping.values():
         return s.lower()
-    return (mapping.get(low, s)).lower()
+
+    k1 = _canon_key(s)
+    k2 = _loose_key(s)
+
+    if k1 in mapping:
+        return mapping[k1].lower()
+    if k2 in mapping:
+        return mapping[k2].lower()
+
+    # Try "city nickname" pattern if provided as two tokens in reverse/casual forms
+    # (e.g., "boston sox" -> Boston Red Sox, "la dodgers" -> Los Angeles Dodgers)
+    tokens = k1.split()
+    if len(tokens) >= 2:
+        # rebuild without common connectors
+        guess = " ".join(tokens[-2:])  # last two words
+        if guess in mapping:
+            return mapping[guess].lower()
+        guess2 = _loose_key(guess)
+        if guess2 in mapping:
+            return mapping[guess2].lower()
+
+    # Fallback: return original lowercased
+    return k1
 
 def load_scores_for_date(api_base: str, date: str) -> Dict[Tuple[str, str], Tuple[int, int]]:
     """Returns {(away_full.lower(), home_full.lower()): (away_runs, home_runs)} using schedule?hydrate=linescore."""
