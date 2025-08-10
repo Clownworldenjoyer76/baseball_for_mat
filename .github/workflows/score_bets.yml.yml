@@ -1,0 +1,73 @@
+name: Score Bets (MLB API)
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Date to score (YYYY-MM-DD). Blank = yesterday (UTC)."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  score-bets:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          else
+            python -m pip install pandas requests
+          fi
+
+      - name: Compute target date (default = yesterday UTC)
+        id: dates
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            D="${{ github.event.inputs.date }}"
+          else
+            D="$(date -u -d 'yesterday' +%Y-%m-%d)"
+          fi
+          echo "DATE=$D" >> "$GITHUB_ENV"
+          echo "Using date: $D"
+
+      - name: Score GAME bets (debug always on)
+        run: |
+          python -u scripts/score_game_bets_range.py \
+            --date "${{ env.DATE }}" \
+            --api "https://statsapi.mlb.com/api/v1" \
+            --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
+
+      - name: Score PLAYER bets (writes prop_correct only)
+        run: |
+          python -u scripts/score_player_bets.py \
+            --date "${{ env.DATE }}" \
+            --api "https://statsapi.mlb.com/api/v1" \
+            --out "data/bets/bet_history/${{ env.DATE }}_player_props.csv"
+
+      - name: Commit and push results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add "data/bets/bet_history/${{ env.DATE }}_game_props.csv" "data/bets/bet_history/${{ env.DATE }}_player_props.csv" || true
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Score bets for ${{ env.DATE }}"
+            git push
+          fi
