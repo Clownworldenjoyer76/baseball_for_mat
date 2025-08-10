@@ -132,10 +132,10 @@ def main():
         print(f"Error: Bet file not found at '{args.out}'.", file=sys.stderr)
         sys.exit(1)
     
-    # Add a 'game_found' column if it doesn't exist.
-    # This prevents the KeyError shown in your traceback.
-    if "game_found" not in df_bets.columns:
-        df_bets["game_found"] = pd.NA
+    # Ensure necessary columns exist to avoid KeyErrors
+    for col in ["home_score", "away_score", "game_found"]:
+        if col not in df_bets.columns:
+            df_bets[col] = pd.NA
         
     # Get the game schedule from MLB API
     try:
@@ -178,6 +178,9 @@ def main():
         for game in games_to_score:
             home_team_bet = normalize_for_match(row.get("HOME", ""), mapping)
             away_team_bet = normalize_for_match(row.get("AWAY", ""), mapping)
+            
+            if args.debug:
+                print(f"DEBUG: Comparing bet: '{home_team_bet}' vs '{away_team_bet}' with game: '{game['home_team_api']}' vs '{game['away_team_api']}'")
 
             # First, try to match both teams
             is_match = False
