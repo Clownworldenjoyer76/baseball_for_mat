@@ -48,8 +48,6 @@ jobs:
       - name: Score GAME bets (writes only 3 cols in per-day file)
         run: |
           python scripts/score_game_bets_range.py \
-            --date "${{ env.DATE }}" \
-            --api "https://statsapi.mlb.com/api/v1" \
             --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
 
       - name: Score PLAYER bets (writes only prop_correct in per-day file)
