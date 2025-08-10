@@ -23,13 +23,15 @@ TEAM_ALIASES: Dict[str, str] = {
     "kansas city royals":"Kansas City Royals","royals":"Kansas City Royals","kc":"Kansas City Royals","kcr":"Kansas City Royals",
     "chicago white sox":"Chicago White Sox","white sox":"Chicago White Sox","whitesox":"Chicago White Sox","chisox":"Chicago White Sox","cws":"Chicago White Sox","chw":"Chicago White Sox",
 
-    # AL WEST
+        # AL WEST
     "houston astros":"Houston Astros","astros":"Houston Astros","hou":"Houston Astros","stros":"Houston Astros",
     "seattle mariners":"Seattle Mariners","mariners":"Seattle Mariners","sea":"Seattle Mariners","m's":"Seattle Mariners","ms":"Seattle Mariners",
     "texas rangers":"Texas Rangers","rangers":"Texas Rangers","tex":"Texas Rangers",
     "los angeles angels":"Los Angeles Angels","angels":"Los Angeles Angels","laa":"Los Angeles Angels","ana":"Los Angeles Angels","halos":"Los Angeles Angels",
-    "oakland athletics":"Oakland Athletics","athletics":"Oakland Athletics","oak":"Oakland Athletics","a's":"Oakland Athletics","as":"Oakland Athletics","a s":"Oakland Athletics",
 
+    # Use MLB API naming: "Athletics"
+    "oakland athletics":"Athletics","athletics":"Athletics","oak":"Athletics","a's":"Athletics","as":"Athletics","a s":"Athletics",
+    
     # NL EAST
     "atlanta braves":"Atlanta Braves","braves":"Atlanta Braves","atl":"Atlanta Braves",
     "miami marlins":"Miami Marlins","marlins":"Miami Marlins","mia":"Miami Marlins","fish":"Miami Marlins",
@@ -74,10 +76,10 @@ def build_team_mapping() -> Dict[str, str]:
     mapping = TEAM_ALIASES.copy()
 
     # Add identity mappings for all 30 full names
-    fulls = [
+        fulls = [
         "New York Yankees","Boston Red Sox","Toronto Blue Jays","Tampa Bay Rays","Baltimore Orioles",
         "Cleveland Guardians","Detroit Tigers","Minnesota Twins","Kansas City Royals","Chicago White Sox",
-        "Houston Astros","Seattle Mariners","Texas Rangers","Los Angeles Angels","Oakland Athletics",
+        "Houston Astros","Seattle Mariners","Texas Rangers","Los Angeles Angels","Athletics",
         "Atlanta Braves","Miami Marlins","New York Mets","Philadelphia Phillies","Washington Nationals",
         "Chicago Cubs","St. Louis Cardinals","Milwaukee Brewers","Cincinnati Reds","Pittsburgh Pirates",
         "Los Angeles Dodgers","San Francisco Giants","San Diego Padres","Arizona Diamondbacks","Colorado Rockies",
