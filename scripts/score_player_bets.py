@@ -4,6 +4,8 @@ from pathlib import Path
 import requests
 import pandas as pd
 
+TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # adjust path if different
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Score daily PLAYER props: computes prop_correct only, based on MLB StatsAPI boxscores for the given date."
@@ -32,6 +34,19 @@ def norm_name_to_last_first(full_name: str) -> str:
     first = " ".join(parts[:-1])
     return f"{last}, {first}"
 
+def normalize_team_names(df: pd.DataFrame, team_col: str) -> pd.DataFrame:
+    if TEAM_MAP_FILE.exists():
+        try:
+            tm = pd.read_csv(TEAM_MAP_FILE)
+            tm["team_code"] = tm["team_code"].astype(str).str.strip().str.lower()
+            tm["team_name_api"] = tm["team_name_api"].astype(str).str.strip()
+            tm["team_name_short"] = tm["team_name_short"].astype(str).str.strip().str.lower()
+            mapping = dict(zip(tm["team_name_short"], tm["team_name_api"]))
+            df[team_col] = df[team_col].astype(str).str.strip().str.lower().replace(mapping)
+        except Exception as e:
+            print(f"⚠️ Could not load/parse team map: {e}", file=sys.stderr)
+    return df
+
 def collect_boxscore_stats_for_date(api_base: str, date: str) -> pd.DataFrame:
     sched = _get(f"{api_base}/schedule", {"sportId":1, "date":date})
     game_pks = [g.get("gamePk") for d in sched.get("dates", []) for g in d.get("games", [])]
@@ -44,7 +59,7 @@ def collect_boxscore_stats_for_date(api_base: str, date: str) -> pd.DataFrame:
         teams = []
         if "teams" in box:
             teams = [("home", box["teams"].get("home")), ("away", box["teams"].get("away"))]
-        for side, tjs in teams:
+        for _, tjs in teams:
             if not tjs: continue
             team_name = tjs.get("team", {}).get("name", "")
             for group in ("batters", "pitchers"):
@@ -101,12 +116,14 @@ def main():
         sys.exit(1)
 
     picks = pd.read_csv(out_path)
-
     for col in ["date","team","player_name","prop_type"]:
         if col not in picks.columns:
             picks[col] = ""
 
     picks["player_name"] = picks["player_name"].fillna("").apply(lambda s: s.strip())
+
+    # Normalize team names if mapping exists
+    picks = normalize_team_names(picks, "team")
 
     if "prop_line" in picks.columns:
         line_series = pd.to_numeric(picks["prop_line"], errors="coerce")
@@ -114,13 +131,17 @@ def main():
         line_series = pd.to_numeric(picks.get("line"), errors="coerce")
 
     actual = collect_boxscore_stats_for_date(args.api, args.date)
+    actual = normalize_team_names(actual, "team")
 
-    merged = picks.merge(actual, on=["team","player_name"], how="left", suffixes=("", "_actual"))
+    # 1st pass: name-only match
+    merged = picks.merge(actual.drop(columns=["team"]).drop_duplicates("player_name"),
+                         on="player_name", how="left", suffixes=("", "_actual"))
 
-    need = merged["hits"].isna() & merged["home_runs"].isna() & merged["total_bases"].isna() & merged["strikeouts"].isna() & merged["walks"].isna()
+    # 2nd pass: for still-missing, try team+name
+    need = merged["hits"].isna() & merged["home_runs"].isna() & merged["total_bases"].isna()
     if need.any():
-        only_name = picks[need][["player_name"]].merge(actual.drop(columns=["team"]), on="player_name", how="left")
-        merged.loc[need, ["hits","home_runs","total_bases","strikeouts","walks"]] = only_name[["hits","home_runs","total_bases","strikeouts","walks"]].values
+        fix = picks[need].merge(actual, on=["team","player_name"], how="left")
+        merged.loc[need, ["hits","home_runs","total_bases","strikeouts","walks"]] = fix[["hits","home_runs","total_bases","strikeouts","walks"]].values
 
     metric_for_row = [map_prop_to_metric(pt) for pt in picks["prop_type"]]
     actual_vals = []
