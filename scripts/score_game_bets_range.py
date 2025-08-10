@@ -116,6 +116,11 @@ def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     s = str(val or "").strip()
     if not s:
         return ""
+    
+    # Specific exception for "Athletics" to force the name
+    if _loose_key(s) == "athletics":
+        return "athletics"
+        
     k = _loose_key(s)
     if k in mapping:
         return mapping[k].lower()
