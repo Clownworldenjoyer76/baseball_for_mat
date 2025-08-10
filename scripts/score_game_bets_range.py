@@ -14,7 +14,7 @@ TEAM_ALIASES: Dict[str, str] = {
     "boston red sox":"Boston Red Sox","red sox":"Boston Red Sox","bos":"Boston Red Sox","bo sox":"Boston Red Sox","bo-sox":"Boston Red Sox",
     "toronto blue jays":"Toronto Blue Jays","blue jays":"Toronto Blue Jays","jays":"Toronto Blue Jays","tor":"Toronto Blue Jays",
     "tampa bay rays":"Tampa Bay Rays","rays":"Tampa Bay Rays","tb":"Tampa Bay Rays","tbr":"Tampa Bay Rays","devil rays":"Tampa Bay Rays",
-    "baltimore orioles":"Baltimore Orioles","orioles":"Baltimore Orioles","o's":"Baltimore Orioles","os":"Baltimore Orioles","bal":"Baltimore Orioles",
+    "baltimore orioles":"Baltimore Orioles","orioles": "Baltimore Orioles","o's":"Baltimore Orioles","os":"Baltimore Orioles","bal":"Baltimore Orioles",
 
     # AL CENTRAL
     "cleveland guardians":"Cleveland Guardians","guardians":"Cleveland Guardians","cle":"Cleveland Guardians","indians":"Cleveland Guardians",
@@ -30,7 +30,7 @@ TEAM_ALIASES: Dict[str, str] = {
     "los angeles angels":"Los Angeles Angels","angels":"Los Angeles Angels","laa":"Los Angeles Angels","ana":"Los Angeles Angels","halos":"Los Angeles Angels",
 
     # Athletics mappings
-    "oakland athletics":"Athletics","athletics":"Athletics","oak":"Athletics","a's":"Athletics","as":"Athletics","a s":"Athletics",
+    "oakland athletics": "Athletics","athletics": "Athletics","oak":"Athletics","a's":"Athletics","as":"Athletics","a s":"Athletics",
     
     # NL EAST
     "atlanta braves":"Atlanta Braves","braves":"Atlanta Braves","atl":"Atlanta Braves",
