@@ -1,3 +1,18 @@
+import argparse
+import csv
+import sys
+from pathlib import Path
+import pandas as pd
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Update per-day game bet file with only 3 columns.")
+parser.add_argument("--scored", required=True, help="CSV with scored games data")
+parser.add_argument("--out", required=True, help="Path to per-day game_props.csv to update")
+args = parser.parse_args()
+
+# Load the scored games CSV
+scored = pd.read_csv(args.scored)
+
 # --- IN-PLACE UPDATE: only 3 columns in the per-day file ---
 out_path = Path(args.out)  # e.g., data/bets/bet_history/2025-08-08_game_props.csv
 out_path.parent.mkdir(parents=True, exist_ok=True)
