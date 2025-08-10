@@ -28,7 +28,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             python -m pip install -r requirements.txt
-          else:
+          else
             python -m pip install pandas requests
           fi
 
@@ -46,11 +46,17 @@ jobs:
 
       - name: Score GAME bets (writes scores if missing + 3 cols)
         run: |
-          python scripts/score_game_bets_range.py             --date "${{ env.DATE }}"             --api "https://statsapi.mlb.com/api/v1"             --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
+          python scripts/score_game_bets_range.py \
+            --date "${{ env.DATE }}" \
+            --api "https://statsapi.mlb.com/api/v1" \
+            --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
 
       - name: Score PLAYER bets (writes prop_correct only)
         run: |
-          python scripts/score_player_bets.py             --date "${{ env.DATE }}"             --api "https://statsapi.mlb.com/api/v1"             --out "data/bets/bet_history/${{ env.DATE }}_player_props.csv"
+          python scripts/score_player_bets.py \
+            --date "${{ env.DATE }}" \
+            --api "https://statsapi.mlb.com/api/v1" \
+            --out "data/bets/bet_history/${{ env.DATE }}_player_props.csv"
 
       - name: Commit and push results
         run: |
