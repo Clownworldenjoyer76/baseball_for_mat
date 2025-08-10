@@ -169,42 +169,54 @@ def main():
         sys.exit(1)
 
     matched_bets_indices = []
-
     print(f"Scoring {len(df_bets)} bets from '{args.out}' against {len(games_to_score)} games for {args.date}...")
 
-    # Iterate through the MLB games to find matching bets
+    # A more robust matching loop
     for i, row in df_bets.iterrows():
-        # Look for a match for the current bet in the list of MLB games
+        best_match = None
+        best_match_score = 0
+        
+        home_team_bet = normalize_for_match(row.get("HOME", ""), mapping)
+        away_team_bet = normalize_for_match(row.get("AWAY", ""), mapping)
+        
+        if args.debug:
+            print(f"DEBUG: Processing bet for: '{home_team_bet}' vs '{away_team_bet}'")
+
         for game in games_to_score:
-            home_team_bet = normalize_for_match(row.get("HOME", ""), mapping)
-            away_team_bet = normalize_for_match(row.get("AWAY", ""), mapping)
+            game_home = game['home_team_api']
+            game_away = game['away_team_api']
+            current_score = 0
             
             if args.debug:
-                print(f"DEBUG: Comparing bet: '{home_team_bet}' vs '{away_team_bet}' with game: '{game['home_team_api']}' vs '{game['away_team_api']}'")
+                print(f"DEBUG: Comparing against game: '{game_home}' vs '{game_away}'")
 
-            # First, try to match both teams
-            is_match = False
-            if home_team_bet == game["home_team_api"] and away_team_bet == game["away_team_api"]:
-                is_match = True
-            # If no match, try to match just one team
-            elif home_team_bet == game["home_team_api"] or away_team_bet == game["away_team_api"]:
-                is_match = True
+            # Score for a perfect match (both teams)
+            if (home_team_bet == game_home and away_team_bet == game_away) or \
+               (home_team_bet == game_away and away_team_bet == game_home):
+                current_score = 2
+            # Score for a one-team match
+            elif (home_team_bet == game_home or home_team_bet == game_away) or \
+                 (away_team_bet == game_home or away_team_bet == game_away):
+                current_score = 1
+                
+            if current_score > best_match_score:
+                best_match_score = current_score
+                best_match = game
 
-            if is_match and i not in matched_bets_indices:
-                print(f"✅ Found match for gamePk {game['gamePk']}: Bet on {row['AWAY']} vs {row['HOME']}.")
-                
-                # Update only if the cells are empty or missing
-                if pd.isna(df_bets.loc[i, "home_score"]):
-                    df_bets.loc[i, "home_score"] = game["home_score"]
-                if pd.isna(df_bets.loc[i, "away_score"]):
-                    df_bets.loc[i, "away_score"] = game["away_score"]
-                if pd.isna(df_bets.loc[i, "game_found"]):
-                    df_bets.loc[i, "game_found"] = True
-                
-                matched_bets_indices.append(i)
-                break # Move to the next bet once a match is found
+        # If a match was found, process it
+        if best_match and i not in matched_bets_indices:
+            print(f"✅ Found match (score {best_match_score}) for gamePk {best_match['gamePk']}: Bet on {row['AWAY']} vs {row['HOME']}.")
+            
+            if pd.isna(df_bets.loc[i, "home_score"]):
+                df_bets.loc[i, "home_score"] = best_match["home_score"]
+            if pd.isna(df_bets.loc[i, "away_score"]):
+                df_bets.loc[i, "away_score"] = best_match["away_score"]
+            if pd.isna(df_bets.loc[i, "game_found"]):
+                df_bets.loc[i, "game_found"] = True
+            
+            matched_bets_indices.append(i)
     
-    # After the loop, explicitly mark all unmatched bets as False
+    # After the loop, mark all unmatched bets as False
     unmatched_indices = [i for i in df_bets.index if i not in matched_bets_indices]
     for i in unmatched_indices:
          if pd.isna(df_bets.loc[i, "game_found"]):
