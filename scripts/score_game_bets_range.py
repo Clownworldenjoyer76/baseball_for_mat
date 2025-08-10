@@ -5,7 +5,7 @@ from typing import Dict, Tuple, List, Any
 import requests
 import pandas as pd
 import numpy as np
-import os # Added for path and permission checks
+import os
 
 TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
@@ -24,7 +24,7 @@ TEAM_ALIASES: Dict[str, str] = {
     "chicago white sox":"chiwhitesox","white sox":"chiwhitesox","whitesox":"chiwhitesox","chisox":"chiwhitesox","cws":"chiwhitesox","chw":"chiwhitesox",
     # AL WEST
     "houston astros":"houastros","astros":"houastros","hou":"houastros","stros":"houastros",
-    "seattle mariners":"seamarins","mariners":"seamarins","sea":"seamarins","m's":"seamarins","ms":"seamarins",
+    "seattle mariners":"seamariners","mariners":"seamariners","sea":"seamariners","m's":"seamariners","ms":"seamariners",
     "texas rangers":"texrangers","rangers":"texrangers","tex":"texrangers",
     "los angeles angels":"laangels","angels":"laangels","laa":"laangels","ana":"laangels","halos":"laangels",
     # Athletics mappings
@@ -81,7 +81,7 @@ def build_team_mapping() -> Dict[str, str]:
     canonical_keys_map = {
         "New York Yankees": "nyyankees", "Boston Red Sox": "bosredsox", "Toronto Blue Jays": "torbluejays", "Tampa Bay Rays": "tampabaysrays", "Baltimore Orioles": "balorioles",
         "Cleveland Guardians": "cleguardians", "Detroit Tigers": "dettigers", "Minnesota Twins": "mintwins", "Kansas City Royals": "kcroyals", "Chicago White Sox": "chiwhitesox",
-        "Houston Astros": "houastros", "Seattle Mariners": "seamarins", "Texas Rangers": "texrangers", "Los Angeles Angels": "laangels", "Athletics": "oakathletics",
+        "Houston Astros": "houastros", "Seattle Mariners": "seamariners", "Texas Rangers": "texrangers", "Los Angeles Angels": "laangels", "Athletics": "oakathletics",
         "Atlanta Braves": "atlbraves", "Miami Marlins": "miamarlins", "New York Mets": "nymets", "Philadelphia Phillies": "phiphillies", "Washington Nationals": "wasnats",
         "Chicago Cubs": "chicubs", "St. Louis Cardinals": "stlcardinals", "Milwaukee Brewers": "milbrewers", "Cincinnati Reds": "cinreds", "Pittsburgh Pirates": "pitpirates",
         "Los Angeles Dodgers": "ladodgers", "San Francisco Giants": "sfgiants", "San Diego Padres": "sdpadres", "Arizona Diamondbacks": "aridbacks", "Colorado Rockies": "colrockies",
@@ -103,65 +103,53 @@ def build_team_mapping() -> Dict[str, str]:
                         mapping[_loose_key(s)] = canonical_keys_map[a]
         except Exception as e:
             print(f"⚠️ team_name_master.csv problem: {e}", file=sys.stderr)
+
+    # Guarantee Athletics mappings always exist
+    mapping[_loose_key("athletics")] = "oakathletics"
+    mapping[_loose_key("oakland athletics")] = "oakathletics"
+
     return mapping
 
 def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
     s = str(val or "").strip()
     if not s:
         return ""
-    
     k = _loose_key(s)
     if k in mapping:
         return mapping[k]
-    
     return k
 
 def find_team_columns(df: pd.DataFrame) -> Tuple[str, str]:
     cols = [c.lower().strip() for c in df.columns]
-    
     home_cols = ['home', 'home_team', 'hometeam']
     away_cols = ['away', 'away_team', 'awayteam', 'visitor', 'visitorteam']
-    
     home_col = next((c for c in home_cols if c in cols), None)
     away_col = next((c for c in away_cols if c in cols), None)
-
     if not home_col or not away_col:
-        raise ValueError("Could not find suitable home/away team columns in the CSV. Please ensure your CSV has columns like 'HOME'/'AWAY' or 'Home Team'/'Away Team'.")
-    
+        raise ValueError("Could not find suitable home/away team columns in the CSV.")
     return home_col, away_col
-
 
 def main():
     args = parse_args()
-    
-    # === START DIAGNOSTIC CHECKS ===
     out_path = Path(args.out)
     out_dir = out_path.parent
-    
-    print(f"Diagnostics:")
-    print(f"  - Current working directory: {Path.cwd()}")
-    print(f"  - Output file path: {out_path.resolve()}")
-    print(f"  - Output directory: {out_dir.resolve()}")
-    
     if not out_dir.is_dir():
-        print(f"  - ERROR: Output directory does not exist. Please create it: {out_dir}")
+        print(f"ERROR: Output dir does not exist: {out_dir}")
         sys.exit(1)
-        
     if not os.access(out_dir, os.W_OK):
-        print(f"  - ERROR: Cannot write to output directory. Please check permissions: {out_dir}")
+        print(f"ERROR: Cannot write to output dir: {out_dir}")
         sys.exit(1)
-        
-    print(f"  - Directory exists and is writable. Proceeding...")
-    # === END DIAGNOSTIC CHECKS ===
 
     mapping = build_team_mapping()
+    print("DEBUG: 'athletics' in mapping? ->", "athletics" in mapping)
+    print("DEBUG: mapping['athletics'] ->", mapping.get("athletics"))
 
     try:
         df_bets = pd.read_csv(args.out, keep_default_na=False)
     except FileNotFoundError:
         print(f"Error: Bet file not found at '{args.out}'.", file=sys.stderr)
         sys.exit(1)
-    
+
     try:
         home_col, away_col = find_team_columns(df_bets)
     except ValueError as e:
@@ -171,13 +159,12 @@ def main():
     for col in ["home_score", "away_score", "game_found"]:
         if col not in df_bets.columns:
             df_bets[col] = pd.NA
-        
+
     try:
         url = f"{args.api}/schedule"
         params = {"sportId": 1, "date": args.date, "hydrate": "linescore,teams"}
         schedule_data = _get(url, params)
         dates = schedule_data.get("dates", [])
-        
         if not dates:
             print(f"No games found for {args.date}.", file=sys.stderr)
             return
@@ -186,72 +173,56 @@ def main():
         for game in dates[0]["games"]:
             home_team = game["teams"]["home"]["team"]["name"]
             away_team = game["teams"]["away"]["team"]["name"]
-            
             home_team_api = normalize_for_match(home_team, mapping)
             away_team_api = normalize_for_match(away_team, mapping)
-            
             games_to_score.append({
                 "gamePk": game["gamePk"],
                 "home_team_api": home_team_api,
                 "away_team_api": away_team_api,
-                "home_score": game["linescore"]["teams"]["home"]["runs"],
-                "away_score": game["linescore"]["teams"]["away"]["runs"],
+                "home_score": game["linescore"]["teams"]["home"].get("runs"),
+                "away_score": game["linescore"]["teams"]["away"].get("runs"),
             })
-
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data from MLB API: {e}", file=sys.stderr)
         sys.exit(1)
 
     matched_bets_indices = []
     print(f"\nScoring {len(df_bets)} bets from '{args.out}' against {len(games_to_score)} games for {args.date}...")
-
     for i, row in df_bets.iterrows():
         home_team_bet = normalize_for_match(row.get(home_col, ""), mapping)
         away_team_bet = normalize_for_match(row.get(away_col, ""), mapping)
-        
         if args.debug:
             print(f"DEBUG: Processing bet for: '{home_team_bet}' vs '{away_team_bet}'")
-
         best_match = None
         best_match_score = 0
         for game in games_to_score:
             game_home = game['home_team_api']
             game_away = game['away_team_api']
             current_score = 0
-            
-            if args.debug:
-                print(f"DEBUG: Comparing against game: '{game_home}' vs '{game_away}'")
-
             if (home_team_bet == game_home and away_team_bet == game_away) or \
                (home_team_bet == game_away and away_team_bet == game_home):
                 current_score = 2
             elif (home_team_bet == game_home or home_team_bet == game_away) or \
                  (away_team_bet == game_home or away_team_bet == game_away):
                 current_score = 1
-                
             if current_score > best_match_score:
                 best_match_score = current_score
                 best_match = game
-
         if best_match and i not in matched_bets_indices:
-            print(f"✅ Found match (score {best_match_score}) for gamePk {best_match['gamePk']}: Bet on {row[away_col]} vs {row[home_col]}.")
-            
             if pd.isna(df_bets.loc[i, "home_score"]):
                 df_bets.loc[i, "home_score"] = best_match["home_score"]
             if pd.isna(df_bets.loc[i, "away_score"]):
                 df_bets.loc[i, "away_score"] = best_match["away_score"]
             if pd.isna(df_bets.loc[i, "game_found"]):
                 df_bets.loc[i, "game_found"] = True
-            
             matched_bets_indices.append(i)
-    
+
     unmatched_indices = [i for i in df_bets.index if i not in matched_bets_indices]
     for i in unmatched_indices:
-         if pd.isna(df_bets.loc[i, "game_found"]):
+        if pd.isna(df_bets.loc[i, "game_found"]):
             df_bets.loc[i, "game_found"] = False
 
     df_bets.to_csv(args.out, index=False)
-    
     print("\n--- Process complete ---")
     print(f"Updated {len(matched_bets_indices)} bets and saved to '{args.out}'.")
 
