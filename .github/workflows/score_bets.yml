@@ -15,7 +15,7 @@ jobs:
   score-bets:
     runs-on: ubuntu-latest
     env:
-      PYTHONUNBUFFERED: "1"   # force immediate stdout
+      PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,21 +46,12 @@ jobs:
           echo "DATE=$D" >> "$GITHUB_ENV"
           echo "Using date: $D"
 
-      # OPTION A: if your debug file is a separate file, call it here
-      - name: Score GAME bets (writes scores if missing + 3 cols)
+      - name: Score GAME bets (debug always on)
         run: |
           python -u scripts/score_game_bets_range_debug_start.py \
             --date "${{ env.DATE }}" \
             --api "https://statsapi.mlb.com/api/v1" \
             --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
-
-      # If you merged debug into score_game_bets_range.py instead, replace the step above with:
-      # - name: Score GAME bets (writes scores if missing + 3 cols)
-      #   run: |
-      #     python -u scripts/score_game_bets_range.py \
-      #       --date "${{ env.DATE }}" \
-      #       --api "https://statsapi.mlb.com/api/v1" \
-      #       --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
 
       - name: Score PLAYER bets (writes prop_correct only)
         run: |
