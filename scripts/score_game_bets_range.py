@@ -5,6 +5,8 @@ from typing import Dict, Tuple
 import requests
 import pandas as pd
 
+TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # adjust if different
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Score daily GAME bets: fill scores if missing, then write actual_real_run_total, run_total_diff, favorite_correct into the per-day CSV."
@@ -15,15 +17,30 @@ def parse_args():
     return p.parse_args()
 
 def _get(url, params=None, tries=3, sleep=0.8):
-    for i in range(tries):
+    for _ in range(tries):
         r = requests.get(url, params=params, timeout=20)
         if r.ok:
             return r.json()
         time.sleep(sleep)
     r.raise_for_status()
 
+def normalize_team_names(df: pd.DataFrame, home_col: str, away_col: str) -> pd.DataFrame:
+    """Normalize short names in CSV to API full names using team_name_master.csv if available."""
+    if TEAM_MAP_FILE.exists():
+        try:
+            tm = pd.read_csv(TEAM_MAP_FILE)
+            tm["team_name_short"] = tm["team_name_short"].astype(str).str.strip().str.lower()
+            tm["team_name_api"] = tm["team_name_api"].astype(str).str.strip()
+            mapping = dict(zip(tm["team_name_short"], tm["team_name_api"]))
+            df[home_col] = df[home_col].astype(str).str.strip().str.lower().replace(mapping)
+            df[away_col] = df[away_col].astype(str).str.strip().str.lower().replace(mapping)
+        except Exception as e:
+            print(f"⚠️ Could not load/parse team map: {e}", file=sys.stderr)
+    return df
+
 def load_scores_for_date(api_base: str, date: str) -> Dict[Tuple[str,str], Tuple[int,int]]:
-    js = _get(f"{api_base}/schedule", {"sportId":1, "date": date})
+    """Returns {(away_team_name.lower(), home_team_name.lower()): (away_score, home_score)}."""
+    js = _get(f"{api_base}/schedule", {"sportId": 1, "date": date})
     mapping = {}
     for d in js.get("dates", []):
         for g in d.get("games", []):
@@ -57,26 +74,19 @@ def main():
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
 
-    need_fetch = False
-    for col in ("home_score","away_score"):
-        if col not in df.columns or df[col].isna().all():
-            need_fetch = True
-    if need_fetch:
-        scores = load_scores_for_date(args.api, args.date)
-        if "home_score" not in df.columns: df["home_score"] = pd.NA
-        if "away_score" not in df.columns: df["away_score"] = pd.NA
+    # Normalize team names to API full names
+    df = normalize_team_names(df, "home_team", "away_team")
 
-        for i, r in df.iterrows():
-            k1 = (clean_team(r.get("away_team","")), clean_team(r.get("home_team","")))
-            k2 = (clean_team(r.get("home_team","")), clean_team(r.get("away_team","")))
-            if k1 in scores:
-                a,h = scores[k1]
-                df.at[i, "away_score"] = a
-                df.at[i, "home_score"] = h
-            elif k2 in scores:
-                a,h = scores[k2]
-                df.at[i, "away_score"] = h
-                df.at[i, "home_score"] = a
+    scores = load_scores_for_date(args.api, args.date)
+    if "home_score" not in df.columns: df["home_score"] = pd.NA
+    if "away_score" not in df.columns: df["away_score"] = pd.NA
+
+    for i, r in df.iterrows():
+        k = (clean_team(r.get("away_team","")), clean_team(r.get("home_team","")))
+        if k in scores:
+            a, h = scores[k]
+            df.at[i, "away_score"] = a
+            df.at[i, "home_score"] = h
 
     df["actual_real_run_total"] = (
         pd.to_numeric(df.get("home_score"), errors="coerce").fillna(pd.NA) +
@@ -89,8 +99,10 @@ def main():
             as_ = float(r["away_score"])
         except Exception:
             return ""
-        if pd.isna(hs) or pd.isna(as_): return ""
+        if pd.isna(hs) or pd.isna(as_):
+            return ""
         return r["home_team"] if hs > as_ else r["away_team"]
+
     df["winner"] = df.apply(winner_row, axis=1)
 
     proj = pd.to_numeric(df["projected_real_run_total"], errors="coerce")
@@ -98,10 +110,12 @@ def main():
     df["run_total_diff"] = (act - proj).where(~act.isna() & ~proj.isna(), pd.NA)
 
     def fav_ok(r):
-        w = str(r.get("winner") or "").strip()
-        f = str(r.get("favorite") or "").strip()
-        if not w or not f: return ""
-        return "Yes" if w.lower() == f.lower() else "No"
+        w = str(r.get("winner") or "").strip().lower()
+        f = str(r.get("favorite") or "").strip().lower()
+        if not w or not f:
+            return ""
+        return "Yes" if w == f else "No"
+
     df["favorite_correct"] = df.apply(fav_ok, axis=1)
 
     df.to_csv(out_path, index=False, quoting=csv.QUOTE_MINIMAL)
