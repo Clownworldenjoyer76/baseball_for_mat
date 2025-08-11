@@ -11,6 +11,56 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def _select_weather_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Select and normalize expected columns from weather_adjustments.csv.
+    Handles schema variations:
+      - 'game_time' may be stored as 'game_time_et'
+      - add guards if some columns are missing
+    """
+    # map desired -> candidate options in order of preference
+    desired_to_candidates = {
+        "temperature": ["temperature"],
+        "wind_speed": ["wind_speed"],
+        "wind_direction": ["wind_direction"],
+        "humidity": ["humidity"],
+        "condition": ["condition"],
+        "game_time": ["game_time", "game_time_et"],  # <- support both
+        "home_team": ["home_team"],
+        "away_team": ["away_team"],
+    }
+
+    rename_map = {}
+    keep_cols = []
+    missing = []
+
+    for desired, candidates in desired_to_candidates.items():
+        chosen = None
+        for c in candidates:
+            if c in df.columns:
+                chosen = c
+                break
+        if chosen:
+            keep_cols.append(chosen)
+            if chosen != desired:
+                rename_map[chosen] = desired
+        else:
+            missing.append(desired)
+
+    if missing:
+        logger.warning(f"Weather file missing expected columns: {missing}. Proceeding with available ones.")
+
+    out = df[keep_cols].rename(columns=rename_map)
+
+    # standardize dtypes/formatting
+    if "temperature" in out.columns:
+        out["temperature"] = pd.to_numeric(out["temperature"], errors="coerce").round(1)
+    for col in ["home_team", "away_team"]:
+        if col in out.columns:
+            out[col] = out[col].astype(str)
+
+    return out
+
 def main():
     logger.info("📥 Loading data...")
     batters_path = Path("data/end_chain/cleaned/prep/bat_awp_cleaned.csv")
@@ -22,20 +72,21 @@ def main():
     logger.info(f"✅ Loaded {len(batters)} batters and {len(weather)} weather rows")
 
     logger.info("📐 Normalizing columns...")
+    # incoming batters has 'team' as away team
     batters = batters.rename(columns={"team": "away_team"})
 
-    weather_cols = [
-        "temperature", "wind_speed", "wind_direction", "humidity",
-        "condition", "game_time", "home_team", "away_team"
-    ]
-    weather = weather[weather_cols]
-    weather["temperature"] = weather["temperature"].round(1)
+    # ensure merge key dtypes align
+    for col in ["home_team", "away_team"]:
+        if col in batters.columns:
+            batters[col] = batters[col].astype(str)
 
-    # 🔧 Force correct data types for merge
-    batters["home_team"] = batters["home_team"].astype(str)
-    batters["away_team"] = batters["away_team"].astype(str)
-    weather["home_team"] = weather["home_team"].astype(str)
-    weather["away_team"] = weather["away_team"].astype(str)
+    # normalize weather columns & handle schema variations
+    weather = _select_weather_columns(weather)
+
+    # ensure merge key dtypes align
+    for col in ["home_team", "away_team"]:
+        if col in weather.columns:
+            weather[col] = weather[col].astype(str)
 
     logger.info("🔗 Merging...")
     batters = pd.merge(batters, weather, on=["away_team", "home_team"], how="left")
