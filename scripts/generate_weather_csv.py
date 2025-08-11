@@ -2,6 +2,8 @@ import pandas as pd
 from pathlib import Path
 import subprocess
 import os
+import re
+from unidecode import unidecode
 
 # --- File Paths ---
 GAMES_FILE = "data/raw/todaysgames_normalized.csv"
@@ -9,6 +11,101 @@ STADIUM_FILE = "data/Data/stadium_metadata.csv"
 TEAM_MAP_FILE = "data/Data/team_name_master.csv"
 OUTPUT_FILE = "data/weather_input.csv"
 SUMMARY_FILE = "data/weather_summary.txt"
+
+def _norm(s: str) -> str:
+    """Normalize strings for matching: ASCII, lower, no spaces/punct."""
+    s = unidecode(str(s or "")).strip().lower()
+    return re.sub(r"[^a-z]", "", s)
+
+def _build_team_alias_map(team_map_df: pd.DataFrame) -> dict:
+    """
+    Build many-to-one alias map -> canonical nickname (team_name in file).
+    Accepts columns: team_code, abbreviation, team_name, clean_team_name.
+    """
+    alias_to_canonical = {}
+    # canonical nicknames (e.g., "Yankees", "White Sox", "Athletics")
+    # We prefer 'team_name' if present; otherwise 'clean_team_name'
+    for _, r in team_map_df.iterrows():
+        team_name = (r.get("team_name") or r.get("clean_team_name") or "").strip()
+        clean_name = (r.get("clean_team_name") or team_name or "").strip()
+        code = (r.get("team_code") or "").strip()
+        abbr = (r.get("abbreviation") or "").strip()
+
+        if not team_name and not clean_name:
+            continue
+
+        canonical = team_name if team_name else clean_name  # write this into CSV later
+
+        # All normalized variants that should map to the nickname
+        variants = set()
+        if team_name:
+            variants.add(_norm(team_name))
+        if clean_name:
+            variants.add(_norm(clean_name))
+        if code:
+            variants.add(_norm(code))
+        if abbr:
+            variants.add(_norm(abbr))
+
+        # e.g., "bostonredsox" or "newyorkyankees" may appear in inputs
+        # Add a concatenated city+nickname variant by assumption if present in source elsewhere.
+        # We can’t know all cities here, but suffix matching later handles those cases.
+
+        for v in variants:
+            if v:
+                alias_to_canonical[v] = canonical
+
+    # Special-case helpers for common MLB inputs that sometimes include city:
+    # We’ll rely on suffix matching in _resolve_team to handle city+nickname forms.
+    return alias_to_canonical
+
+def _resolve_team(raw: str, alias_map: dict, canonical_choices: set) -> str:
+    """
+    Resolve an incoming team label to canonical nickname using:
+    1) direct alias map hit,
+    2) suffix match vs canonical nicknames (handles city+nickname),
+    3) last-2-words or last-word heuristics for tricky names ("White Sox", "Red Sox").
+    Returns empty string if not resolved.
+    """
+    s = (raw or "").strip()
+    n = _norm(s)
+    if not n:
+        return ""
+
+    # 1) direct alias hit
+    if n in alias_map:
+        return alias_map[n]
+
+    # 2) suffix match against canonical nicknames
+    #    (e.g., "newyorkyankees" endswith "yankees" -> "Yankees")
+    for canon in canonical_choices:
+        if n.endswith(_norm(canon)):
+            return canon
+
+    # 3) last-2-words or last-word heuristic
+    tokens = re.findall(r"[A-Za-z]+", unidecode(s))
+    if tokens:
+        # try last two tokens
+        if len(tokens) >= 2:
+            last2 = " ".join(tokens[-2:])
+            for cand in (last2, tokens[-1]):
+                cand_n = _norm(cand)
+                if cand_n in alias_map:
+                    return alias_map[cand_n]
+                # also compare to canonical set directly
+                for canon in canonical_choices:
+                    if cand_n == _norm(canon):
+                        return canon
+        else:
+            # only one token
+            cand_n = _norm(tokens[-1])
+            if cand_n in alias_map:
+                return alias_map[cand_n]
+            for canon in canonical_choices:
+                if cand_n == _norm(canon):
+                    return canon
+
+    return ""  # failed
 
 def generate_weather_csv():
     try:
@@ -22,21 +119,53 @@ def generate_weather_csv():
         print(f"❌ Error reading input files: {e}")
         return
 
-    # Normalize team names
-    games_df["home_team_raw"] = games_df["home_team"].str.strip().str.upper()
-    games_df["away_team_raw"] = games_df["away_team"].str.strip().str.upper()
-    stadium_df["home_team_stadium"] = stadium_df["home_team"].str.strip().str.upper()
-    team_map_df["uppercase"] = team_map_df["team_name"].str.strip().str.upper()
-    team_map_df = team_map_df.drop_duplicates(subset="uppercase")
+    # Normalize column names
+    games_df.columns = [c.strip() for c in games_df.columns]
+    stadium_df.columns = [c.strip() for c in stadium_df.columns]
+    team_map_df.columns = [c.strip() for c in team_map_df.columns]
 
-    # Drop 'game_time' if present (we'll keep the one from stadium metadata)
+    # Build robust alias map
+    alias_map = _build_team_alias_map(team_map_df)
+    # Canonical set of nicknames we will keep in output
+    canonical_choices = set(
+        (team_map_df["team_name"].fillna("") | team_map_df["clean_team_name"].fillna("")).replace("", pd.NA).dropna().tolist()
+    )
+    # Some rows may have empty team_name but valid clean_team_name; ensure both are included
+    canonical_choices |= set(team_map_df["clean_team_name"].dropna().tolist())
+
+    # --- Resolve incoming home/away from games_df to canonical nicknames ---
+    if "home_team" not in games_df.columns or "away_team" not in games_df.columns:
+        print("❌ games file must include 'home_team' and 'away_team'.")
+        return
+
+    games_df["home_team_resolved"] = games_df["home_team"].apply(
+        lambda x: _resolve_team(x, alias_map, canonical_choices)
+    )
+    games_df["away_team_resolved"] = games_df["away_team"].apply(
+        lambda x: _resolve_team(x, alias_map, canonical_choices)
+    )
+
+    # Warn on unresolved teams (prevents silent blanks)
+    unresolved_home = games_df[games_df["home_team_resolved"] == ""]
+    unresolved_away = games_df[games_df["away_team_resolved"] == ""]
+    if not unresolved_home.empty or not unresolved_away.empty:
+        print("⚠️ Unresolved team names detected:")
+        if not unresolved_home.empty:
+            print("  Home unresolved:", unresolved_home[["home_team"]].drop_duplicates().to_dict(orient="list"))
+        if not unresolved_away.empty:
+            print("  Away unresolved:", unresolved_away[["away_team"]].drop_duplicates().to_dict(orient="list"))
+
+    # --- Prepare stadium_df for merge (it already uses nicknames in examples) ---
+    stadium_df["home_team_stadium"] = stadium_df["home_team"].astype(str).str.strip()
+
+    # Drop 'game_time' from games (we keep stadium's)
     games_df.drop(columns=["game_time"], errors="ignore", inplace=True)
 
-    # --- Merge with Stadium Info ---
+    # --- Merge with Stadium Info on canonical home nickname ---
     merged = pd.merge(
         games_df,
-        stadium_df.drop(columns=["home_team"]),
-        left_on="home_team_raw",
+        stadium_df.drop(columns=["home_team"], errors="ignore"),
+        left_on="home_team_resolved",
         right_on="home_team_stadium",
         how="left"
     )
@@ -45,53 +174,43 @@ def generate_weather_csv():
         print("❌ Merge failed: No matching rows after games + stadium merge.")
         return
 
-    merged.drop(columns=["home_team_stadium"], inplace=True)
+    merged.drop(columns=["home_team_stadium"], inplace=True, errors="ignore")
 
-    # --- Map home team canonical name ---
-    merged = pd.merge(
-        merged,
-        team_map_df[["uppercase", "team_name"]],
-        left_on="home_team_raw",
-        right_on="uppercase",
-        how="left"
-    ).rename(columns={"team_name": "home_team"})
-
-    merged.drop(columns=["home_team_raw", "uppercase"], inplace=True)
-
-    # --- Map away team canonical name ---
-    merged = pd.merge(
-        merged,
-        team_map_df[["uppercase", "team_name"]],
-        left_on="away_team_raw",
-        right_on="uppercase",
-        how="left"
-    ).rename(columns={"team_name": "away_team"})
-
-    merged.drop(columns=["away_team_raw", "uppercase"], inplace=True)
+    # --- Set final canonical home/away team columns ---
+    merged.rename(columns={"home_team_resolved": "home_team",
+                           "away_team_resolved": "away_team"}, inplace=True)
 
     # --- Drop merge artifacts if any exist ---
-    for col in ["away_team_x", "away_team_y", "team_name_original", "team_name_mapped"]:
+    for col in ["away_team_x", "away_team_y", "team_name_original", "team_name_mapped", "uppercase"]:
         if col in merged.columns:
             merged.drop(columns=[col], inplace=True)
 
-    # --- Reorder columns for clarity ---
+    # --- Reorder columns for clarity (only those that exist) ---
     preferred_order = [
         "home_team", "away_team", "pitcher_home", "pitcher_away",
         "venue", "city", "state", "timezone", "is_dome", "latitude", "longitude",
         "game_time", "time_of_day", "Park Factor"
     ]
-    merged = merged[[col for col in preferred_order if col in merged.columns]]
+    merged = merged[[c for c in preferred_order if c in merged.columns]]
 
-    # --- Validate ---
-    if merged.isnull().any().any():
-        print("⚠️ Warning: Some values are missing after merge.")
-        print(merged[merged.isnull().any(axis=1)])
+    # --- Validate empties after mapping ---
+    required_nonempty = ["home_team", "away_team", "venue", "city", "latitude", "longitude", "game_time"]
+    empties = []
+    for c in required_nonempty:
+        if c in merged.columns and merged[c].isna().any():
+            empties.append(c)
+    if empties:
+        print(f"⚠️ Warning: missing values detected in: {', '.join(empties)}")
+        print(merged[merged[empties].isnull().any(axis=1)])
 
-    if len(merged) != len(games_df):
-        print(f"⚠️ Row mismatch: expected {len(games_df)}, got {len(merged)}")
-        missing_teams = set(games_df["home_team"].str.upper()) - set(stadium_df["home_team"].str.upper())
-        if missing_teams:
-            print("🔍 Possible unmatched teams in stadium merge:", sorted(missing_teams))
+    # --- Row count check ---
+    try:
+        expected = len(games_df)
+        got = len(merged)
+        if expected != got:
+            print(f"⚠️ Row mismatch: expected {expected}, got {got}")
+    except Exception:
+        pass
 
     # --- Output to CSV ---
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
