@@ -208,23 +208,33 @@ def process(file_in: Path, file_out: Path | None, api_base: str, date_str: str, 
     if not check:
         df.loc[need_total, "actual_real_run_total"] = (hs_num + as_num)[need_total].astype("Int64")
 
-    # run_total_diff
-    total_col = _find_col(df, ["total", "closing_total", "market_total", "ou_total", "line_total", "game_total"])
-    if total_col:
-        market = pd.to_numeric(df[total_col], errors="coerce")
-        actual = pd.to_numeric(df["actual_real_run_total"], errors="coerce")
+    # run_total_diff (UPDATED)
+    proj_col = _find_col(df, ["projected_real_run_total"])
+    actual_col = _find_col(df, ["actual_real_run_total"])
+    if proj_col and actual_col:
+        projected = pd.to_numeric(df[proj_col], errors="coerce")
+        actual = pd.to_numeric(df[actual_col], errors="coerce")
         need_diff = df["run_total_diff"].apply(_is_empty)
-        mask = need_diff & market.notna() & actual.notna()
+        mask = need_diff & projected.notna() & actual.notna()
         if not check:
-            df.loc[mask, "run_total_diff"] = (market[mask] - actual[mask]).abs()
+            df.loc[mask, "run_total_diff"] = (projected[mask] - actual[mask]).abs()
 
-    # favorite_correct
-    fav_side = _favorite_side(df)
-    winner = _winner_side(df, "home_score", "away_score")
-    need_fc = df["favorite_correct"].apply(_is_empty)
-    mask = need_fc & fav_side.isin(["home", "away"]) & winner.isin(["home", "away"])
-    if not check:
-        df.loc[mask, "favorite_correct"] = (fav_side[mask] == winner[mask]).astype(int)
+    # favorite_correct (UPDATED)
+    fav_col = _find_col(df, ["favorite"])
+    if fav_col:
+        fav_side = pd.Series(index=df.index, dtype=object)
+        fav_norm = df[fav_col].apply(_norm_name)
+        home_norm = df[home_team_col].apply(_norm_name)
+        away_norm = df[away_team_col].apply(_norm_name)
+        fav_side[fav_norm == home_norm] = "home"
+        fav_side[fav_norm == away_norm] = "away"
+
+        winner = _winner_side(df, "home_score", "away_score")
+        need_fc = df["favorite_correct"].apply(_is_empty)
+        mask = need_fc & fav_side.isin(["home", "away"]) & winner.isin(["home", "away"])
+        if not check:
+            is_correct = (fav_side[mask] == winner[mask]).map({True: "Yes", False: "No"})
+            df.loc[mask, "favorite_correct"] = is_correct
 
     if check:
         print("[DRY-RUN] Completed checks. No changes written.")
