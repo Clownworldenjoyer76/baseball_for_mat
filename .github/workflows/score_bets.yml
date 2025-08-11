@@ -51,7 +51,7 @@ jobs:
       # Output: data/bets/bet_history/${DATE}_game_props.csv
       - name: Score GAME bets (API)
         run: |
-          python -u scripts/score_game_bets_range_bet_history_api.py \
+          python -u scripts/score_game_bets_range.py \
             --date "${{ env.DATE }}" \
             --file "game_bets_${{ env.DATE }}.csv" \
             --api "https://statsapi.mlb.com/api/v1" \
