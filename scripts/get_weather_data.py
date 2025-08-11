@@ -2,14 +2,14 @@
 import pandas as pd
 import requests
 import time
-from datetime import datetime, date, time as dtime
+from datetime import datetime
 from requests.exceptions import RequestException
 
 try:
     # Python 3.9+
     from zoneinfo import ZoneInfo
 except Exception:
-    ZoneInfo = None  # If unavailable, we’ll fallback to naive matching
+    ZoneInfo = None  # fallback if unavailable
 
 INPUT_FILE = "data/weather_input.csv"
 OUTPUT_FILE = "data/weather_adjustments.csv"
@@ -19,8 +19,14 @@ FORECAST_URL = "https://api.weatherapi.com/v1/forecast.json"  # hourly forecast
 def timestamp():
     return datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
 
-_GAME_TIME_FORMATS = ["%Y-%m-%d %H:%M", "%Y-%m-%d %I:%M %p", "%m/%d/%Y %H:%M",
-                      "%m/%d/%Y %I:%M %p", "%H:%M", "%I:%M %p"]
+_GAME_TIME_FORMATS = [
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d %I:%M %p",
+    "%m/%d/%Y %H:%M",
+    "%m/%d/%Y %I:%M %p",
+    "%H:%M",
+    "%I:%M %p",
+]
 
 def parse_game_time_et(raw_time, raw_date=None):
     """
@@ -41,10 +47,12 @@ def parse_game_time_et(raw_time, raw_date=None):
             except Exception:
                 continue
     if base_date is None:
-        # default to "today" in ET
-        base_date = datetime.now(ZoneInfo("America/New_York") if ZoneInfo else None).date()
+        if ZoneInfo:
+            base_date = datetime.now(ZoneInfo("America/New_York")).date()
+        else:
+            base_date = datetime.now().date()
 
-    # Try all formats
+    # Try formats
     parsed_dt = None
     for fmt in _GAME_TIME_FORMATS:
         try:
@@ -78,8 +86,11 @@ def fetch_forecast(lat, lon, days=3):
         print(f"{timestamp()} ⚠️ Request failed: {e}")
     return None
 
-def pick_hour_block(forecast_json, target_local_dt):
-    """Pick the hourly block closest to target_local_dt (local to venue)."""
+def pick_hour_block(forecast_json, target_local_dt, tzinfo):
+    """
+    Pick the hourly block closest to target_local_dt.
+    WeatherAPI hour['time'] is a naive LOCAL string; we attach tzinfo before diffing.
+    """
     if not forecast_json:
         return None, None
     fdays = forecast_json.get("forecast", {}).get("forecastday", [])
@@ -89,10 +100,23 @@ def pick_hour_block(forecast_json, target_local_dt):
     for day in fdays:
         for h in day.get("hour", []):
             try:
-                t = pd.to_datetime(h.get("time")).to_pydatetime()
+                t = pd.to_datetime(h.get("time")).to_pydatetime()  # naive local
+                if tzinfo is not None and t.tzinfo is None:
+                    t = t.replace(tzinfo=tzinfo)  # make it local-aware
             except Exception:
                 continue
-            diff = abs((t - target_local_dt).total_seconds())
+            # Ensure both sides are same awareness
+            if (t.tzinfo is None) != (target_local_dt.tzinfo is None):
+                # Fallback: drop tz if mismatch persists (shouldn't if tzinfo provided)
+                if t.tzinfo is not None:
+                    t = t.replace(tzinfo=None)
+                if target_local_dt.tzinfo is not None:
+                    target_cmp = target_local_dt.replace(tzinfo=None)
+                else:
+                    target_cmp = target_local_dt
+            else:
+                target_cmp = target_local_dt
+            diff = abs((t - target_cmp).total_seconds())
             if best is None or diff < best_diff:
                 best, best_diff = h, diff
                 best_day_str = day.get("date")
@@ -126,7 +150,7 @@ def main():
         home_team = row.get("home_team", "UNKNOWN")
         away_team = row.get("away_team", "UNKNOWN")
         game_time_raw = row.get("game_time", "")
-        game_date = row.get("game_date", None)  # optional column
+        game_date = row.get("game_date", None)  # optional
 
         # Coerce is_dome strings to bool
         if isinstance(is_dome, str):
@@ -138,11 +162,11 @@ def main():
             print(f"{timestamp()} ⚠️ Missing coordinates for {location}. Skipping.")
             continue
 
-        # Parse ET start time (ALWAYS ET per your note)
+        # Parse ET start time (ALWAYS ET)
         dt_et = parse_game_time_et(game_time_raw, game_date)
         if dt_et is None:
             print(f"{timestamp()} ⚠️ Unparsable ET game_time for {location}: '{game_time_raw}'. Using current ET.")
-            dt_et = datetime.now(ZoneInfo("America/New_York") if ZoneInfo else None)
+            dt_et = datetime.now(ZoneInfo("America/New_York")) if ZoneInfo else datetime.now()
 
         # Fetch forecast (hourly) to get tz_id
         attempts, data = 0, None
@@ -159,14 +183,19 @@ def main():
         tz_id = (data.get("location") or {}).get("tz_id")
         if ZoneInfo and tz_id:
             try:
-                dt_local = dt_et.astimezone(ZoneInfo(tz_id))
+                local_tz = ZoneInfo(tz_id)
             except Exception:
-                dt_local = dt_et  # fallback
+                local_tz = None
         else:
-            # Fallback: assume ET == local if tz not available
-            dt_local = dt_et
+            local_tz = None
 
-        hour_block, matched_day = pick_hour_block(data, dt_local)
+        # Convert ET -> local tz (aware) when possible
+        if local_tz and dt_et.tzinfo is not None:
+            dt_local = dt_et.astimezone(local_tz)
+        else:
+            dt_local = dt_et  # fallback (may be naive)
+
+        hour_block, matched_day = pick_hour_block(data, dt_local, local_tz)
         if not hour_block:
             print(f"{timestamp()} ⚠️ No hourly block found for {location} near {dt_local}.")
             continue
