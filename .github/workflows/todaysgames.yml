@@ -18,17 +18,6 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      - name: Mark workspace as safe for Git
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - name: Show branch & tree
-        run: |
-          echo "Ref        : ${{ github.ref }}"
-          echo "Branch     : ${{ github.ref_name }}"
-          pwd
-          ls -la
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -36,36 +25,37 @@ jobs:
 
       - name: Install deps
         run: |
-          python -V
           python -m pip install --upgrade pip
           pip install requests
 
       - name: Run script to create todaysgames.csv
         run: |
           set -euo pipefail
-          python -u scripts/todaysgames.py --out todaysgames.csv || {
-            echo "Script exited non-zero. Proceeding to ensure file exists for commit."
-          }
+          python -u scripts/todaysgames.py --out todaysgames.csv
 
-      - name: Ensure CSV exists (create header-only if missing)
+      - name: Ensure CSV exists
         run: |
-          if [ ! -s todaysgames.csv ]; then
-            echo 'Creating header-only CSV because script produced no file/output.'
-            printf '"home_team","away_team","game_time","pitcher_home","pitcher_away"\n' > todaysgames.csv
-          fi
-          echo "Preview:"
+          test -s todaysgames.csv || { echo "todaysgames.csv missing/empty"; exit 1; }
           head -n 5 todaysgames.csv || true
 
-      - name: Commit and push CSV (if changed)
+      - name: Commit and push (always create a commit)
         run: |
           set -e
+          BRANCH="${{ github.ref_name }}"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
+          # Force-add even if ignored
           git add --force todaysgames.csv
-          if git diff --quiet && git diff --staged --quiet; then
-            echo "No changes to commit."
-            exit 0
+
+          # If there are staged changes, commit them; otherwise make an empty commit
+          if git diff --cached --quiet; then
+            echo "No content changes; creating an empty keep-alive commit."
+            git commit --allow-empty -m "Keep todaysgames.csv (no content change) [run $GITHUB_RUN_ID]"
+          else
+            git commit -m "Update todaysgames.csv [run $GITHUB_RUN_ID]"
           fi
-          git commit -m "Update todaysgames.csv"
-          git pull --rebase origin "${{ github.ref_name }}"
-          git push origin HEAD:"${{ github.ref_name }}"
+
+          # Rebase to avoid non-fast-forward, then push to the same branch the workflow ran on
+          git pull --rebase origin "$BRANCH" || true
+          git push origin HEAD:"$BRANCH"
