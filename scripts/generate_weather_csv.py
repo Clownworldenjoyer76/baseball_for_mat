@@ -114,7 +114,7 @@ def generate_weather_csv():
     alias_map = _build_team_alias_map(team_map_df)
 
     # Canonical set of nicknames we will keep in output
-    # FIX: replace string Series "|" with combine_first
+    # (Prefer team_name, else clean_team_name)
     team_name_series = team_map_df.get("team_name", pd.Series(dtype=str)).astype(str).str.strip().replace({"": pd.NA})
     clean_name_series = team_map_df.get("clean_team_name", pd.Series(dtype=str)).astype(str).str.strip().replace({"": pd.NA})
     canonical_series = team_name_series.combine_first(clean_name_series)
@@ -161,11 +161,13 @@ def generate_weather_csv():
         print("❌ Merge failed: No matching rows after games + stadium merge.")
         return
 
-    merged.drop(columns=["home_team_stadium"], inplace=True, errors="ignore")
+    # De-duplicate any repeated columns created by merge (keep first)
+    merged = merged.loc[:, ~merged.columns.duplicated(keep="first")]
 
     # --- Set final canonical home/away team columns ---
     merged.rename(columns={"home_team_resolved": "home_team",
                            "away_team_resolved": "away_team"}, inplace=True)
+    merged.drop(columns=["home_team_stadium"], inplace=True, errors="ignore")
 
     # --- Drop merge artifacts if any exist ---
     for col in ["away_team_x", "away_team_y", "team_name_original", "team_name_mapped", "uppercase"]:
@@ -184,8 +186,13 @@ def generate_weather_csv():
     required_nonempty = ["home_team", "away_team", "venue", "city", "latitude", "longitude", "game_time"]
     empties = []
     for c in required_nonempty:
-        if c in merged.columns and merged[c].isna().any():
-            empties.append(c)
+        if c in merged.columns:
+            # After de-dupe, this is a Series; still guard defensively
+            col = merged[c]
+            na_any = col.isna().to_numpy().any() if hasattr(col.isna(), "to_numpy") else col.isna().any()
+            if na_any:
+                empties.append(c)
+
     if empties:
         print(f"⚠️ Warning: missing values detected in: {', '.join(empties)}")
         print(merged[merged[empties].isnull().any(axis=1)])
