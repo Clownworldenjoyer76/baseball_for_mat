@@ -1,22 +1,29 @@
 name: Update Todays Games CSV
-
-on:
-  workflow_dispatch:
-
+on: { workflow_dispatch: {} }
 permissions:
   contents: write
 
 jobs:
-  run-script:
+  run:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
     steps:
-      - name: Checkout repo
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
           persist-credentials: true
           fetch-depth: 0
+          ref: main
+
+      - name: Show repo/branch/remote
+        run: |
+          echo "Repo: ${{ github.repository }}"
+          echo "Ref : ${{ github.ref }}"
+          echo "Branch: ${{ github.ref_name }}"
+          git rev-parse --abbrev-ref HEAD
+          git remote -v
+          pwd && ls -la
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,34 +35,60 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Run script to create todaysgames.csv
+      - name: Run script -> todaysgames.csv
         run: |
           set -euo pipefail
           python -u scripts/todaysgames.py --out todaysgames.csv
-
-      - name: Ensure CSV exists
-        run: |
-          test -s todaysgames.csv || { echo "todaysgames.csv missing/empty"; exit 1; }
+          echo "CSV preview:"
           head -n 5 todaysgames.csv || true
+          wc -c todaysgames.csv
 
-      - name: Commit and push (always create a commit)
+      - name: Git diagnostics (before add)
+        run: |
+          echo "---- .gitignore ----"
+          [ -f .gitignore ] && sed -n '1,200p' .gitignore || echo "(none)"
+          echo "---- status (porcelain v2) ----"
+          git status --porcelain=v2
+          echo "---- ls-files tracked ----"
+          git ls-files | sed -n '1,50p'
+          echo "---- ls-files others (respect ignore) ----"
+          git ls-files --others --exclude-standard | sed -n '1,50p'
+
+      - name: Stage CSV (force) and show index diff
         run: |
           set -e
-          BRANCH="${{ github.ref_name }}"
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          # Force-add even if ignored
           git add --force todaysgames.csv
+          echo "---- cached diff ----"
+          git diff --cached --stat || true
+          echo "---- status after add ----"
+          git status -vv
 
-          # If there are staged changes, commit them; otherwise make an empty commit
+      - name: Commit on main (empty commit if no diff)
+        id: commit
+        run: |
+          set -e
+          git config user.name  "github-actions"
+          git config user.email "github-actions@github.com"
           if git diff --cached --quiet; then
-            echo "No content changes; creating an empty keep-alive commit."
             git commit --allow-empty -m "Keep todaysgames.csv (no content change) [run $GITHUB_RUN_ID]"
           else
             git commit -m "Update todaysgames.csv [run $GITHUB_RUN_ID]"
           fi
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Committed $SHA"
+          git log -1 --stat
 
-          # Rebase to avoid non-fast-forward, then push to the same branch the workflow ran on
-          git pull --rebase origin "$BRANCH" || true
-          git push origin HEAD:"$BRANCH"
+      - name: Push to main (verbose)
+        env:
+          GIT_TRACE: "1"
+          GIT_CURL_VERBOSE: "1"
+        run: |
+          set -e
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+
+      - name: Print commit link
+        run: |
+          echo "Commit: ${{ steps.commit.outputs.sha }}"
+          echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit.outputs.sha }}"
