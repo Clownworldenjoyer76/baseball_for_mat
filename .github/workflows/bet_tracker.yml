@@ -4,7 +4,7 @@ name: Run Bet Tracker
 on:
   workflow_dispatch:
   # schedule:
-  #   - cron: "5 15 * * *"   # 11:05 AM ET (15:05 UTC) daily; adjust as needed
+  #   - cron: "5 15 * * *"   # 11:05 AM ET (15:05 UTC) daily
 
 jobs:
   run-bet-tracker:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: true
-          fetch-depth: 0
+          fetch-depth: 0   # needed for rebase
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,6 +38,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+          git config --global pull.rebase true
 
       - name: Snapshot pre-run line counts
         id: counts_before
@@ -67,12 +68,30 @@ jobs:
           echo "Player props: $(( ${{ steps.counts_after.outputs.players_after }} - ${{ steps.counts_before.outputs.players_before }} )) line(s) change"
           echo "Game props:   $(( ${{ steps.counts_after.outputs.games_after }}   - ${{ steps.counts_before.outputs.games_before }} )) line(s) change"
 
-      - name: Commit and Push Changes
+      - name: Commit and Push Changes (rebase-safe)
+        shell: bash
         run: |
+          set -e
           git add data/bets/player_props_history.csv data/bets/game_props_history.csv
-          if [[ -n "$(git status --porcelain data/bets/player_props_history.csv data/bets/game_props_history.csv)" ]]; then
-            git commit -m "Automated bet tracker update"
-            git push
-          else
+
+          if [[ -z "$(git status --porcelain data/bets/player_props_history.csv data/bets/game_props_history.csv)" ]]; then
             echo "No bet-tracker changes to commit."
+            exit 0
           fi
+
+          git commit -m "Automated bet tracker update"
+
+          # Rebase onto latest remote and push (retry once if race)
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          for attempt in 1 2; do
+            echo "Attempt $attempt: syncing with origin/$BRANCH..."
+            git fetch origin
+            git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+            if git push origin "HEAD:$BRANCH"; then
+              echo "Push succeeded."
+              break
+            else
+              echo "Push rejected (non-fast-forward). Retrying..."
+              sleep 2
+            fi
+          done
