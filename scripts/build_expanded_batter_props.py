@@ -77,13 +77,11 @@ std_devs = {
     "strikeouts": 0.4
 }
 
-final_expanded.loc[final_expanded["prop_type"] == "strikeouts", "projection"] /= 150
-
-# Compute over_probability correctly
+# Compute over_probability (probability projection exceeds line)
 def compute_prob(row):
     sigma = std_devs.get(row["prop_type"], 0.5)
     z = (row["projection"] - row["line"]) / sigma
-    return round(norm.sf(z), 4)  # Corrected: P(X > line)
+    return round(norm.sf(z), 4)
 
 final_expanded["over_probability"] = final_expanded.apply(compute_prob, axis=1)
 
@@ -99,5 +97,6 @@ final = final_expanded[[
 ]].sort_values(by=["name", "prop_type", "line"]).reset_index(drop=True)
 
 # Save
+OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 final.to_csv(OUTPUT_FILE, index=False)
 print(f"✅ Wrote: {OUTPUT_FILE}")
