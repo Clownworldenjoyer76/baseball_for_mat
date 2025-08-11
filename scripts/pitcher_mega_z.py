@@ -2,15 +2,15 @@
 import pandas as pd
 from pathlib import Path
 from scipy.stats import zscore, norm
+import re
 
 # File paths
 INPUT_PROPS = Path("data/_projections/pitcher_props_projected.csv")
 XTRA_STATS  = Path("data/end_chain/cleaned/pitchers_xtra_normalized.csv")
 OUTPUT_FILE = Path("data/_projections/pitcher_mega_z.csv")
 
-# ---- helpers ----------------------------------------------------------------
+# ---------- helpers ----------
 def pick_col(df: pd.DataFrame, candidates) -> str | None:
-    """Return the first column name in df matching any candidate (case-insensitive)."""
     cols = list(df.columns)
     low = {c.lower(): c for c in cols}
     for c in candidates:
@@ -24,14 +24,51 @@ def pick_col(df: pd.DataFrame, candidates) -> str | None:
 def to_num(s):
     return pd.to_numeric(s, errors="coerce")
 
-def require_cols_or_die(df_label: str, df: pd.DataFrame, needed: list[str]):
-    missing = [c for c in needed if c not in df.columns]
-    if missing:
-        print(f"❌ {df_label} missing required columns: {missing}")
-        print(f"   Available columns: {list(df.columns)}")
-        raise SystemExit(1)
+def coalesce_stat(df: pd.DataFrame, target: str, candidates: list[str]) -> pd.DataFrame:
+    """
+    Create/overwrite df[target] by coalescing the first non-null from:
+      1) exact target if present
+      2) any candidate columns (case-insensitive)
+      3) any columns that match ^{target}(_.*)?$  (e.g., strikeouts_x, strikeouts_y)
+    Drops the helper columns after coalescing.
+    """
+    all_cols = list(df.columns)
+    chosen = []
+    # exact first
+    if target in df.columns:
+        chosen.append(target)
+    # explicit candidates
+    low = {c.lower(): c for c in all_cols}
+    for c in candidates:
+        if c in df.columns:
+            chosen.append(c)
+        elif c.lower() in low and low[c.lower()] not in chosen:
+            chosen.append(low[c.lower()])
+    # suffix variants
+    pat = re.compile(rf"^{re.escape(target)}(_.*)?$", re.IGNORECASE)
+    for c in all_cols:
+        if pat.match(c) and c not in chosen:
+            chosen.append(c)
 
-# ---- load -------------------------------------------------------------------
+    if not chosen:
+        return df  # nothing to do
+
+    # build the coalesced series
+    ser = None
+    for c in chosen:
+        if ser is None:
+            ser = df[c]
+        else:
+            ser = ser.where(ser.notna(), df[c])
+
+    df[target] = ser
+    # drop everything except the final target
+    drop_cols = [c for c in chosen if c != target]
+    if drop_cols:
+        df.drop(columns=drop_cols, inplace=True, errors="ignore")
+    return df
+
+# ---------- load ----------
 df_base = pd.read_csv(INPUT_PROPS)
 df_xtra = pd.read_csv(XTRA_STATS)
 
@@ -39,7 +76,7 @@ df_xtra = pd.read_csv(XTRA_STATS)
 df_base["player_id"] = df_base["player_id"].astype(str).str.strip()
 df_xtra["player_id"]  = df_xtra["player_id"].astype(str).str.strip()
 
-# ---- ensure name/team in base (fallback from xtra if needed) ----------------
+# ensure name/team present (fallback from xtra)
 if "name" not in df_base.columns or (df_base["name"].isna().all() if "name" in df_base.columns else True):
     cols_avail = [c for c in ["player_id","name","team"] if c in df_xtra.columns]
     if "player_id" in cols_avail and (("name" in cols_avail) or ("team" in cols_avail)):
@@ -59,52 +96,39 @@ if "name" not in df_base.columns or (df_base["name"].isna().all() if "name" in d
 if "name" not in df_base.columns and "last_name, first_name" in df_base.columns:
     df_base["name"] = df_base["last_name, first_name"]
 
-# ---- locate strikeouts / walks columns (xtra OR base) -----------------------
-K_CANDIDATES  = ["strikeouts","k","k_total","k_count","strike_outs","proj_k","k_pred","strikeouts_projected"]
-BB_CANDIDATES = ["walks","bb","bb_total","walk_count","proj_bb","bb_pred","walks_projected"]
+# ---------- bring K/BB from xtra if present ----------
+K_CANDS  = ["strikeouts","k","k_total","k_count","strike_outs","proj_k","k_pred","strikeouts_projected"]
+BB_CANDS = ["walks","bb","bb_total","walk_count","proj_bb","bb_pred","walks_projected"]
 
-k_col_xtra  = pick_col(df_xtra, K_CANDIDATES)
-bb_col_xtra = pick_col(df_xtra, BB_CANDIDATES)
+use_xtra_k  = pick_col(df_xtra, K_CANDS)
+use_xtra_bb = pick_col(df_xtra, BB_CANDS)
 
-k_col_base  = pick_col(df_base, K_CANDIDATES)
-bb_col_base = pick_col(df_base, BB_CANDIDATES)
+df = df_base.copy()
+if use_xtra_k:
+    df = df.merge(df_xtra[["player_id", use_xtra_k]], on="player_id", how="left")
+if use_xtra_bb:
+    df = df.merge(df_xtra[["player_id", use_xtra_bb]], on="player_id", how="left")
 
-# Priority: xtra first, then base
-k_source = ("xtra", k_col_xtra) if k_col_xtra else (("base", k_col_base) if k_col_base else (None, None))
-bb_source = ("xtra", bb_col_xtra) if bb_col_xtra else (("base", bb_col_base) if bb_col_base else (None, None))
+# also coalesce any K/BB already in base (handles *_x/*_y)
+df = coalesce_stat(df, "strikeouts", K_CANDS + ([use_xtra_k] if use_xtra_k else []))
+df = coalesce_stat(df, "walks",      BB_CANDS + ([use_xtra_bb] if use_xtra_bb else []))
 
-if k_source[0] is None or bb_source[0] is None:
-    print("❌ Required strikeouts/walks not found in either file.")
-    print("   Looked for K in:", K_CANDIDATES)
-    print("   Looked for BB in:", BB_CANDIDATES)
-    print("   Columns in pitchers_xtra_normalized.csv:", list(df_xtra.columns))
-    print("   Columns in pitcher_props_projected.csv:", list(df_base.columns))
+# require present after coalescing
+if not {"strikeouts","walks"}.issubset(df.columns):
+    print("❌ Working DF missing required columns: ['strikeouts','walks']")
+    print("   Available columns:", list(df.columns))
     raise SystemExit(1)
 
-# ---- build working df with K/BB ---------------------------------------------
-df = df_base.copy()
-
-# bring K/BB from chosen sources
-if k_source[0] == "xtra":
-    df = df.merge(df_xtra[["player_id", k_source[1]]], on="player_id", how="left").rename(columns={k_source[1]:"strikeouts"})
-else:
-    df = df.rename(columns={k_source[1]:"strikeouts"})
-
-if bb_source[0] == "xtra":
-    df = df.merge(df_xtra[["player_id", bb_source[1]]], on="player_id", how="left").rename(columns={bb_source[1]:"walks"})
-else:
-    df = df.rename(columns={bb_source[1]:"walks"})
-
-# ensure we now have columns
-require_cols_or_die("Working DF", df, ["strikeouts","walks"])
-
-# ---- ERA/WHIP sourcing (prefer base, else xtra) -----------------------------
+# ---------- ERA/WHIP (prefer base, else xtra; then coalesce suffixes) ----------
 if "era" not in df.columns and "era" in df_xtra.columns:
     df = df.merge(df_xtra[["player_id","era"]], on="player_id", how="left")
 if "whip" not in df.columns and "whip" in df_xtra.columns:
     df = df.merge(df_xtra[["player_id","whip"]], on="player_id", how="left")
 
-# coerce numerics
+df = coalesce_stat(df, "era",  ["ERA"])
+df = coalesce_stat(df, "whip", ["WHIP"])
+
+# ---------- numerics / pruning ----------
 for c in ["era","whip","strikeouts","walks"]:
     if c in df.columns:
         df[c] = to_num(df[c])
@@ -115,24 +139,20 @@ if df.empty:
     print("❌ After coercion, no rows have both strikeouts and walks.")
     raise SystemExit(1)
 
-# ---- z-scores ----------------------------------------------------------------
-# ERA/WHIP: compute z on rows where both exist; fill missing with 0
-if "era" in df.columns and "whip" in df.columns:
-    mask_e_w = df["era"].notna() & df["whip"].notna()
-    df["era_z"]  = 0.0
-    df["whip_z"] = 0.0
-    if mask_e_w.any():
-        df.loc[mask_e_w, "era_z"]  = -zscore(df.loc[mask_e_w, "era"])
-        df.loc[mask_e_w, "whip_z"] = -zscore(df.loc[mask_e_w, "whip"])
-else:
-    df["era_z"] = 0.0
-    df["whip_z"] = 0.0
+# ---------- z-scores ----------
+# ERA/WHIP: compute z where both exist; else 0
+df["era_z"]  = 0.0
+df["whip_z"] = 0.0
+mask_e_w = df["era"].notna() & df["whip"].notna()
+if mask_e_w.any():
+    df.loc[mask_e_w, "era_z"]  = -zscore(df.loc[mask_e_w, "era"])
+    df.loc[mask_e_w, "whip_z"] = -zscore(df.loc[mask_e_w, "whip"])
 
 df["strikeouts_z"] = zscore(df["strikeouts"].astype(float))
 df["walks_z"]      = -zscore(df["walks"].astype(float))
 df["mega_z"]       = df[["era_z","whip_z","strikeouts_z","walks_z"]].mean(axis=1)
 
-# ---- build prop rows ---------------------------------------------------------
+# ---------- props ----------
 props = []
 for _, row in df.iterrows():
     for prop_type, stat_value, lines in [
@@ -154,7 +174,7 @@ for _, row in df.iterrows():
                 "over_probability": round(over_prob, 4),
             })
 
-# ---- write -------------------------------------------------------------------
+# ---------- write ----------
 props_df = pd.DataFrame(props)
 OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 props_df.to_csv(OUTPUT_FILE, index=False)
