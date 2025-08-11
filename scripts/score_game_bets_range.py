@@ -1,160 +1,232 @@
 #!/usr/bin/env python3
-import argparse, sys, time, re
-from pathlib import Path
-from typing import Dict, Tuple, List, Any
-import requests
+# -*- coding: utf-8 -*-
+"""
+score_game_bets_range_updated.py
+--------------------------------
+Fills ONLY these columns in a bets CSV:
+  - home_score
+  - away_score
+  - actual_real_run_total
+  - run_total_diff
+  - favorite_correct
+
+Rules:
+- Detects source columns case-insensitively (supports common aliases).
+- Coerces numbers safely; ignores bad/missing values.
+- Only fills EMPTY cells (NaN/None/blank); never overwrites non-empty.
+- favorite_correct is computed from either favorite_side, favorite_team,
+  or by inferring the favorite from moneylines/spreads if needed.
+
+Usage:
+  python score_game_bets_range_updated.py --input path/to/file.csv
+  python score_game_bets_range_updated.py --input file.csv --output out.csv
+  python score_game_bets_range_updated.py --input file.csv --check  (dry-run)
+
+Exit codes:
+  0 success
+  2 error
+"""
+from __future__ import annotations
+import argparse
+from typing import Dict, List, Tuple
+import numpy as np
 import pandas as pd
-import os
 
-TEAM_MAP_FILE = Path("data/Data/team_name_master.csv")  # optional external map
 
-TEAM_ALIASES: Dict[str, str] = {
-    # AL EAST
-    "new york yankees":"nyyankees","yankees":"nyyankees","nyy":"nyyankees","ny yankees":"nyyankees","yanks":"nyyankees",
-    "boston red sox":"bosredsox","red sox":"bosredsox","bos":"bosredsox","bo sox":"bosredsox","bo-sox":"bosredsox",
-    "toronto blue jays":"torbluejays","blue jays":"torbluejays","jays":"torbluejays","tor":"torbluejays",
-    "tampa bay rays":"tampabaysrays","rays":"tampabaysrays","tb":"tampabaysrays","tbr":"tampabaysrays","devil rays":"tampabaysrays",
-    "baltimore orioles":"balorioles","orioles":"balorioles","o's":"balorioles","os":"balorioles","bal":"balorioles",
-    # AL CENTRAL
-    "cleveland guardians":"cleguardians","guardians":"cleguardians","cle":"cleguardians","indians":"cleguardians",
-    "detroit tigers":"dettigers","tigers":"dettigers","det":"dettigers",
-    "minnesota twins":"mintwins","twins":"mintwins","min":"mintwins","twinkies":"mintwins",
-    "kansas city royals":"kcroyals","royals":"kcroyals","kc":"kcroyals","kcr":"kcroyals",
-    "chicago white sox":"chiwhitesox","white sox":"chiwhitesox","whitesox":"chiwhitesox","chisox":"chiwhitesox","cws":"chiwhitesox","chw":"chiwhitesox",
-    # AL WEST
-    "houston astros":"houastros","astros":"houastros","hou":"houastros","stros":"houastros",
-    "seattle mariners":"seamariners","mariners":"seamariners","sea":"seamariners","m's":"seamariners","ms":"seamariners",
-    "texas rangers":"texrangers","rangers":"texrangers","tex":"texrangers",
-    "los angeles angels":"laangels","angels":"laangels","laa":"laangels","ana":"laangels","halos":"laangels",
-    # Athletics mappings
-    "oakland athletics":"oakathletics","athletics":"oakathletics","oak":"oakathletics","a's":"oakathletics","as":"oakathletics","a s":"oakathletics",
-    # NL EAST
-    "atlanta braves":"atlbraves","braves":"atlbraves","atl":"atlbraves",
-    "miami marlins":"miamarlins","marlins":"miamarlins","mia":"miamarlins","fish":"miamarlins",
-    "new york mets":"nymets","mets":"nymets","nym":"nymets","metropolitans":"nymets",
-    "philadelphia phillies":"phiphillies","phillies":"phiphillies","phils":"phiphillies","phi":"phiphillies",
-    "washington nationals":"wasnats","nationals":"wasnats","nats":"wasnats","was":"wasnats","wsh":"wasnats",
-    # NL CENTRAL
-    "chicago cubs":"chicubs","cubs":"chicubs","chc":"chicubs","cubbies":"chicubs",
-    "st. louis cardinals":"stlcardinals","st louis cardinals":"stlcardinals","cardinals":"stlcardinals","stl":"stlcardinals","redbirds":"stlcardinals",
-    "milwaukee brewers":"milbrewers","brewers":"milbrewers","mil":"milbrewers","brew crew":"milbrewers",
-    "cincinnati reds":"cinreds","reds":"cinreds","cin":"cinreds","big red machine":"cinreds",
-    "pittsburgh pirates":"pitpirates","pirates":"pitpirates","pit":"pitpirates","bucs":"pitpirates","buccos":"pitpirates",
-    # NL WEST
-    "los angeles dodgers":"ladodgers","la dodgers":"ladodgers","dodgers":"ladodgers","lad":"ladodgers",
-    "san francisco giants":"sfgiants","giants":"sfgiants","sf":"sfgiants","sfg":"sfgiants",
-    "san diego padres":"sdpadres","padres":"sdpadres","sd":"sdpadres","friars":"sdpadres",
-    "arizona diamondbacks":"aridbacks","diamondbacks":"aridbacks","dbacks":"aridbacks","d-backs":"aridbacks","ari":"aridbacks","snakes":"aridbacks",
-    "colorado rockies":"colrockies","rockies":"colrockies","col":"colrockies","rox":"colrockies",
-}
+TARGET_COLS = [
+    "home_score",
+    "away_score",
+    "actual_real_run_total",
+    "run_total_diff",
+    "favorite_correct",
+]
 
-_PUNCT_RE = re.compile(r"[.\u2019'’`-]")
 
-def parse_args():
-    p = argparse.ArgumentParser(description="Score daily GAME bets and update specific columns only.")
-    p.add_argument("--date", required=True, help="YYYY-MM-DD")
-    p.add_argument("--api", default="https://statsapi.mlb.com/api/v1")
-    p.add_argument("--out", required=True, help="Per-day game props CSV to update")
-    p.add_argument("--debug", action="store_true")
-    return p.parse_args()
+# ----------------- helpers -----------------
+def _is_empty(x) -> bool:
+    if x is None:
+        return True
+    if isinstance(x, float):
+        return pd.isna(x)
+    if isinstance(x, str):
+        return x.strip() == ""
+    return False
 
-def _get(url: str, params: Dict[str, str] | None = None, tries: int = 3, sleep: float = 0.8) -> Dict[str, Any]:
-    for _ in range(tries):
-        r = requests.get(url, params=params, timeout=25)
-        if r.ok:
-            return r.json()
-        time.sleep(sleep)
-    r.raise_for_status()
-    return {}
 
-def _canon_key(s: str) -> str:
-    return " ".join((s or "").strip().lower().split())
+def _norm_header_map(df: pd.DataFrame) -> Dict[str, str]:
+    """Map normalized header -> original header"""
+    return {c.lower().strip(): c for c in df.columns}
 
-def _loose_key(s: str) -> str:
-    return _PUNCT_RE.sub("", _canon_key(s))
 
-def build_team_mapping() -> Dict[str, str]:
-    mapping = {_loose_key(k): v for k, v in TEAM_ALIASES.items()}
-    if TEAM_MAP_FILE.exists():
-        try:
-            tm = pd.read_csv(TEAM_MAP_FILE)
-            cols = {c.lower().strip(): c for c in tm.columns}
-            short_col = cols.get("team_name_short") or cols.get("short") or cols.get("nickname") or cols.get("team_short")
-            api_col   = cols.get("team_name_api")   or cols.get("api")   or cols.get("full")      or cols.get("team_full")
-            if short_col and api_col:
-                tm["_short"] = tm[short_col].astype(str).str.strip().str.lower()
-                tm["_api"]   = tm[api_col].astype(str).str.strip()
-                for s, a in zip(tm["_short"], tm["_api"]):
-                    mapping[_loose_key(s)] = mapping.get(_loose_key(a), a)
-        except Exception as e:
-            print(f"⚠️ team_name_master.csv problem: {e}", file=sys.stderr)
-    mapping[_loose_key("athletics")] = "oakathletics"
-    return mapping
+def _find_col(df: pd.DataFrame, candidates: List[str]) -> str | None:
+    m = _norm_header_map(df)
+    for name in candidates:
+        k = name.lower().strip()
+        if k in m:
+            return m[k]
+    return None
 
-def normalize_for_match(val: str, mapping: Dict[str,str]) -> str:
-    k = _loose_key(str(val or "").strip())
-    return mapping.get(k, k)
 
-def find_team_columns(df: pd.DataFrame) -> Tuple[str, str]:
-    cols = [c.lower().strip() for c in df.columns]
-    home_cols = ['home', 'home_team', 'hometeam']
-    away_cols = ['away', 'away_team', 'awayteam', 'visitor', 'visitorteam']
-    home_col = next((c for c in home_cols if c in cols), None)
-    away_col = next((c for c in away_cols if c in cols), None)
-    if not home_col or not away_col:
-        raise ValueError("Could not find suitable home/away team columns in the CSV.")
-    return home_col, away_col
-
-def main():
-    args = parse_args()
-    mapping = build_team_mapping()
-
+def _coerce_int(val):
+    if _is_empty(val):
+        return np.nan
     try:
-        df_bets = pd.read_csv(args.out, keep_default_na=False)
-    except FileNotFoundError:
-        print(f"Error: Bet file not found at '{args.out}'.", file=sys.stderr)
-        sys.exit(1)
+        return int(float(str(val).strip()))
+    except Exception:
+        return np.nan
 
-    home_col, away_col = find_team_columns(df_bets)
 
-    url = f"{args.api}/schedule"
-    params = {"sportId": 1, "date": args.date, "hydrate": "linescore,teams"}
-    schedule_data = _get(url, params)
-    dates = schedule_data.get("dates", [])
-    if not dates:
-        print(f"No games found for {args.date}.", file=sys.stderr)
-        return
+def _norm_str(s: object) -> str:
+    return (
+        str(s)
+        .strip()
+        .lower()
+        .replace(".", "")
+        .replace(",", "")
+        .replace("-", " ")
+        .replace("  ", " ")
+    )
 
-    games_to_score = []
-    for game in dates[0]["games"]:
-        home_team = game["teams"]["home"]["team"]["name"]
-        away_team = game["teams"]["away"]["team"]["name"]
-        games_to_score.append({
-            "home_team_api": normalize_for_match(home_team, mapping),
-            "away_team_api": normalize_for_match(away_team, mapping),
-            "home_score": game["linescore"]["teams"]["home"].get("runs"),
-            "away_score": game["linescore"]["teams"]["away"].get("runs"),
-        })
 
-    for i, row in df_bets.iterrows():
-        home_team_bet = normalize_for_match(row.get(home_col, ""), mapping)
-        away_team_bet = normalize_for_match(row.get(away_col, ""), mapping)
+def _winner_side(df: pd.DataFrame, home_score_col: str, away_score_col: str) -> pd.Series:
+    hs = pd.to_numeric(df[home_score_col], errors="coerce")
+    as_ = pd.to_numeric(df[away_score_col], errors="coerce")
+    out = pd.Series(index=df.index, dtype=object)
+    out[(hs > as_)] = "home"
+    out[(as_ > hs)] = "away"
+    out[(hs == as_)] = "push"
+    return out
 
-        for game in games_to_score:
-            if home_team_bet == game["home_team_api"] and away_team_bet == game["away_team_api"]:
-                df_bets.loc[i, "home_score"] = game["home_score"]
-                df_bets.loc[i, "away_score"] = game["away_score"]
-                df_bets.loc[i, "actual_real_run_total"] = (game["home_score"] or 0) + (game["away_score"] or 0)
-                if "total" in df_bets.columns:
-                    try:
-                        df_bets.loc[i, "run_total_diff"] = float(df_bets.loc[i, "actual_real_run_total"]) - float(df_bets.loc[i, "total"])
-                    except ValueError:
-                        df_bets.loc[i, "run_total_diff"] = None
-                df_bets.loc[i, "favorite_correct"] = None  # Placeholder for your logic
-                break
 
-    df_bets.to_csv(args.out, index=False)
-    print(f"Updated and saved to '{args.out}'.")
+def _favorite_side(df: pd.DataFrame) -> pd.Series:
+    """Return Series with values 'home', 'away', or NaN if unknown."""
+    home_col = _find_col(df, ["home_team", "home"])
+    away_col = _find_col(df, ["away_team", "away", "visitor", "visitorteam"])
+    fav_side_col = _find_col(df, ["favorite_side", "fav_side", "side_favorite"])
+    fav_team_col = _find_col(df, ["favorite_team", "ml_favorite_team", "closing_favorite_team"])
+
+    # Moneyline or spread as fallback
+    home_ml = _find_col(df, ["home_ml", "home_moneyline", "moneyline_home"])
+    away_ml = _find_col(df, ["away_ml", "away_moneyline", "moneyline_away"])
+    home_spread = _find_col(df, ["home_spread", "home_handicap", "spread_home"])
+    away_spread = _find_col(df, ["away_spread", "away_handicap", "spread_away"])
+
+    # 1) direct side column
+    if fav_side_col:
+        s = df[fav_side_col].astype(str).str.strip().str.lower()
+        return s.replace({"h": "home", "a": "away", "home_team": "home", "away_team": "away"})
+
+    # 2) favorite team name -> side
+    if fav_team_col and home_col and away_col:
+        fav_norm = df[fav_team_col].apply(_norm_str)
+        home_norm = df[home_col].apply(_norm_str)
+        away_norm = df[away_col].apply(_norm_str)
+        side = pd.Series(index=df.index, dtype=object)
+        side[fav_norm == home_norm] = "home"
+        side[fav_norm == away_norm] = "away"
+        return side
+
+    # 3) moneyline: more negative is favorite
+    if home_ml and away_ml:
+        h = pd.to_numeric(df[home_ml], errors="coerce")
+        a = pd.to_numeric(df[away_ml], errors="coerce")
+        side = pd.Series(index=df.index, dtype=object)
+        side[(h.notna()) & (a.notna()) & (h < a)] = "home"
+        side[(h.notna()) & (a.notna()) & (a < h)] = "away"
+        return side
+
+    # 4) spread: more negative is favorite
+    if home_spread and away_spread:
+        hs = pd.to_numeric(df[home_spread], errors="coerce")
+        as_ = pd.to_numeric(df[away_spread], errors="coerce")
+        side = pd.Series(index=df.index, dtype=object)
+        side[(hs.notna()) & (as_.notna()) & (hs < as_)] = "home"
+        side[(hs.notna()) & (as_.notna()) & (as_ < hs)] = "away"
+        return side
+
+    return pd.Series(index=df.index, dtype=object)  # unknown
+
+
+# ----------------- main work -----------------
+def process(file_in: str, file_out: str | None = None, check: bool = False) -> int:
+    df = pd.read_csv(file_in)
+
+    # Ensure target columns exist
+    for col in TARGET_COLS:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    # Detect score columns (prefer existing targets, else aliases)
+    home_col = _find_col(df, ["home_score", "final_home_score", "score_home", "home_runs", "home_points"])
+    away_col = _find_col(df, ["away_score", "final_away_score", "score_away", "away_runs", "away_points"])
+    home_col = home_col or "home_score"
+    away_col = away_col or "away_score"
+
+    # Convert existing score columns to numeric helpers
+    hs_num = pd.to_numeric(df[home_col], errors="coerce")
+    as_num = pd.to_numeric(df[away_col], errors="coerce")
+
+    # 1) Fill home_score / away_score only where blank (if source columns are not the canonical ones)
+    if home_col != "home_score":
+        mask = df["home_score"].apply(_is_empty) & hs_num.notna()
+        if not check:
+            df.loc[mask, "home_score"] = hs_num[mask].astype("Int64")
+
+    if away_col != "away_score":
+        mask = df["away_score"].apply(_is_empty) & as_num.notna()
+        if not check:
+            df.loc[mask, "away_score"] = as_num[mask].astype("Int64")
+
+    # Recompute helpers from the (possibly updated) canonical columns
+    hs_num = pd.to_numeric(df["home_score"], errors="coerce").fillna(0)
+    as_num = pd.to_numeric(df["away_score"], errors="coerce").fillna(0)
+
+    # 2) actual_real_run_total (only fill blanks)
+    need_total = df["actual_real_run_total"].apply(_is_empty)
+    if not check:
+        df.loc[need_total, "actual_real_run_total"] = (hs_num + as_num)[need_total].astype("Int64")
+
+    # 3) run_total_diff = abs(market_total - actual_total) where both exist
+    total_col = _find_col(df, ["total", "closing_total", "market_total", "ou_total", "line_total", "game_total"])
+    if total_col:
+        market = pd.to_numeric(df[total_col], errors="coerce")
+        actual = pd.to_numeric(df["actual_real_run_total"], errors="coerce")
+        need_diff = df["run_total_diff"].apply(_is_empty)
+        mask = need_diff & market.notna() & actual.notna()
+        if not check:
+            df.loc[mask, "run_total_diff"] = (market[mask] - actual[mask]).abs()
+
+    # 4) favorite_correct (only fill blanks)
+    fav_side = _favorite_side(df)  # "home"/"away"/None
+    winner = _winner_side(df, "home_score", "away_score")  # "home"/"away"/"push"
+    need_fc = df["favorite_correct"].apply(_is_empty)
+    mask = need_fc & fav_side.isin(["home", "away"]) & winner.isin(["home", "away"])
+    if not check:
+        df.loc[mask, "favorite_correct"] = (fav_side[mask] == winner[mask]).astype(int)
+
+    # Write output
+    if check:
+        print("[DRY-RUN] Completed checks. No changes written.")
+        return 0
+
+    out = file_out or file_in
+    df.to_csv(out, index=False)
+    print(f"Wrote updates to: {out}")
+    return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--input", required=True, help="Path to input CSV")
+    ap.add_argument("--output", help="Optional output CSV; defaults to in-place")
+    ap.add_argument("--check", action="store_true", help="Dry-run without writing changes")
+    args = ap.parse_args()
+    try:
+        return process(args.input, args.output, args.check)
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return 2
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
