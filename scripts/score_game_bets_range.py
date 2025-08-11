@@ -1,7 +1,3 @@
-import os, time
-print(f"RUNNING SCRIPT: {__file__}")
-print(f"LAST MODIFIED: {time.ctime(os.path.getmtime(__file__))}")
-
 #!/usr/bin/env python3
 import argparse, csv, sys, time, re
 from pathlib import Path
@@ -147,6 +143,11 @@ def main():
     mapping = build_team_mapping()
     print("DEBUG: 'athletics' in mapping? ->", "athletics" in mapping)
     print("DEBUG: mapping['athletics'] ->", mapping.get("athletics"))
+    # Added Orioles-focused debug
+    print("DEBUG: 'orioles' in mapping? ->", "orioles" in mapping)
+    print("DEBUG: mapping['orioles'] ->", mapping.get("orioles"))
+    print("DEBUG: 'baltimore orioles' in mapping? ->", "baltimore orioles" in mapping)
+    print("DEBUG: mapping['baltimore orioles'] ->", mapping.get("baltimore orioles"))
 
     try:
         df_bets = pd.read_csv(args.out, keep_default_na=False)
