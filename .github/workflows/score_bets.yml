@@ -46,13 +46,18 @@ jobs:
           echo "DATE=$D" >> "$GITHUB_ENV"
           echo "Using date: $D"
 
-      - name: Score GAME bets (debug always on)
+      # Scores GAME bets by reading MLB API and updating only allowed columns.
+      # Input:  data/bets/bet_history/game_bets_${DATE}.csv (must exist)
+      # Output: data/bets/bet_history/${DATE}_game_props.csv
+      - name: Score GAME bets (API)
         run: |
-          python -u scripts/score_game_bets_range.py \
+          python -u scripts/score_game_bets_range_bet_history_api.py \
             --date "${{ env.DATE }}" \
+            --file "game_bets_${{ env.DATE }}.csv" \
             --api "https://statsapi.mlb.com/api/v1" \
-            --out "data/bets/bet_history/${{ env.DATE }}_game_props.csv"
+            --output "${{ env.DATE }}_game_props.csv"
 
+      # Player step unchanged (still uses your existing script/args)
       - name: Score PLAYER bets (writes prop_correct only)
         run: |
           python -u scripts/score_player_bets.py \
@@ -64,7 +69,10 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add "data/bets/bet_history/${{ env.DATE }}_game_props.csv" "data/bets/bet_history/${{ env.DATE }}_player_props.csv" || true
+          git add \
+            "data/bets/bet_history/game_bets_${{ env.DATE }}.csv" \
+            "data/bets/bet_history/${{ env.DATE }}_game_props.csv" \
+            "data/bets/bet_history/${{ env.DATE }}_player_props.csv" || true
           if git diff --staged --quiet; then
             echo "No changes to commit."
           else
