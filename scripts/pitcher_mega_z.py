@@ -34,7 +34,7 @@ def coalesce_stat(df: pd.DataFrame, target: str, candidates: list[str]) -> pd.Da
     """
     all_cols = list(df.columns)
     chosen = []
-    # exact first
+    # exact
     if target in df.columns:
         chosen.append(target)
     # explicit candidates
@@ -51,9 +51,10 @@ def coalesce_stat(df: pd.DataFrame, target: str, candidates: list[str]) -> pd.Da
             chosen.append(c)
 
     if not chosen:
-        return df  # nothing to do
+        # ensure the column exists even if none found (set to NA)
+        df[target] = pd.NA
+        return df
 
-    # build the coalesced series
     ser = None
     for c in chosen:
         if ser is None:
@@ -62,7 +63,6 @@ def coalesce_stat(df: pd.DataFrame, target: str, candidates: list[str]) -> pd.Da
             ser = ser.where(ser.notna(), df[c])
 
     df[target] = ser
-    # drop everything except the final target
     drop_cols = [c for c in chosen if c != target]
     if drop_cols:
         df.drop(columns=drop_cols, inplace=True, errors="ignore")
@@ -109,7 +109,7 @@ if use_xtra_k:
 if use_xtra_bb:
     df = df.merge(df_xtra[["player_id", use_xtra_bb]], on="player_id", how="left")
 
-# also coalesce any K/BB already in base (handles *_x/*_y)
+# coalesce K/BB from any variants (including *_x/_y and base aliases)
 df = coalesce_stat(df, "strikeouts", K_CANDS + ([use_xtra_k] if use_xtra_k else []))
 df = coalesce_stat(df, "walks",      BB_CANDS + ([use_xtra_bb] if use_xtra_bb else []))
 
@@ -119,14 +119,18 @@ if not {"strikeouts","walks"}.issubset(df.columns):
     print("   Available columns:", list(df.columns))
     raise SystemExit(1)
 
-# ---------- ERA/WHIP (prefer base, else xtra; then coalesce suffixes) ----------
+# ---------- ERA/WHIP (prefer base, else xtra; then coalesce suffixes/aliases) ----------
+# Try to bring from xtra if absent in base
 if "era" not in df.columns and "era" in df_xtra.columns:
     df = df.merge(df_xtra[["player_id","era"]], on="player_id", how="left")
 if "whip" not in df.columns and "whip" in df_xtra.columns:
     df = df.merge(df_xtra[["player_id","whip"]], on="player_id", how="left")
 
-df = coalesce_stat(df, "era",  ["ERA"])
-df = coalesce_stat(df, "whip", ["WHIP"])
+# Coalesce possible variants/aliases and ensure columns exist
+ERA_CANDS  = ["ERA","era_value","earned_run_average","era_adj"]
+WHIP_CANDS = ["WHIP","whip_value","walks_hits_per_ip","whip_adj"]
+df = coalesce_stat(df, "era",  ERA_CANDS)
+df = coalesce_stat(df, "whip", WHIP_CANDS)
 
 # ---------- numerics / pruning ----------
 for c in ["era","whip","strikeouts","walks"]:
@@ -140,13 +144,18 @@ if df.empty:
     raise SystemExit(1)
 
 # ---------- z-scores ----------
-# ERA/WHIP: compute z where both exist; else 0
+# Ensure 'era' and 'whip' exist so we don't KeyError
+if "era" not in df.columns:
+    df["era"] = pd.NA
+if "whip" not in df.columns:
+    df["whip"] = pd.NA
+
 df["era_z"]  = 0.0
 df["whip_z"] = 0.0
 mask_e_w = df["era"].notna() & df["whip"].notna()
 if mask_e_w.any():
-    df.loc[mask_e_w, "era_z"]  = -zscore(df.loc[mask_e_w, "era"])
-    df.loc[mask_e_w, "whip_z"] = -zscore(df.loc[mask_e_w, "whip"])
+    df.loc[mask_e_w, "era_z"]  = -zscore(df.loc[mask_e_w, "era"].astype(float))
+    df.loc[mask_e_w, "whip_z"] = -zscore(df.loc[mask_e_w, "whip"].astype(float))
 
 df["strikeouts_z"] = zscore(df["strikeouts"].astype(float))
 df["walks_z"]      = -zscore(df["walks"].astype(float))
