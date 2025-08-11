@@ -35,13 +35,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Run script -> todaysgames.csv
+      - name: Run script -> data/raw/todaysgames.csv
         run: |
           set -euo pipefail
-          python -u scripts/todaysgames.py --out todaysgames.csv
+          mkdir -p data/raw
+          python -u scripts/todaysgames.py --out data/raw/todaysgames.csv
           echo "CSV preview:"
-          head -n 5 todaysgames.csv || true
-          wc -c todaysgames.csv
+          head -n 5 data/raw/todaysgames.csv || true
+          wc -c data/raw/todaysgames.csv
 
       - name: Git diagnostics (before add)
         run: |
@@ -57,7 +58,7 @@ jobs:
       - name: Stage CSV (force) and show index diff
         run: |
           set -e
-          git add --force todaysgames.csv
+          git add --force data/raw/todaysgames.csv
           echo "---- cached diff ----"
           git diff --cached --stat || true
           echo "---- status after add ----"
@@ -70,9 +71,9 @@ jobs:
           git config user.name  "github-actions"
           git config user.email "github-actions@github.com"
           if git diff --cached --quiet; then
-            git commit --allow-empty -m "Keep todaysgames.csv (no content change) [run $GITHUB_RUN_ID]"
+            git commit --allow-empty -m "Keep data/raw/todaysgames.csv (no content change) [run $GITHUB_RUN_ID]"
           else
-            git commit -m "Update todaysgames.csv [run $GITHUB_RUN_ID]"
+            git commit -m "Update data/raw/todaysgames.csv [run $GITHUB_RUN_ID]"
           fi
           SHA="$(git rev-parse HEAD)"
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
