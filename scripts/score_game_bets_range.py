@@ -239,7 +239,7 @@ def process(file_in: Path, file_out: Path | None, api_base: str, date_str: str, 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--date", help="YYYY-MM-DD (used for API query and default filename)")
-    ap.add_argument("--file", help="Explicit filename inside bet_history, e.g., game_bets_2025-08-11.csv")
+    ap.add_argument("--file", help="Explicit filename inside bet_history, e.g., 2025-08-11_game_props.csv")
     ap.add_argument("--output", help="Optional output filename (must be inside bet_history). Defaults to in-place.")
     ap.add_argument("--api", default="https://statsapi.mlb.com/api/v1", help="MLB Stats API base URL")
     ap.add_argument("--check", action="store_true", help="Dry-run without writing changes")
@@ -250,17 +250,17 @@ def main() -> int:
 
     if args.file:
         file_in = BET_HISTORY_DIR / args.file
-        # If no --date, try to infer from filename suffix _YYYY-MM-DD.csv
+        # If no --date, try to infer from filename prefix YYYY-MM-DD_
         date_str = args.date
         if not date_str:
             stem = Path(args.file).stem
             parts = stem.split("_")
-            date_str = parts[-1] if parts else ""
+            date_str = parts[0] if parts else ""
             if len(date_str) != 10:
-                raise SystemExit("Provide --date when filename does not include a YYYY-MM-DD suffix.")
+                raise SystemExit("Provide --date when filename does not include a YYYY-MM-DD prefix.")
     else:
         date_str = args.date
-        file_in = BET_HISTORY_DIR / f"game_bets_{date_str}.csv"
+        file_in = BET_HISTORY_DIR / f"{date_str}_game_props.csv"
 
     file_out = (BET_HISTORY_DIR / args.output) if args.output else None
     return process(file_in, file_out, args.api, date_str, args.check)
