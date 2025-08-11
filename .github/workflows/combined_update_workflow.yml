@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
+
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -36,7 +37,11 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install pandas requests
+          fi
 
       # ---------- LINEUPS ----------
       - name: Run todayslineups.py -> data/raw/lineups.csv
@@ -138,3 +143,99 @@ jobs:
         run: |
           echo "Commit: ${{ steps.commit_games.outputs.sha }}"
           echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit_games.outputs.sha }}"
+
+      # ---------- ENRICH PITCHERS WITH OPP CONTEXT ----------
+      - name: Run enrich_pitchers_with_opp.py -> data/raw/startingpitchers_with_opp_context.csv
+        run: |
+          set -euo pipefail
+          mkdir -p data/raw
+          GAME_DATE="$(date +%F)"  # Uses TZ=America/New_York
+          python -u scripts/enrich_pitchers_with_opp.py \
+            --infile data/end_chain/final/startingpitchers_final.csv \
+            --date "${GAME_DATE}" \
+            --outfile data/raw/startingpitchers_with_opp_context.csv
+          echo "CSV preview (startingpitchers_with_opp_context):"
+          head -n 5 data/raw/startingpitchers_with_opp_context.csv || true
+          wc -c data/raw/startingpitchers_with_opp_context.csv
+
+      - name: Stage startingpitchers_with_opp_context.csv (force)
+        run: |
+          set -e
+          git add --force data/raw/startingpitchers_with_opp_context.csv
+          echo "---- cached diff ----"
+          git diff --cached --stat || true
+          echo "---- status after add ----"
+          git status -vv
+
+      - name: Commit startingpitchers_with_opp_context.csv (separate commit; allow-empty when no diff)
+        id: commit_opp
+        run: |
+          set -e
+          git config user.name  "github-actions"
+          git config user.email "github-actions@github.com"
+          if git diff --cached --quiet; then
+            git commit --allow-empty -m "Keep data/raw/startingpitchers_with_opp_context.csv (no content change) [run $GITHUB_RUN_ID]"
+          else
+            git commit -m "Update data/raw/startingpitchers_with_opp_context.csv [run $GITHUB_RUN_ID]"
+          fi
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Committed $SHA"
+          git log -1 --stat
+
+      - name: Push opponent-context commit
+        env:
+          GIT_TRACE: "1"
+          GIT_CURL_VERBOSE: "1"
+        run: |
+          set -e
+          git pull --rebase origin main || true
+          git push origin HEAD:main
+
+      - name: Print opponent-context commit link
+        run: |
+          echo "Commit: ${{ steps.commit_opp.outputs.sha }}"
+          echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit_opp.outputs.sha }}"
+
+      # ---------- NEWDAYBETS ----------
+      - name: Run newdaybets.py
+        run: |
+          python scripts/newdaybets.py
+          echo "Preview game_props_history.csv:"
+          head -n 5 data/bets/game_props_history.csv || true
+          echo "Preview player_props_history.csv:"
+          head -n 5 data/bets/player_props_history.csv || true
+
+      - name: Stage newdaybets output files (force)
+        run: |
+          set -e
+          git add --force data/bets/game_props_history.csv data/bets/player_props_history.csv
+          echo "---- cached diff ----"
+          git diff --cached --stat || true
+          echo "---- status after add ----"
+          git status -vv
+
+      - name: Commit newdaybets output files (separate commit; allow-empty when no diff)
+        id: commit_newdaybets
+        run: |
+          set -e
+          git config user.name  "github-actions"
+          git config user.email "github-actions@github.com"
+          if git diff --cached --quiet; then
+            git commit --allow-empty -m "Keep newdaybets outputs (no content change) [run $GITHUB_RUN_ID]"
+          else
+            git commit -m "Update newdaybets outputs [run $GITHUB_RUN_ID]"
+          fi
+          SHA="$(git rev-parse HEAD)"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Committed $SHA"
+          git log -1 --stat
+
+      - name: Push newdaybets commit
+        env:
+          GIT_TRACE: "1"
+          GIT_CURL_VERBOSE: "1"
+        run: |
+          set -e
+          git pull --rebase origin main || true
+          git push origin HEAD:main
