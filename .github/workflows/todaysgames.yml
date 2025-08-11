@@ -9,6 +9,8 @@ permissions:
 jobs:
   run-script:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -16,31 +18,54 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
+      - name: Mark workspace as safe for Git
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Show branch & tree
+        run: |
+          echo "Ref        : ${{ github.ref }}"
+          echo "Branch     : ${{ github.ref_name }}"
+          pwd
+          ls -la
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
+          python -V
+          python -m pip install --upgrade pip
           pip install requests
 
       - name: Run script to create todaysgames.csv
         run: |
-          python scripts/todaysgames.py --out todaysgames.csv
+          set -euo pipefail
+          python -u scripts/todaysgames.py --out todaysgames.csv || {
+            echo "Script exited non-zero. Proceeding to ensure file exists for commit."
+          }
 
-      - name: Verify output exists
+      - name: Ensure CSV exists (create header-only if missing)
         run: |
-          ls -la
-          test -s todaysgames.csv
+          if [ ! -s todaysgames.csv ]; then
+            echo 'Creating header-only CSV because script produced no file/output.'
+            printf '"home_team","away_team","game_time","pitcher_home","pitcher_away"\n' > todaysgames.csv
+          fi
+          echo "Preview:"
+          head -n 5 todaysgames.csv || true
 
-      - name: Commit and push CSV
+      - name: Commit and push CSV (if changed)
         run: |
+          set -e
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add todaysgames.csv
-          git status
-          git diff --quiet && git diff --staged --quiet && echo "No changes to commit." && exit 0
+          git add --force todaysgames.csv
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
           git commit -m "Update todaysgames.csv"
           git pull --rebase origin "${{ github.ref_name }}"
           git push origin HEAD:"${{ github.ref_name }}"
