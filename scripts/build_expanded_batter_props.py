@@ -10,6 +10,14 @@ OUTPUT_FILE = Path("data/_projections/batter_props_z_expanded.csv")
 df = pd.read_csv(INPUT_FILE)
 df.columns = df.columns.str.strip().str.lower()
 
+# Map CSV column names to what the script expects
+rename_map = {
+    "b_total_bases": "total_bases_projection",
+    "proj_hits": "total_hits_projection",
+    "proj_hr": "avg_hr",
+}
+df = df.rename(columns=rename_map)
+
 # Filter for only batters
 df = df[df["type"] == "batter"].copy()
 
@@ -69,7 +77,6 @@ std_devs = {
     "strikeouts": 0.4
 }
 
-# Adjust strikeouts from season total to per-game (assumes 150 games)
 final_expanded.loc[final_expanded["prop_type"] == "strikeouts", "projection"] /= 150
 
 # Compute over_probability correctly
