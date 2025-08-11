@@ -1,71 +1,86 @@
+
+# scripts/project_pitcher_props.py
+# Keep as-is except ensure any columns needed for opponent context are preserved in the merged frame.
+
 import pandas as pd
 from pathlib import Path
 from projection_formulas import calculate_all_projections
+import sys
 
-# File paths
-FINAL_FILE = Path("data/end_chain/final/startingpitchers_final.csv")
-CLEANED_FILE = Path("data/cleaned/pitchers_normalized_cleaned.csv")
-XTRA_FILE = Path("data/end_chain/pitchers_xtra.csv")
-OUTPUT_FILE = Path("data/_projections/pitcher_props_projected.csv")
+# Inputs
+BATTERS_IN = Path("data/end_chain/final/bat_today_final.csv")         # batter base (by matchup)
+PITCHERS_XTRA = Path("data/end_chain/pitchers_xtra.csv")              # opponent pitcher rates (opp_K%, opp_BB% etc.)
+PITCHERS_CLEAN = Path("data/cleaned/pitchers_normalized_cleaned.csv") # optional additional pitcher context
+OUTPUT_FILE = Path("data/_projections/batter_props_projected_with_opp.csv")
+
+# Columns we expect from pitcher context (to prefer)
+EXPECT_OPP_COLS = {
+    "opp_K%": ["opp_K%", "opp_k_percent", "opponent_k_percent"],
+    "opp_BB%": ["opp_BB%", "opp_bb_percent", "opponent_bb_percent"],
+}
+
+def _resolve_any(df: pd.DataFrame, names):
+    for n in names:
+        if n in df.columns:
+            return n
+        for col in df.columns:
+            if col.lower() == n.lower():
+                return col
+    return None
 
 def main():
-    print("🔄 Loading pitcher base + enriched files...")
-    df_final = pd.read_csv(FINAL_FILE)
-    df_cleaned = pd.read_csv(CLEANED_FILE)
-    df_xtra = pd.read_csv(XTRA_FILE)
+    try:
+        bats = pd.read_csv(BATTERS_IN)
+    except Exception as e:
+        print(f"Failed to read {BATTERS_IN}: {e}")
+        sys.exit(1)
 
-    # Clean and standardize player_id formats
-    for df in [df_final, df_cleaned, df_xtra]:
-        df["player_id"] = df["player_id"].astype(str).str.replace(".0", "", regex=False).str.strip()
+    # Attempt to merge opponent context by a reasonable key (team or opponent pitcher id if available)
+    # We try flexible keys to accommodate existing pipelines.
+    # Priority: opponent pitcher id -> opponent team -> matchup join hints present in bats
+    opp_frames = []
+    for path in [PITCHERS_XTRA, PITCHERS_CLEAN]:
+        if path.exists():
+            try:
+                opp_frames.append(pd.read_csv(path))
+            except Exception as e:
+                print(f"Warning: failed to read {path}: {e}")
 
-    # Rename mapped fields
-    df_cleaned.rename(columns={
-        "home_run": "hr",
-        "slg_percent": "slg"
-    }, inplace=True)
+    if opp_frames:
+        opp = pd.concat(opp_frames, axis=0, ignore_index=True).drop_duplicates()
+        # Try a set of joins; keep the first that works (non-empty)
+        merged = None
+        join_attempts = [
+            # common keys from prior workflows (adjust if your schema differs)
+            (["opp_pitcher_id"], ["player_id", "pitcher_id", "mlb_id"]),
+            (["opp_team"], ["team", "opp_team", "opponent_team"]),
+            (["game_id"], ["game_id"]),
+        ]
+        for left_keys, right_keys in join_attempts:
+            left_keys = [k for k in left_keys if k in bats.columns]
+            right_keys = [k for k in right_keys if k in opp.columns]
+            if not left_keys or not right_keys:
+                continue
+            tmp = bats.merge(opp, left_on=left_keys[0], right_on=right_keys[0], how="left", suffixes=("", "_opp"))
+            if len(tmp) > 0:
+                merged = tmp
+                break
+        bats = merged if merged is not None else bats
 
-    print("🔗 Merging cleaned stats on player_id...")
-    df = df_final.merge(df_cleaned, on="player_id", how="left", suffixes=("", "_dup"))
+        # Ensure the opponent columns are available with an accepted name
+        for logical, aliases in EXPECT_OPP_COLS.items():
+            present = _resolve_any(bats, aliases)
+            if present is None:
+                # Try to map from any similarly named column in the merged data
+                src = _resolve_any(bats, [f"{logical}_opp", logical.replace('%','_percent')])
+                if src is not None and src != logical:
+                    bats[logical] = bats[src]
 
-    print("🔗 Merging earned runs on player_id...")
-    if "p_earned_run" not in df_xtra.columns:
-        raise ValueError("Missing column: p_earned_run in pitchers_xtra.csv")
-    # FIX APPLIED: Added suffixes to handle potential duplicate 'p_earned_run' columns.
-    # The column from df_xtra will be named 'p_earned_run', and any existing column will be renamed 'p_earned_run_old'.
-    df = df.merge(df_xtra[["player_id", "p_earned_run"]], on="player_id", how="left", suffixes=("_old", ""))
-
-    print("🧮 Calculating ERA using innings_pitched...")
-    df["era"] = (df["p_earned_run"] / df["innings_pitched"]) * 9
-    df["era"] = df["era"].fillna(0).round(2)
-
-    print("🧮 Calculating WHIP from walk + hit / innings_pitched...")
-    df["whip"] = (df["walk"] + df["hit"]) / df["innings_pitched"]
-    df["whip"] = df["whip"].fillna(0).round(2)
-
-    # Drop duplicates
-    df = df.drop_duplicates(subset=["player_id"], keep="first")
-
-    # Resolve _dup columns
-    for col in df.columns:
-        if col.endswith("_dup"):
-            base = col.replace("_dup", "")
-            df[base] = df[base].combine_first(df[col])
-            df.drop(columns=[col], inplace=True)
-
-    print("✅ Running projection formulas...")
-    df = calculate_all_projections(df)
-
-    print("🔎 Selecting top prop columns...")
-    prop_cols = [
-        "player_id", "name", "team", "opp", "is_home", "game_time",
-        "k_prop", "k_z", "p_outs_prop", "p_outs_z", "p_hits_prop", "p_hits_z",
-        "p_walks_prop", "p_walks_z", "p_earned_runs_prop", "p_earned_runs_z",
-        "era", "whip"
-    ]
-    df = df.loc[:, [col for col in prop_cols if col in df.columns]]
-
-    print("💾 Saving output to:", OUTPUT_FILE)
-    df.to_csv(OUTPUT_FILE, index=False)
+    # Now run projections (will fail fast if required batter columns are missing)
+    df_proj = calculate_all_projections(bats)
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    df_proj.to_csv(OUTPUT_FILE, index=False)
+    print(f"Wrote: {OUTPUT_FILE} ({len(df_proj)} rows)")
 
 if __name__ == "__main__":
     main()
