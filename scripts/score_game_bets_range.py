@@ -1,3 +1,7 @@
+import os, time
+print(f"RUNNING SCRIPT: {__file__}")
+print(f"LAST MODIFIED: {time.ctime(os.path.getmtime(__file__))}")
+
 #!/usr/bin/env python3
 import argparse, csv, sys, time, re
 from pathlib import Path
