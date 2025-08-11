@@ -1,7 +1,7 @@
 name: Update Lineups CSV
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -9,12 +9,13 @@ permissions:
 jobs:
   run:
     runs-on: ubuntu-latest
-    env:
-      TZ: America/New_York
-
     steps:
-      - name: Checkout repo
+      - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,15 +27,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests
 
-      - name: Run script -> data/raw/lineups.csv
+      - name: Run todayslineups.py
         run: |
           python scripts/todayslineups.py
-          test -f data/raw/lineups.csv && echo "lineups.csv created"
 
-      - name: Commit and push CSV
+      - name: Commit and push lineups.csv
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/raw/lineups.csv
-          git diff --staged --quiet && echo "No changes to commit." || git commit -m "Update lineups.csv"
+          git diff --staged --quiet || git commit -m "Update lineups.csv"
           git push origin HEAD:${{ github.ref_name }}
