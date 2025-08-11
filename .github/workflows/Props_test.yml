@@ -1,0 +1,43 @@
+name: Project MLB Props
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  project-props:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run projections
+        env:
+          PYTHONPATH: .
+        run: |
+          python scripts/project_batter_props.py
+          python scripts/project_pitcher_props.py
+
+      - name: Commit & push projection files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/_projections/batter_props_projected.csv
+          git add data/_projections/batter_props_projected_with_opp.csv
+          git commit -m "Update projections" || echo "No changes to commit"
+          git push
