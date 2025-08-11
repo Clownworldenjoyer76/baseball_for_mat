@@ -1,23 +1,23 @@
 
-▶️ START: normalize_names (2025-08-11 02:19:46 PM EDT)
+▶️ START: normalize_names (2025-08-11 03:24:05 PM EDT)
 ✅ Batters normalized: 586 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 716 → data/normalized/pitchers_normalized.csv
-⏹️ END: normalize_names (2025-08-11 02:19:46 PM EDT)
+⏹️ END: normalize_names (2025-08-11 03:24:05 PM EDT)
 
-▶️ START: tag_master_files (2025-08-11 02:19:47 PM EDT)
-⏹️ END: tag_master_files (2025-08-11 02:19:47 PM EDT)
+▶️ START: tag_master_files (2025-08-11 03:24:06 PM EDT)
+⏹️ END: tag_master_files (2025-08-11 03:24:06 PM EDT)
 
-▶️ START: validate_tagged_players (2025-08-11 02:19:48 PM EDT)
-⏹️ END: validate_tagged_players (2025-08-11 02:19:48 PM EDT)
+▶️ START: validate_tagged_players (2025-08-11 03:24:06 PM EDT)
+⏹️ END: validate_tagged_players (2025-08-11 03:24:06 PM EDT)
 
-▶️ START: deduplicate_normalized (2025-08-11 02:19:48 PM EDT)
-⏹️ END: deduplicate_normalized (2025-08-11 02:19:48 PM EDT)
+▶️ START: deduplicate_normalized (2025-08-11 03:24:07 PM EDT)
+⏹️ END: deduplicate_normalized (2025-08-11 03:24:07 PM EDT)
 
-▶️ START: normalize_lineups (2025-08-11 02:19:49 PM EDT)
+▶️ START: normalize_lineups (2025-08-11 03:24:08 PM EDT)
 ✅ normalize_lineups.py completed: 779 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups (2025-08-11 02:19:49 PM EDT)
+⏹️ END: normalize_lineups (2025-08-11 03:24:08 PM EDT)
 
-▶️ START: normalize_todays_games (2025-08-11 02:19:49 PM EDT)
+▶️ START: normalize_todays_games (2025-08-11 03:24:08 PM EDT)
 📥 Loading input files...
 🔁 Mapping team abbreviations to full names...
 ⚠️ Unmapped home_team codes: ['CWS']
@@ -25,28 +25,28 @@
 ⏱ Validating game times...
 🔁 Checking for duplicate matchups (by teams + time)…
 ✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games (2025-08-11 02:19:49 PM EDT)
+⏹️ END: normalize_todays_games (2025-08-11 03:24:08 PM EDT)
 
-▶️ START: refresh_stadium_metadata (2025-08-11 02:19:50 PM EDT)
+▶️ START: refresh_stadium_metadata (2025-08-11 03:24:08 PM EDT)
 ✅ Saved updated stadium metadata for 10 home teams to data/Data/stadium_metadata.csv
-⏹️ END: refresh_stadium_metadata (2025-08-11 02:19:50 PM EDT)
+⏹️ END: refresh_stadium_metadata (2025-08-11 03:24:08 PM EDT)
 
-▶️ START: apply_team_name_mapping (2025-08-11 02:19:50 PM EDT)
+▶️ START: apply_team_name_mapping (2025-08-11 03:24:09 PM EDT)
 ✅ Updated: data/raw/todaysgames_normalized.csv
 ✅ Updated: data/Data/stadium_metadata.csv
-⏹️ END: apply_team_name_mapping (2025-08-11 02:19:50 PM EDT)
+⏹️ END: apply_team_name_mapping (2025-08-11 03:24:09 PM EDT)
 
-▶️ START: update_game_time (2025-08-11 02:19:50 PM EDT)
+▶️ START: update_game_time (2025-08-11 03:24:09 PM EDT)
 ✅ Game times and park factors updated for 10 teams.
-⏹️ END: update_game_time (2025-08-11 02:19:50 PM EDT)
+⏹️ END: update_game_time (2025-08-11 03:24:09 PM EDT)
 
-▶️ START: filter_stadium_metadata (2025-08-11 02:19:51 PM EDT)
-⏹️ END: filter_stadium_metadata (2025-08-11 02:19:51 PM EDT)
+▶️ START: filter_stadium_metadata (2025-08-11 03:24:09 PM EDT)
+⏹️ END: filter_stadium_metadata (2025-08-11 03:24:09 PM EDT)
 
-▶️ START: normalize_batter_team_names (2025-08-11 02:19:51 PM EDT)
-⏹️ END: normalize_batter_team_names (2025-08-11 02:19:51 PM EDT)
+▶️ START: normalize_batter_team_names (2025-08-11 03:24:10 PM EDT)
+⏹️ END: normalize_batter_team_names (2025-08-11 03:24:10 PM EDT)
 
-▶️ START: splitaway (2025-08-11 02:19:52 PM EDT)
+▶️ START: splitaway (2025-08-11 03:24:10 PM EDT)
 --- Starting populate_away_batters for data/adjusted/batters_away.csv ---
 Using batters_today from: data/temp_inputs/batters_today_copy.csv
 Using todaysgames_normalized from: data/temp_inputs/todaysgames_normalized_copy.csv
@@ -59,9 +59,9 @@ Filtered batters for away teams. Resulting DataFrame shape: (115, 190)
 Ensured directory 'data/adjusted' exists.
 SUCCESS: Populated 'data/adjusted/batters_away.csv' with 115 away team batters.
 --- Finished populate_away_batters ---
-⏹️ END: splitaway (2025-08-11 02:19:52 PM EDT)
+⏹️ END: splitaway (2025-08-11 03:24:10 PM EDT)
 
-▶️ START: splithome (2025-08-11 02:19:52 PM EDT)
+▶️ START: splithome (2025-08-11 03:24:11 PM EDT)
 --- Starting populate_home_batters for data/adjusted/batters_home.csv ---
 Using batters_today from: data/temp_inputs/batters_today_copy.csv
 Using todaysgames_normalized from: data/temp_inputs/todaysgames_normalized_copy.csv
@@ -74,65 +74,51 @@ Filtered batters for home teams. Resulting DataFrame shape: (117, 190)
 Ensured directory 'data/adjusted' exists.
 SUCCESS: Populated 'data/adjusted/batters_home.csv' with 117 home team batters.
 --- Finished populate_home_batters ---
-⏹️ END: splithome (2025-08-11 02:19:52 PM EDT)
+⏹️ END: splithome (2025-08-11 03:24:11 PM EDT)
 
-▶️ START: updatesplitcsvs (2025-08-11 02:19:52 PM EDT)
+▶️ START: updatesplitcsvs (2025-08-11 03:24:11 PM EDT)
 ✅ Corrected home_team and away_team values added to both files.
-⏹️ END: updatesplitcsvs (2025-08-11 02:19:52 PM EDT)
+⏹️ END: updatesplitcsvs (2025-08-11 03:24:11 PM EDT)
 
-▶️ START: commit_split_batters (2025-08-11 02:19:53 PM EDT)
-⏹️ END: commit_split_batters (2025-08-11 02:19:53 PM EDT)
+▶️ START: commit_split_batters (2025-08-11 03:24:11 PM EDT)
+⏹️ END: commit_split_batters (2025-08-11 03:24:11 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-08-11 02:19:53 PM EDT)
-⏹️ END: normalize_pitcher_home_away (2025-08-11 02:19:53 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-08-11 03:24:12 PM EDT)
+⏹️ END: normalize_pitcher_home_away (2025-08-11 03:24:12 PM EDT)
 
-▶️ START: pitcherfilecleanup (2025-08-11 02:19:53 PM EDT)
+▶️ START: pitcherfilecleanup (2025-08-11 03:24:12 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: pitcherfilecleanup (2025-08-11 02:19:53 PM EDT)
+⏹️ END: pitcherfilecleanup (2025-08-11 03:24:12 PM EDT)
 
-▶️ START: generate_weather_csv (2025-08-11 02:19:54 PM EDT)
-⚠️ Warning: Some values are missing after merge.
-  home_team away_team     pitcher_home  ... game_time time_of_day Park Factor
-3       CWS    Tigers   Peguero, Elvis  ...       NaN         NaN         NaN
-6   Rangers       NaN  Eovaldi, Nathan  ...   8:05 PM       night        94.0
+▶️ START: generate_weather_csv (2025-08-11 03:24:13 PM EDT)
+⏹️ END: generate_weather_csv (2025-08-11 03:24:13 PM EDT)
 
-[2 rows x 14 columns]
-✅ Weather input file generated
-🔢 Rows: 11
-📁 Output: data/weather_input.csv
-📄 Games file: data/raw/todaysgames_normalized.csv
-🏟️ Stadium file: data/Data/stadium_metadata.csv
-✅ Git commit and push complete.
-⏹️ END: generate_weather_csv (2025-08-11 02:19:54 PM EDT)
+▶️ START: lineupcleaned (2025-08-11 03:24:13 PM EDT)
+⏹️ END: lineupcleaned (2025-08-11 03:24:13 PM EDT)
 
-▶️ START: lineupcleaned (2025-08-11 02:19:55 PM EDT)
-⏹️ END: lineupcleaned (2025-08-11 02:19:55 PM EDT)
-
-▶️ START: filter_today_batters (2025-08-11 02:19:55 PM EDT)
+▶️ START: filter_today_batters (2025-08-11 03:24:13 PM EDT)
 📥 Loading lineups, batters, and pitchers...
 ✅ Identified 368 pitchers in the lineup (based on data/cleaned/pitchers_normalized_cleaned.csv).
 📝 Saved identified pitchers to data/cleaned/pitchers_in_lineups.txt
 ✅ Filtered down to 349 batters (excluding identified pitchers)
 ⚠️ 16 unmatched batters found (after removing pitchers). Writing to data/cleaned/unmatched_batters.txt
 💾 Saved filtered batters to data/cleaned/batters_today.csv
-⏹️ END: filter_today_batters (2025-08-11 02:19:55 PM EDT)
+⏹️ END: filter_today_batters (2025-08-11 03:24:13 PM EDT)
 
-▶️ START: get_weather_data (2025-08-11 02:19:56 PM EDT)
-2025-08-11 06:19:56 PM 🔄 Reading input file...
-2025-08-11 06:19:56 PM 🌍 Fetching weather for 11 venues...
-2025-08-11 06:20:02 PM ❌ Failed to fetch weather for nan, nan after 5 attempts.
-2025-08-11 06:20:03 PM ✅ Weather data written to data/weather_adjustments.csv
-⏹️ END: get_weather_data (2025-08-11 02:19:56 PM EDT)
+▶️ START: get_weather_data (2025-08-11 03:24:14 PM EDT)
+2025-08-11 07:24:14 PM 🔄 Reading input file...
+2025-08-11 07:24:14 PM 🌍 Fetching weather for 11 venues...
+⏹️ END: get_weather_data (2025-08-11 03:24:14 PM EDT)
 
-▶️ START: weather_data_fix (2025-08-11 02:20:03 PM EDT)
+▶️ START: weather_data_fix (2025-08-11 03:24:17 PM EDT)
 🔄 Loading weather adjustments...
-🧮 Calculating weather_factor...
+✅ weather_factor already exists. Skipping calculation.
 💾 Saving updated file...
 ✅ Done.
-⏹️ END: weather_data_fix (2025-08-11 02:20:03 PM EDT)
+⏹️ END: weather_data_fix (2025-08-11 03:24:17 PM EDT)
 
-▶️ START: apply_weather_adjustment (2025-08-11 02:20:04 PM EDT)
+▶️ START: apply_weather_adjustment (2025-08-11 03:24:17 PM EDT)
 Loading input files...
 Files loaded successfully.
 Applying weather adjustments for home batters...
@@ -141,19 +127,18 @@ Saving adjusted data...
 Adjusted data saved to data/adjusted/batters_home_weather.csv and data/adjusted/batters_away_weather.csv
 Writing adjustment logs...
 Logs written to log_weather_home.txt and log_weather_away.txt
-⏹️ END: apply_weather_adjustment (2025-08-11 02:20:04 PM EDT)
+⏹️ END: apply_weather_adjustment (2025-08-11 03:24:17 PM EDT)
 
-▶️ START: apply_park_adjustment (2025-08-11 02:20:04 PM EDT)
-[main bdc8418] Force commit: adjusted park batters + log
- 2 files changed, 219 insertions(+), 219 deletions(-)
+▶️ START: apply_park_adjustment (2025-08-11 03:24:18 PM EDT)
+[main 81f71b3] Force commit: adjusted park batters + log
+ 4 files changed, 23 insertions(+), 22 deletions(-)
 Home batters adjusted: 117
 Away batters adjusted: 115
 ✅ Committed and pushed adjusted park files.
-⏹️ END: apply_park_adjustment (2025-08-11 02:20:04 PM EDT)
+⏹️ END: apply_park_adjustment (2025-08-11 03:24:18 PM EDT)
 
-▶️ START: combine_weather_park_home (2025-08-11 02:20:05 PM EDT)
-[main 3e2b654] Auto-commit: Combined home batter adjustments
- 2 files changed, 122 insertions(+), 122 deletions(-)
+▶️ START: combine_weather_park_home (2025-08-11 03:24:19 PM EDT)
+[main a94903e] Auto-commit: Combined home batter adjustments
 📥 Loading input CSVs...
 🔹 Weather rows: 117
 🔹 Park rows: 117
@@ -163,11 +148,11 @@ Away batters adjusted: 115
 📝 Log written to: data/adjusted/log_combined_home.txt
 📤 Committing and pushing to repo...
 ✅ Git commit and push successful.
-⏹️ END: combine_weather_park_home (2025-08-11 02:20:05 PM EDT)
+⏹️ END: combine_weather_park_home (2025-08-11 03:24:19 PM EDT)
 
-▶️ START: combine_weather_park_away (2025-08-11 02:20:06 PM EDT)
-[main 944c611] Auto-commit: Combined away batter adjustments
- 2 files changed, 107 insertions(+), 107 deletions(-)
+▶️ START: combine_weather_park_away (2025-08-11 03:24:20 PM EDT)
+[main 60c95d6] Auto-commit: Combined away batter adjustments
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 📥 Loading input CSVs...
 🔹 Weather rows before dedup: 115
 🔹 Park rows before dedup: 115
@@ -180,35 +165,31 @@ Away batters adjusted: 115
 📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
 📤 Committing and pushing results...
 ✅ Git commit & push successful.
-⏹️ END: combine_weather_park_away (2025-08-11 02:20:06 PM EDT)
+⏹️ END: combine_weather_park_away (2025-08-11 03:24:20 PM EDT)
 
-▶️ START: normalize_pitcher_weather_outputs (2025-08-11 02:20:07 PM EDT)
-[main 03398d5] Normalize pitchers before weather adjustment
- 2 files changed, 18 insertions(+), 18 deletions(-)
+▶️ START: normalize_pitcher_weather_outputs (2025-08-11 03:24:21 PM EDT)
+[main f07330c] Normalize pitchers before weather adjustment
+ 2 files changed, 19 insertions(+), 19 deletions(-)
 ✅ Forced commit and push to repo.
-⏹️ END: normalize_pitcher_weather_outputs (2025-08-11 02:20:07 PM EDT)
+⏹️ END: normalize_pitcher_weather_outputs (2025-08-11 03:24:21 PM EDT)
 
-▶️ START: fix_away_team_column (2025-08-11 02:20:08 PM EDT)
+▶️ START: fix_away_team_column (2025-08-11 03:24:22 PM EDT)
 ℹ️ Column 'away_team_y' not found. No changes made.
-⏹️ END: fix_away_team_column (2025-08-11 02:20:08 PM EDT)
+⏹️ END: fix_away_team_column (2025-08-11 03:24:22 PM EDT)
 
-▶️ START: preprocess_pitcher_weather_park_away (2025-08-11 02:20:09 PM EDT)
-⏹️ END: preprocess_pitcher_weather_park_away (2025-08-11 02:20:09 PM EDT)
+▶️ START: preprocess_pitcher_weather_park_away (2025-08-11 03:24:22 PM EDT)
+⏹️ END: preprocess_pitcher_weather_park_away (2025-08-11 03:24:22 PM EDT)
 
-▶️ START: add_team_alias_columns (2025-08-11 02:20:09 PM EDT)
-[main f8c3bc5] Add team alias columns to pitcher files
- 2 files changed, 20 insertions(+), 20 deletions(-)
+▶️ START: add_team_alias_columns (2025-08-11 03:24:22 PM EDT)
+[main 0c24cb8] Add team alias columns to pitcher files
+ 3 files changed, 22 insertions(+), 22 deletions(-)
 ✅ Added 'home_team' to data/adjusted/pitchers_home.csv (9 rows)
-✅ Added 'away_team' to data/adjusted/pitchers_away.csv (9 rows)
+✅ Added 'away_team' to data/adjusted/pitchers_away.csv (10 rows)
 📝 Log saved to log_add_team_alias_columns.txt
-⏹️ END: add_team_alias_columns (2025-08-11 02:20:09 PM EDT)
+⏹️ END: add_team_alias_columns (2025-08-11 03:24:22 PM EDT)
 
-▶️ START: add_team_columns_to_weather (2025-08-11 02:20:10 PM EDT)
+▶️ START: add_team_columns_to_weather (2025-08-11 03:24:23 PM EDT)
 ✅ Wrote home_team and away_team to data/weather_teams.csv
-⏹️ END: add_team_columns_to_weather (2025-08-11 02:20:10 PM EDT)
+⏹️ END: add_team_columns_to_weather (2025-08-11 03:24:23 PM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment (2025-08-11 02:20:10 PM EDT)
-✅ Git commit and push complete for pitcher weather adjustments.
-⏹️ END: apply_pitcher_weather_adjustment (2025-08-11 02:20:10 PM EDT)
-
-▶️ START: apply_pitcher_park_adjustment (2025-08-11 02:20:11 PM EDT)
+▶️ START: apply_pitcher_weather_adjustment (2025-08-11 03:24:24 PM EDT)
