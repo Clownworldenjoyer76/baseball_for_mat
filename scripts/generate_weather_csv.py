@@ -13,18 +13,16 @@ OUTPUT_FILE = "data/weather_input.csv"
 SUMMARY_FILE = "data/weather_summary.txt"
 
 def _norm(s: str) -> str:
-    """Normalize strings for matching: ASCII, lower, no spaces/punct."""
+    """Normalize strings for matching: ASCII, lower, remove non-letters."""
     s = unidecode(str(s or "")).strip().lower()
     return re.sub(r"[^a-z]", "", s)
 
 def _build_team_alias_map(team_map_df: pd.DataFrame) -> dict:
     """
-    Build many-to-one alias map -> canonical nickname (team_name in file).
+    Build many-to-one alias map -> canonical nickname (team_name or clean_team_name).
     Accepts columns: team_code, abbreviation, team_name, clean_team_name.
     """
     alias_to_canonical = {}
-    # canonical nicknames (e.g., "Yankees", "White Sox", "Athletics")
-    # We prefer 'team_name' if present; otherwise 'clean_team_name'
     for _, r in team_map_df.iterrows():
         team_name = (r.get("team_name") or r.get("clean_team_name") or "").strip()
         clean_name = (r.get("clean_team_name") or team_name or "").strip()
@@ -34,9 +32,8 @@ def _build_team_alias_map(team_map_df: pd.DataFrame) -> dict:
         if not team_name and not clean_name:
             continue
 
-        canonical = team_name if team_name else clean_name  # write this into CSV later
+        canonical = team_name if team_name else clean_name
 
-        # All normalized variants that should map to the nickname
         variants = set()
         if team_name:
             variants.add(_norm(team_name))
@@ -47,25 +44,18 @@ def _build_team_alias_map(team_map_df: pd.DataFrame) -> dict:
         if abbr:
             variants.add(_norm(abbr))
 
-        # e.g., "bostonredsox" or "newyorkyankees" may appear in inputs
-        # Add a concatenated city+nickname variant by assumption if present in source elsewhere.
-        # We can’t know all cities here, but suffix matching later handles those cases.
-
         for v in variants:
             if v:
                 alias_to_canonical[v] = canonical
 
-    # Special-case helpers for common MLB inputs that sometimes include city:
-    # We’ll rely on suffix matching in _resolve_team to handle city+nickname forms.
     return alias_to_canonical
 
 def _resolve_team(raw: str, alias_map: dict, canonical_choices: set) -> str:
     """
     Resolve an incoming team label to canonical nickname using:
-    1) direct alias map hit,
-    2) suffix match vs canonical nicknames (handles city+nickname),
-    3) last-2-words or last-word heuristics for tricky names ("White Sox", "Red Sox").
-    Returns empty string if not resolved.
+      1) direct alias map,
+      2) suffix match vs canonical nicknames (handles City+Nickname),
+      3) last-2-words / last-word heuristics (fixes 'White Sox', 'Red Sox', etc.).
     """
     s = (raw or "").strip()
     n = _norm(s)
@@ -77,7 +67,6 @@ def _resolve_team(raw: str, alias_map: dict, canonical_choices: set) -> str:
         return alias_map[n]
 
     # 2) suffix match against canonical nicknames
-    #    (e.g., "newyorkyankees" endswith "yankees" -> "Yankees")
     for canon in canonical_choices:
         if n.endswith(_norm(canon)):
             return canon
@@ -85,19 +74,16 @@ def _resolve_team(raw: str, alias_map: dict, canonical_choices: set) -> str:
     # 3) last-2-words or last-word heuristic
     tokens = re.findall(r"[A-Za-z]+", unidecode(s))
     if tokens:
-        # try last two tokens
         if len(tokens) >= 2:
             last2 = " ".join(tokens[-2:])
             for cand in (last2, tokens[-1]):
                 cand_n = _norm(cand)
                 if cand_n in alias_map:
                     return alias_map[cand_n]
-                # also compare to canonical set directly
                 for canon in canonical_choices:
                     if cand_n == _norm(canon):
                         return canon
         else:
-            # only one token
             cand_n = _norm(tokens[-1])
             if cand_n in alias_map:
                 return alias_map[cand_n]
@@ -105,7 +91,7 @@ def _resolve_team(raw: str, alias_map: dict, canonical_choices: set) -> str:
                 if cand_n == _norm(canon):
                     return canon
 
-    return ""  # failed
+    return ""
 
 def generate_weather_csv():
     try:
@@ -126,12 +112,13 @@ def generate_weather_csv():
 
     # Build robust alias map
     alias_map = _build_team_alias_map(team_map_df)
+
     # Canonical set of nicknames we will keep in output
-    canonical_choices = set(
-        (team_map_df["team_name"].fillna("") | team_map_df["clean_team_name"].fillna("")).replace("", pd.NA).dropna().tolist()
-    )
-    # Some rows may have empty team_name but valid clean_team_name; ensure both are included
-    canonical_choices |= set(team_map_df["clean_team_name"].dropna().tolist())
+    # FIX: replace string Series "|" with combine_first
+    team_name_series = team_map_df.get("team_name", pd.Series(dtype=str)).astype(str).str.strip().replace({"": pd.NA})
+    clean_name_series = team_map_df.get("clean_team_name", pd.Series(dtype=str)).astype(str).str.strip().replace({"": pd.NA})
+    canonical_series = team_name_series.combine_first(clean_name_series)
+    canonical_choices = set(canonical_series.dropna().tolist())
 
     # --- Resolve incoming home/away from games_df to canonical nicknames ---
     if "home_team" not in games_df.columns or "away_team" not in games_df.columns:
@@ -155,10 +142,10 @@ def generate_weather_csv():
         if not unresolved_away.empty:
             print("  Away unresolved:", unresolved_away[["away_team"]].drop_duplicates().to_dict(orient="list"))
 
-    # --- Prepare stadium_df for merge (it already uses nicknames in examples) ---
+    # --- Prepare stadium_df for merge (uses nicknames in examples) ---
     stadium_df["home_team_stadium"] = stadium_df["home_team"].astype(str).str.strip()
 
-    # Drop 'game_time' from games (we keep stadium's)
+    # Drop 'game_time' from games (we keep stadium's game_time)
     games_df.drop(columns=["game_time"], errors="ignore", inplace=True)
 
     # --- Merge with Stadium Info on canonical home nickname ---
