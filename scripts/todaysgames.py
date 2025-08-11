@@ -122,7 +122,7 @@ def main():
     # Clean headers (strip whitespace)
     fieldnames = [h.strip() for h in ["home_team", "away_team", "game_time", "pitcher_home", "pitcher_away"]]
     with open(args.out, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
         writer.writeheader()
         writer.writerows(rows)
 
