@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-score_game_bets_range_updated.py
---------------------------------
-Fills ONLY these columns in a bets CSV:
+score_game_bets_range_bet_history.py
+------------------------------------
+Restricts ALL I/O to the folder: data/bets/bet_history
+
+This script ONLY fills these columns (and only when currently blank):
   - home_score
   - away_score
   - actual_real_run_total
   - run_total_diff
   - favorite_correct
 
-Rules:
-- Detects source columns case-insensitively (supports common aliases).
+Rules / behavior:
+- Case-insensitive detection of common source/alias columns.
 - Coerces numbers safely; ignores bad/missing values.
-- Only fills EMPTY cells (NaN/None/blank); never overwrites non-empty.
-- favorite_correct is computed from either favorite_side, favorite_team,
-  or by inferring the favorite from moneylines/spreads if needed.
+- Never overwrites a non-empty target cell.
+- favorite_correct is computed from favorite_side/favorite_team if available,
+  or inferred from moneylines/spreads.
+- run_total_diff = abs(market_total - actual_real_run_total) when both exist.
 
-Usage:
-  python score_game_bets_range_updated.py --input path/to/file.csv
-  python score_game_bets_range_updated.py --input file.csv --output out.csv
-  python score_game_bets_range_updated.py --input file.csv --check  (dry-run)
+USAGE (I/O locked to data/bets/bet_history):
+  # Date-driven (recommended). File name pattern: game_bets_YYYY-MM-DD.csv
+  python score_game_bets_range_bet_history.py --date 2025-08-11
+
+  # OR give an explicit filename that lives in the bet_history folder
+  python score_game_bets_range_bet_history.py --file game_bets_2025-08-11.csv
+
+  # Dry-run (no writes)
+  python score_game_bets_range_bet_history.py --date 2025-08-11 --check
 
 Exit codes:
   0 success
@@ -28,11 +36,13 @@ Exit codes:
 """
 from __future__ import annotations
 import argparse
-from typing import Dict, List, Tuple
+from pathlib import Path
+from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-
+# ---- CONSTANTS ----
+BET_HISTORY_DIR = Path("data/bets/bet_history").resolve()
 TARGET_COLS = [
     "home_score",
     "away_score",
@@ -65,15 +75,6 @@ def _find_col(df: pd.DataFrame, candidates: List[str]) -> str | None:
         if k in m:
             return m[k]
     return None
-
-
-def _coerce_int(val):
-    if _is_empty(val):
-        return np.nan
-    try:
-        return int(float(str(val).strip()))
-    except Exception:
-        return np.nan
 
 
 def _norm_str(s: object) -> str:
@@ -148,7 +149,16 @@ def _favorite_side(df: pd.DataFrame) -> pd.Series:
 
 
 # ----------------- main work -----------------
-def process(file_in: str, file_out: str | None = None, check: bool = False) -> int:
+def process(file_in: Path, file_out: Path | None = None, check: bool = False) -> int:
+    # Enforce that both input and output live under BET_HISTORY_DIR
+    file_in = file_in.resolve()
+    if BET_HISTORY_DIR not in file_in.parents:
+        raise ValueError(f"Input must be inside {BET_HISTORY_DIR}")
+    if file_out:
+        file_out = Path(file_out).resolve()
+        if BET_HISTORY_DIR not in file_out.parents:
+            raise ValueError(f"Output must be inside {BET_HISTORY_DIR}")
+
     df = pd.read_csv(file_in)
 
     # Ensure target columns exist
@@ -157,10 +167,8 @@ def process(file_in: str, file_out: str | None = None, check: bool = False) -> i
             df[col] = np.nan
 
     # Detect score columns (prefer existing targets, else aliases)
-    home_col = _find_col(df, ["home_score", "final_home_score", "score_home", "home_runs", "home_points"])
-    away_col = _find_col(df, ["away_score", "final_away_score", "score_away", "away_runs", "away_points"])
-    home_col = home_col or "home_score"
-    away_col = away_col or "away_score"
+    home_col = _find_col(df, ["home_score", "final_home_score", "score_home", "home_runs", "home_points"]) or "home_score"
+    away_col = _find_col(df, ["away_score", "final_away_score", "score_away", "away_runs", "away_points"]) or "away_score"
 
     # Convert existing score columns to numeric helpers
     hs_num = pd.to_numeric(df[home_col], errors="coerce")
@@ -177,7 +185,7 @@ def process(file_in: str, file_out: str | None = None, check: bool = False) -> i
         if not check:
             df.loc[mask, "away_score"] = as_num[mask].astype("Int64")
 
-    # Recompute helpers from the (possibly updated) canonical columns
+    # Recompute helpers from the canonical columns
     hs_num = pd.to_numeric(df["home_score"], errors="coerce").fillna(0)
     as_num = pd.to_numeric(df["away_score"], errors="coerce").fillna(0)
 
@@ -210,6 +218,7 @@ def process(file_in: str, file_out: str | None = None, check: bool = False) -> i
         return 0
 
     out = file_out or file_in
+    out.parent.mkdir(parents=True, exist_ok=True)  # ensure folder exists
     df.to_csv(out, index=False)
     print(f"Wrote updates to: {out}")
     return 0
@@ -217,12 +226,24 @@ def process(file_in: str, file_out: str | None = None, check: bool = False) -> i
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--input", required=True, help="Path to input CSV")
-    ap.add_argument("--output", help="Optional output CSV; defaults to in-place")
+    ap.add_argument("--date", help="YYYY-MM-DD to build file name game_bets_{DATE}.csv inside bet_history")
+    ap.add_argument("--file", help="Explicit filename (must be inside bet_history), e.g., game_bets_2025-08-11.csv")
+    ap.add_argument("--output", help="Optional output filename (must be inside bet_history). Defaults to in-place.")
     ap.add_argument("--check", action="store_true", help="Dry-run without writing changes")
     args = ap.parse_args()
+
+    if not args.date and not args.file:
+        raise SystemExit("Provide --date OR --file")
+
+    if args.file:
+        file_in = BET_HISTORY_DIR / args.file
+    else:
+        file_in = BET_HISTORY_DIR / f"game_bets_{args.date}.csv"
+
+    file_out = (BET_HISTORY_DIR / args.output) if args.output else None
+
     try:
-        return process(args.input, args.output, args.check)
+        return process(file_in, file_out, args.check)
     except Exception as e:
         print(f"ERROR: {e}")
         return 2
