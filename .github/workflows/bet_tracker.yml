@@ -1,32 +1,78 @@
+# .github/workflows/bet_tracker.yml
 name: Run Bet Tracker
 
 on:
   workflow_dispatch:
+  # schedule:
+  #   - cron: "5 15 * * *"   # 11:05 AM ET (15:05 UTC) daily; adjust as needed
 
 jobs:
   run-bet-tracker:
     name: Run Daily Bet Tracker
     runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
-      - name: Install Dependencies
-        run: pip install pandas
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-      - name: Execute Script
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install "pandas==2.2.2"
+          fi
+
+      - name: Git safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+
+      - name: Snapshot pre-run line counts
+        id: counts_before
+        run: |
+          PLAYERS="data/bets/player_props_history.csv"
+          GAMES="data/bets/game_props_history.csv"
+          PLAYERS_BEFORE=$( [ -f "$PLAYERS" ] && (wc -l < "$PLAYERS") || echo 0 )
+          GAMES_BEFORE=$( [ -f "$GAMES" ] && (wc -l < "$GAMES") || echo 0 )
+          echo "players_before=$PLAYERS_BEFORE" >> $GITHUB_OUTPUT
+          echo "games_before=$GAMES_BEFORE" >> $GITHUB_OUTPUT
+
+      - name: Execute Bet Tracker
         run: python scripts/bet_tracker.py
+
+      - name: Snapshot post-run line counts
+        id: counts_after
+        run: |
+          PLAYERS="data/bets/player_props_history.csv"
+          GAMES="data/bets/game_props_history.csv"
+          PLAYERS_AFTER=$( [ -f "$PLAYERS" ] && (wc -l < "$PLAYERS") || echo 0 )
+          GAMES_AFTER=$( [ -f "$GAMES" ] && (wc -l < "$GAMES") || echo 0 )
+          echo "players_after=$PLAYERS_AFTER" >> $GITHUB_OUTPUT
+          echo "games_after=$GAMES_AFTER" >> $GITHUB_OUTPUT
+
+      - name: Show deltas
+        run: |
+          echo "Player props: $(( ${{ steps.counts_after.outputs.players_after }} - ${{ steps.counts_before.outputs.players_before }} )) line(s) change"
+          echo "Game props:   $(( ${{ steps.counts_after.outputs.games_after }}   - ${{ steps.counts_before.outputs.games_before }} )) line(s) change"
 
       - name: Commit and Push Changes
         run: |
-          git config --global user.name "Your Name"
-          git config --global user.email "your-email@example.com"
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git add data/bets/game_props_history.csv
-            git add data/bets/player_props_history.csv
-            git commit -m "Automated update of bet tracker data"
+          git add data/bets/player_props_history.csv data/bets/game_props_history.csv
+          if [[ -n "$(git status --porcelain data/bets/player_props_history.csv data/bets/game_props_history.csv)" ]]; then
+            git commit -m "Automated bet tracker update"
             git push
           else
-            echo "No changes to commit. Exiting successfully."
+            echo "No bet-tracker changes to commit."
           fi
