@@ -1,6 +1,4 @@
-
-# scripts/project_batter_props.py
-# Ensures required columns exist/are standardized before calling projection formulas.
+# scripts/project_batter_props.py — corrected so H/AB is optional and works with batting_avg
 
 import pandas as pd
 from pathlib import Path
@@ -10,42 +8,38 @@ import sys
 FINAL_FILE = Path("data/end_chain/final/bat_today_final.csv")
 OUTPUT_FILE = Path("data/_projections/batter_props_projected.csv")
 
-# Column normalization map: standard -> accepted aliases
+# Accept your actual headers
 ALIASES = {
-    "PA": ["PA", "pa"],
-    "BB%": ["BB%", "bb_percent", "bb_rate"],
-    "K%": ["K%", "k_percent", "k_rate"],
-    "H/AB": ["H/AB", "hits_per_ab", "AVG", "avg"],  # batting avg proxy
-    # opponent context (optional but preferred)
+    "PA": ["pa", "PA"],
+    "BB%": ["bb_percent", "BB%"],
+    "K%": ["k_percent", "K%"],
+    "H/AB": ["batting_avg", "H/AB", "hits_per_ab", "AVG", "avg"],
+    "HR/AB": ["HR/AB", "hr_per_ab"],
     "opp_K%": ["opp_K%", "opp_k_percent", "opponent_k_percent"],
     "opp_BB%": ["opp_BB%", "opp_bb_percent", "opponent_bb_percent"],
-    # optional HR rate per AB
-    "HR/AB": ["HR/AB", "hr_per_ab", "hr_rate_ab"],
 }
 
-def _resolve_or_raise(df: pd.DataFrame, target: str) -> str:
-    for cand in ALIASES.get(target, [target]):
+def _resolve(df: pd.DataFrame, target: str, required: bool) -> str | None:
+    cands = ALIASES.get(target, [target])
+    for cand in cands:
         if cand in df.columns:
             return cand
         for col in df.columns:
             if col.lower() == cand.lower():
                 return col
-    raise ValueError(f"Missing required column for batters: {target} (accepted: {ALIASES.get(target)})")
+    if required:
+        raise ValueError(f"Missing required column for batters: {target} (accepted: {cands})")
+    return None
 
 def _ensure_columns(df: pd.DataFrame) -> pd.DataFrame:
-    # Required
-    pa = _resolve_or_raise(df, "PA")
-    bb = _resolve_or_raise(df, "BB%")
-    k = _resolve_or_raise(df, "K%")
-    hits_ab = _resolve_or_raise(df, "H/AB")
-    # Optional; if absent, we don't create silent defaults (projection_formulas will handle preference)
-    for opt in ["opp_K%", "opp_BB%", "HR/AB"]:
-        try:
-            _resolve_or_raise(df, opt)
-        except ValueError:
-            # keep absent; do not create placeholder to avoid silent defaulting
-            pass
-    # Return df unchanged (we operate by name inside formulas using aliases)
+    # Only PA is strictly required — all other rates can be derived from counts by projection_formulas
+    _resolve(df, "PA", required=True)      # must exist
+    _resolve(df, "BB%", required=False)
+    _resolve(df, "K%", required=False)
+    _resolve(df, "H/AB", required=False)
+    _resolve(df, "HR/AB", required=False)
+    _resolve(df, "opp_K%", required=False)
+    _resolve(df, "opp_BB%", required=False)
     return df
 
 def main():
