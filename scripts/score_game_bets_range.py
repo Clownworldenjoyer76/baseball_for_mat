@@ -214,17 +214,20 @@ def main():
                 best_match_score = current_score
                 best_match = game
         if best_match and i not in matched_bets_indices:
-            if pd.isna(df_bets.loc[i, "home_score"]):
+            # Check if home_score is considered empty (either NA or an empty string)
+            if pd.isna(df_bets.loc[i, "home_score"]) or str(df_bets.loc[i, "home_score"]).strip() == '':
                 df_bets.loc[i, "home_score"] = best_match["home_score"]
-            if pd.isna(df_bets.loc[i, "away_score"]):
+            # Check if away_score is considered empty (either NA or an empty string)
+            if pd.isna(df_bets.loc[i, "away_score"]) or str(df_bets.loc[i, "away_score"]).strip() == '':
                 df_bets.loc[i, "away_score"] = best_match["away_score"]
-            if pd.isna(df_bets.loc[i, "game_found"]):
+            # Check if game_found is considered empty
+            if pd.isna(df_bets.loc[i, "game_found"]) or str(df_bets.loc[i, "game_found"]).strip() == '':
                 df_bets.loc[i, "game_found"] = True
             matched_bets_indices.append(i)
 
     unmatched_indices = [i for i in df_bets.index if i not in matched_bets_indices]
     for i in unmatched_indices:
-        if pd.isna(df_bets.loc[i, "game_found"]):
+        if pd.isna(df_bets.loc[i, "game_found"]) or str(df_bets.loc[i, "game_found"]).strip() == '':
             df_bets.loc[i, "game_found"] = False
 
     df_bets.to_csv(args.out, index=False)
