@@ -66,46 +66,13 @@ jobs:
 
             echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
 
-            if [[ "$SCRIPT" == "splitaway.py" ]]; then
-              if python "scripts/${SCRIPT}" "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_away.csv" >> "$LOG_FILE" 2> temp_error.log; then
-                echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-              else
-                echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-                echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
-                cat temp_error.log >> "$ERRORS_FILE"
-                echo -e "\n---\n" >> "$ERRORS_FILE"
-              fi
-            elif [[ "$SCRIPT" == "splithome.py" ]]; then
-              if python "scripts/${SCRIPT}" "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_home.csv" >> "$LOG_FILE" 2> temp_error.log; then
-                echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-              else
-                echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-                echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
-                cat temp_error.log >> "$ERRORS_FILE"
-                echo -e "\n---\n" >> "$ERRORS_FILE"
-              fi
-            elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
-              if python "scripts/${SCRIPT}" \
-                "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
-                "data/temp_inputs/todaysgames_normalized_copy.csv" \
-                "data/adjusted/pitchers_home.csv" \
-                "data/adjusted/pitchers_away.csv" >> "$LOG_FILE" 2> temp_error.log; then
-                echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-              else
-                echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-                echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
-                cat temp_error.log >> "$ERRORS_FILE"
-                echo -e "\n---\n" >> "$ERRORS_FILE"
-              fi
+            if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
+              echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
             else
-              if python "scripts/${SCRIPT}" >> "$LOG_FILE" 2> temp_error.log; then
-                echo "✅ $STEP_NAME succeeded [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-              else
-                echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
-                echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
-                cat temp_error.log >> "$ERRORS_FILE"
-                echo -e "\n---\n" >> "$ERRORS_FILE"
-              fi
+              echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
+              echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
+              cat temp_error.log >> "$ERRORS_FILE"
+              echo -e "\n---\n" >> "$ERRORS_FILE"
             fi
 
             echo "⏹️ END: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
@@ -172,12 +139,18 @@ jobs:
           run_step project_prep.py
           run_step fix_missing_batter_stats.py
           run_step normalize_batters_for_builder.py
+
+          # NEW: Fail-fast check for weather team key alignment
+          run_step align_weather_team_keys.py
+
           run_step project_batter_props.py
           run_step project_pitcher_props.py
           run_step build_expanded_batter_props.py
           run_step pitcher_mega_z.py
-          # NEW: attach IDs before scoring
+
+          # NEW: Fail-fast check for pitcher ID mapping
           run_step attach_pitcher_ids.py
+
           run_step project_final_score.py
 
           {
@@ -193,29 +166,17 @@ jobs:
             cat "$ERRORS_FILE"
           } > "$SUMMARY_FILE"
 
-      - name: Show current Git branch
-        run: git rev-parse --abbrev-ref HEAD
-
       - name: Commit pitchers_xtra.csv
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
           git add data/end_chain/pitchers_xtra.csv || echo "pitchers_xtra.csv not found or no changes"
           git commit -m "Update pitchers_xtra.csv" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
 
       - name: Commit all output files
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
           git add data/adjusted/*.csv || echo "No adjusted files changed"
           git add data/end_chain/**/*.csv || echo "No end_chain files changed"
-          git add data/_projections/batter_props_projected.csv || echo "batter_props_projected.csv not found or no changes"
-          git add data/_projections/pitcher_props_projected.csv || echo "pitcher_props_projected.csv not found or no changes"
-          git add data/_projections/batter_props_z_expanded.csv || echo "batter_props_z_expanded.csv not found or no changes"
-          git add data/_projections/pitcher_props_z_expanded.csv || echo "pitcher_props_z_expanded.csv not found or no changes"
-          git add data/_projections/pitcher_mega_z.csv || echo "pitcher_mega_z.csv not found or no changes"
-          git add data/_projections/final_scores_projected.csv || echo "final_scores_projected.csv not found or no changes"
+          git add data/_projections/*.csv || echo "No projections files changed"
           git add summaries/summary.txt || echo "summary not found"
           git commit -m "Commit processed data + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
