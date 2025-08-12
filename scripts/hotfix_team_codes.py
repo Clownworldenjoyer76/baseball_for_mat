@@ -1,57 +1,57 @@
-#!/usr/bin/env python3
-import pandas as pd
+# scripts/hotfix_team_codes.py
+import sys
+import logging
 from pathlib import Path
+import pandas as pd
 
-INPUT = Path("data/raw/todaysgames_normalized.csv")
-BACKUP = Path("data/raw/todaysgames_normalized.bak.csv")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+LOG = logging.getLogger("hotfix_team_codes")
 
-# Extend/adjust this mapping as needed
-TEAM_FIXES = {
-    "AZ": "Diamondbacks",
-    "Az": "Diamondbacks",
-    "az": "Diamondbacks",
-    "CWS": "WhiteSox",
-    "Cws": "WhiteSox",
-    "cws": "WhiteSox",
+INPUT_PATH = Path("data/raw/todaysgames_normalized.csv")
+
+# Only fix what we know is breaking downstream
+MAP = {
+    # CHW variations → WhiteSox (your downstream keys expect this format)
+    "CWS": "WhiteSox", "Cws": "WhiteSox", "cws": "WhiteSox",
+    # ARI variations → Diamondbacks
+    "AZ": "Diamondbacks", "Az": "Diamondbacks", "az": "Diamondbacks",
 }
 
+COLUMNS = ("home_team", "away_team")
+
 def main():
-    if not INPUT.exists():
-        print(f"❌ Not found: {INPUT}")
-        return
+    if not INPUT_PATH.exists():
+        LOG.error("Missing file: %s", INPUT_PATH)
+        sys.exit(0)  # don't fail the whole pipeline
 
-    df = pd.read_csv(INPUT)
-    changed = 0
+    df = pd.read_csv(INPUT_PATH)
+    missing = [c for c in COLUMNS if c not in df.columns]
+    if missing:
+        LOG.error("Missing expected column(s) in %s: %s", INPUT_PATH, missing)
+        sys.exit(0)
 
-    for col in ("home_team", "away_team"):
-        if col not in df.columns:
-            print(f"ℹ️ Column '{col}' not in {INPUT.name}; skipping that column.")
-            continue
+    # Normalize to strings and strip (idempotent)
+    for c in COLUMNS:
+        df[c] = df[c].astype(str).str.strip()
 
-        # Normalize to string for safe replace
-        before = df[col].astype(str).copy()
-        df[col] = before.replace(TEAM_FIXES)
+    # Count before/after for quick sanity
+    before = {k: ((df[COLUMNS[0]] == k) | (df[COLUMNS[1]] == k)).sum() for k in MAP.keys()}
 
-        # Count changes
-        col_changes = (before != df[col]).sum()
-        changed += col_changes
-        print(f"🔧 {col}: fixed {col_changes} value(s).")
+    for c in COLUMNS:
+        df[c] = df[c].replace(MAP)
 
-    if changed == 0:
-        print("✅ No team code fixes required—file already normalized.")
-        return
+    after = {v: ((df[COLUMNS[0]] == v) | (df[COLUMNS[1]] == v)).sum() for v in set(MAP.values())}
 
-    # Make a one-time backup on first change
-    try:
-        if not BACKUP.exists():
-            df_original = pd.read_csv(INPUT)
-            df_original.to_csv(BACKUP, index=False)
-            print(f"🧷 Backup written: {BACKUP}")
-    except Exception as e:
-        print(f"⚠️ Could not write backup: {e}")
-
-    df.to_csv(INPUT, index=False)
-    print(f"✅ Saved normalized teams to {INPUT}")
+    df.to_csv(INPUT_PATH, index=False)
+    LOG.info("Hotfix applied to %s", INPUT_PATH)
+    if any(before.values()):
+        LOG.info("Replaced counts (source codes): %s", before)
+        LOG.info("Counts of normalized targets: %s", after)
+    else:
+        LOG.info("No known bad codes found; file already clean.")
 
 if __name__ == "__main__":
     main()
