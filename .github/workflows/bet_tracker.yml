@@ -1,5 +1,5 @@
 # .github/workflows/bet_tracker.yml
-name: Run Bet Tracker
+name: Run Bet Tracker (Modular)
 
 on:
   workflow_dispatch:
@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
+      PYTHONUNBUFFERED: '1'
+      PYTHONWARNINGS: default
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
 
     steps:
       - name: Checkout Repository
@@ -20,21 +23,43 @@ jobs:
           persist-credentials: true
           fetch-depth: 0   # needed for rebase
 
+      - name: Runner diagnostics
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "::group::Host"
+          uname -a
+          echo "::endgroup::"
+          echo "::group::Disk/Memory"
+          df -h
+          free -m || true
+          echo "::endgroup::"
+          echo "::group::Workspace root"
+          ls -la
+          echo "::endgroup::"
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install dependencies (verbose)
+        shell: bash
         run: |
+          set -Eeuxo pipefail
+          python -V
+          pip -V
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           else
-            pip install "pandas==2.2.2"
+            pip install "pandas==2.2.2" "requests>=2.32.3"
           fi
+          pip list
 
       - name: Git safe directory
+        shell: bash
         run: |
+          set -Eeuo pipefail
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
@@ -42,28 +67,92 @@ jobs:
 
       - name: Snapshot pre-run line counts
         id: counts_before
+        shell: bash
         run: |
+          set -Eeuo pipefail
           PLAYERS="data/bets/player_props_history.csv"
           GAMES="data/bets/game_props_history.csv"
+          for f in "$PLAYERS" "$GAMES"; do
+            echo "----- PRE: $f"
+            if [ -f "$f" ]; then
+              wc -l "$f"
+              head -n 3 "$f" || true
+              tail -n 3 "$f" || true
+            else
+              echo "MISSING"
+            fi
+          done
           PLAYERS_BEFORE=$( [ -f "$PLAYERS" ] && (wc -l < "$PLAYERS") || echo 0 )
           GAMES_BEFORE=$( [ -f "$GAMES" ] && (wc -l < "$GAMES") || echo 0 )
           echo "players_before=$PLAYERS_BEFORE" >> $GITHUB_OUTPUT
           echo "games_before=$GAMES_BEFORE" >> $GITHUB_OUTPUT
 
-      - name: Execute Bet Tracker
-        run: python scripts/bet_tracker.py
+      - name: Verify module imports
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PYTHONPATH="$PWD"
+          python - <<'PY'
+import importlib, sys
+targets = [
+  ("fetch_data", ["scripts.fetch_data","fetch_data"]),
+  ("process_data", ["scripts.process_data","process_data"]),
+  ("update_history", ["scripts.update_history","update_history"]),
+  ("logging_utils", ["scripts.logging_utils","logging_utils"]),
+  ("main", ["scripts.main","main"]),
+]
+failures = []
+for label, options in targets:
+    loaded = False
+    for mod in options:
+        try:
+            importlib.import_module(mod)
+            print(f"OK import: {mod}")
+            loaded = True
+            break
+        except Exception as e:
+            last_err = e
+    if not loaded:
+        failures.append((label, last_err))
+if failures:
+    print("\nFAILED imports:")
+    for name, err in failures:
+        print(f"  {name}: {err!r}")
+    sys.exit(1)
+PY
+
+      - name: Execute Bet Tracker (main.py) with debug
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PYTHONPATH="$PWD"
+          echo "Starting main at $(date -Iseconds)"
+          stdbuf -oL -eL python -X dev -u scripts/main.py 2>&1 | tee run.log
+          echo "Finished main at $(date -Iseconds)"
 
       - name: Snapshot post-run line counts
         id: counts_after
+        shell: bash
         run: |
+          set -Eeuo pipefail
           PLAYERS="data/bets/player_props_history.csv"
           GAMES="data/bets/game_props_history.csv"
+          for f in "$PLAYERS" "$GAMES"; do
+            echo "----- POST: $f"
+            if [ -f "$f" ]; then
+              wc -l "$f"
+              tail -n 5 "$f" || true
+            else
+              echo "MISSING"
+            fi
+          done
           PLAYERS_AFTER=$( [ -f "$PLAYERS" ] && (wc -l < "$PLAYERS") || echo 0 )
           GAMES_AFTER=$( [ -f "$GAMES" ] && (wc -l < "$GAMES") || echo 0 )
           echo "players_after=$PLAYERS_AFTER" >> $GITHUB_OUTPUT
           echo "games_after=$GAMES_AFTER" >> $GITHUB_OUTPUT
 
       - name: Show deltas
+        shell: bash
         run: |
           echo "Player props: $(( ${{ steps.counts_after.outputs.players_after }} - ${{ steps.counts_before.outputs.players_before }} )) line(s) change"
           echo "Game props:   $(( ${{ steps.counts_after.outputs.games_after }}   - ${{ steps.counts_before.outputs.games_before }} )) line(s) change"
@@ -71,18 +160,14 @@ jobs:
       - name: Commit and Push Changes (rebase-safe)
         shell: bash
         run: |
-          set -e
+          set -Eeuo pipefail
           git add data/bets/player_props_history.csv data/bets/game_props_history.csv
-
           if [[ -z "$(git status --porcelain data/bets/player_props_history.csv data/bets/game_props_history.csv)" ]]; then
             echo "No bet-tracker changes to commit."
             exit 0
           fi
-
           git commit -m "Automated bet tracker update"
-
-          # Rebase onto latest remote and push (retry once if race)
-          BRANCH="${GITHUB_REF_NAME:-main}"
+          BRANCH="\${GITHUB_REF_NAME:-main}"
           for attempt in 1 2; do
             echo "Attempt $attempt: syncing with origin/$BRANCH..."
             git fetch origin
@@ -95,3 +180,28 @@ jobs:
               sleep 2
             fi
           done
+
+      - name: Collect artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bet-tracker-logs
+          path: |
+            run.log
+            data/bets/player_props_history.csv
+            data/bets/game_props_history.csv
+
+      - name: Post-mortem (on failure)
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          echo "Workflow failed. Debug dump:"
+          echo "::group::run.log (tail)"
+          tail -n 200 run.log || true
+          echo "::endgroup::"
+          echo "::group::Python env"
+          python -V; pip -V; pip list
+          echo "::endgroup::"
+          echo "::group::Tree"
+          command -v tree >/dev/null 2>&1 && tree -a -I '.git' || ls -R
+          echo "::endgroup::"
