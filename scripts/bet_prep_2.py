@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 
 # Load the input files
 mlb_sched_df = pd.read_csv('data/bets/mlb_sched.csv')
@@ -17,14 +18,27 @@ mlb_sched_merged = pd.concat([mlb_sched_away, mlb_sched_home])
 batter_props_df = pd.merge(batter_props_df, mlb_sched_merged[['team', 'date', 'game_id']],
                          on='team', how='left')
 
-# Add the new columns
-batter_props_df['player_name'] = batter_props_df['name']
+# Add new columns with specified values
+batter_props_df['sport'] = 'Baseball'
+batter_props_df['league'] = 'MLB'
+batter_props_df['book'] = ''
+batter_props_df['timestamp'] = datetime.now().isoformat()
+batter_props_df['result'] = ''
+
+# Rename columns by creating them with the new names
+batter_props_df['player'] = batter_props_df['name'] # Renamed from player_name
+batter_props_df['prop'] = ''                        # Renamed from prop_type
+batter_props_df['line'] = ''                        # Renamed from prop_line
+
+# Add other existing columns from original script
 batter_props_df['player_pos'] = 'batter'
-batter_props_df['prop_type'] = ''
-batter_props_df['prop_line'] = ''
 batter_props_df['bet_type'] = ''
 batter_props_df['over_probability'] = ''
 batter_props_df['prop_correct'] = ''
+
+# Convert 'game_id' column to string type
+# Using .astype(str) handles potential missing values (NaN) by converting them to 'nan'
+batter_props_df['game_id'] = batter_props_df['game_id'].astype(str)
 
 # Save the final dataframe to the output file
 batter_props_df.to_csv('data/bets/prep/batter_props_bets.csv', index=False)
