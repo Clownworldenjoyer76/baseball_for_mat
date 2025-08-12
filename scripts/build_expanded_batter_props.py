@@ -1,3 +1,23 @@
+TEAM_ALIASES = {
+    'RedSox': 'Red Sox',
+    'WhiteSox': 'White Sox',
+    'BlueJays': 'Blue Jays',
+    'Diamondbacks': 'Diamondbacks',
+    'Braves': 'Braves',
+    'Cubs': 'Cubs',
+    'Dodgers': 'Dodgers',
+    'Mariners': 'Mariners',
+    'Marlins': 'Marlins',
+    'Nationals': 'Nationals',
+    'Padres': 'Padres',
+    'Phillies': 'Phillies',
+    'Pirates': 'Pirates',
+    'Rays': 'Rays',
+    'Rockies': 'Rockies',
+    'Tigers': 'Tigers',
+    'Twins': 'Twins',
+}
+
 #!/usr/bin/env python3
 # scripts/build_expanded_batter_props.py  (STRICT Mode B: weather required)
 import math
