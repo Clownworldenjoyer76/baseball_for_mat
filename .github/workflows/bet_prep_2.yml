@@ -1,0 +1,8 @@
+- name: Run bet_prep_2.py
+  shell: |
+    python scripts/bet_prep_2.py
+  register: script_output
+
+- name: Force output of bet_prep_2.py
+  debug:
+    var: script_output.stdout_lines
