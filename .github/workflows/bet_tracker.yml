@@ -1,5 +1,5 @@
 # .github/workflows/bet_tracker.yml
-name: Run Bet Tracker (Modular, Stable)
+name: Run Bet Tracker (Minimal)
 
 on:
   workflow_dispatch:
@@ -9,80 +9,36 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
-      PYTHONUNBUFFERED: '1'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install deps
-        shell: bash
+      - name: Install dependencies
         run: |
-          set -Eeuo pipefail
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           else
-            pip install "pandas==2.2.2" "requests>=2.32.3"
+            pip install pandas==2.2.2 requests
           fi
-          pip list
 
       - name: Git config
-        shell: bash
         run: |
-          set -Eeuo pipefail
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git config --global pull.rebase true
 
-      - name: Runner diag
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          uname -a
-          python -V
-          pip -V
-          ls -la
-
-      - name: Verify imports
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          export PYTHONPATH="$PWD"
-          python - <<'PY'
-import importlib, sys
-mods = ["scripts.fetch_data","scripts.process_data","scripts.update_history","scripts.logging_utils","scripts.main"]
-bad = []
-for m in mods:
-    try:
-        importlib.import_module(m)
-        print("OK", m)
-    except Exception as e:
-        print("FAIL", m, "->", repr(e))
-        bad.append((m, e))
-if bad:
-    sys.exit(1)
-PY
-
-      - name: Run bet tracker
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          export PYTHONPATH="$PWD"
-          python -X dev -u scripts/main.py 2>&1 | tee run.log
+      - name: Run bet tracker (modular)
+        run: python scripts/main.py
 
       - name: Commit and push changes
-        shell: bash
         run: |
-          set -Eeuo pipefail
           git add data/bets/player_props_history.csv data/bets/game_props_history.csv || true
           if [ -z "$(git status --porcelain -- data/bets/player_props_history.csv data/bets/game_props_history.csv)" ]; then
             echo "No changes to commit."
@@ -93,12 +49,3 @@ PY
           git fetch origin
           git rebase "origin/$BRANCH" || (git rebase --abort; exit 1)
           git push origin "HEAD:$BRANCH"
-
-      - name: Upload logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: bet-tracker-artifacts
-          path: |
-            run.log
-            data/bets/player_props_history.csv
-            data/bets/game_props_history.csv
