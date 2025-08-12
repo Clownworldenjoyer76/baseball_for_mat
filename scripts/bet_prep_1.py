@@ -50,6 +50,11 @@ df_cleaned = df_cleaned.merge(df_map[['name_lower', 'mapped_team']],
                               right_on='name_lower',
                               how='left')
 df_cleaned['home_team'] = df_cleaned['mapped_team'].fillna(df_cleaned['home_team_name'])
+
+# Apply specific replacements after mapping
+df_cleaned['home_team'] = df_cleaned['home_team'].replace('St. Louis Cardinals', 'Cardinals')
+df_cleaned['home_team'] = df_cleaned['home_team'].replace('Athletics', 'Athletics')
+
 df_cleaned.drop(columns=['home_team_name', 'home_team_name_lower', 'name_lower', 'mapped_team'], inplace=True)
 
 # Map away team names
@@ -59,6 +64,11 @@ df_cleaned = df_cleaned.merge(df_map[['name_lower', 'mapped_team']],
                               right_on='name_lower',
                               how='left')
 df_cleaned['away_team'] = df_cleaned['mapped_team'].fillna(df_cleaned['away_team_name'])
+
+# Apply specific replacements after mapping
+df_cleaned['away_team'] = df_cleaned['away_team'].replace('St. Louis Cardinals', 'Cardinals')
+df_cleaned['away_team'] = df_cleaned['away_team'].replace('Athletics', 'Athletics')
+
 df_cleaned.drop(columns=['away_team_name', 'away_team_name_lower', 'name_lower', 'mapped_team'], inplace=True)
 
 # Reorder columns to match the requested output structure
