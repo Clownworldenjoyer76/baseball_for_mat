@@ -63,11 +63,21 @@ jobs:
             echo "▶️ START: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
 
             if [[ "$SCRIPT" == "splitaway.py" ]]; then
-              CMD=(python "scripts/${SCRIPT}"                 "data/temp_inputs/batters_today_copy.csv"                 "data/temp_inputs/todaysgames_normalized_copy.csv"                 "data/adjusted/batters_away.csv")
+              CMD=(python "scripts/${SCRIPT}" \
+                "data/temp_inputs/batters_today_copy.csv" \
+                "data/temp_inputs/todaysgames_normalized_copy.csv" \
+                "data/adjusted/batters_away.csv")
             elif [[ "$SCRIPT" == "splithome.py" ]]; then
-              CMD=(python "scripts/${SCRIPT}"                 "data/temp_inputs/batters_today_copy.csv"                 "data/temp_inputs/todaysgames_normalized_copy.csv"                 "data/adjusted/batters_home.csv")
+              CMD=(python "scripts/${SCRIPT}" \
+                "data/temp_inputs/batters_today_copy.csv" \
+                "data/temp_inputs/todaysgames_normalized_copy.csv" \
+                "data/adjusted/batters_home.csv")
             elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
-              CMD=(python "scripts/${SCRIPT}"                 "data/temp_inputs/pitchers_normalized_cleaned_copy.csv"                 "data/temp_inputs/todaysgames_normalized_copy.csv"                 "data/adjusted/pitchers_home.csv"                 "data/adjusted/pitchers_away.csv")
+              CMD=(python "scripts/${SCRIPT}" \
+                "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
+                "data/temp_inputs/todaysgames_normalized_copy.csv" \
+                "data/adjusted/pitchers_home.csv" \
+                "data/adjusted/pitchers_away.csv")
             elif [[ "$SCRIPT" == "attach_pitcher_ids.py" ]]; then
               CMD=(python "scripts/${SCRIPT}" --games "data/end_chain/cleaned/games_today_cleaned.csv")
             elif [[ "$SCRIPT" == "project_final_score.py" ]]; then
@@ -98,21 +108,25 @@ jobs:
           run_step refresh_stadium_metadata.py
           run_step apply_team_name_mapping.py
 
-          python - <<'PY' || true
-import pandas as pd
-from pathlib import Path
-p = Path("data/raw/todaysgames_normalized.csv")
+      - name: Hotfix team codes in todaysgames_normalized
+        run: |
+          python - <<'PY'
+import pandas as pd, pathlib
+p = pathlib.Path("data/raw/todaysgames_normalized.csv")
 if p.exists():
     df = pd.read_csv(p)
     for col in ("home_team","away_team"):
         if col in df.columns:
-            df[col] = df[col].astype(str).replace({
+            df[col] = df[col].astype(str)
+            df[col] = df[col].replace({
                 "AZ":"Diamondbacks","Az":"Diamondbacks","az":"Diamondbacks",
                 "CWS":"WhiteSox","Cws":"WhiteSox","cws":"WhiteSox"
             })
     df.to_csv(p, index=False)
 PY
 
+      - name: Continue Run All Scripts
+        run: |
           run_step update_game_time.py
           run_step filter_stadium_metadata.py
           run_step normalize_batter_team_names.py
@@ -177,14 +191,14 @@ PY
             echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
             echo ""
             echo "===== STATUS ====="
-            cat "$STATUS_FILE"
+            cat summaries/status.txt
             echo ""
             echo "===== LOG ====="
-            cat "$LOG_FILE"
+            cat summaries/log.txt
             echo ""
             echo "===== ERRORS ====="
-            cat "$ERRORS_FILE"
-          } > "$SUMMARY_FILE"
+            cat summaries/errors.txt
+          } > summaries/summary.txt
 
       - name: Commit pitchers_xtra.csv
         run: |
