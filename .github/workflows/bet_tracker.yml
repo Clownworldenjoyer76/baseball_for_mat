@@ -1,89 +1,35 @@
-# .github/workflows/bet_tracker.yml
-name: Run Bet Tracker (Modular + Artifacts)
-
+name: Run Bet Tracker
 on:
   workflow_dispatch:
 
 jobs:
   run-bet-tracker:
     runs-on: ubuntu-latest
-    env:
-      TZ: America/New_York
-      PYTHONUNBUFFERED: '1'
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        shell: bash
         run: |
-          set -Eeuo pipefail
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install pandas==2.2.2 requests>=2.32.3
-          fi
-          pip list
+          pip install -r requirements.txt || pip install "pandas==2.2.2" requests
 
       - name: Git config
-        shell: bash
         run: |
-          set -Eeuo pipefail
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git config --global pull.rebase true
 
-      - name: Snapshot pre-run
-        shell: bash
+      - name: Run tracker
         run: |
-          set -Eeuo pipefail
-          for f in data/bets/player_props_history.csv data/bets/game_props_history.csv; do
-            echo "PRE $f"
-            if [ -f "$f" ]; then wc -l "$f"; else echo "MISSING"; fi
-          done
-
-      - name: Verify imports
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          export PYTHONPATH="$PWD"
-          python - <<'PY'
-import importlib, sys
-mods = ["scripts.fetch_data","scripts.process_data","scripts.update_history","scripts.logging_utils","scripts.main"]
-bad = []
-for m in mods:
-    try:
-        importlib.import_module(m); print("OK", m)
-    except Exception as e:
-        print("FAIL", m, "->", repr(e)); bad.append(m)
-if bad: sys.exit(1)
-PY
-
-      - name: Run bet tracker
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          export PYTHONPATH="$PWD"
-          python -u -X dev scripts/main.py 2>&1 | tee run.log
-
-      - name: Snapshot post-run
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          for f in data/bets/player_props_history.csv data/bets/game_props_history.csv; do
-            echo "POST $f"
-            if [ -f "$f" ]; then wc -l "$f"; else echo "MISSING"; fi
-          done
+          set -e
+          if [ -f scripts/main.py ]; then
+            python -u scripts/main.py 2>&1 | tee run.log
+          else
+            python -u scripts/bet_tracker.py 2>&1 | tee run.log
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -94,17 +40,12 @@ PY
             data/bets/player_props_history.csv
             data/bets/game_props_history.csv
 
-      - name: Commit and push changes
-        shell: bash
+      - name: Commit and push CSVs
         run: |
-          set -Eeuo pipefail
           git add data/bets/player_props_history.csv data/bets/game_props_history.csv || true
           if [ -z "$(git status --porcelain -- data/bets/player_props_history.csv data/bets/game_props_history.csv)" ]; then
             echo "No changes to commit."
             exit 0
           fi
           git commit -m "Automated bet tracker update"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git fetch origin
-          git rebase "origin/$BRANCH" || (git rebase --abort; exit 1)
-          git push origin "HEAD:$BRANCH"
+          git push
