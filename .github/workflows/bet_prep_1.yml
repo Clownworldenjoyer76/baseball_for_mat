@@ -2,9 +2,9 @@ name: Run bet_prep_1 MLB SCHED
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+
+permissions:
+  contents: write
 
 jobs:
   run-script:
