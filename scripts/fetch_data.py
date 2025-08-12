@@ -1,9 +1,9 @@
+# scripts/fetch_data.py
 import requests
 from logging_utils import log
 from config import API_KEY, PLAYER_PROPS_ENDPOINT, GAME_PROPS_ENDPOINT
 
 def _safe_get(url: str, headers: dict | None = None):
-    # Return JSON or []; never raise. Skip placeholders.
     if not url or "example.com" in url or not url.startswith(("http://","https://")):
         log(f"Skipping fetch (endpoint not configured): {url!r}")
         return []
