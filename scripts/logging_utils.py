@@ -1,4 +1,6 @@
-# logging_utils.py
+# scripts/logging_utils.py
+import sys
 
-def log(message):
-    print(f"[BET_TRACKER] {message}")
+def log(message: str):
+    sys.stdout.write(f"[BET_TRACKER] {message}\n")
+    sys.stdout.flush()
