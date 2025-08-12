@@ -51,6 +51,7 @@ jobs:
           SUMMARY_FILE="summaries/summary.txt"
           : > "$STATUS_FILE"; : > "$LOG_FILE"; : > "$ERRORS_FILE"; : > "$SUMMARY_FILE"
 
+          # temp copies used by a few legacy scripts
           mkdir -p data/temp_inputs
           cp -f data/cleaned/batters_today.csv                data/temp_inputs/batters_today_copy.csv || true
           cp -f data/raw/todaysgames_normalized.csv           data/temp_inputs/todaysgames_normalized_copy.csv || true
@@ -73,6 +74,7 @@ jobs:
                 "data/temp_inputs/todaysgames_normalized_copy.csv" \
                 "data/adjusted/batters_home.csv")
             elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
+              # REQUIRED ARGS: <pitchers_input_path> <games_input_path> <output_home_path> <output_away_path>
               CMD=(python "scripts/${SCRIPT}" \
                 "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
                 "data/temp_inputs/todaysgames_normalized_copy.csv" \
@@ -107,26 +109,7 @@ jobs:
           run_step normalize_todays_games.py
           run_step refresh_stadium_metadata.py
           run_step apply_team_name_mapping.py
-
-      - name: Hotfix team codes in todaysgames_normalized
-        run: |
-          python - <<'PY'
-import pandas as pd, pathlib
-p = pathlib.Path("data/raw/todaysgames_normalized.csv")
-if p.exists():
-    df = pd.read_csv(p)
-    for col in ("home_team","away_team"):
-        if col in df.columns:
-            df[col] = df[col].astype(str)
-            df[col] = df[col].replace({
-                "AZ":"Diamondbacks","Az":"Diamondbacks","az":"Diamondbacks",
-                "CWS":"WhiteSox","Cws":"WhiteSox","cws":"WhiteSox"
-            })
-    df.to_csv(p, index=False)
-PY
-
-      - name: Continue Run All Scripts
-        run: |
+          run_step hotfix_team_codes.py
           run_step update_game_time.py
           run_step filter_stadium_metadata.py
           run_step normalize_batter_team_names.py
@@ -157,7 +140,10 @@ PY
           run_step combine_pitcher_weather_park_away.py
           run_step prep_merge.py
           run_step clean_and_preprocess_games.py
+
+          # ⛓️ Attach pitcher IDs immediately after games are cleaned
           run_step attach_pitcher_ids.py
+
           run_step normalize_pitchers_xtra.py
           run_step clean_merge_files.py
           run_step clean_and_preprocess_batters.py
@@ -180,25 +166,30 @@ PY
           run_step project_prep.py
           run_step fix_missing_batter_stats.py
           run_step normalize_batters_for_builder.py
+
+          # Ensure weather keys align right before strict builder
           run_step align_weather_team_keys.py
+
           run_step project_batter_props.py
           run_step project_pitcher_props.py
           run_step build_expanded_batter_props.py
           run_step pitcher_mega_z.py
+
+          # Final scoring uses same games file path as attach step
           run_step project_final_score.py
 
           {
             echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
             echo ""
             echo "===== STATUS ====="
-            cat summaries/status.txt
+            cat "$STATUS_FILE"
             echo ""
             echo "===== LOG ====="
-            cat summaries/log.txt
+            cat "$LOG_FILE"
             echo ""
             echo "===== ERRORS ====="
-            cat summaries/errors.txt
-          } > summaries/summary.txt
+            cat "$ERRORS_FILE"
+          } > "$SUMMARY_FILE"
 
       - name: Commit pitchers_xtra.csv
         run: |
