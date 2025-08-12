@@ -41,24 +41,25 @@ df_cleaned['date'] = df_cleaned['date'].str.split('T').str[0]
 
 # Prepare mapping DataFrame for case-insensitive merge
 df_map['name_lower'] = df_map['name'].str.lower()
+df_map.rename(columns={'team': 'mapped_team'}, inplace=True)
 
-# Map and rename home_team_name
+# Map home team names
 df_cleaned['home_team_name_lower'] = df_cleaned['home_team_name'].str.lower()
-df_cleaned = df_cleaned.merge(df_map[['name_lower', 'team']],
+df_cleaned = df_cleaned.merge(df_map[['name_lower', 'mapped_team']],
                               left_on='home_team_name_lower',
                               right_on='name_lower',
                               how='left')
-df_cleaned.rename(columns={'team': 'home_team'}, inplace=True)
-df_cleaned.drop(columns=['home_team_name', 'home_team_name_lower', 'name_lower'], inplace=True)
+df_cleaned['home_team'] = df_cleaned['mapped_team'].fillna(df_cleaned['home_team_name'])
+df_cleaned.drop(columns=['home_team_name', 'home_team_name_lower', 'name_lower', 'mapped_team'], inplace=True)
 
-# Map and rename away_team_name
+# Map away team names
 df_cleaned['away_team_name_lower'] = df_cleaned['away_team_name'].str.lower()
-df_cleaned = df_cleaned.merge(df_map[['name_lower', 'team']],
+df_cleaned = df_cleaned.merge(df_map[['name_lower', 'mapped_team']],
                               left_on='away_team_name_lower',
                               right_on='name_lower',
                               how='left')
-df_cleaned.rename(columns={'team': 'away_team'}, inplace=True)
-df_cleaned.drop(columns=['away_team_name', 'away_team_name_lower', 'name_lower'], inplace=True)
+df_cleaned['away_team'] = df_cleaned['mapped_team'].fillna(df_cleaned['away_team_name'])
+df_cleaned.drop(columns=['away_team_name', 'away_team_name_lower', 'name_lower', 'mapped_team'], inplace=True)
 
 # Reorder columns to match the requested output structure
 new_cols = [
@@ -81,3 +82,4 @@ if not os.path.exists(output_dir):
 df_cleaned.to_csv(output_file, index=False)
 
 print(f"Data successfully cleaned and saved to '{output_file}'")
+
