@@ -1,27 +1,34 @@
-TEAM_ALIASES = {
-    'RedSox': 'Red Sox',
-    'WhiteSox': 'White Sox',
-    'BlueJays': 'Blue Jays',
-    'Diamondbacks': 'Diamondbacks',
-    'Braves': 'Braves',
-    'Cubs': 'Cubs',
-    'Dodgers': 'Dodgers',
-    'Mariners': 'Mariners',
-    'Marlins': 'Marlins',
-    'Nationals': 'Nationals',
-    'Padres': 'Padres',
-    'Phillies': 'Phillies',
-    'Pirates': 'Pirates',
-    'Rays': 'Rays',
-    'Rockies': 'Rockies',
-    'Tigers': 'Tigers',
-    'Twins': 'Twins',
-}
-
 #!/usr/bin/env python3
 import sys, argparse, unicodedata, re
 from pathlib import Path
 import pandas as pd
+
+TEAM_NORMALIZATION_MAP = {
+    'redsox': 'Red Sox',
+    'whitesox': 'White Sox',
+    'bluejays': 'Blue Jays',
+    'diamondbacks': 'Diamondbacks',
+    'braves': 'Braves',
+    'cubs': 'Cubs',
+    'dodgers': 'Dodgers',
+    'mariners': 'Mariners',
+    'marlins': 'Marlins',
+    'nationals': 'Nationals',
+    'padres': 'Padres',
+    'phillies': 'Phillies',
+    'pirates': 'Pirates',
+    'rays': 'Rays',
+    'rockies': 'Rockies',
+    'tigers': 'Tigers',
+    'twins': 'Twins',
+}
+
+def normalize_team_column(df, columns):
+    for col in columns:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip().str.lower().map(TEAM_NORMALIZATION_MAP).fillna(df[col])
+    return df
+
 
 BATTERS_FILE = Path("data/tagged/batters_normalized.csv")
 WEATHER_INPUT  = Path("data/weather_input.csv")        # needs: home_team, Park Factor
