@@ -40,4 +40,4 @@ def update_player_history(df: pd.DataFrame):
     _write_or_append(df, Path(PLAYER_HISTORY_FILE), PLAYER_HISTORY_COLUMNS)
 
 def update_game_history(df: pd.DataFrame):
-    _write_or_append(df, Path(GAME_HISTORY_FILE), GAME_HISTORY_COLUMNS)i
+    _write_or_append(df, Path(GAME_HISTORY_FILE), GAME_HISTORY_COLUMNS)
