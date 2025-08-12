@@ -1,56 +1,58 @@
-# scripts/clean_and_preprocess_games.py
-
+#!/usr/bin/env python3
 import pandas as pd
 from pathlib import Path
-import os
 
-def clean_and_preprocess_games(input_path: str, output_path: str) -> None:
-    """
-    Cleans and preprocesses the raw games data.
+RAW_GAMES   = Path("data/end_chain/first/games_today.csv")         # your existing source
+CLEAN_OUT   = Path("data/end_chain/cleaned/games_today_cleaned.csv")
+MLB_IDS_CSV = Path("data/raw/mlb_game_ids.csv")                    # new join source
 
-    Args:
-        input_path (str): Path to the raw games CSV file.
-        output_path (str): Path where the cleaned CSV will be saved.
-    """
-    print("🔧 Cleaning and preprocessing game-level data...")
+def _key(s: str) -> str:
+    return "".join(ch for ch in str(s).lower() if ch.isalnum())
 
-    df = pd.read_csv(input_path)
+def main():
+    if not RAW_GAMES.exists():
+        raise SystemExit(f"❌ missing input: {RAW_GAMES}")
 
-    # Strip whitespace from column names
-    df.columns = df.columns.str.strip()
+    g = pd.read_csv(RAW_GAMES)
+    # normalize column names you already use
+    g.columns = g.columns.str.strip()
+    # ensure we have home_team/away_team
+    rename_map = {"Home":"home_team","home":"home_team","Away":"away_team","away":"away_team"}
+    for k,v in rename_map.items():
+        if k in g.columns and v not in g.columns:
+            g = g.rename(columns={k:v})
 
-    # Ensure required columns exist
-    required_cols = ['home_team', 'away_team', 'pitcher_home', 'pitcher_away']
-    for col in required_cols:
-        if col not in df.columns:
-            raise ValueError(f"Missing required column: {col}")
+    needed = {"home_team","away_team"}
+    if not needed.issubset(g.columns):
+        raise SystemExit(f"❌ games_today missing {sorted(needed - set(g.columns))}")
 
-    # Standardize team names (strip/normalize spacing)
-    df['home_team'] = df['home_team'].astype(str).str.strip()
-    df['away_team'] = df['away_team'].astype(str).str.strip()
+    g = g.copy()
+    g["home_key"] = g["home_team"].apply(_key)
+    g["away_key"] = g["away_team"].apply(_key)
 
-    # Standardize pitcher names (remove extra spacing)
-    df['pitcher_home'] = df['pitcher_home'].astype(str).str.strip()
-    df['pitcher_away'] = df['pitcher_away'].astype(str).str.strip()
+    # attach MLB game_pk if available
+    if MLB_IDS_CSV.exists():
+        ids = pd.read_csv(MLB_IDS_CSV)
+        ids = ids.rename(columns={"date":"mlb_date"})
+        ids["home_key"] = ids["home_team"].apply(_key)
+        ids["away_key"] = ids["away_team"].apply(_key)
+        g = g.merge(
+            ids[["mlb_date","home_key","away_key","game_pk","game_number","game_datetime"]],
+            on=["home_key","away_key"],
+            how="left"
+        )
+        g["game_id"] = g["game_pk"].astype("Int64").astype("string")
+    else:
+        g["game_id"] = pd.NA
 
-    # Parse and standardize game_time if it exists
-    if 'game_time' in df.columns:
-        df['game_time'] = pd.to_datetime(df['game_time'], errors='coerce')
-        if df['game_time'].isnull().any():
-            print("⚠️ Warning: Some game_time values could not be parsed and were set to NaT.")
+    # keep your existing columns plus new identifiers
+    keep_order = ["game_id","home_team","away_team","game_datetime","game_number"]
+    others = [c for c in g.columns if c not in keep_order]
+    out = g[keep_order + others]
 
-    # Fill NA values with explicit placeholders if needed
-    df.fillna({'pitcher_home': 'Undecided', 'pitcher_away': 'Undecided'}, inplace=True)
-
-    # Create output directory if it doesn't exist
-    output_dir = Path(output_path).parent
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    df.to_csv(output_path, index=False)
-    print(f"✅ Saved cleaned game data to: {output_path}")
+    CLEAN_OUT.parent.mkdir(parents=True, exist_ok=True)
+    out.to_csv(CLEAN_OUT, index=False)
+    print(f"✅ Saved cleaned game data to: {CLEAN_OUT}")
 
 if __name__ == "__main__":
-    INPUT_FILE = "data/end_chain/first/games_today.csv"
-    OUTPUT_FILE = "data/end_chain/cleaned/games_today_cleaned.csv"
-
-    clean_and_preprocess_games(INPUT_FILE, OUTPUT_FILE)
+    main()
