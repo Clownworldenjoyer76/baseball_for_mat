@@ -184,34 +184,3 @@ jobs:
         run: |
           echo "Commit: ${{ steps.commit_opp.outputs.sha }}"
           echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit_opp.outputs.sha }}"
-
-      # ---------- NEWDAYBETS ----------
-      - name: Run newdaybets.py
-        run: |
-          python scripts/newdaybets.py
-          echo "Preview game_props_history.csv:"
-          head -n 5 data/bets/game_props_history.csv || true
-          echo "Preview player_props_history.csv:"
-          head -n 5 data/bets/player_props_history.csv || true
-
-      - name: Always commit newdaybets outputs (force + allow-empty)
-        id: commit_newdaybets
-        run: |
-          set -e
-          git config user.name  "github-actions"
-          git config user.email "github-actions@github.com"
-          git add --force data/bets/game_props_history.csv data/bets/player_props_history.csv
-          git commit --allow-empty -m "Update newdaybets outputs [run $GITHUB_RUN_ID]"
-          SHA="$(git rev-parse HEAD)"
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "Committed $SHA"
-          git log -1 --stat
-
-      - name: Push newdaybets commit (always)
-        env:
-          GIT_TRACE: "1"
-          GIT_CURL_VERBOSE: "1"
-        run: |
-          set -e
-          git pull --rebase origin main || true
-          git push origin HEAD:main
