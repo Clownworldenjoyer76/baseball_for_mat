@@ -176,6 +176,8 @@ jobs:
           run_step project_pitcher_props.py
           run_step build_expanded_batter_props.py
           run_step pitcher_mega_z.py
+          # NEW: attach IDs before scoring
+          run_step attach_pitcher_ids.py
           run_step project_final_score.py
 
           {
