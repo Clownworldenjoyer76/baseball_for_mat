@@ -20,6 +20,7 @@ jobs:
           ref: main
 
       - name: Configure Git
+        shell: bash
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
@@ -38,12 +39,16 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt unidecode
 
       - name: Run All Scripts + Unified Logs
+        shell: bash
         run: |
+          set -euo pipefail
+
           mkdir -p summaries
           STATUS_FILE="summaries/status.txt"
           LOG_FILE="summaries/log.txt"
@@ -74,7 +79,6 @@ jobs:
                 "data/temp_inputs/todaysgames_normalized_copy.csv" \
                 "data/adjusted/batters_home.csv")
             elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
-              # REQUIRED ARGS: <pitchers_input_path> <games_input_path> <output_home_path> <output_away_path>
               CMD=(python "scripts/${SCRIPT}" \
                 "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
                 "data/temp_inputs/todaysgames_normalized_copy.csv" \
@@ -94,7 +98,9 @@ jobs:
               echo "❌ $STEP_NAME failed [$STEP_TIMESTAMP]" >> "$STATUS_FILE"
               echo "❌ $STEP_NAME ERROR ($STEP_TIMESTAMP):" >> "$ERRORS_FILE"
               cat temp_error.log >> "$ERRORS_FILE"
-              echo -e "\n---\n" >> "$ERRORS_FILE"
+              echo "" >> "$ERRORS_FILE"
+              echo "---" >> "$ERRORS_FILE"
+              echo "" >> "$ERRORS_FILE"
             fi
 
             echo "⏹️ END: $STEP_NAME ($STEP_TIMESTAMP)" >> "$LOG_FILE"
@@ -110,7 +116,7 @@ jobs:
           run_step refresh_stadium_metadata.py
           run_step apply_team_name_mapping.py
 
-          # 🔧 Hotfix lingering team codes before any weather/park work
+          # Hotfix lingering team codes before any weather/park work
           python - <<'PY' || true
 import pandas as pd, pathlib
 p = pathlib.Path("data/raw/todaysgames_normalized.csv")
@@ -118,8 +124,7 @@ if p.exists():
     df = pd.read_csv(p)
     for col in ("home_team","away_team"):
         if col in df.columns:
-            df[col] = df[col].astype(str)
-            df[col] = df[col].replace({
+            df[col] = df[col].astype(str).replace({
                 "AZ":"Diamondbacks","Az":"Diamondbacks","az":"Diamondbacks",
                 "CWS":"WhiteSox","Cws":"WhiteSox","cws":"WhiteSox"
             })
@@ -156,10 +161,7 @@ PY
           run_step combine_pitcher_weather_park_away.py
           run_step prep_merge.py
           run_step clean_and_preprocess_games.py
-
-          # ⛓️ Attach pitcher IDs immediately after games are cleaned
           run_step attach_pitcher_ids.py
-
           run_step normalize_pitchers_xtra.py
           run_step clean_merge_files.py
           run_step clean_and_preprocess_batters.py
@@ -182,38 +184,34 @@ PY
           run_step project_prep.py
           run_step fix_missing_batter_stats.py
           run_step normalize_batters_for_builder.py
-
-          # Ensure weather keys align right before strict builder
           run_step align_weather_team_keys.py
-
           run_step project_batter_props.py
           run_step project_pitcher_props.py
           run_step build_expanded_batter_props.py
           run_step pitcher_mega_z.py
-
-          # Final scoring uses same games file path as attach step
           run_step project_final_score.py
 
-          {
-            echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
-            echo ""
-            echo "===== STATUS ====="
-            cat "$STATUS_FILE"
-            echo ""
-            echo "===== LOG ====="
-            cat "$LOG_FILE"
-            echo ""
-            echo "===== ERRORS ====="
-            cat "$ERRORS_FILE"
-          } > "$SUMMARY_FILE"
+          # Write summary in a YAML-safe way (no brace groups)
+          echo "===== RUN TIMESTAMP: $(TZ='America/New_York' date +"%Y-%m-%d %I:%M:%S %p %Z") =====" > "$SUMMARY_FILE"
+          echo "" >> "$SUMMARY_FILE"
+          echo "===== STATUS =====" >> "$SUMMARY_FILE"
+          cat "$STATUS_FILE" >> "$SUMMARY_FILE"
+          echo "" >> "$SUMMARY_FILE"
+          echo "===== LOG =====" >> "$SUMMARY_FILE"
+          cat "$LOG_FILE" >> "$SUMMARY_FILE"
+          echo "" >> "$SUMMARY_FILE"
+          echo "===== ERRORS =====" >> "$SUMMARY_FILE"
+          cat "$ERRORS_FILE" >> "$SUMMARY_FILE"
 
       - name: Commit pitchers_xtra.csv
+        shell: bash
         run: |
           git add data/end_chain/pitchers_xtra.csv || echo "pitchers_xtra.csv not found or no changes"
           git commit -m "Update pitchers_xtra.csv" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
 
       - name: Commit all output files
+        shell: bash
         run: |
           git add data/adjusted/*.csv || echo "No adjusted files changed"
           git add data/end_chain/**/*.csv || echo "No end_chain files changed"
