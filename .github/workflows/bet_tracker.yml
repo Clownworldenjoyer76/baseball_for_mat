@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: true
-          fetch-depth: 0   # needed for rebase
+          fetch-depth: 0
 
       - name: Runner diagnostics
         shell: bash
@@ -84,8 +84,8 @@ jobs:
           done
           PLAYERS_BEFORE=$( [ -f "$PLAYERS" ] && (wc -l < "$PLAYERS") || echo 0 )
           GAMES_BEFORE=$( [ -f "$GAMES" ] && (wc -l < "$GAMES") || echo 0 )
-          echo "players_before=$PLAYERS_BEFORE" >> $GITHUB_OUTPUT
-          echo "games_before=$GAMES_BEFORE" >> $GITHUB_OUTPUT
+          echo "players_before=$PLAYERS_BEFORE" >> "$GITHUB_OUTPUT"
+          echo "games_before=$GAMES_BEFORE" >> "$GITHUB_OUTPUT"
 
       - name: Verify module imports
         shell: bash
@@ -104,6 +104,7 @@ targets = [
 failures = []
 for label, options in targets:
     loaded = False
+    last_err = None
     for mod in options:
         try:
             importlib.import_module(mod)
@@ -148,14 +149,8 @@ PY
           done
           PLAYERS_AFTER=$( [ -f "$PLAYERS" ] && (wc -l < "$PLAYERS") || echo 0 )
           GAMES_AFTER=$( [ -f "$GAMES" ] && (wc -l < "$GAMES") || echo 0 )
-          echo "players_after=$PLAYERS_AFTER" >> $GITHUB_OUTPUT
-          echo "games_after=$GAMES_AFTER" >> $GITHUB_OUTPUT
-
-      - name: Show deltas
-        shell: bash
-        run: |
-          echo "Player props: $(( ${{ steps.counts_after.outputs.players_after }} - ${{ steps.counts_before.outputs.players_before }} )) line(s) change"
-          echo "Game props:   $(( ${{ steps.counts_after.outputs.games_after }}   - ${{ steps.counts_before.outputs.games_before }} )) line(s) change"
+          echo "players_after=$PLAYERS_AFTER" >> "$GITHUB_OUTPUT"
+          echo "games_after=$GAMES_AFTER" >> "$GITHUB_OUTPUT"
 
       - name: Commit and Push Changes (rebase-safe)
         shell: bash
@@ -167,7 +162,7 @@ PY
             exit 0
           fi
           git commit -m "Automated bet tracker update"
-          BRANCH="\${GITHUB_REF_NAME:-main}"
+          BRANCH="${GITHUB_REF_NAME:-main}"
           for attempt in 1 2; do
             echo "Attempt $attempt: syncing with origin/$BRANCH..."
             git fetch origin
