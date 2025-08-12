@@ -30,4 +30,4 @@ def run_bet_tracker():
     log("Done.")
 
 if __name__ == "__main__":
-    run_bet_tracker()i
+    run_bet_tracker()
