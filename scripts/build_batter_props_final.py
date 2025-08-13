@@ -64,14 +64,13 @@ sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
 # -------- make sure batter columns exist (auto-create if missing) --------
-# prefer 'prop' and never rename to prop_type
 if "prop" not in bat.columns:
     if "prop_type" in bat.columns:
         bat["prop"] = bat["prop_type"]
-        print("ℹ️ Created 'prop' column from existing 'prop_type'.")
+        print("ℹ️ Created 'prop' from 'prop_type'.")
     else:
         bat["prop"] = ""
-        print("⚠️ Created empty 'prop' column (no 'prop' or 'prop_type' found).")
+        print("⚠️ Created empty 'prop' (no 'prop' or 'prop_type').")
 
 BAT_SPEC = {
     "player_id": ("str", ""),
@@ -84,6 +83,15 @@ BAT_SPEC = {
 created = ensure_columns(bat, BAT_SPEC)
 if created:
     print(f"ℹ️ Auto-created/normalized batter columns: {', '.join(created)}")
+
+# quick batch stats pre-merge
+print(f"📊 Batter rows (input): {len(bat)}")
+if "prop" in bat.columns:
+    try:
+        cnt = bat["prop"].value_counts(dropna=False).to_dict()
+        print(f"📦 Prop distribution (input): {cnt}")
+    except Exception:
+        pass
 
 # -------- find opponent team via schedule --------
 need = [c for c in ("home_team", "away_team") if c not in sch.columns]
@@ -131,9 +139,24 @@ pit_one = pit_one[keep_pit_cols].rename(columns={
 })
 
 # attach opponent pitcher by opp_team
+pre_merge_rows = len(bat)
 bat = bat.merge(pit_one, on="opp_team", how="left")
+matched_rows = bat["opp_pitcher_name"].notna().sum()
+unmatched_rows = pre_merge_rows - matched_rows
+print(f"🧩 Pitcher match: matched={matched_rows} unmatched={unmatched_rows} (of {pre_merge_rows})")
 
-# -------- HARD SAFETY: guarantee 'prop', 'value' before grouping --------
+if unmatched_rows:
+    top_unmatched = (
+        bat[bat["opp_pitcher_name"].isna()]
+        .groupby("opp_team", dropna=False)
+        .size()
+        .sort_values(ascending=False)
+        .head(8)
+        .to_dict()
+    )
+    print(f"🔎 Unmatched by opp_team (top): {top_unmatched}")
+
+# -------- HARD SAFETY: guarantee 'prop' & 'value' before grouping --------
 if "prop" not in bat.columns:
     if "prop_type" in bat.columns:
         bat["prop"] = bat["prop_type"].astype(str).str.strip()
@@ -188,4 +211,14 @@ out = bat[out_cols].copy()
 
 OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 out.to_csv(OUT_FILE, index=False)
+
+# final logs
 print(f"✅ Wrote: {OUT_FILE} (rows={len(out)})")
+if "prop" in out.columns:
+    try:
+        out_prop_cnt = out["prop"].value_counts(dropna=False).to_dict()
+        print(f"📦 Prop distribution (output): {out_prop_cnt}")
+    except Exception:
+        pass
+matched_final = out["opp_pitcher_name"].notna().sum() if "opp_pitcher_name" in out.columns else 0
+print(f"🧾 Opp pitcher populated on {matched_final} of {len(out)} output rows")
