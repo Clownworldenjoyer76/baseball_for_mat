@@ -13,13 +13,13 @@ def norm_cols(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def first_col(df: pd.DataFrame, candidates: list[str], default=None):
+    # return the first matching column (case-insensitive), else default
+    lower_map = {c.lower(): c for c in df.columns}
     for c in candidates:
         if c in df.columns:
             return c
-        # also try case-insensitive matches
-        alt = {col.lower(): col for col in df.columns}
-        if c.lower() in alt:
-            return alt[c.lower()]
+        if c.lower() in lower_map:
+            return lower_map[c.lower()]
     return default
 
 def main():
@@ -36,6 +36,7 @@ def main():
     batter_df    = norm_cols(batter_df)
 
     created = []
+    updated = []
 
     # --- map/ensure key identifiers
     name_col = first_col(batter_df, ["name", "player_name", "player"]) or "name"
@@ -78,21 +79,48 @@ def main():
                          on="team", how="left")
 
     # --- required columns for downstream script
-    # stick with "prop" (not prop_type); numeric line/value may be empty
+    # PROP: keep existing if present; else backfill from prop_type; else create empty
     if "prop" not in batter_df.columns:
-        # if a legacy prop_type exists, copy it; else create blank
-        legacy = first_col(batter_df, ["prop_type"])
-        if legacy:
-            batter_df["prop"] = batter_df[legacy].astype(str).str.strip()
+        legacy_prop_type = first_col(batter_df, ["prop_type"])
+        if legacy_prop_type:
+            batter_df["prop"] = batter_df[legacy_prop_type].astype(str).str.strip()
+            created.append("prop")
         else:
             batter_df["prop"] = ""
-        created.append("prop")
+            created.append("prop")
+    else:
+        # if 'prop' exists but blank/NA while 'prop_type' exists, backfill only where blank
+        legacy_prop_type = first_col(batter_df, ["prop_type"])
+        if legacy_prop_type:
+            mask_blank = batter_df["prop"].isna() | (batter_df["prop"].astype(str).str.strip() == "")
+            if mask_blank.any():
+                batter_df.loc[mask_blank, "prop"] = (
+                    batter_df.loc[mask_blank, legacy_prop_type].astype(str).str.strip()
+                )
+                updated.append("prop(backfilled_from_prop_type)")
+    batter_df["prop"] = batter_df["prop"].fillna("").astype(str).str.strip()
 
+    # LINE: keep existing numeric 'line' if present; otherwise backfill from prop_line; else NaN
+    src_prop_line = first_col(batter_df, ["prop_line"])
     if "line" not in batter_df.columns:
-        batter_df["line"] = np.nan
-        created.append("line")
-    batter_df["line"] = pd.to_numeric(batter_df["line"], errors="coerce")
+        if src_prop_line:
+            batter_df["line"] = pd.to_numeric(batter_df[src_prop_line], errors="coerce")
+            created.append("line")
+        else:
+            batter_df["line"] = np.nan
+            created.append("line")
+    else:
+        # coerce and backfill blanks from prop_line if available
+        batter_df["line"] = pd.to_numeric(batter_df["line"], errors="coerce")
+        if src_prop_line:
+            src_num = pd.to_numeric(batter_df[src_prop_line], errors="coerce")
+            mask_na = batter_df["line"].isna()
+            if mask_na.any():
+                batter_df.loc[mask_na, "line"] = src_num[mask_na]
+                if src_num[mask_na].notna().any():
+                    updated.append("line(backfilled_from_prop_line)")
 
+    # VALUE: keep existing numeric 'value' if present; otherwise create NaN
     if "value" not in batter_df.columns:
         batter_df["value"] = np.nan
         created.append("value")
@@ -137,7 +165,9 @@ def main():
     out.to_csv(OUTPUT_OUT, index=False)
 
     if created:
-        print("ℹ️ Created/standardized columns:", ", ".join(sorted(set(created))))
+        print("ℹ️ Created columns:", ", ".join(sorted(set(created))))
+    if updated:
+        print("ℹ️ Backfilled columns:", ", ".join(sorted(set(updated))))
     print(f"✅ Wrote: {OUTPUT_OUT} (rows={len(out)})")
 
 if __name__ == "__main__":
