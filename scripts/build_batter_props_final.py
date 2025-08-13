@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import math
-import os
 
 BATTER_IN   = Path("data/bets/prep/batter_props_bets.csv")
 SCHED_IN    = Path("data/bets/mlb_sched.csv")
@@ -13,9 +12,6 @@ OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
 # -------- helpers --------
 def _norm(s: pd.Series) -> pd.Series:
     return s.astype(str).str.strip()
-
-def _key(s: pd.Series) -> pd.Series:
-    return s.astype(str).str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
 
 def poisson_p_ge(k: int, lam: float) -> float:
     """Tail P(X>=k) for Poisson(lam)."""
@@ -37,13 +33,28 @@ def poisson_p_ge(k: int, lam: float) -> float:
 def z_by_group(df: pd.DataFrame, value_col: str, group_cols: list) -> pd.Series:
     """Standard score within each prop group to keep scales comparable."""
     def _z(g):
-        v = g[value_col].astype(float)
+        v = pd.to_numeric(g[value_col], errors="coerce")
         mu = v.mean()
         sd = v.std(ddof=0)
         if sd == 0 or np.isnan(sd):
             return pd.Series([0.0] * len(g), index=g.index)
         return (v - mu) / sd
     return df.groupby(group_cols, group_keys=False).apply(_z)
+
+def ensure_columns(df: pd.DataFrame, spec: dict) -> pd.DataFrame:
+    """
+    Ensure required columns exist. spec: {col: ('str'|'num', default)}
+    Missing string -> default ""; missing number -> np.nan (or provided default).
+    """
+    for col, (kind, default) in spec.items():
+        if col not in df.columns:
+            df[col] = default
+        # Coerce types safely
+        if kind == "str":
+            df[col] = _norm(df[col].astype(str))
+        elif kind == "num":
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    return df
 
 # -------- load --------
 if not BATTER_IN.exists():
@@ -62,18 +73,16 @@ bat.columns = [c.strip() for c in bat.columns]
 sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
-# required columns
-for col in ("player_id","name","team","prop","line","value"):
-    if col not in bat.columns:
-        raise SystemExit(f"❌ batter file missing required column: {col}")
-
-# ensure types
-bat["player_id"] = bat["player_id"].astype(str)
-bat["name"] = _norm(bat["name"])
-bat["team"] = _norm(bat["team"])
-bat["prop"] = _norm(bat["prop"])
-bat["line"] = pd.to_numeric(bat["line"], errors="coerce")
-bat["value"] = pd.to_numeric(bat["value"], errors="coerce")
+# -------- make sure batter columns exist (auto-create if missing) --------
+BAT_SPEC = {
+    "player_id": ("str", ""),
+    "name": ("str", ""),
+    "team": ("str", ""),
+    "prop": ("str", ""),     # we stick with 'prop'
+    "line": ("num", np.nan),
+    "value": ("num", np.nan)
+}
+bat = ensure_columns(bat, BAT_SPEC)
 
 # -------- find opponent team via schedule --------
 need = [c for c in ("home_team","away_team") if c not in sch.columns]
