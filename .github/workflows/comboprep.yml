@@ -1,0 +1,157 @@
+name: Combined Bet Prep + Build Batter Props
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pandas==2.2.2" numpy
+
+      - name: Git config (safe directory + identity)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name  "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git config --global pull.rebase true
+
+      # -------------------------------
+      # STEP 1: bet_prep_1 (mlb_sched)
+      # -------------------------------
+      - name: Run bet_prep_1.py
+        run: python scripts/bet_prep_1.py
+
+      - name: Commit & push (mlb_sched.csv)
+        shell: bash
+        run: |
+          set -e
+          git add data/bets/mlb_sched.csv
+          if [[ -z "$(git status --porcelain data/bets/mlb_sched.csv)" ]]; then
+            echo "No mlb_sched changes to commit."
+          else
+            git commit -m "bet_prep_1: update mlb_sched.csv"
+            BRANCH="${GITHUB_REF_NAME:-main}"
+            for attempt in 1 2; do
+              echo "Attempt $attempt: syncing with origin/$BRANCH..."
+              git fetch origin
+              git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+              if git push origin "HEAD:$BRANCH"; then
+                echo "Push succeeded."
+                break
+              else
+                echo "Push rejected (non-fast-forward). Retrying..."
+                sleep 2
+              fi
+            done
+          fi
+
+      # -------------------------------
+      # STEP 2: bet_prep_2 (batter props - bets)
+      # -------------------------------
+      - name: Run bet_prep_2.py
+        run: python scripts/bet_prep_2.py
+
+      - name: Commit & push (batter_props_bets.csv)
+        shell: bash
+        run: |
+          set -e
+          git add data/bets/prep/batter_props_bets.csv
+          if [[ -z "$(git status --porcelain data/bets/prep/batter_props_bets.csv)" ]]; then
+            echo "No batter_props_bets changes to commit."
+          else
+            git commit -m "bet_prep_2: update batter_props_bets.csv"
+            BRANCH="${GITHUB_REF_NAME:-main}"
+            for attempt in 1 2; do
+              echo "Attempt $attempt: syncing with origin/$BRANCH..."
+              git fetch origin
+              git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+              if git push origin "HEAD:$BRANCH"; then
+                echo "Push succeeded."
+                break
+              else
+                echo "Push rejected (non-fast-forward). Retrying..."
+                sleep 2
+              fi
+            done
+          fi
+
+      # -------------------------------
+      # STEP 3: bet_prep_3 (pitcher props - bets)
+      # -------------------------------
+      - name: Run bet_prep_3.py
+        run: python scripts/bet_prep_3.py
+
+      - name: Commit & push (pitcher_props_bets.csv)
+        shell: bash
+        run: |
+          set -e
+          git add data/bets/prep/pitcher_props_bets.csv
+          if [[ -z "$(git status --porcelain data/bets/prep/pitcher_props_bets.csv)" ]]; then
+            echo "No pitcher_props_bets changes to commit."
+          else
+            git commit -m "bet_prep_3: update pitcher_props_bets.csv"
+            BRANCH="${GITHUB_REF_NAME:-main}"
+            for attempt in 1 2; do
+              echo "Attempt $attempt: syncing with origin/$BRANCH..."
+              git fetch origin
+              git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+              if git push origin "HEAD:$BRANCH"; then
+                echo "Push succeeded."
+                break
+              else
+                echo "Push rejected (non-fast-forward). Retrying..."
+                sleep 2
+              fi
+            done
+          fi
+
+      # -------------------------------
+      # STEP 4: build_batter_props_final
+      # -------------------------------
+      - name: Run build_batter_props_final.py
+        run: python scripts/build_batter_props_final.py
+
+      - name: Commit & push (batter_props_final.csv)
+        shell: bash
+        run: |
+          set -e
+          git add data/bets/prep/batter_props_final.csv
+          if [[ -z "$(git status --porcelain data/bets/prep/batter_props_final.csv)" ]]; then
+            echo "No batter_props_final changes to commit."
+          else
+            git commit -m "build_batter_props_final: update batter_props_final.csv"
+            BRANCH="${GITHUB_REF_NAME:-main}"
+            for attempt in 1 2; do
+              echo "Attempt $attempt: syncing with origin/$BRANCH..."
+              git fetch origin
+              git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+              if git push origin "HEAD:$BRANCH"; then
+                echo "Push succeeded."
+                break
+              else
+                echo "Push rejected (non-fast-forward). Retrying..."
+                sleep 2
+              fi
+            done
+          fi
