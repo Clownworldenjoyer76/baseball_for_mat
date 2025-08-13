@@ -35,7 +35,7 @@ def poisson_p_ge(k: int, lam: float) -> float:
     return max(0.0, 1.0 - cdf)
 
 def z_by_group(df: pd.DataFrame, value_col: str, group_cols: list) -> pd.Series:
-    """Standard score within each prop_type group to keep scales comparable."""
+    """Standard score within each prop group to keep scales comparable."""
     def _z(g):
         v = g[value_col].astype(float)
         mu = v.mean()
@@ -62,20 +62,20 @@ bat.columns = [c.strip() for c in bat.columns]
 sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
-for col in ("player_id","name","team","prop_type","line","value"):
+# required columns
+for col in ("player_id","name","team","prop","line","value"):
     if col not in bat.columns:
-        raise SystemExit(f"❌ battter file missing required column: {col}")
+        raise SystemExit(f"❌ batter file missing required column: {col}")
 
 # ensure types
 bat["player_id"] = bat["player_id"].astype(str)
 bat["name"] = _norm(bat["name"])
 bat["team"] = _norm(bat["team"])
-bat["prop_type"] = _norm(bat["prop_type"])
+bat["prop"] = _norm(bat["prop"])
 bat["line"] = pd.to_numeric(bat["line"], errors="coerce")
 bat["value"] = pd.to_numeric(bat["value"], errors="coerce")
 
 # -------- find opponent team via schedule --------
-# Expect sch has home_team, away_team (and optionally game_id, date).
 need = [c for c in ("home_team","away_team") if c not in sch.columns]
 if need:
     raise SystemExit(f"❌ schedule missing columns: {need}")
@@ -91,20 +91,17 @@ team_pairs["opp_team"] = _norm(team_pairs["opp_team"])
 # merge opponent team onto each batter row
 bat = bat.merge(team_pairs, on="team", how="left")
 
-# -------- pick the starting pitcher for each team (already filtered upstream) --------
-# If multiple rows per team remain, pick the one with the highest pitcher mega_z (best indicator of strength).
+# -------- pick the starting pitcher for each team --------
 if "team" not in pit.columns:
     raise SystemExit("❌ pitcher file missing 'team' column")
 
 pit["team"] = _norm(pit["team"])
-# keep one pitcher row per team
 if "mega_z" in pit.columns:
     pit_one = pit.sort_values(by=["team","mega_z"], ascending=[True, False]).groupby("team", as_index=False).head(1)
 else:
     pit_one = pit.groupby("team", as_index=False).head(1)
 
-# we only need a few pitcher cols for influence; keep safe subset
-keep_pit_cols = [c for c in ["team","name","prop_type","mega_z","z_score","over_probability","line","value"] if c in pit_one.columns]
+keep_pit_cols = [c for c in ["team","name","prop","mega_z","z_score","over_probability","line","value"] if c in pit_one.columns]
 pit_one = pit_one[keep_pit_cols].rename(columns={
     "team": "opp_team",
     "name": "opp_pitcher_name",
@@ -118,16 +115,15 @@ pit_one = pit_one[keep_pit_cols].rename(columns={
 # attach opponent pitcher by opp_team
 bat = bat.merge(pit_one, on="opp_team", how="left")
 
-# -------- compute batter z per prop_type --------
-bat["batter_z"] = z_by_group(bat, value_col="value", group_cols=["prop_type"])
+# -------- compute batter z per prop --------
+bat["batter_z"] = z_by_group(bat, value_col="value", group_cols=["prop"])
 
-# -------- combined mega_z (batter strength adjusted by opposing pitcher) --------
-# Penalize vs strong pitchers: combined = batter_z - w * opp_pitcher_mega_z
-W = 0.5  # weight; increase to penalize more vs tough SPs
+# -------- combined mega_z --------
+W = 0.5
 bat["opp_pitcher_mega_z"] = pd.to_numeric(bat.get("opp_pitcher_mega_z", np.nan), errors="coerce")
 bat["mega_z"] = bat["batter_z"] - W * bat["opp_pitcher_mega_z"].fillna(0.0)
 
-# -------- over_probability (Poisson tail on batter's projected value vs line) --------
+# -------- over_probability --------
 def _over_prob(row):
     val = row.get("value", np.nan)
     ln  = row.get("line", np.nan)
@@ -144,11 +140,10 @@ bat["over_probability"] = bat.apply(_over_prob, axis=1)
 
 # -------- order + save --------
 out_cols = [
-    "player_id","name","team","prop_type","line","value",
+    "player_id","name","team","prop","line","value",
     "batter_z","mega_z","over_probability",
     "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z"
 ]
-# include only columns that exist
 out_cols = [c for c in out_cols if c in bat.columns]
 out = bat[out_cols].copy()
 
