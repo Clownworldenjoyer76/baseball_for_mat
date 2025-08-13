@@ -9,7 +9,7 @@ SCHED_IN    = Path("data/bets/mlb_sched.csv")
 PITCHER_IN  = Path("data/bets/prep/pitcher_props_bets.csv")
 OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
 
-# -------- helpers --------
+# ---------------- helpers ----------------
 def _norm(s: pd.Series) -> pd.Series:
     return s.astype(str).str.strip()
 
@@ -32,8 +32,8 @@ def poisson_p_ge(k: int, lam: float) -> float:
 
 def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
     """
-    Ensure columns exist and coerce types.
-    spec: {col: ('str'|'num', default_val)}. Returns list of created cols.
+    Ensure columns exist and coerce dtypes.
+    spec: {col: ('str'|'num', default_val)}
     """
     created = []
     for col, (kind, default) in spec.items():
@@ -46,7 +46,7 @@ def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     return created
 
-# -------- load --------
+# ---------------- load ----------------
 if not BATTER_IN.exists():
     raise SystemExit(f"❌ Missing {BATTER_IN}")
 if not SCHED_IN.exists():
@@ -63,37 +63,36 @@ bat.columns = [c.strip() for c in bat.columns]
 sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
-# -------- make sure batter columns exist (auto-create if missing) --------
+# -------- HARD GUARANTEE: make 'prop' exist BEFORE any access --------
 if "prop" not in bat.columns:
     if "prop_type" in bat.columns:
-        bat["prop"] = bat["prop_type"]
+        bat["prop"] = _norm(bat["prop_type"].astype(str))
         print("ℹ️ Created 'prop' from 'prop_type'.")
     else:
         bat["prop"] = ""
         print("⚠️ Created empty 'prop' (no 'prop' or 'prop_type').")
+else:
+    bat["prop"] = _norm(bat["prop"].astype(str))
 
-BAT_SPEC = {
+# ensure key columns/types
+created = ensure_columns(bat, {
     "player_id": ("str", ""),
     "name":      ("str", ""),
     "team":      ("str", ""),
     "prop":      ("str", ""),
     "line":      ("num", np.nan),
     "value":     ("num", np.nan),
-}
-created = ensure_columns(bat, BAT_SPEC)
+})
 if created:
     print(f"ℹ️ Auto-created/normalized batter columns: {', '.join(created)}")
 
-# quick batch stats pre-merge
 print(f"📊 Batter rows (input): {len(bat)}")
-if "prop" in bat.columns:
-    try:
-        cnt = bat["prop"].value_counts(dropna=False).to_dict()
-        print(f"📦 Prop distribution (input): {cnt}")
-    except Exception:
-        pass
+try:
+    print(f"🧱 Prop distribution (input): {bat['prop'].value_counts(dropna=False).to_dict()}")
+except Exception:
+    pass
 
-# -------- find opponent team via schedule --------
+# ---------------- schedule -> opp team ----------------
 need = [c for c in ("home_team", "away_team") if c not in sch.columns]
 if need:
     raise SystemExit(f"❌ schedule missing columns: {need}")
@@ -106,10 +105,9 @@ team_pairs = pd.concat([sch_home, sch_away], ignore_index=True)
 team_pairs["team"] = _norm(team_pairs["team"])
 team_pairs["opp_team"] = _norm(team_pairs["opp_team"])
 
-# merge opponent team onto each batter row
 bat = bat.merge(team_pairs, on="team", how="left")
 
-# -------- pick the starting pitcher for each team --------
+# ---------------- pick 1 pitcher per team ----------------
 if "team" not in pit.columns:
     raise SystemExit("❌ pitcher file missing 'team' column")
 
@@ -123,11 +121,10 @@ if "mega_z" in pit.columns:
 else:
     pit_one = pit.groupby("team", as_index=False).head(1)
 
-keep_pit_cols = [
-    c for c in ["team", "name", "prop", "mega_z", "z_score",
-                "over_probability", "line", "value"]
-    if c in pit_one.columns
-]
+keep_pit_cols = [c for c in
+    ["team", "name", "prop", "mega_z", "z_score",
+     "over_probability", "line", "value"]
+    if c in pit_one.columns]
 pit_one = pit_one[keep_pit_cols].rename(columns={
     "team":  "opp_team",
     "name":  "opp_pitcher_name",
@@ -138,13 +135,11 @@ pit_one = pit_one[keep_pit_cols].rename(columns={
     "value": "opp_pitcher_value",
 })
 
-# attach opponent pitcher by opp_team
 pre_merge_rows = len(bat)
 bat = bat.merge(pit_one, on="opp_team", how="left")
 matched_rows = bat["opp_pitcher_name"].notna().sum()
 unmatched_rows = pre_merge_rows - matched_rows
 print(f"🧩 Pitcher match: matched={matched_rows} unmatched={unmatched_rows} (of {pre_merge_rows})")
-
 if unmatched_rows:
     top_unmatched = (
         bat[bat["opp_pitcher_name"].isna()]
@@ -156,7 +151,7 @@ if unmatched_rows:
     )
     print(f"🔎 Unmatched by opp_team (top): {top_unmatched}")
 
-# -------- HARD SAFETY: remove rows with blank prop before z-scores --------
+# ---------------- safety: drop blank prop rows ----------------
 bat["prop"] = bat["prop"].fillna("").astype(str).str.strip()
 empty_prop_rows = int((bat["prop"] == "").sum())
 if empty_prop_rows > 0:
@@ -165,10 +160,11 @@ if empty_prop_rows > 0:
     after = len(bat)
     print(f"⚠️ Removed {empty_prop_rows} rows with blank prop before z-scores (kept {after}/{before}).")
 
-# ensure value numeric
+# ensure numeric for calc
 bat["value"] = pd.to_numeric(bat.get("value", np.nan), errors="coerce")
+bat["line"]  = pd.to_numeric(bat.get("line",  np.nan), errors="coerce")
 
-# -------- compute batter z per prop (transform -> 1D Series) --------
+# ---------------- batter z per prop ----------------
 def _z_transform(s: pd.Series) -> pd.Series:
     sd = s.std(ddof=0)
     if sd == 0 or not np.isfinite(sd):
@@ -181,12 +177,12 @@ bat["batter_z"] = (
        .astype(float)
 )
 
-# -------- combined mega_z --------
+# ---------------- mega_z (adjust for opp pitcher) ----------------
 W = 0.5
 bat["opp_pitcher_mega_z"] = pd.to_numeric(bat.get("opp_pitcher_mega_z", np.nan), errors="coerce")
 bat["mega_z"] = bat["batter_z"] - W * bat["opp_pitcher_mega_z"].fillna(0.0)
 
-# -------- over_probability --------
+# ---------------- over_probability ----------------
 def _over_prob(row):
     val = row.get("value", np.nan)
     ln  = row.get("line", np.nan)
@@ -201,7 +197,7 @@ def _over_prob(row):
 
 bat["over_probability"] = bat.apply(_over_prob, axis=1)
 
-# -------- order + save --------
+# ---------------- order + save ----------------
 out_cols = [
     "player_id","name","team","prop","line","value",
     "batter_z","mega_z","over_probability",
@@ -213,13 +209,10 @@ out = bat[out_cols].copy()
 OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 out.to_csv(OUT_FILE, index=False)
 
-# final logs
 print(f"✅ Wrote: {OUT_FILE} (rows={len(out)})")
-if "prop" in out.columns:
-    try:
-        out_prop_cnt = out["prop"].value_counts(dropna=False).to_dict()
-        print(f"📦 Prop distribution (output): {out_prop_cnt}")
-    except Exception:
-        pass
+try:
+    print(f"📦 Prop distribution (output): {out['prop'].value_counts(dropna=False).to_dict()}")
+except Exception:
+    pass
 matched_final = out["opp_pitcher_name"].notna().sum() if "opp_pitcher_name" in out.columns else 0
 print(f"🧾 Opp pitcher populated on {matched_final} of {len(out)} output rows")
