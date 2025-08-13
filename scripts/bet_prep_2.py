@@ -1,9 +1,10 @@
-# scripts/bet_prep_2.py
+#!/usr/bin/env python3
 import pandas as pd
 import numpy as np
 from datetime import datetime
 from pathlib import Path
 from glob import glob
+import re
 
 SCHED_IN   = Path("data/bets/mlb_sched.csv")
 SOURCE_IN  = Path("data/_projections/batter_props_z_expanded.csv")  # will auto-pick newest * if this exact file not present
@@ -19,8 +20,9 @@ def first_col(df: pd.DataFrame, *cands: str) -> str | None:
     for c in cands:
         if c in df.columns:
             return c
-        if c.lower() in lower:
-            return lower[c.lower()]
+        lc = c.lower()
+        if lc in lower:
+            return lower[lc]
     return None
 
 def pick_source() -> Path:
@@ -65,6 +67,7 @@ def build_long_from_projections(df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     keep_cols = id_cols + used
     base = df[keep_cols].copy()
 
+    # wide -> long
     long = base.melt(id_vars=id_cols, var_name="src_col", value_name="value")
     long = long.dropna(subset=["value"])
     long["value"] = pd.to_numeric(long["value"], errors="coerce")
@@ -81,6 +84,19 @@ def build_long_from_projections(df: pd.DataFrame) -> tuple[pd.DataFrame, list]:
     preferred = ["player_id","name","team","date","game_id","prop","line","value","src_col"]
     ordered = [c for c in preferred if c in long.columns] + [c for c in long.columns if c not in preferred]
     return long[ordered], used
+
+def infer_prop_from_src(src: str) -> str:
+    x = str(src).lower()
+    # hits
+    if re.search(r'(proj_)?hits|total_hits_projection', x):
+        return 'hits'
+    # home runs
+    if re.search(r'(proj_)?hr|avg_hr|home[_ ]?runs?', x):
+        return 'home_runs'
+    # total bases
+    if re.search(r'(total_bases_projection|b_total_bases|total[_ ]?bases)', x):
+        return 'total_bases'
+    return ''
 
 def main():
     # --- load
@@ -139,6 +155,21 @@ def main():
         built = True
         if used:
             mapped = used
+
+        # Backfill prop from src_col when blank
+        if "src_col" in out.columns:
+            mask_blank = out["prop"].isna() | (out["prop"].astype(str).str.strip() == "")
+            if mask_blank.any():
+                out.loc[mask_blank, "prop"] = out.loc[mask_blank, "src_col"].map(infer_prop_from_src)
+
+        # Final clean-up: drop rows still blank on prop
+        out["prop"] = out["prop"].fillna("").astype(str).str.strip()
+        dropped_empty_prop = int((out["prop"] == "").sum())
+        if dropped_empty_prop > 0:
+            before = len(out)
+            out = out[out["prop"] != ""].copy()
+            after = len(out)
+            print(f"⚠️ Dropped {dropped_empty_prop} rows with empty prop (kept {after}/{before}).")
 
     # --- meta/defaults
     defaults = {
