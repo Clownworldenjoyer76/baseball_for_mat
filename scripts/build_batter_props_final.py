@@ -30,17 +30,6 @@ def poisson_p_ge(k: int, lam: float) -> float:
         cdf += term
     return max(0.0, 1.0 - cdf)
 
-def z_by_group(df: pd.DataFrame, value_col: str, group_cols: list) -> pd.Series:
-    """Standard score within each prop group to keep scales comparable."""
-    def _z(g):
-        v = pd.to_numeric(g[value_col], errors="coerce")
-        mu = v.mean()
-        sd = v.std(ddof=0)
-        if sd == 0 or np.isnan(sd):
-            return pd.Series([0.0] * len(g), index=g.index)
-        return (v - mu) / sd
-    return df.groupby(group_cols, group_keys=False).apply(_z)
-
 def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
     """
     Ensure columns exist and coerce types.
@@ -144,7 +133,7 @@ pit_one = pit_one[keep_pit_cols].rename(columns={
 # attach opponent pitcher by opp_team
 bat = bat.merge(pit_one, on="opp_team", how="left")
 
-# -------- HARD SAFETY: guarantee 'prop' exists right before grouping --------
+# -------- HARD SAFETY: guarantee 'prop', 'value' before grouping --------
 if "prop" not in bat.columns:
     if "prop_type" in bat.columns:
         bat["prop"] = bat["prop_type"].astype(str).str.strip()
@@ -153,9 +142,20 @@ if "prop" not in bat.columns:
         bat["prop"] = ""
         print("⚠️ Recreated empty 'prop' (post-merge).")
 bat["prop"] = bat["prop"].fillna("").astype(str).str.strip()
+bat["value"] = pd.to_numeric(bat.get("value", np.nan), errors="coerce")
 
-# -------- compute batter z per prop --------
-bat["batter_z"] = z_by_group(bat, value_col="value", group_cols=["prop"])
+# -------- compute batter z per prop (transform -> 1D Series) --------
+def _z_transform(s: pd.Series) -> pd.Series:
+    sd = s.std(ddof=0)
+    if sd == 0 or not np.isfinite(sd):
+        return pd.Series([0.0] * len(s), index=s.index)
+    return (s - s.mean()) / sd
+
+bat["batter_z"] = (
+    bat.groupby("prop", dropna=False)["value"]
+       .transform(_z_transform)
+       .astype(float)
+)
 
 # -------- combined mega_z --------
 W = 0.5
