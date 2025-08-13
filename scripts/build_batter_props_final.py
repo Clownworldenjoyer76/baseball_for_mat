@@ -46,6 +46,18 @@ def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     return created
 
+def ensure_prop(df: pd.DataFrame, when: str) -> None:
+    """Guarantee df['prop'] exists and is string-trimmed."""
+    if "prop" not in df.columns:
+        if "prop_type" in df.columns:
+            df["prop"] = _norm(df["prop_type"].astype(str))
+            print(f"ℹ️ [{when}] Created 'prop' from 'prop_type'.")
+        else:
+            df["prop"] = ""
+            print(f"⚠️ [{when}] Created empty 'prop' (no 'prop' or 'prop_type').")
+    else:
+        df["prop"] = _norm(df["prop"].astype(str))
+
 # ---------------- load ----------------
 if not BATTER_IN.exists():
     raise SystemExit(f"❌ Missing {BATTER_IN}")
@@ -63,23 +75,15 @@ bat.columns = [c.strip() for c in bat.columns]
 sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
-# -------- HARD GUARANTEE: make 'prop' exist BEFORE any access --------
-if "prop" not in bat.columns:
-    if "prop_type" in bat.columns:
-        bat["prop"] = _norm(bat["prop_type"].astype(str))
-        print("ℹ️ Created 'prop' from 'prop_type'.")
-    else:
-        bat["prop"] = ""
-        print("⚠️ Created empty 'prop' (no 'prop' or 'prop_type').")
-else:
-    bat["prop"] = _norm(bat["prop"].astype(str))
+# ---- FIRST GUARANTEE: prop exists immediately after load
+ensure_prop(bat, when="post-load")
 
-# ensure key columns/types
+# ensure other key cols/types
 created = ensure_columns(bat, {
     "player_id": ("str", ""),
     "name":      ("str", ""),
     "team":      ("str", ""),
-    "prop":      ("str", ""),
+    "prop":      ("str", ""),   # re-ensure string type
     "line":      ("num", np.nan),
     "value":     ("num", np.nan),
 })
@@ -151,14 +155,16 @@ if unmatched_rows:
     )
     print(f"🔎 Unmatched by opp_team (top): {top_unmatched}")
 
-# ---------------- safety: drop blank prop rows ----------------
-bat["prop"] = bat["prop"].fillna("").astype(str).str.strip()
-empty_prop_rows = int((bat["prop"] == "").sum())
-if empty_prop_rows > 0:
+# ---- SECOND GUARANTEE: ensure prop still present before any access/groupby
+ensure_prop(bat, when="pre-zscores")
+
+# drop blank prop rows (cannot compute z by empty group)
+blank_prop = int((bat["prop"] == "").sum())
+if blank_prop > 0:
     before = len(bat)
     bat = bat[bat["prop"] != ""].copy()
     after = len(bat)
-    print(f"⚠️ Removed {empty_prop_rows} rows with blank prop before z-scores (kept {after}/{before}).")
+    print(f"⚠️ Removed {blank_prop} rows with blank prop before z-scores (kept {after}/{before}).")
 
 # ensure numeric for calc
 bat["value"] = pd.to_numeric(bat.get("value", np.nan), errors="coerce")
