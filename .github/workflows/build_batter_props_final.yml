@@ -1,0 +1,64 @@
+name: Build Batter Props Final
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-batter-props-final:
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install "pandas==2.2.2"
+          fi
+
+      - name: Git safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git config --global pull.rebase true
+
+      - name: Run build_batter_props_final.py
+        run: python scripts/build_batter_props_final.py
+
+      - name: Commit and Push Changes (rebase-safe)
+        shell: bash
+        run: |
+          set -e
+          git add data/bets/prep/batter_props_final.csv
+          if [[ -z "$(git status --porcelain data/bets/prep/batter_props_final.csv)" ]]; then
+            echo "No batter-props changes to commit."
+            exit 0
+          fi
+          git commit -m "Automated batter props final update"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          for attempt in 1 2; do
+            echo "Attempt $attempt: syncing with origin/$BRANCH..."
+            git fetch origin
+            git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+            if git push origin "HEAD:$BRANCH"; then
+              echo "Push succeeded."
+              break
+            else
+              echo "Push rejected (non-fast-forward). Retrying..."
+              sleep 2
+            fi
+          done
