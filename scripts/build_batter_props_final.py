@@ -47,16 +47,16 @@ def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
     return created
 
 def ensure_prop(df: pd.DataFrame, when: str) -> None:
-    """Guarantee df['prop'] exists and is string-trimmed."""
-    if "prop" not in df.columns:
-        if "prop_type" in df.columns:
-            df["prop"] = _norm(df["prop_type"].astype(str))
-            print(f"ℹ️ [{when}] Created 'prop' from 'prop_type'.")
-        else:
-            df["prop"] = ""
-            print(f"⚠️ [{when}] Created empty 'prop' (no 'prop' or 'prop_type').")
-    else:
+    """Guarantee df['prop'] exists; do not overwrite if already present."""
+    if "prop" in df.columns:
         df["prop"] = _norm(df["prop"].astype(str))
+        return
+    if "prop_type" in df.columns:
+        df["prop"] = _norm(df["prop_type"].astype(str))
+        print(f"ℹ️ [{when}] Created 'prop' from 'prop_type'.")
+    else:
+        df["prop"] = ""
+        print(f"⚠️ [{when}] Created empty 'prop' (no 'prop' or 'prop_type').")
 
 # ---------------- load ----------------
 if not BATTER_IN.exists():
@@ -75,7 +75,7 @@ bat.columns = [c.strip() for c in bat.columns]
 sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
-# ---- FIRST GUARANTEE: prop exists immediately after load
+# ---- make sure 'prop' exists right after load (no overwrite if present)
 ensure_prop(bat, when="post-load")
 
 # ensure other key cols/types
@@ -125,10 +125,14 @@ if "mega_z" in pit.columns:
 else:
     pit_one = pit.groupby("team", as_index=False).head(1)
 
+# IMPORTANT: exclude pitcher's 'prop' to avoid clobbering batter 'prop'
 keep_pit_cols = [c for c in
-    ["team", "name", "prop", "mega_z", "z_score",
+    ["team", "name",               # <- keep
+     # "prop",                     # <- DO NOT keep; prevents prop_x/prop_y collision
+     "mega_z", "z_score",
      "over_probability", "line", "value"]
     if c in pit_one.columns]
+
 pit_one = pit_one[keep_pit_cols].rename(columns={
     "team":  "opp_team",
     "name":  "opp_pitcher_name",
@@ -155,16 +159,19 @@ if unmatched_rows:
     )
     print(f"🔎 Unmatched by opp_team (top): {top_unmatched}")
 
-# ---- SECOND GUARANTEE: ensure prop still present before any access/groupby
+# ---- re-assert 'prop' exists (in case earlier merges altered columns)
 ensure_prop(bat, when="pre-zscores")
 
-# drop blank prop rows (cannot compute z by empty group)
-blank_prop = int((bat["prop"] == "").sum())
-if blank_prop > 0:
+# Drop blank-prop rows only if some are blank (but not all)
+blank_mask = bat["prop"].eq("")
+blank_count = int(blank_mask.sum())
+if blank_count and not blank_mask.all():
     before = len(bat)
-    bat = bat[bat["prop"] != ""].copy()
+    bat = bat[~blank_mask].copy()
     after = len(bat)
-    print(f"⚠️ Removed {blank_prop} rows with blank prop before z-scores (kept {after}/{before}).")
+    print(f"⚠️ Removed {blank_count} rows with blank prop before z-scores (kept {after}/{before}).")
+elif blank_mask.all():
+    print("⚠️ All rows have blank 'prop' — keeping rows (no drop).")
 
 # ensure numeric for calc
 bat["value"] = pd.to_numeric(bat.get("value", np.nan), errors="coerce")
