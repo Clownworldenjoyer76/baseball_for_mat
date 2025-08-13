@@ -1,4 +1,4 @@
-# scripts/build_batter_props_final.py
+#!/usr/bin/env python3
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -156,15 +156,16 @@ if unmatched_rows:
     )
     print(f"🔎 Unmatched by opp_team (top): {top_unmatched}")
 
-# -------- HARD SAFETY: guarantee 'prop' & 'value' before grouping --------
-if "prop" not in bat.columns:
-    if "prop_type" in bat.columns:
-        bat["prop"] = bat["prop_type"].astype(str).str.strip()
-        print("ℹ️ Recreated 'prop' from 'prop_type' (post-merge).")
-    else:
-        bat["prop"] = ""
-        print("⚠️ Recreated empty 'prop' (post-merge).")
+# -------- HARD SAFETY: remove rows with blank prop before z-scores --------
 bat["prop"] = bat["prop"].fillna("").astype(str).str.strip()
+empty_prop_rows = int((bat["prop"] == "").sum())
+if empty_prop_rows > 0:
+    before = len(bat)
+    bat = bat[bat["prop"] != ""].copy()
+    after = len(bat)
+    print(f"⚠️ Removed {empty_prop_rows} rows with blank prop before z-scores (kept {after}/{before}).")
+
+# ensure value numeric
 bat["value"] = pd.to_numeric(bat.get("value", np.nan), errors="coerce")
 
 # -------- compute batter z per prop (transform -> 1D Series) --------
