@@ -22,7 +22,7 @@ except FileNotFoundError as e:
     print(f"Error: {e}. Please ensure input files are in the correct directory.")
     raise SystemExit(1)
 
-# -------- STEP 1: Normalize team names using team_name_master (clean_team_name -> team_name) --------
+# -------- STEP 1: Normalize team names using team_name_master --------
 team_map_df['clean_team_name'] = team_map_df['clean_team_name'].astype(str).str.strip().str.lower()
 team_map_df['team_name'] = team_map_df['team_name'].astype(str).str.strip()
 
@@ -30,7 +30,6 @@ if 'team' not in pitcher_df.columns:
     pitcher_df['team'] = ''
 
 pitcher_df['_team_norm'] = pitcher_df['team'].astype(str).str.strip().str.lower()
-
 pitcher_df = pitcher_df.merge(
     team_map_df[['clean_team_name', 'team_name']].rename(
         columns={'clean_team_name': '_team_norm', 'team_name': '_team_mapped'}
@@ -38,11 +37,10 @@ pitcher_df = pitcher_df.merge(
     on='_team_norm',
     how='left'
 )
-
 pitcher_df['team'] = pitcher_df['_team_mapped'].fillna(pitcher_df['team'])
 pitcher_df.drop(columns=['_team_norm', '_team_mapped'], errors='ignore', inplace=True)
 
-# -------- Merge date and game_id from schedule (using normalized team) --------
+# -------- Merge date and game_id from schedule --------
 mlb_sched_away = mlb_sched_df.rename(columns={'away_team': 'team'})
 mlb_sched_home = mlb_sched_df.rename(columns={'home_team': 'team'})
 mlb_sched_merged = pd.concat([mlb_sched_away, mlb_sched_home], ignore_index=True)
@@ -82,15 +80,26 @@ if 'game_id' in pitcher_df.columns:
     except Exception:
         pitcher_df['game_id'] = pitcher_df['game_id'].astype(str).replace({'nan': ''})
 
-# -------- FINAL STEP: Keep only pitchers who are in today's normalized games --------
+# -------- FINAL STEP: Filter to pitchers in today's games --------
 try:
     tg = pd.read_csv(todays_games_file)
-    # Ensure required columns exist
     for col in ['pitcher_home', 'pitcher_away']:
         if col not in tg.columns:
             tg[col] = ''
-    # Normalize names for matching (case-insensitive, trimmed)
+
     def _norm(s: pd.Series) -> pd.Series:
         return s.astype(str).str.strip().str.casefold()
 
-    todays_pitchers = set(_norm(tg['pitcher_home
+    todays_pitchers = set(_norm(tg['pitcher_home']).tolist() + _norm(tg['pitcher_away']).tolist())
+
+    pitcher_df['_name_norm'] = pitcher_df['name'].astype(str).str.strip().str.casefold()
+    pitcher_df = pitcher_df[pitcher_df['_name_norm'].isin(todays_pitchers)].copy()
+    pitcher_df.drop(columns=['_name_norm'], inplace=True, errors='ignore')
+
+except FileNotFoundError:
+    print(f"Warning: {todays_games_file} not found. No pitchers retained.")
+    pitcher_df = pitcher_df.iloc[0:0].copy()
+
+# -------- Save --------
+pitcher_df.to_csv(output_file, index=False)
+print(f"Saved -> {output_file} (rows: {len(pitcher_df)})")
