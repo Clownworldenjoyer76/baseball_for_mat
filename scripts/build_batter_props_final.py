@@ -43,9 +43,8 @@ def z_by_group(df: pd.DataFrame, value_col: str, group_cols: list) -> pd.Series:
 
 def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
     """
-    Ensure required columns exist and coerce types.
-    spec: {col: ('str'|'num', default_val)}
-    Returns a list of columns that were created.
+    Ensure columns exist and coerce types.
+    spec: {col: ('str'|'num', default_val)}. Returns list of created cols.
     """
     created = []
     for col, (kind, default) in spec.items():
@@ -76,7 +75,7 @@ sch.columns = [c.strip() for c in sch.columns]
 pit.columns = [c.strip() for c in pit.columns]
 
 # -------- make sure batter columns exist (auto-create if missing) --------
-# If no 'prop' but we have 'prop_type', copy it. Otherwise create empty.
+# prefer 'prop' and never rename to prop_type
 if "prop" not in bat.columns:
     if "prop_type" in bat.columns:
         bat["prop"] = bat["prop_type"]
@@ -89,13 +88,13 @@ BAT_SPEC = {
     "player_id": ("str", ""),
     "name":      ("str", ""),
     "team":      ("str", ""),
-    "prop":      ("str", ""),     # we stick with 'prop'
+    "prop":      ("str", ""),
     "line":      ("num", np.nan),
     "value":     ("num", np.nan),
 }
 created = ensure_columns(bat, BAT_SPEC)
 if created:
-    print(f"ℹ️ Auto-created/normalized columns in batter file: {', '.join(created)}")
+    print(f"ℹ️ Auto-created/normalized batter columns: {', '.join(created)}")
 
 # -------- find opponent team via schedule --------
 need = [c for c in ("home_team", "away_team") if c not in sch.columns]
@@ -144,6 +143,16 @@ pit_one = pit_one[keep_pit_cols].rename(columns={
 
 # attach opponent pitcher by opp_team
 bat = bat.merge(pit_one, on="opp_team", how="left")
+
+# -------- HARD SAFETY: guarantee 'prop' exists right before grouping --------
+if "prop" not in bat.columns:
+    if "prop_type" in bat.columns:
+        bat["prop"] = bat["prop_type"].astype(str).str.strip()
+        print("ℹ️ Recreated 'prop' from 'prop_type' (post-merge).")
+    else:
+        bat["prop"] = ""
+        print("⚠️ Recreated empty 'prop' (post-merge).")
+bat["prop"] = bat["prop"].fillna("").astype(str).str.strip()
 
 # -------- compute batter z per prop --------
 bat["batter_z"] = z_by_group(bat, value_col="value", group_cols=["prop"])
