@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Game Props</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/table.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Props</h1>
+    <nav><a href="index.html">Home</a> · <a href="games.html">Games</a></nav>
+  </header>
+  <main>
+    <table id="game-props" class="data-table">
+      <thead><tr>
+        <th>Player</th><th>Team</th><th>Market</th><th>Line</th><th>Odds</th><th>Edge</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const p = new URLSearchParams(location.search);
+      if (typeof renderGameTopProps === 'function') {
+        renderGameTopProps({
+          gameId: p.get('game_id'),
+          homeTeam: p.get('home'),
+          awayTeam: p.get('away'),
+          date: p.get('date')
+        });
+      }
+    });
+  </script>
+</body>
+</html>
