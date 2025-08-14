@@ -219,7 +219,9 @@ bat["mega_z"] = bat["batter_z"] - W * bat["opp_pitcher_mega_z"].fillna(0.0)
 if PROJ_IN.exists():
     try:
         proj = pd.read_csv(PROJ_IN)
-        proj.columns = [c.strip().lower() for c in proj.columns]
+        proj.columns = proj.columns.str.strip().str.lower()
+        # De-duplicate any repeated column names (keep last occurrence)
+        proj = proj.loc[:, ~proj.columns.duplicated(keep="last")]
         # prefer join by player_id if populated on both sides; else (name, team)
         use_id = ("player_id" in bat.columns and "player_id" in proj.columns and
                   bat["player_id"].notna().any() and proj["player_id"].notna().any())
@@ -240,7 +242,7 @@ def _lambda_for_row(row) -> float:
     Choose λ per row:
       - If projections present: use prop-specific λ (proj_hits/proj_hr/proj_slg*AB)
       - Else fallback to original 'value'.
-    Always operates on scalars to avoid 'truth value is ambiguous'.
+    Guardrails reject absurd projection values and scale down unreasonable fallbacks.
     """
     prop = str(_to_scalar(row.get("prop", ""))).lower()
 
@@ -250,14 +252,39 @@ def _lambda_for_row(row) -> float:
     ab        = _to_scalar(row.get("ab",        np.nan))
     val       = _to_scalar(row.get("value",     np.nan))
 
-    if prop == "hits" and pd.notna(proj_hits):
-        return float(proj_hits)
+    def ok(x, lo, hi):
+        try:
+            xf = float(x)
+            return (pd.notna(xf)) and (lo <= xf <= hi)
+        except Exception:
+            return False
 
-    if prop == "home_runs" and pd.notna(proj_hr):
-        return float(proj_hr)
+    # HITS: λ should be ~0–6
+    if prop == "hits":
+        if ok(proj_hits, 0.0, 6.0):
+            return float(proj_hits)
+        # Heuristic fallback from SLG & AB → estimate AVG ≈ SLG / 1.6
+        if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.2) and ok(ab, 0.0, 7.0):
+            est_avg = max(0.0, min(1.0, float(proj_slg) / 1.6))
+            lam = est_avg * float(ab)
+            return max(0.0, min(6.0, lam))
+        # Last resort: scale your 'value' down if it looks like a huge index
+        if pd.notna(val) and float(val) > 6:
+            return float(val) / 30.0
+        return float(val) if pd.notna(val) else np.nan
 
+    # HOME RUNS: λ should be ~0–2
+    if prop == "home_runs":
+        if ok(proj_hr, 0.0, 2.0):
+            return float(proj_hr)
+        if pd.notna(val) and float(val) > 2:
+            return float(val) / 50.0
+        return float(val) if pd.notna(val) else np.nan
+
+    # TOTAL BASES: use SLG * AB; cap to reasonable range
     if prop == "total_bases" and pd.notna(proj_slg) and pd.notna(ab):
-        return float(proj_slg) * float(ab)
+        lam_tb = float(proj_slg) * float(ab)
+        return max(0.0, min(12.0, lam_tb))
 
     return float(val) if pd.notna(val) else np.nan
 
