@@ -7,28 +7,38 @@ import math
 BATTER_IN   = Path("data/bets/prep/batter_props_bets.csv")
 SCHED_IN    = Path("data/bets/mlb_sched.csv")
 PITCHER_IN  = Path("data/bets/prep/pitcher_props_bets.csv")
+# Optional projections (used if present to compute better lambda per prop)
+PROJ_IN     = Path("data/_projections/batter_props_projected.csv")
+
 OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
 
 # ---------------- helpers ----------------
 def _norm(s: pd.Series) -> pd.Series:
     return s.astype(str).str.strip()
 
-def poisson_p_ge(k: int, lam: float) -> float:
-    """Tail P(X>=k) for Poisson(lam)."""
-    if lam is None or lam <= 0:
-        return 0.0 if k > 0 else 1.0
-    if k == 1:
-        return 1.0 - math.exp(-lam)
-    if k == 2:
-        return 1.0 - math.exp(-lam) * (1.0 + lam)
+def poisson_tail_over(line_val: float, lam: float) -> float:
+    """
+    P(X > line) for Poisson(λ) with fractional sportsbook lines:
+      threshold = floor(line) + 1  -> P(X >= threshold) = 1 - P(X <= threshold-1)
+    """
+    try:
+        thr = int(math.floor(float(line_val))) + 1
+    except Exception:
+        return np.nan
+    if lam is None or not np.isfinite(lam):
+        return np.nan
+    lam = float(lam)
+    if thr <= 0:
+        return 1.0
+    # P(X <= k) = sum_{i=0..k} e^-λ λ^i / i!
     term = math.exp(-lam)
-    cdf = term
-    n = 0
-    while n < (k - 1) and term > 1e-12 and n < 200:
-        n += 1
-        term *= lam / n
-        cdf += term
-    return max(0.0, 1.0 - cdf)
+    acc = term
+    for i in range(1, thr):
+        term *= lam / i
+        acc += term
+        if term < 1e-15:
+            break
+    return float(max(0.0, min(1.0, 1.0 - acc)))
 
 def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
     """
@@ -195,16 +205,55 @@ W = 0.5
 bat["opp_pitcher_mega_z"] = pd.to_numeric(bat.get("opp_pitcher_mega_z", np.nan), errors="coerce")
 bat["mega_z"] = bat["batter_z"] - W * bat["opp_pitcher_mega_z"].fillna(0.0)
 
+# ---------------- optional projections join (for better lambda) ----------------
+proj = None
+if PROJ_IN.exists():
+    try:
+        proj = pd.read_csv(PROJ_IN)
+        proj.columns = [c.strip().lower() for c in proj.columns]
+        # prefer join by player_id if populated on both sides; else (name, team)
+        use_id = ("player_id" in bat.columns and "player_id" in proj.columns and
+                  bat["player_id"].notna().any() and proj["player_id"].notna().any())
+        key = ["player_id"] if use_id else ["name", "team"]
+        for k in key:
+            if k in bat.columns:  bat[k]  = _norm(bat[k])
+            if k in proj.columns: proj[k] = _norm(proj[k])
+        keep = [c for c in ["player_id","name","team","ab","proj_hits","proj_hr","proj_slg"] if c in proj.columns]
+        proj_slim = proj[keep].drop_duplicates()
+        bat = bat.merge(proj_slim, on=[k for k in key if k in proj_slim.columns], how="left", suffixes=("", "_proj"))
+        print(f"🧮 Projections join: columns present -> {', '.join([c for c in ['ab','proj_hits','proj_hr','proj_slg'] if c in bat.columns])}")
+    except Exception as e:
+        print(f"⚠️ Projections not used: {e}")
+
 # ---------------- over_probability ----------------
-def _over_prob(row):
+def _lambda_for_row(row) -> float | float:
+    """
+    Choose λ per row:
+      - If projections present: use prop-specific λ (proj_hits/proj_hr/proj_slg*AB)
+      - Else fallback to your original 'value' column
+    """
+    prop = str(row.get("prop", "")).lower()
+    ln   = row.get("line", np.nan)  # not used here but kept for clarity
+    # Projection-based
+    if prop == "hits" and pd.notna(row.get("proj_hits", np.nan)):
+        return float(row["proj_hits"])
+    if prop == "home_runs" and pd.notna(row.get("proj_hr", np.nan)):
+        return float(row["proj_hr"])
+    if prop == "total_bases" and pd.notna(row.get("proj_slg", np.nan)) and pd.notna(row.get("ab", np.nan)):
+        return float(row["proj_slg"]) * float(row["ab"])
+    # Fallback to original behavior
     val = row.get("value", np.nan)
+    return float(val) if pd.notna(val) else np.nan
+
+def _over_prob(row):
     ln  = row.get("line", np.nan)
-    if pd.isna(val) or pd.isna(ln):
+    lam = _lambda_for_row(row)
+    if pd.isna(ln) or pd.isna(lam):
         return np.nan
     try:
-        k = int(math.ceil(float(ln)))
-        lam = max(0.0, float(val))
-        return round(max(0.02, min(0.98, poisson_p_ge(k, lam))), 4)
+        p = poisson_tail_over(ln, lam)
+        # Only clip to [0,1]; NO artificial 0.98 ceiling or 0.02 floor
+        return float(min(max(p, 0.0), 1.0))
     except Exception:
         return np.nan
 
