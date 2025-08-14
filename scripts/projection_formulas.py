@@ -101,15 +101,19 @@ def _prefer_opponent(df: pd.DataFrame, logical_name: str, fallback_col: str) -> 
     """
     Prefer opponent rate if present; otherwise use fallback column (already normalized).
     Expect df to contain either opponent column or the fallback series under fallback_col.
+    Always returns a Series aligned with df's index.
     """
     opp_logical = OPP_PITCHER_PREF.get(logical_name)
-    if not opp_logical:
-        return df[fallback_col]
-    opp_aliases = ALIASES.get(opp_logical, [opp_logical])
-    opp_col = _first_existing(df, opp_aliases)
-    if opp_col and opp_col in df.columns:
-        return _normalize_rate_smart(logical_name, df[opp_col])
-    return df[fallback_col]
+    if opp_logical:
+        opp_aliases = ALIASES.get(opp_logical, [opp_logical])
+        opp_col = _first_existing(df, opp_aliases)
+        if opp_col and opp_col in df.columns:
+            return _normalize_rate_smart(logical_name, df[opp_col])
+    # Fallback: ensure Series
+    fb = df[fallback_col]
+    if not isinstance(fb, pd.Series):
+        fb = pd.Series(fb, index=df.index)
+    return fb
 
 def _ensure_ab_from_pa_bb(df: pd.DataFrame, pa_col: str) -> pd.Series:
     """
@@ -169,10 +173,6 @@ def calculate_all_projections(
       - proj_avg  (H/AB proxy)
       - proj_slg  (per-AB total bases proxy)
       - k_percent_eff, bb_percent_eff (effective rates, opp-adjusted if present)
-
-    Assumptions:
-      - If rates are provided as percentages (0–100), they’re normalized to 0–1.
-      - If rates are missing, derives them from counts when possible.
     """
     # Work on a copy; keep original columns intact
     df = df.copy()
@@ -211,11 +211,30 @@ def calculate_all_projections(
             pd.to_numeric(df[pa_col],  errors="coerce").replace(0, np.nan)
         )
 
-    # Opponent overrides (if present). Build small frames to pass to _prefer_opponent.
-    k_df  = pd.DataFrame({k_col or "k": k_dec})
-    bb_df = pd.DataFrame({bb_col or "bb": bb_dec})
+    # Build small frames to pass to opponent preference; make sure fallbacks are named.
+    k_df  = pd.DataFrame({k_col or "k": k_dec}, index=df.index)
+    bb_df = pd.DataFrame({bb_col or "bb": bb_dec}, index=df.index)
+
+    # Opponent overrides (if present). Always get Series back.
     k_dec_eff  = _prefer_opponent(pd.concat([k_df, df], axis=1), "k_percent",  k_col or "k")
     bb_dec_eff = _prefer_opponent(pd.concat([bb_df, df], axis=1), "bb_percent", bb_col or "bb")
+
+    # ---- SAFEGUARD: ensure Series aligned to df.index before to_numeric ----
+    if not isinstance(k_dec_eff, pd.Series):
+        k_dec_eff = pd.Series(k_dec_eff, index=df.index)
+    if not isinstance(bb_dec_eff, pd.Series):
+        bb_dec_eff = pd.Series(bb_dec_eff, index=df.index)
+
+    df["k_percent_eff"]  = _clip_series(
+        "k_percent",
+        pd.to_numeric(k_dec_eff, errors="coerce")
+    ).round(4)
+
+    df["bb_percent_eff"] = _clip_series(
+        "bb_percent",
+        pd.to_numeric(bb_dec_eff, errors="coerce")
+    ).round(4)
+    # -----------------------------------------------------------------------
 
     # Hits per AB: use column if present, else derive from counts
     h_ab_col = _first_existing(df, ALIASES["hits_per_ab"])
@@ -268,17 +287,13 @@ def calculate_all_projections(
     tb_per_ab = singles_per_ab*1 + doubles_per_ab*2 + triples_per_ab*3 + hr_per_ab*4
     df["proj_slg"] = tb_per_ab.round(3)
 
-    # Effective (possibly opponent-adjusted) displayed rates
-    df["k_percent_eff"]  = _clip_series("k_percent",  pd.to_numeric(k_dec_eff,  errors="coerce")).round(4)
-    df["bb_percent_eff"] = _clip_series("bb_percent", pd.to_numeric(bb_dec_eff, errors="coerce")).round(4)
-
     # Safety: coerce projections to finite numbers
     for c in ["proj_hits", "proj_hr", "proj_avg", "proj_slg"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).replace([np.inf, -np.inf], 0)
 
     return df
 
-# Optional explicit export for linting/static tools
+# Explicit export for linters
 __all__ = [
     "ProjectionConfig",
     "calculate_all_projections",
