@@ -86,12 +86,13 @@ def main():
     # prop_correct blank
     top["prop_correct"] = ""
 
-    # Ensure all output columns exist
-    for col in OUTPUT_COLUMNS:
-        if col not in top.columns:
-            top[col] = ""
+   # Ensure all output columns exist
+   for col in OUTPUT_COLUMNS:
+    if col not in top.columns:
+        top[col] = ""
 
-    # Reorder and persist
-    top = top[OUTPUT_COLUMNS]
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    top.to_csv(OUTPUT
+   # Reorder and persist
+   top = top[OUTPUT_COLUMNS]
+   OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+   top.to_csv(OUTPUT_FILE, index=False)
+   print(f"Saved {len(top)} rows to {OUTPUT_FILE}")
