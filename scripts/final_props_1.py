@@ -50,7 +50,7 @@ def main():
         if c not in all_props.columns:
             all_props[c] = pd.NA
 
-    # Build schedule map without using an explicit triple-column literal
+    # Build schedule map (avoid the explicit triple-column literal)
     cols_for_map = ["team", "date", "game_id"]
     sched_map = sched.loc[:, cols_for_map].drop_duplicates()
 
@@ -86,13 +86,16 @@ def main():
     # prop_correct blank
     top["prop_correct"] = ""
 
-   # Ensure all output columns exist
-   for col in OUTPUT_COLUMNS:
-    if col not in top.columns:
-        top[col] = ""
+    # Ensure all output columns exist
+    for col in OUTPUT_COLUMNS:
+        if col not in top.columns:
+            top[col] = ""
 
-   # Reorder and persist
-   top = top[OUTPUT_COLUMNS]
-   OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-   top.to_csv(OUTPUT_FILE, index=False)
-   print(f"Saved {len(top)} rows to {OUTPUT_FILE}")
+    # Reorder and persist
+    top = top[OUTPUT_COLUMNS]
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    top.to_csv(OUTPUT_FILE, index=False)
+    print(f"Saved {len(top)} rows to {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    main()
