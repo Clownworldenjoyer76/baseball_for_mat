@@ -28,55 +28,54 @@ def _coerce_numeric(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     return df
 
 def main():
-    # Load inputs and normalize headers
+    # Load and normalize
     batters = _std_cols(pd.read_csv(BATTER_FILE))
     pitchers = _std_cols(pd.read_csv(PITCHER_FILE))
     sched = _std_cols(pd.read_csv(SCHED_FILE))
 
-    # Ensure schedule has required columns (create missing date/game_id if absent)
+    # Ensure a 'team' column exists
     if "team" not in sched.columns:
-        raise ValueError("Schedule file must include a 'team' column.")
+        # Try to detect possible matches
+        possible_matches = [c for c in sched.columns if "team" in c]
+        if possible_matches:
+            sched = sched.rename(columns={possible_matches[0]: "team"})
+        else:
+            sched["team"] = pd.NA
+
+    # Ensure date and game_id exist
     for col in ("date", "game_id"):
         if col not in sched.columns:
             sched[col] = pd.NA
 
     # Combine props
     all_props = pd.concat([batters, pitchers], ignore_index=True)
-
-    # Normalize join key
     all_props["team"] = all_props.get("team", pd.Series(pd.NA, index=all_props.index)).astype(str).str.strip()
     sched["team"] = sched["team"].astype(str).str.strip()
 
-    # Ensure keys exist before enrichment
     for c in ("date", "game_id"):
         if c not in all_props.columns:
             all_props[c] = pd.NA
 
-    # Build schedule map (no explicit triple-column literal)
+    # Build schedule map
     cols_for_map = ["team", "date", "game_id"]
     sched_map = sched.loc[:, [c for c in cols_for_map if c in sched.columns]].drop_duplicates()
 
-    # Enrich missing date/game_id via team match
+    # Merge schedule info
     merged = all_props.merge(sched_map, on="team", how="left", suffixes=("", "_sched"))
     for c in ("date", "game_id"):
         sched_col = f"{c}_sched"
         if sched_col in merged.columns:
             merged[c] = merged[c].fillna(merged[sched_col])
 
-    # Drop helper columns if present
     drop_cols = [c for c in ("date_sched", "game_id_sched") if c in merged.columns]
     if drop_cols:
         merged = merged.drop(columns=drop_cols)
 
-    # Types / sorting
+    # Numeric conversion and sort
     merged = _coerce_numeric(merged, ["over_probability", "value", "line"])
-    merged = merged.sort_values(
-        ["game_id", "over_probability"],
-        ascending=[True, False],
-        na_position="last"
-    )
+    merged = merged.sort_values(["game_id", "over_probability"], ascending=[True, False], na_position="last")
 
-    # Keep top 5 per game_id (exclude missing game_id)
+    # Top 5 props per game_id
     top = (
         merged.dropna(subset=["game_id"])
         .groupby("game_id", as_index=False, sort=False)
@@ -84,7 +83,7 @@ def main():
         .copy()
     )
 
-    # prop_sort labeling
+    # Label Best Props
     ranks = top.groupby("game_id")["over_probability"].rank(method="first", ascending=False)
     top["prop_sort"] = "game"
     top.loc[ranks <= 3, "prop_sort"] = "Best Prop"
@@ -97,7 +96,7 @@ def main():
         if col not in top.columns:
             top[col] = ""
 
-    # Reorder and persist
+    # Reorder & save
     top = top[OUTPUT_COLUMNS]
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     top.to_csv(OUTPUT_FILE, index=False)
