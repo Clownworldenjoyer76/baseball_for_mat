@@ -28,21 +28,23 @@ def _coerce_numeric(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     return df
 
 def main():
-    # Load inputs
+    # Load inputs and normalize headers
     batters = _std_cols(pd.read_csv(BATTER_FILE))
     pitchers = _std_cols(pd.read_csv(PITCHER_FILE))
     sched = _std_cols(pd.read_csv(SCHED_FILE))
 
-    # Basic validation
-    if "team" not in batters.columns and "team" not in pitchers.columns:
-        raise ValueError("Props inputs must include a 'team' column.")
-    for req in ("team", "date", "game_id"):
-        if req not in sched.columns:
-            raise ValueError("Schedule file must include: team, date, game_id.")
+    # Ensure schedule has required columns (create missing date/game_id if absent)
+    if "team" not in sched.columns:
+        raise ValueError("Schedule file must include a 'team' column.")
+    for col in ("date", "game_id"):
+        if col not in sched.columns:
+            sched[col] = pd.NA
 
     # Combine props
     all_props = pd.concat([batters, pitchers], ignore_index=True)
-    all_props["team"] = all_props["team"].astype(str).str.strip()
+
+    # Normalize join key
+    all_props["team"] = all_props.get("team", pd.Series(pd.NA, index=all_props.index)).astype(str).str.strip()
     sched["team"] = sched["team"].astype(str).str.strip()
 
     # Ensure keys exist before enrichment
@@ -50,14 +52,18 @@ def main():
         if c not in all_props.columns:
             all_props[c] = pd.NA
 
-    # Build schedule map (avoid the explicit triple-column literal)
+    # Build schedule map (no explicit triple-column literal)
     cols_for_map = ["team", "date", "game_id"]
-    sched_map = sched.loc[:, cols_for_map].drop_duplicates()
+    sched_map = sched.loc[:, [c for c in cols_for_map if c in sched.columns]].drop_duplicates()
 
     # Enrich missing date/game_id via team match
     merged = all_props.merge(sched_map, on="team", how="left", suffixes=("", "_sched"))
     for c in ("date", "game_id"):
-        merged[c] = merged[c].fillna(merged[f"{c}_sched"])
+        sched_col = f"{c}_sched"
+        if sched_col in merged.columns:
+            merged[c] = merged[c].fillna(merged[sched_col])
+
+    # Drop helper columns if present
     drop_cols = [c for c in ("date_sched", "game_id_sched") if c in merged.columns]
     if drop_cols:
         merged = merged.drop(columns=drop_cols)
