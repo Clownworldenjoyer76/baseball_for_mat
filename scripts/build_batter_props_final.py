@@ -8,7 +8,6 @@ BATTER_IN   = Path("data/bets/prep/batter_props_bets.csv")
 SCHED_IN    = Path("data/bets/mlb_sched.csv")
 PITCHER_IN  = Path("data/bets/prep/pitcher_props_bets.csv")
 PROJ_IN     = Path("data/_projections/batter_props_projected.csv")  # optional
-
 OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
 
 # ---------------- helpers ----------------
@@ -44,7 +43,7 @@ def poisson_tail_over(line_val: float, lam: float) -> float:
     for i in range(1, thr):
         term *= lam / i
         acc += term
-        if term < 1e-15:
+        if term < 1e-15:  # early break for stability
             break
     return float(min(max(1.0 - acc, 0.0), 1.0))
 
@@ -260,7 +259,7 @@ def _lambda_for_row(row) -> float:
     if prop == "hits":
         if ok(proj_hits, 0.0, 6.0):
             return float(proj_hits)
-        if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.2) and ok(ab, 0.0, 7.0):
+        if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.6) and ok(ab, 0.0, 7.0):
             est_avg = max(0.0, min(1.0, float(proj_slg) / 1.6))
             return max(0.0, min(6.0, est_avg * float(ab)))
         if pd.notna(val):
@@ -275,7 +274,7 @@ def _lambda_for_row(row) -> float:
             return max(0.0, min(2.0, float(val)))
         return np.nan
 
-    # TOTAL BASEES: λ ≈ SLG * AB; cap to 0–12
+    # TOTAL BASES: λ ≈ SLG * AB; cap to 0–12
     if prop == "total_bases":
         if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.6) and ok(ab, 0.0, 7.0):
             return max(0.0, min(12.0, float(proj_slg) * float(ab)))
@@ -302,15 +301,11 @@ def _over_prob(row):
 # Compute probabilities
 bat["over_probability"] = bat.apply(_over_prob, axis=1)
 
-# If you want to inspect λ used, uncomment the next line:
-# bat["lambda_used"] = bat.apply(_lambda_for_row, axis=1)
-
 # ---------------- order + save ----------------
 out_cols = [
     "player_id","name","team","prop","line","value",
     "batter_z","mega_z","over_probability",
-    "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z",
-    # "lambda_used",  # <- uncomment if you want to export it for QA
+    "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z"
 ]
 out_cols = [c for c in out_cols if c in bat.columns]
 out = bat[out_cols].copy()
