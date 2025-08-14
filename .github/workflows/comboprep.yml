@@ -162,15 +162,31 @@ jobs:
       - name: Run final_scores_1.py
         run: python scripts/final_scores_1.py
 
-      - name: Commit & push (game_props_history.csv)
+      # Always create a tiny digest so there's something to commit even if the CSV is unchanged
+      - name: Write run digest (forces a commit without changing CSV)
+        run: |
+          set -e
+          mkdir -p data/bets/.meta
+          {
+            echo "run_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            if [ -f data/bets/game_props_history.csv ]; then
+              if command -v sha256sum >/dev/null 2>&1; then
+                sha256sum data/bets/game_props_history.csv
+              else
+                shasum -a 256 data/bets/game_props_history.csv
+              fi
+            fi
+          } > data/bets/.meta/final_scores_run.txt
+
+      - name: Commit & push (game_props_history.csv + digest)
         shell: bash
         run: |
           set -e
-          git add data/bets/game_props_history.csv
-          if [[ -z "$(git status --porcelain data/bets/game_props_history.csv)" ]]; then
-            echo "No game_props_history changes to commit."
+          git add data/bets/game_props_history.csv data/bets/.meta/final_scores_run.txt
+          if [[ -z "$(git status --porcelain data/bets/game_props_history.csv data/bets/.meta/final_scores_run.txt)" ]]; then
+            echo "No game props changes to commit."
           else
-            git commit -m "final_scores_1: update game_props_history.csv"
+            git commit -m "final_scores_1: update history (and run digest)"
             BRANCH="${GITHUB_REF_NAME:-main}"
             for attempt in 1 2; do
               echo "Attempt $attempt: syncing with origin/$BRANCH..."
