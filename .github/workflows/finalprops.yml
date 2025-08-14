@@ -1,0 +1,87 @@
+name: Run Final Props 1
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-final-props-1:
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install "pandas==2.2.2" numpy
+          fi
+
+      - name: Git safe directory
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git config --global pull.rebase true
+
+      - name: Snapshot pre-run line count
+        id: count_before
+        run: |
+          FILE="data/bets/player_props_history.csv"
+          BEFORE=$( [ -f "$FILE" ] && (wc -l < "$FILE") || echo 0 )
+          echo "before_count=$BEFORE" >> $GITHUB_OUTPUT
+
+      - name: Execute final_props_1.py
+        run: python scripts/final_props_1.py
+
+      - name: Snapshot post-run line count
+        id: count_after
+        run: |
+          FILE="data/bets/player_props_history.csv"
+          AFTER=$( [ -f "$FILE" ] && (wc -l < "$FILE") || echo 0 )
+          echo "after_count=$AFTER" >> $GITHUB_OUTPUT
+
+      - name: Show delta
+        run: |
+          echo "Lines before: ${{ steps.count_before.outputs.before_count }}"
+          echo "Lines after:  ${{ steps.count_after.outputs.after_count }}"
+          echo "Change:       $(( ${{ steps.count_after.outputs.after_count }} - ${{ steps.count_before.outputs.before_count }} ))"
+
+      - name: Commit and Push Changes
+        shell: bash
+        run: |
+          set -e
+          git add data/bets/player_props_history.csv
+          if [[ -z "$(git status --porcelain data/bets/player_props_history.csv)" ]]; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Automated final_props_1 update"
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          for attempt in 1 2; do
+            echo "Attempt $attempt: syncing with origin/$BRANCH..."
+            git fetch origin
+            git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+            if git push origin "HEAD:$BRANCH"; then
+              echo "Push succeeded."
+              break
+            else
+              echo "Push rejected (non-fast-forward). Retrying..."
+              sleep 2
+            fi
+          done
