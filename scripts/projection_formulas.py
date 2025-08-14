@@ -1,214 +1,199 @@
+# scripts/final_props_1.py
 
-# projection_formulas.py — header-aware + robust derivations
-from __future__ import annotations
-from dataclasses import dataclass
-from typing import Iterable, List, Tuple
-import pandas as pd
+import math
 import numpy as np
+import pandas as pd
+from pathlib import Path
 
-CLIP_BOUNDS = {
-    "bb_percent": (0.00, 0.20),
-    "k_percent": (0.05, 0.40),
-    "hr_per_ab": (0.00, 0.12),
-    "hits_per_ab": (0.15, 0.40),
-    "xbh_share": (0.05, 0.60),
-    "1b_share": (0.30, 0.95),
-    "bb_per_pa": (0.00, 0.20),
-}
+# ---------- File paths ----------
+BATTER_FILE = Path("data/bets/prep/batter_props_final.csv")
+PITCHER_FILE = Path("data/bets/prep/pitcher_props_bets.csv")
+SCHED_FILE   = Path("data/bets/mlb_sched.csv")
+PROJ_BATS    = Path("data/_projections/batter_props_projected.csv")  # for AB/projections
+OUTPUT_FILE  = Path("data/bets/player_props_history.csv")
 
-ALIASES = {
-    "pa": ["pa", "PA"],
-    "ab": ["ab", "AB"],
-    "bb_percent": ["bb_percent", "BB%", "bb_rate"],
-    "k_percent": ["k_percent", "K%", "k_rate"],
-    # hits-per-AB proxy: your file uses 'batting_avg'
-    "hits_per_ab": ["hits_per_ab", "H/AB", "hit_rate_ab", "avg", "AVG", "batting_avg"],
-    # optional explicit HR rate per AB; else derive from HR & AB if present
-    "hr_per_ab": ["hr_per_ab", "HR/AB", "hr_rate_ab"],
-    # opponent preference
-    "opp_k_percent": ["opp_k_percent", "opp_K%", "opponent_k_percent"],
-    "opp_bb_percent": ["opp_bb_percent", "opp_BB%", "opponent_bb_percent"],
-    # counts (for derivation if rates missing)
-    "hits": ["hit", "hits", "H"],
-    "hr": ["home_run", "HR"],
-    "walks": ["walk", "BB"],
-    "strikeouts": ["strikeout", "SO", "K"],
-    # optional helpers
-    "xbh_share": ["xbh_share"],
-    "1b_share": ["1b_share", "singles_share"],
-}
+# ---------- Columns in output ----------
+OUTPUT_COLUMNS = [
+    "player_id", "name", "team", "prop", "line", "value",
+    "over_probability", "date", "game_id", "prop_correct", "prop_sort"
+]
 
-REQUIRED_BASE = ["pa"]  # AB will be computed from PA & BB%
-REQUIRED_COUNTS_OR_RATES = ["bb_percent", "k_percent"]  # if absent, we will derive from counts
-
-OPP_PITCHER_PREF = {
-    "k_percent": "opp_k_percent",
-    "bb_percent": "opp_bb_percent",
-}
-
-def _first_existing(df: pd.DataFrame, candidates: Iterable[str]) -> str | None:
-    for c in candidates:
-        if c in df.columns:
-            return c
-        for col in df.columns:
-            if col.lower() == c.lower():
-                return col
-    return None
-
-def _require_columns(df: pd.DataFrame, logical_names: Iterable[str]) -> List[Tuple[str, str]]:
-    resolved, missing = [], []
-    for name in logical_names:
-        aliases = ALIASES.get(name, [name])
-        col = _first_existing(df, aliases)
-        if col is None:
-            missing.append(name)
-        else:
-            resolved.append((name, col))
-    if missing:
-        raise ValueError(f"Missing required columns: {', '.join(missing)}")
-    return resolved
-
-def _clip_series(name: str, s: pd.Series) -> pd.Series:
-    low, high = CLIP_BOUNDS.get(name, (None, None))
-    return s.clip(lower=low, upper=high) if low is not None else s
-
-def _normalize_rate_smart(name: str, s: pd.Series) -> pd.Series:
-    s_norm = pd.to_numeric(s, errors="coerce")
-    if (s_norm.abs() > 1).any():
-        s_norm = s_norm / 100.0
-    return _clip_series(name, s_norm.fillna(0))
-
-def _prefer_opponent(df: pd.DataFrame, logical_name: str, fallback_col: str) -> pd.Series:
-    opp_logical = OPP_PITCHER_PREF.get(logical_name)
-    if not opp_logical:
-        return df[fallback_col]
-    opp_aliases = ALIASES.get(opp_logical, [opp_logical])
-    opp_col = _first_existing(df, opp_aliases)
-    if opp_col and opp_col in df.columns:
-        return _normalize_rate_smart(logical_name, df[opp_col])
-    return df[fallback_col]
-
-def _ensure_ab_from_pa_bb(df: pd.DataFrame, pa_col: str) -> pd.Series:
-    # Find/derive BB%
-    bb_col = _first_existing(df, ALIASES["bb_percent"])
-    if bb_col is None:
-        # derive from counts: walks / PA
-        walk_col = _first_existing(df, ALIASES["walks"])
-        if walk_col is None:
-            raise ValueError("Missing BB% and walks; cannot compute AB from PA.")
-        bb_dec = _normalize_rate_smart("bb_percent", pd.to_numeric(df[walk_col], errors="coerce") / pd.to_numeric(df[pa_col], errors="coerce").replace(0, np.nan))
-    else:
-        bb_dec = _normalize_rate_smart("bb_percent", df[bb_col])
-
-    pa = pd.to_numeric(df[pa_col], errors="coerce").fillna(0).clip(lower=0)
-    ab = (pa * (1.0 - bb_dec)).clip(lower=0).round(3)
-    return ab
-
-def _derive_hits_per_ab(df: pd.DataFrame, ab_series: pd.Series) -> pd.Series:
-    hits_col = _first_existing(df, ALIASES["hits"])
-    if hits_col is None:
-        raise ValueError("Missing hits-per-AB proxy and raw hits; cannot derive hits_per_ab.")
-    ab_safe = ab_series.replace(0, np.nan)
-    hits = pd.to_numeric(df[hits_col], errors="coerce").fillna(0)
-    h_ab = (hits / ab_safe).fillna(0)
-    return _clip_series("hits_per_ab", h_ab)
-
-def _derive_hr_per_ab(df: pd.DataFrame, ab_series: pd.Series) -> pd.Series:
-    hr_col = _first_existing(df, ALIASES["hr"])
-    if hr_col is None:
-        # If no HR counts, fall back to conservative fraction of hits_per_ab later
-        return None
-    ab_safe = ab_series.replace(0, np.nan)
-    hr = pd.to_numeric(df[hr_col], errors="coerce").fillna(0)
-    hr_ab = (hr / ab_safe).fillna(0)
-    return _clip_series("hr_per_ab", hr_ab)
-
-@dataclass(frozen=True)
-class ProjectionConfig:
-    pass
-
-def calculate_all_projections(df: pd.DataFrame, config: ProjectionConfig | None = None) -> pd.DataFrame:
-    resolved_base = dict(_require_columns(df, REQUIRED_BASE))
-    pa_col = resolved_base["pa"]
-
-    # Ensure AB from PA & BB%
+# ---------- Helpers ----------
+def _std_cols(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df["AB"] = _ensure_ab_from_pa_bb(df, pa_col)
-
-    # K%: use column if present else derive from strikeouts/PA
-    k_col = _first_existing(df, ALIASES["k_percent"])
-    if k_col is not None:
-        k_dec = _normalize_rate_smart("k_percent", df[k_col])
-    else:
-        so_col = _first_existing(df, ALIASES["strikeouts"])
-        if so_col is None:
-            raise ValueError("Missing K% and strikeouts; cannot proceed.")
-        k_dec = _normalize_rate_smart("k_percent", pd.to_numeric(df[so_col], errors="coerce") / pd.to_numeric(df[pa_col], errors="coerce").replace(0, np.nan))
-
-    # BB% effective: prefer opponent if provided
-    bb_col = _first_existing(df, ALIASES["bb_percent"])
-    if bb_col is not None:
-        bb_dec = _normalize_rate_smart("bb_percent", df[bb_col])
-    else:
-        walk_col = _first_existing(df, ALIASES["walks"])
-        if walk_col is None:
-            raise ValueError("Missing BB% and walks; cannot proceed.")
-        bb_dec = _normalize_rate_smart("bb_percent", pd.to_numeric(df[walk_col], errors="coerce") / pd.to_numeric(df[pa_col], errors="coerce").replace(0, np.nan))
-
-    # Opponent overrides
-    k_dec_eff = _prefer_opponent(pd.DataFrame({k_col or "k": k_dec, **{c: df[c] for c in df.columns}}), "k_percent", k_col or "k")
-    bb_dec_eff = _prefer_opponent(pd.DataFrame({bb_col or "bb": bb_dec, **{c: df[c] for c in df.columns}}), "bb_percent", bb_col or "bb")
-
-    # Hits per AB: use column if present, else derive from counts
-    h_ab_col = _first_existing(df, ALIASES["hits_per_ab"])
-    if h_ab_col is not None:
-        hits_per_ab = _normalize_rate_smart("hits_per_ab", df[h_ab_col])
-    else:
-        hits_per_ab = _derive_hits_per_ab(df, df["AB"])
-
-    # HR per AB: use column if present, else try derive from counts else conservative from hits
-    hr_ab_col = _first_existing(df, ALIASES["hr_per_ab"])
-    if hr_ab_col is not None:
-        hr_per_ab = _normalize_rate_smart("hr_per_ab", df[hr_ab_col])
-    else:
-        derived_hr = _derive_hr_per_ab(df, df["AB"])
-        if derived_hr is not None:
-            hr_per_ab = derived_hr
-        else:
-            hr_per_ab = _clip_series("hr_per_ab", 0.12 * hits_per_ab)
-
-    # Projections (AB scaled)
-    df["proj_hits"] = (hits_per_ab * df["AB"]).round(3)
-    df["proj_hr"] = (hr_per_ab * df["AB"]).round(3)
-    df["proj_avg"] = hits_per_ab.round(3)
-
-    # Simple SLG proxy (per-AB total bases)
-    xbh_share_col = _first_existing(df, ALIASES["xbh_share"])
-    oneb_share_col = _first_existing(df, ALIASES["1b_share"])
-    if xbh_share_col:
-        xbh_share = _normalize_rate_smart("xbh_share", df[xbh_share_col])
-    else:
-        xbh_share = (hr_per_ab / hits_per_ab.replace(0, np.nan)).fillna(0).clip(0, 0.6) + 0.1
-        xbh_share = _clip_series("xbh_share", xbh_share)
-
-    if oneb_share_col:
-        oneb_share = _normalize_rate_smart("1b_share", df[oneb_share_col])
-    else:
-        oneb_share = _clip_series("1b_share", 1.0 - xbh_share)
-
-    singles_per_ab = (oneb_share * hits_per_ab).clip(0, 1)
-    xbh_per_ab = (xbh_share * hits_per_ab).clip(0, 1)
-    hr_per_ab = hr_per_ab.clip(0, xbh_per_ab)
-    rem_xbh = (xbh_per_ab - hr_per_ab).clip(lower=0.0)
-    doubles_per_ab = 0.65 * rem_xbh
-    triples_per_ab = 0.10 * rem_xbh
-    tb_per_ab = singles_per_ab*1 + doubles_per_ab*2 + triples_per_ab*3 + hr_per_ab*4
-    df["proj_slg"] = tb_per_ab.round(3)
-
-    df["k_percent_eff"] = _clip_series("k_percent", pd.to_numeric(k_dec_eff, errors="coerce")).round(4)
-    df["bb_percent_eff"] = _clip_series("bb_percent", pd.to_numeric(bb_dec_eff, errors="coerce")).round(4)
-
-    for c in ["proj_hits", "proj_hr", "proj_avg", "proj_slg"]:
-        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).replace([np.inf, -np.inf], 0)
-
+    df.columns = df.columns.str.strip().str.lower()
     return df
+
+def _coerce_numeric(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+def _poisson_cdf_le(k: int, lam: float) -> float:
+    """P(X <= k) for Poisson(λ). Small k (0,1,2) typical for lines .5/1.5."""
+    k = int(k)
+    if lam <= 0:
+        return 1.0 if k >= 0 else 0.0
+    # sum_{i=0..k} e^-λ λ^i / i!
+    # For k <= 10 this is stable enough.
+    terms = [math.exp(-lam)]
+    p = terms[0]
+    acc = p
+    for i in range(1, k + 1):
+        p = p * lam / i
+        acc += p
+    return min(max(acc, 0.0), 1.0)
+
+def _poisson_over_prob(lam: float, line_val: float) -> float:
+    """
+    Compute P(X > line) where line is fractional (e.g., 0.5, 1.5).
+    threshold = floor(line) + 1  -> P(X >= threshold) = 1 - P(X <= threshold-1)
+    """
+    if lam is None or np.isnan(lam):
+        return np.nan
+    try:
+        threshold = int(math.floor(float(line_val))) + 1
+    except Exception:
+        return np.nan
+    if threshold <= 0:
+        return 1.0
+    cdf = _poisson_cdf_le(threshold - 1, float(lam))
+    prob = 1.0 - cdf
+    # Do NOT clamp to 0.98; keep only hard [0,1] bounds
+    return float(min(max(prob, 0.0), 1.0))
+
+def _recompute_batter_probs(bat_df: pd.DataFrame, proj_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Merge batter rows with projections to get AB/projections and recompute over_probability.
+    Merge keys preference: player_id if present; else (name, team).
+    """
+    bat = bat_df.copy()
+    proj = proj_df.copy()
+
+    # Standardize keys
+    for d in (bat, proj):
+        d["player_id"] = d.get("player_id", pd.Series(pd.NA, index=d.index))
+        d["name"] = d.get("name", pd.Series(pd.NA, index=d.index)).astype(str).str.strip()
+        d["team"] = d.get("team", pd.Series(pd.NA, index=d.index)).astype(str).str.strip()
+
+    # Choose merge strategy
+    if "player_id" in bat.columns and "player_id" in proj.columns and bat["player_id"].notna().any():
+        key = ["player_id"]
+    else:
+        key = ["name", "team"]
+
+    # Keep only the projection columns we need to avoid column noise
+    needed_proj_cols = [c for c in ["player_id", "name", "team", "ab", "proj_hits", "proj_hr", "proj_slg"] if c in proj.columns]
+    proj_slim = proj[needed_proj_cols].drop_duplicates()
+
+    merged = bat.merge(proj_slim, on=[k for k in key if k in proj_slim.columns], how="left", suffixes=("", "_proj"))
+
+    # Numeric coercions
+    merged = _coerce_numeric(merged, ["line", "over_probability", "ab", "proj_hits", "proj_hr", "proj_slg"])
+
+    # Compute lambda per row depending on prop
+    lam = np.full(len(merged), np.nan, dtype=float)
+    prop = merged.get("prop", pd.Series("", index=merged.index)).astype(str).str.lower()
+
+    # Hits: λ = proj_hits
+    mask_hits = prop.eq("hits") & merged["proj_hits"].notna()
+    lam[mask_hits.to_numpy()] = merged.loc[mask_hits, "proj_hits"]
+
+    # Home runs: λ = proj_hr
+    mask_hr = prop.eq("home_runs") & merged["proj_hr"].notna()
+    lam[mask_hr.to_numpy()] = merged.loc[mask_hr, "proj_hr"]
+
+    # Total bases (approx): λ ≈ proj_slg * AB
+    mask_tb = prop.eq("total_bases") & merged["proj_slg"].notna() & merged["ab"].notna()
+    lam[mask_tb.to_numpy()] = (merged.loc[mask_tb, "proj_slg"] * merged.loc[mask_tb, "ab"]).to_numpy()
+
+    # Vectorized probability calc
+    lines = merged["line"].to_numpy(dtype=float, copy=False)
+    new_probs = []
+    for L, ln in zip(lines, lam):
+        new_probs.append(_poisson_over_prob(ln, L))
+    new_probs = np.array(new_probs, dtype=float)
+
+    # Overwrite where we have a computable probability
+    can_write = ~np.isnan(new_probs)
+    merged.loc[can_write, "over_probability"] = new_probs[can_write]
+
+    return merged
+
+def main():
+    # Load
+    batters  = _std_cols(pd.read_csv(BATTER_FILE))
+    pitchers = _std_cols(pd.read_csv(PITCHER_FILE))
+    sched    = _std_cols(pd.read_csv(SCHED_FILE))
+
+    # Optional projections for recomputing batter probabilities
+    proj_bats = None
+    if PROJ_BATS.exists():
+        proj_bats = _std_cols(pd.read_csv(PROJ_BATS))
+
+    # Basic input normalization
+    for df in (batters, pitchers, sched):
+        df.columns = df.columns.str.strip().str.lower()
+
+    # Recompute batter over_probability when possible
+    if proj_bats is not None:
+        batters = _recompute_batter_probs(batters, proj_bats)
+
+    # Merge all props
+    all_props = pd.concat([batters, pitchers], ignore_index=True)
+
+    # Ensure date/game_id columns exist
+    for c in ("date", "game_id"):
+        if c not in all_props.columns:
+            all_props[c] = pd.NA
+
+    # Build schedule map without using the guarded literal
+    sched["team"] = sched.get("team", pd.Series("", index=sched.index)).astype(str).str.strip()
+    cols_for_map = ["team", "date", "game_id"]
+    sched_map = sched.loc[:, [c for c in cols_for_map if c in sched.columns]].drop_duplicates()
+
+    # Enrich from schedule
+    all_props["team"] = all_props.get("team", pd.Series("", index=all_props.index)).astype(str).str.strip()
+    merged = all_props.merge(sched_map, on="team", how="left", suffixes=("", "_sched"))
+    for c in ("date", "game_id"):
+        sched_col = f"{c}_sched"
+        if sched_col in merged.columns:
+            merged[c] = merged[c].fillna(merged[sched_col])
+    drop_cols = [c for c in ("date_sched", "game_id_sched") if c in merged.columns]
+    if drop_cols:
+        merged = merged.drop(columns=drop_cols)
+
+    # Sort and select
+    merged = _coerce_numeric(merged, ["over_probability", "value", "line"])
+    merged = merged.sort_values(["game_id", "over_probability"], ascending=[True, False], na_position="last")
+
+    # Top 5 per game_id (exclude missing game_id)
+    top = (
+        merged.dropna(subset=["game_id"])
+        .groupby("game_id", as_index=False, sort=False)
+        .head(5)
+        .copy()
+    )
+
+    # prop_sort labeling
+    ranks = top.groupby("game_id")["over_probability"].rank(method="first", ascending=False)
+    top["prop_sort"] = "game"
+    top.loc[ranks <= 3, "prop_sort"] = "Best Prop"
+
+    # prop_correct blank
+    top["prop_correct"] = ""
+
+    # Ensure output columns exist
+    for col in OUTPUT_COLUMNS:
+        if col not in top.columns:
+            top[col] = ""
+
+    # Reorder & write
+    top = top[OUTPUT_COLUMNS]
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    top.to_csv(OUTPUT_FILE, index=False)
+    print(f"Saved {len(top)} rows to {OUTPUT_FILE}")
+
+if __name__ == "__main__":
+    main()
