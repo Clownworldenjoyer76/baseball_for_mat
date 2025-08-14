@@ -13,7 +13,7 @@ jobs:
       TZ: America/New_York
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           persist-credentials: true
@@ -24,45 +24,182 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
+            python -m pip install -r requirements.txt
           else
-            pip install "pandas==2.2.2" numpy
+            python -m pip install "pandas==2.2.2"
           fi
 
-      - name: Git safe directory
+      - name: Git config
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git config --global pull.rebase true
 
+      # ---- Force the correct script contents on the runner ----
+      - name: Write scripts/final_props_1.py
+        run: |
+          mkdir -p scripts
+          cat > scripts/final_props_1.py << 'PY'
+import pandas as pd
+from pathlib import Path
+
+BATTER_FILE = Path("data/bets/prep/batter_props_final.csv")
+PITCHER_FILE = Path("data/bets/prep/pitcher_props_bets.csv")
+SCHED_FILE = Path("data/bets/mlb_sched.csv")
+OUTPUT_FILE = Path("data/bets/player_props_history.csv")
+
+OUT_COLS = [
+    "player_id","name","team","prop","line","value",
+    "over_probability","date","game_id","prop_correct","prop_sort",
+]
+
+def _read_csv(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df.columns = [c.strip().lower() for c in df.columns]
+    return df
+
+def _coerce_numeric(df: pd.DataFrame, cols):
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+def _first_existing_col(df: pd.DataFrame, candidates):
+    for c in candidates:
+        if c in df.columns:
+            return c
+    return None
+
+def _standardize_props(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+    rename_map = {}
+    if "prop_type" in df.columns and "prop" not in df.columns:
+        rename_map["prop_type"] = "prop"
+    if "player" in df.columns and "name" not in df.columns:
+        rename_map["player"] = "name"
+    if rename_map:
+        df = df.rename(columns=rename_map)
+    for col in ["player_id","name","team","prop","line","value","over_probability","date","game_id"]:
+        if col not in df.columns:
+            df[col] = pd.NA
+    df = _coerce_numeric(df, ["line","value","over_probability"])
+    for col in ["name","team","prop","game_id"]:
+        if col in df.columns:
+            df[col] = df[col].astype("string")
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date.astype("string")
+    return df[["player_id","name","team","prop","line","value","over_probability","date","game_id"]].copy()
+
+def _normalize_team_key(s: pd.Series) -> pd.Series:
+    return s.astype("string").fillna("").str.strip().str.casefold()
+
+def _standardize_schedule(df_sched: pd.DataFrame) -> pd.DataFrame:
+    if df_sched.empty:
+        raise SystemExit("Schedule file is empty or missing.")
+    df = df_sched.copy()
+    df.columns = [c.strip().lower() for c in df.columns]
+    home_col = _first_existing_col(df, ["home_team","home"])
+    away_col = _first_existing_col(df, ["away_team","away"])
+    if not home_col or not away_col:
+        raise SystemExit("Schedule must have home_team/away_team (or home/away).")
+    date_col = _first_existing_col(df, ["date","game_date"])
+    if not date_col:
+        raise SystemExit("Schedule must have a date column (date or game_date).")
+    gid_col = _first_existing_col(df, ["game_id","id","gameid"])
+    if not gid_col:
+        df["game_id"] = (
+            pd.to_datetime(df[date_col], errors="coerce").dt.strftime("%Y%m%d").fillna("NA")
+            + "_" + df[home_col].astype(str).str.replace(r"\s+","",regex=True).str.lower()
+            + "_" + df[away_col].astype(str).str.replace(r"\s+","",regex=True).str.lower()
+        )
+        gid_col = "game_id"
+    out = pd.DataFrame({
+        "date": pd.to_datetime(df[date_col], errors="coerce").dt.date.astype("string"),
+        "game_id": df[gid_col].astype("string"),
+        "home_team": df[home_col].astype("string"),
+        "away_team": df[away_col].astype("string"),
+    })
+    out["home_key"] = _normalize_team_key(out["home_team"])
+    out["away_key"] = _normalize_team_key(out["away_team"])
+    return out
+
+def main():
+    bat = _standardize_props(_read_csv(BATTER_FILE))
+    pit = _standardize_props(_read_csv(PITCHER_FILE))
+    sched = _standardize_schedule(_read_csv(SCHED_FILE))
+
+    props = pd.concat([bat, pit], ignore_index=True)
+    props = props[props["over_probability"].notna()].copy()
+    # guard: drop rows with missing/blank team
+    props = props[props["team"].notna() & (props["team"].astype(str).str.strip() != "")]
+    props["team_key"] = _normalize_team_key(props["team"])
+
+    picked = []
+    for _, g in sched.iterrows():
+        home_key, away_key = str(g["home_key"]), str(g["away_key"])
+        candidates = props[props["team_key"].isin([home_key, away_key])].copy()
+        if candidates.empty:
+            continue
+        if candidates["date"].notna().any() and isinstance(g["date"], str):
+            same_date = candidates["date"] == g["date"]
+            if same_date.any():
+                candidates = candidates[same_date]
+        candidates = candidates.sort_values("over_probability", ascending=False).head(5).copy()
+        candidates["date"] = candidates["date"].where(candidates["date"].notna(), g["date"])
+        candidates["game_id"] = candidates["game_id"].where(candidates["game_id"].notna(), g["game_id"])
+        candidates["prop_correct"] = ""
+        candidates["rank_in_game"] = range(1, len(candidates) + 1)
+        candidates["prop_sort"] = candidates["rank_in_game"].apply(lambda r: "Best Prop" if r <= 3 else "game")
+        picked.append(candidates[OUT_COLS])
+
+    final_df = pd.concat(picked, ignore_index=True) if picked else pd.DataFrame(columns=OUT_COLS)
+    for col in OUT_COLS:
+        if col not in final_df.columns:
+            final_df[col] = pd.NA
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    final_df.to_csv(OUTPUT_FILE, index=False)
+    print(f"Saved: {OUTPUT_FILE} rows={len(final_df)}")
+
+if __name__ == "__main__":
+    main()
+PY
+          python - << 'PY'
+from pathlib import Path, PurePath
+p = Path("scripts/final_props_1.py")
+print("WROTE:", p, "exists:", p.exists(), "size:", p.stat().st_size if p.exists() else 0)
+print("HEAD:")
+print(p.read_text().splitlines()[0:5])
+PY
+
       - name: Snapshot pre-run line count
-        id: count_before
+        id: before
         run: |
           FILE="data/bets/player_props_history.csv"
-          BEFORE=$( [ -f "$FILE" ] && (wc -l < "$FILE") || echo 0 )
-          echo "before_count=$BEFORE" >> $GITHUB_OUTPUT
+          echo "count=$( [ -f "$FILE" ] && (wc -l < "$FILE") || echo 0 )" >> $GITHUB_OUTPUT
 
-      - name: Execute final_props_1.py
+      - name: Run final_props_1.py
         run: python scripts/final_props_1.py
 
       - name: Snapshot post-run line count
-        id: count_after
+        id: after
         run: |
           FILE="data/bets/player_props_history.csv"
-          AFTER=$( [ -f "$FILE" ] && (wc -l < "$FILE") || echo 0 )
-          echo "after_count=$AFTER" >> $GITHUB_OUTPUT
+          echo "count=$( [ -f "$FILE" ] && (wc -l < "$FILE") || echo 0 )" >> $GITHUB_OUTPUT
 
       - name: Show delta
         run: |
-          echo "Lines before: ${{ steps.count_before.outputs.before_count }}"
-          echo "Lines after:  ${{ steps.count_after.outputs.after_count }}"
-          echo "Change:       $(( ${{ steps.count_after.outputs.after_count }} - ${{ steps.count_before.outputs.before_count }} ))"
+          echo "Before: ${{ steps.before.outputs.count }}"
+          echo "After:  ${{ steps.after.outputs.count }}"
+          echo "Delta:  $(( ${{ steps.after.outputs.count }} - ${{ steps.before.outputs.count }} ))"
 
-      - name: Commit and Push Changes
+      - name: Commit and push CSV
         shell: bash
         run: |
           set -e
@@ -71,17 +208,8 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated final_props_1 update"
+          git commit -m "Automated: update player_props_history via final_props_1.py"
           BRANCH="${GITHUB_REF_NAME:-main}"
-          for attempt in 1 2; do
-            echo "Attempt $attempt: syncing with origin/$BRANCH..."
-            git fetch origin
-            git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
-            if git push origin "HEAD:$BRANCH"; then
-              echo "Push succeeded."
-              break
-            else
-              echo "Push rejected (non-fast-forward). Retrying..."
-              sleep 2
-            fi
-          done
+          git fetch origin
+          git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
+          git push origin "HEAD:$BRANCH"
