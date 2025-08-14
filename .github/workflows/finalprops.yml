@@ -1,4 +1,4 @@
-name: Run Final Props 1
+name: Build Batter Projections & Final Props
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  run-final-props-1:
+  build-and-finalize:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
@@ -31,7 +31,7 @@ jobs:
           if [ -f requirements.txt ]; then
             python -m pip install -r requirements.txt
           else
-            python -m pip install "pandas==2.2.2"
+            python -m pip install "pandas==2.2.2" numpy
           fi
 
       - name: Git config
@@ -41,51 +41,112 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global pull.rebase true
 
-      # ---- Sanity: show what the runner is actually using ----
-      - name: Show running script version
+      # ---------- Upstream: build batter projections (WRITES data/_projections/batter_props_projected.csv) ----------
+      - name: Show inputs for projections
         run: |
-          echo "Branch: $(git rev-parse --abbrev-ref HEAD)"
-          echo "Last commit:"
-          git log -1 --oneline
-          echo "Path to script:"
-          ls -l scripts/final_props_1.py || true
-          echo "First 120 lines of scripts/final_props_1.py:"
-          sed -n '1,120p' scripts/final_props_1.py || true
-          echo "Guard (should be NO MATCH):"
-          ! grep -n 'sched\[\["team",\s*"date",\s*"game_id"\]\]' -n scripts/final_props_1.py || (echo "ERROR: old code detected"; exit 1)
+          ls -l data/end_chain/final || true
+          echo "Preview bat_today_final.csv (first 15 lines):"
+          sed -n '1,15p' data/end_chain/final/bat_today_final.csv || true
 
-      - name: Snapshot pre-run line count
-        id: before
+      - name: Snapshot pre-run hashes
+        id: prehash
         run: |
-          FILE="data/bets/player_props_history.csv"
-          echo "count=$( [ -f "$FILE" ] && wc -l < "$FILE" || echo 0 )" >> "$GITHUB_OUTPUT"
+          set -e
+          for f in \
+            data/_projections/batter_props_projected.csv \
+            data/bets/player_props_history.csv
+          do
+            if [ -f "$f" ]; then
+              echo "$(sha256sum "$f")"
+            else
+              echo "MISSING $f"
+            fi
+          done > prehash.txt
+          cat prehash.txt
 
+      - name: Run project_batter_props.py (upstream probabilities)
+        run: |
+          python scripts/project_batter_props.py
+
+      - name: Validate probability spread (projected)
+        run: |
+          python - << 'PY'
+          import pandas as pd, sys
+          p = "data/_projections/batter_props_projected.csv"
+          try:
+            df = pd.read_csv(p)
+          except Exception as e:
+            print(f"Failed to read {p}: {e}")
+            sys.exit(1)
+          # If the upstream file doesn't include our new prob columns yet, don't fail here.
+          prob_cols = [c for c in ["prob_hits_over_1p5","prob_hr_over_0p5","prob_tb_over_1p5"] if c in df.columns]
+          if not prob_cols:
+            print("No upstream prob_* columns present (ok if script was not updated yet).")
+            sys.exit(0)
+          s = pd.concat([df[c].dropna() for c in prob_cols], ignore_index=True)
+          if s.empty:
+            print("All upstream probabilities are NaN.")
+            sys.exit(1)
+          if s.nunique() < 10:
+            print("Upstream probabilities look too flat (low uniqueness).")
+            print(s.describe())
+            sys.exit(1)
+          print("Upstream probability spread looks OK.")
+          PY
+
+      # ---------- Final: build history (WRITES data/bets/player_props_history.csv) ----------
       - name: Run final_props_1.py
-        run: python scripts/final_props_1.py
-
-      - name: Snapshot post-run line count
-        id: after
         run: |
-          FILE="data/bets/player_props_history.csv"
-          echo "count=$( [ -f "$FILE" ] && wc -l < "$FILE" || echo 0 )" >> "$GITHUB_OUTPUT"
+          # Optional: syntax check to fail fast
+          python -m py_compile scripts/final_props_1.py
+          python scripts/final_props_1.py
 
-      - name: Show delta
+      - name: Show deltas & tails
         run: |
-          echo "Before: ${{ steps.before.outputs.count }}"
-          echo "After:  ${{ steps.after.outputs.count }}"
-          echo "Delta:  $(( ${{ steps.after.outputs.count }} - ${{ steps.before.outputs.count }} ))"
+          set -e
+          echo "Post-run hashes:"
+          for f in \
+            data/_projections/batter_props_projected.csv \
+            data/bets/player_props_history.csv
+          do
+            if [ -f "$f" ]; then
+              echo "$(sha256sum "$f")"
+            else
+              echo "MISSING $f"
+            fi
+          done > posthash.txt
+          cat posthash.txt
+          echo
+          echo "Diff hashes:"
+          (diff -u prehash.txt posthash.txt || true)
+          echo
+          echo "Tail of batter_props_projected.csv:"
+          tail -n 5 data/_projections/batter_props_projected.csv || true
+          echo
+          echo "Tail of player_props_history.csv:"
+          tail -n 5 data/bets/player_props_history.csv || true
 
       - name: Commit and push changes
         shell: bash
         run: |
           set -e
-          git add data/bets/player_props_history.csv
-          if [[ -z "$(git status --porcelain data/bets/player_props_history.csv)" ]]; then
+          git add \
+            data/_projections/batter_props_projected.csv \
+            data/bets/player_props_history.csv
+          if [[ -z "$(git status --porcelain data/_projections/batter_props_projected.csv data/bets/player_props_history.csv)" ]]; then
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated: update player_props_history via final_props_1.py"
+          git commit -m "Automated: update projections and player_props_history"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git fetch origin
           git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
           git push origin "HEAD:$BRANCH"
+
+      - name: Upload artifacts (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: props-output
+          path: |
+            data/_projections/batter_props_projected.csv
+            data/bets/player_props_history.csv
