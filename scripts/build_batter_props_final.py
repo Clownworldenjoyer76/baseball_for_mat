@@ -16,6 +16,16 @@ OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
 def _norm(s: pd.Series) -> pd.Series:
     return s.astype(str).str.strip()
 
+def _to_scalar(x):
+    """Return a single scalar from possible Series/array/list/scalar; NaN if empty."""
+    if isinstance(x, pd.Series):
+        x = x.dropna()
+        return x.iloc[0] if not x.empty else np.nan
+    if isinstance(x, (list, tuple, np.ndarray)):
+        arr = np.asarray(x).ravel()
+        return arr[0] if arr.size else np.nan
+    return x
+
 def poisson_tail_over(line_val: float, lam: float) -> float:
     """
     P(X > line) for Poisson(λ) with fractional sportsbook lines:
@@ -36,7 +46,7 @@ def poisson_tail_over(line_val: float, lam: float) -> float:
     for i in range(1, thr):
         term *= lam / i
         acc += term
-        if term < 1e-15:
+        if term < 1e-15:  # early break for stability
             break
     return float(max(0.0, min(1.0, 1.0 - acc)))
 
@@ -206,7 +216,6 @@ bat["opp_pitcher_mega_z"] = pd.to_numeric(bat.get("opp_pitcher_mega_z", np.nan),
 bat["mega_z"] = bat["batter_z"] - W * bat["opp_pitcher_mega_z"].fillna(0.0)
 
 # ---------------- optional projections join (for better lambda) ----------------
-proj = None
 if PROJ_IN.exists():
     try:
         proj = pd.read_csv(PROJ_IN)
@@ -226,33 +235,40 @@ if PROJ_IN.exists():
         print(f"⚠️ Projections not used: {e}")
 
 # ---------------- over_probability ----------------
-def _lambda_for_row(row) -> float | float:
+def _lambda_for_row(row) -> float:
     """
     Choose λ per row:
       - If projections present: use prop-specific λ (proj_hits/proj_hr/proj_slg*AB)
-      - Else fallback to your original 'value' column
+      - Else fallback to original 'value'.
+    Always operates on scalars to avoid 'truth value is ambiguous'.
     """
-    prop = str(row.get("prop", "")).lower()
-    ln   = row.get("line", np.nan)  # not used here but kept for clarity
-    # Projection-based
-    if prop == "hits" and pd.notna(row.get("proj_hits", np.nan)):
-        return float(row["proj_hits"])
-    if prop == "home_runs" and pd.notna(row.get("proj_hr", np.nan)):
-        return float(row["proj_hr"])
-    if prop == "total_bases" and pd.notna(row.get("proj_slg", np.nan)) and pd.notna(row.get("ab", np.nan)):
-        return float(row["proj_slg"]) * float(row["ab"])
-    # Fallback to original behavior
-    val = row.get("value", np.nan)
+    prop = str(_to_scalar(row.get("prop", ""))).lower()
+
+    proj_hits = _to_scalar(row.get("proj_hits", np.nan))
+    proj_hr   = _to_scalar(row.get("proj_hr",   np.nan))
+    proj_slg  = _to_scalar(row.get("proj_slg",  np.nan))
+    ab        = _to_scalar(row.get("ab",        np.nan))
+    val       = _to_scalar(row.get("value",     np.nan))
+
+    if prop == "hits" and pd.notna(proj_hits):
+        return float(proj_hits)
+
+    if prop == "home_runs" and pd.notna(proj_hr):
+        return float(proj_hr)
+
+    if prop == "total_bases" and pd.notna(proj_slg) and pd.notna(ab):
+        return float(proj_slg) * float(ab)
+
     return float(val) if pd.notna(val) else np.nan
 
 def _over_prob(row):
-    ln  = row.get("line", np.nan)
+    ln  = _to_scalar(row.get("line", np.nan))
     lam = _lambda_for_row(row)
     if pd.isna(ln) or pd.isna(lam):
         return np.nan
     try:
-        p = poisson_tail_over(ln, lam)
-        # Only clip to [0,1]; NO artificial 0.98 ceiling or 0.02 floor
+        p = poisson_tail_over(float(ln), float(lam))
+        # Only clip to [0,1]; no artificial floor/ceiling
         return float(min(max(p, 0.0), 1.0))
     except Exception:
         return np.nan
