@@ -7,8 +7,7 @@ import math
 BATTER_IN   = Path("data/bets/prep/batter_props_bets.csv")
 SCHED_IN    = Path("data/bets/mlb_sched.csv")
 PITCHER_IN  = Path("data/bets/prep/pitcher_props_bets.csv")
-# Optional projections (used if present to compute better lambda per prop)
-PROJ_IN     = Path("data/_projections/batter_props_projected.csv")
+PROJ_IN     = Path("data/_projections/batter_props_projected.csv")  # optional
 
 OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
 
@@ -40,15 +39,14 @@ def poisson_tail_over(line_val: float, lam: float) -> float:
     lam = float(lam)
     if thr <= 0:
         return 1.0
-    # P(X <= k) = sum_{i=0..k} e^-λ λ^i / i!
     term = math.exp(-lam)
     acc = term
     for i in range(1, thr):
         term *= lam / i
         acc += term
-        if term < 1e-15:  # early break for stability
+        if term < 1e-15:
             break
-    return float(max(0.0, min(1.0, 1.0 - acc)))
+    return float(min(max(1.0 - acc, 0.0), 1.0))
 
 def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
     """
@@ -239,10 +237,9 @@ if PROJ_IN.exists():
 # ---------------- over_probability ----------------
 def _lambda_for_row(row) -> float:
     """
-    Choose λ per row:
-      - If projections present: use prop-specific λ (proj_hits/proj_hr/proj_slg*AB)
-      - Else fallback to original 'value'.
-    Guardrails reject absurd projection values and scale down unreasonable fallbacks.
+    Choose λ per row with realistic caps by prop:
+      Hits: 0–6; HR: 0–2; TB: 0–12.
+      Prefer projections; conservative fallbacks if projections are missing/absurd.
     """
     prop = str(_to_scalar(row.get("prop", ""))).lower()
 
@@ -263,30 +260,33 @@ def _lambda_for_row(row) -> float:
     if prop == "hits":
         if ok(proj_hits, 0.0, 6.0):
             return float(proj_hits)
-        # Heuristic fallback from SLG & AB → estimate AVG ≈ SLG / 1.6
         if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.2) and ok(ab, 0.0, 7.0):
             est_avg = max(0.0, min(1.0, float(proj_slg) / 1.6))
-            lam = est_avg * float(ab)
-            return max(0.0, min(6.0, lam))
-        # Last resort: scale your 'value' down if it looks like a huge index
-        if pd.notna(val) and float(val) > 6:
-            return float(val) / 30.0
-        return float(val) if pd.notna(val) else np.nan
+            return max(0.0, min(6.0, est_avg * float(ab)))
+        if pd.notna(val):
+            return max(0.0, min(6.0, float(val)))
+        return np.nan
 
     # HOME RUNS: λ should be ~0–2
     if prop == "home_runs":
         if ok(proj_hr, 0.0, 2.0):
             return float(proj_hr)
-        if pd.notna(val) and float(val) > 2:
-            return float(val) / 50.0
-        return float(val) if pd.notna(val) else np.nan
+        if pd.notna(val):
+            return max(0.0, min(2.0, float(val)))
+        return np.nan
 
-    # TOTAL BASES: use SLG * AB; cap to reasonable range
-    if prop == "total_bases" and pd.notna(proj_slg) and pd.notna(ab):
-        lam_tb = float(proj_slg) * float(ab)
-        return max(0.0, min(12.0, lam_tb))
+    # TOTAL BASEES: λ ≈ SLG * AB; cap to 0–12
+    if prop == "total_bases":
+        if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.6) and ok(ab, 0.0, 7.0):
+            return max(0.0, min(12.0, float(proj_slg) * float(ab)))
+        if pd.notna(val):
+            return max(0.0, min(12.0, float(val)))
+        return np.nan
 
-    return float(val) if pd.notna(val) else np.nan
+    # Fallback for any other prop types (not expected here)
+    if pd.notna(val):
+        return max(0.0, min(12.0, float(val)))
+    return np.nan
 
 def _over_prob(row):
     ln  = _to_scalar(row.get("line", np.nan))
@@ -295,18 +295,22 @@ def _over_prob(row):
         return np.nan
     try:
         p = poisson_tail_over(float(ln), float(lam))
-        # Only clip to [0,1]; no artificial floor/ceiling
-        return float(min(max(p, 0.0), 1.0))
+        return float(min(max(p, 0.0), 1.0))   # [0,1] only
     except Exception:
         return np.nan
 
+# Compute probabilities
 bat["over_probability"] = bat.apply(_over_prob, axis=1)
+
+# If you want to inspect λ used, uncomment the next line:
+# bat["lambda_used"] = bat.apply(_lambda_for_row, axis=1)
 
 # ---------------- order + save ----------------
 out_cols = [
     "player_id","name","team","prop","line","value",
     "batter_z","mega_z","over_probability",
-    "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z"
+    "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z",
+    # "lambda_used",  # <- uncomment if you want to export it for QA
 ]
 out_cols = [c for c in out_cols if c in bat.columns]
 out = bat[out_cols].copy()
