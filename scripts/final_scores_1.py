@@ -1,189 +1,172 @@
-#!/usr/bin/env python3
+# scripts/final_props_1.py
 import pandas as pd
-import numpy as np
 from pathlib import Path
 
-SCHED_IN      = Path("data/bets/mlb_sched.csv")
-BATTER_IN     = Path("data/bets/prep/batter_props_final.csv")   # has batter_z and opp pitcher detail
-PITCHER_IN    = Path("data/bets/prep/pitcher_props_bets.csv")   # has pitcher z/mega_z per team
-OUT_HISTORY   = Path("data/bets/game_props_history.csv")
+# ---------- Inputs / Outputs ----------
+BATTER_FILE = Path("data/bets/prep/batter_props_final.csv")
+PITCHER_FILE = Path("data/bets/prep/pitcher_props_bets.csv")
+SCHED_FILE = Path("data/bets/mlb_sched.csv")
+OUTPUT_FILE = Path("data/bets/player_props_history.csv")
 
-# ----- tunables for projection (simple linear map to runs)
-BASE_RUNS = 4.25     # neutral baseline per team
-A_BAT     = 0.75     # weight for team batter strength
-B_PIT     = 0.75     # penalty for opponent pitcher strength
-MIN_RUNS  = 0.2      # floor on projected runs
+# ---------- Required output columns ----------
+OUT_COLS = [
+    "player_id",
+    "name",
+    "team",
+    "prop",
+    "line",
+    "value",
+    "over_probability",
+    "date",
+    "game_id",
+    "prop_correct",
+    "prop_sort",
+]
 
-def _norm(s: pd.Series) -> pd.Series:
-    return s.astype(str).str.strip()
-
-def _safe_num(s, default=np.nan):
-    return pd.to_numeric(s, errors="coerce").fillna(default)
-
-def load_schedule(path: Path) -> pd.DataFrame:
+def _read_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
-        raise SystemExit(f"❌ Missing schedule file: {path}")
-    sch = pd.read_csv(path)
-    sch.columns = [c.strip() for c in sch.columns]
-    need = [c for c in ("home_team", "away_team") if c not in sch.columns]
-    if need:
-        raise SystemExit(f"❌ schedule missing columns: {need}")
-    sch["home_team"] = _norm(sch["home_team"])
-    sch["away_team"] = _norm(sch["away_team"])
-    return sch
-
-def load_batter_strength(path: Path) -> pd.DataFrame:
-    """Aggregate batter strength by team (mean of batter_z across all rows)."""
-    if not path.exists():
-        print(f"⚠️ Missing batter file: {path} (using zeros).")
-        return pd.DataFrame(columns=["team", "bat_strength"]).assign(bat_strength=0.0)
+        return pd.DataFrame()
     df = pd.read_csv(path)
-    df.columns = [c.strip() for c in df.columns]
-    if "team" not in df.columns or "batter_z" not in df.columns:
-        print("⚠️ batter file lacks 'team' or 'batter_z'; using zeros.")
-        return pd.DataFrame(columns=["team", "bat_strength"]).assign(bat_strength=0.0)
-    df["team"] = _norm(df["team"])
-    df["batter_z"] = _safe_num(df["batter_z"], 0.0)
-    agg = df.groupby("team", as_index=False)["batter_z"].mean().rename(columns={"batter_z": "bat_strength"})
-    return agg
+    df.columns = [c.strip().lower() for c in df.columns]
+    return df
 
-def load_pitcher_strength(path: Path) -> pd.DataFrame:
-    """
-    Aggregate pitcher strength by team.
-    Prefer 'mega_z', else 'z_score'. Use mean as a simple team indicator.
-    """
-    if not path.exists():
-        print(f"⚠️ Missing pitcher file: {path} (using zeros).")
-        return pd.DataFrame(columns=["team", "pit_strength"]).assign(pit_strength=0.0)
-    df = pd.read_csv(path)
-    df.columns = [c.strip() for c in df.columns]
-    if "team" not in df.columns:
-        print("⚠️ pitcher file lacks 'team'; using zeros.")
-        return pd.DataFrame(columns=["team", "pit_strength"]).assign(pit_strength=0.0)
+def _coerce_numeric(df: pd.DataFrame, cols):
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
 
-    df["team"] = _norm(df["team"])
-    if "mega_z" in df.columns:
-        x = _safe_num(df["mega_z"], 0.0)
-    elif "z_score" in df.columns:
-        x = _safe_num(df["z_score"], 0.0)
-    else:
-        x = pd.Series(0.0, index=df.index)
+def _first_existing_col(df: pd.DataFrame, candidates):
+    for c in candidates:
+        if c in df.columns:
+            return c
+    return None
 
-    agg = df.assign(_z=x).groupby("team", as_index=False)["_z"].mean().rename(columns={"_z": "pit_strength"})
-    return agg
+def _standardize_props(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure prop frames expose the core columns."""
+    if df.empty:
+        return df
 
-def project_runs(bat_strength: float, opp_pit_strength: float) -> float:
-    r = BASE_RUNS + A_BAT * bat_strength - B_PIT * opp_pit_strength
-    return float(max(MIN_RUNS, r))
+    rename_map = {}
+    if "prop_type" in df.columns and "prop" not in df.columns:
+        rename_map["prop_type"] = "prop"
+    if "player" in df.columns and "name" not in df.columns:
+        rename_map["player"] = "name"
+    if rename_map:
+        df = df.rename(columns=rename_map)
+
+    # ensure required cols exist
+    for col in ["player_id", "name", "team", "prop", "line", "value",
+                "over_probability", "date", "game_id"]:
+        if col not in df.columns:
+            df[col] = pd.NA
+
+    df = _coerce_numeric(df, ["line", "value", "over_probability"])
+    # normalize strings
+    for col in ["name", "team", "prop", "game_id"]:
+        if col in df.columns:
+            df[col] = df[col].astype("string")
+
+    # normalize date (keep as string YYYY-MM-DD where possible)
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date.astype("string")
+
+    return df[["player_id","name","team","prop","line","value",
+               "over_probability","date","game_id"]].copy()
+
+def _normalize_team_key(s: pd.Series) -> pd.Series:
+    return s.astype("string").fillna("").str.strip().str.casefold()
+
+def _standardize_schedule(df_sched: pd.DataFrame) -> pd.DataFrame:
+    """Return schedule with columns: date, game_id, home_team, away_team, and keys."""
+    if df_sched.empty:
+        raise SystemExit("Schedule file is empty or missing.")
+
+    df = df_sched.copy()
+    df.columns = [c.strip().lower() for c in df.columns]
+
+    home_col = _first_existing_col(df, ["home_team", "home"])
+    away_col = _first_existing_col(df, ["away_team", "away"])
+    if not home_col or not away_col:
+        raise SystemExit("Schedule must have home_team/away_team (or home/away).")
+
+    date_col = _first_existing_col(df, ["date", "game_date"])
+    if not date_col:
+        raise SystemExit("Schedule must have a date column (date or game_date).")
+
+    gid_col = _first_existing_col(df, ["game_id", "id", "gameid"])
+    if not gid_col:
+        # synthesize a game_id so pipeline always works
+        df["game_id"] = (
+            pd.to_datetime(df[date_col], errors="coerce").dt.strftime("%Y%m%d").fillna("NA")
+            + "_"
+            + df[home_col].astype(str).str.replace(r"\s+", "", regex=True).str.lower()
+            + "_"
+            + df[away_col].astype(str).str.replace(r"\s+", "", regex=True).str.lower()
+        )
+        gid_col = "game_id"
+
+    out = pd.DataFrame({
+        "date": pd.to_datetime(df[date_col], errors="coerce").dt.date.astype("string"),
+        "game_id": df[gid_col].astype("string"),
+        "home_team": df[home_col].astype("string"),
+        "away_team": df[away_col].astype("string"),
+    })
+    out["home_key"] = _normalize_team_key(out["home_team"])
+    out["away_key"] = _normalize_team_key(out["away_team"])
+    return out
 
 def main():
-    # 1) Load base games and make a full copy
-    sch = load_schedule(SCHED_IN)
-    out = sch.copy()
+    # --- Load inputs ---
+    bat = _standardize_props(_read_csv(BATTER_FILE))
+    pit = _standardize_props(_read_csv(PITCHER_FILE))
+    sched = _standardize_schedule(_read_csv(SCHED_FILE))
 
-    # 2) Add required columns (initialize)
-    add_cols = {
-        "home_score_proj": np.nan,
-        "home_score_final": np.nan,
-        "away_score_proj": np.nan,
-        "away_score_final": np.nan,
-        "projected_real_run_total": np.nan,
-        "real_run_total": np.nan,
-        "favorite_projected": "",
-        "favorite_correct": "",
-    }
-    for col, val in add_cols.items():
-        if col not in out.columns:
-            out[col] = val
+    # combine props and prep keys
+    props = pd.concat([bat, pit], ignore_index=True)
+    props = props[props["over_probability"].notna()].copy()
+    props["team_key"] = _normalize_team_key(props["team"])
 
-    # 3) Load strengths
-    bat_team = load_batter_strength(BATTER_IN)     # team -> bat_strength
-    pit_team = load_pitcher_strength(PITCHER_IN)   # team -> pit_strength
+    # container for per-game selections
+    picked = []
 
-    # 4) Merge strengths onto schedule
-    # home side gets its own bat_strength + away pitcher strength
-    out = out.merge(bat_team.rename(columns={"team": "home_team", "bat_strength": "home_bat_strength"}),
-                    on="home_team", how="left")
-    out = out.merge(bat_team.rename(columns={"team": "away_team", "bat_strength": "away_bat_strength"}),
-                    on="away_team", how="left")
-    out = out.merge(pit_team.rename(columns={"team": "home_team", "pit_strength": "home_pit_strength"}),
-                    on="home_team", how="left")
-    out = out.merge(pit_team.rename(columns={"team": "away_team", "pit_strength": "away_pit_strength"}),
-                    on="away_team", how="left")
+    # iterate schedule; pick top-5 across both teams for each game
+    for _, g in sched.iterrows():
+        home_key, away_key = str(g["home_key"]), str(g["away_key"])
+        candidates = props[props["team_key"].isin([home_key, away_key])].copy()
+        if candidates.empty:
+            continue
 
-    # Fill any missing strengths with 0
-    for c in ["home_bat_strength","away_bat_strength","home_pit_strength","away_pit_strength"]:
-        if c in out.columns:
-            out[c] = _safe_num(out[c], 0.0).fillna(0.0)
-        else:
-            out[c] = 0.0
+        # prefer same-date rows when present
+        if candidates["date"].notna().any() and isinstance(g["date"], str):
+            same_date = candidates["date"] == g["date"]
+            if same_date.any():
+                candidates = candidates[same_date]
 
-    # 5) Compute projected runs
-    out["home_score_proj"] = out.apply(
-        lambda r: project_runs(r["home_bat_strength"], r["away_pit_strength"]), axis=1
-    )
-    out["away_score_proj"] = out.apply(
-        lambda r: project_runs(r["away_bat_strength"], r["home_pit_strength"]), axis=1
-    )
-    out["projected_real_run_total"] = out["home_score_proj"] + out["away_score_proj"]
+        # order and take top 5
+        candidates = candidates.sort_values("over_probability", ascending=False).head(5).copy()
 
-    # 6) Decide favorite by projected runs
-    def pick_favorite(row) -> str:
-        if pd.isna(row["home_score_proj"]) or pd.isna(row["away_score_proj"]):
-            return ""
-        if row["home_score_proj"] > row["away_score_proj"]:
-            return row["home_team"]
-        if row["away_score_proj"] > row["home_score_proj"]:
-            return row["away_team"]
-        return "PICK'EM"
+        # inject schedule date/game_id if missing
+        candidates["date"] = candidates["date"].where(candidates["date"].notna(), g["date"])
+        candidates["game_id"] = candidates["game_id"].where(candidates["game_id"].notna(), g["game_id"])
 
-    out["favorite_projected"] = out.apply(pick_favorite, axis=1)
+        # prop_correct blank; prop_sort for ranks 1-3
+        candidates["prop_correct"] = ""
+        candidates["rank_in_game"] = range(1, len(candidates) + 1)
+        candidates["prop_sort"] = candidates["rank_in_game"].apply(lambda r: "Best Prop" if r <= 3 else "game")
 
-    # 7) Prepare columns order (keep all schedule cols first)
-    tail = [
-        "home_bat_strength","away_bat_strength","home_pit_strength","away_pit_strength",
-        "home_score_proj","away_score_proj","projected_real_run_total",
-        "home_score_final","away_score_final","real_run_total",
-        "favorite_projected","favorite_correct",
-    ]
-    # ensure presence
-    tail = [c for c in tail if c in out.columns]
-    ordered = [c for c in sch.columns if c in out.columns] + [c for c in tail if c not in sch.columns]
-    out = out[ordered]
+        picked.append(candidates[OUT_COLS])
 
-    # 8) Write/update history with de-duplication
-    OUT_HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    final_df = pd.concat(picked, ignore_index=True) if picked else pd.DataFrame(columns=OUT_COLS)
 
-    if OUT_HISTORY.exists():
-        hist = pd.read_csv(OUT_HISTORY)
-        hist.columns = [c.strip() for c in hist.columns]
+    # ensure all required columns exist
+    for col in OUT_COLS:
+        if col not in final_df.columns:
+            final_df[col] = pd.NA
 
-        # Identify a game key for dedupe
-        if "game_id" in out.columns and "game_id" in hist.columns:
-            key_cols = ["game_id"]
-        else:
-            # fallback on date + teams if game_id not present
-            key_cols = [c for c in ["date","home_team","away_team"] if c in out.columns and c in hist.columns]
-            if not key_cols:
-                key_cols = None
-
-        if key_cols:
-            # keep newest from 'out' for same key
-            # normalize join key types
-            for c in key_cols:
-                hist[c] = hist[c].astype(str)
-                out[c]  = out[c].astype(str)
-            merged = pd.concat([hist[hist.columns], out[hist.columns.intersection(out.columns)]], ignore_index=True)
-            merged = merged.drop_duplicates(subset=key_cols, keep="last")
-            merged.to_csv(OUT_HISTORY, index=False)
-        else:
-            # no common key -> append
-            merged = pd.concat([hist, out], ignore_index=True)
-            merged.to_csv(OUT_HISTORY, index=False)
-    else:
-        out.to_csv(OUT_HISTORY, index=False)
-
-    print(f"✅ Wrote/updated: {OUT_HISTORY} (rows={len(pd.read_csv(OUT_HISTORY))})")
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    final_df.to_csv(OUTPUT_FILE, index=False)
+    print(f"Saved: {OUTPUT_FILE} rows={len(final_df)}")
 
 if __name__ == "__main__":
     main()
