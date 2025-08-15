@@ -39,9 +39,9 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git config --global pull.rebase true
+          git config --global pull.rebase false
 
-      # ---------- Upstream: build batter projections (WRITES data/_projections/batter_props_projected.csv) ----------
+      # ---------- Upstream: build batter projections ----------
       - name: Show inputs for projections
         run: |
           ls -l data/end_chain/final || true
@@ -54,7 +54,8 @@ jobs:
           set -e
           for f in \
             data/_projections/batter_props_projected.csv \
-            data/bets/player_props_history.csv
+            data/bets/player_props_history.csv \
+            data/bets/game_props_history.csv
           do
             if [ -f "$f" ]; then
               echo "$(sha256sum "$f")"
@@ -65,39 +66,26 @@ jobs:
           cat prehash.txt
 
       - name: Run project_batter_props.py (upstream probabilities)
-        run: |
-          python scripts/project_batter_props.py
+        run: python scripts/project_batter_props.py
 
       - name: Validate probability spread (projected)
         run: |
           python - << 'PY'
           import pandas as pd, sys
           p = "data/_projections/batter_props_projected.csv"
-          try:
-            df = pd.read_csv(p)
-          except Exception as e:
-            print(f"Failed to read {p}: {e}")
-            sys.exit(1)
-          # If the upstream file doesn't include our new prob columns yet, don't fail here.
+          df = pd.read_csv(p)
           prob_cols = [c for c in ["prob_hits_over_1p5","prob_hr_over_0p5","prob_tb_over_1p5"] if c in df.columns]
           if not prob_cols:
-            print("No upstream prob_* columns present (ok if script was not updated yet).")
-            sys.exit(0)
+            print("No upstream prob_* columns present (ok if script was not updated yet)."); sys.exit(0)
           s = pd.concat([df[c].dropna() for c in prob_cols], ignore_index=True)
-          if s.empty:
-            print("All upstream probabilities are NaN.")
-            sys.exit(1)
-          if s.nunique() < 10:
-            print("Upstream probabilities look too flat (low uniqueness).")
-            print(s.describe())
-            sys.exit(1)
+          if s.empty or s.nunique() < 10:
+            print("Upstream probabilities look too flat."); print(s.describe()); sys.exit(1)
           print("Upstream probability spread looks OK.")
           PY
 
-      # ---------- Final: build history (WRITES data/bets/player_props_history.csv) ----------
+      # ---------- Final: build history ----------
       - name: Run final_props_1.py
         run: |
-          # Optional: syntax check to fail fast
           python -m py_compile scripts/final_props_1.py
           python scripts/final_props_1.py
 
@@ -107,7 +95,8 @@ jobs:
           echo "Post-run hashes:"
           for f in \
             data/_projections/batter_props_projected.csv \
-            data/bets/player_props_history.csv
+            data/bets/player_props_history.csv \
+            data/bets/game_props_history.csv
           do
             if [ -f "$f" ]; then
               echo "$(sha256sum "$f")"
@@ -120,27 +109,23 @@ jobs:
           echo "Diff hashes:"
           (diff -u prehash.txt posthash.txt || true)
           echo
-          echo "Tail of batter_props_projected.csv:"
-          tail -n 5 data/_projections/batter_props_projected.csv || true
+          echo "Tail of batter_props_projected.csv:"; tail -n 5 data/_projections/batter_props_projected.csv || true
           echo
-          echo "Tail of player_props_history.csv:"
-          tail -n 5 data/bets/player_props_history.csv || true
+          echo "Tail of player_props_history.csv:";  tail -n 5 data/bets/player_props_history.csv || true
+          echo
+          echo "Tail of game_props_history.csv:";    tail -n 5 data/bets/game_props_history.csv || true
 
       - name: Commit and push changes
         shell: bash
         run: |
           set -e
-          git add \
-            data/_projections/batter_props_projected.csv \
-            data/bets/player_props_history.csv
-          if [[ -z "$(git status --porcelain data/_projections/batter_props_projected.csv data/bets/player_props_history.csv)" ]]; then
+          git add -A
+          if git diff --staged --quiet; then
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated: update projections and player_props_history"
+          git commit -m "Automated: update projections and player/game props history"
           BRANCH="${GITHUB_REF_NAME:-main}"
-          git fetch origin
-          git rebase "origin/$BRANCH" || (echo "Rebase failed"; git rebase --abort; exit 1)
           git push origin "HEAD:$BRANCH"
 
       - name: Upload artifacts (optional)
@@ -150,3 +135,4 @@ jobs:
           path: |
             data/_projections/batter_props_projected.csv
             data/bets/player_props_history.csv
+            data/bets/game_props_history.csv
