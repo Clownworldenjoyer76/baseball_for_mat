@@ -1,4 +1,4 @@
-name: Combined Bet Prep + Build Batter Props + Final Scores
+name: Combined Bet Prep + Build Batter Props
 
 on:
   workflow_dispatch:
@@ -109,24 +109,5 @@ jobs:
             exit 0
           fi
           git commit -m "build_batter_props_final: update batter_props_final.csv"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git push origin "HEAD:$BRANCH"
-
-      # -------------------------------
-      # STEP 5: final_scores_1
-      # -------------------------------
-      - name: Run final_scores_1.py
-        run: python scripts/final_scores_1.py
-
-      - name: Commit & push (game_props_history.csv)
-        shell: bash
-        run: |
-          set -e
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No game_props_history changes to commit."
-            exit 0
-          fi
-          git commit -m "final_scores_1: update game_props_history.csv"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git push origin "HEAD:$BRANCH"
