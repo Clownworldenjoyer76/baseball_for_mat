@@ -89,6 +89,12 @@ jobs:
           python -m py_compile scripts/final_props_1.py
           python scripts/final_props_1.py
 
+      # ---------- NEW: Run final_scores_1.py ----------
+      - name: Run final_scores_1.py
+        run: |
+          python -m py_compile scripts/final_scores_1.py
+          python scripts/final_scores_1.py
+
       - name: Show deltas & tails
         run: |
           set -e
@@ -124,7 +130,7 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated: update projections and player/game props history"
+          git commit -m "Automated: update projections, props history, and final scores"
           BRANCH="${GITHUB_REF_NAME:-main}"
           git push origin "HEAD:$BRANCH"
 
