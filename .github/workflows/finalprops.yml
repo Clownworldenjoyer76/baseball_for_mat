@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
-      PYTHONDONTWRITEBYTECODE: "1"   # prevent __pycache__/*.pyc files
+      PYTHONDONTWRITEBYTECODE: "1"
 
     steps:
       - name: Checkout repository
@@ -90,11 +90,16 @@ jobs:
           python -m py_compile scripts/final_props_1.py
           python -B scripts/final_props_1.py
 
-      # ---------- Run final_scores_1.py ----------
       - name: Run final_scores_1.py
         run: |
           python -m py_compile scripts/final_scores_1.py
           python -B scripts/final_scores_1.py
+
+      # ---------- NEW: derive proj_home_score / proj_away_score and totals/favorite ----------
+      - name: Run final_scores_2.py (update game totals & favorite)
+        run: |
+          python -m py_compile scripts/final_scores_2.py
+          python -B scripts/final_scores_2.py
 
       - name: Show deltas & tails
         run: |
@@ -127,10 +132,8 @@ jobs:
         run: |
           set -e
           BRANCH="${GITHUB_REF_NAME:-main}"
-          # Ensure we're up-to-date; rebase any in-flight local changes from scripts
           git fetch origin "$BRANCH"
           git pull --rebase --autostash origin "$BRANCH"
-          # Stage outputs
           git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit."
