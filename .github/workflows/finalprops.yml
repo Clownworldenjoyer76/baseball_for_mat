@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
+      PYTHONDONTWRITEBYTECODE: "1"   # prevent __pycache__/*.pyc files
 
     steps:
       - name: Checkout repository
@@ -66,7 +67,7 @@ jobs:
           cat prehash.txt
 
       - name: Run project_batter_props.py (upstream probabilities)
-        run: python scripts/project_batter_props.py
+        run: python -B scripts/project_batter_props.py
 
       - name: Validate probability spread (projected)
         run: |
@@ -87,13 +88,13 @@ jobs:
       - name: Run final_props_1.py
         run: |
           python -m py_compile scripts/final_props_1.py
-          python scripts/final_props_1.py
+          python -B scripts/final_props_1.py
 
-      # ---------- NEW: Run final_scores_1.py ----------
+      # ---------- Run final_scores_1.py ----------
       - name: Run final_scores_1.py
         run: |
           python -m py_compile scripts/final_scores_1.py
-          python scripts/final_scores_1.py
+          python -B scripts/final_scores_1.py
 
       - name: Show deltas & tails
         run: |
@@ -121,17 +122,21 @@ jobs:
           echo
           echo "Tail of game_props_history.csv:";    tail -n 5 data/bets/game_props_history.csv || true
 
-      - name: Commit and push changes
+      - name: Commit and push changes (rebase if remote advanced)
         shell: bash
         run: |
           set -e
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          # Ensure we're up-to-date; rebase any in-flight local changes from scripts
+          git fetch origin "$BRANCH"
+          git pull --rebase --autostash origin "$BRANCH"
+          # Stage outputs
           git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit."
             exit 0
           fi
           git commit -m "Automated: update projections, props history, and final scores"
-          BRANCH="${GITHUB_REF_NAME:-main}"
           git push origin "HEAD:$BRANCH"
 
       - name: Upload artifacts (optional)
