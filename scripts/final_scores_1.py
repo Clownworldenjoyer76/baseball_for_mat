@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# scripts/final_scores_1.py  (robust team-key merge + compact 'WhiteSox'/'RedSox' handling)
+# scripts/final_scores_1.py  (robust team-key merge + compact 'WhiteSox'/'RedSox' handling; fixed DataFrame truthiness)
 from __future__ import annotations
 from pathlib import Path
 from typing import List, Tuple, Optional, Dict
@@ -134,7 +134,9 @@ def _extract_game_totals(path: Path) -> Optional[pd.DataFrame]:
     return _derive_game_totals_from_team_rows(df)
 
 def main() -> None:
-    sched = _std(_read_csv(SCHED_FILE) or pd.DataFrame())
+    # ---- Read schedule safely (fixes DataFrame truthiness bug) ----
+    sched_df = _read_csv(SCHED_FILE)
+    sched = _std(sched_df) if sched_df is not None else pd.DataFrame()
     if sched.empty:
         raise SystemExit(f"❌ Missing or unreadable {SCHED_FILE}")
     if "venue_name" not in sched.columns and "venue" in sched.columns:
@@ -146,6 +148,7 @@ def main() -> None:
     base = sched[needed].drop_duplicates().copy()
     base = _add_team_keys(base, "home_team","away_team","sched")
 
+    # todaysgames (for time + pitchers)
     today_raw = _read_csv(TODAY_FILE)
     if today_raw is not None:
         today = _std(today_raw)
@@ -167,7 +170,7 @@ def main() -> None:
                 how="left",
                 suffixes=("","_t1"),
             )
-        # Stage 2: keys only backfill
+        # Stage 2: keys-only backfill
         need = (
             base.get("pitcher_home", pd.Series([pd.NA]*len(base))).isna()
             | base.get("pitcher_home", pd.Series([""]*len(base))).astype(str).eq("")
@@ -193,6 +196,7 @@ def main() -> None:
         base["pitcher_home"] = pd.NA
         base["pitcher_away"] = pd.NA
 
+    # Projections
     gb = _extract_game_totals(BATTER_FILE)
     gp = _extract_game_totals(PITCHER_FILE)
 
@@ -222,6 +226,7 @@ def main() -> None:
         out["projected_real_run_total"] = pd.NA
         out["favorite"] = pd.NA
 
+    # Fixed columns
     out["favorite_correct"] = pd.NA
     out["actual_real_run_total"] = pd.NA
     out["run_total_diff"] = pd.NA
