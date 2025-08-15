@@ -19,6 +19,7 @@ OUT_COLS: List[str] = [
     "game_id","date","home_team","away_team","venue_name",
     "favorite","favorite_correct","projected_real_run_total","actual_real_run_total",
     "run_total_diff","home_score","away_score","game_time","pitcher_home","pitcher_away",
+    "proj_home_score","proj_away_score",
 ]
 
 def _std(df: pd.DataFrame) -> pd.DataFrame:
@@ -232,6 +233,16 @@ def main() -> None:
     out["run_total_diff"] = pd.NA
     out["home_score"] = pd.NA
     out["away_score"] = pd.NA
+
+    # New: expose side projections as proj_home_score/proj_away_score when present
+    if "home_proj" in out.columns:
+        out["proj_home_score"] = out["home_proj"]
+    else:
+        out["proj_home_score"] = pd.NA
+    if "away_proj" in out.columns:
+        out["proj_away_score"] = out["away_proj"]
+    else:
+        out["proj_away_score"] = pd.NA
 
     out = _ensure_cols(out, OUT_COLS)
     sort_cols = [c for c in ["date","game_id"] if c in out.columns]
