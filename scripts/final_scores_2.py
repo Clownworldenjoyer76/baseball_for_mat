@@ -7,21 +7,18 @@
 #   - projected_real_run_total
 #   - favorite
 #
-# Data sources (column mapping hard-coded to your files):
-#   Batter:  data/bets/prep/batter_props_final.csv
-#       team_name, game_id, projected_team_runs
-#   Pitcher: data/bets/prep/pitcher_props_bets.csv
-#       team_name, game_id, proj_runs_allowed
+# proj_team_runs = (batter_proj_runs + pitcher_allowed_runs) / 2
 #
-# Formula per team:
-#   proj_team_runs = (projected_team_runs + proj_runs_allowed) / 2
-#
-# Output overwritten in place:
+# Inputs:
 #   data/bets/game_props_history.csv
-
+#   data/bets/prep/batter_props_final.csv
+#   data/bets/prep/pitcher_props_bets.csv
+#
+# Output (overwrite in place):
+#   data/bets/game_props_history.csv
 from __future__ import annotations
 from pathlib import Path
-from typing import Dict
+from typing import Optional, Dict, List, Tuple
 import pandas as pd
 import numpy as np
 import re
@@ -31,10 +28,22 @@ GAME_OUT = Path("data/bets/game_props_history.csv")
 BATTER_FILE = Path("data/bets/prep/batter_props_final.csv")
 PITCHER_FILE = Path("data/bets/prep/pitcher_props_bets.csv")
 
+# ---- utils ----
 def _std(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
     d.columns = d.columns.str.strip()
+    d.columns = d.columns.str.lower()
     return d
+
+def _read_csv(path: Path) -> Optional[pd.DataFrame]:
+    if not path.exists():
+        print(f"❌ Missing file: {path}")
+        return None
+    try:
+        return pd.read_csv(path, dtype=str)
+    except Exception as e:
+        print(f"❌ Could not read {path}: {e}")
+        return None
 
 def _num(s: pd.Series) -> pd.Series:
     return pd.to_numeric(s.astype(str).str.replace(r"[,$%]", "", regex=True), errors="coerce")
@@ -49,104 +58,94 @@ SPECIALS: Dict[str, str] = {
     "D-BACKS": "DIAMONDBACKS",
     "DBACKS": "DIAMONDBACKS",
 }
-
 def _canon_team_name(s: str) -> str:
     if s is None:
         return ""
     t = re.sub(r"\s+", " ", str(s).strip().upper())
     t_compact = re.sub(r"[^A-Z]", "", t)
-    if t_compact == "WHITESOX":
-        return "WHITE SOX"
-    if t_compact == "REDSOX":
-        return "RED SOX"
-    if t in SPECIALS:
-        return SPECIALS[t]
-    if t in {"WHITE SOX", "RED SOX"}:
-        return t
+    if t_compact == "WHITESOX": return "WHITE SOX"
+    if t_compact == "REDSOX": return "RED SOX"
+    if t in SPECIALS: return SPECIALS[t]
+    if t in {"WHITE SOX","RED SOX"}: return t
     parts = t.split(" ")
     if len(parts) >= 2:
         return " ".join(parts[-2:]) if parts[-2:] in (["WHITE","SOX"],["RED","SOX"]) else parts[-1]
     return t
 
-def main() -> None:
-    # Load current game_props_history
-    try:
-        base = pd.read_csv(GAME_OUT, dtype=str)
-    except Exception as e:
-        print(f"❌ Cannot read {GAME_OUT}: {e}")
+def _pick_col(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
+    for c in candidates:
+        if c in df.columns: return c
+    return None
+
+# ---- load base table ----
+base_raw = _read_csv(GAME_OUT)
+if base_raw is None:
+    sys.exit(1)
+base = _std(base_raw)
+for required in ["game_id","home_team","away_team"]:
+    if required not in base.columns:
+        print(f"❌ {GAME_OUT} missing column: {required}")
         sys.exit(1)
-    base = _std(base)
+base["_game_id"] = base["game_id"].astype(str).str.strip()
+base["_home_key"] = base["home_team"].apply(_canon_team_name)
+base["_away_key"] = base["away_team"].apply(_canon_team_name)
+for col in ["proj_home_score","proj_away_score","projected_real_run_total","favorite"]:
+    if col not in base.columns: base[col] = pd.NA
 
-    for need in ["game_id","home_team","away_team"]:
-        if need not in base.columns:
-            print(f"❌ {GAME_OUT} missing column: {need}")
-            sys.exit(1)
+# ---- batter file ----
+bdf_raw = _read_csv(BATTER_FILE)
+if bdf_raw is None: sys.exit(1)
+bdf = _std(bdf_raw)
+team_col_b = _pick_col(bdf, ["team_name","team","home_team","away_team"])
+gid_col_b  = _pick_col(bdf, ["game_id","gamepk","game_pk","id"])
+runs_col_b = _pick_col(bdf, ["projected_team_runs","batter_proj_runs","team_proj_runs","proj_runs","expected_runs"])
+if team_col_b is None or gid_col_b is None or runs_col_b is None:
+    print(f"❌ batter file columns not found. Have: {list(bdf.columns)}")
+    sys.exit(1)
+bdf["_team_key"] = bdf[team_col_b].apply(_canon_team_name)
+bdf["_game_id"]  = bdf[gid_col_b].astype(str).str.strip()
+bdf["_batter_proj_runs"] = _num(bdf[runs_col_b])
+bdf_team = bdf.groupby(["_game_id","_team_key"], dropna=False)["_batter_proj_runs"].mean().reset_index()
 
-    base["_game_id"] = base["game_id"].astype(str).str.strip()
-    base["_home_key"] = base["home_team"].apply(_canon_team_name)
-    base["_away_key"] = base["away_team"].apply(_canon_team_name)
+# ---- pitcher file ----
+pdf_raw = _read_csv(PITCHER_FILE)
+if pdf_raw is None: sys.exit(1)
+pdf = _std(pdf_raw)
+team_col_p = _pick_col(pdf, ["team_name","team","home_team","away_team"])
+gid_col_p  = _pick_col(pdf, ["game_id","gamepk","game_pk","id"])
+runs_col_p = _pick_col(pdf, ["proj_runs_allowed","pitcher_allowed_runs","allowed_runs","x_runs_allowed"])
+if team_col_p is None or gid_col_p is None or runs_col_p is None:
+    print(f"❌ pitcher file columns not found. Have: {list(pdf.columns)}")
+    sys.exit(1)
+pdf["_team_key"] = pdf[team_col_p].apply(_canon_team_name)
+pdf["_game_id"]  = pdf[gid_col_p].astype(str).str.strip()
+pdf["_pitcher_allowed_runs"] = _num(pdf[runs_col_p])
+pdf_team = pdf.groupby(["_game_id","_team_key"], dropna=False)["_pitcher_allowed_runs"].mean().reset_index()
 
-    # Ensure target columns exist
-    for col in ["proj_home_score","proj_away_score","projected_real_run_total","favorite"]:
-        if col not in base.columns:
-            base[col] = pd.NA
+# ---- combine per-team ----
+team_proj = bdf_team.merge(pdf_team, on=["_game_id","_team_key"], how="inner")
+team_proj["proj_team_runs"] = (team_proj["_batter_proj_runs"] + team_proj["_pitcher_allowed_runs"]) / 2.0
 
-    # Batter file (hard-coded columns)
-    try:
-        bdf = pd.read_csv(BATTER_FILE, dtype=str)
-    except Exception as e:
-        print(f"❌ Cannot read {BATTER_FILE}: {e}")
-        sys.exit(1)
-    bdf = _std(bdf)
-    for c in ["team_name","game_id","projected_team_runs"]:
-        if c not in bdf.columns:
-            print(f"❌ {BATTER_FILE} missing column: {c}")
-            sys.exit(1)
-    bdf["_team_key"] = bdf["team_name"].apply(_canon_team_name)
-    bdf["_game_id"] = bdf["game_id"].astype(str).str.strip()
-    bdf["_b_runs"] = _num(bdf["projected_team_runs"])
-    b_team = bdf.groupby(["_game_id","_team_key"], dropna=False)["_b_runs"].mean().reset_index()
+# ---- map to base home/away ----
+home_merge = base[["_game_id","_home_key"]].merge(
+    team_proj, left_on=["_game_id","_home_key"], right_on=["_game_id","_team_key"], how="left"
+)
+away_merge = base[["_game_id","_away_key"]].merge(
+    team_proj, left_on=["_game_id","_away_key"], right_on=["_game_id","_team_key"], how="left"
+)
+base["proj_home_score"] = home_merge["proj_team_runs"]
+base["proj_away_score"] = away_merge["proj_team_runs"]
 
-    # Pitcher file (hard-coded columns)
-    try:
-        pdf = pd.read_csv(PITCHER_FILE, dtype=str)
-    except Exception as e:
-        print(f"❌ Cannot read {PITCHER_FILE}: {e}")
-        sys.exit(1)
-    pdf = _std(pdf)
-    for c in ["team_name","game_id","proj_runs_allowed"]:
-        if c not in pdf.columns:
-            print(f"❌ {PITCHER_FILE} missing column: {c}")
-            sys.exit(1)
-    pdf["_team_key"] = pdf["team_name"].apply(_canon_team_name)
-    pdf["_game_id"] = pdf["game_id"].astype(str).str.strip()
-    pdf["_p_runs"] = _num(pdf["proj_runs_allowed"])
-    p_team = pdf.groupby(["_game_id","_team_key"], dropna=False)["_p_runs"].mean().reset_index()
+base["projected_real_run_total"] = _num(base["proj_home_score"]) + _num(base["proj_away_score"])
+base["favorite"] = np.where(
+    _num(base["proj_home_score"]) > _num(base["proj_away_score"]), base["home_team"],
+    np.where(_num(base["proj_away_score"]) > _num(base["proj_home_score"]), base["away_team"], pd.NA)
+)
 
-    # Combine per-team
-    team_proj = b_team.merge(p_team, on=["_game_id","_team_key"], how="inner")
-    team_proj["proj_team_runs"] = (team_proj["_b_runs"] + team_proj["_p_runs"]) / 2.0
+# preserve original col order, appending fields as needed
+out_cols = list(base_raw.columns)
+for c in ["proj_home_score","proj_away_score","projected_real_run_total","favorite"]:
+    if c not in out_cols: out_cols.append(c)
 
-    # Map to home/away
-    home = base[["_game_id","_home_key"]].merge(team_proj, left_on=["_game_id","_home_key"], right_on=["_game_id","_team_key"], how="left")
-    away = base[["_game_id","_away_key"]].merge(team_proj, left_on=["_game_id","_away_key"], right_on=["_game_id","_team_key"], how="left")
-
-    base["proj_home_score"] = home["proj_team_runs"]
-    base["proj_away_score"] = away["proj_team_runs"]
-
-    # Totals and favorite
-    h = _num(base["proj_home_score"])
-    a = _num(base["proj_away_score"])
-    base["projected_real_run_total"] = h + a
-    base["favorite"] = np.where(h > a, base["home_team"], np.where(a > h, base["away_team"], pd.NA))
-
-    # Save back preserving original column order (append our fields if new)
-    out_cols = list(pd.read_csv(GAME_OUT, nrows=0).columns)
-    for c in ["proj_home_score","proj_away_score","projected_real_run_total","favorite"]:
-        if c not in out_cols:
-            out_cols.append(c)
-    base[out_cols].to_csv(GAME_OUT, index=False)
-    print(f"✅ Updated {len(base):,} rows → {GAME_OUT}")
-
-if __name__ == "__main__":
-    main()
+base[out_cols].to_csv(GAME_OUT, index=False)
+print(f"✅ Updated {len(base):,} rows → {GAME_OUT}")
