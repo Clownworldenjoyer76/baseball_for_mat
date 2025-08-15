@@ -13,6 +13,45 @@ def is_valid_time(t):
     except Exception:
         return False
 
+def _norm_team_str(s: pd.Series) -> pd.Series:
+    s = s.astype(str).str.strip().str.upper()
+    s = s.str.replace(r'[^A-Z0-9 ]','', regex=True)
+    s = s.str.replace('WHITE SOX','WHITESOX', regex=False).str.replace('RED SOX','REDSOX', regex=False)
+    s = s.str.replace('ST LOUIS','CARDINALS', regex=False).str.replace('SAINT LOUIS','CARDINALS', regex=False)
+    s = s.str.replace(' ','', regex=False)
+    return s
+
+def _backfill_date_from_sched(df: pd.DataFrame) -> pd.DataFrame:
+    """If schedule is available, fill missing/blank 'date' by matching (home_team, away_team)."""
+    try:
+        sched = pd.read_csv("data/bets/mlb_sched.csv", dtype=str)
+    except Exception:
+        return df
+
+    if not all(c in df.columns for c in ["home_team","away_team"]):
+        return df
+    if not all(c in sched.columns for c in ["home_team","away_team","date"]):
+        return df
+
+    if "date" not in df.columns:
+        df["date"] = pd.NA
+
+    df["_HN"] = _norm_team_str(df["home_team"])
+    df["_AN"] = _norm_team_str(df["away_team"])
+    sched["_HN"] = _norm_team_str(sched["home_team"])
+    sched["_AN"] = _norm_team_str(sched["away_team"])
+
+    need = df["date"].isna() | (df["date"].astype(str).str.strip()=="")
+    if need.any():
+        m = df.loc[need, ["_HN","_AN"]].merge(
+            sched[["date","_HN","_AN"]].drop_duplicates(), on=["_HN","_AN"], how="left"
+        )
+        if "date" in m.columns:
+            df.loc[need, "date"] = m["date"].values
+
+    df.drop(columns=["_HN","_AN"], inplace=True, errors="ignore")
+    return df
+
 def normalize_todays_games():
     print("📥 Loading input files...")
     try:
@@ -58,15 +97,12 @@ def normalize_todays_games():
         sys.exit(1)
 
     print("🔁 Checking for duplicate matchups (by teams + time)…")
-    # Include time so doubleheaders don’t trigger false positives
     dupe_mask = games.duplicated(subset=["home_team", "away_team", "game_time"], keep=False)
     if dupe_mask.any():
-        # If exact duplicates are present, you can decide to fail here.
-        exact_dupes = games[dupe_mask].sort_values(["home_team","away_team","game_time"])
-        # print("❌ Exact duplicate rows found:")
-        # print(exact_dupes)
-        # sys.exit(1)
-        pass
+        pass  # allow; could be doubleheaders or benign
+
+    # Optional: add/repair date by matching schedule
+    games = _backfill_date_from_sched(games)
 
     games.to_csv(OUTPUT_FILE, index=False)
     print(f"✅ normalize_todays_games completed: {OUTPUT_FILE}")
