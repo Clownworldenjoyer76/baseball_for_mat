@@ -1,291 +1,268 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Projects per-game expected runs using ONLY:
-  - data/bets/prep/batter_props_final.csv
-  - data/bets/prep/pitcher_props_bets.csv  (loaded for parity; not required if batter file has opp_pitcher_z)
-  - data/raw/todaysgames_normalized.csv     (drives game list + real home/away)
 
-Writes:
+"""
+Inputs (read-only):
+  - data/raw/todaysgames_normalized.csv
+  - data/bets/prep/batter_props_final.csv
+  - data/bets/prep/pitcher_props_bets.csv
+
+Output (overwrite):
   - data/bets/game_props_history.csv
 
-Intentionally leaves BLANK:
+Columns left BLANK:
   favorite_correct, actual_real_run_total, run_total_diff, home_score, away_score
 """
 
 from __future__ import annotations
-from pathlib import Path
 import pandas as pd
 import numpy as np
+from pathlib import Path
 import re
 
 # ---------------- Paths ----------------
-BATTERS = Path("data/bets/prep/batter_props_final.csv")
+GAMES    = Path("data/raw/todaysgames_normalized.csv")
+BATTERS  = Path("data/bets/prep/batter_props_final.csv")
 PITCHERS = Path("data/bets/prep/pitcher_props_bets.csv")
-GAMES   = Path("data/raw/todaysgames_normalized.csv")
-OUTFILE = Path("data/bets/game_props_history.csv")
+OUTFILE  = Path("data/bets/game_props_history.csv")
 
-# ---------------- Simple model constants (tune later if desired) ----------------
-BASELINE = 4.5      # league-average runs per team per game
-ALPHA    = 0.8      # lineup z impact
-BETA     = 0.8      # opposing SP z impact
-PROB_MIN, PROB_MAX = 0.50, 0.99  # clamp for weighting if over_probability exists
+# ---------------- Model constants ----------------
+BASELINE = 4.5   # league-average runs per team
+ALPHA    = 0.8   # lineup z impact
+BETA     = 0.8   # opposing SP z impact
 
-# ---------------- Helpers ----------------
-def _prep(df: pd.DataFrame) -> pd.DataFrame:
-    """Lower/strip columns; coerce core identifiers to clean strings; normalize date."""
+# ---------------- Team normalization (deterministic; no fuzzy) ----------------
+CANON = {
+    "diamondbacks":"Diamondbacks","braves":"Braves","orioles":"Orioles","red sox":"Red Sox",
+    "cubs":"Cubs","white sox":"White Sox","reds":"Reds","guardians":"Guardians","rockies":"Rockies",
+    "tigers":"Tigers","astros":"Astros","royals":"Royals","angels":"Angels","dodgers":"Dodgers",
+    "marlins":"Marlins","brewers":"Brewers","twins":"Twins","mets":"Mets","yankees":"Yankees",
+    "athletics":"Athletics","phillies":"Phillies","pirates":"Pirates","padres":"Padres",
+    "giants":"Giants","mariners":"Mariners","cardinals":"Cardinals","rays":"Rays","rangers":"Rangers",
+    "blue jays":"Blue Jays","nationals":"Nationals",
+}
+ALIASES = {
+    # common variants/misspellings
+    "d-backs":"diamondbacks","dbacks":"diamondbacks","diamondiamondbacks":"diamondbacks",
+    "whitesox":"white sox","chi white sox":"white sox","chi sox":"white sox",
+    "ny yankees":"yankees","st. louis cardinals":"cardinals","la angels":"angels",
+    "los angeles angels":"angels","oakland athletics":"athletics","tb rays":"rays",
+    "tampa bay devil rays":"rays","toronto blue jays":"blue jays","washington nationals":"nationals",
+}
+
+def _collapse_repeat_word(s: str) -> str:
+    # Fix sequences like "Diamondiamondbacks" -> "Diamondbacks"
+    return re.sub(r'(?:([a-z]{3,}))\1+', r'\1', s, flags=re.I)
+
+def norm_team(x: str) -> str:
+    if not isinstance(x, str):
+        return ""
+    s = _collapse_repeat_word(x.strip())
+    s = re.sub(r"\s+", " ", s)
+    low = s.lower()
+    low = ALIASES.get(low, low)
+    return CANON.get(low, s.title())
+
+# ---------------- Utils ----------------
+def prep(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = df.columns.str.strip().str.lower()
-    for c in ("team", "opp_team", "home_team", "away_team", "game_id", "date"):
+    for c in ("team","opp_team","home_team","away_team","game_id","date","matchup"):
         if c in df.columns:
             df[c] = df[c].astype("string").fillna("").str.strip()
     if "date" in df.columns:
         parsed = pd.to_datetime(df["date"], errors="coerce", utc=False)
         df["date"] = parsed.dt.date.astype("string").fillna("")
-    # scrub literal "nan"
-    for c in ("team", "opp_team", "home_team", "away_team", "game_id", "date"):
-        if c in df.columns:
-            df[c] = df[c].replace({"nan": ""})
     return df
 
-def _assert_cols(df: pd.DataFrame, required: list[str], name: str) -> None:
-    missing = [c for c in required if c not in df.columns]
-    if missing:
-        raise ValueError(f"{name}: missing required column(s): {missing}")
-
-def _normalize_team_strings(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    """Trim/collapse whitespace and normalize a few common variants."""
-    mapping = {
-        "d-backs": "diamondbacks",
-        "dbacks": "diamondbacks",
-        "ny yankees": "yankees",
-        "st. louis cardinals": "cardinals",
-        "la angels": "angels",
-        "los angeles angels": "angels",
-        "oakland athletics": "athletics",
-        "chi white sox": "white sox",
-        "chi cubs": "cubs",
-        "sd padres": "padres",
-        "sf giants": "giants",
-        "tb rays": "rays",
-        "tampa bay devil rays": "rays",
-    }
-    for c in cols:
-        if c in df.columns:
-            s = df[c].astype("string").fillna("").str.strip()
-            s = s.str.replace(r"\s+", " ", regex=True)
-            # normalize punctuation and case for mapping, then restore case title-ish
-            s_lower = s.str.lower()
-            for k, v in mapping.items():
-                s_lower = s_lower.str.replace(re.escape(k), v, regex=True)
-            df[c] = s_lower.str.title()
-    return df
-
-def _wmean(values: pd.Series, weights: pd.Series) -> float:
-    v = pd.to_numeric(values, errors="coerce")
-    w = pd.to_numeric(weights, errors="coerce")
-    m = v.notna() & w.notna()
-    return float(np.average(v[m], weights=w[m])) if m.any() else np.nan
-
-def _smean(values: pd.Series) -> float:
-    v = pd.to_numeric(values, errors="coerce")
-    return float(v.mean()) if v.notna().any() else np.nan
-
-def _ensure_dir(p: Path) -> None:
+def ensure_dir(p: Path) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
 
-def _parse_matchup_to_home_away(df: pd.DataFrame) -> pd.DataFrame:
-    """If games file lacks home_team/away_team, try to parse from 'matchup' like 'Away @ Home'."""
-    if "matchup" not in df.columns:
-        return df
-    away_list, home_list = [], []
-    for s in df["matchup"].astype("string").fillna(""):
-        parts = re.split(r"@|\bat\b", s)
-        if len(parts) >= 2:
-            away = parts[0].strip()
-            home = parts[1].strip()
-        else:
-            away, home = "", ""
-        away_list.append(away)
-        home_list.append(home)
-    if "away_team" not in df.columns:
-        df["away_team"] = pd.Series(away_list, dtype="string")
-    if "home_team" not in df.columns:
-        df["home_team"] = pd.Series(home_list, dtype="string")
-    return df
+# ---------------- Load ----------------
+if not GAMES.exists():   raise SystemExit(f"Missing input: {GAMES}")
+if not BATTERS.exists(): raise SystemExit(f"Missing input: {BATTERS}")
+if not PITCHERS.exists():raise SystemExit(f"Missing input: {PITCHERS}")
 
-# ---------------- Load inputs ----------------
-if not BATTERS.exists():
-    raise SystemExit(f"Missing input: {BATTERS}")
-if not PITCHERS.exists():
-    raise SystemExit(f"Missing input: {PITCHERS}")
-if not GAMES.exists():
-    raise SystemExit(f"Missing input: {GAMES}")
+games   = prep(pd.read_csv(GAMES))
+batters = prep(pd.read_csv(BATTERS))
+pitch   = prep(pd.read_csv(PITCHERS))
 
-bat = _prep(pd.read_csv(BATTERS))
-_   = _prep(pd.read_csv(PITCHERS))  # kept for parity; not strictly used if batter file has opp_pitcher_z
-games = _prep(pd.read_csv(GAMES))
-
-# ---------------- Prepare games (authoritative home/away/date/game_id) ----------------
-games = _parse_matchup_to_home_away(games)
-
-# Allow several common column name variants
-# date
-if "date" not in games.columns:
-    # try game_date or similar
-    for alt in ["game_date", "gamedate"]:
-        if alt in games.columns:
-            games.rename(columns={alt: "date"}, inplace=True)
-            break
-    games["date"] = games.get("date", pd.Series("", index=games.index, dtype="string"))
-# home/away
+# ---------------- Prepare games: authoritative date/home/away/game_id ----------------
 if "home_team" not in games.columns or "away_team" not in games.columns:
-    raise SystemExit("todaysgames_normalized.csv must contain home_team and away_team (or a parsable 'matchup').")
-# game_id (optional but helpful)
-if "game_id" not in games.columns:
-    # synthesize stable id
-    games["game_id"] = (
-        games["home_team"].str[:3].str.upper() + "_" +
-        games["away_team"].str[:3].str.upper() + "_" +
-        pd.Series(range(1, len(games) + 1), dtype="int").astype(str)
-    )
+    # Try to parse from 'matchup' like "Away @ Home"
+    if "matchup" in games.columns:
+        away, home = [], []
+        for s in games["matchup"].astype("string").fillna(""):
+            parts = re.split(r"@|\bat\b", s)
+            if len(parts) >= 2:
+                away.append(parts[0].strip()); home.append(parts[1].strip())
+            else:
+                away.append(""); home.append("")
+        games["away_team"] = pd.Series(away, dtype="string")
+        games["home_team"] = pd.Series(home, dtype="string")
+    else:
+        raise SystemExit("todaysgames_normalized.csv must contain home_team and away_team or a parsable 'matchup'.")
 
-# Normalize team names to improve matching
-games = _normalize_team_strings(games, ["home_team", "away_team"])
-for c in ("home_team", "away_team", "date", "game_id"):
-    games[c] = games[c].astype("string").fillna("").str.strip()
+games["home_team"] = games["home_team"].map(norm_team)
+games["away_team"] = games["away_team"].map(norm_team)
 
-# Reduce to minimal set we need
-games = games[["date", "game_id", "home_team", "away_team"]].drop_duplicates().reset_index(drop=True)
+# Keep only necessary columns; do NOT create game_id if it's missing
+if "date" not in games.columns:
+    games["date"] = ""  # keep blank if absent
+core_games_cols = [c for c in ["date","game_id","home_team","away_team"] if c in games.columns]
+games = games[core_games_cols].drop_duplicates().reset_index(drop=True)
 
-# ---------------- Validate / normalize batter props ----------------
-# Required: team & opp_team to compute directional strengths
-required_bat_cols = ["team", "opp_team"]
-missing = [c for c in required_bat_cols if c not in bat.columns]
-if missing:
-    raise SystemExit(f"batter_props_final.csv missing required columns: {missing}")
-
-# Strength column: prefer mega_z, then batter_z, else zeros
-if "mega_z" in bat.columns:
-    strength_col = "mega_z"
-elif "batter_z" in bat.columns:
-    strength_col = "batter_z"
+# ---------------- Build offense strength from batter props ----------------
+# Choose strength metric
+if "mega_z" in batters.columns:
+    bat_strength_col = "mega_z"
+elif "batter_z" in batters.columns:
+    bat_strength_col = "batter_z"
 else:
-    strength_col = "_zero_strength"
-    bat[strength_col] = 0.0
+    bat_strength_col = "_zero"
+    batters[bat_strength_col] = 0.0
 
-# Weights from over_probability if present
-if "over_probability" in bat.columns:
-    op = pd.to_numeric(bat["over_probability"], errors="coerce").clip(0.0, 1.0)
-    bat["__weight"] = op.fillna(0.75).clip(PROB_MIN, PROB_MAX)
+# Weighting
+if "over_probability" in batters.columns:
+    w = pd.to_numeric(batters["over_probability"], errors="coerce").clip(0.0, 1.0).fillna(0.75)
 else:
-    bat["__weight"] = 1.0
+    w = pd.Series(1.0, index=batters.index)
 
-# Opposing starter z from batter rows if available
-opp_sp_col = "opp_pitcher_z" if "opp_pitcher_z" in bat.columns else None
+# Normalize team keys
+for c in ("team","opp_team"):
+    if c in batters.columns:
+        batters[c] = batters[c].map(norm_team)
 
-# Normalize team strings in batters
-bat = _normalize_team_strings(bat, ["team", "opp_team"])
-for c in ("team", "opp_team", "date", "game_id"):
-    if c in bat.columns:
-        bat[c] = bat[c].astype("string").fillna("").str.strip()
-
-# ---------------- Aggregate batter props to team-vs-opp rows ----------------
-group_keys = [k for k in ["date", "game_id", "team", "opp_team"] if k in bat.columns]
+group_keys = [k for k in ["date","team","opp_team"] if k in batters.columns]
 if not group_keys:
-    group_keys = ["team", "opp_team"]
+    group_keys = ["team","opp_team"]
 
-agg_rows = []
-for keys, df in bat.groupby(group_keys, dropna=False):
-    if not isinstance(keys, tuple):
-        keys = (keys,)
+off_rows = []
+for keys, df in batters.groupby(group_keys, dropna=False):
+    if not isinstance(keys, tuple): keys = (keys,)
     kdict = dict(zip(group_keys, [str(k) for k in keys]))
+    off = np.nan
+    try:
+        off = float(np.average(pd.to_numeric(df[bat_strength_col], errors="coerce"), 
+                               weights=pd.to_numeric(w.loc[df.index], errors="coerce")))
+    except Exception:
+        off = float(pd.to_numeric(df[bat_strength_col], errors="coerce").mean())
+    if not np.isfinite(off): off = 0.0
+    off_rows.append({**kdict, "offense_strength_z": off})
 
-    off_strength = _wmean(df[strength_col], df["__weight"])
-    opp_sp_z     = _smean(df[opp_sp_col]) if opp_sp_col and opp_sp_col in df.columns else np.nan
+off_df = pd.DataFrame(off_rows)
+for c in ("date","team","opp_team"):
+    if c in off_df.columns:
+        off_df[c] = off_df[c].astype("string").fillna("")
 
-    agg_rows.append({
-        **kdict,
-        "offense_strength_z": off_strength,
-        "opp_sp_strength_z": opp_sp_z
-    })
+# ---------------- Build SP strength from pitcher props (per date, team) ----------------
+# Choose pitcher strength metric
+if "mega_z" in pitch.columns:
+    sp_strength_col = "mega_z"
+elif "z_score" in pitch.columns:
+    sp_strength_col = "z_score"
+else:
+    sp_strength_col = "_zero"
+    pitch[sp_strength_col] = 0.0
 
-team_vs_opp = pd.DataFrame(agg_rows)
-for c in ("team", "opp_team", "date", "game_id"):
-    if c in team_vs_opp.columns:
-        team_vs_opp[c] = team_vs_opp[c].astype("string").fillna("").str.strip()
+# Weighting
+if "over_probability" in pitch.columns:
+    pw = pd.to_numeric(pitch["over_probability"], errors="coerce").clip(0.0, 1.0).fillna(0.75)
+else:
+    pw = pd.Series(1.0, index=pitch.index)
 
-# Helper to fetch a directional strength (Team A vs Team B), first try same date, then any date fallback
-def _get_strength(a_team: str, b_team: str, date_val: str) -> tuple[float, float]:
-    """Return (offense_strength_z, opp_sp_strength_z) for a_team vs b_team."""
-    # Date-aware exact
-    mask = (team_vs_opp.get("team", "") == a_team) & (team_vs_opp.get("opp_team", "") == b_team)
-    if "date" in team_vs_opp.columns and date_val:
-        mask = mask & (team_vs_opp.get("date", "") == date_val)
-    rows = team_vs_opp.loc[mask]
-    if not rows.empty:
-        return (
-            float(rows["offense_strength_z"].iloc[0]) if pd.notna(rows["offense_strength_z"].iloc[0]) else 0.0,
-            float(rows["opp_sp_strength_z"].iloc[0]) if pd.notna(rows["opp_sp_strength_z"].iloc[0]) else 0.0,
-        )
-    # Fallback: ignore date
-    mask2 = (team_vs_opp.get("team", "") == a_team) & (team_vs_opp.get("opp_team", "") == b_team)
-    rows2 = team_vs_opp.loc[mask2]
-    if not rows2.empty:
-        return (
-            float(rows2["offense_strength_z"].iloc[0]) if pd.notna(rows2["offense_strength_z"].iloc[0]) else 0.0,
-            float(rows2["opp_sp_strength_z"].iloc[0]) if pd.notna(rows2["opp_sp_strength_z"].iloc[0]) else 0.0,
-        )
-    # Nothing found
-    return 0.0, 0.0
+# Normalize team field
+if "team" not in pitch.columns:
+    pitch["team"] = ""
+pitch["team"] = pitch["team"].map(norm_team)
 
-# ---------------- Build projections anchored to games file ----------------
+sp_keys = [k for k in ["date","team"] if k in pitch.columns]
+if not sp_keys:
+    sp_keys = ["team"]
+
+sp_rows = []
+for keys, df in pitch.groupby(sp_keys, dropna=False):
+    if not isinstance(keys, tuple): keys = (keys,)
+    kdict = dict(zip(sp_keys, [str(k) for k in keys]))
+    # pick the row with highest weight as the presumed listed starter
+    idx = pw.loc[df.index].astype(float).fillna(0.0).idxmax()
+    val = float(pd.to_numeric(df.loc[idx, sp_strength_col], errors="coerce")) if idx in df.index else 0.0
+    if not np.isfinite(val): val = 0.0
+    sp_rows.append({**kdict, "sp_strength_z": val})
+
+sp_df = pd.DataFrame(sp_rows)
+for c in sp_keys:
+    sp_df[c] = sp_df[c].astype("string").fillna("")
+
+# Helpers to fetch strengths with date-aware fallback
+def get_offense_z(team: str, opp: str, date_val: str) -> float:
+    if {"date","team","opp_team"}.issubset(off_df.columns):
+        m = (off_df["team"] == team) & (off_df["opp_team"] == opp) & (off_df["date"] == date_val)
+        if m.any(): 
+            v = float(off_df.loc[m, "offense_strength_z"].iloc[0])
+            return v if np.isfinite(v) else 0.0
+    # fallback without date
+    m2 = (off_df.get("team","") == team) & (off_df.get("opp_team","") == opp)
+    if m2.any():
+        v = float(off_df.loc[m2, "offense_strength_z"].iloc[0])
+        return v if np.isfinite(v) else 0.0
+    return 0.0
+
+def get_sp_z(team: str, date_val: str) -> float:
+    if {"date","team"}.issubset(sp_df.columns):
+        m = (sp_df["team"] == team) & (sp_df["date"] == date_val)
+        if m.any():
+            v = float(sp_df.loc[m, "sp_strength_z"].iloc[0])
+            return v if np.isfinite(v) else 0.0
+    # fallback without date
+    m2 = (sp_df.get("team","") == team)
+    if m2.any():
+        v = float(sp_df.loc[m2, "sp_strength_z"].iloc[0])
+        return v if np.isfinite(v) else 0.0
+    return 0.0
+
+# ---------------- Build projections (anchored to games list) ----------------
 out_rows = []
 for _, g in games.iterrows():
-    date_val = str(g["date"])
-    gid_val  = str(g["game_id"])
-    home     = str(g["home_team"])
-    away     = str(g["away_team"])
+    date_val = str(g.get("date",""))
+    gid      = str(g.get("game_id","")) if "game_id" in games.columns else ""
+    home     = norm_team(str(g.get("home_team","")))
+    away     = norm_team(str(g.get("away_team","")))
 
-    # Get directional strengths
-    # Home offense vs Away pitcher
-    home_off_z, home_opp_sp_z = _get_strength(home, away, date_val)
-    # Away offense vs Home pitcher
-    away_off_z, away_opp_sp_z = _get_strength(away, home, date_val)
+    home_off = get_offense_z(home, away, date_val)
+    away_off = get_offense_z(away, home, date_val)
 
-    # μ = BASELINE + ALPHA*offense_z − BETA*opp_SP_z
-    mu_home = BASELINE + ALPHA * home_off_z - BETA * home_opp_sp_z
-    mu_away = BASELINE + ALPHA * away_off_z - BETA * away_opp_sp_z
+    home_opp_sp = get_sp_z(away, date_val)  # away SP vs home bats
+    away_opp_sp = get_sp_z(home, date_val)  # home SP vs away bats
+
+    mu_home = BASELINE + ALPHA*home_off - BETA*home_opp_sp
+    mu_away = BASELINE + ALPHA*away_off - BETA*away_opp_sp
     mu_home = max(0.0, float(mu_home)) if np.isfinite(mu_home) else 0.0
     mu_away = max(0.0, float(mu_away)) if np.isfinite(mu_away) else 0.0
 
     out_rows.append({
         "date": date_val,
-        "game_id": gid_val,
+        "game_id": gid,
         "home_team": home,
         "away_team": away,
         "proj_home_runs": round(mu_home, 3),
         "proj_away_runs": round(mu_away, 3),
         "proj_total": round(mu_home + mu_away, 3),
+        "favorite_correct": "",
+        "actual_real_run_total": "",
+        "run_total_diff": "",
+        "home_score": "",
+        "away_score": "",
     })
 
 out = pd.DataFrame(out_rows, columns=[
-    "date", "game_id", "home_team", "away_team",
-    "proj_home_runs", "proj_away_runs", "proj_total"
+    "date","game_id","home_team","away_team",
+    "proj_home_runs","proj_away_runs","proj_total",
+    "favorite_correct","actual_real_run_total","run_total_diff",
+    "home_score","away_score"
 ])
 
-# ---------------- Fail-fast smoke checks ----------------
-if out.empty:
-    raise SystemExit("No games produced—verify todaysgames_normalized.csv has home_team/away_team (and date/game_id if available).")
-assert {"home_team", "away_team"}.issubset(out.columns), "Missing home/away in output."
-assert out[["proj_home_runs", "proj_away_runs"]].notna().all().all(), "Found NaNs in projections."
-assert (out["proj_home_runs"] >= 0).all() and (out["proj_away_runs"] >= 0).all(), "Negative projections."
-
-# ---------------- Add required blank columns ----------------
-for col in ["favorite_correct", "actual_real_run_total", "run_total_diff", "home_score", "away_score"]:
-    out[col] = pd.NA
-
 # ---------------- Write ----------------
-_ensure_dir(OUTFILE)
+ensure_dir(OUTFILE)
 out.to_csv(OUTFILE, index=False, encoding="utf-8", lineterminator="\n")
 print(f"Wrote {len(out)} rows -> {OUTFILE}")
