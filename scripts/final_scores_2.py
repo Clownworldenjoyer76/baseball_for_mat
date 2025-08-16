@@ -1,346 +1,291 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Build per-game projected runs (using only the two provided inputs) and write to:
-  Output: data/bets/game_props_history.csv
-
-Inputs:
+Projects per-game expected runs using ONLY:
   - data/bets/prep/batter_props_final.csv
-  - data/bets/prep/pitcher_props_bets.csv
+  - data/bets/prep/pitcher_props_bets.csv  (loaded for parity; not required if batter file has opp_pitcher_z)
+  - data/raw/todaysgames_normalized.csv     (drives game list + real home/away)
 
-Leaves these columns BLANK in the output:
+Writes:
+  - data/bets/game_props_history.csv
+
+Intentionally leaves BLANK:
   favorite_correct, actual_real_run_total, run_total_diff, home_score, away_score
 """
 
 from __future__ import annotations
-import sys
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import re
 
-# ---------------- Configuration (tunable but fixed here) ----------------
-INPUT_BATTERS = Path("data/bets/prep/batter_props_final.csv")
-INPUT_PITCHERS = Path("data/bets/prep/pitcher_props_bets.csv")
-OUTPUT_FILE   = Path("data/bets/game_props_history.csv")
+# ---------------- Paths ----------------
+BATTERS = Path("data/bets/prep/batter_props_final.csv")
+PITCHERS = Path("data/bets/prep/pitcher_props_bets.csv")
+GAMES   = Path("data/raw/todaysgames_normalized.csv")
+OUTFILE = Path("data/bets/game_props_history.csv")
 
-# League-level baseline & weights (simple, explainable; tune later)
-BASELINE_RUNS_PER_TEAM = 4.5
-ALPHA_OFFENSE = 0.8    # strength of lineup z on runs
-BETA_PITCHING = 0.8    # strength of opposing SP z on runs
+# ---------------- Simple model constants (tune later if desired) ----------------
+BASELINE = 4.5      # league-average runs per team per game
+ALPHA    = 0.8      # lineup z impact
+BETA     = 0.8      # opposing SP z impact
+PROB_MIN, PROB_MAX = 0.50, 0.99  # clamp for weighting if over_probability exists
 
-# If over_probability is missing/noisy, clamp to this range before weighting
-PROB_MIN, PROB_MAX = 0.50, 0.99
-
-# ---------------- Helper functions ----------------
+# ---------------- Helpers ----------------
 def _prep(df: pd.DataFrame) -> pd.DataFrame:
+    """Lower/strip columns; coerce core identifiers to clean strings; normalize date."""
     df = df.copy()
     df.columns = df.columns.str.strip().str.lower()
-    # Normalize common key fields if present
-    for c in ("team", "opp_team", "player", "name"):
+    for c in ("team", "opp_team", "home_team", "away_team", "game_id", "date"):
         if c in df.columns:
-            df[c] = df[c].astype(str).str.strip()
-    # Standardize date if present
+            df[c] = df[c].astype("string").fillna("").str.strip()
     if "date" in df.columns:
-        # Keep as string for matching the existing CSV schema
-        df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date.astype("string")
+        parsed = pd.to_datetime(df["date"], errors="coerce", utc=False)
+        df["date"] = parsed.dt.date.astype("string").fillna("")
+    # scrub literal "nan"
+    for c in ("team", "opp_team", "home_team", "away_team", "game_id", "date"):
+        if c in df.columns:
+            df[c] = df[c].replace({"nan": ""})
     return df
 
-def safe_mean(x: pd.Series) -> float:
-    if len(x) == 0:
-        return np.nan
-    return float(np.nanmean(x.values))
+def _assert_cols(df: pd.DataFrame, required: list[str], name: str) -> None:
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"{name}: missing required column(s): {missing}")
 
-def weighted_mean(values: pd.Series, weights: pd.Series) -> float:
-    v = values.astype(float)
-    w = weights.astype(float)
-    mask = np.isfinite(v) & np.isfinite(w)
-    if not mask.any():
-        return np.nan
-    return float(np.average(v[mask], weights=w[mask]))
+def _normalize_team_strings(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """Trim/collapse whitespace and normalize a few common variants."""
+    mapping = {
+        "d-backs": "diamondbacks",
+        "dbacks": "diamondbacks",
+        "ny yankees": "yankees",
+        "st. louis cardinals": "cardinals",
+        "la angels": "angels",
+        "los angeles angels": "angels",
+        "oakland athletics": "athletics",
+        "chi white sox": "white sox",
+        "chi cubs": "cubs",
+        "sd padres": "padres",
+        "sf giants": "giants",
+        "tb rays": "rays",
+        "tampa bay devil rays": "rays",
+    }
+    for c in cols:
+        if c in df.columns:
+            s = df[c].astype("string").fillna("").str.strip()
+            s = s.str.replace(r"\s+", " ", regex=True)
+            # normalize punctuation and case for mapping, then restore case title-ish
+            s_lower = s.str.lower()
+            for k, v in mapping.items():
+                s_lower = s_lower.str.replace(re.escape(k), v, regex=True)
+            df[c] = s_lower.str.title()
+    return df
 
-def pick_two_teams(team_series: pd.Series) -> tuple[str, str]:
-    teams = sorted(set([t for t in team_series if isinstance(t, str) and t]))
-    if len(teams) == 2:
-        return teams[0], teams[1]
-    # Fallback: best effort
-    if len(teams) == 1:
-        return teams[0], teams[0]
-    return "", ""
+def _wmean(values: pd.Series, weights: pd.Series) -> float:
+    v = pd.to_numeric(values, errors="coerce")
+    w = pd.to_numeric(weights, errors="coerce")
+    m = v.notna() & w.notna()
+    return float(np.average(v[m], weights=w[m])) if m.any() else np.nan
+
+def _smean(values: pd.Series) -> float:
+    v = pd.to_numeric(values, errors="coerce")
+    return float(v.mean()) if v.notna().any() else np.nan
+
+def _ensure_dir(p: Path) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+
+def _parse_matchup_to_home_away(df: pd.DataFrame) -> pd.DataFrame:
+    """If games file lacks home_team/away_team, try to parse from 'matchup' like 'Away @ Home'."""
+    if "matchup" not in df.columns:
+        return df
+    away_list, home_list = [], []
+    for s in df["matchup"].astype("string").fillna(""):
+        parts = re.split(r"@|\bat\b", s)
+        if len(parts) >= 2:
+            away = parts[0].strip()
+            home = parts[1].strip()
+        else:
+            away, home = "", ""
+        away_list.append(away)
+        home_list.append(home)
+    if "away_team" not in df.columns:
+        df["away_team"] = pd.Series(away_list, dtype="string")
+    if "home_team" not in df.columns:
+        df["home_team"] = pd.Series(home_list, dtype="string")
+    return df
 
 # ---------------- Load inputs ----------------
-if not INPUT_BATTERS.exists():
-    sys.exit(f"ERROR: Missing input file: {INPUT_BATTERS}")
-if not INPUT_PITCHERS.exists():
-    sys.exit(f"ERROR: Missing input file: {INPUT_PITCHERS}")
+if not BATTERS.exists():
+    raise SystemExit(f"Missing input: {BATTERS}")
+if not PITCHERS.exists():
+    raise SystemExit(f"Missing input: {PITCHERS}")
+if not GAMES.exists():
+    raise SystemExit(f"Missing input: {GAMES}")
 
-bat = _prep(pd.read_csv(INPUT_BATTERS))
-pit = _prep(pd.read_csv(INPUT_PITCHERS))
+bat = _prep(pd.read_csv(BATTERS))
+_   = _prep(pd.read_csv(PITCHERS))  # kept for parity; not strictly used if batter file has opp_pitcher_z
+games = _prep(pd.read_csv(GAMES))
 
-# Columns we hope/assume exist in batter file (defensive checks below)
-# - team, opp_team, batter_z or mega_z, over_probability, opp_pitcher_z, game_id, date
-# Pitcher file is optional for this calculation (batters already carry opp_pitcher_z),
-# but we load it to potentially future-proof or validate.
+# ---------------- Prepare games (authoritative home/away/date/game_id) ----------------
+games = _parse_matchup_to_home_away(games)
 
-# ---------------- Build team-game aggregates from batter props ----------------
-# Choose batter strength metric (prefer mega_z if present; else batter_z; else 0)
+# Allow several common column name variants
+# date
+if "date" not in games.columns:
+    # try game_date or similar
+    for alt in ["game_date", "gamedate"]:
+        if alt in games.columns:
+            games.rename(columns={alt: "date"}, inplace=True)
+            break
+    games["date"] = games.get("date", pd.Series("", index=games.index, dtype="string"))
+# home/away
+if "home_team" not in games.columns or "away_team" not in games.columns:
+    raise SystemExit("todaysgames_normalized.csv must contain home_team and away_team (or a parsable 'matchup').")
+# game_id (optional but helpful)
+if "game_id" not in games.columns:
+    # synthesize stable id
+    games["game_id"] = (
+        games["home_team"].str[:3].str.upper() + "_" +
+        games["away_team"].str[:3].str.upper() + "_" +
+        pd.Series(range(1, len(games) + 1), dtype="int").astype(str)
+    )
+
+# Normalize team names to improve matching
+games = _normalize_team_strings(games, ["home_team", "away_team"])
+for c in ("home_team", "away_team", "date", "game_id"):
+    games[c] = games[c].astype("string").fillna("").str.strip()
+
+# Reduce to minimal set we need
+games = games[["date", "game_id", "home_team", "away_team"]].drop_duplicates().reset_index(drop=True)
+
+# ---------------- Validate / normalize batter props ----------------
+# Required: team & opp_team to compute directional strengths
+required_bat_cols = ["team", "opp_team"]
+missing = [c for c in required_bat_cols if c not in bat.columns]
+if missing:
+    raise SystemExit(f"batter_props_final.csv missing required columns: {missing}")
+
+# Strength column: prefer mega_z, then batter_z, else zeros
 if "mega_z" in bat.columns:
-    bat_strength_col = "mega_z"
+    strength_col = "mega_z"
 elif "batter_z" in bat.columns:
-    bat_strength_col = "batter_z"
+    strength_col = "batter_z"
 else:
-    # If neither present, create a zero column
-    bat_strength_col = "_tmp_bat_strength"
-    bat[bat_strength_col] = 0.0
+    strength_col = "_zero_strength"
+    bat[strength_col] = 0.0
 
-# Build weight vector from over_probability if available
+# Weights from over_probability if present
 if "over_probability" in bat.columns:
-    weights = bat["over_probability"].clip(PROB_MIN, PROB_MAX)
+    op = pd.to_numeric(bat["over_probability"], errors="coerce").clip(0.0, 1.0)
+    bat["__weight"] = op.fillna(0.75).clip(PROB_MIN, PROB_MAX)
 else:
-    weights = pd.Series(1.0, index=bat.index)
+    bat["__weight"] = 1.0
 
-# Opponent SP z-score (prefer opp_pitcher_z if present)
+# Opposing starter z from batter rows if available
 opp_sp_col = "opp_pitcher_z" if "opp_pitcher_z" in bat.columns else None
 
+# Normalize team strings in batters
+bat = _normalize_team_strings(bat, ["team", "opp_team"])
+for c in ("team", "opp_team", "date", "game_id"):
+    if c in bat.columns:
+        bat[c] = bat[c].astype("string").fillna("").str.strip()
+
+# ---------------- Aggregate batter props to team-vs-opp rows ----------------
 group_keys = [k for k in ["date", "game_id", "team", "opp_team"] if k in bat.columns]
 if not group_keys:
-    # Fall back to pairing by (team, opp_team) only
-    for k in ["team", "opp_team"]:
-        if k not in bat.columns:
-            bat[k] = ""
     group_keys = ["team", "opp_team"]
 
 agg_rows = []
 for keys, df in bat.groupby(group_keys, dropna=False):
-    # Normalize keys to dict
     if not isinstance(keys, tuple):
         keys = (keys,)
-    keydict = dict(zip(group_keys, keys))
+    kdict = dict(zip(group_keys, [str(k) for k in keys]))
 
-    # Offense strength = weighted mean of batter z
-    off_strength = weighted_mean(df[bat_strength_col], weights.loc[df.index])
-
-    # Opponent SP z (same within matchup rows; take mean to be safe)
-    opp_sp_z = safe_mean(df[opp_sp_col]) if opp_sp_col and opp_sp_col in df.columns else np.nan
+    off_strength = _wmean(df[strength_col], df["__weight"])
+    opp_sp_z     = _smean(df[opp_sp_col]) if opp_sp_col and opp_sp_col in df.columns else np.nan
 
     agg_rows.append({
-        **keydict,
+        **kdict,
         "offense_strength_z": off_strength,
-        "opp_sp_strength_z": opp_sp_z,
+        "opp_sp_strength_z": opp_sp_z
     })
 
-team_game = pd.DataFrame(agg_rows)
+team_vs_opp = pd.DataFrame(agg_rows)
+for c in ("team", "opp_team", "date", "game_id"):
+    if c in team_vs_opp.columns:
+        team_vs_opp[c] = team_vs_opp[c].astype("string").fillna("").str.strip()
 
-# Ensure date/game_id columns exist (string for date)
-if "date" not in team_game.columns:
-    team_game["date"] = pd.NA
-if "game_id" not in team_game.columns:
-    # Create a synthetic game_id from team/opp_team if needed
-    team_game["game_id"] = (
-        team_game.get("team", "").astype(str).str[:3] + "_" +
-        team_game.get("opp_team", "").astype(str).str[:3]
-    )
+# Helper to fetch a directional strength (Team A vs Team B), first try same date, then any date fallback
+def _get_strength(a_team: str, b_team: str, date_val: str) -> tuple[float, float]:
+    """Return (offense_strength_z, opp_sp_strength_z) for a_team vs b_team."""
+    # Date-aware exact
+    mask = (team_vs_opp.get("team", "") == a_team) & (team_vs_opp.get("opp_team", "") == b_team)
+    if "date" in team_vs_opp.columns and date_val:
+        mask = mask & (team_vs_opp.get("date", "") == date_val)
+    rows = team_vs_opp.loc[mask]
+    if not rows.empty:
+        return (
+            float(rows["offense_strength_z"].iloc[0]) if pd.notna(rows["offense_strength_z"].iloc[0]) else 0.0,
+            float(rows["opp_sp_strength_z"].iloc[0]) if pd.notna(rows["opp_sp_strength_z"].iloc[0]) else 0.0,
+        )
+    # Fallback: ignore date
+    mask2 = (team_vs_opp.get("team", "") == a_team) & (team_vs_opp.get("opp_team", "") == b_team)
+    rows2 = team_vs_opp.loc[mask2]
+    if not rows2.empty:
+        return (
+            float(rows2["offense_strength_z"].iloc[0]) if pd.notna(rows2["offense_strength_z"].iloc[0]) else 0.0,
+            float(rows2["opp_sp_strength_z"].iloc[0]) if pd.notna(rows2["opp_sp_strength_z"].iloc[0]) else 0.0,
+        )
+    # Nothing found
+    return 0.0, 0.0
 
-# ---------------- Pair into single game rows and compute μ ----------------
-# Some rows are "team vs opp_team". We want one row per game with both sides' μ.
-# We'll merge each pair by using a canonical key: frozenset({team, opp_team}) + date (+ game_id if present).
-def canon_key(row: pd.Series) -> tuple:
-    a = str(row.get("team", "")).strip()
-    b = str(row.get("opp_team", "")).strip()
-    d = str(row.get("date", ""))
-    gid = str(row.get("game_id", ""))
-    pair = tuple(sorted([a, b]))
-    # prefer (date, game_id, pair) to reduce accidental collisions
-    return (d, gid, pair[0], pair[1])
+# ---------------- Build projections anchored to games file ----------------
+out_rows = []
+for _, g in games.iterrows():
+    date_val = str(g["date"])
+    gid_val  = str(g["game_id"])
+    home     = str(g["home_team"])
+    away     = str(g["away_team"])
 
-team_game["_ckey"] = team_game.apply(canon_key, axis=1)
+    # Get directional strengths
+    # Home offense vs Away pitcher
+    home_off_z, home_opp_sp_z = _get_strength(home, away, date_val)
+    # Away offense vs Home pitcher
+    away_off_z, away_opp_sp_z = _get_strength(away, home, date_val)
 
-games = []
-for _, grp in team_game.groupby("_ckey"):
-    t1, t2 = pick_two_teams(pd.concat([grp["team"], grp["opp_team"]], ignore_index=True))
-    if not t1 or not t2:
-        continue
+    # μ = BASELINE + ALPHA*offense_z − BETA*opp_SP_z
+    mu_home = BASELINE + ALPHA * home_off_z - BETA * home_opp_sp_z
+    mu_away = BASELINE + ALPHA * away_off_z - BETA * away_opp_sp_z
+    mu_home = max(0.0, float(mu_home)) if np.isfinite(mu_home) else 0.0
+    mu_away = max(0.0, float(mu_away)) if np.isfinite(mu_away) else 0.0
 
-    # Extract strengths for each side
-    # side A row: team == t1
-    a_row = grp.loc[grp["team"] == t1].head(1)
-    b_row = grp.loc[grp["team"] == t2].head(1)
-
-    # In case structure is flipped (team/opp), attempt mirror
-    if a_row.empty and not grp.empty:
-        a_row = grp.iloc[[0]]
-    if b_row.empty and len(grp) > 1:
-        b_row = grp.iloc[[1]]
-
-    # Pull keys
-    date_val = str(a_row["date"].iloc[0]) if "date" in a_row.columns else str(pd.NA)
-    gid_val  = str(a_row["game_id"].iloc[0]) if "game_id" in a_row.columns else ""
-
-    # Offense strengths
-    a_off = float(a_row["offense_strength_z"].iloc[0]) if not a_row.empty else 0.0
-    b_off = float(b_row["offense_strength_z"].iloc[0]) if not b_row.empty else 0.0
-
-    # Opposing SP z for each side (from batter rows)
-    a_opp_sp = float(a_row["opp_sp_strength_z"].iloc[0]) if not a_row.empty else 0.0
-    b_opp_sp = float(b_row["opp_sp_strength_z"].iloc[0]) if not b_row.empty else 0.0
-
-    # Projected means (μ) using the simple linear log-less mapping:
-    # μ_team = baseline + α * offense_strength_z - β * opp_sp_strength_z
-    a_mu = BASELINE_RUNS_PER_TEAM + ALPHA_OFFENSE * a_off - BETA_PITCHING * a_opp_sp
-    b_mu = BASELINE_RUNS_PER_TEAM + ALPHA_OFFENSE * b_off - BETA_PITCHING * b_opp_sp
-
-    # Hard clip to non-negative
-    a_mu = max(0.0, float(a_mu))
-    b_mu = max(0.0, float(b_mu))
-
-    games.append({
+    out_rows.append({
         "date": date_val,
         "game_id": gid_val,
-        "home_team": None,  # will be set later if template provides; else alphabetical
-        "away_team": None,
-        "team_a": t1,
-        "team_b": t2,
-        "proj_team_a_runs": round(a_mu, 3),
-        "proj_team_b_runs": round(b_mu, 3),
-        "proj_total": round(a_mu + b_mu, 3),
+        "home_team": home,
+        "away_team": away,
+        "proj_home_runs": round(mu_home, 3),
+        "proj_away_runs": round(mu_away, 3),
+        "proj_total": round(mu_home + mu_away, 3),
     })
 
-proj_df = pd.DataFrame(games)
-
-# If nothing to write, still create an empty output with required blank columns
-if proj_df.empty:
-    proj_df = pd.DataFrame(columns=[
-        "date", "game_id", "home_team", "away_team",
-        "proj_team_a_runs", "proj_team_b_runs", "proj_total"
-    ])
-
-# ---------------- Integrate with existing output schema (if any) ----------------
-existing_cols = []
-template = None
-if OUTPUT_FILE.exists():
-    try:
-        template = pd.read_csv(OUTPUT_FILE)
-        template = _prep(template)
-        existing_cols = template.columns.tolist()
-    except Exception:
-        template = None
-
-# Decide home/away:
-# 1) If template has home_team/away_team, align μ to those team names when we can match.
-# 2) Else, set alphabetically: home = min(team_a, team_b), away = max(team_a, team_b).
-def align_home_away(row: pd.Series, home: str|None, away: str|None) -> dict:
-    t1, t2 = str(row["team_a"]), str(row["team_b"])
-    mu_a, mu_b = float(row["proj_team_a_runs"]), float(row["proj_team_b_runs"])
-    if home and away and home in (t1, t2) and away in (t1, t2):
-        if home == t1:
-            return {"home_team": t1, "away_team": t2, "proj_home_runs": mu_a, "proj_away_runs": mu_b}
-        else:
-            return {"home_team": t2, "away_team": t1, "proj_home_runs": mu_b, "proj_away_runs": mu_a}
-    # fallback alphabetical
-    h, a = sorted([t1, t2])
-    if h == t1:
-        return {"home_team": h, "away_team": a, "proj_home_runs": mu_a, "proj_away_runs": mu_b}
-    else:
-        return {"home_team": h, "away_team": a, "proj_home_runs": mu_b, "proj_away_runs": mu_a}
-
-# Build final frame
-final_rows = []
-if template is not None and not template.empty:
-    # Try to map each projected game into the template by (date, game_id) primarily, else by team pair.
-    tmpl_key_cols = [c for c in ["date", "game_id", "home_team", "away_team"] if c in template.columns]
-
-    # Create lookup from template for home/away resolution
-    tmpl_lookup = {}
-    for _, r in template.iterrows():
-        key = (str(r.get("date", "")), str(r.get("game_id", "")),
-               str(r.get("home_team", "")), str(r.get("away_team", "")))
-        tmpl_lookup[key] = {"home_team": r.get("home_team", None), "away_team": r.get("away_team", None)}
-
-    for _, r in proj_df.iterrows():
-        # Prefer exact (date, game_id) match in template to extract declared home/away
-        home_hint, away_hint = None, None
-        k1 = (str(r.get("date", "")), str(r.get("game_id", "")),
-              str(r.get("team_a", "")), str(r.get("team_b", "")))
-        k2 = (str(r.get("date", "")), str(r.get("game_id", "")),
-              str(r.get("team_b", "")), str(r.get("team_a", "")))
-
-        # Find any template row with same date/game_id (regardless of teams)
-        hits = [k for k in tmpl_lookup.keys() if k[0] == k1[0] and k[1] == k1[1]]
-        if hits:
-            home_hint = tmpl_lookup[hits[0]].get("home_team")
-            away_hint = tmpl_lookup[hits[0]].get("away_team")
-
-        aligned = align_home_away(r, home_hint, away_hint)
-
-        out = {
-            "date": r.get("date", pd.NA),
-            "game_id": r.get("game_id", ""),
-            "home_team": aligned["home_team"],
-            "away_team": aligned["away_team"],
-            "proj_home_runs": round(aligned["proj_home_runs"], 3),
-            "proj_away_runs": round(aligned["proj_away_runs"], 3),
-            "proj_total": round(r.get("proj_total", np.nan), 3),
-        }
-        final_rows.append(out)
-
-    out_df = pd.DataFrame(final_rows)
-
-    # Merge back into the template on (date, home_team, away_team, game_id) when present
-    merge_keys = [c for c in ["date", "game_id", "home_team", "away_team"] if c in template.columns and c in out_df.columns]
-    if not merge_keys:
-        merge_keys = [c for c in ["date", "home_team", "away_team"] if c in template.columns and c in out_df.columns]
-
-    merged = template.merge(out_df, on=merge_keys, how="left", suffixes=("", "_proj"))
-
-    # If template already has proj_* columns, update them; else keep the *_proj we just added
-    for col in ["proj_home_runs", "proj_away_runs", "proj_total"]:
-        if col in merged.columns and f"{col}_proj" in merged.columns:
-            merged[col] = merged[f"{col}_proj"].combine_first(merged[col])
-            merged.drop(columns=[f"{col}_proj"], inplace=True, errors="ignore")
-        elif f"{col}_proj" in merged.columns:
-            merged.rename(columns={f"{col}_proj": col}, inplace=True)
-
-    final = merged
-
-else:
-    # No template: construct a clean output with standard columns
-    aligned = proj_df.apply(lambda r: align_home_away(r, None, None), axis=1, result_type="expand")
-    final = pd.DataFrame({
-        "date": proj_df["date"],
-        "game_id": proj_df["game_id"],
-        "home_team": aligned["home_team"],
-        "away_team": aligned["away_team"],
-        "proj_home_runs": aligned["proj_home_runs"].round(3),
-        "proj_away_runs": aligned["proj_away_runs"].round(3),
-        "proj_total": proj_df["proj_total"].round(3),
-    })
-
-# ---------------- Ensure required blank columns ----------------
-for blank_col in ["favorite_correct", "actual_real_run_total", "run_total_diff", "home_score", "away_score"]:
-    if blank_col not in final.columns:
-        final[blank_col] = pd.NA
-    else:
-        final[blank_col] = pd.NA
-
-# Optional: stable column order if we created from scratch
-preferred_order = [
+out = pd.DataFrame(out_rows, columns=[
     "date", "game_id", "home_team", "away_team",
-    "proj_home_runs", "proj_away_runs", "proj_total",
-    "home_score", "away_score", "actual_real_run_total",
-    "run_total_diff", "favorite_correct"
-]
-# Keep existing columns first (if any), then append missing preferred columns in order
-ordered = []
-seen = set()
-for c in final.columns:
-    if c not in seen:
-        ordered.append(c); seen.add(c)
-for c in preferred_order:
-    if c not in seen and c in final.columns:
-        ordered.append(c); seen.add(c)
+    "proj_home_runs", "proj_away_runs", "proj_total"
+])
 
-final = final[ordered]
+# ---------------- Fail-fast smoke checks ----------------
+if out.empty:
+    raise SystemExit("No games produced—verify todaysgames_normalized.csv has home_team/away_team (and date/game_id if available).")
+assert {"home_team", "away_team"}.issubset(out.columns), "Missing home/away in output."
+assert out[["proj_home_runs", "proj_away_runs"]].notna().all().all(), "Found NaNs in projections."
+assert (out["proj_home_runs"] >= 0).all() and (out["proj_away_runs"] >= 0).all(), "Negative projections."
 
-# ---------------- Write output ----------------
-OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-final.to_csv(OUTPUT_FILE, index=False)
+# ---------------- Add required blank columns ----------------
+for col in ["favorite_correct", "actual_real_run_total", "run_total_diff", "home_score", "away_score"]:
+    out[col] = pd.NA
 
-print(f"Wrote {len(final)} rows to {OUTPUT_FILE}")
+# ---------------- Write ----------------
+_ensure_dir(OUTFILE)
+out.to_csv(OUTFILE, index=False, encoding="utf-8", lineterminator="\n")
+print(f"Wrote {len(out)} rows -> {OUTFILE}")
