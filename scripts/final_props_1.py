@@ -1,169 +1,244 @@
 #!/usr/bin/env python3
-# scripts/final_props_1.py
+# scripts/final_props_select.py
 #
-# Purpose: Select top 5 player props per game (batters only) with a prop-mix rule
-#          and write ONLY today's games to data/bets/player_props_history.csv.
+# Purpose:
+#   For each game_id on today's MLB schedule:
+#     - pick highest-prob prop for: Home run, Hits, Total Bases, Pitcher prop
+#     - then pick the highest remaining prop from either dataset
+#   All selected rows get prop_sort="game".
+#   Then, across ALL selected rows, the global top 3 by over_probability
+#   are re-labeled prop_sort="Best Prop" (only 3 total).
+#
+# Inputs:
+#   data/bets/prep/batter_props_final.csv   (batters)
+#   data/bets/prep/pitcher_props_bets.csv   (pitchers)
+#   data/bets/mlb_sched.csv                 (schedule with date & game_id)
+#
+# Output:
+#   data/bets/player_props_history.csv
 
-import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import pandas as pd
+import numpy as np
+
 try:
-    # Python 3.9+ standard library
-    from zoneinfo import ZoneInfo
+    from zoneinfo import ZoneInfo  # py3.9+
 except Exception:
-    ZoneInfo = None  # fallback handled below
+    ZoneInfo = None
 
 # ---------- File paths ----------
-BATTER_FILE = Path("data/bets/prep/batter_props_final.csv")
-SCHED_FILE  = Path("data/bets/mlb_sched.csv")
-PLAYER_OUT  = Path("data/bets/player_props_history.csv")
+BATTER_FILE  = Path("data/bets/prep/batter_props_final.csv")
+PITCHER_FILE = Path("data/bets/prep/pitcher_props_bets.csv")
+SCHED_FILE   = Path("data/bets/mlb_sched.csv")
+PLAYER_OUT   = Path("data/bets/player_props_history.csv")
 
-# ---------- Config ----------
 TZ_NAME = "America/New_York"
 
-# ---------- Columns in player output ----------
+# Output schema
 PLAYER_COLUMNS = [
     "player_id", "name", "team", "prop", "line", "value",
     "over_probability", "date", "game_id", "prop_correct", "prop_sort"
 ]
 
+# Prop name aliases (lower-case compare)
+HR_ALIASES  = {"home_runs", "home run", "hr"}
+H_ALIASES   = {"hits"}
+TB_ALIASES  = {"total_bases", "total bases"}
+
 def _std(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = df.columns.str.strip().str.lower()
+    df.columns = df.columns.str.strip()
+    # keep original casing in values, but compare via lower() when needed
     return df
 
 def _today_str() -> str:
     if ZoneInfo is not None:
         now_local = datetime.now(ZoneInfo(TZ_NAME))
     else:
-        # Fallback: naive local time; still format as YYYY-MM-DD
         now_local = datetime.now()
     return now_local.strftime("%Y-%m-%d")
 
-def _pick_top5_with_mix(df_game: pd.DataFrame) -> pd.DataFrame:
+def _ensure_numeric(df: pd.DataFrame, cols) -> None:
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+def _normalize_team(s: pd.Series) -> pd.Series:
+    return s.astype(str).str.strip().str.lower()
+
+def _first_best(df: pd.DataFrame, mask: pd.Series) -> list[int]:
+    """Return index of the row with max over_probability within mask; [] if none."""
+    pool = df[mask].dropna(subset=["over_probability"])
+    if pool.empty:
+        return []
+    idx = pool["over_probability"].idxmax()
+    return [idx] if pd.notna(idx) else []
+
+def _select_for_game(df_game: pd.DataFrame) -> pd.DataFrame:
     """
     Per-game selection:
-      • Try to include 1 'hits' and 1 'home_runs' if present.
-      • Cap 'total_bases' at most 3 in the final 5.
-      • Fill remaining slots by highest over_probability.
-      • Mark top 3 as 'Best Prop'.
+      1) best HR
+      2) best Hits
+      3) best Total Bases
+      4) best Pitcher prop (is_pitcher==True)
+      5) best remaining (not already picked)
+    Some categories may be missing; we only pick what's available.
     """
-    df = df_game.sort_values("over_probability", ascending=False).copy()
-
-    if len(df) <= 5:
-        selected = df.copy()
-        selected["prop_sort"] = "game"
-        selected.loc[selected.index[: min(3, len(selected))], "prop_sort"] = "Best Prop"
-        return selected
+    df = df_game.copy()
+    df["_prop_lc"] = df["prop"].astype(str).str.strip().str.lower()
 
     picks: list[int] = []
 
-    def _take_best(prop_name: str, k: int = 1):
-        nonlocal picks
-        mask = (df["prop"].str.lower() == prop_name) & (~df.index.isin(picks))
-        pool = df[mask]
-        if not pool.empty:
-            picks.extend(list(pool.head(k).index))
+    # 1) Home run
+    picks += _first_best(df, df["_prop_lc"].isin(HR_ALIASES))
 
-    # Reserve 1 Hits, 1 HR if available
-    _take_best("hits", k=1)
-    _take_best("home_runs", k=1)
+    # 2) Hits
+    picks += _first_best(df, df["_prop_lc"].isin(H_ALIASES) & (~df.index.isin(picks)))
 
-    # Fill remaining, respecting TB cap
-    MAX_TB = 3
-    for idx, row in df.iterrows():
-        if len(picks) >= 5:
-            break
-        if idx in picks:
-            continue
-        if str(row.get("prop", "")).lower() == "total_bases":
-            tb_count = int((df.loc[picks, "prop"].str.lower() == "total_bases").sum()) if picks else 0
-            if tb_count >= MAX_TB:
-                continue
-        picks.append(idx)
+    # 3) Total Bases
+    picks += _first_best(df, df["_prop_lc"].isin(TB_ALIASES) & (~df.index.isin(picks)))
 
-    selected = df.loc[picks].copy().sort_values("over_probability", ascending=False)
+    # 4) Pitcher prop
+    if "is_pitcher" in df.columns:
+        picks += _first_best(df, (df["is_pitcher"] == True) & (~df.index.isin(picks)))
+
+    # 5) Highest remaining
+    remain = df[~df.index.isin(picks)].dropna(subset=["over_probability"])
+    if not remain.empty:
+        picks.append(remain["over_probability"].idxmax())
+
+    if not picks:
+        return df.head(0).copy()
+
+    selected = df.loc[picks].copy()
+    selected = selected.sort_values("over_probability", ascending=False)
+
+    # Mark all as "game" initially
     selected["prop_sort"] = "game"
-    selected.loc[selected.index[: min(3, len(selected))], "prop_sort"] = "Best Prop"
     return selected
 
 def main():
     # ----- Load inputs -----
-    batters = _std(pd.read_csv(BATTER_FILE))
-    sched   = _std(pd.read_csv(SCHED_FILE))
+    if not SCHED_FILE.exists():
+        raise SystemExit(f"❌ Missing schedule: {SCHED_FILE}")
+    sched = _std(pd.read_csv(SCHED_FILE))
 
-    # Required columns
-    for col in ["prop", "over_probability", "team"]:
-        if col not in batters.columns:
-            raise SystemExit(f"❌ {BATTER_FILE} missing column '{col}'")
+    if not BATTER_FILE.exists():
+        raise SystemExit(f"❌ Missing batter props: {BATTER_FILE}")
+    bat = _std(pd.read_csv(BATTER_FILE))
+
+    if not PITCHER_FILE.exists():
+        raise SystemExit(f"❌ Missing pitcher props: {PITCHER_FILE}")
+    pit = _std(pd.read_csv(PITCHER_FILE))
+
+    # ---- Validate schedule
     need_sched = [c for c in ("home_team", "away_team", "date", "game_id") if c not in sched.columns]
     if need_sched:
         raise SystemExit(f"❌ schedule missing columns: {need_sched}")
 
-    # Normalize types
-    batters["over_probability"] = pd.to_numeric(batters["over_probability"], errors="coerce")
-    batters["team"] = batters["team"].astype(str).str.strip().str.lower()
-
-    # ----- Choose "today" from schedule -----
+    # Normalize schedule dates and pick today's slate (fallback to latest)
     sched["date"] = pd.to_datetime(sched["date"], errors="coerce")
     if sched["date"].isna().all():
-        raise SystemExit("❌ schedule 'date' column could not be parsed")
+        raise SystemExit("❌ schedule 'date' column unparseable")
 
-    today_str = _today_str()
-    today_dt  = pd.to_datetime(today_str)
-
-    sched_today = sched[sched["date"] == today_dt].copy()
+    today = pd.to_datetime(_today_str())
+    sched_today = sched[sched["date"] == today].copy()
     if sched_today.empty:
-        # Fallback: use the latest available date in schedule
         latest = sched["date"].max()
         sched_today = sched[sched["date"] == latest].copy()
-        print(f"⚠️ No rows for today ({today_str}) in schedule; using latest date {latest.date()} instead.")
+        print(f"⚠️ No schedule for today ({today.date()}); using latest {latest.date()} instead.")
     else:
-        print(f"✅ Using schedule for today: {today_str}")
+        print(f"✅ Using schedule for {today.date()}")
 
-    # Map team → (date, game_id) for TODAY ONLY
+    # Build team → (date, game_id) map for the chosen date only
     team_map = pd.concat([
         sched_today[["home_team", "date", "game_id"]].rename(columns={"home_team": "team"}),
         sched_today[["away_team", "date", "game_id"]].rename(columns={"away_team": "team"}),
     ], ignore_index=True).drop_duplicates()
+    team_map["team_norm"] = _normalize_team(team_map["team"])
 
-    team_map["team"] = team_map["team"].astype(str).str.strip().str.lower()
+    # ---- Prepare batter props
+    for col in ["prop", "team", "over_probability"]:
+        if col not in bat.columns:
+            raise SystemExit(f"❌ batter file missing '{col}'")
+    _ensure_numeric(bat, ["over_probability", "line", "value"])
+    bat["team_norm"] = _normalize_team(bat["team"])
+    bat["is_pitcher"] = False
 
-    # ----- Join batters to today's schedule -----
-    merged = batters.merge(team_map, on="team", how="left")
+    # ---- Prepare pitcher props
+    for col in ["prop", "team", "over_probability"]:
+        if col not in pit.columns:
+            raise SystemExit(f"❌ pitcher file missing '{col}'")
+    _ensure_numeric(pit, ["over_probability", "line", "value"])
+    pit["team_norm"] = _normalize_team(pit["team"])
+    # infer pitcher flag
+    if "player_pos" in pit.columns:
+        pit["is_pitcher"] = pit["player_pos"].astype(str).str.lower().eq("pitcher")
+    else:
+        pit["is_pitcher"] = True  # assume everything in this file is a pitcher prop
 
-    # Strictly keep ONLY scheduled teams (drop NaN game_id)
-    before = len(merged)
-    merged = merged[merged["game_id"].notna()].copy()
-    after = len(merged)
+    # ---- Combine, then attach (date, game_id) via team_map, strict filter to scheduled games
+    both = pd.concat([bat, pit], ignore_index=True, sort=False)
+    both = both.merge(team_map[["team_norm", "date", "game_id"]], on="team_norm", how="left")
+
+    before = len(both)
+    both = both[both["game_id"].notna()].copy()
+    after = len(both)
     if after < before:
-        print(f"🧹 Dropped {before - after} props not on today's schedule.")
+        print(f"🧹 Dropped {before - after} off-schedule props (no game_id match).")
 
-    # Optional hygiene: drop rows with missing/invalid over_probability
-    merged = merged[pd.to_numeric(merged["over_probability"], errors="coerce").notna()].copy()
+    # ---- Clean & sort
+    both["over_probability"] = pd.to_numeric(both["over_probability"], errors="coerce")
+    both = both.dropna(subset=["over_probability"])
+    both = both.sort_values(["game_id", "over_probability"], ascending=[True, False])
 
-    # Sort for stable grouping
-    merged = merged.sort_values(["game_id", "over_probability"], ascending=[True, False])
+    # ---- Per-game selection
+    chunks = []
+    for gid, df_game in both.groupby("game_id", dropna=False):
+        sel = _select_for_game(df_game)
+        if not sel.empty:
+            chunks.append(sel)
 
-    # ----- Group by game and select top 5 with mix -----
-    top_chunks = []
-    for gid, df_game in merged.groupby("game_id", dropna=False):
-        top_chunks.append(_pick_top5_with_mix(df_game))
+    selected = pd.concat(chunks, ignore_index=True) if chunks else both.head(0).copy()
 
-    top_props = pd.concat(top_chunks, ignore_index=True) if top_chunks else merged.head(0).copy()
+    # ---- All get "game", then globally re-label top 3 as "Best Prop"
+    if not selected.empty:
+        # Ensure only 3 in total get "Best Prop"
+        top3_idx = selected["over_probability"].nlargest(3).index
+        selected.loc[:, "prop_sort"] = "game"
+        selected.loc[top3_idx, "prop_sort"] = "Best Prop"
 
-    # Prepare output schema
-    top_props["prop_correct"] = ""
+    # ---- Construct output schema
+    selected["prop_correct"] = ""
+    # If 'date' not present from join, copy from schedule selected date
+    if "date" not in selected.columns:
+        selected["date"] = sched_today["date"].iloc[0]
+    # Ensure date is str YYYY-MM-DD
+    selected["date"] = pd.to_datetime(selected["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+
+    # Normalize expected columns; fill missing with ""
+    out = selected.copy()
     for col in PLAYER_COLUMNS:
-        if col not in top_props.columns:
-            top_props[col] = ""
-
-    player_out = top_props[PLAYER_COLUMNS].copy()
+        if col not in out.columns:
+            out[col] = ""
+    out = out[PLAYER_COLUMNS].copy()
 
     PLAYER_OUT.parent.mkdir(parents=True, exist_ok=True)
-    player_out.to_csv(PLAYER_OUT, index=False)
+    out.to_csv(PLAYER_OUT, index=False)
 
-    print(f"✅ Wrote players → {PLAYER_OUT} (rows={len(player_out)})")
+    print(f"✅ Wrote {len(out)} rows → {PLAYER_OUT}")
+    # Optional: quick summary per game
+    try:
+        summary = (
+            out.groupby("game_id")["prop"]
+              .apply(lambda s: ", ".join(s.astype(str).tolist()))
+              .head(10)
+              .to_dict()
+        )
+        print(f"🧾 Example picks by game (first 10): {summary}")
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     main()
