@@ -1,27 +1,7 @@
 #!/usr/bin/env python3
-# scripts/final_props_select.py
+# scripts/final_props_1.py
 #
-# For each game on today's MLB schedule:
-#   1) highest-prob Home run
-#   2) highest-prob Hits
-#   3) highest-prob Total Bases
-#   4) highest-prob Pitcher prop
-#   5) highest remaining prop (either file, excluding the 4 already picked)
-# All selected rows get prop_sort="game".
-# Then, across ALL selected rows, the global top 3 by over_probability
-# are re-labeled prop_sort="Best Prop" (ONLY 3 total).
-#
-# Team names are normalized via data/Data/team_name_master.csv to the
-# canonical "team_name" (e.g., "Cubs", "Yankees", ...).
-#
-# Inputs:
-#   data/bets/prep/batter_props_final.csv
-#   data/bets/prep/pitcher_props_bets.csv
-#   data/bets/mlb_sched.csv
-#   data/Data/team_name_master.csv
-#
-# Output:
-#   data/bets/player_props_history.csv
+# Outputs: data/bets/player_props_history.csv
 
 from pathlib import Path
 from datetime import datetime
@@ -29,18 +9,18 @@ import pandas as pd
 import numpy as np
 
 try:
-    from zoneinfo import ZoneInfo  # Python 3.9+
+    from zoneinfo import ZoneInfo  # py3.9+
 except Exception:
     ZoneInfo = None
 
-# ---------- File paths ----------
+# -------- Paths --------
 BATTER_FILE   = Path("data/bets/prep/batter_props_final.csv")
 PITCHER_FILE  = Path("data/bets/prep/pitcher_props_bets.csv")
 SCHED_FILE    = Path("data/bets/mlb_sched.csv")
 TEAMMAP_FILE  = Path("data/Data/team_name_master.csv")
-PLAYER_OUT    = Path("data/bets/player_props_history.csv")
 
-TZ_NAME = "America/New_York"
+PLAYER_OUT    = Path("data/bets/player_props_history.csv")
+TZ_NAME       = "America/New_York"
 
 # Output schema
 PLAYER_COLUMNS = [
@@ -53,6 +33,7 @@ HR_ALIASES = {"home_runs", "home run", "hr"}
 H_ALIASES  = {"hits"}
 TB_ALIASES = {"total_bases", "total bases"}
 
+# ------------- utils -------------
 def _std(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = df.columns.str.strip()
@@ -70,37 +51,38 @@ def _ensure_num(df: pd.DataFrame, cols) -> None:
 
 def _build_team_normalizer(team_map_df: pd.DataFrame):
     """
-    Build a normalizer function that maps any alias to canonical team_name.
-    Accept keys from: team_code, abbreviation, team_name, clean_team_name.
+    Map any alias to canonical team_name from team_name_master.csv.
+    Accept keys from: team_code, abbreviation, team_name, clean_team_name (+ lowercase value of team_name).
     """
     req = {"team_code", "team_name", "abbreviation", "clean_team_name"}
-    missing = [c for c in req if c not in team_map_df.columns]
-    if missing:
-        raise SystemExit(f"❌ team_name_master.csv missing columns: {missing}")
+    miss = [c for c in req if c not in team_map_df.columns]
+    if miss:
+        raise SystemExit(f"❌ team_name_master.csv missing columns: {miss}")
 
-    # Lowercased lookup: any alias -> team_name (canonical)
     alias_to_team = {}
 
-    def _add_key(val, team_name):
-        if pd.isna(val):
+    def _add(k, team_name):
+        if pd.isna(k):
             return
-        k = str(val).strip().lower()
-        if k:
-            alias_to_team[k] = team_name
+        key = str(k).strip().lower()
+        if key:
+            alias_to_team[key] = team_name
 
     for _, r in team_map_df.iterrows():
         team_name = str(r["team_name"]).strip()
-        _add_key(r["team_code"], team_name)
-        _add_key(r["abbreviation"], team_name)
-        _add_key(r["team_name"], team_name)
-        _add_key(r["clean_team_name"], team_name)
+        # All known aliases
+        _add(r["team_code"], team_name)
+        _add(r["abbreviation"], team_name)
+        _add(r["clean_team_name"], team_name)
+        _add(r["team_name"], team_name)
+        # Also treat lowercase short name (e.g., "padres") as alias
+        _add(str(r["team_name"]).lower(), team_name)
 
     def normalize_one(name: str) -> str:
         if pd.isna(name):
             return ""
         raw = str(name).strip()
-        canonical = alias_to_team.get(raw.lower())
-        return canonical if canonical else raw  # fall back to raw string if unknown
+        return alias_to_team.get(raw.lower(), raw)
 
     def normalize_series(s: pd.Series) -> pd.Series:
         return s.astype(str).map(normalize_one)
@@ -127,11 +109,9 @@ def _select_for_game(df_game: pd.DataFrame) -> pd.DataFrame:
     df["_prop_lc"] = df["prop"].astype(str).str.strip().str.lower()
 
     picks: list[int] = []
-
     picks += _first_best(df, df["_prop_lc"].isin(HR_ALIASES))
     picks += _first_best(df, df["_prop_lc"].isin(H_ALIASES) & (~df.index.isin(picks)))
     picks += _first_best(df, df["_prop_lc"].isin(TB_ALIASES) & (~df.index.isin(picks)))
-
     if "is_pitcher" in df.columns:
         picks += _first_best(df, (df["is_pitcher"] == True) & (~df.index.isin(picks)))
 
@@ -146,14 +126,15 @@ def _select_for_game(df_game: pd.DataFrame) -> pd.DataFrame:
     sel["prop_sort"] = "game"
     return sel
 
+# ------------- main -------------
 def main():
-    # ---- Load team map (for canonicalization to team_name)
+    # Team map
     if not TEAMMAP_FILE.exists():
         raise SystemExit(f"❌ Missing team map: {TEAMMAP_FILE}")
-    team_map_df = _std(pd.read_csv(TEAMMAP_FILE))
-    normalize_one, normalize_series = _build_team_normalizer(team_map_df)
+    teammap = _std(pd.read_csv(TEAMMAP_FILE))
+    normalize_one, normalize_series = _build_team_normalizer(teammap)
 
-    # ---- Load schedule
+    # Schedule
     if not SCHED_FILE.exists():
         raise SystemExit(f"❌ Missing schedule: {SCHED_FILE}")
     sched = _std(pd.read_csv(SCHED_FILE))
@@ -161,7 +142,7 @@ def main():
     if need_sched:
         raise SystemExit(f"❌ schedule missing columns: {need_sched}")
 
-    # Canonicalize schedule team fields to team_name
+    # Canonicalize schedule team names to team_name
     sched["home_team"] = normalize_series(sched["home_team"])
     sched["away_team"] = normalize_series(sched["away_team"])
 
@@ -169,7 +150,7 @@ def main():
     if sched["date"].isna().all():
         raise SystemExit("❌ schedule 'date' column is not parseable")
 
-    # Select today's slate (fallback to latest in file)
+    # Select today's slate (fallback to latest)
     today = pd.to_datetime(_today_str())
     sched_today = sched[sched["date"] == today].copy()
     if sched_today.empty:
@@ -179,13 +160,13 @@ def main():
     else:
         print(f"✅ Using schedule for {today.date()}")
 
-    # Build team → (date, game_id) map (already canonicalized)
+    # Team→(date,game_id) map (already canonical team_name)
     team_map_sched = pd.concat([
         sched_today[["home_team", "date", "game_id"]].rename(columns={"home_team": "team"}),
         sched_today[["away_team", "date", "game_id"]].rename(columns={"away_team": "team"}),
     ], ignore_index=True).drop_duplicates()
 
-    # ---- Load props
+    # Load props
     if not BATTER_FILE.exists():
         raise SystemExit(f"❌ Missing batter props: {BATTER_FILE}")
     if not PITCHER_FILE.exists():
@@ -203,15 +184,14 @@ def main():
     _ensure_num(bat, ["over_probability", "line", "value"])
     _ensure_num(pit, ["over_probability", "line", "value"])
 
-    # Mark pitchers (prefer player_pos if present)
+    # Mark pitchers
     if "player_pos" in pit.columns:
         pit["is_pitcher"] = pit["player_pos"].astype(str).str.lower().eq("pitcher")
     else:
         pit["is_pitcher"] = True
-
     bat["is_pitcher"] = False
 
-    # Canonicalize props' team to team_name via team_name_master.csv
+    # Canonicalize props 'team' to team_name (so they merge to schedule)
     bat["team"] = normalize_series(bat["team"])
     pit["team"] = normalize_series(pit["team"])
 
@@ -219,17 +199,15 @@ def main():
     both = pd.concat([bat, pit], ignore_index=True, sort=False)
     both = both.merge(team_map_sched, on="team", how="left")
 
-    # Strict filter to scheduled games (drop NaN game_id)
     if "game_id" not in both.columns:
         raise SystemExit("❌ Merge failed: no 'game_id' column after schedule join.")
 
-    before = len(both)
+    # Strict schedule filter
     off_mask = both["game_id"].isna()
-    dropped = int(off_mask.sum())
-    if dropped:
+    if int(off_mask.sum()):
         sample = (both.loc[off_mask, "team"].value_counts().head(8).to_dict()
                   if "team" in both.columns else {})
-        print(f"🧹 Dropping {dropped} off-schedule/unaligned props. Sample: {sample}")
+        print(f"🧹 Dropping {int(off_mask.sum())} off-schedule/unaligned props. Sample: {sample}")
     both = both[~off_mask].copy()
 
     # Clean & sort
@@ -245,7 +223,7 @@ def main():
 
     selected = pd.concat(chunks, ignore_index=True) if chunks else both.head(0).copy()
 
-    # All selected start as "game", then globally mark the top 3 as "Best Prop"
+    # Global top-3 → "Best Prop"
     if not selected.empty:
         selected["prop_sort"] = "game"
         top3_idx = selected["over_probability"].nlargest(3).index
@@ -253,17 +231,15 @@ def main():
 
     # Output schema
     selected["prop_correct"] = ""
-    # Ensure date present/normalized (comes from schedule join)
     if "date" in selected.columns:
         selected["date"] = pd.to_datetime(selected["date"], errors="coerce").dt.strftime("%Y-%m-%d")
     else:
         selected["date"] = pd.to_datetime(sched_today["date"].iloc[0]).strftime("%Y-%m-%d")
 
-    # Final column order & write
     out = selected.copy()
-    for col in PLAYER_COLUMNS:
-        if col not in out.columns:
-            out[col] = ""
+    for c in PLAYER_COLUMNS:
+        if c not in out.columns:
+            out[c] = ""
     out = out[PLAYER_COLUMNS].copy()
 
     PLAYER_OUT.parent.mkdir(parents=True, exist_ok=True)
