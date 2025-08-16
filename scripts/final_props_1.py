@@ -59,7 +59,11 @@ def _ensure_num(df: pd.DataFrame, cols) -> None:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
 def _build_team_normalizer(team_map_df: pd.DataFrame):
-    # Map any alias to canonical team_name (per team_name_master.csv)
+    """
+    Map any alias to canonical team_name (per team_name_master.csv).
+    Accept keys: team_code, abbreviation, team_name, clean_team_name,
+    plus lowercase(team_name) as an alias.
+    """
     req = {"team_code", "team_name", "abbreviation", "clean_team_name"}
     miss = [c for c in req if c not in team_map_df.columns]
     if miss:
@@ -95,17 +99,25 @@ def _first_best(df: pd.DataFrame, mask: pd.Series) -> list[int]:
     return [idx] if pd.notna(idx) else []
 
 def _select_for_game(df_game: pd.DataFrame) -> pd.DataFrame:
+    """
+    Per-game selection:
+      1) best HR
+      2) best Hits
+      3) best Total Bases
+      4) best Pitcher prop (is_pitcher==True)
+      5) best remaining (highest over_probability not yet picked)
+    """
     df = df_game.copy()
     df["_prop_lc"] = df["prop"].astype(str).str.strip().str.lower()
 
     picks: list[int] = []
-    picks += _first_best(df, df["_prop_lc"].isin(HR_ALIASES))                                   # HR
-    picks += _first_best(df, df["_prop_lc"].isin(H_ALIASES) & (~df.index.isin(picks)))          # Hits
-    picks += _first_best(df, df["_prop_lc"].isin(TB_ALIASES) & (~df.index.isin(picks)))         # TB
+    picks += _first_best(df, df["_prop_lc"].isin(HR_ALIASES))
+    picks += _first_best(df, df["_prop_lc"].isin(H_ALIASES) & (~df.index.isin(picks)))
+    picks += _first_best(df, df["_prop_lc"].isin(TB_ALIASES) & (~df.index.isin(picks)))
     if "is_pitcher" in df.columns:
-        picks += _first_best(df, (df["is_pitcher"] == True) & (~df.index.isin(picks)))          # Pitcher
+        picks += _first_best(df, (df["is_pitcher"] == True) & (~df.index.isin(picks)))
 
-    remain = df[~df.index.isin(picks)].dropna(subset=["over_probability"])                      # Highest remaining
+    remain = df[~df.index.isin(picks)].dropna(subset=["over_probability"])
     if not remain.empty:
         picks.append(remain["over_probability"].idxmax())
 
@@ -119,14 +131,10 @@ def _select_for_game(df_game: pd.DataFrame) -> pd.DataFrame:
 # ---------- Main ----------
 def main():
     # Team map & normalizer
-    if not TEAMMAP_FILE.exists():
-        raise SystemExit(f"❌ Missing team map: {TEAMMAP_FILE}")
     teammap = _std(pd.read_csv(TEAMMAP_FILE))
     normalize_series = _build_team_normalizer(teammap)
 
     # Schedule
-    if not SCHED_FILE.exists():
-        raise SystemExit(f"❌ Missing schedule: {SCHED_FILE}")
     sched = _std(pd.read_csv(SCHED_FILE))
     need_sched = [c for c in ("home_team", "away_team", "date", "game_id") if c not in sched.columns]
     if need_sched:
@@ -138,6 +146,7 @@ def main():
     if sched["date"].isna().all():
         raise SystemExit("❌ schedule 'date' column is not parseable")
 
+    # Select today's slate (fallback to latest in schedule)
     today = pd.to_datetime(_today_str())
     sched_today = sched[sched["date"] == today].copy()
     if sched_today.empty:
@@ -147,62 +156,84 @@ def main():
     else:
         print(f"✅ Using schedule for {today.date()}")
 
-    team_map_sched = pd.concat([
+    # Long map: team -> (date, game_id) for the selected date only
+    team_map = pd.concat([
         sched_today[["home_team", "date", "game_id"]].rename(columns={"home_team": "team"}),
         sched_today[["away_team", "date", "game_id"]].rename(columns={"away_team": "team"}),
     ], ignore_index=True).drop_duplicates()
 
     # Props
-    if not BATTER_FILE.exists():
-        raise SystemExit(f"❌ Missing batter props: {BATTER_FILE}")
-    if not PITCHER_FILE.exists():
-        raise SystemExit(f"❌ Missing pitcher props: {PITCHER_FILE}")
-
     bat = _std(pd.read_csv(BATTER_FILE))
     pit = _std(pd.read_csv(PITCHER_FILE))
 
     for col in ["prop", "team", "over_probability"]:
-        if col not in bat.columns:
-            raise SystemExit(f"❌ batter file missing '{col}'")
-        if col not in pit.columns:
-            raise SystemExit(f"❌ pitcher file missing '{col}'")
+        if col not in bat.columns: raise SystemExit(f"❌ batter file missing '{col}'")
+        if col not in pit.columns: raise SystemExit(f"❌ pitcher file missing '{col}'")
 
     _ensure_num(bat, ["over_probability", "line", "value"])
     _ensure_num(pit, ["over_probability", "line", "value"])
 
     # Mark pitchers
-    if "player_pos" in pit.columns:
-        pit["is_pitcher"] = pit["player_pos"].astype(str).str.lower().eq("pitcher")
-    else:
-        pit["is_pitcher"] = True
+    pit["is_pitcher"] = pit["player_pos"].astype(str).str.lower().eq("pitcher") if "player_pos" in pit.columns else True
     bat["is_pitcher"] = False
 
-    # Canonicalize props’ team to team_name
+    # Normalize teams in props
     bat["team"] = normalize_series(bat["team"])
+    if "opp_team" in bat.columns:
+        bat["opp_team"] = normalize_series(bat["opp_team"])
     pit["team"] = normalize_series(pit["team"])
 
-    # Combine props
+    # Preserve original ids from pitcher file (some rows already have correct ids)
+    pit["_game_id_orig"] = pit["game_id"] if "game_id" in pit.columns else np.nan
+    pit["_date_orig"]    = pit["date"]    if "date"    in pit.columns else np.nan
+
     both = pd.concat([bat, pit], ignore_index=True, sort=False)
 
-    # CRITICAL: drop pre-existing game_id/date from props to avoid suffixing on merge
-    for c in ("game_id", "date"):
-        if c in both.columns:
-            both = both.drop(columns=[c])
+    # Remove any preexisting date/game_id to avoid merge suffixing
+    both = both.drop(columns=[c for c in ("game_id", "date") if c in both.columns], errors="ignore")
 
-    # Merge schedule (brings in schedule's game_id/date)
-    both = both.merge(team_map_sched, on="team", how="left")
+    # Primary join: props.team → schedule team_map (brings schedule date/game_id)
+    both = both.merge(team_map, on="team", how="left")
 
-    # Guard & diagnostics
+    # Fallback A: use opp_team for batters where primary join missed
+    if "opp_team" in both.columns:
+        opp_map = team_map.rename(columns={"team": "opp_team"})
+        both = both.merge(opp_map, on="opp_team", how="left", suffixes=("", "_opp"))
+        miss = both["game_id"].isna() & both["game_id_opp"].notna()
+        both.loc[miss, "game_id"] = both.loc[miss, "game_id_opp"]
+        both.loc[miss, "date"]    = both.loc[miss, "date_opp"]
+        both = both.drop(columns=[c for c in ["game_id_opp", "date_opp"] if c in both.columns])
+
+    # Fallback B: reuse original pitcher ids where still missing
+    if "_game_id_orig" in both.columns:
+        miss = both["game_id"].isna() & both["_game_id_orig"].notna()
+        both.loc[miss, "game_id"] = both.loc[miss, "_game_id_orig"]
+    if "_date_orig" in both.columns:
+        miss = both["date"].isna() & both["_date_orig"].notna()
+        both.loc[miss, "date"] = both.loc[miss, "_date_orig"]
+
+    both = both.drop(columns=[c for c in ["_game_id_orig","_date_orig"] if c in both.columns], errors="ignore")
+
+    # Log & DROP any remaining unmatched (do NOT exit)
     if "game_id" not in both.columns:
-        raise SystemExit("❌ Merge failed: schedule did not contribute 'game_id' column.")
-
-    off_mask = both["game_id"].isna()
-    if int(off_mask.sum()):
-        sample = (both.loc[off_mask, "team"].value_counts().head(12).to_dict()
-                  if "team" in both.columns else {})
-        raise SystemExit(f"❌ No schedule match for {int(off_mask.sum())} props. Example teams: {sample}")
+        print("⚠️ Schedule merge produced no 'game_id' column; continuing with empty selection.")
+        both = both.head(0)
+    else:
+        miss_ct = int(both["game_id"].isna().sum())
+        if miss_ct:
+            sample = both.loc[both["game_id"].isna(), "team"].value_counts().head(10).to_dict()
+            print(f"⚠️ No schedule match for {miss_ct} props. Example teams: {sample}")
+            both = both[both["game_id"].notna()].copy()
 
     # Clean & sort
+    if "over_probability" not in both.columns or both.empty:
+        # nothing to select; write empty with correct columns
+        out = pd.DataFrame(columns=PLAYER_COLUMNS)
+        PLAYER_OUT.parent.mkdir(parents=True, exist_ok=True)
+        out.to_csv(PLAYER_OUT, index=False)
+        print(f"✅ Wrote 0 rows → {PLAYER_OUT}")
+        return
+
     both = both.dropna(subset=["over_probability"])
     both = both.sort_values(["game_id", "over_probability"], ascending=[True, False])
 
@@ -215,7 +246,7 @@ def main():
 
     selected = pd.concat(chunks, ignore_index=True) if chunks else both.head(0).copy()
 
-    # Global top-3 → "Best Prop"
+    # Global top-3 -> "Best Prop"
     if not selected.empty:
         selected["prop_sort"] = "game"
         top3_idx = selected["over_probability"].nlargest(3).index
