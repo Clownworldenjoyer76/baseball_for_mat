@@ -1,268 +1,100 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Inputs (read-only):
-  - data/raw/todaysgames_normalized.csv
-  - data/bets/prep/batter_props_final.csv
-  - data/bets/prep/pitcher_props_bets.csv
-
-Output (overwrite):
-  - data/bets/game_props_history.csv
-
-Columns left BLANK:
-  favorite_correct, actual_real_run_total, run_total_diff, home_score, away_score
-"""
-
-from __future__ import annotations
 import pandas as pd
 import numpy as np
-from pathlib import Path
-import re
 
-# ---------------- Paths ----------------
-GAMES    = Path("data/raw/todaysgames_normalized.csv")
-BATTERS  = Path("data/bets/prep/batter_props_final.csv")
-PITCHERS = Path("data/bets/prep/pitcher_props_bets.csv")
-OUTFILE  = Path("data/bets/game_props_history.csv")
+# Load the datasets
+try:
+    batter_props = pd.read_csv('batter_props_final.csv')
+    pitcher_props = pd.read_csv('pitcher_props_bets.csv')
+    todays_games = pd.read_csv('todaysgames_normalized.csv')
+    game_props_history = pd.read_csv('game_props_history.csv')
+except FileNotFoundError as e:
+    print(f"Error loading CSV file: {e}. Please make sure all input files are in the same directory.")
+    exit()
 
-# ---------------- Model constants ----------------
-BASELINE = 4.5   # league-average runs per team
-ALPHA    = 0.8   # lineup z impact
-BETA     = 0.8   # opposing SP z impact
+# Handle duplicate game_ids in todays_games
+todays_games.drop_duplicates(subset='game_id', keep='first', inplace=True)
 
-# ---------------- Team normalization (deterministic; no fuzzy) ----------------
-CANON = {
-    "diamondbacks":"Diamondbacks","braves":"Braves","orioles":"Orioles","red sox":"Red Sox",
-    "cubs":"Cubs","white sox":"White Sox","reds":"Reds","guardians":"Guardians","rockies":"Rockies",
-    "tigers":"Tigers","astros":"Astros","royals":"Royals","angels":"Angels","dodgers":"Dodgers",
-    "marlins":"Marlins","brewers":"Brewers","twins":"Twins","mets":"Mets","yankees":"Yankees",
-    "athletics":"Athletics","phillies":"Phillies","pirates":"Pirates","padres":"Padres",
-    "giants":"Giants","mariners":"Mariners","cardinals":"Cardinals","rays":"Rays","rangers":"Rangers",
-    "blue jays":"Blue Jays","nationals":"Nationals",
-}
-ALIASES = {
-    # common variants/misspellings
-    "d-backs":"diamondbacks","dbacks":"diamondbacks","diamondiamondbacks":"diamondbacks",
-    "whitesox":"white sox","chi white sox":"white sox","chi sox":"white sox",
-    "ny yankees":"yankees","st. louis cardinals":"cardinals","la angels":"angels",
-    "los angeles angels":"angels","oakland athletics":"athletics","tb rays":"rays",
-    "tampa bay devil rays":"rays","toronto blue jays":"blue jays","washington nationals":"nationals",
-}
+# Create game_id for batter_props
+game_id_map = {}
+for _, row in todays_games.iterrows():
+    key1 = (row['home_team_abbr'], row['away_team_abbr'])
+    key2 = (row['away_team_abbr'], row['home_team_abbr'])
+    game_id_map[key1] = row['game_id']
+    game_id_map[key2] = row['game_id']
 
-def _collapse_repeat_word(s: str) -> str:
-    # Fix sequences like "Diamondiamondbacks" -> "Diamondbacks"
-    return re.sub(r'(?:([a-z]{3,}))\1+', r'\1', s, flags=re.I)
+batter_props['game_id'] = batter_props.apply(
+    lambda row: game_id_map.get((row['team'], row['opp_team'])),
+    axis=1
+)
 
-def norm_team(x: str) -> str:
-    if not isinstance(x, str):
-        return ""
-    s = _collapse_repeat_word(x.strip())
-    s = re.sub(r"\s+", " ", s)
-    low = s.lower()
-    low = ALIASES.get(low, low)
-    return CANON.get(low, s.title())
+# Aggregate pitcher props
+pitcher_aggs = pitcher_props.pivot_table(
+    index='game_id',
+    columns='prop',
+    values='value',
+    aggfunc='sum'
+).reset_index()
+pitcher_aggs.columns = ['pitcher_' + str(col) for col in pitcher_aggs.columns]
+pitcher_aggs.rename(columns={'pitcher_game_id': 'game_id'}, inplace=True)
 
-# ---------------- Utils ----------------
-def prep(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.columns = df.columns.str.strip().str.lower()
-    for c in ("team","opp_team","home_team","away_team","game_id","date","matchup"):
-        if c in df.columns:
-            df[c] = df[c].astype("string").fillna("").str.strip()
-    if "date" in df.columns:
-        parsed = pd.to_datetime(df["date"], errors="coerce", utc=False)
-        df["date"] = parsed.dt.date.astype("string").fillna("")
-    return df
+# Aggregate batter props for projected scores
+batter_runs = batter_props[batter_props['prop'] == 'Runs'].copy()
 
-def ensure_dir(p: Path) -> None:
-    p.parent.mkdir(parents=True, exist_ok=True)
+if not batter_runs.empty:
+    game_to_teams = todays_games.set_index('game_id')[['home_team_abbr', 'away_team_abbr']].to_dict('index')
 
-# ---------------- Load ----------------
-if not GAMES.exists():   raise SystemExit(f"Missing input: {GAMES}")
-if not BATTERS.exists(): raise SystemExit(f"Missing input: {BATTERS}")
-if not PITCHERS.exists():raise SystemExit(f"Missing input: {PITCHERS}")
+    def get_home_away(row):
+        teams = game_to_teams.get(row['game_id'])
+        if teams:
+            if row['team'] == teams['home_team_abbr']:
+                return 'home'
+            elif row['team'] == teams['away_team_abbr']:
+                return 'away'
+        return 'unknown'
 
-games   = prep(pd.read_csv(GAMES))
-batters = prep(pd.read_csv(BATTERS))
-pitch   = prep(pd.read_csv(PITCHERS))
+    batter_runs['home_away'] = batter_runs.apply(get_home_away, axis=1)
 
-# ---------------- Prepare games: authoritative date/home/away/game_id ----------------
-if "home_team" not in games.columns or "away_team" not in games.columns:
-    # Try to parse from 'matchup' like "Away @ Home"
-    if "matchup" in games.columns:
-        away, home = [], []
-        for s in games["matchup"].astype("string").fillna(""):
-            parts = re.split(r"@|\bat\b", s)
-            if len(parts) >= 2:
-                away.append(parts[0].strip()); home.append(parts[1].strip())
-            else:
-                away.append(""); home.append("")
-        games["away_team"] = pd.Series(away, dtype="string")
-        games["home_team"] = pd.Series(home, dtype="string")
+    batter_aggs = batter_runs.groupby(['game_id', 'home_away'])['value'].sum().unstack(fill_value=0)
+    if 'home' in batter_aggs.columns:
+        batter_aggs.rename(columns={'home': 'proj_home_score'}, inplace=True)
     else:
-        raise SystemExit("todaysgames_normalized.csv must contain home_team and away_team or a parsable 'matchup'.")
-
-games["home_team"] = games["home_team"].map(norm_team)
-games["away_team"] = games["away_team"].map(norm_team)
-
-# Keep only necessary columns; do NOT create game_id if it's missing
-if "date" not in games.columns:
-    games["date"] = ""  # keep blank if absent
-core_games_cols = [c for c in ["date","game_id","home_team","away_team"] if c in games.columns]
-games = games[core_games_cols].drop_duplicates().reset_index(drop=True)
-
-# ---------------- Build offense strength from batter props ----------------
-# Choose strength metric
-if "mega_z" in batters.columns:
-    bat_strength_col = "mega_z"
-elif "batter_z" in batters.columns:
-    bat_strength_col = "batter_z"
+        batter_aggs['proj_home_score'] = 0
+    if 'away' in batter_aggs.columns:
+        batter_aggs.rename(columns={'away': 'proj_away_score'}, inplace=True)
+    else:
+        batter_aggs['proj_away_score'] = 0
+    batter_aggs = batter_aggs.reset_index()
 else:
-    bat_strength_col = "_zero"
-    batters[bat_strength_col] = 0.0
+    # If there are no 'Runs' props, create an empty DataFrame with the necessary columns
+    batter_aggs = pd.DataFrame(columns=['game_id', 'proj_home_score', 'proj_away_score'])
 
-# Weighting
-if "over_probability" in batters.columns:
-    w = pd.to_numeric(batters["over_probability"], errors="coerce").clip(0.0, 1.0).fillna(0.75)
+
+# Merge data and finalize
+merged_df = todays_games.merge(pitcher_aggs, on='game_id', how='left')
+# Ensure batter_aggs is not empty before merging, or that it has the right columns.
+if not batter_aggs.empty:
+    merged_df = merged_df.merge(batter_aggs[['game_id', 'proj_home_score', 'proj_away_score']], on='game_id', how='left')
 else:
-    w = pd.Series(1.0, index=batters.index)
+    merged_df['proj_home_score'] = np.nan
+    merged_df['proj_away_score'] = np.nan
 
-# Normalize team keys
-for c in ("team","opp_team"):
-    if c in batters.columns:
-        batters[c] = batters[c].map(norm_team)
 
-group_keys = [k for k in ["date","team","opp_team"] if k in batters.columns]
-if not group_keys:
-    group_keys = ["team","opp_team"]
+output_df = pd.DataFrame(columns=game_props_history.columns)
+for col in output_df.columns:
+    if col in merged_df.columns:
+        output_df[col] = merged_df[col]
 
-off_rows = []
-for keys, df in batters.groupby(group_keys, dropna=False):
-    if not isinstance(keys, tuple): keys = (keys,)
-    kdict = dict(zip(group_keys, [str(k) for k in keys]))
-    off = np.nan
-    try:
-        off = float(np.average(pd.to_numeric(df[bat_strength_col], errors="coerce"), 
-                               weights=pd.to_numeric(w.loc[df.index], errors="coerce")))
-    except Exception:
-        off = float(pd.to_numeric(df[bat_strength_col], errors="coerce").mean())
-    if not np.isfinite(off): off = 0.0
-    off_rows.append({**kdict, "offense_strength_z": off})
+# Fill projected run total, handling potential NaNs from the merge
+output_df['projected_real_run_total'] = merged_df['proj_home_score'].fillna(0) + merged_df['proj_away_score'].fillna(0)
 
-off_df = pd.DataFrame(off_rows)
-for c in ("date","team","opp_team"):
-    if c in off_df.columns:
-        off_df[c] = off_df[c].astype("string").fillna("")
 
-# ---------------- Build SP strength from pitcher props (per date, team) ----------------
-# Choose pitcher strength metric
-if "mega_z" in pitch.columns:
-    sp_strength_col = "mega_z"
-elif "z_score" in pitch.columns:
-    sp_strength_col = "z_score"
-else:
-    sp_strength_col = "_zero"
-    pitch[sp_strength_col] = 0.0
+blank_cols = ['favorite_correct', 'home_score', 'away_score', 'actual_real_run_total']
+for col in blank_cols:
+    if col in output_df.columns:
+        output_df[col] = np.nan
 
-# Weighting
-if "over_probability" in pitch.columns:
-    pw = pd.to_numeric(pitch["over_probability"], errors="coerce").clip(0.0, 1.0).fillna(0.75)
-else:
-    pw = pd.Series(1.0, index=pitch.index)
+output_df.to_csv('game_props_history.csv', index=False)
 
-# Normalize team field
-if "team" not in pitch.columns:
-    pitch["team"] = ""
-pitch["team"] = pitch["team"].map(norm_team)
-
-sp_keys = [k for k in ["date","team"] if k in pitch.columns]
-if not sp_keys:
-    sp_keys = ["team"]
-
-sp_rows = []
-for keys, df in pitch.groupby(sp_keys, dropna=False):
-    if not isinstance(keys, tuple): keys = (keys,)
-    kdict = dict(zip(sp_keys, [str(k) for k in keys]))
-    # pick the row with highest weight as the presumed listed starter
-    idx = pw.loc[df.index].astype(float).fillna(0.0).idxmax()
-    val = float(pd.to_numeric(df.loc[idx, sp_strength_col], errors="coerce")) if idx in df.index else 0.0
-    if not np.isfinite(val): val = 0.0
-    sp_rows.append({**kdict, "sp_strength_z": val})
-
-sp_df = pd.DataFrame(sp_rows)
-for c in sp_keys:
-    sp_df[c] = sp_df[c].astype("string").fillna("")
-
-# Helpers to fetch strengths with date-aware fallback
-def get_offense_z(team: str, opp: str, date_val: str) -> float:
-    if {"date","team","opp_team"}.issubset(off_df.columns):
-        m = (off_df["team"] == team) & (off_df["opp_team"] == opp) & (off_df["date"] == date_val)
-        if m.any(): 
-            v = float(off_df.loc[m, "offense_strength_z"].iloc[0])
-            return v if np.isfinite(v) else 0.0
-    # fallback without date
-    m2 = (off_df.get("team","") == team) & (off_df.get("opp_team","") == opp)
-    if m2.any():
-        v = float(off_df.loc[m2, "offense_strength_z"].iloc[0])
-        return v if np.isfinite(v) else 0.0
-    return 0.0
-
-def get_sp_z(team: str, date_val: str) -> float:
-    if {"date","team"}.issubset(sp_df.columns):
-        m = (sp_df["team"] == team) & (sp_df["date"] == date_val)
-        if m.any():
-            v = float(sp_df.loc[m, "sp_strength_z"].iloc[0])
-            return v if np.isfinite(v) else 0.0
-    # fallback without date
-    m2 = (sp_df.get("team","") == team)
-    if m2.any():
-        v = float(sp_df.loc[m2, "sp_strength_z"].iloc[0])
-        return v if np.isfinite(v) else 0.0
-    return 0.0
-
-# ---------------- Build projections (anchored to games list) ----------------
-out_rows = []
-for _, g in games.iterrows():
-    date_val = str(g.get("date",""))
-    gid      = str(g.get("game_id","")) if "game_id" in games.columns else ""
-    home     = norm_team(str(g.get("home_team","")))
-    away     = norm_team(str(g.get("away_team","")))
-
-    home_off = get_offense_z(home, away, date_val)
-    away_off = get_offense_z(away, home, date_val)
-
-    home_opp_sp = get_sp_z(away, date_val)  # away SP vs home bats
-    away_opp_sp = get_sp_z(home, date_val)  # home SP vs away bats
-
-    mu_home = BASELINE + ALPHA*home_off - BETA*home_opp_sp
-    mu_away = BASELINE + ALPHA*away_off - BETA*away_opp_sp
-    mu_home = max(0.0, float(mu_home)) if np.isfinite(mu_home) else 0.0
-    mu_away = max(0.0, float(mu_away)) if np.isfinite(mu_away) else 0.0
-
-    out_rows.append({
-        "date": date_val,
-        "game_id": gid,
-        "home_team": home,
-        "away_team": away,
-        "proj_home_runs": round(mu_home, 3),
-        "proj_away_runs": round(mu_away, 3),
-        "proj_total": round(mu_home + mu_away, 3),
-        "favorite_correct": "",
-        "actual_real_run_total": "",
-        "run_total_diff": "",
-        "home_score": "",
-        "away_score": "",
-    })
-
-out = pd.DataFrame(out_rows, columns=[
-    "date","game_id","home_team","away_team",
-    "proj_home_runs","proj_away_runs","proj_total",
-    "favorite_correct","actual_real_run_total","run_total_diff",
-    "home_score","away_score"
-])
-
-# ---------------- Write ----------------
-ensure_dir(OUTFILE)
-out.to_csv(OUTFILE, index=False, encoding="utf-8", lineterminator="\n")
-print(f"Wrote {len(out)} rows -> {OUTFILE}")
+print("Script finished. 'game_props_history.csv' has been updated.")
+print("\nFinal DataFrame head:")
+print(output_df.head())
