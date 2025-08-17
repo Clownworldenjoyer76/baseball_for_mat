@@ -7,7 +7,6 @@ import math
 BATTER_IN  = Path("data/bets/prep/batter_props_bets.csv")
 OUT_FILE   = Path("data/bets/prep/batter_props_final.csv")
 
-# Optional projection sources to enrich with AB / rates (prefer z_expanded, else projected)
 PROJ_CANDIDATES = [
     Path("data/_projections/batter_props_z_expanded.csv"),
     Path("data/_projections/batter_props_projected.csv"),
@@ -19,7 +18,15 @@ def _norm(s: pd.Series) -> pd.Series:
 def _to_scalar(x):
     if isinstance(x, pd.Series):
         x = x.dropna()
-        return x.iloc[0] if not x.empty else np.nan
+        if x.empty:
+            return np.nan
+        try:
+            return x.iloc[0].item() if hasattr(x.iloc[0], "item") else x.iloc[0]
+        except Exception:
+            return x.iloc[0]
+    if isinstance(x, (list, tuple, np.ndarray)):
+        arr = np.asarray(x).ravel()
+        return arr[0] if arr.size > 0 else np.nan
     return x
 
 def _read_first_exists(paths):
@@ -33,9 +40,9 @@ def _read_first_exists(paths):
                 continue
     return None, None
 
-def _expected_abs(proj_df_row):
-    # expected AB: prefer explicit 'ab' if present; else estimate from PA or fallback 4.0
-    ab = proj_df_row.get("ab")
+def _expected_abs(row):
+    """Return scalar expected ABs for this row."""
+    ab = _to_scalar(row.get("ab"))
     if pd.notna(ab):
         try:
             abf = float(ab)
@@ -43,7 +50,7 @@ def _expected_abs(proj_df_row):
                 return abf
         except Exception:
             pass
-    pa = proj_df_row.get("pa")
+    pa = _to_scalar(row.get("pa"))
     if pd.notna(pa):
         try:
             paf = float(pa)
@@ -67,7 +74,6 @@ def poisson_tail_over(line_val: float, lam: float) -> float:
     lam = float(lam)
     if thr <= 0:
         return 1.0
-    # sum P(0..thr-1)
     term = math.exp(-lam)
     acc = term
     for i in range(1, thr):
@@ -84,35 +90,28 @@ def main():
     bat = pd.read_csv(BATTER_IN)
     bat.columns = bat.columns.str.strip().str.lower()
 
-    # Ensure required columns
     for c in ("prop","line","value"):
         if c not in bat.columns:
             bat[c] = np.nan
     for c in ("name","team","player_id"):
         if c not in bat.columns:
             bat[c] = ""
-    bat["prop"] = bat["prop"].astype(str).str.strip().str.lower()
-    bat["line"] = pd.to_numeric(bat["line"], errors="coerce")
+    bat["prop"]  = bat["prop"].astype(str).str.strip().str.lower()
+    bat["line"]  = pd.to_numeric(bat["line"], errors="coerce")
     bat["value"] = pd.to_numeric(bat["value"], errors="coerce")
 
-    # Enrich from projections (to get ab, proj_avg, proj_slg, totals if needed)
-    proj_df, src_used = _read_first_exists(PROJ_CANDIDATES)
+    # Enrich with projections for ab/pa/avg/slg/totals
+    proj_df, _ = _read_first_exists(PROJ_CANDIDATES)
     if proj_df is not None:
-        key_cols = []
-        if "player_id" in bat.columns and "player_id" in proj_df.columns:
-            key_cols = ["player_id"]
-        else:
-            # fallback: name+team join
+        # choose join keys
+        keys = ["player_id"] if ("player_id" in bat.columns and "player_id" in proj_df.columns) else []
+        if not keys:
             for k in ("name","team"):
                 if k not in bat.columns: bat[k] = ""
                 if k not in proj_df.columns: proj_df[k] = ""
-            proj_df["name"] = _norm(proj_df["name"])
-            proj_df["team"] = _norm(proj_df["team"])
-            bat["name"] = _norm(bat["name"])
-            bat["team"] = _norm(bat["team"])
-            key_cols = [k for k in ("player_id","name","team") if k in proj_df.columns and k in bat.columns]
-            if not key_cols:
-                key_cols = [c for c in ("name","team") if c in proj_df.columns and c in bat.columns]
+            bat["name"] = _norm(bat["name"]); bat["team"] = _norm(bat["team"])
+            proj_df["name"] = _norm(proj_df["name"]); proj_df["team"] = _norm(proj_df["team"])
+            keys = [k for k in ("name","team") if k in bat.columns and k in proj_df.columns]
 
         keep = [c for c in (
             "player_id","name","team","ab","pa",
@@ -120,54 +119,45 @@ def main():
             "b_total_bases","total_bases_projection"
         ) if c in proj_df.columns]
         proj_slim = proj_df[keep].drop_duplicates()
-        bat = bat.merge(proj_slim, on=[k for k in key_cols if k in proj_slim.columns], how="left", suffixes=("", "_proj"))
+        bat = bat.merge(proj_slim, on=keys, how="left", suffixes=("", "_proj"))
 
-    # Build continuous lambda per row based on per-game expectations (no caps)
-    def lambda_from_row(row) -> float:
-        prop = str(_to_scalar(row.get("prop",""))).lower()
-        line = _to_scalar(row.get("line"))
-        val  = _to_scalar(row.get("value"))
-        ab   = _to_scalar(row.get("ab"))
-        pa   = _to_scalar(row.get("pa"))
-        avg  = _to_scalar(row.get("proj_avg"))
-        slg  = _to_scalar(row.get("proj_slg"))
-        tot_hits = _to_scalar(row.get("proj_hits"))
-        tot_hr   = _to_scalar(row.get("proj_hr"))
-        tb_tot   = _to_scalar(row.get("b_total_bases"))
-        tb_proj2 = _to_scalar(row.get("total_bases_projection"))
+    def lambda_from_row(r) -> float:
+        prop = str(_to_scalar(r.get("prop",""))).lower()
+        line = _to_scalar(r.get("line"))
+        val  = _to_scalar(r.get("value"))
+        ab   = _to_scalar(r.get("ab"))
+        avg  = _to_scalar(r.get("proj_avg"))
+        slg  = _to_scalar(r.get("proj_slg"))
+        tot_hits = _to_scalar(r.get("proj_hits"))
+        tot_hr   = _to_scalar(r.get("proj_hr"))
+        tb_tot   = _to_scalar(r.get("b_total_bases"))
+        tb_proj2 = _to_scalar(r.get("total_bases_projection"))
 
-        exp_ab = _expected_abs(row)
+        exp_ab = _expected_abs(r)
 
-        # HITS: prefer per-AB hit prob (AVG), else per-game from totals
         if prop == "hits":
             if pd.notna(avg) and pd.notna(exp_ab):
-                p_hit = max(0.0, min(1.0, float(avg)))
+                p_hit = min(1.0, max(0.0, float(avg)))
                 return float(p_hit * float(exp_ab))
-            if pd.notna(tot_hits) and float(exp_ab) > 0:
-                return float(max(0.0, float(tot_hits) / float(exp_ab * 37.5)))  # ~150 games * 4 AB baseline
+            if pd.notna(tot_hits) and exp_ab > 0:
+                # season total to per-game: assume 150 games ~ 4 AB each
+                return float(max(0.0, float(tot_hits) / 150.0))
             if pd.notna(val):
-                # Treat extreme season-like values as totals; scale down
                 vf = float(val)
-                if vf > 5.0:
-                    return float(vf / 150.0)
-                return max(0.0, vf)
+                return float(vf / 150.0) if vf > 5.0 else max(0.0, vf)
             return np.nan
 
-        # HOME RUNS: per-AB HR rate times expected AB; else scale totals
         if prop == "home_runs":
-            if pd.notna(tot_hr) and pd.notna(ab) and float(ab) > 0 and pd.notna(exp_ab):
+            if pd.notna(tot_hr) and pd.notna(ab) and ab > 0:
                 hr_rate = max(0.0, float(tot_hr) / float(ab))
                 return float(hr_rate * float(exp_ab))
             if pd.notna(tot_hr):
                 return float(max(0.0, float(tot_hr) / 150.0))
             if pd.notna(val):
                 vf = float(val)
-                if vf > 2.0:
-                    return float(vf / 150.0)
-                return max(0.0, vf)
+                return float(vf / 150.0) if vf > 2.0 else max(0.0, vf)
             return np.nan
 
-        # TOTAL BASES: SLG per AB * expected AB; else scale totals
         if prop == "total_bases":
             if pd.notna(slg) and pd.notna(exp_ab):
                 return float(max(0.0, float(slg) * float(exp_ab)))
@@ -176,28 +166,22 @@ def main():
                 return float(max(0.0, float(tb_src) / 150.0))
             if pd.notna(val):
                 vf = float(val)
-                if vf > 8.0:
-                    return float(vf / 150.0)
-                return max(0.0, vf)
+                return float(vf / 150.0) if vf > 8.0 else max(0.0, vf)
             return np.nan
 
-        # Unknown prop
-        if pd.notna(val):
-            return max(0.0, float(val))
-        return np.nan
+        return max(0.0, float(val)) if pd.notna(val) else np.nan
 
     bat["lambda"] = bat.apply(lambda_from_row, axis=1)
 
-    def over_prob_row(row) -> float:
-        ln  = _to_scalar(row.get("line"))
-        lam = _to_scalar(row.get("lambda"))
+    def over_prob_row(r) -> float:
+        ln  = _to_scalar(r.get("line"))
+        lam = _to_scalar(r.get("lambda"))
         if pd.isna(ln) or pd.isna(lam) or lam < 0:
             return np.nan
         return poisson_tail_over(float(ln), float(lam))
 
     bat["over_probability"] = bat.apply(over_prob_row, axis=1).clip(0, 1)
 
-    # Keep common output columns if present
     out_cols = [
         "player_id","name","team","prop","line","value",
         "batter_z","mega_z","over_probability",
