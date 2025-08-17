@@ -1,129 +1,38 @@
-/* ===== Config: map your column names here if they differ ===== */
-const PLAYER_PROPS_COLS = {
-  gameId:   'game_id',
-  date:     'date',
-  team:     'team',
-  player:   'player_name',   // e.g., "Mookie Betts"
-  market:   'market',        // e.g., "Hits", "HR"
-  line:     'line',
-  odds:     'odds',
-  edge:     'edge',
-  betType:  'bet_type'       // optional, e.g., "Best Prop"
-};
-
-const GAME_PROPS_COLS = {
-  gameId:   'game_id',
-  date:     'date',
-  market:   'market',        // game-level markets like "Total Runs", etc.
-  line:     'line',
-  odds:     'odds',
-  edge:     'edge'
-};
-/* ===================================================================== */
-
-async function loadPlayerProps() {
-  const rows = await loadCSV('data/bets/player_props_history.csv');
-  return rows.map(r => ({
-    type: 'player',
-    game_id: String(r[PLAYER_PROPS_COLS.gameId] ?? '').trim(),
-    date: (r[PLAYER_PROPS_COLS.date] ?? '').toString().slice(0,10),
-    team: String(r[PLAYER_PROPS_COLS.team] ?? '').trim(),
-    player: String(r[PLAYER_PROPS_COLS.player] ?? '').trim(),
-    market: String(r[PLAYER_PROPS_COLS.market] ?? '').trim(),
-    line: r[PLAYER_PROPS_COLS.line],
-    odds: r[PLAYER_PROPS_COLS.odds],
-    edge: r[PLAYER_PROPS_COLS.edge],
-    betType: String(r[PLAYER_PROPS_COLS.betType] ?? '').trim()
-  }));
-}
-
-async function loadGameProps() {
-  const rows = await loadCSV('data/bets/game_props_history.csv');
-  return rows.map(r => ({
-    type: 'game',
-    game_id: String(r[GAME_PROPS_COLS.gameId] ?? '').trim(),
-    date: (r[GAME_PROPS_COLS.date] ?? '').toString().slice(0,10),
-    market: String(r[GAME_PROPS_COLS.market] ?? '').trim(),
-    line: r[GAME_PROPS_COLS.line],
-    odds: r[GAME_PROPS_COLS.odds],
-    edge: r[GAME_PROPS_COLS.edge]
-  }));
-}
-
-function getQuery() {
-  const p = new URLSearchParams(location.search);
-  return {
-    gameId: (p.get('game_id') || '').trim(),
-    date: (p.get('date') || '').slice(0,10),
-    home: (p.get('home') || '').trim(),
-    away: (p.get('away') || '').trim()
-  };
-}
-
-function matchesQuery(row, q) {
-  // If gameId present, that wins.
-  if (q.gameId) return String(row.game_id || '') === q.gameId;
-
-  // Otherwise match by date and team presence (player props only)
-  if (row.type === 'player') {
-    const dateOk = q.date ? (row.date === q.date) : true;
-    const teamOk = (q.home || q.away)
-      ? [row.team].some(t => {
-          const v = (t||'').toLowerCase();
-          return v.includes((q.home||'').toLowerCase()) || v.includes((q.away||'').toLowerCase());
-        })
-      : true;
-    return dateOk && teamOk;
-  }
-
-  // For game props, if no gameId, fallback to date only
-  return q.date ? (row.date === q.date) : true;
-}
-
-async function renderGameTopProps({ gameId, homeTeam, awayTeam, date }) {
-  const tbody = document.querySelector('#game-props tbody');
-  if (!tbody) return;
-
-  const [playerProps, gameProps] = await Promise.all([loadPlayerProps(), loadGameProps()]);
-  const q = { gameId, date, home: homeTeam, away: awayTeam };
-
-  // Filter
-  let rows = [...playerProps.filter(r => matchesQuery(r, q)), ...gameProps.filter(r => matchesQuery(r, q))];
-
-  // Prefer “Best Prop” first, then higher edge
-  rows.sort((a, b) => {
-    const aBest = (a.betType || '').toLowerCase() === 'best prop';
-    const bBest = (b.betType || '').toLowerCase() === 'best prop';
-    if (aBest !== bBest) return bBest - aBest;
-    const ae = Number(a.edge ?? 0), be = Number(b.edge ?? 0);
-    return be - ae;
-  });
-
-  // Render
-  tbody.innerHTML = rows.slice(0, 100).map(r => {
-    const playerOrMarket = (r.type === 'player') ? (r.player || '') : (r.market || '');
-    const teamOrType = (r.type === 'player') ? (r.team || '') : 'Game';
-    const market = (r.type === 'player') ? (r.market || '') : (r.market || '');
-    return `
-      <tr>
-        <td>${playerOrMarket}</td>
-        <td>${teamOrType}</td>
-        <td>${market}</td>
-        <td>${r.line ?? ''}</td>
-        <td>${r.odds ?? ''}</td>
-        <td>${r.edge ?? ''}</td>
-      </tr>
-    `;
-  }).join('') || `<tr><td colspan="6">No props found for this game.</td></tr>`;
-}
-
-// Wire up on load using query params from props.html
-document.addEventListener('DOMContentLoaded', () => {
-  const p = new URLSearchParams(location.search);
-  renderGameTopProps({
-    gameId: p.get('game_id'),
-    homeTeam: p.get('home'),
-    awayTeam: p.get('away'),
-    date: p.get('date')
-  });
-});
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Props</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="assets/css/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/props.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Props</h1>
+    <nav><a href="index.html">Home</a> · <a href="games.html">Games</a></nav>
+  </header>
+  <main>
+    <section class="card">
+      <div class="card-body">
+        <h2 id="matchup-title" class="title"></h2>
+        <table class="data-table" id="top-props-table">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Market</th>
+              <th>Line</th>
+              <th>Odds</th>
+              <th>Edge</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="props-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
