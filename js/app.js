@@ -1,56 +1,22 @@
-async function loadCSV(path) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(path, {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: (res) => resolve(res.data),
-      error: reject
-    });
-  });
-}
 
-function mlbHeadshot(playerId) {
-  if (!playerId) return 'assets/img/default_player.png';
-  return `https://securea.mlb.com/mlb/images/players/head_shot/${playerId}.jpg`;
-}
-
-// ----- Best Props (Top card) -----
-async function renderBestProps() {
-  try {
-    const data = await loadCSV('data/bets/player_props_history.csv');
-    const best = data.filter(r => String(r.bet_type || '').toLowerCase() === 'best prop');
-
-    // unique by playerId
-    const seen = new Set();
-    const unique = [];
-    for (const r of best) {
-      const id = String(r.playerId || r.player_id || '').trim();
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-      unique.push(r);
-    }
-
-    const container = document.querySelector('#best-props');
-    if (!container) return;
-    container.innerHTML = unique.slice(0, 10).map(p => `
-      <div class="card card-interactive fade-in-card">
-        <div class="card-body">
-          <div class="media">
-            <img src="${mlbHeadshot(p.playerId || p.player_id)}" alt="" class="avatar"/>
-            <div class="media-content">
-              <div class="title">${p.player_name || p.player || ''}</div>
-              <div class="subtitle">${p.market || p.prop_type || ''} · ${p.team || ''}</div>
-              <div class="meta">Edge: ${p.edge ?? ''} · Odds: ${p.odds ?? ''}</div>
-            </div>
-          </div>
-        </div>
+async function loadCSV(path){return new Promise((resolve,reject)=>{Papa.parse(path,{download:true,header:true,dynamicTyping:true,skipEmptyLines:true,complete:r=>resolve(r.data),error:reject});});}
+function pct(x){const n=Number(x);return Number.isFinite(n)?Math.round(n*100):null;}
+function initials(name=''){const p=String(name).split(/\s+/).filter(Boolean);return (p[0]?.[0]||'')+(p[1]?.[0]||'');}
+async function renderBestProps(){
+  const wrap=document.getElementById('best-props'); if(!wrap) return;
+  try{
+    const data=await loadCSV('data/bets/player_props_history.csv');
+    const ranked=[...data].sort((a,b)=>(b.value??0)-(a.value??0)).slice(0,12);
+    wrap.innerHTML=ranked.map(row=>{
+      const edgePct=pct(row.over_probability);
+      return `<div class="card"><div class="body"><div class="media">
+        <div class="logo">${initials(row.team||'')}</div>
+        <div><div class="title">${row.name||''}</div>
+        <div class="meta">${(row.team||'')} · ${(row.prop||'').toString().toUpperCase()} · Line ${row.line??''}</div></div>
       </div>
-    `).join('');
-  } catch (e) {
-    console.error('renderBestProps failed', e);
-  }
+      <div style="margin-top:10px"><div class="meta">Over probability ${edgePct??''}%</div>
+        <div class="edge"><i style="width:${edgePct??0}%"></i></div></div></div></div>`;
+    }).join('');
+  }catch(e){wrap.innerHTML=`<div class="card"><div class="body">Failed to load props.</div></div>`;console.error(e);}
 }
-
 document.addEventListener('DOMContentLoaded', renderBestProps);
