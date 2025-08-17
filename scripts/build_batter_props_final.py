@@ -2,318 +2,70 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
-import math
+from scipy.stats import poisson
 
-BATTER_IN   = Path("data/bets/prep/batter_props_bets.csv")
-SCHED_IN    = Path("data/bets/mlb_sched.csv")
-PITCHER_IN  = Path("data/bets/prep/pitcher_props_bets.csv")
-PROJ_IN     = Path("data/_projections/batter_props_projected.csv")  # optional
-OUT_FILE    = Path("data/bets/prep/batter_props_final.csv")
+INPUT_FILE  = Path("data/bets/prep/batter_props_bets.csv")
+OUTPUT_FILE = Path("data/bets/batter_props_final.csv")
 
-# ---------------- helpers ----------------
-def _norm(s: pd.Series) -> pd.Series:
-    return s.astype(str).str.strip()
 
-def _to_scalar(x):
-    """Return a single scalar from possible Series/array/list/scalar; NaN if empty."""
-    if isinstance(x, pd.Series):
-        x = x.dropna()
-        return x.iloc[0] if not x.empty else np.nan
-    if isinstance(x, (list, tuple, np.ndarray)):
-        arr = np.asarray(x).ravel()
-        return arr[0] if arr.size else np.nan
-    return x
-
-def poisson_tail_over(line_val: float, lam: float) -> float:
-    """
-    P(X > line) for Poisson(λ) with fractional sportsbook lines:
-      threshold = floor(line) + 1  -> P(X >= threshold) = 1 - P(X <= threshold-1)
-    """
-    try:
-        thr = int(math.floor(float(line_val))) + 1
-    except Exception:
-        return np.nan
-    if lam is None or not np.isfinite(lam):
-        return np.nan
-    lam = float(lam)
-    if thr <= 0:
-        return 1.0
-    term = math.exp(-lam)
-    acc = term
-    for i in range(1, thr):
-        term *= lam / i
-        acc += term
-        if term < 1e-15:  # early break for stability
-            break
-    return float(min(max(1.0 - acc, 0.0), 1.0))
-
-def ensure_columns(df: pd.DataFrame, spec: dict) -> list:
-    """
-    Ensure columns exist and coerce dtypes.
-    spec: {col: ('str'|'num', default_val)}
-    """
-    created = []
-    for col, (kind, default) in spec.items():
-        if col not in df.columns:
-            df[col] = default
-            created.append(col)
-        if kind == "str":
-            df[col] = _norm(df[col].astype(str))
-        elif kind == "num":
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-    return created
-
-def ensure_prop(df: pd.DataFrame, when: str) -> None:
-    """Guarantee df['prop'] exists; do not overwrite if already present."""
-    if "prop" in df.columns:
-        df["prop"] = _norm(df["prop"].astype(str))
-        return
-    if "prop_type" in df.columns:
-        df["prop"] = _norm(df["prop_type"].astype(str))
-        print(f"ℹ️ [{when}] Created 'prop' from 'prop_type'.")
+# --- Normalize season totals to per-game ---
+def normalize_per_game(df: pd.DataFrame) -> pd.DataFrame:
+    # Prefer games played, else ABs, else fallback
+    if "games_played" in df.columns:
+        g = df["games_played"].replace(0, 1)
+    elif "ab" in df.columns:  # use at-bats as proxy (~4 AB per game)
+        g = (df["ab"] / 4).replace(0, 1)
     else:
-        df["prop"] = ""
-        print(f"⚠️ [{when}] Created empty 'prop' (no 'prop' or 'prop_type').")
+        g = 150  # fallback if no denominator available
 
-# ---------------- load ----------------
-if not BATTER_IN.exists():
-    raise SystemExit(f"❌ Missing {BATTER_IN}")
-if not SCHED_IN.exists():
-    raise SystemExit(f"❌ Missing {SCHED_IN}")
-if not PITCHER_IN.exists():
-    raise SystemExit(f"❌ Missing {PITCHER_IN}")
+    if "proj_hits" in df.columns:
+        df["proj_hits"] = df["proj_hits"] / g
+    if "proj_hr" in df.columns:
+        df["proj_hr"] = df["proj_hr"] / g
+    if "b_total_bases" in df.columns:
+        df["b_total_bases"] = df["b_total_bases"] / g
 
-bat = pd.read_csv(BATTER_IN)
-sch = pd.read_csv(SCHED_IN)
-pit = pd.read_csv(PITCHER_IN)
+    return df
 
-# basic hygiene
-bat.columns = [c.strip() for c in bat.columns]
-sch.columns = [c.strip() for c in sch.columns]
-pit.columns = [c.strip() for c in pit.columns]
 
-# ---- make sure 'prop' exists right after load (no overwrite if present)
-ensure_prop(bat, when="post-load")
+def prob_over_poisson(mean: float, line: float) -> float:
+    """Probability X > line given Poisson(mean)."""
+    if mean <= 0 or np.isnan(mean):
+        return 0.0
+    k = int(np.floor(line))
+    return 1.0 - poisson.cdf(k, mean)
 
-# ensure other key cols/types
-created = ensure_columns(bat, {
-    "player_id": ("str", ""),
-    "name":      ("str", ""),
-    "team":      ("str", ""),
-    "prop":      ("str", ""),   # re-ensure string type
-    "line":      ("num", np.nan),
-    "value":     ("num", np.nan),
-})
-if created:
-    print(f"ℹ️ Auto-created/normalized batter columns: {', '.join(created)}")
 
-print(f"📊 Batter rows (input): {len(bat)}")
-try:
-    print(f"🧱 Prop distribution (input): {bat['prop'].value_counts(dropna=False).to_dict()}")
-except Exception:
-    pass
+def main():
+    if not INPUT_FILE.exists():
+        raise SystemExit(f"❌ Missing {INPUT_FILE}")
 
-# ---------------- schedule -> opp team ----------------
-need = [c for c in ("home_team", "away_team") if c not in sch.columns]
-if need:
-    raise SystemExit(f"❌ schedule missing columns: {need}")
+    df = pd.read_csv(INPUT_FILE)
 
-sch_home = sch[["home_team", "away_team"]].copy()
-sch_home.columns = ["team", "opp_team"]
-sch_away = sch[["away_team", "home_team"]].copy()
-sch_away.columns = ["team", "opp_team"]
-team_pairs = pd.concat([sch_home, sch_away], ignore_index=True)
-team_pairs["team"] = _norm(team_pairs["team"])
-team_pairs["opp_team"] = _norm(team_pairs["opp_team"])
+    # --- normalize projections ---
+    df = normalize_per_game(df)
 
-bat = bat.merge(team_pairs, on="team", how="left")
+    # --- probabilities ---
+    if "proj_hits" in df.columns:
+        df["prob_hits_over_1p5"] = df["proj_hits"].apply(
+            lambda x: prob_over_poisson(x, 1.5)
+        )
 
-# ---------------- pick 1 pitcher per team ----------------
-if "team" not in pit.columns:
-    raise SystemExit("❌ pitcher file missing 'team' column")
+    if "proj_hr" in df.columns:
+        df["prob_hr_over_0p5"] = df["proj_hr"].apply(
+            lambda x: prob_over_poisson(x, 0.5)
+        )
 
-pit["team"] = _norm(pit["team"])
-if "mega_z" in pit.columns:
-    pit_one = (
-        pit.sort_values(by=["team", "mega_z"], ascending=[True, False])
-           .groupby("team", as_index=False)
-           .head(1)
-    )
-else:
-    pit_one = pit.groupby("team", as_index=False).head(1)
+    if "b_total_bases" in df.columns:
+        df["prob_tb_over_1p5"] = df["b_total_bases"].apply(
+            lambda x: prob_over_poisson(x, 1.5)
+        )
 
-# IMPORTANT: exclude pitcher's 'prop' to avoid clobbering batter 'prop'
-keep_pit_cols = [c for c in
-    ["team", "name",               # <- keep
-     # "prop",                     # <- DO NOT keep; prevents prop_x/prop_y collision
-     "mega_z", "z_score",
-     "over_probability", "line", "value"]
-    if c in pit_one.columns]
+    # --- output ---
+    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ Wrote: {OUTPUT_FILE} (rows={len(df)})")
 
-pit_one = pit_one[keep_pit_cols].rename(columns={
-    "team":  "opp_team",
-    "name":  "opp_pitcher_name",
-    "mega_z":"opp_pitcher_mega_z",
-    "z_score":"opp_pitcher_z",
-    "over_probability":"opp_pitcher_over_prob",
-    "line":  "opp_pitcher_line",
-    "value": "opp_pitcher_value",
-})
 
-pre_merge_rows = len(bat)
-bat = bat.merge(pit_one, on="opp_team", how="left")
-matched_rows = bat["opp_pitcher_name"].notna().sum()
-unmatched_rows = pre_merge_rows - matched_rows
-print(f"🧩 Pitcher match: matched={matched_rows} unmatched={unmatched_rows} (of {pre_merge_rows})")
-if unmatched_rows:
-    top_unmatched = (
-        bat[bat["opp_pitcher_name"].isna()]
-        .groupby("opp_team", dropna=False)
-        .size()
-        .sort_values(ascending=False)
-        .head(8)
-        .to_dict()
-    )
-    print(f"🔎 Unmatched by opp_team (top): {top_unmatched}")
-
-# ---- re-assert 'prop' exists (in case earlier merges altered columns)
-ensure_prop(bat, when="pre-zscores")
-
-# Drop blank-prop rows only if some are blank (but not all)
-blank_mask = bat["prop"].eq("")
-blank_count = int(blank_mask.sum())
-if blank_count and not blank_mask.all():
-    before = len(bat)
-    bat = bat[~blank_mask].copy()
-    after = len(bat)
-    print(f"⚠️ Removed {blank_count} rows with blank prop before z-scores (kept {after}/{before}).")
-elif blank_mask.all():
-    print("⚠️ All rows have blank 'prop' — keeping rows (no drop).")
-
-# ensure numeric for calc
-bat["value"] = pd.to_numeric(bat.get("value", np.nan), errors="coerce")
-bat["line"]  = pd.to_numeric(bat.get("line",  np.nan), errors="coerce")
-
-# ---------------- batter z per prop ----------------
-def _z_transform(s: pd.Series) -> pd.Series:
-    sd = s.std(ddof=0)
-    if sd == 0 or not np.isfinite(sd):
-        return pd.Series([0.0] * len(s), index=s.index)
-    return (s - s.mean()) / sd
-
-bat["batter_z"] = (
-    bat.groupby("prop", dropna=False)["value"]
-       .transform(_z_transform)
-       .astype(float)
-)
-
-# ---------------- mega_z (adjust for opp pitcher) ----------------
-W = 0.5
-bat["opp_pitcher_mega_z"] = pd.to_numeric(bat.get("opp_pitcher_mega_z", np.nan), errors="coerce")
-bat["mega_z"] = bat["batter_z"] - W * bat["opp_pitcher_mega_z"].fillna(0.0)
-
-# ---------------- optional projections join (for better lambda) ----------------
-if PROJ_IN.exists():
-    try:
-        proj = pd.read_csv(PROJ_IN)
-        proj.columns = proj.columns.str.strip().str.lower()
-        # De-duplicate any repeated column names (keep last occurrence)
-        proj = proj.loc[:, ~proj.columns.duplicated(keep="last")]
-        # prefer join by player_id if populated on both sides; else (name, team)
-        use_id = ("player_id" in bat.columns and "player_id" in proj.columns and
-                  bat["player_id"].notna().any() and proj["player_id"].notna().any())
-        key = ["player_id"] if use_id else ["name", "team"]
-        for k in key:
-            if k in bat.columns:  bat[k]  = _norm(bat[k])
-            if k in proj.columns: proj[k] = _norm(proj[k])
-        keep = [c for c in ["player_id","name","team","ab","proj_hits","proj_hr","proj_slg"] if c in proj.columns]
-        proj_slim = proj[keep].drop_duplicates()
-        bat = bat.merge(proj_slim, on=[k for k in key if k in proj_slim.columns], how="left", suffixes=("", "_proj"))
-        print(f"🧮 Projections join: columns present -> {', '.join([c for c in ['ab','proj_hits','proj_hr','proj_slg'] if c in bat.columns])}")
-    except Exception as e:
-        print(f"⚠️ Projections not used: {e}")
-
-# ---------------- over_probability ----------------
-def _over_prob(row):
-    ln  = _to_scalar(row.get("line", np.nan))
-    lam = _lambda_for_row(row)
-    if pd.isna(ln) or pd.isna(lam):
-        return np.nan
-    try:
-        p = poisson_tail_over(float(ln), float(lam))
-        return float(min(max(p, 0.0), 1.0))   # [0,1] only
-    except Exception:
-        return np.nan
-
-# Compute probabilities
-
-# ---------------- over_probability ----------------
-def _lambda_for_row(row) -> float:
-    """
-    Compute a continuous λ per row with **no artificial caps**:
-      - Hits: use proj_hits if available; else estimate from SLG*AB via a proxy for per-AB hit prob (<=1).
-      - HR:   use proj_hr if available (expected HR per game).
-      - TB:   use SLG * AB (expected total bases).
-    If required inputs are missing, return NaN rather than inventing a fallback.
-    """
-    prop = str(_to_scalar(row.get("prop", ""))).lower()
-
-    proj_hits = _to_scalar(row.get("proj_hits", None))
-    proj_hr   = _to_scalar(row.get("proj_hr",   None))
-    proj_slg  = _to_scalar(row.get("proj_slg",  None))
-    ab        = _to_scalar(row.get("ab",        None))
-
-    def finite_nonneg(x):
-        try:
-            xf = float(x)
-            return (not pd.isna(xf)) and (xf >= 0.0) and (np.isfinite(xf))
-        except Exception:
-            return False
-
-    # HITS: λ ≈ expected hits per game
-    if prop == "hits":
-        if finite_nonneg(proj_hits):
-            return float(proj_hits)
-        # fallback: approximate per-AB hit probability from SLG; keep within [0,1]
-        if finite_nonneg(proj_slg) and finite_nonneg(ab):
-            est_avg = min(1.0, max(0.0, float(proj_slg) / 1.6))
-            return est_avg * float(ab)
-        return np.nan
-
-    # HOME RUNS: λ ≈ expected HR per game
-    if prop == "home_runs":
-        if finite_nonneg(proj_hr):
-            return float(proj_hr)
-        # If you later add season_hr/pa to this DataFrame, derive hr_rate*expected_PA here.
-        return np.nan
-
-    # TOTAL BASES: λ ≈ SLG * AB
-    if prop == "total_bases":
-        if finite_nonneg(proj_slg) and finite_nonneg(ab):
-            return float(proj_slg) * float(ab)
-        return np.nan
-
-    # Any other prop types (shouldn't occur here)
-    return np.nan
-
-bat["over_probability"] = bat.apply(_over_prob, axis=1)
-
-# ---------------- order + save ----------------
-out_cols = [
-    "player_id","name","team","prop","line","value",
-    "batter_z","mega_z","over_probability",
-    "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z"
-]
-out_cols = [c for c in out_cols if c in bat.columns]
-out = bat[out_cols].copy()
-
-OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-out.to_csv(OUT_FILE, index=False)
-
-print(f"✅ Wrote: {OUT_FILE} (rows={len(out)})")
-try:
-    print(f"📦 Prop distribution (output): {out['prop'].value_counts(dropna=False).to_dict()}")
-except Exception:
-    pass
-matched_final = out["opp_pitcher_name"].notna().sum() if "opp_pitcher_name" in out.columns else 0
-print(f"🧾 Opp pitcher populated on {matched_final} of {len(out)} output rows")
+if __name__ == "__main__":
+    main()
