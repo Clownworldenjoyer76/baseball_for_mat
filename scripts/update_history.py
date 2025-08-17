@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-update_history.py  — write today-only history with participation & power guards (NO lineups.csv)
+update_history.py — today-only writes with hard participation guards (NO lineups.csv)
 
-What it enforces:
-- Today-only rows (date == today)
-- Clamp over_probability into [1%, 99%]
-- Participation floors from meta:
-    * Batters: projected AB/PA >= MIN_AB_FOR_BATTERS
-    * Pitchers: projected IP   >= MIN_IP_FOR_PITCHERS
-- HR overs are dropped unless the batter shows power:
-    * season HR >= HR_MIN_SEASON_HR   OR
-    * HR per PA >= HR_MIN_RATE_PER_PA
+Changes in this version:
+- For ALL BATTER PROPS: require average ≥ 3 AB per game (season) OR projected AB/PA ≥ 3 today.
+  (Fail-closed: if neither metric is available or both are below 3, drop the row.)
+- Pitcher props still require projected IP ≥ 3.
+- HR props still require power (season HR >= HR_MIN_SEASON_HR OR HR/PA >= HR_MIN_RATE_PER_PA).
+- Probabilities clamped to [1%, 99%].
 """
 
 from __future__ import annotations
@@ -27,20 +24,21 @@ PLAYER_HISTORY_FILE = Path("data/history/player_props_history.csv")
 GAME_HISTORY_FILE   = Path("data/history/game_props_history.csv")
 
 # Projection/meta sources (ONLY these — no lineups.csv)
-BATTERS_META_FILE   = Path("data/Data/batters.csv")    # should contain season HR/PA/AB and projected AB/PA
-PITCHERS_META_FILE  = Path("data/Data/pitchers.csv")   # should contain projected IP
+BATTERS_META_FILE   = Path("data/Data/batters.csv")    # season totals + projections
+PITCHERS_META_FILE  = Path("data/Data/pitchers.csv")   # projections for IP
 
 # =========================
 # Tunables / thresholds
 # =========================
-MIN_AB_FOR_BATTERS   = 3.0    # projected AB/PA floor to keep batter props
-MIN_IP_FOR_PITCHERS  = 3.0    # projected IP floor to keep pitcher props
-PROB_CLAMP_LOW       = 0.01   # 1%
-PROB_CLAMP_HIGH      = 0.99   # 99%
+MIN_AB_FOR_BATTERS      = 3.0   # projected AB/PA floor for today
+MIN_AB_AVG_PER_GAME     = 3.0   # season average AB/game floor
+MIN_IP_FOR_PITCHERS     = 3.0   # projected IP floor
+PROB_CLAMP_LOW          = 0.01  # 1%
+PROB_CLAMP_HIGH         = 0.99  # 99%
 
 # HR recommendation floors
-HR_MIN_SEASON_HR     = 15           # require at least this many season HR
-HR_MIN_RATE_PER_PA   = 0.04         # OR at least this HR/PA (~25 HR full-season pace)
+HR_MIN_SEASON_HR        = 15           # require at least this many season HR
+HR_MIN_RATE_PER_PA      = 0.04         # OR at least this HR/PA (~25-HR full-season pace)
 
 # =========================
 # Output schemas
@@ -97,58 +95,91 @@ def _is_hr_prop(prop: str) -> bool:
     return ("home_run" in p) or (p == "hr") or (" hr" in p)
 
 # =========================
-# Load projections/power (NO lineups)
+# Load projections/power
 # =========================
-def _load_batter_power_and_proj() -> Tuple[Dict[str, Tuple[Optional[float], Optional[float]]], Dict[str, float]]:
+def _load_batter_power_proj_and_avg() -> Tuple[
+    Dict[str, Tuple[Optional[float], Optional[float]]],  # power: player_id -> (season_HR, HR/PA)
+    Dict[str, float],                                    # proj_ab: player_id -> projected AB/PA
+    Dict[str, float],                                    # avg_ab_pg: player_id -> season AB per game
+]:
     """
     Returns:
-      power: player_id -> (season_HR, hr_per_pa)
-      proj_ab: player_id -> projected AB/PA (best available)
+      power    : player_id -> (season_HR, hr_per_pa)
+      proj_ab  : player_id -> projected AB/PA (best available)
+      avg_ab_pg: player_id -> season AB per game (AB / G; if G missing, uses PA with rough factor)
     """
     df = _safe_read_csv(BATTERS_META_FILE)
     if df.empty:
-        return {}, {}
+        return {}, {}, {}
 
     df.columns = [c.lower() for c in df.columns]
 
-    # --- season HR, PA/AB for rate ---
+    # --- season HR and PA/AB for rate ---
     hr_cols = [c for c in ["hr","home_runs","season_hr","season_home_runs"] if c in df.columns]
     pa_cols = [c for c in ["pa","plate_appearances","season_pa","season_plate_appearances"] if c in df.columns]
     ab_cols = [c for c in ["ab","at_bats","season_ab","season_at_bats"] if c in df.columns]
+    g_cols  = [c for c in ["g","games","season_g","season_games"] if c in df.columns]
 
-    if hr_cols:
-        hr = pd.to_numeric(df[hr_cols[0]], errors="coerce")
-    else:
-        hr = pd.Series([pd.NA] * len(df))
+    hr = pd.to_numeric(df[hr_cols[0]], errors="coerce") if hr_cols else pd.Series([pd.NA]*len(df))
+    pa = pd.to_numeric(df[pa_cols[0]], errors="coerce") if pa_cols else None
+    if pa is None and ab_cols:
+        ab_for_pa = pd.to_numeric(df[ab_cols[0]], errors="coerce")
+        pa = ab_for_pa * 1.13  # rough conversion if PA not available
+    if pa is None:
+        pa = pd.Series([pd.NA]*len(df))
 
-    if pa_cols:
-        pa = pd.to_numeric(df[pa_cols[0]], errors="coerce")
-    elif ab_cols:
+    # HR/PA
+    hr_pa_rate = []
+    for hr_v, pa_v in zip(hr, pa):
+        if pd.notna(hr_v) and pd.notna(pa_v) and float(pa_v) > 0:
+            hr_pa_rate.append(float(hr_v) / float(pa_v))
+        else:
+            hr_pa_rate.append(None)
+
+    # AB per GAME
+    if ab_cols and g_cols:
         ab = pd.to_numeric(df[ab_cols[0]], errors="coerce")
-        pa = ab * 1.13  # rough conversion if PA not available
+        g  = pd.to_numeric(df[g_cols[0]], errors="coerce")
+        avg_ab_pg_series = []
+        for ab_v, g_v in zip(ab, g):
+            if pd.notna(ab_v) and pd.notna(g_v) and float(g_v) > 0:
+                avg_ab_pg_series.append(float(ab_v)/float(g_v))
+            else:
+                avg_ab_pg_series.append(None)
     else:
-        pa = pd.Series([pd.NA] * len(df))
+        avg_ab_pg_series = [None]*len(df)
 
+    # Assemble dicts
     power: Dict[str, Tuple[Optional[float], Optional[float]]] = {}
-    if "player_id" in df.columns:
-        for pid, hr_v, pa_v in zip(df["player_id"], hr, pa):
-            if pd.isna(pid):
-                continue
-            rate = float(hr_v) / float(pa_v) if (pd.notna(hr_v) and pd.notna(pa_v) and float(pa_v) > 0) else None
-            power[str(int(pid))] = (float(hr_v) if pd.notna(hr_v) else None, rate)
-
-    # --- projected AB/PA for participation floor ---
     proj_ab: Dict[str, float] = {}
+    avg_ab_pg: Dict[str, float] = {}
+
+    # projected AB/PA candidates (pick first present)
     proj_candidates = ["proj_ab","projected_ab","ab","proj_pa","projected_pa","pa"]
+    proj_series = None
     for cand in proj_candidates:
         if cand in df.columns:
-            series = pd.to_numeric(df[cand], errors="coerce")
-            for pid, v in zip(df.get("player_id", []), series):
-                if pd.notna(pid) and pd.notna(v):
-                    proj_ab[str(int(pid))] = float(v)
+            proj_series = pd.to_numeric(df[cand], errors="coerce")
             break
 
-    return power, proj_ab
+    if "player_id" in df.columns:
+        for i, pid in enumerate(df["player_id"]):
+            if pd.isna(pid):
+                continue
+            key = str(int(pid))
+
+            season_hr = float(hr.iloc[i]) if pd.notna(hr.iloc[i]) else None
+            rate      = float(hr_pa_rate[i]) if hr_pa_rate[i] is not None else None
+            power[key] = (season_hr, rate)
+
+            if proj_series is not None and pd.notna(proj_series.iloc[i]):
+                proj_ab[key] = float(proj_series.iloc[i])
+
+            aavg = avg_ab_pg_series[i]
+            if aavg is not None:
+                avg_ab_pg[key] = float(aavg)
+
+    return power, proj_ab, avg_ab_pg
 
 def _load_proj_ip() -> Dict[str, float]:
     """player_id -> projected IP (pitchers)."""
@@ -172,29 +203,38 @@ def _load_proj_ip() -> Dict[str, float]:
 # =========================
 def _keep_player_row(row: pd.Series,
                      proj_ab: Dict[str, float],
+                     avg_ab_pg: Dict[str, float],
                      proj_ip: Dict[str, float],
                      power: Dict[str, Tuple[Optional[float], Optional[float]]]) -> bool:
     """
     Return True iff this player prop row is viable under projection/power rules.
-    (No lineup checks — by design.)
+    BATTER props: require (avg AB/game >= MIN_AB_AVG_PER_GAME) OR (projected AB/PA >= MIN_AB_FOR_BATTERS).
+                  If neither metric exists or both fail → DROP (fail-closed).
+    PITCHER props: require projected IP >= MIN_IP_FOR_PITCHERS (if available, else DROP).
+    HR props: require power (season HR or HR/PA threshold).
     """
     pid = row.get("player_id")
     pid_key = str(int(pid)) if pd.notna(pid) else None
     prop = str(row.get("prop") or "").strip()
 
-    # Participation floors
+    # Pitcher props
     if _is_pitcher_prop(prop):
-        # Pitcher props -> need projected IP
         ip = proj_ip.get(pid_key) if pid_key else None
-        if ip is not None and ip < MIN_IP_FOR_PITCHERS:
+        if ip is None or ip < MIN_IP_FOR_PITCHERS:
             return False
-    else:
-        # Batter props -> need projected AB/PA
-        ab = proj_ab.get(pid_key) if pid_key else None
-        if ab is not None and ab < MIN_AB_FOR_BATTERS:
-            return False
+        return True
 
-    # Extra: HR overs must show power
+    # Batter props — enforce avg 3 AB rule (strict)
+    avg_ab = avg_ab_pg.get(pid_key) if pid_key else None
+    pab    = proj_ab.get(pid_key) if pid_key else None
+
+    avg_ok = (avg_ab is not None and avg_ab >= MIN_AB_AVG_PER_GAME)
+    proj_ok = (pab is not None and pab >= MIN_AB_FOR_BATTERS)
+
+    if not (avg_ok or proj_ok):
+        return False
+
+    # Extra gate for HR props: power filter
     if _is_hr_prop(prop):
         season_hr, rate = power.get(pid_key, (None, None)) if pid_key else (None, None)
         season_ok = (season_hr is not None and season_hr >= HR_MIN_SEASON_HR)
@@ -216,12 +256,12 @@ def _write_today_only(df: pd.DataFrame, path: Path, columns: List[str]) -> None:
     if "date" in df.columns:
         df = df[df["date"].astype(str).str[:10] == _today_str()]
 
-    # apply viability filters for player props (NO lineup usage)
+    # apply filters for player props (NO lineups)
     if path == PLAYER_HISTORY_FILE and not df.empty:
-        power, proj_ab = _load_batter_power_and_proj()
-        proj_ip        = _load_proj_ip()
+        power, proj_ab, avg_ab_pg = _load_batter_power_proj_and_avg()
+        proj_ip = _load_proj_ip()
         keep_mask = [
-            _keep_player_row(row, proj_ab, proj_ip, power)
+            _keep_player_row(row, proj_ab, avg_ab_pg, proj_ip, power)
             for _, row in df.iterrows()
         ]
         df = df.loc[keep_mask].copy()
