@@ -234,59 +234,6 @@ if PROJ_IN.exists():
         print(f"⚠️ Projections not used: {e}")
 
 # ---------------- over_probability ----------------
-def _lambda_for_row(row) -> float:
-    """
-    Choose λ per row with realistic caps by prop:
-      Hits: 0–6; HR: 0–2; TB: 0–12.
-      Prefer projections; conservative fallbacks if projections are missing/absurd.
-    """
-    prop = str(_to_scalar(row.get("prop", ""))).lower()
-
-    proj_hits = _to_scalar(row.get("proj_hits", np.nan))
-    proj_hr   = _to_scalar(row.get("proj_hr",   np.nan))
-    proj_slg  = _to_scalar(row.get("proj_slg",  np.nan))
-    ab        = _to_scalar(row.get("ab",        np.nan))
-    val       = _to_scalar(row.get("value",     np.nan))
-
-    def ok(x, lo, hi):
-        try:
-            xf = float(x)
-            return (pd.notna(xf)) and (lo <= xf <= hi)
-        except Exception:
-            return False
-
-    # HITS: λ should be ~0–6
-    if prop == "hits":
-        if ok(proj_hits, 0.0, 6.0):
-            return float(proj_hits)
-        if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.6) and ok(ab, 0.0, 7.0):
-            est_avg = max(0.0, min(1.0, float(proj_slg) / 1.6))
-            return max(0.0, min(6.0, est_avg * float(ab)))
-        if pd.notna(val):
-            return max(0.0, min(6.0, float(val)))
-        return np.nan
-
-    # HOME RUNS: λ should be ~0–2
-    if prop == "home_runs":
-        if ok(proj_hr, 0.0, 2.0):
-            return float(proj_hr)
-        if pd.notna(val):
-            return max(0.0, min(2.0, float(val)))
-        return np.nan
-
-    # TOTAL BASES: λ ≈ SLG * AB; cap to 0–12
-    if prop == "total_bases":
-        if pd.notna(proj_slg) and pd.notna(ab) and ok(proj_slg, 0.1, 1.6) and ok(ab, 0.0, 7.0):
-            return max(0.0, min(12.0, float(proj_slg) * float(ab)))
-        if pd.notna(val):
-            return max(0.0, min(12.0, float(val)))
-        return np.nan
-
-    # Fallback for any other prop types (not expected here)
-    if pd.notna(val):
-        return max(0.0, min(12.0, float(val)))
-    return np.nan
-
 def _over_prob(row):
     ln  = _to_scalar(row.get("line", np.nan))
     lam = _lambda_for_row(row)
@@ -299,6 +246,56 @@ def _over_prob(row):
         return np.nan
 
 # Compute probabilities
+
+# ---------------- over_probability ----------------
+def _lambda_for_row(row) -> float:
+    """
+    Compute a continuous λ per row with **no artificial caps**:
+      - Hits: use proj_hits if available; else estimate from SLG*AB via a proxy for per-AB hit prob (<=1).
+      - HR:   use proj_hr if available (expected HR per game).
+      - TB:   use SLG * AB (expected total bases).
+    If required inputs are missing, return NaN rather than inventing a fallback.
+    """
+    prop = str(_to_scalar(row.get("prop", ""))).lower()
+
+    proj_hits = _to_scalar(row.get("proj_hits", None))
+    proj_hr   = _to_scalar(row.get("proj_hr",   None))
+    proj_slg  = _to_scalar(row.get("proj_slg",  None))
+    ab        = _to_scalar(row.get("ab",        None))
+
+    def finite_nonneg(x):
+        try:
+            xf = float(x)
+            return (not pd.isna(xf)) and (xf >= 0.0) and (np.isfinite(xf))
+        except Exception:
+            return False
+
+    # HITS: λ ≈ expected hits per game
+    if prop == "hits":
+        if finite_nonneg(proj_hits):
+            return float(proj_hits)
+        # fallback: approximate per-AB hit probability from SLG; keep within [0,1]
+        if finite_nonneg(proj_slg) and finite_nonneg(ab):
+            est_avg = min(1.0, max(0.0, float(proj_slg) / 1.6))
+            return est_avg * float(ab)
+        return np.nan
+
+    # HOME RUNS: λ ≈ expected HR per game
+    if prop == "home_runs":
+        if finite_nonneg(proj_hr):
+            return float(proj_hr)
+        # If you later add season_hr/pa to this DataFrame, derive hr_rate*expected_PA here.
+        return np.nan
+
+    # TOTAL BASES: λ ≈ SLG * AB
+    if prop == "total_bases":
+        if finite_nonneg(proj_slg) and finite_nonneg(ab):
+            return float(proj_slg) * float(ab)
+        return np.nan
+
+    # Any other prop types (shouldn't occur here)
+    return np.nan
+
 bat["over_probability"] = bat.apply(_over_prob, axis=1)
 
 # ---------------- order + save ----------------
