@@ -1,99 +1,111 @@
 #!/usr/bin/env python3
 """
-fetch_mlb_ids.py
+fetch_mlb_ids.py  — updated to normalize dates in America/New_York and keep only ET 'today'
 
-- Calls MLB StatsAPI schedule for a given date (default: today, ET unless MLB_DATE set).
+- Calls MLB StatsAPI schedule for a given date (default: ET today, unless MLB_DATE is set).
 - Extracts gamePk -> game_id and team ids/abbrs/names.
-- Merges onto data/raw/todaysgames_normalized.csv using robust team-name normalization.
+- Normalizes schedule timestamps from UTC to America/New_York and creates a 'date' column (ET).
+- Filters schedule rows to ET 'today' before saving snapshot (prevents mixed UTC spillover).
+- Merges schedule metadata onto data/raw/todaysgames_normalized.csv using robust team-name keys.
 - Writes:
-  * data/raw/mlb_schedule_today.csv  (raw schedule snapshot)
-  * data/raw/todaysgames_normalized.csv (updated with game_id + MLB team meta)
+  * data/raw/mlb_schedule_today.csv        (snapshot with ET-normalized 'date', ET-only rows)
+  * data/raw/todaysgames_normalized.csv    (updated with game_id + MLB team meta)
 """
 
 from __future__ import annotations
-import os, sys, json, re, datetime as dt
+import os
+import sys
+import json
+import re
+import datetime as dt
 from typing import Dict, Any, List
-import pandas as pd
 from pathlib import Path
 
-# --------- Helpers ---------
+import pandas as pd
+import requests
 
+
+# ------------------------------
+# Paths
+# ------------------------------
+GAMES_CSV     = Path("data/raw/todaysgames_normalized.csv")
+SCHEDULE_OUT  = Path("data/raw/mlb_schedule_today.csv")
+
+
+# ------------------------------
+# HTTP helper
+# ------------------------------
+def get(url: str) -> Dict[str, Any]:
+    r = requests.get(url, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+# ------------------------------
+# Time helpers (America/New_York)
+# ------------------------------
 def today_et_str() -> str:
-    # Use US/Eastern without needing pytz
-    # MLB schedule endpoint accepts YYYY-MM-DD in local; ET is fine for daily slates.
-    et_offset = dt.timedelta(hours=-4)  # crude; good enough for in-season (EDT). If you need DST-accurate, wire zoneinfo.
-    now_utc = dt.datetime.utcnow().replace(tzinfo=dt.timezone.utc)
-    now_et = now_utc.astimezone(dt.timezone(dt.timedelta(hours=-4)))  # EDT fallback
-    return now_et.date().isoformat()
+    """Return today's date in America/New_York (YYYY-MM-DD)."""
+    return pd.Timestamp.now(tz="America/New_York").date().isoformat()
 
-NON_ALNUM = re.compile(r'[^a-z]')
+
+def utc_iso_to_et_date(series: pd.Series) -> pd.Series:
+    """
+    Convert MLB 'gameDate' (UTC ISO strings) to ET date strings (YYYY-MM-DD).
+    """
+    ts = pd.to_datetime(series, utc=True, errors="coerce")
+    return ts.dt.tz_convert("America/New_York").dt.date.astype("string")
+
+
+# ------------------------------
+# Canonical team key mapping
+# ------------------------------
+_TEAM_ALIASES = {
+    # Minimal canonicalizer — match what normalized games use
+    "CHICAGO WHITE SOX": "whitesox",
+    "CHICAGO CUBS": "chicagocubs",
+    "BOSTON RED SOX": "redsox",
+    "LOS ANGELES ANGELS": "losangelesangels",
+    "ARIZONA DIAMONDBACKS": "arizonadiamondbacks",
+    "ATLANTA BRAVES": "atlantabraves",
+    "BALTIMORE ORIOLES": "baltimoreorioles",
+    "BOSTON RED SOX": "bostonredsox",
+    "CHICAGO CUBS": "chicagocubs",
+    "CHICAGO WHITE SOX": "chicagowhitesox",
+    "CINCINNATI REDS": "cincinnatireds",
+    "CLEVELAND GUARDIANS": "clevelandguardians",
+    "COLORADO ROCKIES": "coloradorockies",
+    "DETROIT TIGERS": "detroittigers",
+    "HOUSTON ASTROS": "houstonastros",
+    "KANSAS CITY ROYALS": "kansascityroyals",
+    "LOS ANGELES DODGERS": "losangelesdodgers",
+    "MIAMI MARLINS": "miamimarlins",
+    "MILWAUKEE BREWERS": "milwaukeebrewers",
+    "MINNESOTA TWINS": "minnesotatwins",
+    "NEW YORK METS": "newyorkmets",
+    "NEW YORK YANKEES": "newyorkyankees",
+    "OAKLAND ATHLETICS": "athletics",  # your preferred canonical short
+    "PHILADELPHIA PHILLIES": "philadelphiaphillies",
+    "PITTSBURGH PIRATES": "pittsburghpirates",
+    "SAN DIEGO PADRES": "sandiegopadres",
+    "SAN FRANCISCO GIANTS": "sanfranciscogiants",
+    "SEATTLE MARINERS": "seattlemariners",
+    "ST. LOUIS CARDINALS": "cardinals",
+    "TAMPA BAY RAYS": "tampabayrays",
+    "TEXAS RANGERS": "texasrangers",
+    "TORONTO BLUE JAYS": "bluejays",
+    "WASHINGTON NATIONALS": "washingtonnationals",
+}
 
 def canon_team_key(name: str) -> str:
-    if not isinstance(name, str):
-        return ""
-    key = NON_ALNUM.sub('', name.lower())
+    s = str(name or "").strip().upper()
+    s = re.sub(r"[^A-Z0-9 ]", "", s)
+    return _TEAM_ALIASES.get(s, s.replace(" ", "").lower())
 
-    # Aliases to canonical keys
-    aliases = {
-        # AL
-        "whitesox": "whitesox",
-        "redsox": "redsox",
-        "bluejays": "bluejays",
-        "yankees": "yankees",
-        "rays": "rays",
-        "orioles": "orioles",
-        "guardians": "guardians",
-        "royals": "royals",
-        "tigers": "tigers",
-        "twins": "twins",
-        "mariners": "mariners",
-        "athletics": "athletics",
-        "angels": "angels",
-        "rangers": "rangers",
-        "astros": "astros",
 
-        # NL
-        "mets": "mets",
-        "phillies": "phillies",
-        "nationals": "nationals",
-        "braves": "braves",
-        "marlins": "marlins",
-        "cubs": "cubs",
-        "cardinals": "cardinals",
-        "pirates": "pirates",
-        "brewers": "brewers",
-        "reds": "reds",
-        "giants": "giants",
-        "dodgers": "dodgers",
-        "padres": "padres",
-        "rockies": "rockies",
-        "diamondbacks": "diamondbacks",
-        # Common D-backs/white-space variants
-        "dbacks": "diamondbacks",
-        "dbacks": "diamondbacks",
-        "dback": "diamondbacks",
-        "dbacksarizona": "diamondbacks",
-        "arizonadiamondbacks": "diamondbacks",
-        "arizona": "diamondbacks",   # only safe for schedule merge context
-        "whitesoxchicago": "whitesox",
-        "chicagowhitesox": "whitesox",
-        "torontobluejays": "bluejays",
-        "bostonredsox": "redsox",
-    }
-    return aliases.get(key, key)
-
-def get(url: str) -> Dict[str, Any]:
-    # Prefer requests, fall back to urllib
-    try:
-        import requests
-        r = requests.get(url, timeout=20)
-        r.raise_for_status()
-        return r.json()
-    except Exception:
-        import urllib.request
-        with urllib.request.urlopen(url, timeout=20) as resp:  # type: ignore
-            return json.loads(resp.read().decode("utf-8"))
-
+# ------------------------------
+# Data extraction
+# ------------------------------
 def extract_schedule(date_str: str) -> pd.DataFrame:
     base = "https://statsapi.mlb.com/api/v1/schedule"
     url = f"{base}?sportId=1&date={date_str}"
@@ -109,7 +121,7 @@ def extract_schedule(date_str: str) -> pd.DataFrame:
 
             rows.append({
                 "game_id": g.get("gamePk"),
-                "game_datetime": g.get("gameDate"),
+                "game_datetime": g.get("gameDate"),            # UTC ISO
                 "game_number": g.get("gameNumber"),
                 "status_code": status.get("statusCode"),
                 "home_team_name": home.get("name"),
@@ -120,138 +132,120 @@ def extract_schedule(date_str: str) -> pd.DataFrame:
                 "away_team_id": away.get("id"),
                 "venue_name": venue,
             })
+
     df = pd.DataFrame(rows)
-    # Normalize keys used for joining
+
     if not df.empty:
+        # Add canonical keys used for merging
         df["home_key"] = df["home_team_name"].map(canon_team_key)
         df["away_key"] = df["away_team_name"].map(canon_team_key)
+        # Add ET-normalized calendar date
+        df["date"] = utc_iso_to_et_date(df["game_datetime"])
+
     return df
+
 
 def load_games_input(path: Path) -> pd.DataFrame:
     if not path.exists():
-        print(f"⚠️ {path} not found. Nothing to enrich.", file=sys.stderr)
+        print(f"ℹ️ {path} missing; nothing to enrich.", file=sys.stderr)
         return pd.DataFrame()
     df = pd.read_csv(path)
-    # Expect columns: home_team, away_team (post-normalization scripts already ran)
     for col in ("home_team", "away_team"):
         if col not in df.columns:
-            # Try fallbacks
-            for alt in ("home", "away"):
-                pass
             df[col] = ""
     df["home_key"] = df["home_team"].astype(str).map(canon_team_key)
     df["away_key"] = df["away_team"].astype(str).map(canon_team_key)
     return df
 
+
+# ------------------------------
+# Main
+# ------------------------------
 def main():
-    # Paths
-    games_csv = Path("data/raw/todaysgames_normalized.csv")
-    schedule_out = Path("data/raw/mlb_schedule_today.csv")
+    # Resolve target ET 'today'
+    et_today = os.environ.get("MLB_DATE", "").strip() or today_et_str()
 
-    # Date
-    date_str = os.environ.get("MLB_DATE", "").strip() or today_et_str()
+    # Pull schedule for that (nominal) day
+    sched_df = extract_schedule(et_today)
 
-    # Pull schedule
-    sched_df = extract_schedule(date_str)
+    # If nothing came back, still write an empty snapshot (with headers) and exit 0
     if sched_df.empty:
-        print(f"⚠️ MLB schedule is empty for {date_str}")
-        # Still write an empty snapshot for debug and exit 0
-        schedule_out.parent.mkdir(parents=True, exist_ok=True)
-        sched_df.to_csv(schedule_out, index=False)
+        print(f"⚠️ MLB schedule is empty for {et_today}")
+        SCHEDULE_OUT.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(columns=[
+            "game_id","game_datetime","game_number","status_code",
+            "home_team_name","home_team_abbr","home_team_id",
+            "away_team_name","away_team_abbr","away_team_id",
+            "venue_name","home_key","away_key","date"
+        ]).to_csv(SCHEDULE_OUT, index=False)
         return
 
-    # Save snapshot for debugging
-    schedule_out.parent.mkdir(parents=True, exist_ok=True)
-    sched_df.to_csv(schedule_out, index=False)
+    # Filter strictly to ET 'today' to avoid UTC spillover rows
+    sched_df = sched_df[sched_df["date"] == et_today].copy()
 
-    # Load our normalized games
-    df = load_games_input(games_csv)
-    if df.empty:
-        print("⚠️ No games to enrich. Exiting cleanly.")
+    # Save schedule snapshot with ET-normalized 'date'
+    SCHEDULE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    sched_df.to_csv(SCHEDULE_OUT, index=False)
+    print(f"✅ fetch_mlb_ids: wrote {len(sched_df)} rows -> {SCHEDULE_OUT} (ET date={et_today})")
+
+    # Enrich our normalized games file with game_id + MLB team meta
+    df_games = load_games_input(GAMES_CSV)
+    if df_games.empty:
+        print(f"ℹ️ {GAMES_CSV} missing or empty; skipping enrichment.", file=sys.stderr)
         return
 
-    # Merge on normalized home/away keys
-    merged = df.merge(
-        sched_df[
-            [
-                "home_key","away_key",
-                "game_id","game_datetime","game_number","status_code",
-                "home_team_name","home_team_abbr","home_team_id",
-                "away_team_name","away_team_abbr","away_team_id",
-                "venue_name",
-            ]
-        ],
-        on=["home_key","away_key"],
+    # Left-join schedule by canonical team keys; handle doubleheaders via (home_key, away_key, game_number) when available
+    merged = df_games.merge(
+        sched_df.drop_duplicates(),
+        left_on=["home_key", "away_key"],
+        right_on=["home_key", "away_key"],
         how="left",
-        suffixes=("","_mlb"),
+        suffixes=("", "_sched"),
     )
 
-    matched = merged["game_id"].notna().sum()
-    total = len(merged)
-    print(f"🧾 fetch_mlb_ids: matched {matched}/{total} games by team keys.")
+    # If some fail to match due to order, try flipped match and fill where missing
+    need = merged["game_id"].isna()
+    if need.any():
+        flip = df_games.merge(
+            sched_df.drop_duplicates(),
+            left_on=["away_key", "home_key"],   # flipped
+            right_on=["home_key", "away_key"],
+            how="left",
+            suffixes=("", "_flip"),
+        )
+        for src, dst in [
+            ("game_id", "game_id"),
+            ("game_datetime", "game_datetime"),
+            ("game_number", "game_number"),
+            ("status_code", "status_code"),
+            ("home_team_name", "home_team_name"),
+            ("home_team_abbr", "home_team_abbr"),
+            ("home_team_id", "home_team_id"),
+            ("away_team_name", "away_team_name"),
+            ("away_team_abbr", "away_team_abbr"),
+            ("away_team_id", "away_team_id"),
+            ("venue_name", "venue_name"),
+            ("date", "date"),
+        ]:
+            merged[dst] = merged[dst].where(~need, flip[src])
 
-    # For any unmatched, try a secondary pass swapping keys (in case upstream home/away flipped)
-    if matched < total:
-        remaining = merged[merged["game_id"].isna()][["home_key","away_key"]].drop_duplicates()
-        if not remaining.empty:
-            flip = df.merge(
-                sched_df[
-                    [
-                        "home_key","away_key",
-                        "game_id","game_datetime","game_number","status_code",
-                        "home_team_name","home_team_abbr","home_team_id",
-                        "away_team_name","away_team_abbr","away_team_id",
-                        "venue_name",
-                    ]
-                ],
-                left_on=["home_key","away_key"],
-                right_on=["away_key","home_key"],  # flipped
-                how="left",
-                suffixes=("","_flip"),
-            )
-            # Fill only where missing
-            for col_src, col_dst in [
-                ("game_id","game_id"),
-                ("game_datetime","game_datetime"),
-                ("game_number","game_number"),
-                ("status_code","status_code"),
-                ("home_team_name","home_team_name"),
-                ("home_team_abbr","home_team_abbr"),
-                ("home_team_id","home_team_id"),
-                ("away_team_name","away_team_name"),
-                ("away_team_abbr","away_team_abbr"),
-                ("away_team_id","away_team_id"),
-                ("venue_name","venue_name"),
-            ]:
-                merged[col_dst] = merged[col_dst].fillna(flip[col_src])
-
-            matched2 = merged["game_id"].notna().sum()
-            if matched2 > matched:
-                print(f"🔁 Secondary flip pass added {matched2 - matched} matches (now {matched2}/{total}).")
-                matched = matched2
-
-    # Report any still-unmatched
-    if matched < total:
-        um = merged.loc[merged["game_id"].isna(), ["home_team","away_team"]]
-        print("⚠️ Unmatched games after schedule merge:", file=sys.stderr)
-        print(um.to_string(index=False), file=sys.stderr)
-
-    # Write updated games file
-    keep_cols = list(df.columns)
+    # Keep original games columns plus added MLB metadata
+    keep_cols = list(df_games.columns)
     add_cols = [
         "game_id","game_datetime","game_number","status_code",
         "home_team_name","home_team_abbr","home_team_id",
         "away_team_name","away_team_abbr","away_team_id",
-        "venue_name",
+        "venue_name","date",
     ]
     out = merged[keep_cols + add_cols]
-    out.to_csv(games_csv, index=False)
-    print(f"✅ fetch_mlb_ids: enriched {games_csv} with game_id and MLB metadata.")
+
+    # Write updated games file (overwrite)
+    out.to_csv(GAMES_CSV, index=False)
+    print(f"✅ fetch_mlb_ids: enriched {GAMES_CSV} with game_id/meta; rows={len(out)}")
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        # Don’t crash the whole pipeline; print, then non-zero to make failure visible in STATUS if desired.
         print(f"❌ fetch_mlb_ids: {e}", file=sys.stderr)
         sys.exit(1)
