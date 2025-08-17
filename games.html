@@ -1,22 +1,11 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Games</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script defer src="js/app.js"></script>
-  <script defer src="js/games.js"></script>
-</head>
-<body>
-  <header class="site-header">
-    <h1>Games</h1>
-    <nav><a href="index.html">Home</a> · <a href="props.html">Props</a></nav>
-  </header>
-
-  <main>
-    <section id="games-list" class="card-grid"></section>
-  </main>
-</body>
-</html>
+<html lang='en'><head><meta charset='utf-8'><title>Games</title><meta name='viewport' content='width=device-width, initial-scale=1'>
+<link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='assets/css/global.css'>
+<script src='https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'></script>
+<script defer src='js/app.js'></script><script defer src='js/games.js'></script></head>
+<body><header class='site-header'><div class='brand'><span class='dot'></span><h1>MLB Dashboard</h1></div>
+<nav class='nav'><a href='index.html'>Home</a><a class='active' href='games.html'>Games</a><a href='props.html'>Props</a></nav></header>
+<div class='container'><div class='cards' id='games-list'></div><p class='note'>Powered by <code>data/bets/mlb_sched.csv</code>.</p></div>
+</body></html>

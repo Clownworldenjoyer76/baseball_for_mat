@@ -1,38 +1,16 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Props</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="assets/css/global.css">
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script defer src="js/app.js"></script>
-  <script defer src="js/props.js"></script>
-</head>
-<body>
-  <header class="site-header">
-    <h1>Props</h1>
-    <nav><a href="index.html">Home</a> · <a href="games.html">Games</a></nav>
-  </header>
-  <main>
-    <section class="card">
-      <div class="card-body">
-        <h2 id="matchup-title" class="title"></h2>
-        <table class="data-table" id="top-props-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Market</th>
-              <th>Line</th>
-              <th>Odds</th>
-              <th>Edge</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody id="props-body"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-</body>
-</html>
+<html lang='en'><head><meta charset='utf-8'><title>Props</title><meta name='viewport' content='width=device-width, initial-scale=1'>
+<link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+<link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='assets/css/global.css'>
+<script src='https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js'></script>
+<script defer src='js/app.js'></script><script defer src='js/props.js'></script></head>
+<body><header class='site-header'><div class='brand'><span class='dot'></span><h1>MLB Dashboard</h1></div>
+<nav class='nav'><a href='index.html'>Home</a><a href='games.html'>Games</a><a class='active' href='props.html'>Props</a></nav></header>
+<div class='container'>
+  <div class='card'><div class='body'><div class='media' id='matchup-title'></div></div></div>
+  <div class='table-wrap' style='margin-top:16px'><table class='table' id='props-table'><thead><tr>
+    <th>Player</th><th>Market</th><th>Line</th><th>Odds</th><th>Edge</th><th>Type</th>
+  </tr></thead><tbody id='props-body'></tbody></table></div>
+  <p class='note'>Loaded from <code>data/bets/player_props_history.csv</code> and <code>data/bets/game_props_history.csv</code>.</p>
+</div></body></html>
