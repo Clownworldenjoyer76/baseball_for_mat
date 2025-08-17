@@ -1,95 +1,93 @@
-import pandas as pd
+#!/usr/bin/env python3
 import os
+from pathlib import Path
+from datetime import datetime, timezone
+import pandas as pd
 
-# Define file paths
-input_file = 'data/raw/mlb_schedule_today.csv'
-mapping_file = 'data/Data/team_name_map.csv'
-output_file = 'data/bets/mlb_sched.csv'
+# ---- Inputs / Output ----
+INPUT_FILE   = Path("data/raw/mlb_schedule_today.csv")
+MAP_FILE     = Path("data/Data/team_name_map.csv")   # columns: name, team
+OUTPUT_FILE  = Path("data/bets/mlb_sched.csv")
 
-# Read the input CSV file
-try:
-    df = pd.read_csv(input_file)
-except FileNotFoundError:
-    print(f"Error: The input file '{input_file}' was not found.")
-    exit()
+# ---- Helpers ----
+def ensure_parent(p: Path):
+    p.parent.mkdir(parents=True, exist_ok=True)
 
-# Read the mapping CSV file
-try:
-    df_map = pd.read_csv(mapping_file)
-except FileNotFoundError:
-    print(f"Error: The mapping file '{mapping_file}' was not found.")
-    exit()
+def required(df: pd.DataFrame, cols: list[str], where: str):
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"{where}: missing required columns: {missing}")
 
-# Select the required columns
-df_cleaned = df[[
-    'game_id',
-    'game_datetime',
-    'home_team_name',
-    'home_team_id',
-    'away_team_name',
-    'away_team_id',
-    'venue_name'
-]].copy()
+def to_et_date(series: pd.Series) -> pd.Series:
+    # MLB gameDate is UTC ISO (e.g., 2025-08-16T23:05:00Z)
+    ts = pd.to_datetime(series, utc=True, errors="coerce")
+    # Convert to America/New_York via tz_convert; using IANA name keeps DST correct
+    return ts.dt.tz_convert("America/New_York").dt.date.astype("string")
 
-# Rename the 'game_datetime' column to 'date'
-df_cleaned.rename(columns={'game_datetime': 'date'}, inplace=True)
+def today_et_str() -> str:
+    # Compute 'today' in America/New_York
+    # Use pandas for tz correctness
+    now_et = pd.Timestamp.now(tz="America/New_York")
+    return now_et.date().isoformat()
 
-# Extract only the date portion from the 'date' column
-df_cleaned['date'] = df_cleaned['date'].str.split('T').str[0]
+def build_map(df_map: pd.DataFrame) -> dict:
+    # MAP_FILE has columns: name (source full name), team (desired short name)
+    # Create a case-insensitive map on 'name'
+    required(df_map, ["name", "team"], "team_name_map.csv")
+    return {str(n).strip().lower(): t for n, t in zip(df_map["name"], df_map["team"])}
 
-# --- New Logic for mapping team names ---
+# ---- Main ----
+def main():
+    if not INPUT_FILE.exists():
+        raise FileNotFoundError(f"Missing input: {INPUT_FILE}")
 
-# Prepare mapping DataFrame for case-insensitive merge
-df_map['name_lower'] = df_map['name'].str.lower()
-df_map.rename(columns={'team': 'mapped_team'}, inplace=True)
+    df = pd.read_csv(INPUT_FILE)
+    required(df,
+        ["game_id", "game_datetime",
+         "home_team_name", "home_team_id",
+         "away_team_name", "away_team_id",
+         "venue_name"],
+        str(INPUT_FILE),
+    )
 
-# Map home team names
-df_cleaned['home_team_name_lower'] = df_cleaned['home_team_name'].str.lower()
-df_cleaned = df_cleaned.merge(df_map[['name_lower', 'mapped_team']],
-                              left_on='home_team_name_lower',
-                              right_on='name_lower',
-                              how='left')
-df_cleaned['home_team'] = df_cleaned['mapped_team'].fillna(df_cleaned['home_team_name'])
+    df_map = pd.read_csv(MAP_FILE)
+    name_map = build_map(df_map)
 
-# Apply specific replacements after mapping
-df_cleaned['home_team'] = df_cleaned['home_team'].replace('St. Louis Cardinals', 'Cardinals')
-df_cleaned['home_team'] = df_cleaned['home_team'].replace('Athletics', 'Athletics')
+    # Convert UTC -> ET, then take the ET calendar date
+    df["date"] = to_et_date(df["game_datetime"])
 
-df_cleaned.drop(columns=['home_team_name', 'home_team_name_lower', 'name_lower', 'mapped_team'], inplace=True)
+    # Filter to ET today only
+    et_today = today_et_str()
+    df = df[df["date"] == et_today].copy()
 
-# Map away team names
-df_cleaned['away_team_name_lower'] = df_cleaned['away_team_name'].str.lower()
-df_cleaned = df_cleaned.merge(df_map[['name_lower', 'mapped_team']],
-                              left_on='away_team_name_lower',
-                              right_on='name_lower',
-                              how='left')
-df_cleaned['away_team'] = df_cleaned['mapped_team'].fillna(df_cleaned['away_team_name'])
+    # Map canonical team names using map file (fallback to original if not found)
+    def canon(name: str) -> str:
+        key = str(name).strip().lower()
+        return name_map.get(key, str(name).strip())
 
-# Apply specific replacements after mapping
-df_cleaned['away_team'] = df_cleaned['away_team'].replace('St. Louis Cardinals', 'Cardinals')
-df_cleaned['away_team'] = df_cleaned['away_team'].replace('Athletics', 'Athletics')
+    df["home_team"] = df["home_team_name"].map(canon)
+    df["away_team"] = df["away_team_name"].map(canon)
 
-df_cleaned.drop(columns=['away_team_name', 'away_team_name_lower', 'name_lower', 'mapped_team'], inplace=True)
+    # Final column order expected by downstream scripts
+    out_cols = [
+        "game_id",
+        "date",
+        "home_team",
+        "home_team_id",
+        "away_team",
+        "away_team_id",
+        "venue_name",
+    ]
 
-# Reorder columns to match the requested output structure
-new_cols = [
-    'game_id',
-    'date',
-    'home_team',
-    'home_team_id',
-    'away_team',
-    'away_team_id',
-    'venue_name'
-]
-df_cleaned = df_cleaned[new_cols]
+    # Align + write
+    for c in out_cols:
+        if c not in df.columns:
+            df[c] = pd.NA
+    df = df[out_cols].drop_duplicates()
 
-# Create the output directory if it doesn't exist
-output_dir = os.path.dirname(output_file)
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+    ensure_parent(OUTPUT_FILE)
+    df.to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ Wrote {len(df)} rows for ET {et_today} -> {OUTPUT_FILE}")
 
-# Save the cleaned DataFrame to the output CSV file
-df_cleaned.to_csv(output_file, index=False)
-
-print(f"Data successfully cleaned and saved to '{output_file}'")
-
+if __name__ == "__main__":
+    main()
