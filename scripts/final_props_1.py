@@ -61,8 +61,7 @@ def _ensure_num(df: pd.DataFrame, cols) -> None:
 def _build_team_normalizer(team_map_df: pd.DataFrame):
     """
     Map any alias to canonical team_name (per team_name_master.csv).
-    Accept keys: team_code, abbreviation, team_name, clean_team_name,
-    plus lowercase(team_name) as an alias.
+    STRICT: unknown aliases become NaN (no fallback/guessing).
     """
     req = {"team_code", "team_name", "abbreviation", "clean_team_name"}
     miss = [c for c in req if c not in team_map_df.columns]
@@ -70,13 +69,10 @@ def _build_team_normalizer(team_map_df: pd.DataFrame):
         raise SystemExit(f"❌ team_name_master.csv missing columns: {miss}")
 
     alias_to_team = {}
-
     def _add(key_val, team_name):
-        if pd.isna(key_val):
-            return
+        if pd.isna(key_val): return
         k = str(key_val).strip().lower()
-        if k:
-            alias_to_team[k] = team_name
+        if k: alias_to_team[k] = team_name
 
     for _, r in team_map_df.iterrows():
         canon = str(r["team_name"]).strip()
@@ -86,10 +82,10 @@ def _build_team_normalizer(team_map_df: pd.DataFrame):
         _add(r["team_name"], canon)
         _add(str(r["team_name"]).lower(), canon)
 
-    def normalize_series(s: pd.Series) -> pd.Series:
-        return s.astype(str).map(lambda x: alias_to_team.get(str(x).strip().lower(), str(x).strip()))
+    def normalize_series_strict(s: pd.Series) -> pd.Series:
+        return s.astype(str).map(lambda x: alias_to_team.get(str(x).strip().lower(), pd.NA))
 
-    return normalize_series
+    return normalize_series_strict
 
 def _first_best(df: pd.DataFrame, mask: pd.Series) -> list[int]:
     pool = df[mask].dropna(subset=["over_probability"])
@@ -130,7 +126,7 @@ def _select_for_game(df_game: pd.DataFrame) -> pd.DataFrame:
 
 # ---------- Main ----------
 def main():
-    # Team map & normalizer
+    # Team map & normalizer (STRICT)
     teammap = _std(pd.read_csv(TEAMMAP_FILE))
     normalize_series = _build_team_normalizer(teammap)
 
@@ -140,10 +136,16 @@ def main():
     if need_sched:
         raise SystemExit(f"❌ schedule missing columns: {need_sched}")
 
-    sched["home_team"] = normalize_series(sched["home_team"])
-    sched["away_team"] = normalize_series(sched["away_team"])
+    # Normalize schedule teams (fail hard on unknown aliases)
+    for col in ["home_team", "away_team"]:
+        orig = sched[col].copy()
+        sched[col] = normalize_series(sched[col])
+        unknown = orig[pd.isna(sched[col])].dropna().unique().tolist()
+        if unknown:
+            raise SystemExit(f"❌ Unknown team alias(es) in schedule '{col}': {unknown}")
+
     sched["date"] = pd.to_datetime(sched["date"], errors="coerce")
-    # NEW: drop timezone if present for stable date-only comparisons
+    # drop timezone if present for stable date-only comparisons
     try:
         sched["date"] = sched["date"].dt.tz_localize(None)
     except Exception:
@@ -152,8 +154,7 @@ def main():
         raise SystemExit("❌ schedule 'date' column is not parseable")
 
     # Select today's slate (fallback to latest in schedule) using date-only
-    today_dt = pd.to_datetime(_today_str())
-    today_date = today_dt.date()
+    today_date = pd.to_datetime(_today_str()).date()
     sched_today = sched[sched["date"].dt.date == today_date].copy()
     if sched_today.empty:
         latest = sched["date"].max()
@@ -183,11 +184,15 @@ def main():
     pit["is_pitcher"] = pit["player_pos"].astype(str).str.lower().eq("pitcher") if "player_pos" in pit.columns else True
     bat["is_pitcher"] = False
 
-    # Normalize teams in props
-    bat["team"] = normalize_series(bat["team"])
-    if "opp_team" in bat.columns:
-        bat["opp_team"] = normalize_series(bat["opp_team"])
-    pit["team"] = normalize_series(pit["team"])
+    # Normalize teams in props (fail hard on unknowns)
+    for df, name in [(bat, "batter"), (pit, "pitcher")]:
+        for col in ["team", "opp_team"]:
+            if col in df.columns:
+                orig = df[col].copy()
+                df[col] = normalize_series(df[col])
+                unknown = orig[pd.isna(df[col])].dropna().unique().tolist()
+                if unknown:
+                    raise SystemExit(f"❌ Unknown team alias(es) in {name} file '{col}': {unknown}")
 
     # Preserve original ids from pitcher file (some rows already have correct ids)
     pit["_game_id_orig"] = pit["game_id"] if "game_id" in pit.columns else np.nan
