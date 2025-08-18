@@ -143,18 +143,24 @@ def main():
     sched["home_team"] = normalize_series(sched["home_team"])
     sched["away_team"] = normalize_series(sched["away_team"])
     sched["date"] = pd.to_datetime(sched["date"], errors="coerce")
+    # NEW: drop timezone if present for stable date-only comparisons
+    try:
+        sched["date"] = sched["date"].dt.tz_localize(None)
+    except Exception:
+        pass
     if sched["date"].isna().all():
         raise SystemExit("❌ schedule 'date' column is not parseable")
 
-    # Select today's slate (fallback to latest in schedule)
-    today = pd.to_datetime(_today_str())
-    sched_today = sched[sched["date"] == today].copy()
+    # Select today's slate (fallback to latest in schedule) using date-only
+    today_dt = pd.to_datetime(_today_str())
+    today_date = today_dt.date()
+    sched_today = sched[sched["date"].dt.date == today_date].copy()
     if sched_today.empty:
         latest = sched["date"].max()
         sched_today = sched[sched["date"] == latest].copy()
-        print(f"⚠️ No schedule for today ({today.date()}); using latest {latest.date()} instead.")
+        print(f"⚠️ No schedule for today ({today_date}); using latest {latest.date()} instead.")
     else:
-        print(f"✅ Using schedule for {today.date()}")
+        print(f"✅ Using schedule for {today_date}")
 
     # Long map: team -> (date, game_id) for the selected date only
     team_map = pd.concat([
