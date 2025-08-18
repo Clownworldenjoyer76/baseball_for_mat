@@ -7,8 +7,21 @@ from pathlib import Path
 import pandas as pd
 from projection_formulas import calculate_all_projections
 
+# ---------------- NEW: normalization & schedule constants ----------------
+from datetime import datetime
+try:
+    from zoneinfo import ZoneInfo  # py3.9+
+except Exception:
+    ZoneInfo = None
+
 FINAL_FILE   = Path("data/end_chain/final/bat_today_final.csv")
 OUTPUT_FILE  = Path("data/_projections/batter_props_projected.csv")
+
+# NEW
+SCHED_FILE   = Path("data/bets/mlb_sched.csv")
+TEAMMAP_FILE = Path("data/Data/team_name_master.csv")
+TZ_NAME      = "America/New_York"
+# ------------------------------------------------------------------------
 
 # Accept your actual headers
 ALIASES = {
@@ -70,10 +83,108 @@ def _poisson_over_prob(lam: float, line_val: float) -> float:
         return 1.0
     return float(min(max(1.0 - _poisson_cdf_le(thr - 1, float(lam)), 0.0), 1.0))
 
+# ---------------- NEW: helpers for normalization/schedule ----------------
+def _std(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    return df
+
+def _today_str() -> str:
+    if ZoneInfo is not None:
+        return datetime.now(ZoneInfo(TZ_NAME)).strftime("%Y-%m-%d")
+    return datetime.now().strftime("%Y-%m-%d")
+
+def _build_team_normalizer(team_map_df: pd.DataFrame):
+    """
+    Map any alias to canonical team_name (per team_name_master.csv).
+    Accept keys: team_code, abbreviation, team_name, clean_team_name,
+    plus lowercase(team_name) as an alias.
+    """
+    req = {"team_code", "team_name", "abbreviation", "clean_team_name"}
+    miss = [c for c in req if c not in team_map_df.columns]
+    if miss:
+        raise SystemExit(f"❌ team_name_master.csv missing columns: {miss}")
+
+    alias_to_team = {}
+
+    def _add(key_val, team_name):
+        if pd.isna(key_val):
+            return
+        k = str(key_val).strip().lower()
+        if k:
+            alias_to_team[k] = team_name
+
+    for _, r in team_map_df.iterrows():
+        canon = str(r["team_name"]).strip()
+        _add(r["team_code"], canon)
+        _add(r["abbreviation"], canon)
+        _add(r["clean_team_name"], canon)
+        _add(r["team_name"], canon)
+        _add(str(r["team_name"]).lower(), canon)
+
+    def normalize_series(s: pd.Series) -> pd.Series:
+        return s.astype(str).map(lambda x: alias_to_team.get(str(x).strip().lower(), str(x).strip()))
+
+    return normalize_series
+# ------------------------------------------------------------------------
+
 def main():
     # Load the day’s batter base and ensure expected columns exist
     df = pd.read_csv(FINAL_FILE)
     df = _ensure_columns(df)
+
+    # ---------------- NEW: normalize teams & filter to today's schedule ----------------
+    # Load team map & normalizer (your master mapping only)
+    teammap = _std(pd.read_csv(TEAMMAP_FILE))
+    normalize_series = _build_team_normalizer(teammap)
+
+    # Normalize any team columns present
+    for col in ["team", "Team", "team_abbr", "bat_team", "opp_team", "home_team", "away_team"]:
+        if col in df.columns:
+            df[col] = normalize_series(df[col])
+
+    # Read schedule, parse dates safely (drop timezone), select today's slate (date-only)
+    sched = _std(pd.read_csv(SCHED_FILE))
+    need_sched = [c for c in ("home_team", "away_team", "date") if c not in sched.columns]
+    if need_sched:
+        raise SystemExit(f"❌ schedule missing columns: {need_sched}")
+
+    sched["home_team"] = normalize_series(sched["home_team"])
+    sched["away_team"] = normalize_series(sched["away_team"])
+    sched["date"] = pd.to_datetime(sched["date"], errors="coerce")
+    try:
+        sched["date"] = sched["date"].dt.tz_localize(None)
+    except Exception:
+        pass
+    if sched["date"].isna().all():
+        raise SystemExit("❌ schedule 'date' column is not parseable")
+
+    today_dt = pd.to_datetime(_today_str())
+    today_date = today_dt.date()
+    sched_today = sched[sched["date"].dt.date == today_date].copy()
+    if sched_today.empty:
+        latest = sched["date"].max()
+        sched_today = sched[sched["date"] == latest].copy()
+        print(f"⚠️ No schedule for today ({today_date}); using latest {latest.date()} instead.")
+    else:
+        print(f"✅ Using schedule for {today_date}")
+
+    # Build set of today teams and filter the batter base
+    today_teams = set(sched_today["home_team"]).union(set(sched_today["away_team"]))
+    # Prefer 'team' if it exists, otherwise try common fallbacks
+    team_col = None
+    for c in ["team", "Team", "team_abbr", "bat_team"]:
+        if c in df.columns:
+            team_col = c
+            break
+    if team_col is None:
+        raise SystemExit("❌ Could not find a team column in bat_today_final.csv for filtering.")
+
+    before_ct = len(df)
+    df = df[df[team_col].isin(today_teams)].copy()
+    after_ct = len(df)
+    print(f"✅ Filtered to today's slate by team: {after_ct}/{before_ct} rows remain.")
+    # -------------------------------------------------------------------------------
 
     # Compute projections (adds AB, proj_hits, proj_hr, proj_slg, etc.)
     df_proj = calculate_all_projections(df)
