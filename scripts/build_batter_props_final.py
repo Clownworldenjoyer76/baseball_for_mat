@@ -54,6 +54,13 @@ def infer_games(row):
         games = SEASON_GAMES_DEFAULT
     return float(games)
 
+def try_parse_float(series, default=np.nan):
+    def conv(x):
+        try: return float(x)
+        except: return default
+    return series.map(conv)
+
+# Poisson P(X >= ceil(line))
 def poisson_over_prob(lmbda, line):
     if pd.isna(lmbda) or lmbda < 0 or pd.isna(line):
         return np.nan
@@ -63,10 +70,9 @@ def poisson_over_prob(lmbda, line):
         return np.nan
     if k <= 0:
         return 1.0
-    lam = float(lmbda)
-    lam = min(lam, MAX_REASONABLE_LAMBDA)
+    lam = min(float(lmbda), MAX_REASONABLE_LAMBDA)
     cdf = 0.0
-    term = math.exp(-lam)
+    term = math.exp(-lam)  # i=0
     cdf += term
     for i in range(1, k):
         term *= lam / i
@@ -82,7 +88,7 @@ def per_game_rate_from_season(row, season_cols, games=None):
         g = SEASON_GAMES_DEFAULT
     return float(season_total) / float(g)
 
-# ---- Lambdas per prop ----
+# ---- Lambdas per prop (treat inputs as SEASON totals unless *_pg exists) ----
 def hr_lambda_pg(row):
     v = get_first_value(row, ["proj_hr_pg","hr_pg","expected_hr_pg"], as_float=True, min_val=0.0)
     if not pd.isna(v): return v
@@ -126,48 +132,22 @@ def sb_lambda_pg(row):
     if not pd.isna(v): return v
     return per_game_rate_from_season(row, ["proj_sb","season_proj_sb","sb","steals"])
 
-PROP_TO_LAMBDA = {
-    "hr": hr_lambda_pg,
-    "home_run": hr_lambda_pg,
-    "h": hits_lambda_pg,
-    "hit": hits_lambda_pg,
-    "hits": hits_lambda_pg,
-    "tb": tb_lambda_pg,
-    "total_bases": tb_lambda_pg,
-    "r": r_lambda_pg,
-    "run": r_lambda_pg,
-    "runs": r_lambda_pg,
-    "rbi": rbi_lambda_pg,
-    "bb": bb_lambda_pg,
-    "walk": bb_lambda_pg,
-    "walks": bb_lambda_pg,
-    "sb": sb_lambda_pg,
-    "steal": sb_lambda_pg,
-    "steals": sb_lambda_pg,
-}
-
-def normalize_prop_name(v: str) -> str:
-    if not isinstance(v, str): return ""
-    v = v.strip().lower()
-    if v in ("home runs","home_run","homer","homers"): return "hr"
-    if v in ("total bases","total_bases"): return "tb"
-    if v in ("hit","hits"): return "h"
-    if v in ("run","runs"): return "r"
-    if v in ("walk","walks"): return "bb"
-    if v in ("steal","steals"): return "sb"
-    return v
-
-def try_parse_float(series, default=np.nan):
-    def conv(x):
-        try: return float(x)
-        except: return default
-    return series.map(conv)
+def lambda_for_prop(row, prop_value):
+    p = str(prop_value).strip().lower()
+    if p in ("hr","home run","home runs","home_run"): return hr_lambda_pg(row)
+    if p in ("hits","hit","h"): return hits_lambda_pg(row)
+    if p in ("total bases","total_bases","tb"): return tb_lambda_pg(row)
+    if p in ("runs","run","r"): return r_lambda_pg(row)
+    if p == "rbi": return rbi_lambda_pg(row)
+    if p in ("walks","walk","bb"): return bb_lambda_pg(row)
+    if p in ("steals","steal","sb","stolen bases","stolen base"): return sb_lambda_pg(row)
+    return np.nan
 
 # ---- AB/PA/G backfill with ambiguity guard ----
 def backfill_ab(bat: pd.DataFrame) -> pd.DataFrame:
     if "ab" in bat.columns:
         ab_obj = bat["ab"]
-        # In case duplicate column names caused a DataFrame, force Series
+        # If duplicate column names produced a DataFrame, force Series
         if isinstance(ab_obj, pd.DataFrame):
             ab_series = ab_obj.iloc[:, 0]
         else:
@@ -217,11 +197,9 @@ def main():
         return
     bets = std_cols(pd.read_csv(BATTER_IN))
 
-    for need in ["prop","line","player_id","name","team"]:
-        if need not in bets.columns:
-            bets[need] = np.nan
-
-    bets["prop"] = bets["prop"].astype(str).map(normalize_prop_name)
+    # Do NOT rename/normalize the 'prop' column; keep exactly as provided
+    if "line" not in bets.columns:
+        bets["line"] = np.nan
     bets["line"] = try_parse_float(bets["line"])
 
     proj = read_first_existing(PROJ_CANDIDATES)
@@ -229,71 +207,44 @@ def main():
         print("❌ No projection file found in:", ", ".join(map(str, PROJ_CANDIDATES)))
         return
 
+    # Ensure join keys exist
     for need in ["player_id","name","team"]:
-        if need not in proj.columns:
-            proj[need] = np.nan
+        if need not in bets.columns: bets[need] = np.nan
+        if need not in proj.columns: proj[need] = np.nan
 
-    if bets["player_id"].notna().any() and "player_id" in proj.columns:
-        merged = bets.merge(proj, on="player_id", how="left", suffixes=("","_p"))
-        nohit = merged.filter(like="_p").isna().all(axis=1)
-        if nohit.any() and all(k in bets.columns for k in ("name","team")) and all(k in proj.columns for k in ("name","team")):
-            fallback = bets[nohit].merge(proj, on=["name","team"], how="left", suffixes=("","_p2"))
-            merged.loc[nohit, :] = fallback.reindex(merged.columns, axis=1).fillna(merged.loc[nohit, :])
-    elif all(k in bets.columns for k in ("name","team")) and all(k in proj.columns for k in ("name","team")):
-        merged = bets.merge(proj, on=["name","team"], how="left", suffixes=("","_p"))
-    else:
-        merged = bets.copy()
+    # Join priority: player_id, then (name, team)
+    merged = bets.merge(proj, on="player_id", how="left", suffixes=("","_p"))
+    need_fallback = merged.filter(like="_p").isna().all(axis=1) if {"name_p","team_p"}.issubset(merged.columns) else merged.isna().all(axis=1)
+    if need_fallback.any() and all(k in bets.columns for k in ("name","team")) and all(k in proj.columns for k in ("name","team")):
+        alt = bets.merge(proj, on=["name","team"], how="left", suffixes=("","_p2"))
+        # align shapes and prefer filled values from alt where merged is NaN
+        merged = merged.combine_first(alt)
 
     bat = std_cols(merged)
 
     # Backfill AB/PA/G if missing
     bat = backfill_ab(bat)
 
-    # Per-game lambda for each row/prop
+    # Per-game lambda for each row/prop (using raw prop labels)
     lambdas = []
     for _, row in bat.iterrows():
-        prop = row.get("prop","")
-        fn = PROP_TO_LAMBDA.get(prop)
-        if fn is None:
-            lambdas.append(np.nan)
-            continue
-        lmbda = fn(row)
+        lmbda = lambda_for_prop(row, row.get("prop", ""))
         if pd.isna(lmbda):
+            # last-ditch by prop family using season totals
+            p = str(row.get("prop","")).strip().lower()
             g = infer_games(row)
-            if prop == "hr":
+            if p in ("hr","home run","home runs","home_run"):
                 lmbda = per_game_rate_from_season(row, ["hr","season_hr"], games=g)
-            elif prop == "h":
-                lmbda = per_game_rate_from_season(row, ["h","season_hits"], games=g)
-            elif prop == "tb":
+            elif p in ("hits","hit","h"):
+                lmbda = per_game_rate_from_season(row, ["h","hits","season_hits"], games=g)
+            elif p in ("total bases","total_bases","tb"):
                 lmbda = per_game_rate_from_season(row, ["tb","season_tb"], games=g)
-            elif prop == "r":
-                lmbda = per_game_rate_from_season(row, ["r","season_r"], games=g)
-            elif prop == "rbi":
+            elif p in ("runs","run","r"):
+                lmbda = per_game_rate_from_season(row, ["r","runs","season_r"], games=g)
+            elif p == "rbi":
                 lmbda = per_game_rate_from_season(row, ["rbi","season_rbi"], games=g)
-            elif prop == "bb":
+            elif p in ("walks","walk","bb"):
                 lmbda = per_game_rate_from_season(row, ["bb","walks","season_bb","season_walks"], games=g)
-            elif prop == "sb":
+            elif p in ("steals","steal","sb","stolen bases","stolen base"):
                 lmbda = per_game_rate_from_season(row, ["sb","steals","season_sb","season_steals"], games=g)
-        lambdas.append(lmbda)
-
-    bat["lambda_pg"] = pd.to_numeric(pd.Series(lambdas), errors="coerce").clip(upper=MAX_REASONABLE_LAMBDA)
-
-    bat["over_probability"] = [
-        poisson_over_prob(lmbda, line) for lmbda, line in zip(bat["lambda_pg"], bat["line"])
-    ]
-
-    out_cols = [
-        "player_id","name","team","prop","line",
-        "value","batter_z","mega_z","over_probability",
-        "opp_team","opp_pitcher_name","opp_pitcher_mega_z","opp_pitcher_z",
-        "lambda_pg"
-    ]
-    out_cols = [c for c in out_cols if c in bat.columns]
-    out = bat[out_cols].copy() if out_cols else bat.copy()
-
-    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(OUT_FILE, index=False)
-    print(f"✅ Wrote: {OUT_FILE} (rows={len(out)})")
-
-if __name__ == "__main__":
-    main()
+        lamb
