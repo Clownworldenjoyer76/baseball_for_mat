@@ -55,6 +55,7 @@ jobs:
           set -e
           for f in \
             data/_projections/batter_props_projected.csv \
+            data/bets/prep/batter_props_final.csv \
             data/bets/player_props_history.csv \
             data/bets/game_props_history.csv
           do
@@ -84,7 +85,7 @@ jobs:
           print("Upstream probability spread looks OK.")
           PY
 
-      # ---------- Final: build history ----------
+      # ---------- Final: build history (games) ----------
       - name: Run final_props_1.py
         run: |
           python -m py_compile scripts/final_props_1.py
@@ -95,13 +96,25 @@ jobs:
           python -m py_compile scripts/final_scores_1.py
           python -B scripts/final_scores_1.py
 
-      # ---------- NEW: derive proj_home_score / proj_away_score and totals/favorite ----------
+      # ---------- Derive proj_home_score / proj_away_score and totals/favorite ----------
       - name: Run final_scores_2.py (update game totals & favorite)
         run: |
           python -m py_compile scripts/final_scores_2.py
           python -B scripts/final_scores_2.py
 
-      # ---------- NEW: canonicalize today's histories via update_history.py ----------
+      # ---------- NEW: build batter_props_final.csv (prep) ----------
+      - name: Run build_batter_props_final.py (produce prep file)
+        run: |
+          python -m py_compile scripts/build_batter_props_final.py
+          python -B scripts/build_batter_props_final.py
+
+      - name: Quick check batter_props_final.csv
+        run: |
+          set -e
+          echo "Head of batter_props_final.csv:"
+          head -n 20 data/bets/prep/batter_props_final.csv || true
+
+      # ---------- Canonicalize today's histories via update_history.py ----------
       - name: Run update_history.py (canonical history writer)
         run: |
           python -m py_compile scripts/update_history.py
@@ -148,12 +161,13 @@ jobs:
           echo "Post-run hashes:"
           for f in \
             data/_projections/batter_props_projected.csv \
+            data/bets/prep/batter_props_final.csv \
             data/bets/player_props_history.csv \
             data/bets/game_props_history.csv
           do
             if [ -f "$f" ]; then
               echo "$(sha256sum "$f")"
-            else
+            else:
               echo "MISSING $f"
             fi
           done > posthash.txt
@@ -164,9 +178,11 @@ jobs:
           echo
           echo "Tail of batter_props_projected.csv:"; tail -n 5 data/_projections/batter_props_projected.csv || true
           echo
-          echo "Tail of player_props_history.csv:";  tail -n 5 data/bets/player_props_history.csv || true
+          echo "Tail of batter_props_final.csv:";   tail -n 5 data/bets/prep/batter_props_final.csv || true
           echo
-          echo "Tail of game_props_history.csv:";    tail -n 5 data/bets/game_props_history.csv || true
+          echo "Tail of player_props_history.csv:"; tail -n 5 data/bets/player_props_history.csv || true
+          echo
+          echo "Tail of game_props_history.csv:";   tail -n 5 data/bets/game_props_history.csv || true
 
       - name: Commit and push changes (rebase if remote advanced)
         shell: bash
@@ -180,7 +196,7 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated: update projections, props history, and final scores"
+          git commit -m "Automated: update projections, prep file, props history, and final scores"
           git push origin "HEAD:$BRANCH"
 
       - name: Upload artifacts (optional)
@@ -189,5 +205,6 @@ jobs:
           name: props-output
           path: |
             data/_projections/batter_props_projected.csv
+            data/bets/prep/batter_props_final.csv
             data/bets/player_props_history.csv
             data/bets/game_props_history.csv
