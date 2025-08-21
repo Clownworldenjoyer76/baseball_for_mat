@@ -8,6 +8,10 @@ Changes in this version:
 - Pitcher props still require projected IP ≥ 3.
 - HR props still require power (season HR >= HR_MIN_SEASON_HR OR HR/PA >= HR_MIN_RATE_PER_PA).
 - Probabilities clamped to [1%, 99%].
+
+This file now has an executable main that:
+- Reads current files from data/bets/
+- Applies filters and overwrites those same files
 """
 
 from __future__ import annotations
@@ -156,7 +160,7 @@ def _load_batter_power_proj_and_avg() -> Tuple[
     avg_ab_pg: Dict[str, float] = {}
 
     # projected AB/PA candidates (pick first present)
-    proj_candidates = ["proj_ab","projected_ab","ab","proj_pa","projected_pa","pa"]
+    proj_candidates = {"proj_ab","projected_ab","ab","proj_pa","projected_pa","pa"}
     proj_series = None
     for cand in df.columns:
         if cand in proj_candidates:
@@ -261,11 +265,12 @@ def _write_today_only(df: pd.DataFrame, path: Path, columns: List[str]) -> None:
     if path == PLAYER_HISTORY_FILE and not df.empty:
         power, proj_ab, avg_ab_pg = _load_batter_power_proj_and_avg()
         proj_ip = _load_proj_ip()
-        keep_mask = [
-            _keep_player_row(row, proj_ab, avg_ab_pg, proj_ip, power)
-            for _, row in df.iterrows()
-        ]
-        df = df.loc[keep_mask].copy()
+        if df.shape[0]:
+            keep_mask = [
+                _keep_player_row(row, proj_ab, avg_ab_pg, proj_ip, power)
+                for _, row in df.iterrows()
+            ]
+            df = df.loc[keep_mask].copy()
 
     # overwrite
     if df.empty:
@@ -273,7 +278,7 @@ def _write_today_only(df: pd.DataFrame, path: Path, columns: List[str]) -> None:
         print(f"{path} -> wrote headers only (no rows after filters)")
     else:
         df.to_csv(path, index=False)
-        print(f"{path} -> wrote {len(df)} row(s) for today after filters")
+        print(f"{path} -> wrote {len(df)} row(s) for today after filters)")
 
 def update_player_history(df: pd.DataFrame) -> None:
     _write_today_only(df, PLAYER_HISTORY_FILE, PLAYER_HISTORY_COLUMNS)
@@ -281,5 +286,37 @@ def update_player_history(df: pd.DataFrame) -> None:
 def update_game_history(df: pd.DataFrame) -> None:
     _write_today_only(df, GAME_HISTORY_FILE, GAME_HISTORY_COLUMNS)
 
+# =========================
+# Executable main
+# =========================
+def _main() -> int:
+    player_src = _safe_read_csv(PLAYER_HISTORY_FILE)
+    game_src   = _safe_read_csv(GAME_HISTORY_FILE)
+
+    if player_src.empty and game_src.empty:
+        print("No source rows found in data/bets/*history.csv — nothing to rewrite.")
+        # Still create headers to ensure presence
+        _write_today_only(pd.DataFrame(columns=PLAYER_HISTORY_COLUMNS),
+                          PLAYER_HISTORY_FILE, PLAYER_HISTORY_COLUMNS)
+        _write_today_only(pd.DataFrame(columns=GAME_HISTORY_COLUMNS),
+                          GAME_HISTORY_FILE, GAME_HISTORY_COLUMNS)
+        return 0
+
+    if not player_src.empty:
+        print(f"Loaded {len(player_src)} player rows; rewriting today-only with guards…")
+        update_player_history(player_src)
+    else:
+        _write_today_only(pd.DataFrame(columns=PLAYER_HISTORY_COLUMNS),
+                          PLAYER_HISTORY_FILE, PLAYER_HISTORY_COLUMNS)
+
+    if not game_src.empty:
+        print(f"Loaded {len(game_src)} game rows; rewriting today-only…")
+        update_game_history(game_src)
+    else:
+        _write_today_only(pd.DataFrame(columns=GAME_HISTORY_COLUMNS),
+                          GAME_HISTORY_FILE, GAME_HISTORY_COLUMNS)
+
+    return 0
+
 if __name__ == "__main__":
-    pass
+    raise SystemExit(_main())
