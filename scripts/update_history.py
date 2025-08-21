@@ -20,8 +20,9 @@ import pandas as pd
 # =========================
 # Paths (match your repo)
 # =========================
-PLAYER_HISTORY_FILE = Path("data/history/player_props_history.csv")
-GAME_HISTORY_FILE   = Path("data/history/game_props_history.csv")
+# NOTE: write to data/bets so the site reads the same files it produces.
+PLAYER_HISTORY_FILE = Path("data/bets/player_props_history.csv")
+GAME_HISTORY_FILE   = Path("data/bets/game_props_history.csv")
 
 # Projection/meta sources (ONLY these — no lineups.csv)
 BATTERS_META_FILE   = Path("data/Data/batters.csv")    # season totals + projections
@@ -157,8 +158,8 @@ def _load_batter_power_proj_and_avg() -> Tuple[
     # projected AB/PA candidates (pick first present)
     proj_candidates = ["proj_ab","projected_ab","ab","proj_pa","projected_pa","pa"]
     proj_series = None
-    for cand in proj_candidates:
-        if cand in df.columns:
+    for cand in df.columns:
+        if cand in proj_candidates:
             proj_series = pd.to_numeric(df[cand], errors="coerce")
             break
 
