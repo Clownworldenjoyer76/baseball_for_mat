@@ -107,6 +107,41 @@ jobs:
           python -m py_compile scripts/update_history.py
           python -B scripts/update_history.py
 
+      # ---------- DEBUG: show contents and row counts after update ----------
+      - name: Debug history after update
+        run: |
+          set -e
+          echo "Listing data/bets:"
+          ls -lh data/bets || true
+          echo
+          echo "Head of player_props_history.csv:"
+          head -n 20 data/bets/player_props_history.csv || true
+          echo
+          echo "Head of game_props_history.csv:"
+          head -n 20 data/bets/game_props_history.csv || true
+          echo
+          python - << 'PY'
+          import pandas as pd, datetime
+          from pathlib import Path
+          today = datetime.date.today()
+          for p in ["data/bets/player_props_history.csv","data/bets/game_props_history.csv"]:
+              path = Path(p)
+              if not path.exists():
+                  print(f"{p}: MISSING")
+                  continue
+              try:
+                  df = pd.read_csv(path)
+              except Exception as e:
+                  print(f"{p}: failed to read - {e}")
+                  continue
+              print(f"{p}: {len(df)} rows total")
+              if "date" in df.columns:
+                  ds = pd.to_datetime(df["date"], errors="coerce").dt.date
+                  print(f"{p}: {int((ds==today).sum())} rows for today ({today})")
+              else:
+                  print(f"{p}: no 'date' column present")
+          PY
+
       - name: Show deltas & tails
         run: |
           set -e
