@@ -101,6 +101,12 @@ jobs:
           python -m py_compile scripts/final_scores_2.py
           python -B scripts/final_scores_2.py
 
+      # ---------- NEW: canonicalize today's histories via update_history.py ----------
+      - name: Run update_history.py (canonical history writer)
+        run: |
+          python -m py_compile scripts/update_history.py
+          python -B scripts/update_history.py
+
       - name: Show deltas & tails
         run: |
           set -e
