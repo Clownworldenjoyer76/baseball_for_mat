@@ -102,7 +102,7 @@ jobs:
           python -m py_compile scripts/final_scores_2.py
           python -B scripts/final_scores_2.py
 
-      # ---------- NEW: build batter_props_final.csv (prep) ----------
+      # ---------- Build batter_props_final.csv (prep) ----------
       - name: Run build_batter_props_final.py (produce prep file)
         run: |
           python -m py_compile scripts/build_batter_props_final.py
@@ -114,7 +114,7 @@ jobs:
           echo "Head of batter_props_final.csv:"
           head -n 20 data/bets/prep/batter_props_final.csv || true
 
-      # ---------- Canonicalize today's histories via update_history.py ----------
+      # ---------- Canonicalize today's histories ----------
       - name: Run update_history.py (canonical history writer)
         run: |
           python -m py_compile scripts/update_history.py
@@ -167,14 +167,14 @@ jobs:
           do
             if [ -f "$f" ]; then
               echo "$(sha256sum "$f")"
-            else:
+            else
               echo "MISSING $f"
             fi
           done > posthash.txt
           cat posthash.txt
           echo
           echo "Diff hashes:"
-          (diff -u prehash.txt posthash.txt || true)
+          diff -u prehash.txt posthash.txt || true
           echo
           echo "Tail of batter_props_projected.csv:"; tail -n 5 data/_projections/batter_props_projected.csv || true
           echo
