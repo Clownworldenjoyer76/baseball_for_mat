@@ -114,6 +114,12 @@ jobs:
           echo "Head of batter_props_final.csv:"
           head -n 20 data/bets/prep/batter_props_final.csv || true
 
+      # ---------- Append prep batter props into player history ----------
+      - name: Append player history from prep
+        run: |
+          python -m py_compile scripts/append_player_history_from_prep.py
+          python -B scripts/append_player_history_from_prep.py
+
       # ---------- Canonicalize today's histories ----------
       - name: Run update_history.py (canonical history writer)
         run: |
