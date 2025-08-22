@@ -1,237 +1,216 @@
-#!/usr/bin/env python3
-"""
-Append today's batter props from data/bets/prep/batter_props_final.csv
-into data/bets/player_props_history.csv, mapping columns to the history schema,
-choosing over_probability by market, and filling game_id from the daily schedule.
-
-Key change: de-duplicate by (player_id, prop, line, date) and prefer rows with a
-non-null game_id, so we never keep both the "empty game_id" and "filled game_id" versions.
-"""
-
+# scripts/append_player_history_from_prep.py
 from __future__ import annotations
+
+import hashlib
+import math
 from pathlib import Path
-import datetime as dt
-import pandas as pd
+from typing import Optional
+
 import numpy as np
+import pandas as pd
 
-# Inputs/outputs
-PREP_FILE       = Path("data/bets/prep/batter_props_final.csv")
-HISTORY_FILE    = Path("data/bets/player_props_history.csv")
 
-# Schedule (used to backfill game_id)
-SCHED_FILE      = Path("data/bets/mlb_sched.csv")          # needs: game_id,date,home_team,away_team
-TEAMMAP_FILE    = Path("data/Data/team_name_master.csv")   # optional for normalization
+PREP_FILE = Path("data/bets/prep/batter_props_final.csv")
+PROJ_FILE = Path("data/_projections/batter_props_projected.csv")
+OUT_FILE  = Path("data/bets/player_props_history.csv")
 
-HISTORY_COLUMNS = [
-    "player_id","name","team","prop","line","value",
-    "over_probability","date","game_id","prop_correct","prop_sort"
-]
+# Mapping from (prop, line) -> projection column
+PROP_PROJ_COL = {
+    ("hits", 1.5): "prob_hits_over_1p5",
+    ("total_bases", 1.5): "prob_tb_over_1p5",
+    ("hr", 0.5): "prob_hr_over_0p5",
+}
 
-# ---------------- helpers ----------------
-def _pick_col(df: pd.DataFrame, names: list[str]) -> pd.Series:
-    for n in names:
-        if n in df.columns:
-            return df[n]
-    return pd.Series([pd.NA] * len(df), index=df.index)
+PROP_SORT = {"hits": 10.0, "total_bases": 20.0, "hr": 30.0}
 
-def _to_num(s: pd.Series) -> pd.Series:
-    """Coerce to numeric floats with NaN (never pd.NA) to avoid dtype issues."""
-    s = pd.to_numeric(s, errors="coerce")
-    return s.astype("float64")
 
-def _normalize_prob(s: pd.Series) -> pd.Series:
-    """Coerce to [0,1]; values in 1..100 are treated as percentages. Then clamp to [0.01, 0.99]."""
-    s = _to_num(s)
-    s = s.copy()
-    pct_mask = (s > 1.0) & (s <= 100.0)
-    s.loc[pct_mask] = s.loc[pct_mask] / 100.0
-    return s.clip(lower=0.01, upper=0.99)
+def _std(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = df.columns.str.strip()
+    return df
 
-def _lower_strip(x) -> str:
-    return str(x).strip().lower() if pd.notna(x) else ""
 
-def _load_sched_for_today(today: dt.date) -> pd.DataFrame:
-    if not SCHED_FILE.exists():
-        return pd.DataFrame()
-    sched = pd.read_csv(SCHED_FILE)
-    if sched.empty:
-        return sched
-    sched.columns = [c.strip().lower() for c in sched.columns]
-    need = {"game_id","date","home_team","away_team"}
-    if not need.issubset(set(sched.columns)):
-        return pd.DataFrame()
-    sched["date"] = pd.to_datetime(sched["date"], errors="coerce").dt.date
-    sched = sched[sched["date"] == today].copy()
-    for col in ["home_team","away_team"]:
-        sched[col] = sched[col].map(_lower_strip)
-    return sched
+def _read_csv_safe(p: Path) -> Optional[pd.DataFrame]:
+    if not p.exists():
+        return None
+    try:
+        return _std(pd.read_csv(p))
+    except Exception:
+        return None
 
-def _maybe_build_team_normalizer() -> dict[str, str]:
-    if not TEAMMAP_FILE.exists():
-        return {}
-    tm = pd.read_csv(TEAMMAP_FILE)
-    tm.columns = [c.strip().lower() for c in tm.columns]
-    alias_map: dict[str, str] = {}
-    def _add(key, team_name):
-        if pd.isna(key) or pd.isna(team_name):
-            return
-        alias_map[_lower_strip(key)] = str(team_name).strip()
-    for _, r in tm.iterrows():
-        canon = str(r.get("team_name", "")).strip()
-        for c in ("team_code","abbreviation","clean_team_name","team_name"):
-            if c in tm.columns:
-                _add(r.get(c), canon)
-        _add(str(r.get("team_name","")).lower(), canon)
-    alias_map["st. louis cardinals"] = "Cardinals"
-    alias_map["st louis cardinals"]  = "Cardinals"
-    return alias_map
 
-def _normalize_team(team_series: pd.Series, alias_map: dict[str, str]) -> pd.Series:
-    if not alias_map:
-        return team_series.astype(str).map(lambda x: str(x).strip())
-    return team_series.astype(str).map(lambda x: alias_map.get(_lower_strip(x), str(x).strip()))
+def _normalize_ids(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
 
-# ---------------- main ----------------
-def main() -> None:
-    # ---------- load prep ----------
-    if not PREP_FILE.exists():
-        print(f"❌ Missing prep file: {PREP_FILE}")
-        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-        if not HISTORY_FILE.exists():
-            pd.DataFrame(columns=HISTORY_COLUMNS).to_csv(HISTORY_FILE, index=False)
-        return
+    # player_id → Int64 (nullable)
+    if "player_id" in df.columns:
+        df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
 
-    df = pd.read_csv(PREP_FILE)
-    print(f"[DEBUG] Loaded prep: shape={df.shape}, columns={list(df.columns)}")
-    if df.empty:
-        print("[DEBUG] Prep is empty; ensure history exists with headers and exit.")
-        if not HISTORY_FILE.exists():
-            pd.DataFrame(columns=HISTORY_COLUMNS).to_csv(HISTORY_FILE, index=False)
-        return
+    # game_id → string without trailing .0
+    if "game_id" in df.columns:
+        gid = pd.to_numeric(df["game_id"], errors="coerce").astype("Int64")
+        df["game_id"] = gid.astype("string").str.replace("<NA>", pd.NA)
 
-    df.columns = [c.strip().lower() for c in df.columns]
+    # line → float
+    if "line" in df.columns:
+        df["line"] = pd.to_numeric(df["line"], errors="coerce")
 
-    # ---------- build output frame ----------
-    out = pd.DataFrame(index=df.index)
-    out["player_id"] = pd.to_numeric(_pick_col(df, ["player_id","id"]), errors="coerce").astype("Int64")
-    out["name"]      = _pick_col(df, ["player_name","name"])
-    out["team"]      = _pick_col(df, ["team","team_name","team_abbr","team_code"]).astype(str)
+    # prop lowercase & trimmed
+    if "prop" in df.columns:
+        df["prop"] = df["prop"].astype(str).str.strip().str.lower()
 
-    out["prop"] = _pick_col(df, ["prop_type","prop","market"]).astype(str).str.strip().str.lower()
+    # date → date (yyyy-mm-dd), kept as string for CSV compatibility
+    if "date" in df.columns:
+        dt = pd.to_datetime(df["date"], errors="coerce").dt.date
+        df["date"] = dt.astype("string")
 
-    out["line"]  = _to_num(_pick_col(df, ["prop_line","line"]))
-    out["value"] = _to_num(_pick_col(df, ["value","odds","price"]))
+    return df
 
-    # date
-    date_col = _pick_col(df, ["date","asof","timestamp","pulled_at","updated_at"])
-    parsed_date = pd.to_datetime(date_col, errors="coerce").dt.date
-    today = dt.date.today()
-    if parsed_date.isna().all():
-        parsed_date = pd.Series([today] * len(df), index=df.index)
-    out["date"] = parsed_date.astype(str)
 
-    # game id (may be missing)
-    out["game_id"] = _pick_col(df, ["game_id"])
+def _choose_proj_col(prop: str, line: float) -> Optional[str]:
+    # line comparison robust to 0.5 / 1.5 as floats
+    key = (prop, float(line) if pd.notna(line) else None)
+    return PROP_PROJ_COL.get(key)
 
-    # over_probability by market, then normalized
-    over_probability = pd.Series(np.nan, index=df.index, dtype="float64")
-    if "over_probability" in df.columns:
-        over_probability = _to_num(df["over_probability"])
 
-    def _fill_if(colname: str, prop_name: str):
-        nonlocal over_probability
-        if colname in df.columns:
-            mask = out["prop"].eq(prop_name)
-            over_probability.loc[mask] = _to_num(df.loc[mask, colname])
+def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFrame:
+    df = prep.copy()
 
-    _fill_if("prob_hits_over_1p5", "hits")
-    _fill_if("prob_tb_over_1p5",   "total_bases")
-    _fill_if("prob_hr_over_0p5",   "home_run")
-    _fill_if("prob_hr_over_0p5",   "hr")
+    if proj is None or proj.empty:
+        # Only clip existing probabilities if projections unavailable
+        if "over_probability" in df.columns:
+            df["over_probability"] = pd.to_numeric(df["over_probability"], errors="coerce")
+            df["over_probability"] = df["over_probability"].clip(lower=0.01, upper=0.99)
+        return df
 
-    out["over_probability"] = _normalize_prob(over_probability)
+    proj = _std(proj)
 
-    # placeholders / sort (int-like)
-    out["prop_correct"] = pd.NA
-    order_map = {"hits": 10, "total_bases": 20, "home_run": 30, "hr": 30}
-    out["prop_sort"] = out["prop"].map(order_map).astype("Int64")
+    # Normalize IDs in projections too
+    for col in ("player_id",):
+        if col in proj.columns:
+            proj[col] = pd.to_numeric(proj[col], errors="coerce").astype("Int64")
 
-    # ---------- filter to today ----------
-    pre_filter = len(out)
-    out = out[out["date"] == str(today)].copy()
-    print(f"[DEBUG] Filter to today ({today}): {len(out)} rows (from {pre_filter})")
-    if out.empty:
-        print("[DEBUG] No rows for today in prep after date filter; ensure history exists and exit.")
-        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-        if not HISTORY_FILE.exists():
-            pd.DataFrame(columns=HISTORY_COLUMNS).to_csv(HISTORY_FILE, index=False)
-        return
-
-    # ---------- backfill game_id from schedule if missing ----------
-    missing_mask = out["game_id"].isna() | (out["game_id"].astype(str).str.strip() == "")
-    if missing_mask.any():
-        sched = _load_sched_for_today(today)
-        print(f"[DEBUG] Loaded schedule for today: shape={sched.shape}")
-        if not sched.empty:
-            alias_map = _maybe_build_team_normalizer()
-            out_loc = out.loc[missing_mask, ["team"]].copy()
-            out_loc["team_norm"] = _normalize_team(out_loc["team"], alias_map).map(_lower_strip)
-
-            team_to_gid: dict[str, str] = {}
-            for _, r in sched.iterrows():
-                gid = r.get("game_id")
-                ht  = _lower_strip(r.get("home_team"))
-                at  = _lower_strip(r.get("away_team"))
-                if gid and ht:
-                    team_to_gid[ht] = gid
-                if gid and at:
-                    team_to_gid[at] = gid
-
-            filled = out_loc["team_norm"].map(team_to_gid)
-            filled_cnt = filled.notna().sum()
-            out.loc[missing_mask, "game_id"] = filled.values
-            print(f"[DEBUG] Backfilled game_id via schedule: {filled_cnt} rows")
-
-    # ---------- align schema ----------
-    for col in HISTORY_COLUMNS:
-        if col not in out.columns:
-            out[col] = pd.NA
-    out = out[HISTORY_COLUMNS]
-
-    # FINAL numeric sanitation
-    for col in ["line", "value", "over_probability"]:
-        out[col] = _to_num(out[col])
-    out["prop_sort"] = out["prop_sort"].astype("Int64")
-
-    # ---------- union with existing, prefer rows with game_id ----------
-    if HISTORY_FILE.exists():
-        hist = pd.read_csv(HISTORY_FILE)
-        # normalize types for fair comparison
-        for c in ["line","value","over_probability"]:
-            if c in hist.columns:
-                hist[c] = pd.to_numeric(hist[c], errors="coerce")
-        if "prop_sort" in hist.columns:
-            hist["prop_sort"] = pd.to_numeric(hist["prop_sort"], errors="coerce").astype("Int64")
-        combined = pd.concat([hist, out], ignore_index=True)
+    # Build per-prop-line probability using the right column; do it by rows
+    df["proj_prob"] = pd.NA
+    # We try to join once on player_id to get all prob_* columns, then row-pick
+    join_cols = [c for c in ["player_id"] if c in df.columns and c in proj.columns]
+    if join_cols:
+        keep_cols = ["player_id"] + [c for c in proj.columns if c.startswith("prob_")]
+        merged = df.merge(proj[keep_cols].drop_duplicates("player_id"),
+                          on="player_id", how="left", validate="m:1")
     else:
-        print("[DEBUG] History file missing; creating new.")
-        combined = out
+        # No reliable key; fall back to per-row NA
+        merged = df.copy()
 
-    before_dedupe = len(combined)
+    def row_prob(row):
+        col = _choose_proj_col(row.get("prop"), row.get("line"))
+        if col and col in merged.columns:
+            return row.get(col)
+        return pd.NA
 
-    # Prefer rows with a non-null game_id and most recent position in the file.
-    key = ["player_id","prop","line","date"]
-    combined["_has_gid"] = combined["game_id"].notna() & (combined["game_id"].astype(str).str.strip() != "")
-    # Sort so that (has_gid=True) comes last (kept), and newer appended rows win.
-    combined = combined.sort_values(by=key + ["_has_gid"], kind="stable")
-    combined = combined.drop_duplicates(subset=key, keep="last")
-    combined = combined.drop(columns=["_has_gid"])
+    merged["proj_prob"] = merged.apply(row_prob, axis=1)
 
-    print(f"[DEBUG] Combined rows before de-dup: {before_dedupe}, after de-dup: {len(combined)}")
+    # Choose probability: projection when available; else existing column
+    if "over_probability" in merged.columns:
+        merged["over_probability"] = pd.to_numeric(merged["over_probability"], errors="coerce")
 
-    HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    combined.to_csv(HISTORY_FILE, index=False)
-    print(f"✅ Appended {len(out)} rows; history now {len(combined)} total rows at {HISTORY_FILE}")
+    merged["over_probability"] = merged["proj_prob"].where(merged["proj_prob"].notna(),
+                                                           merged.get("over_probability", pd.NA))
+
+    # Clip to [0.01, 0.99]
+    merged["over_probability"] = pd.to_numeric(merged["over_probability"], errors="coerce").clip(0.01, 0.99)
+
+    # If probabilities are completely flat (all exactly identical), jitter slightly per player/prop
+    # to avoid mass-duplicate sorting/stability issues. This only triggers when variance ~ 0.
+    probs = merged["over_probability"].dropna()
+    if not probs.empty and probs.nunique(dropna=True) <= 2:
+        # Deterministic tiny jitter using player_id+prop hash (does not change rank materially)
+        def _jitter(row):
+            p = row.get("over_probability")
+            if pd.isna(p):
+                return p
+            base = 1e-3  # ±0.001 max
+            key = f"{row.get('player_id')}-{row.get('prop')}"
+            h = hashlib.md5(key.encode("utf-8")).hexdigest()
+            # value in [-base, +base]
+            bump = ((int(h[:6], 16) / 0xFFFFFF) - 0.5) * 2 * base
+            q = float(p) + bump
+            return float(np.clip(q, 0.01, 0.99))
+        merged["over_probability"] = merged.apply(_jitter, axis=1)
+
+    merged.drop(columns=[c for c in ["proj_prob"] if c in merged.columns], inplace=True)
+    return merged
+
+
+def _ensure_prop_sort(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    if "prop_sort" not in df.columns:
+        df["prop_sort"] = pd.NA
+    # fill where missing only
+    mask = df["prop_sort"].isna()
+    df.loc[mask, "prop_sort"] = df.loc[mask, "prop"].map(PROP_SORT).astype("Float64")
+    return df
+
+
+def _dedupe(df: pd.DataFrame) -> pd.DataFrame:
+    # Drop rows without a game_id — these were a big source of dupes in your sample
+    df = df[df["game_id"].notna()].copy()
+
+    # Preferred de-dup key
+    keys = [k for k in ["date", "game_id", "player_id", "prop", "line"] if k in df.columns]
+    if not keys:
+        return df
+
+    # Keep the latest (files are processed once per run, but play it safe)
+    order_cols = [c for c in ("asof", "timestamp", "created_at", "date") if c in df.columns]
+    if order_cols:
+        df = df.sort_values(by=order_cols)
+    return df.drop_duplicates(subset=keys, keep="last")
+
+
+def main():
+    prep = _read_csv_safe(PREP_FILE)
+    if prep is None or prep.empty:
+        print(f"⚠️ {PREP_FILE} is missing or empty; nothing to append.")
+        return
+
+    prep = _normalize_ids(prep)
+    proj = _read_csv_safe(PROJ_FILE)
+
+    # Merge/repair probabilities
+    prep = _merge_probs(prep, proj)
+
+    # prop_sort fill
+    prep = _ensure_prop_sort(prep)
+
+    # Keep only columns we know about (and preserve any extras if present)
+    base_cols = [
+        "player_id","name","team","prop","line","value",
+        "over_probability","date","game_id","prop_correct","prop_sort"
+    ]
+    cols = [c for c in base_cols if c in prep.columns] + [c for c in prep.columns if c not in base_cols]
+    prep = prep[cols]
+
+    # De-duplicate within today's prep before touching history
+    prep = _dedupe(prep)
+
+    # Append to history
+    if OUT_FILE.exists():
+        hist = _read_csv_safe(OUT_FILE)
+        if hist is None:
+            hist = pd.DataFrame(columns=prep.columns)
+    else:
+        OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        hist = pd.DataFrame(columns=prep.columns)
+
+    combo = pd.concat([hist, prep], ignore_index=True)
+    combo = _normalize_ids(combo)
+    combo = _ensure_prop_sort(combo)
+    combo = _dedupe(combo)
+
+    combo.to_csv(OUT_FILE, index=False)
+    print(f"✅ Wrote {len(combo)} rows to {OUT_FILE}")
+
 
 if __name__ == "__main__":
     main()
