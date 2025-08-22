@@ -4,8 +4,8 @@ Append today's batter props from data/bets/prep/batter_props_final.csv
 into data/bets/player_props_history.csv, mapping columns to the history schema,
 choosing over_probability by market, and filling game_id from the daily schedule.
 
-Includes verbose debug prints. Numeric columns are sanitized to avoid
-'float() argument must be a string or a real number, not NAType' crashes.
+Key change: de-duplicate by (player_id, prop, line, date) and prefer rows with a
+non-null game_id, so we never keep both the "empty game_id" and "filled game_id" versions.
 """
 
 from __future__ import annotations
@@ -32,20 +32,16 @@ def _pick_col(df: pd.DataFrame, names: list[str]) -> pd.Series:
     for n in names:
         if n in df.columns:
             return df[n]
-    # return NA series with correct index length
     return pd.Series([pd.NA] * len(df), index=df.index)
 
 def _to_num(s: pd.Series) -> pd.Series:
     """Coerce to numeric floats with NaN (never pd.NA) to avoid dtype issues."""
     s = pd.to_numeric(s, errors="coerce")
-    # Ensure NumPy NaN rather than pd.NA so float() casting never hits NAType
     return s.astype("float64")
 
 def _normalize_prob(s: pd.Series) -> pd.Series:
     """Coerce to [0,1]; values in 1..100 are treated as percentages. Then clamp to [0.01, 0.99]."""
     s = _to_num(s)
-    if s is None:
-        return s
     s = s.copy()
     pct_mask = (s > 1.0) & (s <= 100.0)
     s.loc[pct_mask] = s.loc[pct_mask] / 100.0
@@ -86,7 +82,6 @@ def _maybe_build_team_normalizer() -> dict[str, str]:
             if c in tm.columns:
                 _add(r.get(c), canon)
         _add(str(r.get("team_name","")).lower(), canon)
-    # common variants
     alias_map["st. louis cardinals"] = "Cardinals"
     alias_map["st louis cardinals"]  = "Cardinals"
     return alias_map
@@ -114,19 +109,16 @@ def main() -> None:
             pd.DataFrame(columns=HISTORY_COLUMNS).to_csv(HISTORY_FILE, index=False)
         return
 
-    # normalize columns
     df.columns = [c.strip().lower() for c in df.columns]
 
     # ---------- build output frame ----------
     out = pd.DataFrame(index=df.index)
-    # Keep player_id as nullable Int64 to avoid float coercion; safe in CSV.
     out["player_id"] = pd.to_numeric(_pick_col(df, ["player_id","id"]), errors="coerce").astype("Int64")
     out["name"]      = _pick_col(df, ["player_name","name"])
     out["team"]      = _pick_col(df, ["team","team_name","team_abbr","team_code"]).astype(str)
 
     out["prop"] = _pick_col(df, ["prop_type","prop","market"]).astype(str).str.strip().str.lower()
 
-    # numeric columns via _to_num -> float64 with NaN (never pd.NA)
     out["line"]  = _to_num(_pick_col(df, ["prop_line","line"]))
     out["value"] = _to_num(_pick_col(df, ["value","odds","price"]))
 
@@ -138,10 +130,10 @@ def main() -> None:
         parsed_date = pd.Series([today] * len(df), index=df.index)
     out["date"] = parsed_date.astype(str)
 
-    # game id
+    # game id (may be missing)
     out["game_id"] = _pick_col(df, ["game_id"])
 
-    # over_probability by market (vectorized) then normalized & clamped
+    # over_probability by market, then normalized
     over_probability = pd.Series(np.nan, index=df.index, dtype="float64")
     if "over_probability" in df.columns:
         over_probability = _to_num(df["over_probability"])
@@ -159,10 +151,10 @@ def main() -> None:
 
     out["over_probability"] = _normalize_prob(over_probability)
 
-    # placeholders / sort
+    # placeholders / sort (int-like)
     out["prop_correct"] = pd.NA
     order_map = {"hits": 10, "total_bases": 20, "home_run": 30, "hr": 30}
-    out["prop_sort"] = out["prop"].map(order_map)
+    out["prop_sort"] = out["prop"].map(order_map).astype("Int64")
 
     # ---------- filter to today ----------
     pre_filter = len(out)
@@ -206,24 +198,35 @@ def main() -> None:
             out[col] = pd.NA
     out = out[HISTORY_COLUMNS]
 
-    # FINAL numeric sanitation (guarantee float64+NaN, not NAType)
+    # FINAL numeric sanitation
     for col in ["line", "value", "over_probability"]:
         out[col] = _to_num(out[col])
+    out["prop_sort"] = out["prop_sort"].astype("Int64")
 
-    # ---------- union with existing, dedupe, write ----------
+    # ---------- union with existing, prefer rows with game_id ----------
     if HISTORY_FILE.exists():
         hist = pd.read_csv(HISTORY_FILE)
-        print(f"[DEBUG] Existing history rows: {len(hist)}")
+        # normalize types for fair comparison
+        for c in ["line","value","over_probability"]:
+            if c in hist.columns:
+                hist[c] = pd.to_numeric(hist[c], errors="coerce")
+        if "prop_sort" in hist.columns:
+            hist["prop_sort"] = pd.to_numeric(hist["prop_sort"], errors="coerce").astype("Int64")
         combined = pd.concat([hist, out], ignore_index=True)
     else:
         print("[DEBUG] History file missing; creating new.")
         combined = out
 
     before_dedupe = len(combined)
-    combined = combined.drop_duplicates(
-        subset=["player_id","prop","line","date","game_id"],
-        keep="last"
-    )
+
+    # Prefer rows with a non-null game_id and most recent position in the file.
+    key = ["player_id","prop","line","date"]
+    combined["_has_gid"] = combined["game_id"].notna() & (combined["game_id"].astype(str).str.strip() != "")
+    # Sort so that (has_gid=True) comes last (kept), and newer appended rows win.
+    combined = combined.sort_values(by=key + ["_has_gid"], kind="stable")
+    combined = combined.drop_duplicates(subset=key, keep="last")
+    combined = combined.drop(columns=["_has_gid"])
+
     print(f"[DEBUG] Combined rows before de-dup: {before_dedupe}, after de-dup: {len(combined)}")
 
     HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
