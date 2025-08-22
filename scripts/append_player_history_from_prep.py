@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import hashlib
-import math
 from pathlib import Path
 from typing import Optional
 
@@ -46,10 +45,10 @@ def _normalize_ids(df: pd.DataFrame) -> pd.DataFrame:
     if "player_id" in df.columns:
         df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
 
-    # game_id → string without trailing .0
+    # game_id → string without trailing .0 (nullable)
     if "game_id" in df.columns:
         gid = pd.to_numeric(df["game_id"], errors="coerce").astype("Int64")
-        df["game_id"] = gid.astype("string").str.replace("<NA>", pd.NA)
+        df["game_id"] = gid.astype("string")  # leaves <NA> as proper missing sentinel
 
     # line → float
     if "line" in df.columns:
@@ -68,7 +67,6 @@ def _normalize_ids(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _choose_proj_col(prop: str, line: float) -> Optional[str]:
-    # line comparison robust to 0.5 / 1.5 as floats
     key = (prop, float(line) if pd.notna(line) else None)
     return PROP_PROJ_COL.get(key)
 
@@ -77,7 +75,6 @@ def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFra
     df = prep.copy()
 
     if proj is None or proj.empty:
-        # Only clip existing probabilities if projections unavailable
         if "over_probability" in df.columns:
             df["over_probability"] = pd.to_numeric(df["over_probability"], errors="coerce")
             df["over_probability"] = df["over_probability"].clip(lower=0.01, upper=0.99)
@@ -86,20 +83,21 @@ def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFra
     proj = _std(proj)
 
     # Normalize IDs in projections too
-    for col in ("player_id",):
-        if col in proj.columns:
-            proj[col] = pd.to_numeric(proj[col], errors="coerce").astype("Int64")
+    if "player_id" in proj.columns:
+        proj["player_id"] = pd.to_numeric(proj["player_id"], errors="coerce").astype("Int64")
 
-    # Build per-prop-line probability using the right column; do it by rows
+    # Join once on player_id to bring in all prob_* columns
     df["proj_prob"] = pd.NA
-    # We try to join once on player_id to get all prob_* columns, then row-pick
     join_cols = [c for c in ["player_id"] if c in df.columns and c in proj.columns]
     if join_cols:
         keep_cols = ["player_id"] + [c for c in proj.columns if c.startswith("prob_")]
-        merged = df.merge(proj[keep_cols].drop_duplicates("player_id"),
-                          on="player_id", how="left", validate="m:1")
+        merged = df.merge(
+            proj[keep_cols].drop_duplicates("player_id"),
+            on="player_id",
+            how="left",
+            validate="m:1",
+        )
     else:
-        # No reliable key; fall back to per-row NA
         merged = df.copy()
 
     def row_prob(row):
@@ -110,29 +108,30 @@ def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFra
 
     merged["proj_prob"] = merged.apply(row_prob, axis=1)
 
-    # Choose probability: projection when available; else existing column
+    # Prefer projection probability when present
     if "over_probability" in merged.columns:
         merged["over_probability"] = pd.to_numeric(merged["over_probability"], errors="coerce")
 
-    merged["over_probability"] = merged["proj_prob"].where(merged["proj_prob"].notna(),
-                                                           merged.get("over_probability", pd.NA))
+    merged["over_probability"] = merged["proj_prob"].where(
+        merged["proj_prob"].notna(), merged.get("over_probability", pd.NA)
+    )
 
     # Clip to [0.01, 0.99]
-    merged["over_probability"] = pd.to_numeric(merged["over_probability"], errors="coerce").clip(0.01, 0.99)
+    merged["over_probability"] = (
+        pd.to_numeric(merged["over_probability"], errors="coerce")
+        .clip(0.01, 0.99)
+    )
 
-    # If probabilities are completely flat (all exactly identical), jitter slightly per player/prop
-    # to avoid mass-duplicate sorting/stability issues. This only triggers when variance ~ 0.
+    # If probs are nearly flat, add tiny deterministic jitter to avoid huge ties
     probs = merged["over_probability"].dropna()
     if not probs.empty and probs.nunique(dropna=True) <= 2:
-        # Deterministic tiny jitter using player_id+prop hash (does not change rank materially)
         def _jitter(row):
             p = row.get("over_probability")
             if pd.isna(p):
                 return p
-            base = 1e-3  # ±0.001 max
+            base = 1e-3  # ±0.001
             key = f"{row.get('player_id')}-{row.get('prop')}"
             h = hashlib.md5(key.encode("utf-8")).hexdigest()
-            # value in [-base, +base]
             bump = ((int(h[:6], 16) / 0xFFFFFF) - 0.5) * 2 * base
             q = float(p) + bump
             return float(np.clip(q, 0.01, 0.99))
@@ -146,25 +145,29 @@ def _ensure_prop_sort(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     if "prop_sort" not in df.columns:
         df["prop_sort"] = pd.NA
-    # fill where missing only
     mask = df["prop_sort"].isna()
     df.loc[mask, "prop_sort"] = df.loc[mask, "prop"].map(PROP_SORT).astype("Float64")
     return df
 
 
 def _dedupe(df: pd.DataFrame) -> pd.DataFrame:
-    # Drop rows without a game_id — these were a big source of dupes in your sample
-    df = df[df["game_id"].notna()].copy()
+    df = df.copy()
 
-    # Preferred de-dup key
-    keys = [k for k in ["date", "game_id", "player_id", "prop", "line"] if k in df.columns]
+    # Filter out rows with missing game_id only if column exists
+    if "game_id" in df.columns:
+        df = df[df["game_id"].notna()].copy()
+
+    # Preferred de-dup key (include game_id if present; otherwise fall back)
+    preferred = ["date", "game_id", "player_id", "team", "prop", "line"]
+    keys = [k for k in preferred if k in df.columns]
     if not keys:
         return df
 
-    # Keep the latest (files are processed once per run, but play it safe)
+    # Keep the latest record when multiple exist
     order_cols = [c for c in ("asof", "timestamp", "created_at", "date") if c in df.columns]
     if order_cols:
         df = df.sort_values(by=order_cols)
+
     return df.drop_duplicates(subset=keys, keep="last")
 
 
@@ -191,7 +194,7 @@ def main():
     cols = [c for c in base_cols if c in prep.columns] + [c for c in prep.columns if c not in base_cols]
     prep = prep[cols]
 
-    # De-duplicate within today's prep before touching history
+    # De-duplicate within today's prep
     prep = _dedupe(prep)
 
     # Append to history
