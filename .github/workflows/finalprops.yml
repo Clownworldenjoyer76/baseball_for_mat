@@ -31,7 +31,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             python -m pip install -r requirements.txt
-          else
+          else:
             python -m pip install "pandas==2.2.2" numpy
           fi
 
@@ -119,6 +119,14 @@ jobs:
         run: |
           python -m py_compile scripts/append_player_history_from_prep.py
           python -B scripts/append_player_history_from_prep.py
+
+      - name: Debug after append
+        run: |
+          echo "Head of player_props_history.csv after append:"
+          head -n 20 data/bets/player_props_history.csv || true
+          echo
+          echo "Row count after append:"
+          wc -l data/bets/player_props_history.csv || true
 
       # ---------- Canonicalize today's histories ----------
       - name: Run update_history.py (canonical history writer)
