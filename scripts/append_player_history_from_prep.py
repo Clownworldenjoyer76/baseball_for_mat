@@ -4,13 +4,15 @@ Append today's batter props from data/bets/prep/batter_props_final.csv
 into data/bets/player_props_history.csv, mapping columns to the history schema,
 choosing over_probability by market, and filling game_id from the daily schedule.
 
-Includes verbose debug prints so you can see row counts at every step in CI.
+Includes verbose debug prints. Numeric columns are sanitized to avoid
+'float() argument must be a string or a real number, not NAType' crashes.
 """
 
 from __future__ import annotations
 from pathlib import Path
 import datetime as dt
 import pandas as pd
+import numpy as np
 
 # Inputs/outputs
 PREP_FILE       = Path("data/bets/prep/batter_props_final.csv")
@@ -30,10 +32,14 @@ def _pick_col(df: pd.DataFrame, names: list[str]) -> pd.Series:
     for n in names:
         if n in df.columns:
             return df[n]
+    # return NA series with correct index length
     return pd.Series([pd.NA] * len(df), index=df.index)
 
 def _to_num(s: pd.Series) -> pd.Series:
-    return pd.to_numeric(s, errors="coerce")
+    """Coerce to numeric floats with NaN (never pd.NA) to avoid dtype issues."""
+    s = pd.to_numeric(s, errors="coerce")
+    # Ensure NumPy NaN rather than pd.NA so float() casting never hits NAType
+    return s.astype("float64")
 
 def _normalize_prob(s: pd.Series) -> pd.Series:
     """Coerce to [0,1]; values in 1..100 are treated as percentages. Then clamp to [0.01, 0.99]."""
@@ -113,13 +119,15 @@ def main() -> None:
 
     # ---------- build output frame ----------
     out = pd.DataFrame(index=df.index)
-    out["player_id"] = _to_num(_pick_col(df, ["player_id","id"])).astype("Int64")
+    # Keep player_id as nullable Int64 to avoid float coercion; safe in CSV.
+    out["player_id"] = pd.to_numeric(_pick_col(df, ["player_id","id"]), errors="coerce").astype("Int64")
     out["name"]      = _pick_col(df, ["player_name","name"])
     out["team"]      = _pick_col(df, ["team","team_name","team_abbr","team_code"]).astype(str)
 
     out["prop"] = _pick_col(df, ["prop_type","prop","market"]).astype(str).str.strip().str.lower()
-    out["line"] = _to_num(_pick_col(df, ["prop_line","line"]))
 
+    # numeric columns via _to_num -> float64 with NaN (never pd.NA)
+    out["line"]  = _to_num(_pick_col(df, ["prop_line","line"]))
     out["value"] = _to_num(_pick_col(df, ["value","odds","price"]))
 
     # date
@@ -133,16 +141,16 @@ def main() -> None:
     # game id
     out["game_id"] = _pick_col(df, ["game_id"])
 
-    # over_probability by market (vectorized)
-    over_probability = pd.Series([pd.NA] * len(df), index=df.index, dtype="float64")
+    # over_probability by market (vectorized) then normalized & clamped
+    over_probability = pd.Series(np.nan, index=df.index, dtype="float64")
     if "over_probability" in df.columns:
-        over_probability = df["over_probability"]
+        over_probability = _to_num(df["over_probability"])
 
     def _fill_if(colname: str, prop_name: str):
         nonlocal over_probability
         if colname in df.columns:
             mask = out["prop"].eq(prop_name)
-            over_probability.loc[mask] = df.loc[mask, colname]
+            over_probability.loc[mask] = _to_num(df.loc[mask, colname])
 
     _fill_if("prob_hits_over_1p5", "hits")
     _fill_if("prob_tb_over_1p5",   "total_bases")
@@ -198,7 +206,7 @@ def main() -> None:
             out[col] = pd.NA
     out = out[HISTORY_COLUMNS]
 
-    # Make sure numeric columns are safe for CSV (avoid NAType -> float() errors)
+    # FINAL numeric sanitation (guarantee float64+NaN, not NAType)
     for col in ["line", "value", "over_probability"]:
         out[col] = _to_num(out[col])
 
