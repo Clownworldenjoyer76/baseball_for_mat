@@ -28,6 +28,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
+          set -e
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             python -m pip install -r requirements.txt
@@ -42,13 +43,13 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global pull.rebase false
 
-      # ---------- Upstream: build batter projections ----------
+      # ---------- INPUT PREVIEW ----------
       - name: Show inputs for projections
         run: |
           ls -l data/end_chain/final || true
-          echo "Preview bat_today_final.csv (first 15 lines):"
           sed -n '1,15p' data/end_chain/final/bat_today_final.csv || true
 
+      # ---------- SNAPSHOT HASHES BEFORE ----------
       - name: Snapshot pre-run hashes
         id: prehash
         run: |
@@ -67,37 +68,32 @@ jobs:
           done > prehash.txt
           cat prehash.txt
 
-      - name: Run project_batter_props.py (upstream probabilities)
-        run: python -B scripts/project_batter_props.py
+      # ---------- PROJECTIONS (UPSTREAM) ----------
+      - name: Run project_batter_props.py
+        run: |
+          python -m py_compile scripts/project_batter_props.py
+          python -B scripts/project_batter_props.py
 
-      - name: Validate probability spread (projected) — warn only
-        continue-on-error: true
+      - name: Validate probability spread (projected)
         run: |
           python - << 'PY'
-          import pandas as pd
-          from pathlib import Path
-          p = Path("data/_projections/batter_props_projected.csv")
-          if not p.exists():
-              print(f"{p} missing; skipping."); raise SystemExit(0)
+          import pandas as pd, sys
+          p = "data/_projections/batter_props_projected.csv"
           try:
               df = pd.read_csv(p)
           except Exception as e:
-              print(f"Can't read {p}: {e}"); raise SystemExit(0)
-
-          prob_cols = [c for c in ("prob_hits_over_1p5","prob_hr_over_0p5","prob_tb_over_1p5") if c in df]
+              print(f"Failed to read {p}: {e}")
+              sys.exit(1)
+          prob_cols = [c for c in ["prob_hits_over_1p5","prob_hr_over_0p5","prob_tb_over_1p5"] if c in df.columns]
           if not prob_cols:
-              print("No prob_* columns present; skipping."); raise SystemExit(0)
-
-          s = pd.concat([pd.to_numeric(df[c], errors="coerce") for c in prob_cols], ignore_index=True).dropna()
-          if s.empty:
-              print("All NaN/empty probability columns; skipping."); raise SystemExit(0)
-
-          print("Distribution summary (info only):")
-          print(s.describe(percentiles=[0.01,0.5,0.99]))
-          # This step is informational only.
+              print("❌ No prob_* columns present in projections."); sys.exit(1)
+          s = pd.concat([df[c].dropna() for c in prob_cols], ignore_index=True)
+          if s.empty or s.nunique() < 10:
+              print("❌ Probabilities look too flat:"); print(s.describe()); sys.exit(1)
+          print("✅ Upstream probability spread looks OK.")
           PY
 
-      # ---------- Final: build history (games) ----------
+      # ---------- GAME SCORES / TOTALS / FAVORITE ----------
       - name: Run final_props_1.py
         run: |
           python -m py_compile scripts/final_props_1.py
@@ -108,79 +104,50 @@ jobs:
           python -m py_compile scripts/final_scores_1.py
           python -B scripts/final_scores_1.py
 
-      # ---------- Derive proj_home_score / proj_away_score and totals/favorite ----------
       - name: Run final_scores_2.py (update game totals & favorite)
         run: |
           python -m py_compile scripts/final_scores_2.py
           python -B scripts/final_scores_2.py
 
-      # ---------- Build batter_props_final.csv (prep) ----------
-      - name: Run build_batter_props_final.py (produce prep file)
+      # ---------- BUILD PREP (BATTER PROPS FINAL) ----------
+      - name: Run build_batter_props_final.py
         run: |
           python -m py_compile scripts/build_batter_props_final.py
           python -B scripts/build_batter_props_final.py
-
-      - name: Quick check batter_props_final.csv
-        run: |
-          set -e
           echo "Head of batter_props_final.csv:"
           head -n 20 data/bets/prep/batter_props_final.csv || true
 
-      # ---------- Append prep batter props into player history ----------
+      # ---------- APPEND TO PLAYER HISTORY (SINGLE SOURCE OF TRUTH) ----------
       - name: Append player history from prep
         run: |
           python -m py_compile scripts/append_player_history_from_prep.py
           python -B scripts/append_player_history_from_prep.py
-
-      - name: Debug after append
-        run: |
           echo "Head of player_props_history.csv after append:"
           head -n 20 data/bets/player_props_history.csv || true
-          echo
           echo "Row count after append:"
           wc -l data/bets/player_props_history.csv || true
 
-      # ---------- Canonicalize today's histories ----------
-      - name: Run update_history.py (canonical history writer)
+      # ---------- SHOW COUNTS ----------
+      - name: Quick counts
         run: |
-          python -m py_compile scripts/update_history.py
-          python -B scripts/update_history.py
-
-      # ---------- DEBUG: show contents and row counts after update ----------
-      - name: Debug history after update
-        run: |
-          set -e
-          echo "Listing data/bets:"
-          ls -lh data/bets || true
-          echo
-          echo "Head of player_props_history.csv:"
-          head -n 20 data/bets/player_props_history.csv || true
-          echo
-          echo "Head of game_props_history.csv:"
-          head -n 20 data/bets/game_props_history.csv || true
-          echo
           python - << 'PY'
-          import pandas as pd, datetime
+          import pandas as pd
           from pathlib import Path
-          today = datetime.date.today()
-          for p in ["data/bets/player_props_history.csv","data/bets/game_props_history.csv"]:
+          for p in ["data/_projections/batter_props_projected.csv",
+                    "data/bets/prep/batter_props_final.csv",
+                    "data/bets/player_props_history.csv",
+                    "data/bets/game_props_history.csv"]:
               path = Path(p)
               if not path.exists():
-                  print(f"{p}: MISSING")
-                  continue
+                  print(f"{p}: MISSING"); continue
               try:
-                  df = pd.read_csv(path)
-              except Exception as e:
-                  print(f"{p}: failed to read - {e}")
-                  continue
-              print(f"{p}: {len(df)} rows total")
-              if "date" in df.columns:
-                  ds = pd.to_datetime(df["date"], errors="coerce").dt.date
-                  print(f"{p}: {int((ds==today).sum())} rows for today ({today})")
-              else:
-                  print(f"{p}: no 'date' column present")
+                  n = sum(1 for _ in open(path, 'rb')) - 1
+              except Exception:
+                  n = "?"
+              print(f"{p}: ~{n} data rows")
           PY
 
+      # ---------- SNAPSHOT HASHES AFTER + TAILS ----------
       - name: Show deltas & tails
         run: |
           set -e
@@ -210,7 +177,8 @@ jobs:
           echo
           echo "Tail of game_props_history.csv:";   tail -n 5 data/bets/game_props_history.csv || true
 
-      - name: Commit and push changes (rebase if remote advanced)
+      # ---------- COMMIT ----------
+      - name: Commit and push changes
         shell: bash
         run: |
           set -e
@@ -222,10 +190,11 @@ jobs:
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Automated: update projections, prep file, props history, and final scores"
+          git commit -m "Automated: projections, prep, player history, and game scores"
           git push origin "HEAD:$BRANCH"
 
-      - name: Upload artifacts (optional)
+      # ---------- ARTIFACTS ----------
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: props-output
