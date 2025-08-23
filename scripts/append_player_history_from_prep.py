@@ -1,243 +1,159 @@
+#!/usr/bin/env python3
 # scripts/append_player_history_from_prep.py
+"""
+Append today's prep batter props into the running player props history.
+
+- Reads:  data/bets/prep/batter_props_final.csv
+- Appends to (creating if needed): data/bets/player_props_history.csv
+- Normalizes key text fields (e.g., prop) safely using .str accessors.
+- Adds local timestamp (America/New_York) and a date column.
+- Aligns columns between prep and history and drops perfect duplicates.
+
+Exit code:
+  0 on success (including "nothing to do")
+  1 on unexpected error
+"""
+
 from __future__ import annotations
 
-import hashlib
-from datetime import datetime, timezone
+import os
+import sys
 from pathlib import Path
-from typing import Optional
-
 import pandas as pd
 
+# ---------- Paths ----------
+PREP_PATH = Path("data/bets/prep/batter_props_final.csv")
+HIST_PATH = Path("data/bets/player_props_history.csv")
 
-PREP_FILE = Path("data/bets/prep/batter_props_final.csv")
-PROJ_FILE = Path("data/_projections/batter_props_projected.csv")
-OUT_FILE  = Path("data/bets/player_props_history.csv")
+# ---------- Helpers ----------
 
-# Mapping from (prop, line) -> projection column
-PROP_PROJ_COL = {
-    ("hits", 1.5): "prob_hits_over_1p5",
-    ("total_bases", 1.5): "prob_tb_over_1p5",
-    ("hr", 0.5): "prob_hr_over_0p5",
-}
-
-
-def _std(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.columns = df.columns.str.strip()
-    return df
-
-
-def _read_csv_safe(p: Path) -> Optional[pd.DataFrame]:
-    if not p.exists():
-        return None
+def _read_csv_safe(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame()
     try:
-        return _std(pd.read_csv(p))
-    except Exception:
-        return None
-
+        return pd.read_csv(path)
+    except Exception as e:
+        print(f"[ERROR] Failed to read {path}: {e}", file=sys.stderr)
+        raise
 
 def _normalize_ids(df: pd.DataFrame) -> pd.DataFrame:
-    """Lightweight ID normalization to keep types consistent across runs."""
+    if df.empty:
+        return df.copy()
+
     df = df.copy()
 
-    # player_id → Int64 (nullable)
-    if "player_id" in df.columns:
-        df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
-
-    # game_id → string (nullable), strip trailing .0 if present
-    if "game_id" in df.columns:
-        gid = pd.to_numeric(df["game_id"], errors="coerce").astype("Int64")
-        df["game_id"] = gid.astype("string")
-
-    # line → float
-    if "line" in df.columns:
-        df["line"] = pd.to_numeric(df["line"], errors="coerce")
-
-    # prop lowercase & trimmed
-    if "prop" in df.columns:
-        df["prop"] = df["prop"].astype(str).strip().str.lower()
-
-    # date → yyyy-mm-dd as string
-    if "date" in df.columns:
-        dt = pd.to_datetime(df["date"], errors="coerce").dt.date
-        df["date"] = dt.astype("string")
-
-    return df
-
-
-def _choose_proj_col(prop: str, line: float) -> Optional[str]:
-    key = (prop, float(line) if pd.notna(line) else None)
-    return PROP_PROJ_COL.get(key)
-
-
-def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFrame:
-    """
-    Merge in model probabilities from projections when available.
-    IMPORTANT: No clipping or jitter is applied to over_probability.
-    """
-    df = prep.copy()
-
-    # Ensure over_probability is numeric if present (no clipping)
-    if "over_probability" in df.columns:
-        df["over_probability"] = pd.to_numeric(df["over_probability"], errors="coerce")
-
-    if proj is None or proj.empty:
-        return df
-
-    proj = _std(proj)
-
-    # Normalize IDs in projections too
-    if "player_id" in proj.columns:
-        proj["player_id"] = pd.to_numeric(proj["player_id"], errors="coerce").astype("Int64")
-
-    # Bring all prob_* columns alongside player_id (m:1)
-    join_cols = [c for c in ["player_id"] if c in df.columns and c in proj.columns]
-    if join_cols:
-        keep_cols = ["player_id"] + [c for c in proj.columns if c.startswith("prob_")]
-        merged = df.merge(
-            proj[keep_cols].drop_duplicates("player_id"),
-            on="player_id",
-            how="left",
-            validate="m:1",
-        )
-    else:
-        merged = df.copy()
-
-    # Row-select the correct upstream projection column when present
-    def row_prob(row):
-        col = _choose_proj_col(row.get("prop"), row.get("line"))
-        if col and col in merged.columns:
-            return row.get(col)
-        return pd.NA
-
-    merged["__proj_prob"] = merged.apply(row_prob, axis=1)
-
-    # Prefer projection probability when present, else keep existing value (no clipping)
-    if "over_probability" in merged.columns:
-        merged["over_probability"] = pd.to_numeric(merged["over_probability"], errors="coerce")
-
-    merged["over_probability"] = merged["__proj_prob"].where(
-        merged["__proj_prob"].notna(),
-        merged.get("over_probability", pd.NA),
+    # Standardize column names (lowercase; single underscores)
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.replace(r"\s+", "_", regex=True)
+        .str.replace(r"[^0-9a-zA-Z_]", "_", regex=True)
+        .str.lower()
     )
 
-    merged.drop(columns=[c for c in ["__proj_prob"] if c in merged.columns], inplace=True)
-    return merged
+    # Normalize "prop" text safely (THIS was the line causing the .strip error)
+    if "prop" in df.columns:
+        df["prop"] = df["prop"].astype(str).str.strip().str.lower()
 
+    # Common numeric columns to coerce
+    for col in [
+        "player_id",
+        "line",
+        "value",
+        "over_probability",
+        "under_probability",
+        "prob_hits_over_1p5",
+        "prob_tb_over_1p5",
+        "prob_hr_over_0p5",
+    ]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
-def _ensure_prop_sort(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Make prop_sort a pure probability-based sort key:
-    - Higher over_probability should come first.
-    - Missing probs go to the bottom.
-    - Deterministic micro-jitter ONLY in the sort key to stabilize ties.
-      (Does NOT modify over_probability itself.)
-    """
-    df = df.copy()
+    # Name/team tidy
+    for col in ["name", "team"]:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
 
-    p = pd.to_numeric(df.get("over_probability"), errors="coerce")
-
-    # base sort key: negative prob so ascending => highest prob first
-    sort_key = -p
-
-    # small deterministic tie-breaker (~1e-6 range)
-    def _tie_key(row):
-        seed = f"{row.get('player_id')}-{row.get('prop')}-{row.get('line')}"
-        h = int(hashlib.md5(seed.encode("utf-8")).hexdigest()[:8], 16)
-        return (h % 10_000) / 10_000_000.0  # 0 .. 0.001
-
-    jitter = df.apply(_tie_key, axis=1)
-
-    # if prob is NaN, push far down
-    sort_key = sort_key.where(p.notna(), 1e9) + jitter
-
-    df["prop_sort"] = sort_key.astype("float64")
     return df
 
-
-def _dedupe(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-
-    # Drop rows with missing game_id only if the column exists
-    if "game_id" in df.columns:
-        df = df[df["game_id"].notna()].copy()
-
-    # Preferred de-dup key (include game_id if present)
-    preferred = ["date", "game_id", "player_id", "team", "prop", "line"]
-    keys = [k for k in preferred if k in df.columns]
-    if not keys:
+def _add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """Add timestamp (local NY) and date if not present."""
+    if df.empty:
         return df
 
-    # Keep the latest record when multiple exist
-    order_cols = [c for c in ("timestamp", "asof", "created_at", "date") if c in df.columns]
-    if order_cols:
-        df = df.sort_values(by=order_cols)
-
-    return df.drop_duplicates(subset=keys, keep="last")
-
-
-def _ensure_timestamp(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Ensure a 'timestamp' column exists, filling missing with current UTC ISO8601.
-    (We use Z-suffixed UTC for consistency across runners.)
-    """
     df = df.copy()
-    now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    # Respect the repo-wide TZ env if present (workflow sets TZ=America/New_York)
+    tz = os.environ.get("TZ", "America/New_York")
+    now_local = pd.Timestamp.now(tz=tz)
     if "timestamp" not in df.columns:
-        df["timestamp"] = now_iso
-    else:
-        # only fill missing/null
-        df["timestamp"] = df["timestamp"].fillna(now_iso)
+        df["timestamp"] = now_local.isoformat()
+    if "date" not in df.columns:
+        df["date"] = now_local.date().isoformat()
     return df
 
+def _align_columns(prep: pd.DataFrame, hist: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Union columns so we can concat without losing fields."""
+    cols_union = sorted(set(prep.columns).union(hist.columns))
+    return prep.reindex(columns=cols_union), hist.reindex(columns=cols_union)
 
-def main():
-    prep = _read_csv_safe(PREP_FILE)
-    if prep is None or prep.empty:
-        print(f"⚠️ {PREP_FILE} is missing or empty; nothing to append.")
-        return
+def _drop_dupes(df: pd.DataFrame) -> pd.DataFrame:
+    """Drop exact duplicate rows. If you want a stricter key, adjust subset."""
+    if df.empty:
+        return df
+    # A sensible de-duplication set (covers typical uniqueness for a day)
+    subset = [c for c in [
+        "date", "player_id", "name", "team",
+        "prop", "line", "value", "over_probability", "under_probability"
+    ] if c in df.columns]
+    return df.drop_duplicates(subset=subset, keep="last").reset_index(drop=True)
+
+# ---------- Main ----------
+
+def main() -> int:
+    # 1) Load prep
+    if not PREP_PATH.exists():
+        print(f"[INFO] {PREP_PATH} not found — nothing to append. Exiting 0.")
+        return 0
+
+    prep = _read_csv_safe(PREP_PATH)
+    if prep.empty:
+        print(f"[INFO] {PREP_PATH} is empty — nothing to append. Exiting 0.")
+        return 0
 
     prep = _normalize_ids(prep)
-    proj = _read_csv_safe(PROJ_FILE)
+    prep = _add_time_columns(prep)
 
-    # Merge/repair probabilities (NO clipping)
-    prep = _merge_probs(prep, proj)
+    # 2) Load existing history (if any)
+    hist = _read_csv_safe(HIST_PATH)
+    if not hist.empty:
+        hist = _normalize_ids(hist)
+        # If history is missing time columns, add them (keeps old timestamps intact)
+        hist = _add_time_columns(hist)
 
-    # Ensure timestamp exists (add current UTC if missing)
-    prep = _ensure_timestamp(prep)
+    # 3) Align columns
+    prep, hist = _align_columns(prep, hist)
 
-    # Probability-based prop_sort (higher prob first; tie-stable)
-    prep = _ensure_prop_sort(prep)
+    # 4) Append and de-duplicate
+    before_hist_rows = len(hist)
+    combined = pd.concat([hist, prep], ignore_index=True)
+    combined = _drop_dupes(combined)
 
-    # Keep only known columns first, then preserve any extras
-    base_cols = [
-        "player_id", "name", "team", "prop", "line", "value",
-        "over_probability", "date", "game_id", "prop_sort", "timestamp"
-    ]
-    cols = [c for c in base_cols if c in prep.columns] + [c for c in prep.columns if c not in base_cols]
-    prep = prep[cols]
+    added_rows = len(combined) - before_hist_rows
+    # 5) Ensure parent dir exists and write
+    HIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(HIST_PATH, index=False)
 
-    # De-duplicate within today's prep
-    prep = _dedupe(prep)
-
-    # Append to history
-    if OUT_FILE.exists():
-        hist = _read_csv_safe(OUT_FILE)
-        if hist is None:
-            hist = pd.DataFrame(columns=prep.columns)
-    else:
-        OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        hist = pd.DataFrame(columns=prep.columns)
-
-    combo = pd.concat([hist, prep], ignore_index=True, sort=False)
-    combo = _normalize_ids(combo)
-    combo = _ensure_timestamp(combo)
-    combo = _ensure_prop_sort(combo)
-    combo = _dedupe(combo)
-
-    combo.to_csv(OUT_FILE, index=False)
-    print(f"✅ Wrote {len(combo)} rows to {OUT_FILE}")
+    # 6) Small report
+    print(f"[OK] Appended {added_rows} new row(s) from prep into history.")
+    print(f"[OK] Wrote {len(combined)} total rows -> {HIST_PATH}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except SystemExit as e:
+        raise
+    except Exception as e:
+        print(f"[FATAL] {e}", file=sys.stderr)
+        sys.exit(1)
