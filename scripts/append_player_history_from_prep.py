@@ -1,198 +1,218 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
-append_player_history_from_prep.py  (REPLACEMENT)
+Replace existing history-appender with a strict, deterministic writer.
 
-New behavior (per your spec):
-- Treats this as a **daily overwrite**, not an append.
-- Reads a "prep" CSV of player props.
-- Filters to **today's date** (fallback: if today's not present, uses the most recent date in the file).
-- Keeps **max 5 props per player** (by highest `over_probability`).
-- Adds/updates a `timestamp` column (ISO-8601, local time).
-- Sorts each player's rows by highest `over_probability` and assigns `prop_rank` (1 = highest).
-- Overwrites the output CSV instead of appending (no history kept here).
+What it does (per your requirements):
+- Reads today's props from a single "prep" CSV.
+- Normalizes columns (prop lower/stripped, names trimmed, etc.).
+- Filters to ONLY today's games.
+- Keeps at most 5 props per player, ranked by over_probability (highest first).
+- Writes a single CSV for today, **overwriting** the prior file (no appends).
+- Adds an ISO timestamp column.
+- Provides a prop_sort rank where 1 = highest probability for that player.
 
-Usage:
-  python scripts/append_player_history_from_prep.py \
-      --input data/prep/player_props_prep.csv \
-      --output data/player_props_history.csv
-
-If --input is omitted, the script will try to auto-detect a prep CSV in:
-  - data/prep/*.csv
-  - data/*.csv
+Default I/O (override via CLI):
+  --prep-csv  data/props_prep.csv
+  --out-csv   data/final_player_props.csv
 """
+
+from __future__ import annotations
 
 import argparse
 import sys
-import os
-import glob
-import pandas as pd
 from datetime import datetime, date
-from typing import Optional
+from typing import Dict, List
 
-def _find_default_prep_csv() -> Optional[str]:
-    """Try to locate a reasonable default prep CSV if none provided."""
-    search_paths = [
-        "data/prep/*.csv",
-        "data/*.csv",
-    ]
-    candidates = []
-    for pattern in search_paths:
-        candidates.extend(glob.glob(pattern))
-    if not candidates:
-        return None
-    # pick the most recently modified file
-    candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
-    return candidates[0]
+import pandas as pd
 
-def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Overwrite daily player props with top 5 per player for today's games.")
-    parser.add_argument(
-        "--input",
-        type=str,
-        default=None,
-        help="Path to the prep CSV (if omitted, the script attempts to auto-detect).",
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="data/player_props_history.csv",
-        help="Path to write the overwritten CSV (default: data/player_props_history.csv).",
-    )
-    return parser.parse_args()
 
-def _ensure_columns(df: pd.DataFrame, needed: list):
-    missing = [c for c in needed if c not in df.columns]
+# --- config --------------------------------------------------------------
+
+REQUIRED_COLS = [
+    "date",              # string or date; expected format YYYY-MM-DD (flexible parsing)
+    "player_id",         # int/str
+    "name",              # str
+    "team",              # str (team name/abbr; we just carry it through)
+    "prop",              # str (e.g., "hits", "total_bases")
+    "over_probability",  # float in [0,1]
+]
+
+# Permissive alternative names we’ll map into REQUIRED_COLS if present.
+ALT_COL_MAP: Dict[str, str] = {
+    "player": "name",
+    "player_name": "name",
+    "playerid": "player_id",
+    "player_id_mlb": "player_id",
+    "mlb_id": "player_id",
+    "team_name": "team",
+    "team_abbr": "team",
+    "prop_type": "prop",
+    "prob_over": "over_probability",
+    "over_prob": "over_probability",
+    "probability_over": "over_probability",
+}
+
+TOP_N_PER_PLAYER = 5
+
+
+# --- helpers -------------------------------------------------------------
+
+def _standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    # Trim column headers
+    df.columns = [c.strip() for c in df.columns]
+
+    # Map alternates -> required
+    for src, dst in ALT_COL_MAP.items():
+        if src in df.columns and dst not in df.columns:
+            df[dst] = df[src]
+
+    # Ensure required columns exist
+    missing = [c for c in REQUIRED_COLS if c not in df.columns]
     if missing:
         raise ValueError(
             f"Prep file is missing required column(s): {missing}. "
-            f"At minimum, the prep CSV must include these columns: {needed}."
+            f"At minimum, the prep CSV must include these columns: {REQUIRED_COLS}."
         )
 
-def _normalize_date_str(x) -> Optional[str]:
-    # Expecting 'YYYY-MM-DD' in prep. If not, try to parse.
-    if pd.isna(x):
-        return None
-    try:
-        s = str(x).strip()
-        # If already YYYY-MM-DD, return as-is
-        if len(s) == 10 and s[4] == "-" and s[7] == "-":
-            return s
-        dt = pd.to_datetime(s, errors="coerce")
-        if pd.isna(dt):
-            return None
-        return dt.strftime("%Y-%m-%d")
-    except Exception:
-        return None
-
-def main():
-    args = _parse_args()
-
-    prep_path = args.input or _find_default_prep_csv()
-    if not prep_path or not os.path.exists(prep_path):
-        print(
-            "ERROR: Could not locate a prep CSV. "
-            "Provide --input or place a prep file in data/prep/ or data/.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    try:
-        df = pd.read_csv(prep_path)
-    except Exception as e:
-        print(f"ERROR: Failed to read prep CSV at {prep_path}: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    # Required columns we rely on
-    required_cols = [
-        "date",              # game date
-        "player_id",         # stable player identifier (used to group)
-        "name",              # display name
-        "team",              # team name/abbr
-        "prop",              # prop type (e.g., hits, total_bases, hr, etc.)
-        "over_probability",  # probability we want to sort/limit by
-    ]
-    _ensure_columns(df, required_cols)
-
-    # Normalize date to YYYY-MM-DD strings
-    df["date"] = df["date"].map(_normalize_date_str)
-
-    if df["date"].isna().all():
-        print("ERROR: Could not parse any valid dates from the 'date' column in the prep CSV.", file=sys.stderr)
-        sys.exit(1)
-
-    # Determine "today" and filter
-    today_str = date.today().strftime("%Y-%m-%d")
-    df_today = df[df["date"] == today_str].copy()
-
-    if df_today.empty:
-        # Fallback to most recent date available in the prep CSV (so the job still produces output)
-        # This avoids a silent empty file if timezones differ or the prep was generated for tomorrow.
-        # If you strictly want no output when today's not present, remove this fallback block.
-        most_recent = (
-            df["date"].dropna().sort_values(ascending=True).iloc[-1]
-        )
-        df_today = df[df["date"] == most_recent].copy()
-        print(
-            f"WARNING: No rows matched today's date ({today_str}). "
-            f"Using most recent date found in prep: {most_recent}.",
-            file=sys.stderr,
+    # Normalize types / text
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
+    if df["date"].isna().any():
+        bad = df[df["date"].isna()]
+        raise ValueError(
+            f"Could not parse some 'date' values to dates. Example rows:\n{bad.head(5)}"
         )
 
-    # Add/refresh timestamp (local ISO-8601)
-    now_iso = datetime.now().astimezone().isoformat()
-    df_today["timestamp"] = now_iso
+    df["player_id"] = df["player_id"].astype(str).str.strip()
+    df["name"] = df["name"].astype(str).str.strip()
+    df["team"] = df["team"].astype(str).str.strip()
 
-    # Sort by over_probability (desc) within each player, keep top 5 props
-    # If probabilities are missing, treat as very low so they drop to bottom.
-    df_today["over_probability"] = pd.to_numeric(df_today["over_probability"], errors="coerce")
-    df_today["over_probability"] = df_today["over_probability"].fillna(-1.0)
+    # prop as canonical lowercase token (e.g., "hits", "total_bases")
+    df["prop"] = df["prop"].astype(str).str.strip().str.lower()
 
-    # Rank props within (player_id, date) by over_probability desc
-    df_today = df_today.sort_values(["player_id", "date", "over_probability"], ascending=[True, True, False])
-    df_today["prop_rank"] = df_today.groupby(["player_id", "date"])["over_probability"].rank(
-        method="first", ascending=False
+    # over_probability to float bounded [0,1]
+    df["over_probability"] = pd.to_numeric(df["over_probability"], errors="coerce")
+    if df["over_probability"].isna().any():
+        bad = df[df["over_probability"].isna()]
+        raise ValueError(
+            "Some 'over_probability' values are not numeric. Example rows:\n"
+            f"{bad[['player_id','name','prop','over_probability']].head(5)}"
+        )
+    df["over_probability"] = df["over_probability"].clip(lower=0.0, upper=1.0)
+
+    return df
+
+
+def _today_local_date() -> date:
+    # Use local system date; if your runner is UTC and you want US/Eastern,
+    # change to: datetime.now(tz=ZoneInfo('America/New_York')).date()
+    return datetime.now().date()
+
+
+def _filter_to_today(df: pd.DataFrame) -> pd.DataFrame:
+    today = _today_local_date()
+    return df[df["date"] == today].copy()
+
+
+def _dedupe_and_rank(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    - Drop perfect duplicate rows across key fields.
+    - Within each player_id for the day, sort props by over_probability desc.
+    - Keep TOP_N_PER_PLAYER.
+    - Create prop_sort rank (1 = highest).
+    """
+    if df.empty:
+        return df
+
+    key_cols = ["date", "player_id", "prop", "team", "name", "over_probability"]
+    df = df.drop_duplicates(subset=key_cols, keep="first")
+
+    df = df.sort_values(
+        by=["player_id", "over_probability", "prop"],
+        ascending=[True, False, True],
+        kind="mergesort",
     )
 
-    # Keep top 5 per player for that date
-    df_today = df_today[df_today["prop_rank"] <= 5].copy()
-
-    # Optional: Keep a consistent output column order if present in prep
-    preferred_order = [
-        "name",
-        "player_id",
-        "team",
-        "date",
-        "prop",
-        "over_probability",
-        "prop_rank",
-        "timestamp",
-    ]
-    # plus any extras the prep may have included (e.g., lines, z-scores, opponents, value, etc.)
-    remaining = [c for c in df_today.columns if c not in preferred_order]
-    out_cols = [c for c in preferred_order if c in df_today.columns] + remaining
-    df_today = df_today[out_cols]
-
-    # Make sure output directory exists
-    out_path = args.output
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-
-    # OVERWRITE (not append)
-    try:
-        df_today.to_csv(out_path, index=False)
-    except Exception as e:
-        print(f"ERROR: Failed to write output CSV at {out_path}: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    # Simple stdout summary
-    players = df_today["player_id"].nunique()
-    rows = len(df_today)
-    msg_date = df_today["date"].iloc[0] if not df_today.empty else today_str
-    print(
-        f"✅ Wrote {rows} rows for {players} players "
-        f"(max 5 props per player) for date={msg_date} → {out_path}"
+    # Rank within player_id by probability (1 is best)
+    df["prop_sort"] = (
+        df.groupby(["player_id"])["over_probability"]
+          .rank(method="first", ascending=False).astype(int)
     )
+
+    # Keep only top N per player
+    df = df[df["prop_sort"] <= TOP_N_PER_PLAYER].copy()
+
+    return df
+
+
+def _attach_timestamp(df: pd.DataFrame) -> pd.DataFrame:
+    # ISO 8601 with local offsetless time (if you want timezone, add %z and set tz-aware now)
+    ts = datetime.now().isoformat(timespec="seconds")
+    df["timestamp"] = ts
+    return df
+
+
+# --- main ---------------------------------------------------------------
+
+def run(prep_csv: str, out_csv: str) -> None:
+    # Read
+    try:
+        df = pd.read_csv(prep_csv)
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Prep CSV not found at '{prep_csv}'. Provide the correct path via --prep-csv."
+        )
+
+    # Normalize / validate
+    df = _standardize_columns(df)
+
+    # Only today's games
+    df = _filter_to_today(df)
+
+    # If nothing for today, still write an empty file with headers (deterministic CI)
+    if df.empty:
+        empty = pd.DataFrame(columns=REQUIRED_COLS + ["prop_sort", "timestamp"])
+        empty.to_csv(out_csv, index=False)
+        print(f"[append_player_history_from_prep] No rows for today. Wrote empty file to {out_csv}")
+        return
+
+    # Rank, cap at 5 props per player, attach timestamp
+    df = _dedupe_and_rank(df)
+    df = _attach_timestamp(df)
+
+    # Final column order (stable)
+    final_cols: List[str] = [
+        "date", "player_id", "name", "team", "prop", "over_probability",
+        "prop_sort", "timestamp",
+    ]
+    # keep any extra columns at the end (don’t break if upstream adds features)
+    extras = [c for c in df.columns if c not in final_cols]
+    df = df[final_cols + extras]
+
+    # OVERWRITE (no append)
+    df.to_csv(out_csv, index=False)
+    print(f"[append_player_history_from_prep] Wrote {len(df)} rows to {out_csv} (overwritten).")
+
+
+def parse_args(argv: List[str]) -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="Filter & cap today's props; overwrite final file.")
+    p.add_argument(
+        "--prep-csv",
+        default="data/props_prep.csv",
+        help="Path to the input prep CSV (default: data/props_prep.csv)",
+    )
+    p.add_argument(
+        "--out-csv",
+        default="data/final_player_props.csv",
+        help="Output CSV path to overwrite (default: data/final_player_props.csv)",
+    )
+    return p.parse_args(argv)
+
+
+def main() -> None:
+    args = parse_args(sys.argv[1:])
+    run(prep_csv=args.prep_csv, out_csv=args.out_csv)
+
 
 if __name__ == "__main__":
     main()
