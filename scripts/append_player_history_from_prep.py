@@ -1,11 +1,9 @@
 # scripts/append_player_history_from_prep.py
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 
@@ -20,6 +18,7 @@ PROP_PROJ_COL = {
     ("hr", 0.5): "prob_hr_over_0p5",
 }
 
+# Optional sort ordering for props
 PROP_SORT = {"hits": 10.0, "total_bases": 20.0, "hr": 30.0}
 
 
@@ -45,10 +44,10 @@ def _normalize_ids(df: pd.DataFrame) -> pd.DataFrame:
     if "player_id" in df.columns:
         df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
 
-    # game_id → string without trailing .0 (nullable)
+    # game_id → string (nullable), no trailing ".0"
     if "game_id" in df.columns:
         gid = pd.to_numeric(df["game_id"], errors="coerce").astype("Int64")
-        df["game_id"] = gid.astype("string")  # leaves <NA> as proper missing sentinel
+        df["game_id"] = gid.astype("string")  # keeps <NA> as proper missing
 
     # line → float
     if "line" in df.columns:
@@ -58,7 +57,7 @@ def _normalize_ids(df: pd.DataFrame) -> pd.DataFrame:
     if "prop" in df.columns:
         df["prop"] = df["prop"].astype(str).str.strip().str.lower()
 
-    # date → date (yyyy-mm-dd), kept as string for CSV compatibility
+    # date → yyyy-mm-dd (string for CSV compatibility)
     if "date" in df.columns:
         dt = pd.to_datetime(df["date"], errors="coerce").dt.date
         df["date"] = dt.astype("string")
@@ -72,12 +71,16 @@ def _choose_proj_col(prop: str, line: float) -> Optional[str]:
 
 
 def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFrame:
+    """
+    Keep probabilities raw. Prefer projection columns when available.
+    No clipping. No jitter. If nothing available, leave NaN.
+    """
     df = prep.copy()
 
     if proj is None or proj.empty:
+        # Just coerce existing column to numeric (no clipping)
         if "over_probability" in df.columns:
             df["over_probability"] = pd.to_numeric(df["over_probability"], errors="coerce")
-            df["over_probability"] = df["over_probability"].clip(lower=0.01, upper=0.99)
         return df
 
     proj = _std(proj)
@@ -86,8 +89,7 @@ def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFra
     if "player_id" in proj.columns:
         proj["player_id"] = pd.to_numeric(proj["player_id"], errors="coerce").astype("Int64")
 
-    # Join once on player_id to bring in all prob_* columns
-    df["proj_prob"] = pd.NA
+    # Bring in all prob_* columns via player_id
     join_cols = [c for c in ["player_id"] if c in df.columns and c in proj.columns]
     if join_cols:
         keep_cols = ["player_id"] + [c for c in proj.columns if c.startswith("prob_")]
@@ -100,6 +102,7 @@ def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFra
     else:
         merged = df.copy()
 
+    # Row-wise choose the correct projection column for each prop/line
     def row_prob(row):
         col = _choose_proj_col(row.get("prop"), row.get("line"))
         if col and col in merged.columns:
@@ -108,34 +111,12 @@ def _merge_probs(prep: pd.DataFrame, proj: Optional[pd.DataFrame]) -> pd.DataFra
 
     merged["proj_prob"] = merged.apply(row_prob, axis=1)
 
-    # Prefer projection probability when present
+    # Prefer projection prob; otherwise keep existing (raw) over_probability
     if "over_probability" in merged.columns:
         merged["over_probability"] = pd.to_numeric(merged["over_probability"], errors="coerce")
-
     merged["over_probability"] = merged["proj_prob"].where(
         merged["proj_prob"].notna(), merged.get("over_probability", pd.NA)
     )
-
-    # Clip to [0.01, 0.99]
-    merged["over_probability"] = (
-        pd.to_numeric(merged["over_probability"], errors="coerce")
-        .clip(0.01, 0.99)
-    )
-
-    # If probs are nearly flat, add tiny deterministic jitter to avoid huge ties
-    probs = merged["over_probability"].dropna()
-    if not probs.empty and probs.nunique(dropna=True) <= 2:
-        def _jitter(row):
-            p = row.get("over_probability")
-            if pd.isna(p):
-                return p
-            base = 1e-3  # ±0.001
-            key = f"{row.get('player_id')}-{row.get('prop')}"
-            h = hashlib.md5(key.encode("utf-8")).hexdigest()
-            bump = ((int(h[:6], 16) / 0xFFFFFF) - 0.5) * 2 * base
-            q = float(p) + bump
-            return float(np.clip(q, 0.01, 0.99))
-        merged["over_probability"] = merged.apply(_jitter, axis=1)
 
     merged.drop(columns=[c for c in ["proj_prob"] if c in merged.columns], inplace=True)
     return merged
@@ -151,19 +132,21 @@ def _ensure_prop_sort(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _dedupe(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Drop obvious duplicates. If game_id exists, require it (prevents dupes),
+    but do NOT invent/alter probabilities.
+    """
     df = df.copy()
 
-    # Filter out rows with missing game_id only if column exists
     if "game_id" in df.columns:
         df = df[df["game_id"].notna()].copy()
 
-    # Preferred de-dup key (include game_id if present; otherwise fall back)
     preferred = ["date", "game_id", "player_id", "team", "prop", "line"]
     keys = [k for k in preferred if k in df.columns]
     if not keys:
         return df
 
-    # Keep the latest record when multiple exist
+    # Keep most recent if timestamps exist
     order_cols = [c for c in ("asof", "timestamp", "created_at", "date") if c in df.columns]
     if order_cols:
         df = df.sort_values(by=order_cols)
@@ -180,16 +163,16 @@ def main():
     prep = _normalize_ids(prep)
     proj = _read_csv_safe(PROJ_FILE)
 
-    # Merge/repair probabilities
+    # Merge probabilities (raw)
     prep = _merge_probs(prep, proj)
 
     # prop_sort fill
     prep = _ensure_prop_sort(prep)
 
-    # Keep only columns we know about (and preserve any extras if present)
+    # Keep only core columns first (but preserve any extras afterward)
     base_cols = [
-        "player_id","name","team","prop","line","value",
-        "over_probability","date","game_id","prop_correct","prop_sort"
+        "player_id", "name", "team", "prop", "line", "value",
+        "over_probability", "date", "game_id", "prop_correct", "prop_sort",
     ]
     cols = [c for c in base_cols if c in prep.columns] + [c for c in prep.columns if c not in base_cols]
     prep = prep[cols]
