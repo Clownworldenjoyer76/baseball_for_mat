@@ -1,133 +1,67 @@
 # scripts/append_player_history_from_prep.py
 from __future__ import annotations
 
-import argparse
-from datetime import datetime, date
 from pathlib import Path
-from typing import Iterable, Optional, Sequence
-
-import numpy as np
 import pandas as pd
+from datetime import date
 
+IN_PREP_DEFAULT = Path("data/batter_props_final.csv")
+OUT_HISTORY = Path("data/player_props_history.csv")
+TODAY = pd.Timestamp(date.today()).normalize().date()
 
-# ---- Defaults (fixed prep path) ----
-DEFAULT_PREP: Path = Path("data/bets/prep/batter_props_final.csv")
-DEFAULT_OUT: Path = Path("data/player_history.csv")  # change if your repo uses a different target
+REQUIRED_MIN = ["date","player_id","name","team","prop","over_probability"]
 
-
-# ---- Utilities ----
-def _read_csv_any(path: Path) -> pd.DataFrame:
-    if not Path(path).exists():
-        raise FileNotFoundError(f"Prep CSV not found at '{path}'. Provide the correct path via --prep-csv.")
-    return pd.read_csv(path)
-
-def _ensure_columns(df: pd.DataFrame, required: Sequence[str]) -> pd.DataFrame:
-    df = df.copy()
+def _read_csv_any(p: Path) -> pd.DataFrame:
+    if not p.exists():
+        raise FileNotFoundError(f"Prep CSV not found at '{p}'.")
+    df = pd.read_csv(p)
     df.columns = df.columns.str.strip()
+    return df
 
-    missing = [c for c in required if c not in df.columns]
+def _ensure_min_cols(df: pd.DataFrame) -> pd.DataFrame:
+    missing = [c for c in REQUIRED_MIN if c not in df.columns]
     if missing:
-        raise ValueError(
-            "Prep file is missing required column(s): "
-            f"{missing}. At minimum, the prep CSV must include these columns: {list(required)}."
-        )
+        raise ValueError(f"Prep file is missing required column(s): {missing}. "
+                         f"At minimum it must include {REQUIRED_MIN}.")
     return df
 
-def _today_str() -> str:
-    # Keep it simple (UTC date is fine for consistency in CI);
-    # if you need US/Eastern, wire it in here.
-    return date.today().isoformat()
-
-def _coerce_date_col(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    if "date" not in df.columns:
-        # backfill with today if missing entirely
-        df["date"] = _today_str()
-
-    # try to coerce to yyyy-mm-dd strings
-    def _to_str(d):
-        try:
-            return pd.to_datetime(d).date().isoformat()
-        except Exception:
-            return _today_str()
-
-    df["date"] = df["date"].apply(_to_str)
+def _ensure_date_today(df: pd.DataFrame) -> pd.DataFrame:
+    if "date" not in df.columns or df["date"].isna().all():
+        df = df.copy()
+        df["date"] = TODAY
+    df["date"] = pd.to_datetime(df["date"]).dt.date
     return df
 
-def _limit_top5_per_player(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Keep at most 5 props per player_id for today's games.
-    Priority for sorting:
-        1) 'value' (desc) if present
-        2) 'over_probability' (desc) if present
-        3) 'mega_z' or 'batter_z' (desc) as last resort
-    """
-    sort_keys: Iterable[str] = []
-    for c in ("value", "over_probability", "mega_z", "batter_z"):
-        if c in df.columns:
-            sort_keys.append(c)
-
-    if sort_keys:
-        df = df.sort_values(list(sort_keys), ascending=[False] * len(sort_keys))
-    else:
-        # No ranking signal at all — keep stable order but still limit
-        pass
-
-    if "player_id" not in df.columns:
-        # fallback: group by name+team if player_id isn’t present
-        grp_cols = [c for c in ["name", "team"] if c in df.columns]
-    else:
-        grp_cols = ["player_id"]
-
-    df = df.groupby(grp_cols, as_index=False).head(5)
-    return df.reset_index(drop=True)
-
-
-# ---- Main pipeline ----
-def run(prep_csv: Path, out_csv: Path) -> None:
-    # Required columns for downstream
-    required_cols = ("date", "player_id", "name", "team", "prop", "over_probability")
-
+def run(prep_csv: Path = IN_PREP_DEFAULT, out_csv: Path = OUT_HISTORY) -> None:
     df = _read_csv_any(prep_csv)
-    df = _coerce_date_col(df)
+    df = _ensure_date_today(df)
+    df = _ensure_min_cols(df)
 
-    # Filter to ONLY today's games
-    today = _today_str()
-    df = df[df["date"].astype(str) == today].copy()
+    # Keep only today's rows
+    df = df[df["date"] == TODAY].copy()
 
-    # Validate required columns (after we possibly added 'date')
-    df = _ensure_columns(df, required_cols)
+    if df.empty:
+        print("ℹ️  No rows for today — nothing to append.")
+        return
 
-    # Enforce max 5 props per player
-    df = _limit_top5_per_player(df)
-
-    # Overwrite the target file (no appending — per your requirement)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(out_csv, index=False)
-
-    print(f"✅ Wrote {len(df)} rows for {today} -> {out_csv}")
-    kept = (
-        df.groupby("player_id", dropna=False)
-          .size()
-          .rename("props_kept")
-          .reset_index()
-          .sort_values("props_kept", ascending=False)
-          .head(5)
-    )
-    print("Top players by props kept (max 5):")
-    print(kept.to_string(index=False))
-
+    if out_csv.exists():
+        # Append without dupes (player_id + prop + date)
+        hist = pd.read_csv(out_csv)
+        hist.columns = hist.columns.str.strip()
+        hist["date"] = pd.to_datetime(hist["date"]).dt.date
+        before = len(hist)
+        key_cols = ["date","player_id","prop"]
+        combined = pd.concat([hist, df], ignore_index=True)
+        combined.drop_duplicates(subset=key_cols, keep="last", inplace=True)
+        combined.to_csv(out_csv, index=False)
+        print(f"✅ Appended {len(combined)-before} new rows → {out_csv}")
+    else:
+        df.to_csv(out_csv, index=False)
+        print(f"✅ Created history with {len(df)} rows → {out_csv}")
 
 def main():
-    p = argparse.ArgumentParser(description="Normalize and cap batter props to 5 per player for today's games.")
-    p.add_argument("--prep-csv", type=Path, default=DEFAULT_PREP,
-                   help="Path to prep CSV (default: data/bets/prep/batter_props_final.csv)")
-    p.add_argument("--out-csv", type=Path, default=DEFAULT_OUT,
-                   help="Where to write the normalized file (OVERWRITES).")
-    args = p.parse_args()
-
-    run(prep_csv=args.prep_csv, out_csv=args.out_csv)
-
+    run()
 
 if __name__ == "__main__":
     main()
