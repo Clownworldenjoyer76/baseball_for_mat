@@ -1,10 +1,9 @@
-
 # scripts/project_batter_props.py
 from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -36,43 +35,62 @@ def _read_first_existing(paths: Iterable[Path]) -> Optional[pd.DataFrame]:
     return None
 
 
-def _to_float(s, default=np.nan) -> float:
-    try:
-        if isinstance(s, str):
-            s = s.strip().replace("%", "")
-        v = float(s)
-        return v
-    except Exception:
-        return default
+def _as_rate(series: pd.Series) -> pd.Series:
+    """Accept 0.123, 12.3, or '12.3%'; return fraction in [0,1]."""
+    s = series.astype(str).str.strip().str.replace("%", "", regex=False)
+    s = pd.to_numeric(s, errors="coerce")
+    pct_mask = s.gt(1.0).fillna(False)
+    s = s.where(~pct_mask, s / 100.0)
+    s = s.clip(lower=0.0)
+    return s
 
 
-def _clip_nonneg(x: pd.Series) -> pd.Series:
-    x = pd.to_numeric(x, errors="coerce")
-    x = x.where(x >= 0, 0.0)
-    return x
+def _coalesce(
+    df: pd.DataFrame, candidates: List[str], *, rate=False, numeric=True
+) -> Tuple[pd.Series, pd.Series]:
+    """
+    Return first non-null among candidate columns.
+    Also return a boolean mask indicating rows that came from a real column (not default).
+    """
+    base = pd.Series([np.nan] * len(df), index=df.index, dtype="float64")
+    source_mask = pd.Series(False, index=df.index)
+    for c in candidates:
+        if c in df.columns:
+            v = df[c]
+            if rate:
+                v = _as_rate(v)
+            elif numeric:
+                v = pd.to_numeric(v, errors="coerce")
+            m = base.isna() & v.notna()
+            base.loc[m] = v.loc[m]
+            source_mask |= m
+    return base, source_mask
+
+
+def _estimate_ab(pa: pd.Series, bb_rate: Optional[pd.Series]) -> pd.Series:
+    """Rough AB estimate from PA and walk rate."""
+    pa = pd.to_numeric(pa, errors="coerce").fillna(0.0)
+    if bb_rate is None:
+        return 0.88 * pa  # generic: 8% BB, 2% HBP, 2% SF
+    r = _as_rate(bb_rate).fillna(0.08)
+    return (1.0 - (r + 0.02 + 0.02)).clip(lower=0.5) * pa
 
 
 def _poisson_tail_at_least_k(mu: pd.Series, k: int) -> pd.Series:
-    """P[X >= k] for X ~ Poisson(mu). Works elementwise for pandas Series."""
-    mu = pd.to_numeric(mu, errors="coerce")
+    mu = pd.to_numeric(mu, errors="coerce").fillna(0.0)
     if k <= 0:
         return pd.Series(np.ones(len(mu)), index=mu.index, dtype=float)
-    # P(X >= k) = 1 - e^{-mu} * sum_{i=0}^{k-1} mu^i / i!
-    # We'll do k=2 and k=1 cases directly for numerical stability/speed
     if k == 1:
-        # 1 - e^{-mu}
         return 1.0 - np.exp(-mu)
     if k == 2:
-        # 1 - e^{-mu} * (1 + mu)
         return 1.0 - np.exp(-mu) * (1.0 + mu)
-    # general fallback
     out = []
-    for val in mu.fillna(0.0).values:
+    for val in mu.values:
         if val <= 0:
             out.append(0.0 if k > 0 else 1.0)
             continue
         s = 0.0
-        term = 1.0  # mu^0 / 0!
+        term = 1.0
         for i in range(k):
             if i > 0:
                 term *= val / i
@@ -82,47 +100,13 @@ def _poisson_tail_at_least_k(mu: pd.Series, k: int) -> pd.Series:
 
 
 def _binom_one_or_more(n: pd.Series, p: pd.Series) -> pd.Series:
-    """P[X >= 1] for X ~ Binomial(n, p) = 1 - (1-p)^n."""
     n = pd.to_numeric(n, errors="coerce").fillna(0.0)
     p = pd.to_numeric(p, errors="coerce").fillna(0.0)
-    # keep it in (0,1) without clipping — use numerical safeguards only
-    p = p.where(p > 0, 0.0)
-    p = p.where(p < 1, 1.0 - 1e-12)
+    p = p.clip(lower=0.0, upper=1.0 - 1e-12)
     return 1.0 - np.power((1.0 - p), n)
 
 
-def _as_rate(series: pd.Series) -> pd.Series:
-    """Accepts values like 0.123, 12.3, or '12.3%'; returns fraction in [0,1]."""
-    s = series.astype(str).str.strip().str.replace("%", "", regex=False)
-    s = pd.to_numeric(s, errors="coerce")
-    # If values look like percentages (e.g., 12.3) convert to 0.123
-    pct_mask = s.gt(1.0).fillna(False)
-    s = s.where(~pct_mask, s / 100.0)
-    s = s.clip(lower=0.0)  # numerical safety only
-    return s
-
-
-def _estimate_ab(pa: pd.Series, bb_rate: Optional[pd.Series]) -> pd.Series:
-    """Rough AB estimate from PA and walk rate. Avoids dependence on many tiny columns."""
-    pa = pd.to_numeric(pa, errors="coerce").fillna(0.0)
-    if bb_rate is None:
-        # generic: 8% BB, 2% HBP, 2% SF -> AB ~ 88% of PA
-        return 0.88 * pa
-    r = _as_rate(bb_rate).fillna(0.08)
-    # Assume 2% HBP, 2% SF
-    return (1.0 - (r + 0.02 + 0.02)).clip(lower=0.5) * pa
-
-
-def _coalesce(df: pd.DataFrame, *cols: str, default=np.nan) -> pd.Series:
-    """Return first non-null column among given options."""
-    out = pd.Series([default] * len(df), index=df.index, dtype="float64")
-    for c in cols:
-        if c in df.columns:
-            v = pd.to_numeric(df[c], errors="coerce")
-            out = out.where(~out.isna(), v)
-    return out
-
-
+# -------- Main projection --------
 def project_batter_props() -> pd.DataFrame:
     z = _read_first_existing(IN_CANDIDATES)
     if z is None or z.empty:
@@ -130,73 +114,73 @@ def project_batter_props() -> pd.DataFrame:
 
     z = _std(z)
 
-    # --- CORE INPUTS ---
-    # Expected plate appearances this game
-    pa = _coalesce(z, "proj_pa", "pa").fillna(4.3)
-    # Walk rate (used only to infer AB); accept various column names
-    bb_rate = None
-    for name in ["proj_bb_rate", "bb_rate", "bb_percent", "bb%"]:
-        if name in z.columns:
-            bb_rate = z[name]
-            break
+    # --- Try many reasonable column names from typical prep files ---
+    pa_cols = ["proj_pa", "pa", "plate_appearances", "xPA", "est_pa"]
+    avg_cols = ["proj_avg", "proj_ba", "ba", "avg", "xBA", "batting_avg"]
+    iso_cols = ["proj_iso", "iso", "xISO"]
+    bb_cols = ["proj_bb_rate", "bb_rate", "bb_percent", "bb%", "walk_rate"]
+    hr_rate_cols = ["proj_hr_rate", "hr_rate", "xhr_rate", "hr_per_pa", "hr%"]
 
-    ab = _estimate_ab(pa, bb_rate)
+    # Coalesce inputs
+    pa, pa_from_data = _coalesce(z, pa_cols, numeric=True)
+    ba, ba_from_data = _coalesce(z, avg_cols, numeric=True)
+    iso, iso_from_data = _coalesce(z, iso_cols, numeric=True)
+    bb_rate, bb_from_data = _coalesce(z, bb_cols, rate=True)
+    hr_pa, hr_from_data = _coalesce(z, hr_rate_cols, rate=True)
 
-    # Hit probability per AB
-    p_hit_ab = _coalesce(z, "proj_avg", "proj_ba", "ba", "avg").clip(lower=0.0)
-    p_hit_ab = p_hit_ab.where(p_hit_ab < 1, 1.0 - 1e-12)
+    # Apply defaults where missing
+    defaults_used: Dict[str, float] = {}
 
-    # HR probability per PA/AB
-    p_hr_pa = None
-    for name in ["proj_hr_rate", "hr_rate", "xhr_rate"]:
-        if name in z.columns:
-            p_hr_pa = _as_rate(z[name])
-            break
-    if p_hr_pa is None:
-        # fallback: small baseline derived from ISO
-        iso = _coalesce(z, "proj_iso", "iso").fillna(0.120)
-        p_hr_pa = (iso * 0.3).clip(0.0, 0.15)
+    if pa.isna().any():
+        defaults_used["PA"] = pa.isna().sum()
+        pa = pa.fillna(4.3)
 
-    # Convert HR per PA -> per AB approximately (if bb% known); otherwise assume per PA ~ per AB
-    bb_r = _as_rate(bb_rate) if bb_rate is not None else pd.Series([0.08] * len(z), index=z.index)
-    ab_over_pa = (1.0 - (bb_r + 0.02 + 0.02)).clip(lower=0.5)  # same assumption used above
-    p_hr_ab = (p_hr_pa / ab_over_pa).clip(lower=0.0)
-    p_hr_ab = p_hr_ab.where(p_hr_ab < 1, 1.0 - 1e-12)
+    if ba.isna().any():
+        defaults_used["AVG"] = ba.isna().sum()
+        ba = ba.fillna(0.245)
 
-    # Singles/extra-base composition from AVG + ISO
-    iso = _coalesce(z, "proj_iso", "iso").fillna(0.120).clip(lower=0.0)
-    # Expected extra bases per AB contributed by HR: 3 * p_hr_ab
-    extra_from_hr = 3.0 * p_hr_ab
+    if iso.isna().any():
+        defaults_used["ISO"] = iso.isna().sum()
+        iso = iso.fillna(0.120)
+
+    if hr_pa.isna().any():
+        defaults_used["HR/PA (from ISO*0.3)"] = hr_pa.isna().sum()
+        hr_pa = (iso * 0.3).clip(0.0, 0.15)
+
+    # Derived
+    ab = _estimate_ab(pa, bb_rate if bb_from_data.any() else None)
+    bb_r = _as_rate(bb_rate) if bb_from_data.any() else pd.Series(0.08, index=z.index)
+    ab_over_pa = (1.0 - (bb_r + 0.02 + 0.02)).clip(lower=0.5)
+    hr_ab = (hr_pa / ab_over_pa).clip(0.0, 1.0 - 1e-12)
+
+    # Split hits composition using AVG + ISO
+    extra_from_hr = 3.0 * hr_ab
     rem_extra = (iso - extra_from_hr).clip(lower=0.0)
-    # Assume triples are 10% of (2B-equivalent) pool; solve: rate_2B + 2*rate_3B = rem_extra, rate_3B = 0.1 * rate_2B
     rate_2b_ab = (rem_extra / 1.2).clip(lower=0.0)
     rate_3b_ab = (0.1 * rem_extra / 1.2).clip(lower=0.0)
-
-    # Hits split
     p_double_ab = rate_2b_ab
     p_triple_ab = rate_3b_ab
-    p_single_ab = (p_hit_ab - (p_double_ab + p_triple_ab + p_hr_ab)).clip(lower=0.0)
-    # If p_single_ab became zero due to inconsistencies, damp it slightly to keep sums sane
-    mask_bad = (p_single_ab + p_double_ab + p_triple_ab + p_hr_ab) > 1.0
-    if mask_bad.any():
-        scale = 0.999 / (p_single_ab + p_double_ab + p_triple_ab + p_hr_ab)
-        p_single_ab *= scale
+    p_hit_ab = ba.clip(0.0, 1.0 - 1e-12)
+    p_single_ab = (p_hit_ab - (p_double_ab + p_triple_ab + hr_ab)).clip(lower=0.0)
 
-    # --- PROBABILITIES ---
-    # HITS >= 2 via Poisson using mu_hits = E[# hits] = AB * p_hit_ab
+    # Guard against sums > 1
+    total_p = p_single_ab + p_double_ab + p_triple_ab + hr_ab
+    mask_bad = total_p > 1.0
+    if mask_bad.any():
+        scale = 0.999 / total_p[mask_bad]
+        p_single_ab.loc[mask_bad] *= scale
+
+    # Probabilities
     mu_hits = ab * p_hit_ab
     prob_hits_over_1p5 = _poisson_tail_at_least_k(mu_hits, 2)
 
-    # TB >= 2 approximation with Poisson "thinning":
-    # TB < 2 iff (no 2B/3B/HR) AND (singles <= 1)
     mu_s = ab * p_single_ab
-    mu_xb = ab * (p_double_ab + p_triple_ab + p_hr_ab)
+    mu_xb = ab * (p_double_ab + p_triple_ab + hr_ab)
     prob_tb_over_1p5 = 1.0 - np.exp(-(mu_s + mu_xb)) * (1.0 + mu_s)
 
-    # HR >= 1 with Binomial over PA
-    prob_hr_over_0p5 = _binom_one_or_more(pa, p_hr_pa)
+    prob_hr_over_0p5 = _binom_one_or_more(pa, hr_pa)
 
-    # -- Build output --
+    # Build output
     cols_keep = [c for c in ["player_id", "name", "team", "game_id", "date"] if c in z.columns]
     out = pd.DataFrame(index=z.index)
     for c in cols_keep:
@@ -206,16 +190,42 @@ def project_batter_props() -> pd.DataFrame:
     out["prob_tb_over_1p5"] = prob_tb_over_1p5.astype(float)
     out["prob_hr_over_0p5"] = prob_hr_over_0p5.astype(float)
 
-    # Keep a few useful diagnostics (not required by downstream)
-    out["proj_pa_used"] = pa
-    out["proj_ab_est"] = ab
-    out["proj_avg_used"] = p_hit_ab
-    out["proj_iso_used"] = iso
-    out["proj_hr_rate_pa_used"] = p_hr_pa
+    # Minimal diagnostics to catch “flat” issues upstream
+    n = len(out)
+    def _pct(x: int) -> str:
+        return f"{(100.0 * x / max(n,1)):.1f}%"
 
+    used_defaults_lines = []
+    for k, cnt in defaults_used.items():
+        used_defaults_lines.append(f"- {k}: {cnt} rows ({_pct(int(cnt))})")
+
+    # If too many defaults, fail with an actionable message
+    high_default_share = any(int(cnt) > 0.6 * n for cnt in defaults_used.values())
+    if high_default_share:
+        lines = "\n".join(used_defaults_lines) if used_defaults_lines else "(none)"
+        raise SystemExit(
+            "❌ Too many rows used fallback defaults — projections will look flat.\n"
+            "What to do: ensure the input file includes real columns for PA/AVG/ISO/HR rate.\n"
+            "Defaults used:\n" + lines
+        )
+
+    # Save
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(OUT_PATH, index=False)
     print(f"✅ Wrote {len(out)} rows -> {OUT_PATH}")
+
+    # Brief summary to stdout (helps the validator step)
+    if used_defaults_lines:
+        print("ℹ️  Defaults used:\n" + "\n".join(used_defaults_lines))
+
+    print(
+        "ℹ️  Probability distribution snapshot (HR>=1): "
+        f"min={out['prob_hr_over_0p5'].min():.3f}, "
+        f"25%={out['prob_hr_over_0p5'].quantile(0.25):.3f}, "
+        f"50%={out['prob_hr_over_0p5'].quantile(0.50):.3f}, "
+        f"75%={out['prob_hr_over_0p5'].quantile(0.75):.3f}, "
+        f"max={out['prob_hr_over_0p5'].max():.3f}"
+    )
     return out
 
 
