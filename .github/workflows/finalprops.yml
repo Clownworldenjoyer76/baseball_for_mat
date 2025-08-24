@@ -1,70 +1,84 @@
-name: Build Batter Projections & Props
+# scripts/final_props_1.py
+from __future__ import annotations
 
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: '0 13 * * *'  # 13:00 UTC = 9am ET
+from pathlib import Path
+import pandas as pd
+from datetime import date
 
-permissions:
-  contents: write
+IN_PROJ = Path("data/_projections/batter_props_projected.csv")
+OUT_FINAL = Path("data/batter_props_final.csv")
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+TODAY = pd.Timestamp(date.today()).normalize()
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+REQUIRED_PROJ_COLS = {
+    "player_id", "name", "team",
+    # at least one of these probs must exist
+    "prob_hits_over_1p5", "prob_tb_over_1p5", "prob_hr_over_0p5",
+}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+def _read_csv_any(p: Path) -> pd.DataFrame:
+    if not p.exists():
+        raise SystemExit(f"❌ Missing input: {p}")
+    df = pd.read_csv(p)
+    df.columns = df.columns.str.strip()
+    return df
 
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install pandas numpy
-          fi
+def _ensure_date(df: pd.DataFrame) -> pd.DataFrame:
+    if "date" not in df.columns or df["date"].isna().all():
+        df = df.copy()
+        df["date"] = TODAY.date()
+    # normalize to date type
+    df["date"] = pd.to_datetime(df["date"]).dt.date
+    return df
 
-      # (Optional) Show first matching input file and a few columns — no heredocs
-      - name: Show inputs (optional)
-        run: |
-          set -euo pipefail
-          for p in data/_projections/batter_props_z_expanded.csv data/batter_props_z_expanded.csv batter_props_z_expanded.csv; do
-            if [ -f "$p" ]; then
-              echo "Found input: $p"
-              python -c "import pandas as pd; import sys; d=pd.read_csv(sys.argv[1]); print('cols:', list(d.columns)[:12], '… rows:', len(d))" "$p"
-              break
-            fi
-          done
+def main() -> None:
+    z = _read_csv_any(IN_PROJ)
+    have = set(z.columns)
 
-      - name: Run project_batter_props.py
-        run: python scripts/project_batter_props.py
+    needed_identity = {"player_id", "name", "team"}
+    if not needed_identity.issubset(have):
+        missing = needed_identity - have
+        raise SystemExit(f"❌ {IN_PROJ} missing id columns: {sorted(missing)}")
 
-      # Soft validation (prints stats but never blocks the run)
-      - name: Validate probability spread (projected)
-        run: |
-          set -euo pipefail
-          f="data/_projections/batter_props_projected.csv"
-          if [ -f "$f" ]; then
-            echo "Stats for $f"
-            python -c "import pandas as pd; import numpy as np; \
-import sys; df=pd.read_csv(sys.argv[1]); \
-s=df[['prob_hits_over_1p5','prob_tb_over_1p5','prob_hr_over_0p5']].stack(); \
-print(s.describe())" "$f" || true
-          else
-            echo "Projected file not found: $f"
-          fi
+    # pick only probability columns that exist
+    prob_cols = [c for c in ["prob_hits_over_1p5","prob_tb_over_1p5","prob_hr_over_0p5"] if c in z.columns]
+    if not prob_cols:
+        raise SystemExit("❌ No probability columns found in projections.")
 
-      - name: Commit and push changes
-        if: ${{ github.ref == 'refs/heads/main' }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Update projections [skip ci]" || echo "No changes to commit"
-          git push
+    z = _ensure_date(z)
+
+    # Filter to today's slate
+    z_today = z[pd.to_datetime(z["date"]).dt.date == TODAY.date()].copy()
+    if z_today.empty:
+        # If projections have no date, fallback already filled with today, else warn.
+        z_today = z.copy()
+
+    # Wide -> long
+    long_rows = []
+    for prop_col in prob_cols:
+        tmp = z_today[["date","player_id","name","team", prop_col]].copy()
+        tmp.rename(columns={prop_col: "over_probability"}, inplace=True)
+        tmp["prop"] = prop_col  # keep the same token; downstream can map labels if needed
+        long_rows.append(tmp)
+
+    final = pd.concat(long_rows, ignore_index=True)
+    # clean numeric
+    final["over_probability"] = pd.to_numeric(final["over_probability"], errors="coerce")
+
+    # keep only sane rows
+    final = final.dropna(subset=["over_probability"])
+    final = final[(final["over_probability"] >= 0) & (final["over_probability"] <= 1)]
+
+    # Limit to **max 5 props per player** (today only)
+    final.sort_values(["player_id","over_probability"], ascending=[True, False], inplace=True)
+    final = final.groupby("player_id", as_index=False, group_keys=False).head(5)
+
+    # Ensure column order
+    final = final[["date","player_id","name","team","prop","over_probability"]]
+
+    OUT_FINAL.parent.mkdir(parents=True, exist_ok=True)
+    final.to_csv(OUT_FINAL, index=False)
+    print(f"✅ Wrote {len(final)} rows → {OUT_FINAL}")
+
+if __name__ == "__main__":
+    main()
