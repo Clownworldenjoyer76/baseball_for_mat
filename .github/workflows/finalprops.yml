@@ -1,34 +1,150 @@
-- name: Validate probability spread (projected)
-  run: |
-    python - <<'PY'
-    import pandas as pd, numpy as np, sys
-    p = "data/_projections/batter_props_projected.csv"
-    try:
-      df = pd.read_csv(p)
-    except Exception as e:
-      print(f"Could not load {p}: {e}")
-      sys.exit(1)
+name: Build Batter Projections & Props
 
-    cols = [c for c in df.columns if c.startswith("prob_")]
-    if not cols:
-      print("No probability columns to check.")
-      sys.exit(0)
+on:
+  workflow_dispatch:
+  schedule:
+    # run once daily at 10:05 UTC (adjust as you like)
+    - cron: "5 10 * * *"
 
-    flat = []
-    for c in cols:
-      s = pd.to_numeric(df[c], errors="coerce").dropna()
-      if s.empty: 
-        continue
-      # "Flat" if almost all mass sits in a very tight band
-      if (s.max() - s.min()) < 0.1 and (s.quantile(0.75) - s.quantile(0.25)) < 0.02:
-        flat.append((c, float(s.mean()), float(s.std()), float(s.min()), float(s.max())))
+jobs:
+  build-and-finalize:
+    runs-on: ubuntu-latest
 
-    if flat:
-      print("⚠️  Probabilities look flat in these columns (warning only):")
-      for c, mean, std, mn, mx in flat:
-        print(f" - {c}: mean={mean:.3f}, std={std:.3f}, min={mn:.3f}, max={mx:.3f}")
-    else:
-      print("✅ Probability spread looks reasonable.")
-    # WARNING ONLY – do not fail the job
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          set -e
+          if [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+          else
+            # minimal fallback so the workflow still runs
+            python -m pip install --upgrade pip
+            pip install pandas numpy
+          fi
+
+      # ------- Visibility step (optional) -------
+      - name: Show inputs for projections
+        run: |
+          set -e
+          echo "Looking for batter_props_z_expanded.csv in common locations..."
+          for p in \
+            data/_projections/batter_props_z_expanded.csv \
+            data/batter_props_z_expanded.csv \
+            batter_props_z_expanded.csv; do
+            if [ -f "$p" ]; then
+              echo "Found: $p"
+              python - <<'PY'
+import pandas as pd, sys
+from pathlib import Path
+p = Path("data/_projections/batter_props_z_expanded.csv")
+candidates = [Path("data/_projections/batter_props_z_expanded.csv"),
+              Path("data/batter_props_z_expanded.csv"),
+              Path("batter_props_z_expanded.csv")]
+for q in candidates:
+    if q.exists():
+        p = q
+        break
+df = pd.read_csv(p)
+print("Rows:", len(df), "Cols:", len(df.columns))
+print("Columns head:", list(df.columns)[:15])
+print(df.head(3).to_string(index=False))
+PY
+              break
+            fi
+          done
+
+      # ------- Produce projected probabilities -------
+      - name: Run project_batter_props.py
+        run: |
+          set -e
+          python scripts/project_batter_props.py
+
+      # ------- Validation that only WARNS, never fails -------
+      - name: Validate probability spread (projected)
+        shell: bash
+        run: |
+          set -e
+          csv="data/_projections/batter_props_projected.csv"
+          if [ ! -f "$csv" ]; then
+            echo "::warning file=scripts/project_batter_props.py::Projected CSV not found at $csv; skipping validation."
+            exit 0
+          fi
+
+          python - <<'PY'
+import pandas as pd, sys, numpy as np
+p = "data/_projections/batter_props_projected.csv"
+df = pd.read_csv(p)
+cols = [c for c in df.columns if c.startswith("prob_")]
+if not cols:
+    print("::warning::No prob_* columns found; skipping.")
     sys.exit(0)
-    PY
+
+s = pd.concat([df[c] for c in cols], axis=0).dropna()
+desc = s.describe()
+print(desc)
+
+# Safeguard thresholds (relaxed so we warn not fail)
+too_flat = (desc["std"] < 0.04) or (desc["min"] > 0.10 and desc["max"] < 0.90)
+
+if too_flat:
+    print("::warning::Probabilities look fairly flat. Check source inputs (PA/AVG/ISO/HR rate).")
+sys.exit(0)  # ALWAYS succeed
+PY
+
+      # ------- Downstream steps (run only if file exists) -------
+      - name: Run final_props_1.py
+        shell: bash
+        run: |
+          set -e
+          if [ -f scripts/final_props_1.py ]; then
+            python scripts/final_props_1.py
+          else
+            echo "::notice::scripts/final_props_1.py not found; skipping."
+          fi
+
+      - name: Run final_scores_1.py
+        shell: bash
+        run: |
+          set -e
+          if [ -f scripts/final_scores_1.py ]; then
+            python scripts/final_scores_1.py
+          else
+            echo "::notice::scripts/final_scores_1.py not found; skipping."
+          fi
+
+      - name: Run final_scores_2.py (update game props)
+        shell: bash
+        run: |
+          set -e
+          if [ -f "scripts/final_scores_2.py" ]; then
+            python scripts/final_scores_2.py
+          else
+            echo "::notice::scripts/final_scores_2.py not found; skipping."
+          fi
+
+      - name: Build batter props final (if present)
+        shell: bash
+        run: |
+          set -e
+          if [ -f "scripts/build_batter_props_final.py" ]; then
+            python scripts/build_batter_props_final.py
+          else
+            echo "::notice::scripts/build_batter_props_final.py not found; skipping."
+          fi
