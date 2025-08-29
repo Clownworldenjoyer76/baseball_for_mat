@@ -1,84 +1,152 @@
-# scripts/final_props_1.py
-from __future__ import annotations
+name: Build Batter Projections & Final Props
 
-from pathlib import Path
-import pandas as pd
-from datetime import date
+on:
+  workflow_dispatch:
 
-IN_PROJ = Path("data/_projections/batter_props_projected.csv")
-OUT_FINAL = Path("data/batter_props_final.csv")
+permissions:
+  contents: write
 
-TODAY = pd.Timestamp(date.today()).normalize()
+jobs:
+  build-and-finalize:
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+      PYTHONDONTWRITEBYTECODE: "1"
 
-REQUIRED_PROJ_COLS = {
-    "player_id", "name", "team",
-    # at least one of these probs must exist
-    "prob_hits_over_1p5", "prob_tb_over_1p5", "prob_hr_over_0p5",
-}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
 
-def _read_csv_any(p: Path) -> pd.DataFrame:
-    if not p.exists():
-        raise SystemExit(f"❌ Missing input: {p}")
-    df = pd.read_csv(p)
-    df.columns = df.columns.str.strip()
-    return df
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-def _ensure_date(df: pd.DataFrame) -> pd.DataFrame:
-    if "date" not in df.columns or df["date"].isna().all():
-        df = df.copy()
-        df["date"] = TODAY.date()
-    # normalize to date type
-    df["date"] = pd.to_datetime(df["date"]).dt.date
-    return df
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+          else
+            python -m pip install "pandas==2.2.2" numpy
+          fi
 
-def main() -> None:
-    z = _read_csv_any(IN_PROJ)
-    have = set(z.columns)
+      - name: Git config
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git config --global pull.rebase false
 
-    needed_identity = {"player_id", "name", "team"}
-    if not needed_identity.issubset(have):
-        missing = needed_identity - have
-        raise SystemExit(f"❌ {IN_PROJ} missing id columns: {sorted(missing)}")
+      # ---------- Upstream: build batter projections ----------
+      - name: Show inputs for projections
+        run: |
+          ls -l data/end_chain/final || true
+          echo "Preview bat_today_final.csv (first 15 lines):"
+          sed -n '1,15p' data/end_chain/final/bat_today_final.csv || true
 
-    # pick only probability columns that exist
-    prob_cols = [c for c in ["prob_hits_over_1p5","prob_tb_over_1p5","prob_hr_over_0p5"] if c in z.columns]
-    if not prob_cols:
-        raise SystemExit("❌ No probability columns found in projections.")
+      - name: Snapshot pre-run hashes
+        id: prehash
+        run: |
+          set -e
+          for f in \
+            data/_projections/batter_props_projected.csv \
+            data/bets/player_props_history.csv \
+            data/bets/game_props_history.csv
+          do
+            if [ -f "$f" ]; then
+              echo "$(sha256sum "$f")"
+            else
+              echo "MISSING $f"
+            fi
+          done > prehash.txt
+          cat prehash.txt
 
-    z = _ensure_date(z)
+      - name: Run project_batter_props.py (upstream probabilities)
+        run: python -B scripts/project_batter_props.py
 
-    # Filter to today's slate
-    z_today = z[pd.to_datetime(z["date"]).dt.date == TODAY.date()].copy()
-    if z_today.empty:
-        # If projections have no date, fallback already filled with today, else warn.
-        z_today = z.copy()
+      - name: Validate probability spread (projected)
+        run: |
+          python - << 'PY'
+          import pandas as pd, sys
+          p = "data/_projections/batter_props_projected.csv"
+          df = pd.read_csv(p)
+          prob_cols = [c for c in ["prob_hits_over_1p5","prob_hr_over_0p5","prob_tb_over_1p5"] if c in df.columns]
+          if not prob_cols:
+            print("No upstream prob_* columns present (ok if script was not updated yet)."); sys.exit(0)
+          s = pd.concat([df[c].dropna() for c in prob_cols], ignore_index=True)
+          if s.empty or s.nunique() < 10:
+            print("Upstream probabilities look too flat."); print(s.describe()); sys.exit(1)
+          print("Upstream probability spread looks OK.")
+          PY
 
-    # Wide -> long
-    long_rows = []
-    for prop_col in prob_cols:
-        tmp = z_today[["date","player_id","name","team", prop_col]].copy()
-        tmp.rename(columns={prop_col: "over_probability"}, inplace=True)
-        tmp["prop"] = prop_col  # keep the same token; downstream can map labels if needed
-        long_rows.append(tmp)
+      # ---------- Final: build history ----------
+      - name: Run final_props_1.py
+        run: |
+          python -m py_compile scripts/final_props_1.py
+          python -B scripts/final_props_1.py
 
-    final = pd.concat(long_rows, ignore_index=True)
-    # clean numeric
-    final["over_probability"] = pd.to_numeric(final["over_probability"], errors="coerce")
+      - name: Run final_scores_1.py
+        run: |
+          python -m py_compile scripts/final_scores_1.py
+          python -B scripts/final_scores_1.py
 
-    # keep only sane rows
-    final = final.dropna(subset=["over_probability"])
-    final = final[(final["over_probability"] >= 0) & (final["over_probability"] <= 1)]
+      # ---------- NEW: derive proj_home_score / proj_away_score and totals/favorite ----------
+      - name: Run final_scores_2.py (update game totals & favorite)
+        run: |
+          python -m py_compile scripts/final_scores_2.py
+          python -B scripts/final_scores_2.py
 
-    # Limit to **max 5 props per player** (today only)
-    final.sort_values(["player_id","over_probability"], ascending=[True, False], inplace=True)
-    final = final.groupby("player_id", as_index=False, group_keys=False).head(5)
+      - name: Show deltas & tails
+        run: |
+          set -e
+          echo "Post-run hashes:"
+          for f in \
+            data/_projections/batter_props_projected.csv \
+            data/bets/player_props_history.csv \
+            data/bets/game_props_history.csv
+          do
+            if [ -f "$f" ]; then
+              echo "$(sha256sum "$f")"
+            else
+              echo "MISSING $f"
+            fi
+          done > posthash.txt
+          cat posthash.txt
+          echo
+          echo "Diff hashes:"
+          (diff -u prehash.txt posthash.txt || true)
+          echo
+          echo "Tail of batter_props_projected.csv:"; tail -n 5 data/_projections/batter_props_projected.csv || true
+          echo
+          echo "Tail of player_props_history.csv:";  tail -n 5 data/bets/player_props_history.csv || true
+          echo
+          echo "Tail of game_props_history.csv:";    tail -n 5 data/bets/game_props_history.csv || true
 
-    # Ensure column order
-    final = final[["date","player_id","name","team","prop","over_probability"]]
+      - name: Commit and push changes (rebase if remote advanced)
+        shell: bash
+        run: |
+          set -e
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          git fetch origin "$BRANCH"
+          git pull --rebase --autostash origin "$BRANCH"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Automated: update projections, props history, and final scores"
+          git push origin "HEAD:$BRANCH"
 
-    OUT_FINAL.parent.mkdir(parents=True, exist_ok=True)
-    final.to_csv(OUT_FINAL, index=False)
-    print(f"✅ Wrote {len(final)} rows → {OUT_FINAL}")
-
-if __name__ == "__main__":
-    main()
+      - name: Upload artifacts (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: props-output
+          path: |
+            data/_projections/batter_props_projected.csv
+            data/bets/player_props_history.csv
+            data/bets/game_props_history.csvm
