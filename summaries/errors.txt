@@ -1,0 +1,45 @@
+❌ apply_weather_adjustment ERROR (2025-08-29 07:34:45 PM EDT):
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 128, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 110, in main
+    wx_long = _build_weather_long()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 78, in _build_weather_long
+    wx_long = pd.concat([home_long, away_long], ignore_index=True)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/concat.py", line 395, in concat
+    return op.get_result()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/concat.py", line 680, in get_result
+    indexers[ax] = obj_labels.get_indexer(new_labels)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3892, in get_indexer
+    raise InvalidIndexError(self._requires_unique_msg)
+pandas.errors.InvalidIndexError: Reindexing only valid with uniquely valued Index objects
+
+---
+
+❌ apply_park_adjustment ERROR (2025-08-29 07:34:45 PM EDT):
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'Park Factor_y'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 120, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 104, in main
+    adjusted_home = apply_park_adjustments(batters_home, games, "home")
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 61, in apply_park_adjustments
+    df.loc[mask, "Park Factor"] = df.loc[mask].merge(pf, on="home_team_key", how="left")["Park Factor_y"].values
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'Park Factor_y'
+
+---
+
