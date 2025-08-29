@@ -74,7 +74,6 @@ jobs:
                 "data/temp_inputs/todaysgames_normalized_copy.csv" \
                 "data/adjusted/batters_home.csv")
             elif [[ "$SCRIPT" == "normalize_pitcher_home_away.py" ]]; then
-              # REQUIRED ARGS: <pitchers_input_path> <games_input_path> <output_home_path> <output_away_path>
               CMD=(python "scripts/${SCRIPT}" \
                 "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" \
                 "data/temp_inputs/todaysgames_normalized_copy.csv" \
@@ -120,15 +119,22 @@ jobs:
           run_step commit_split_batters.py
           run_step normalize_pitcher_home_away.py
           run_step pitcherfilecleanup.py
+
+          # ✅ Build MLB schedule early so park/weather can use it
+          run_step build_mlb_sched.py
+
           run_step generate_weather_csv.py
           run_step lineupcleaned.py
           run_step filter_today_batters.py
           run_step get_weather_data.py
           run_step weather_data_fix.py
+
+          # park & weather use schedule now available in data/bets/mlb_sched.csv
           run_step apply_weather_adjustment.py
           run_step apply_park_adjustment.py
           run_step combine_weather_park_home.py
           run_step combine_weather_park_away.py
+
           run_step normalize_pitcher_weather_outputs.py
           run_step fix_away_team_column.py
           run_step preprocess_pitcher_weather_park_away.py
@@ -142,7 +148,7 @@ jobs:
           run_step prep_merge.py
           run_step clean_and_preprocess_games.py
 
-          # ⛓️ Attach pitcher IDs immediately after games are cleaned
+          # Attach pitcher IDs immediately after games are cleaned
           run_step attach_pitcher_ids.py
 
           run_step normalize_pitchers_xtra.py
@@ -203,6 +209,7 @@ jobs:
           git add data/adjusted/*.csv || echo "No adjusted files changed"
           git add data/end_chain/**/*.csv || echo "No end_chain files changed"
           git add data/_projections/*.csv || echo "No projections files changed"
+          git add data/bets/*.csv || echo "No bets files changed"
           git add summaries/summary.txt || echo "summary not found"
           git commit -m "Commit processed data + summary $(TZ='America/New_York' date +"%Y-%m-%d %H:%M:%S")" || echo "Nothing to commit"
           git push --force || echo "Nothing to push"
