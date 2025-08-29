@@ -36,16 +36,13 @@ def _build_weather_long() -> pd.DataFrame:
     _require(sched, ["home_team","away_team"], SCHED_FILE)
     _require(wx,   ["home_team","away_team"], WEATHER_FILE)
 
-    # Detect venue columns (schedule vs. weather)
     sched_venue = "venue_name" if "venue_name" in sched.columns else ("venue" if "venue" in sched.columns else None)
     wx_venue    = "venue" if "venue" in wx.columns else ("venue_name" if "venue_name" in wx.columns else None)
 
-    # Normalize teams for stable joins
     for c in ("home_team","away_team"):
         if c in sched.columns: sched[c] = sched[c].astype(str).str.strip()
         if c in wx.columns:    wx[c]    = wx[c].astype(str).str.strip()
 
-    # Merge schedule ↔ weather (prefer venue-aware; fallback to teams-only)
     if sched_venue and wx_venue:
         wx_sched = sched.merge(
             wx,
@@ -63,19 +60,29 @@ def _build_weather_long() -> pd.DataFrame:
         "temperature","wind_speed","wind_direction",
         "humidity","precipitation","condition","notes",
         "game_time_et","fetched_at","weather_factor",
-        "home_team","away_team",
+        # team keys handled separately below
     ]
-    for c in keep_candidates:
-        if c not in wx_sched.columns:
-            wx_sched[c] = pd.NA
+    keep_base = [c for c in keep_candidates if c in wx_sched.columns]
 
-    home_long = wx_sched[keep_candidates + ["home_team"]].rename(columns={"home_team":"team"}).copy()
+    # Build home_long without away_team; rename home_team -> team
+    cols_home = keep_base + (["home_team"] if "home_team" in wx_sched.columns else [])
+    home_long = wx_sched[cols_home].copy()
+    if "home_team" in home_long.columns:
+        home_long = home_long.rename(columns={"home_team":"team"})
     home_long["side"] = "home"
 
-    away_long = wx_sched[keep_candidates + ["away_team"]].rename(columns={"away_team":"team"}).copy()
+    # Build away_long without home_team; rename away_team -> team
+    cols_away = keep_base + (["away_team"] if "away_team" in wx_sched.columns else [])
+    away_long = wx_sched[cols_away].copy()
+    if "away_team" in away_long.columns:
+        away_long = away_long.rename(columns={"away_team":"team"})
     away_long["side"] = "away"
 
-    wx_long = pd.concat([home_long, away_long], ignore_index=True)
+    # Ensure unique columns before concat
+    home_long = home_long.loc[:, ~home_long.columns.duplicated()]
+    away_long = away_long.loc[:, ~away_long.columns.duplicated()]
+
+    wx_long = pd.concat([home_long, away_long], ignore_index=True, sort=False)
     wx_long["team_key"] = wx_long["team"].map(_norm)
     return wx_long
 
@@ -113,7 +120,6 @@ def main() -> None:
     adj_home = _attach_weather(bat_home, "home", wx_long)
     adj_away = _attach_weather(bat_away, "away", wx_long)
 
-    # Drop any players whose team is not scheduled today
     adj_home = adj_home[adj_home["team"].map(_norm).isin(sched_teams)].reset_index(drop=True)
     adj_away = adj_away[adj_away["team"].map(_norm).isin(sched_teams)].reset_index(drop=True)
 
