@@ -121,7 +121,7 @@ jobs:
           run_step pitcherfilecleanup.py
 
           # ✅ Build MLB schedule early so park/weather can use it
-          run_step build_mlb_sched.py
+          run_step bet_prep_1.py
 
           run_step generate_weather_csv.py
           run_step lineupcleaned.py
