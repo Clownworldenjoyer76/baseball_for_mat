@@ -1,151 +1,115 @@
 # scripts/append_player_history_from_prep.py
 from __future__ import annotations
 
-import argparse
 import sys
+from datetime import datetime
 from pathlib import Path
-from datetime import date
+
 import pandas as pd
-import numpy as np
 
 
-# ---------- IO ----------
-def _read_csv_any(path: str | Path) -> pd.DataFrame:
-    p = Path(path)
-    if not p.exists():
-        raise FileNotFoundError(f"Prep CSV not found at '{path}'. Provide the correct path via --prep-csv.")
-    return pd.read_csv(p)
+# ---------- Paths ----------
+SRC_PATH = Path("data/_projections/batter_props_projected.csv")
+HIST_PATH = Path("data/history/player_props_history.csv")
 
 
-def _write_csv(df: pd.DataFrame, path: str | Path) -> None:
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(p, index=False)
-
-
-# ---------- Normalization ----------
-ALIASES = {
-    # target -> possible source names (lowercased/stripped)
-    "player_id": {"player_id", "playerid", "mlb_id", "bat_mlbid", "id"},
-    "name": {"name", "player", "player_name"},
-    "team": {"team", "tm"},
-    "prop": {"prop", "market", "stat"},
-    "over_probability": {"over_probability", "prob_over", "over_prob", "over", "p_over"},
-    "date": {"date", "game_date"},
-}
-
-REQUIRED_MIN = {"player_id", "name", "team", "prop", "over_probability"}  # 'date' is filled if missing
-
-
-def _std_cols(df: pd.DataFrame) -> pd.DataFrame:
+def _std(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.columns = df.columns.str.strip()
-    low = {c.lower().strip(): c for c in df.columns}
+    df.columns = df.columns.map(str).str.strip()
+    return df
 
-    def pick_one(canon: str) -> str | None:
-        for alias in ALIASES[canon]:
-            if alias in low:
-                return low[alias]
+
+def _read_csv_safe(p: Path) -> pd.DataFrame | None:
+    if not p.exists():
+        return None
+    try:
+        return _std(pd.read_csv(p))
+    except Exception as e:
+        print(f"Could not read {p}: {e}", file=sys.stderr)
         return None
 
-    rename = {}
-    for tgt in ["player_id", "name", "team", "prop", "over_probability", "date"]:
-        src = pick_one(tgt)
-        if src and src != tgt:
-            rename[src] = tgt
-    if rename:
-        df = df.rename(columns=rename)
 
-    # ensure required types
-    if "over_probability" in df.columns:
-        df["over_probability"] = pd.to_numeric(df["over_probability"], errors="coerce")
-
-    return df
-
-
-def _ensure_min_columns(df: pd.DataFrame, today_str: str) -> pd.DataFrame:
+def _ensure_date_column(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-
-    # Fill/format date
-    if "date" not in df.columns:
-        df["date"] = today_str
-    else:
-        # coerce any datetime-like into YYYY-MM-DD
-        try:
-            df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date.astype("string")
-        except Exception:
-            df["date"] = df["date"].astype("string")
-        df["date"] = df["date"].fillna(today_str)
-        # normalize like 2025-08-24
-        df["date"] = df["date"].astype(str).str[:10]
-
-    missing = [c for c in REQUIRED_MIN if c not in df.columns]
-    if missing:
-        raise ValueError(
-            "Prep file is missing required column(s): "
-            f"{missing}. At minimum, the prep CSV must include: {sorted(REQUIRED_MIN)} "
-            "(date is auto-filled if absent)."
-        )
-
-    # clean basic fields
-    for c in ["player_id", "name", "team", "prop"]:
-        if c in df.columns:
-            df[c] = df[c].astype(str).str.strip()
-
-    # probability safety
-    df["over_probability"] = df["over_probability"].clip(lower=0.0, upper=1.0)
-
+    if "date" not in df.columns or df["date"].isna().all():
+        # Fill with today's date in YYYY-MM-DD
+        df["date"] = datetime.now().astimezone().date().isoformat()
+    # Normalize to YYYY-MM-DD if strings like 2025/08/23 appear
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date.astype(str)
     return df
 
 
-# ---------- Main ----------
-def run(prep_csv: str | Path, out_csv: str | Path) -> None:
-    today_str = date.today().isoformat()
-
-    df = _read_csv_any(prep_csv)
-    df = _std_cols(df)
-    df = _ensure_min_columns(df, today_str)
-
-    # keep only essential columns plus anything else you already had
-    cols = ["date", "player_id", "name", "team", "prop", "over_probability"]
-    keep = [c for c in cols if c in df.columns]
-    base = df[keep].copy()
-
-    # append/deduplicate
-    p_out = Path(out_csv)
-    if p_out.exists():
-        hist = pd.read_csv(p_out)
-        # standardize history too
-        hist = _std_cols(hist)
-        hist = _ensure_min_columns(hist, today_str)
-        base = pd.concat([hist, base], ignore_index=True)
-
-    # de-dupe on unique key (date, player_id, prop) keep last
-    base = (
-        base.sort_index()
-        .drop_duplicates(subset=["date", "player_id", "prop"], keep="last")
-        .reset_index(drop=True)
-    )
-
-    _write_csv(base, p_out)
-    print(f"✅ Appended {len(df)} rows (after merge: {len(base)}) -> {p_out}")
+def _ensure_timestamp(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    if "timestamp" not in df.columns or df["timestamp"].isna().all():
+        df["timestamp"] = datetime.now().astimezone().isoformat()
+    return df
 
 
-def main() -> None:
-    ap = argparse.ArgumentParser(description="Append player history from prep CSV.")
-    ap.add_argument("--prep-csv", default="data/batter_props_final.csv", help="Path to the prepared daily props CSV.")
-    ap.add_argument("--out-csv", default="data/player_history.csv", help="Path to the accumulated player history CSV.")
-    args = ap.parse_args()
+def _dedupe_on_keys(df: pd.DataFrame, keys: list[str]) -> pd.DataFrame:
+    df = df.copy()
+    # Keep the last occurrence (newest write) for each key set
+    return df.drop_duplicates(subset=keys, keep="last")
 
-    try:
-        run(prep_csv=args.prep_csv, out_csv=args.out_csv)
-    except FileNotFoundError as e:
-        print(f"ERROR: {e}", file=sys.stderr)
-        sys.exit(1)
-    except ValueError as e:
-        print(f"ERROR: {e}", file=sys.stderr)
-        sys.exit(1)
+
+def main() -> int:
+    # Load source
+    src = _read_csv_safe(SRC_PATH)
+    if src is None or src.empty:
+        print(f"Source not found or empty: {SRC_PATH}", file=sys.stderr)
+        return 1
+
+    # Standardize/ensure required cols
+    src = _ensure_date_column(src)
+    src = _ensure_timestamp(src)
+
+    # Keys for dedupe into history
+    keys = []
+    for k in ["player_id", "date"]:
+        if k in src.columns:
+            keys.append(k)
+    # Fallback if player_id is missing, use name+team+date
+    if not keys:
+        alt = [k for k in ["name", "team", "date"] if k in src.columns]
+        if alt:
+            keys = alt
+        else:
+            # If absolutely nothing to key on, create a synthetic row_id
+            src = src.copy()
+            src["row_id"] = range(len(src))
+            keys = ["row_id"]
+
+    # Load existing history (if any)
+    hist = _read_csv_safe(HIST_PATH)
+
+    if hist is None or hist.empty:
+        # First write: just ensure directories and write src
+        HIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+        out = _dedupe_on_keys(src, keys)
+        out.to_csv(HIST_PATH, index=False)
+        print(f"Wrote {len(out)} rows to new history file -> {HIST_PATH}")
+        return 0
+
+    # Align columns: union of cols, fill missing with NA
+    all_cols = list(dict.fromkeys(list(hist.columns) + list(src.columns)))
+    hist_u = hist.reindex(columns=all_cols)
+    src_u = src.reindex(columns=all_cols)
+
+    # Append and dedupe on keys
+    combined = pd.concat([hist_u, src_u], ignore_index=True)
+    combined = _dedupe_on_keys(combined, keys)
+
+    # Sort for readability: by date then player_id/name if present
+    sort_cols = [c for c in ["date", "player_id", "name", "team"] if c in combined.columns]
+    if sort_cols:
+        combined = combined.sort_values(sort_cols).reset_index(drop=True)
+
+    # Overwrite history file
+    HIST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(HIST_PATH, index=False)
+    print(f"Appended {len(src)} rows, wrote {len(combined)} total rows -> {HIST_PATH}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
