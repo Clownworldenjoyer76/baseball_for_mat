@@ -96,6 +96,11 @@ jobs:
       # -------------------------------
       # STEP 4: build_batter_props_final
       # -------------------------------
+      - name: Build expanded batter props (per-game)
+        run: |
+          python -m py_compile scripts/build_expanded_batter_props.py
+          python -B scripts/build_expanded_batter_props.py
+
       - name: Run build_batter_props_final.py
         run: python scripts/build_batter_props_final.py
 
