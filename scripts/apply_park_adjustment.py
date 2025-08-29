@@ -32,42 +32,39 @@ def apply_park_adjustments(batters: pd.DataFrame, games: pd.DataFrame, label: st
     if label not in ("home","away"):
         raise ValueError("label must be 'home' or 'away'")
 
-    # Merge time_of_day by home team
     g = games.copy()
     g["home_team_key"] = g["home_team"].map(_norm)
 
     df = batters.copy()
     df["team_key"] = df["team"].map(_norm)
 
-    # Determine which home team to use for park factor
     if label == "home":
         df["home_team_key"] = df["team_key"]
     else:
-        # away batters: need their opponent home team; if 'opponent' exists, use it, else fallback by matchup in schedule when available
         if "opponent" in df.columns:
             df["home_team_key"] = df["opponent"].map(_norm)
         else:
-            # best-effort: leave empty; no-op join will yield NaN factors
             df["home_team_key"] = pd.NA
 
     df = df.merge(g[["home_team_key","time_of_day"]], on="home_team_key", how="left")
 
-    # Load park factors by time_of_day and join
+    if "Park Factor" not in df.columns:
+        df["Park Factor"] = pd.NA
+
     for tod in ("day","night"):
         pf = load_park_factors(tod)
         pf["home_team_key"] = pf["home_team"].map(_norm)
         pf = pf[["home_team_key","Park Factor"]]
         mask = df["time_of_day"].eq(tod)
-        df.loc[mask, "Park Factor"] = df.loc[mask].merge(pf, on="home_team_key", how="left")["Park Factor_y"].values
+        if mask.any():
+            tmp = df.loc[mask, ["home_team_key"]].merge(pf, on="home_team_key", how="left")
+            df.loc[mask, "Park Factor"] = tmp["Park Factor"].values
 
-    # Compute adjusted wOBA (park)
     if "woba" not in df.columns:
         raise ValueError("Missing 'woba' column in batters input")
     df["adj_woba_park"] = df["woba"]
-    if "Park Factor" in df.columns:
-        pf_num = pd.to_numeric(df["Park Factor"], errors="coerce")
-        # Scale around 1.00 (e.g., 1.05 → +5%)
-        df.loc[pf_num.notna(), "adj_woba_park"] = df.loc[pf_num.notna(), "woba"] * pf_num
+    pf_num = pd.to_numeric(df["Park Factor"], errors="coerce")
+    df.loc[pf_num.notna(), "adj_woba_park"] = df.loc[pf_num.notna(), "woba"] * pf_num
 
     return df
 
@@ -102,14 +99,12 @@ def main():
 
     batters_home = pd.read_csv("data/adjusted/batters_home.csv")
     adjusted_home = apply_park_adjustments(batters_home, games, "home")
-    # Drop non-scheduled teams
     adjusted_home = adjusted_home[adjusted_home["team"].map(_norm).isin(sched_teams)].reset_index(drop=True)
     print("Home batters adjusted:", len(adjusted_home))
     save_outputs(adjusted_home, "home")
 
     batters_away = pd.read_csv("data/adjusted/batters_away.csv")
     adjusted_away = apply_park_adjustments(batters_away, games, "away")
-    # Drop non-scheduled teams
     adjusted_away = adjusted_away[adjusted_away["team"].map(_norm).isin(sched_teams)].reset_index(drop=True)
     print("Away batters adjusted:", len(adjusted_away))
     save_outputs(adjusted_away, "away")
