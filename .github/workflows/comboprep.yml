@@ -1,4 +1,4 @@
-name: Combined Bet Prep + Build Batter Props
+name: Combo Prep
 
 on:
   workflow_dispatch:
@@ -7,112 +7,49 @@ permissions:
   contents: write
 
 jobs:
-  run:
+  combo_prep:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
 
     steps:
-      - name: Checkout repository
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
           persist-credentials: true
           fetch-depth: 0
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install "pandas==2.2.2" numpy
-
-      - name: Git config (safe directory + identity)
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global user.name  "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git config --global pull.rebase false
-
-      # -------------------------------
-      # STEP 1: bet_prep_1 (mlb_sched)
-      # -------------------------------
-      - name: Run bet_prep_1.py
-        run: python scripts/bet_prep_1.py
-
-      - name: Commit & push (mlb_sched.csv)
-        shell: bash
-        run: |
-          set -e
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No mlb_sched changes to commit."
-            exit 0
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install pandas requests
           fi
-          git commit -m "bet_prep_1: update mlb_sched.csv"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git push origin "HEAD:$BRANCH"
 
-      # -------------------------------
-      # STEP 2: bet_prep_2 (batter props - bets)
-      # -------------------------------
-      - name: Run bet_prep_2.py
-        run: python scripts/bet_prep_2.py
-
-      - name: Commit & push (batter_props_bets.csv)
-        shell: bash
+      - name: Run scripts in combo prep
         run: |
-          set -e
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No batter_props_bets changes to commit."
-            exit 0
-          fi
-          git commit -m "bet_prep_2: update batter_props_bets.csv"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git push origin "HEAD:$BRANCH"
+          set -euo pipefail
 
-      # -------------------------------
-      # STEP 3: bet_prep_3 (pitcher props - bets)
-      # -------------------------------
-      - name: Run bet_prep_3.py
-        run: python scripts/bet_prep_3.py
+          python scripts/merge_batters_home_away.py
+          python scripts/add_weather_factors.py
+          python scripts/add_park_factors.py
+          python scripts/combine_weather_park_outputs.py
+          python scripts/finalize_batters_context.py
 
-      - name: Commit & push (pitcher_props_bets.csv)
-        shell: bash
+      - name: Commit combo prep outputs
         run: |
-          set -e
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No pitcher_props_bets changes to commit."
-            exit 0
-          fi
-          git commit -m "bet_prep_3: update pitcher_props_bets.csv"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git push origin "HEAD:$BRANCH"
-
-      # -------------------------------
-      # STEP 4: build_batter_props_final
-      # -------------------------------
-      - name: Build expanded batter props (per-game)
-        run: |
-          python -m py_compile scripts/build_expanded_batter_props.py
-          python -B scripts/build_expanded_batter_props.py
-
-      - name: Run build_batter_props_final.py
-        run: python scripts/build_batter_props_final.py
-
-      - name: Commit & push (batter_props_final.csv)
-        shell: bash
-        run: |
-          set -e
-          git add -A
-          if git diff --staged --quiet; then
-            echo "No batter_props_final changes to commit."
-            exit 0
-          fi
-          git commit -m "build_batter_props_final: update batter_props_final.csv"
-          BRANCH="${GITHUB_REF_NAME:-main}"
-          git push origin "HEAD:$BRANCH"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/adjusted/*.csv || echo "No adjusted files changed"
+          git add data/end_chain/**/*.csv || echo "No end_chain files changed"
+          git add data/_projections/*.csv || echo "No projections files changed"
+          git commit -m "Update combo prep outputs" || echo "Nothing to commit"
+          git push || echo "Nothing to push"
