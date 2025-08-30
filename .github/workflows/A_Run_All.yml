@@ -123,16 +123,16 @@ jobs:
           # ✅ Build MLB schedule early so park/weather can use it
           run_step bet_prep_1.py
 
-          # ✅ Attach game IDs to batter files before adjustments
-          run_step attach_game_ids.py
-
           run_step generate_weather_csv.py
           run_step lineupcleaned.py
           run_step filter_today_batters.py
           run_step get_weather_data.py
           run_step weather_data_fix.py
 
-          # park & weather now use batters with game_id
+          # ✅ Attach game IDs immediately before adjustments
+          run_step attach_game_ids.py
+
+          # Adjustments that require game_id/date
           run_step apply_weather_adjustment.py
           run_step apply_park_adjustment.py
           run_step combine_weather_park_home.py
