@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
+# /home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py
 import pandas as pd
 import requests
 import time
 from datetime import datetime
 from requests.exceptions import RequestException
+from pathlib import Path
 
 try:
-    # Python 3.9+
     from zoneinfo import ZoneInfo
 except Exception:
-    ZoneInfo = None  # fallback if unavailable
+    ZoneInfo = None
 
-INPUT_FILE = "data/weather_input.csv"
-OUTPUT_FILE = "data/weather_adjustments.csv"
-API_KEY = "45d9502513854b489c3162411251907"
-FORECAST_URL = "https://api.weatherapi.com/v1/forecast.json"  # hourly forecast
+INPUT_FILE   = "data/weather_input.csv"
+OUTPUT_FILE  = "data/weather_adjustments.csv"
+MAP_FILE     = "data/Data/team_name_map.csv"  # columns: name, team
+API_KEY      = "45d9502513854b489c3162411251907"
+FORECAST_URL = "https://api.weatherapi.com/v1/forecast.json"
 
 def timestamp():
     return datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
@@ -28,16 +30,26 @@ _GAME_TIME_FORMATS = [
     "%I:%M %p",
 ]
 
+def _require(df: pd.DataFrame, cols: list[str], where: str):
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"{where}: missing columns {missing}")
+
+def _norm(s: str) -> str:
+    return str(s).strip().lower()
+
+def _build_team_map(path: str) -> dict:
+    df = pd.read_csv(path)
+    _require(df, ["name", "team"], path)
+    return { _norm(n): str(t).strip() for n, t in zip(df["name"], df["team"]) }
+
+def _canon(series: pd.Series, name_map: dict) -> pd.Series:
+    return series.map(lambda s: name_map.get(_norm(s), str(s).strip()))
+
 def parse_game_time_et(raw_time, raw_date=None):
-    """
-    Parse game_time given in ET. Returns an aware datetime in America/New_York
-    if ZoneInfo is available; otherwise returns a naive ET datetime.
-    """
     s = (str(raw_time) or "").strip()
     if not s or s.lower() in {"nan", "na"}:
         return None
-
-    # Determine a base date in ET
     base_date = None
     if raw_date:
         for dfmt in ("%Y-%m-%d", "%m/%d/%Y"):
@@ -47,12 +59,8 @@ def parse_game_time_et(raw_time, raw_date=None):
             except Exception:
                 continue
     if base_date is None:
-        if ZoneInfo:
-            base_date = datetime.now(ZoneInfo("America/New_York")).date()
-        else:
-            base_date = datetime.now().date()
-
-    # Try formats
+        base_date = (datetime.now(ZoneInfo("America/New_York")).date()
+                     if ZoneInfo else datetime.now().date())
     parsed_dt = None
     for fmt in _GAME_TIME_FORMATS:
         try:
@@ -63,15 +71,10 @@ def parse_game_time_et(raw_time, raw_date=None):
             break
         except Exception:
             continue
-
     if parsed_dt is None:
         return None
-
-    if ZoneInfo:
-        return parsed_dt.replace(tzinfo=ZoneInfo("America/New_York"))
-    else:
-        # naive ET (best effort)
-        return parsed_dt
+    return (parsed_dt.replace(tzinfo=ZoneInfo("America/New_York"))
+            if ZoneInfo else parsed_dt)
 
 def fetch_forecast(lat, lon, days=3):
     url = f"{FORECAST_URL}?key={API_KEY}&q={lat},{lon}&days={days}&aqi=no&alerts=no"
@@ -87,33 +90,24 @@ def fetch_forecast(lat, lon, days=3):
     return None
 
 def pick_hour_block(forecast_json, target_local_dt, tzinfo):
-    """
-    Pick the hourly block closest to target_local_dt.
-    WeatherAPI hour['time'] is a naive LOCAL string; we attach tzinfo before diffing.
-    """
     if not forecast_json:
         return None, None
     fdays = forecast_json.get("forecast", {}).get("forecastday", [])
-    best = None
-    best_diff = None
-    best_day_str = None
+    best, best_diff, best_day_str = None, None, None
     for day in fdays:
         for h in day.get("hour", []):
             try:
-                t = pd.to_datetime(h.get("time")).to_pydatetime()  # naive local
+                t = pd.to_datetime(h.get("time")).to_pydatetime()
                 if tzinfo is not None and t.tzinfo is None:
-                    t = t.replace(tzinfo=tzinfo)  # make it local-aware
+                    t = t.replace(tzinfo=tzinfo)
             except Exception:
                 continue
-            # Ensure both sides are same awareness
             if (t.tzinfo is None) != (target_local_dt.tzinfo is None):
-                # Fallback: drop tz if mismatch persists (shouldn't if tzinfo provided)
                 if t.tzinfo is not None:
                     t = t.replace(tzinfo=None)
-                if target_local_dt.tzinfo is not None:
-                    target_cmp = target_local_dt.replace(tzinfo=None)
-                else:
-                    target_cmp = target_local_dt
+                target_cmp = (target_local_dt.replace(tzinfo=None)
+                              if target_local_dt.tzinfo is not None
+                              else target_local_dt)
             else:
                 target_cmp = target_local_dt
             diff = abs((t - target_cmp).total_seconds())
@@ -130,13 +124,19 @@ def main():
         print(f"{timestamp()} ❌ Failed to read input file: {e}")
         return
 
-    # Normalize headers
     df.columns = [c.strip() for c in df.columns]
     expected = ["venue", "city", "latitude", "longitude", "is_dome",
                 "game_time", "home_team", "away_team"]
     for col in expected:
         if col not in df.columns:
             print(f"{timestamp()} ⚠️ Missing column: {col}")
+
+    # Canonicalize team names from source before any write
+    name_map = _build_team_map(MAP_FILE)
+    if "home_team" in df.columns:
+        df["home_team"] = _canon(df["home_team"], name_map)
+    if "away_team" in df.columns:
+        df["away_team"] = _canon(df["away_team"], name_map)
 
     print(f"{timestamp()} 🌍 Fetching weather for {len(df)} venues...")
     results = []
@@ -150,9 +150,8 @@ def main():
         home_team = row.get("home_team", "UNKNOWN")
         away_team = row.get("away_team", "UNKNOWN")
         game_time_raw = row.get("game_time", "")
-        game_date = row.get("game_date", None)  # optional
+        game_date = row.get("game_date", None)
 
-        # Coerce is_dome strings to bool
         if isinstance(is_dome, str):
             is_dome = is_dome.strip().lower() in {"true", "1", "yes", "y"}
 
@@ -162,13 +161,11 @@ def main():
             print(f"{timestamp()} ⚠️ Missing coordinates for {location}. Skipping.")
             continue
 
-        # Parse ET start time (ALWAYS ET)
         dt_et = parse_game_time_et(game_time_raw, game_date)
         if dt_et is None:
             print(f"{timestamp()} ⚠️ Unparsable ET game_time for {location}: '{game_time_raw}'. Using current ET.")
             dt_et = datetime.now(ZoneInfo("America/New_York")) if ZoneInfo else datetime.now()
 
-        # Fetch forecast (hourly) to get tz_id
         attempts, data = 0, None
         while attempts < 5 and data is None:
             data = fetch_forecast(lat, lon, days=3)
@@ -189,12 +186,7 @@ def main():
         else:
             local_tz = None
 
-        # Convert ET -> local tz (aware) when possible
-        if local_tz and dt_et.tzinfo is not None:
-            dt_local = dt_et.astimezone(local_tz)
-        else:
-            dt_local = dt_et  # fallback (may be naive)
-
+        dt_local = dt_et.astimezone(local_tz) if (local_tz and dt_et.tzinfo) else dt_et
         hour_block, matched_day = pick_hour_block(data, dt_local, local_tz)
         if not hour_block:
             print(f"{timestamp()} ⚠️ No hourly block found for {location} near {dt_local}.")
@@ -237,8 +229,14 @@ def main():
         return
 
     out_df = pd.DataFrame(results)
+
+    # Ensure final output team names are canonical
+    out_df["home_team"] = _canon(out_df["home_team"], name_map)
+    out_df["away_team"] = _canon(out_df["away_team"], name_map)
+
+    Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(OUTPUT_FILE, index=False)
     print(f"{timestamp()} ✅ Weather data written to {OUTPUT_FILE}")
-
+    
 if __name__ == "__main__":
     main()
