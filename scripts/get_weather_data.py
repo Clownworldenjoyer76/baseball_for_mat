@@ -14,7 +14,8 @@ except Exception:
 
 INPUT_FILE   = "data/weather_input.csv"
 OUTPUT_FILE  = "data/weather_adjustments.csv"
-MAP_FILE     = "data/Data/team_name_map.csv"  # columns: name, team
+SCHED_FILE   = "data/bets/mlb_sched.csv"          # schedule for completeness check
+MAP_FILE     = "data/Data/team_name_map.csv"      # columns: name, team
 API_KEY      = "45d9502513854b489c3162411251907"
 FORECAST_URL = "https://api.weatherapi.com/v1/forecast.json"
 
@@ -31,28 +32,28 @@ _GAME_TIME_FORMATS = [
 ]
 
 def _require(df: pd.DataFrame, cols: list[str], where: str):
-    missing = [c for c in cols if c not in df.columns]
-    if missing:
-        raise RuntimeError(f"{where}: missing columns {missing}")
+    miss = [c for c in cols if c not in df.columns]
+    if miss:
+        raise RuntimeError(f"{where}: missing columns {miss}")
 
 def _norm(s: str) -> str:
     return str(s).strip().lower()
 
 def _build_team_map(path: str) -> dict:
-    df = pd.read_csv(path)
-    _require(df, ["name", "team"], path)
-    return { _norm(n): str(t).strip() for n, t in zip(df["name"], df["team"]) }
+    m = pd.read_csv(path)
+    _require(m, ["name","team"], path)
+    return { _norm(n): str(t).strip() for n,t in zip(m["name"], m["team"]) }
 
 def _canon(series: pd.Series, name_map: dict) -> pd.Series:
     return series.map(lambda s: name_map.get(_norm(s), str(s).strip()))
 
 def parse_game_time_et(raw_time, raw_date=None):
     s = (str(raw_time) or "").strip()
-    if not s or s.lower() in {"nan", "na"}:
+    if not s or s.lower() in {"nan","na"}:
         return None
     base_date = None
     if raw_date:
-        for dfmt in ("%Y-%m-%d", "%m/%d/%Y"):
+        for dfmt in ("%Y-%m-%d","%m/%d/%Y"):
             try:
                 base_date = datetime.strptime(str(raw_date).strip(), dfmt).date()
                 break
@@ -65,7 +66,7 @@ def parse_game_time_et(raw_time, raw_date=None):
     for fmt in _GAME_TIME_FORMATS:
         try:
             dt = datetime.strptime(s, fmt)
-            if fmt in ("%H:%M", "%I:%M %p"):
+            if fmt in ("%H:%M","%I:%M %p"):
                 dt = datetime.combine(base_date, dt.time())
             parsed_dt = dt
             break
@@ -73,8 +74,7 @@ def parse_game_time_et(raw_time, raw_date=None):
             continue
     if parsed_dt is None:
         return None
-    return (parsed_dt.replace(tzinfo=ZoneInfo("America/New_York"))
-            if ZoneInfo else parsed_dt)
+    return parsed_dt.replace(tzinfo=ZoneInfo("America/New_York")) if ZoneInfo else parsed_dt
 
 def fetch_forecast(lat, lon, days=3):
     url = f"{FORECAST_URL}?key={API_KEY}&q={lat},{lon}&days={days}&aqi=no&alerts=no"
@@ -97,19 +97,15 @@ def pick_hour_block(forecast_json, target_local_dt, tzinfo):
     for day in fdays:
         for h in day.get("hour", []):
             try:
-                t = pd.to_datetime(h.get("time")).to_pydatetime()
+                t = pd.to_datetime(h.get("time")).to_pydatetime()  # naive local
                 if tzinfo is not None and t.tzinfo is None:
                     t = t.replace(tzinfo=tzinfo)
             except Exception:
                 continue
+            target_cmp = target_local_dt
             if (t.tzinfo is None) != (target_local_dt.tzinfo is None):
-                if t.tzinfo is not None:
-                    t = t.replace(tzinfo=None)
-                target_cmp = (target_local_dt.replace(tzinfo=None)
-                              if target_local_dt.tzinfo is not None
-                              else target_local_dt)
-            else:
-                target_cmp = target_local_dt
+                t = t.replace(tzinfo=None) if t.tzinfo is not None else t
+                target_cmp = target_local_dt.replace(tzinfo=None) if target_local_dt.tzinfo is not None else target_local_dt
             diff = abs((t - target_cmp).total_seconds())
             if best is None or diff < best_diff:
                 best, best_diff = h, diff
@@ -117,43 +113,54 @@ def pick_hour_block(forecast_json, target_local_dt, tzinfo):
     return best, best_day_str
 
 def main():
-    print(f"{timestamp()} 🔄 Reading input file...")
+    print(f"{timestamp()} 🔄 Reading input files...")
     try:
         df = pd.read_csv(INPUT_FILE)
     except Exception as e:
-        print(f"{timestamp()} ❌ Failed to read input file: {e}")
+        print(f"{timestamp()} ❌ Failed to read {INPUT_FILE}: {e}")
         return
 
+    # Standardize headers and required columns
     df.columns = [c.strip() for c in df.columns]
-    expected = ["venue", "city", "latitude", "longitude", "is_dome",
-                "game_time", "home_team", "away_team"]
+    expected = ["venue","city","latitude","longitude","is_dome","game_time","home_team","away_team"]
     for col in expected:
         if col not in df.columns:
             print(f"{timestamp()} ⚠️ Missing column: {col}")
 
-    # Canonicalize team names from source before any write
+    # Canonicalize team names from source
     name_map = _build_team_map(MAP_FILE)
-    if "home_team" in df.columns:
-        df["home_team"] = _canon(df["home_team"], name_map)
-    if "away_team" in df.columns:
-        df["away_team"] = _canon(df["away_team"], name_map)
+    if "home_team" in df.columns: df["home_team"] = _canon(df["home_team"], name_map)
+    if "away_team" in df.columns: df["away_team"] = _canon(df["away_team"], name_map)
+
+    # Completeness check against schedule (canonical)
+    try:
+        sched = pd.read_csv(SCHED_FILE, dtype=str)
+        _require(sched, ["game_id","date","home_team","away_team"], SCHED_FILE)
+        sched["home_team"] = _canon(sched["home_team"], name_map)
+        sched["away_team"] = _canon(sched["away_team"], name_map)
+        missing = sched.merge(df[["home_team","away_team"]], on=["home_team","away_team"], how="left", indicator=True)
+        missing = missing[missing["_merge"] == "left_only"][["date","home_team","away_team"]]
+        if len(missing) > 0:
+            print(f"{timestamp()} ⚠️ Weather input missing {len(missing)} scheduled game(s). They will have no weather rows.")
+    except Exception as e:
+        print(f"{timestamp()} ⚠️ Schedule check skipped: {e}")
 
     print(f"{timestamp()} 🌍 Fetching weather for {len(df)} venues...")
     results = []
 
     for _, row in df.iterrows():
-        venue = str(row.get("venue", "")).strip()
-        city = str(row.get("city", "")).strip()
-        lat = row.get("latitude", "")
-        lon = row.get("longitude", "")
+        venue = str(row.get("venue","")).strip()
+        city  = str(row.get("city","")).strip()
+        lat   = row.get("latitude","")
+        lon   = row.get("longitude","")
         is_dome = row.get("is_dome", False)
-        home_team = row.get("home_team", "UNKNOWN")
-        away_team = row.get("away_team", "UNKNOWN")
-        game_time_raw = row.get("game_time", "")
+        home_team = row.get("home_team","UNKNOWN")
+        away_team = row.get("away_team","UNKNOWN")
+        game_time_raw = row.get("game_time","")
         game_date = row.get("game_date", None)
 
         if isinstance(is_dome, str):
-            is_dome = is_dome.strip().lower() in {"true", "1", "yes", "y"}
+            is_dome = is_dome.strip().lower() in {"true","1","yes","y"}
 
         location = f"{venue}, {city}".strip(", ")
 
@@ -192,19 +199,19 @@ def main():
             print(f"{timestamp()} ⚠️ No hourly block found for {location} near {dt_local}.")
             continue
 
-        condition_text = (hour_block.get("condition") or {}).get("text", "Unknown")
+        condition_text = (hour_block.get("condition") or {}).get("text","Unknown")
         precip_in = hour_block.get("precip_in")
-        temp_f = hour_block.get("temp_f")
-        wind_mph = hour_block.get("wind_mph")
-        wind_dir = hour_block.get("wind_dir")
-        humidity = hour_block.get("humidity")
+        temp_f    = hour_block.get("temp_f")
+        wind_mph  = hour_block.get("wind_mph")
+        wind_dir  = hour_block.get("wind_dir")
+        humidity  = hour_block.get("humidity")
         matched_time = hour_block.get("time")
 
         notes = "Roof closed" if is_dome else "Roof open"
         if is_dome:
             precip_in = 0.0
-            wind_mph = 0.0
-            wind_dir = "CALM"
+            wind_mph  = 0.0
+            wind_dir  = "CALM"
 
         results.append({
             "venue": venue,
@@ -229,14 +236,13 @@ def main():
         return
 
     out_df = pd.DataFrame(results)
-
-    # Ensure final output team names are canonical
+    # Final canonicalization safety
     out_df["home_team"] = _canon(out_df["home_team"], name_map)
     out_df["away_team"] = _canon(out_df["away_team"], name_map)
 
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(OUTPUT_FILE, index=False)
     print(f"{timestamp()} ✅ Weather data written to {OUTPUT_FILE}")
-    
+
 if __name__ == "__main__":
     main()
