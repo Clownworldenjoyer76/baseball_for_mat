@@ -6,6 +6,7 @@ on:
 jobs:
   run-script:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -17,48 +18,117 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run roster fetch script
+      - name: Run scripts with unified debug + summary
+        shell: bash
         run: |
-          python scripts/fetch_rosters.py
+          set +e
 
-      - name: Normalize roster CSVs to team files
-        run: |
-          python scripts/normalize_rosters_to_team_csvs.py
+          mkdir -p summaries
+          STATUS_FILE="summaries/01_fetch_status.txt"
+          LOG_FILE="summaries/01_fetch_log.txt"
+          ERR_FILE="summaries/01_fetch_errors.txt"
+          SUMMARY_FILE="summaries/01_fetch_summary.txt"
+          : > "$STATUS_FILE"; : > "$LOG_FILE"; : > "$ERR_FILE"; : > "$SUMMARY_FILE"
 
-      - name: Force commit and push updated roster CSVs
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/rosters/*.csv
-          git add data/rosters/ready/*.csv
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update MLB rosters"
-          git push --force || echo "Nothing to push"
-        continue-on-error: true
+          ts() { TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
 
-      - name: Prepare team CSVs
-        run: |
-          python scripts/team_csvs_prep.py
+          run_step() {
+            local NAME="$1"
+            shift
+            local CMD=("$@")
 
-      - name: Force commit and push team_csvs
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/team_csvs/*.csv
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update team CSVs"
-          git push --force || echo "Nothing to push"
-        continue-on-error: true
+            echo "▶️ START: ${NAME} ($(ts))" | tee -a "$LOG_FILE"
 
-      - name: Build player-team master list
-        run: |
-          python scripts/build_player_team_master.py
+            # Group logs in GitHub UI
+            echo "::group::${NAME}"
 
-      - name: Force commit and push player_team_master
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add data/processed/player_team_master.csv
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update player_team_master"
-          git push --force || echo "Nothing to push"
-        continue-on-error: true
+            # Capture stdout/stderr separately
+            "${CMD[@]}" >> "$LOG_FILE" 2> step.err
+            local RC=$?
+
+            echo "::endgroup::"
+
+            if [ $RC -eq 0 ]; then
+              echo "✅ ${NAME} succeeded [$(ts)]" | tee -a "$STATUS_FILE"
+            else
+              echo "❌ ${NAME} failed [$(ts)]" | tee -a "$STATUS_FILE"
+              {
+                echo "❌ ${NAME} ERROR [$(ts)]:"
+                cat step.err
+                echo ""
+                echo "---"
+                echo ""
+              } >> "$ERR_FILE"
+            fi
+            rm -f step.err
+            echo "⏹️ END: ${NAME} ($(ts))" | tee -a "$LOG_FILE"
+            echo "" >> "$LOG_FILE"
+          }
+
+          # Steps
+          run_step "fetch_rosters.py"                python scripts/fetch_rosters.py
+          run_step "normalize_rosters_to_team_csvs"  python scripts/normalize_rosters_to_team_csvs.py
+
+          # Force commit and push updated roster CSVs
+          echo "▶️ START: commit_rosters ($(ts))" | tee -a "$LOG_FILE"
+          {
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add data/rosters/*.csv
+            git add data/rosters/ready/*.csv
+            git diff --quiet && git diff --staged --quiet || git commit -m "Update MLB rosters"
+            git push --force || echo "Nothing to push"
+          } >> "$LOG_FILE" 2>> "$ERR_FILE"
+          echo "⏹️ END: commit_rosters ($(ts))" | tee -a "$LOG_FILE"
+          echo "" >> "$LOG_FILE"
+
+          run_step "team_csvs_prep.py"               python scripts/team_csvs_prep.py
+
+          # Force commit and push team_csvs
+          echo "▶️ START: commit_team_csvs ($(ts))" | tee -a "$LOG_FILE"
+          {
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add data/team_csvs/*.csv
+            git diff --quiet && git diff --staged --quiet || git commit -m "Update team CSVs"
+            git push --force || echo "Nothing to push"
+          } >> "$LOG_FILE" 2>> "$ERR_FILE"
+          echo "⏹️ END: commit_team_csvs ($(ts))" | tee -a "$LOG_FILE"
+          echo "" >> "$LOG_FILE"
+
+          run_step "build_player_team_master.py"     python scripts/build_player_team_master.py
+
+          # Force commit and push player_team_master
+          echo "▶️ START: commit_player_team_master ($(ts))" | tee -a "$LOG_FILE"
+          {
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add data/processed/player_team_master.csv
+            git diff --quiet && git diff --staged --quiet || git commit -m "Update player_team_master"
+            git push --force || echo "Nothing to push"
+          } >> "$LOG_FILE" 2>> "$ERR_FILE"
+          echo "⏹️ END: commit_player_team_master ($(ts))" | tee -a "$LOG_FILE"
+          echo "" >> "$LOG_FILE"
+
+          {
+            echo "===== RUN TIMESTAMP: $(ts) ====="
+            echo ""
+            echo "===== STATUS ====="
+            cat "$STATUS_FILE"
+            echo ""
+            echo "===== LOG ====="
+            cat "$LOG_FILE"
+            echo ""
+            echo "===== ERRORS ====="
+            cat "$ERR_FILE"
+          } > "$SUMMARY_FILE"
+
+      - name: Upload summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: roster_workflow_summaries
+          path: summaries/
+          if-no-files-found: warn
