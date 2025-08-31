@@ -1,4 +1,4 @@
-❌ python ERROR [2025-08-31 10:49:55 AM EDT]:
+❌ python ERROR [2025-08-31 02:47:31 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
     main()
@@ -12,17 +12,25 @@ ValueError: batters input: missing columns ['game_id', 'date']
 
 ---
 
-❌ python ERROR [2025-08-31 10:49:56 AM EDT]:
+❌ python ERROR [2025-08-31 02:47:31 PM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 147, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 74, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 130, in main
-    bh2 = _attach_home_team_tod_and_date(bh, sched, tod)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 72, in _attach_home_team_tod_and_date
-    _require(batters, ["team", "woba", "game_id", "date"], "batters input")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 23, in _require
-    raise ValueError(f"{where}: missing columns {miss}")
-ValueError: batters input: missing columns ['game_id', 'date']
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 66, in main
+    out_h = _attach(bh, "home")
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 48, in _attach
+    x = x.merge(stad, left_on=host_col, right_on="home_team", how="left", suffixes=("",""))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
+    op = _MergeOperation(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
+    ) = self._get_merge_keys()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1311, in _get_merge_keys
+    left_keys.append(left._get_label_or_level_values(lk))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
+    raise KeyError(key)
+KeyError: 'home_team'
 
 ---
 
