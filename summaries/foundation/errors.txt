@@ -1,22 +1,17 @@
-❌ python ERROR [2025-08-31 07:21:20 PM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_todays_games.py", line 80, in <module>
-    normalize()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_todays_games.py", line 54, in normalize
-    teams = load_team_directory()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_todays_games.py", line 21, in load_team_directory
-    raise ValueError("team_directory.csv must have exact headers: Team Name, Team ID, Abbreviation")
-ValueError: team_directory.csv must have exact headers: Team Name, Team ID, Abbreviation
-
----
-
-❌ python ERROR [2025-08-31 07:21:22 PM EDT]:
+❌ python ERROR [2025-08-31 07:28:35 PM EDT]:
 ERROR: team_directory.csv must have EXACT headers: 'Team Name','Team ID','Abbreviation'
 
 ---
 
-❌ python ERROR [2025-08-31 07:21:22 PM EDT]:
-ERROR: data/raw/todaysgames_normalized.csv missing required columns: home_team_id
+❌ python ERROR [2025-08-31 07:28:36 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/update_game_time.py", line 134, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/update_game_time.py", line 111, in main
+    pf_day = _load_pf(PF_DAY_CSV, "day")
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/update_game_time.py", line 44, in _load_pf
+    raise ValueError(f"{path} must have exact headers: team_id, park_factor")
+ValueError: data/manual/park_factors_day.csv must have exact headers: team_id, park_factor
 
 ---
 
