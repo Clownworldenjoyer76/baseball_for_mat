@@ -1,55 +1,47 @@
-▶️ START: normalize_names.py (2025-08-31 10:40:50 AM EDT)
+▶️ START: normalize_names.py (2025-08-31 02:45:18 PM EDT)
 ✅ Batters normalized: 156 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 109 → data/normalized/pitchers_normalized.csv
-⏹️ END: python (2025-08-31 10:40:51 AM EDT)
+⏹️ END: python (2025-08-31 02:45:19 PM EDT)
 
-▶️ START: tag_master_files.py (2025-08-31 10:40:51 AM EDT)
-⏹️ END: python (2025-08-31 10:40:51 AM EDT)
+▶️ START: tag_master_files.py (2025-08-31 02:45:19 PM EDT)
+⏹️ END: python (2025-08-31 02:45:19 PM EDT)
 
-▶️ START: validate_tagged_players.py (2025-08-31 10:40:51 AM EDT)
-⏹️ END: python (2025-08-31 10:40:51 AM EDT)
+▶️ START: validate_tagged_players.py (2025-08-31 02:45:19 PM EDT)
+⏹️ END: python (2025-08-31 02:45:20 PM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-08-31 10:40:51 AM EDT)
-⏹️ END: python (2025-08-31 10:40:53 AM EDT)
+▶️ START: deduplicate_normalized.py (2025-08-31 02:45:20 PM EDT)
+⏹️ END: python (2025-08-31 02:45:20 PM EDT)
 
-▶️ START: normalize_lineups.py (2025-08-31 10:40:53 AM EDT)
+▶️ START: normalize_lineups.py (2025-08-31 02:45:20 PM EDT)
 ✅ normalize_lineups.py completed: 779 rows written to data/raw/lineups_normalized.csv
-⏹️ END: python (2025-08-31 10:40:53 AM EDT)
+⏹️ END: python (2025-08-31 02:45:21 PM EDT)
 
-▶️ START: normalize_todays_games.py (2025-08-31 10:40:53 AM EDT)
-📥 Loading input files...
-🔁 Mapping team abbreviations to full names...
-⚠️ Unmapped home_team codes: ['CWS']
-⚠️ Unmapped away_team codes: ['AZ']
-⏱ Validating game times...
-🔁 Checking for duplicate matchups (by teams + time)…
-✅ normalize_todays_games completed: data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 10:40:53 AM EDT)
+▶️ START: normalize_todays_games.py (2025-08-31 02:45:21 PM EDT)
+⏹️ END: python (2025-08-31 02:45:21 PM EDT)
 
-▶️ START: refresh_stadium_metadata.py (2025-08-31 10:40:53 AM EDT)
-✅ Saved updated stadium metadata for 14 home teams to data/Data/stadium_metadata.csv
-⏹️ END: python (2025-08-31 10:40:54 AM EDT)
+▶️ START: refresh_stadium_metadata.py (2025-08-31 02:45:21 PM EDT)
+⏹️ END: python (2025-08-31 02:45:21 PM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-08-31 10:40:54 AM EDT)
+▶️ START: apply_team_name_mapping.py (2025-08-31 02:45:21 PM EDT)
 ✅ Updated: data/raw/todaysgames_normalized.csv
 ✅ Updated: data/Data/stadium_metadata.csv
-⏹️ END: python (2025-08-31 10:40:54 AM EDT)
+⏹️ END: python (2025-08-31 02:45:22 PM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-08-31 10:40:54 AM EDT)
+▶️ START: fetch_mlb_ids.py (2025-08-31 02:45:22 PM EDT)
 ✅ fetch_mlb_ids: wrote 15 rows -> data/raw/mlb_schedule_today.csv (ET date=2025-08-31)
 ✅ fetch_mlb_ids: enriched data/raw/todaysgames_normalized.csv with game_id/meta; rows=15
-⏹️ END: python (2025-08-31 10:40:55 AM EDT)
+⏹️ END: python (2025-08-31 02:45:22 PM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-08-31 10:40:55 AM EDT)
-⏹️ END: python (2025-08-31 10:40:55 AM EDT)
+▶️ START: hotfix_team_codes.py (2025-08-31 02:45:22 PM EDT)
+⏹️ END: python (2025-08-31 02:45:22 PM EDT)
 
-▶️ START: update_game_time.py (2025-08-31 10:40:55 AM EDT)
+▶️ START: update_game_time.py (2025-08-31 02:45:22 PM EDT)
 ✅ Game times and park factors updated for 14 teams.
-⏹️ END: python (2025-08-31 10:40:55 AM EDT)
+⏹️ END: python (2025-08-31 02:45:23 PM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-08-31 10:40:55 AM EDT)
-⏹️ END: python (2025-08-31 10:40:56 AM EDT)
+▶️ START: filter_stadium_metadata.py (2025-08-31 02:45:23 PM EDT)
+⏹️ END: python (2025-08-31 02:45:23 PM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-08-31 10:40:56 AM EDT)
-⏹️ END: python (2025-08-31 10:40:56 AM EDT)
+▶️ START: normalize_batter_team_names.py (2025-08-31 02:45:23 PM EDT)
+⏹️ END: python (2025-08-31 02:45:23 PM EDT)
 
