@@ -1,111 +1,122 @@
+#!/usr/bin/env python3
+"""
+Normalize teams/dates for today's games using manual mappings.
+
+Inputs
+- data/raw/todaysgames.csv  (from scripts/todaysgames.py)
+- data/manual/mlb_team_ids.csv  (Team Name,Team ID,Abbreviation)
+- data/manual/team_name_map.csv (optional; columns: alias, canonical)
+
+Output
+- data/raw/todaysgames_normalized.csv
+"""
 import pandas as pd
+from pathlib import Path
 from datetime import datetime
-import sys
+from zoneinfo import ZoneInfo
 
-INPUT_FILE = "data/raw/todaysgames.csv"
-TEAM_MAP_FILE = "data/Data/team_name_master.csv"
-OUTPUT_FILE = "data/raw/todaysgames_normalized.csv"
+IN_FILE  = Path("data/raw/todaysgames.csv")
+OUT_FILE = Path("data/raw/todaysgames_normalized.csv")
+TEAM_IDS = Path("data/manual/mlb_team_ids.csv")
+TEAM_MAP = Path("data/manual/team_name_map.csv")  # optional
 
-def is_valid_time(t):
-    try:
-        datetime.strptime(str(t).strip(), "%I:%M %p")
-        return True
-    except Exception:
-        return False
+def _norm(s: str) -> str:
+    return "".join((s or "").strip().lower().replace(" ", "").replace("_",""))
 
-def _norm_team_str(s: pd.Series) -> pd.Series:
-    s = s.astype(str).str.strip().str.upper()
-    s = s.str.replace(r'[^A-Z0-9 ]','', regex=True)
-    s = s.str.replace('WHITE SOX','WHITESOX', regex=False).str.replace('RED SOX','REDSOX', regex=False)
-    s = s.str.replace('ST LOUIS','CARDINALS', regex=False).str.replace('SAINT LOUIS','CARDINALS', regex=False)
-    s = s.str.replace(' ','', regex=False)
-    return s
+def main():
+    # Load base
+    df = pd.read_csv(IN_FILE)
+    df.columns = [c.strip() for c in df.columns]
 
-def _backfill_date_from_sched(df: pd.DataFrame) -> pd.DataFrame:
-    """If schedule is available, fill missing/blank 'date' by matching (home_team, away_team)."""
-    try:
-        sched = pd.read_csv("data/bets/mlb_sched.csv", dtype=str)
-    except Exception:
-        return df
+    # Load manual team IDs (required)
+    t = pd.read_csv(TEAM_IDS)
+    t.columns = [c.strip() for c in t.columns]
+    # Ensure expected headers
+    if not {"Team Name","Team ID","Abbreviation"}.issubset(set(t.columns)):
+        raise SystemExit("mlb_team_ids.csv must have: Team Name, Team ID, Abbreviation")
 
-    if not all(c in df.columns for c in ["home_team","away_team"]):
-        return df
-    if not all(c in sched.columns for c in ["home_team","away_team","date"]):
-        return df
+    # Build canonical map by abbreviation and common aliases
+    # Canonical = spaced, title-cased club name (e.g., "White Sox")
+    t["canonical"] = t["Team Name"].astype(str).str.strip()
+    t["abbr"]      = t["Abbreviation"].astype(str).str.strip()
 
-    if "date" not in df.columns:
-        df["date"] = pd.NA
+    # Optional alias map
+    alias = {}
+    if TEAM_MAP.exists():
+        amap = pd.read_csv(TEAM_MAP)
+        amap.columns = [c.strip() for c in amap.columns]
+        if {"alias","canonical"}.issubset(amap.columns):
+            for _, r in amap.iterrows():
+                alias[_norm(str(r["alias"]))] = str(r["canonical"]).strip()
 
-    df["_HN"] = _norm_team_str(df["home_team"])
-    df["_AN"] = _norm_team_str(df["away_team"])
-    sched["_HN"] = _norm_team_str(sched["home_team"])
-    sched["_AN"] = _norm_team_str(sched["away_team"])
+    # Hard normalizations that have tripped joins
+    hard = {
+        _norm("WhiteSox"): "White Sox",
+        _norm("Athletics"): "Athletics",
+        _norm("A's"): "Athletics",
+        _norm("AZ"): "Arizona Diamondbacks",
+        _norm("CWS"): "White Sox",   # if 3-letter used in any step
+        _norm("OAK"): "Athletics",
+    }
 
-    need = df["date"].isna() | (df["date"].astype(str).str.strip()=="")
-    if need.any():
-        m = df.loc[need, ["_HN","_AN"]].merge(
-            sched[["date","_HN","_AN"]].drop_duplicates(), on=["_HN","_AN"], how="left"
-        )
-        if "date" in m.columns:
-            df.loc[need, "date"] = m["date"].values
+    # Build lookup from multiple keys -> canonical + abbr + team_id
+    look = {}
+    for _, r in t.iterrows():
+        can = r["canonical"]
+        ab  = r["abbr"]
+        tid = int(r["Team ID"])
+        for key in { _norm(can), _norm(ab) }:
+            look[key] = (can, ab, tid)
 
-    df.drop(columns=["_HN","_AN"], inplace=True, errors="ignore")
-    return df
+    # Apply alias and hard overrides
+    def canonize(token: str) -> tuple[str,str,int|None]:
+        k = _norm(token)
+        if k in alias:
+            k = _norm(alias[k])
+        if k in hard:
+            k = _norm(hard[k])
+        return look.get(k, (token, token, None))
 
-def normalize_todays_games():
-    print("📥 Loading input files...")
-    try:
-        games = pd.read_csv(INPUT_FILE, dtype=str)
-        team_map = pd.read_csv(TEAM_MAP_FILE, dtype=str)
-    except Exception as e:
-        print(f"❌ Error loading input files: {e}")
-        sys.exit(1)
+    # Normalize home/away to canonical + attach IDs
+    homes = df["home_team"].astype(str)
+    aways = df["away_team"].astype(str)
 
-    # 1) Normalize headers
-    games.columns = games.columns.str.strip()
-    team_map.columns = team_map.columns.str.strip()
+    can_home, ab_home, id_home = [], [], []
+    can_away, ab_away, id_away = [], [], []
 
-    # Validate required columns
-    for col in ["home_team", "away_team", "game_time"]:
-        if col not in games.columns:
-            print(f"❌ Missing required column in games: {col}")
-            sys.exit(1)
+    for v in homes:
+        c,a,i = canonize(v)
+        can_home.append(c); ab_home.append(a); id_home.append(i)
 
-    for col in ["team_code", "team_name"]:
-        if col not in team_map.columns:
-            print(f"❌ Missing required column in team map: {col}")
-            sys.exit(1)
+    for v in aways:
+        c,a,i = canonize(v)
+        can_away.append(c); ab_away.append(a); id_away.append(i)
 
-    print("🔁 Mapping team abbreviations to full names...")
-    team_map["team_code"] = team_map["team_code"].astype(str).str.strip().str.upper()
-    team_map["team_name"] = team_map["team_name"].astype(str).str.strip()
-    code_to_name = dict(zip(team_map["team_code"], team_map["team_name"]))
+    out = df.copy()
+    out["home_team_canonical"] = can_home
+    out["away_team_canonical"] = can_away
+    out["home_team_abbr"]      = ab_home
+    out["away_team_abbr"]      = ab_away
+    out["home_team_id"]        = id_home
+    out["away_team_id"]        = id_away
 
-    for col in ["home_team", "away_team"]:
-        original = games[col].astype(str).str.strip().str.upper()
-        games[col] = original.map(code_to_name)
-        unmapped = original[games[col].isna()].unique()
-        if len(unmapped) > 0:
-            print(f"⚠️ Unmapped {col} codes: {list(unmapped)}")
-        games[col] = games[col].fillna(original)
+    # Ensure single, correct date column (ET)
+    today_et = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    out["date"] = today_et
+    # Drop any accidental duplicates like "date.1"
+    out = out.loc[:, ~out.columns.duplicated()]
 
-    print("⏱ Validating game times...")
-    invalid_times = games[~games["game_time"].apply(is_valid_time)]
-    if not invalid_times.empty:
-        print("❌ Invalid game_time values:")
-        print(invalid_times[["home_team", "away_team", "game_time"]])
-        sys.exit(1)
+    # Reorder to stable schema
+    cols = [
+        "home_team_canonical","away_team_canonical",
+        "home_team_abbr","away_team_abbr",
+        "home_team_id","away_team_id",
+        "game_time","pitcher_home","pitcher_away","date"
+    ]
+    out = out[cols]
 
-    print("🔁 Checking for duplicate matchups (by teams + time)…")
-    dupe_mask = games.duplicated(subset=["home_team", "away_team", "game_time"], keep=False)
-    if dupe_mask.any():
-        pass  # allow; could be doubleheaders or benign
-
-    # Optional: add/repair date by matching schedule
-    games = _backfill_date_from_sched(games)
-
-    games.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ normalize_todays_games completed: {OUTPUT_FILE}")
+    OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    out.to_csv(OUT_FILE, index=False)
 
 if __name__ == "__main__":
-    normalize_todays_games()
+    main()
