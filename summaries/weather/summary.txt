@@ -1,37 +1,37 @@
-===== RUN TIMESTAMP: 2025-08-31 03:39:51 PM EDT =====
+===== RUN TIMESTAMP: 2025-08-31 03:49:53 PM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-08-31 03:39:41 PM EDT]
-✅ python succeeded [2025-08-31 03:39:51 PM EDT]
-✅ python succeeded [2025-08-31 03:39:51 PM EDT]
-✅ python succeeded [2025-08-31 03:39:51 PM EDT]
+❌ python failed [2025-08-31 03:49:43 PM EDT]
+✅ python succeeded [2025-08-31 03:49:52 PM EDT]
+✅ python succeeded [2025-08-31 03:49:53 PM EDT]
+✅ python succeeded [2025-08-31 03:49:53 PM EDT]
 
 ===== LOG =====
-▶️ START: generate_weather_csv.py (2025-08-31 03:39:41 PM EDT)
-⏹️ END: python (2025-08-31 03:39:41 PM EDT)
+▶️ START: generate_weather_csv.py (2025-08-31 03:49:42 PM EDT)
+⏹️ END: python (2025-08-31 03:49:43 PM EDT)
 
-▶️ START: get_weather_data.py (2025-08-31 03:39:41 PM EDT)
-2025-08-31 07:39:41 PM 🔄 Read data/weather_input.csv...
-2025-08-31 07:39:41 PM 🌍 Fetch weather for 15 venues...
-2025-08-31 07:39:44 PM ⚠️ Unparsable ET for nan, nan: 'nan'.
-2025-08-31 07:39:49 PM ❌ No forecast for nan, nan. Stub row.
-2025-08-31 07:39:51 PM ✅ Wrote data/weather_adjustments.csv with 15 rows.
-⏹️ END: python (2025-08-31 03:39:51 PM EDT)
+▶️ START: get_weather_data.py (2025-08-31 03:49:43 PM EDT)
+2025-08-31 07:49:43 PM 🔄 Read data/weather_input.csv...
+2025-08-31 07:49:43 PM 🌍 Fetch weather for 15 venues...
+2025-08-31 07:49:45 PM ⚠️ Unparsable ET for nan, nan: 'nan'.
+2025-08-31 07:49:51 PM ❌ No forecast for nan, nan. Stub row.
+2025-08-31 07:49:52 PM ✅ Wrote data/weather_adjustments.csv with 15 rows.
+⏹️ END: python (2025-08-31 03:49:52 PM EDT)
 
-▶️ START: weather_data_fix.py (2025-08-31 03:39:51 PM EDT)
+▶️ START: weather_data_fix.py (2025-08-31 03:49:52 PM EDT)
 🔄 Load weather_adjustments.csv...
 🧮 Calculate weather_factor...
 ✅ Done.
-⏹️ END: python (2025-08-31 03:39:51 PM EDT)
+⏹️ END: python (2025-08-31 03:49:53 PM EDT)
 
-▶️ START: attach_game_ids.py (2025-08-31 03:39:51 PM EDT)
+▶️ START: attach_game_ids.py (2025-08-31 03:49:53 PM EDT)
 home: 0 → 0 after attaching game_id/date (dropped 0)
 away: 0 → 0 after attaching game_id/date (dropped 0)
-⏹️ END: python (2025-08-31 03:39:51 PM EDT)
+⏹️ END: python (2025-08-31 03:49:53 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-08-31 03:39:41 PM EDT]:
+❌ python ERROR [2025-08-31 03:49:43 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
