@@ -1,0 +1,71 @@
+===== RUN TIMESTAMP: 2025-08-31 10:50:37 AM EDT =====
+
+===== STATUS =====
+✅ python succeeded [2025-08-31 10:50:32 AM EDT]
+✅ python succeeded [2025-08-31 10:50:32 AM EDT]
+✅ python succeeded [2025-08-31 10:50:32 AM EDT]
+✅ python succeeded [2025-08-31 10:50:33 AM EDT]
+✅ python succeeded [2025-08-31 10:50:33 AM EDT]
+✅ python succeeded [2025-08-31 10:50:34 AM EDT]
+✅ python succeeded [2025-08-31 10:50:35 AM EDT]
+✅ python succeeded [2025-08-31 10:50:35 AM EDT]
+✅ python succeeded [2025-08-31 10:50:36 AM EDT]
+✅ python succeeded [2025-08-31 10:50:37 AM EDT]
+
+===== LOG =====
+▶️ START: normalize_pitcher_weather_outputs.py (2025-08-31 10:50:31 AM EDT)
+[main ef4fa141] Normalize pitchers before weather adjustment
+ 2 files changed, 17 insertions(+), 17 deletions(-)
+✅ Forced commit and push to repo.
+⏹️ END: python (2025-08-31 10:50:32 AM EDT)
+
+▶️ START: fix_away_team_column.py (2025-08-31 10:50:32 AM EDT)
+ℹ️ Column 'away_team_y' not found. No changes made.
+⏹️ END: python (2025-08-31 10:50:32 AM EDT)
+
+▶️ START: preprocess_pitcher_weather_park_away (2025-08-31 10:50:32 AM EDT)
+⏹️ END: python (2025-08-31 10:50:32 AM EDT)
+
+▶️ START: add_team_alias_columns.py (2025-08-31 10:50:32 AM EDT)
+[main ad23e975] Add team alias columns to pitcher files
+ 3 files changed, 21 insertions(+), 21 deletions(-)
+✅ Added 'home_team' to data/adjusted/pitchers_home.csv (10 rows)
+✅ Added 'away_team' to data/adjusted/pitchers_away.csv (7 rows)
+📝 Log saved to log_add_team_alias_columns.txt
+⏹️ END: python (2025-08-31 10:50:33 AM EDT)
+
+▶️ START: add_team_columns_to_weather.py (2025-08-31 10:50:33 AM EDT)
+✅ Wrote home_team and away_team to data/weather_teams.csv
+⏹️ END: python (2025-08-31 10:50:33 AM EDT)
+
+▶️ START: apply_pitcher_weather_adjustment.py (2025-08-31 10:50:33 AM EDT)
+✅ Git commit and push complete for pitcher weather adjustments.
+⏹️ END: python (2025-08-31 10:50:34 AM EDT)
+
+▶️ START: apply_pitcher_park_adjustment.py (2025-08-31 10:50:34 AM EDT)
+✅ Wrote data/adjusted/pitchers_home_park.csv with 10 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 7 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: python (2025-08-31 10:50:35 AM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs.py (2025-08-31 10:50:35 AM EDT)
+✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
+⏹️ END: python (2025-08-31 10:50:35 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home.py (2025-08-31 10:50:35 AM EDT)
+[main cde7d1f2] Auto-commit: Cleaned combine pitcher weather + park (home)
+ 2 files changed, 15 insertions(+), 12 deletions(-)
+⏹️ END: python (2025-08-31 10:50:36 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_away.py (2025-08-31 10:50:36 AM EDT)
+[main 3bd8ba55] Auto-commit: Cleaned combine pitcher weather + park (away)
+ 2 files changed, 12 insertions(+), 13 deletions(-)
+⏹️ END: python (2025-08-31 10:50:37 AM EDT)
+
+
+===== ERRORS =====
