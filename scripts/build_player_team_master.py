@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Consolidate player→team master.
-# - Carries player_id from team CSVs when present.
+# - Carries player_id from team CSVs when present (scalar-safe coercion).
 # - Falls back to data/Data/batters.csv and data/Data/pitchers.csv by normalized name.
 # - Injects team_id/team_code/canonical_team from data/manual/team_directory.csv.
 # - Writes unmatched player_id audit to summaries/fetchrosters/unmatched_player_ids.txt.
@@ -49,7 +49,6 @@ def normalize_person_name(name: str) -> str:
 _SUFFIX_RE = re.compile(r"\b(Jr|Sr|II|III|IV|V)\.?\b", flags=re.IGNORECASE)
 
 def normalized_join_key(name: str) -> str:
-    """LAST, FIRST key without accents/punct/suffixes; stable for joins."""
     n = normalize_person_name(name)
     n = _SUFFIX_RE.sub("", n)
     n = re.sub(r"\s+", " ", n).strip()
@@ -104,6 +103,16 @@ if team_dir["team_id"].isna().any():
     raise RuntimeError(f"{TEAM_DIR_FILE}: null team_id rows: {bad.to_dict(orient='records')}")
 team_lut = build_team_lookup(team_dir)
 
+# ===== Scalar-safe coercion =====
+def coerce_pid_scalar(val):
+    num = pd.to_numeric(val, errors="coerce")
+    if pd.isna(num):
+        return pd.NA
+    try:
+        return int(num)
+    except Exception:
+        return pd.NA
+
 # ===== Build base rows from team_csvs (carry player_id when present) =====
 rows = []
 if not TEAM_CSV_DIR.exists():
@@ -122,12 +131,13 @@ for fn in os.listdir(TEAM_CSV_DIR):
                 nm = r.get("last_name, first_name")
                 if pd.isna(nm):
                     continue
+                pid = coerce_pid_scalar(r.get(pid_col)) if pid_col else pd.NA
                 rows.append({
                     "name": normalize_person_name(nm),
                     "join_key": normalized_join_key(nm),
                     "team": team_token,
                     "type": "batter",
-                    "player_id": pd.to_numeric(r.get(pid_col), errors="coerce").astype("Int64") if pid_col else pd.NA
+                    "player_id": pid
                 })
     elif fn.startswith("pitchers_"):
         team_token = fn.replace("pitchers_", "").replace(".csv", "")
@@ -138,12 +148,13 @@ for fn in os.listdir(TEAM_CSV_DIR):
                 nm = r.get("last_name, first_name")
                 if pd.isna(nm):
                     continue
+                pid = coerce_pid_scalar(r.get(pid_col)) if pid_col else pd.NA
                 rows.append({
                     "name": normalize_person_name(nm),
                     "join_key": normalized_join_key(nm),
                     "team": team_token,
                     "type": "pitcher",
-                    "player_id": pd.to_numeric(r.get(pid_col), errors="coerce").astype("Int64") if pid_col else pd.NA
+                    "player_id": pid
                 })
 
 master = pd.DataFrame(rows)
@@ -155,7 +166,7 @@ if master.empty:
     master = master.reindex(columns=["name","team","type","player_id","team_id","team_code","canonical_team"])
     master.to_csv(OUTPUT_FILE, index=False)
     with open(AUDIT_UNMATCHED_IDS, "w") as f:
-        f.write("")  # empty audit
+        f.write("")
     raise SystemExit(0)
 
 # ===== Inject team_id / team_code / canonical_team =====
@@ -167,8 +178,7 @@ def map_team(row):
         tid, tcode, canon = team_lut[k]
         return pd.Series({"team_id": tid, "team_code": tcode, "canonical_team": canon})
     raise RuntimeError(
-        f"Unmapped team token '{row['team']}' → key '{k}'. "
-        f"Add to {TEAM_DIR_FILE} (canonical or alias)."
+        f"Unmapped team token '{row['team']}' → key '{k}'. Add to {TEAM_DIR_FILE}."
     )
 
 mapped = master.apply(map_team, axis=1)
@@ -213,7 +223,7 @@ AUDIT_DIR.mkdir(parents=True, exist_ok=True)
 unmatched = master[master["player_id"].isna()][["team","type","name"]]
 with open(AUDIT_UNMATCHED_IDS, "w") as f:
     if unmatched.empty:
-        f.write("")  # nothing to report
+        f.write("")
     else:
         for _, r in unmatched.sort_values(["team","type","name"]).iterrows():
             f.write(f"{r['team']},{r['type']},{r['name']}\n")
