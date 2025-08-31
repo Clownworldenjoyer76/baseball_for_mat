@@ -1,4 +1,4 @@
-❌ python ERROR [2025-08-31 04:27:49 PM EDT]:
+❌ python ERROR [2025-08-31 04:38:08 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
     main()
@@ -12,25 +12,21 @@ ValueError: batters input: missing columns ['game_id', 'date']
 
 ---
 
-❌ python ERROR [2025-08-31 04:27:50 PM EDT]:
+❌ python ERROR [2025-08-31 04:38:08 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 74, in <module>
     main()
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 66, in main
     out_h = _attach(bh, "home")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 48, in _attach
-    x = x.merge(stad, left_on=host_col, right_on="home_team", how="left", suffixes=("",""))
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
-    op = _MergeOperation(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
-    ) = self._get_merge_keys()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1311, in _get_merge_keys
-    left_keys.append(left._get_label_or_level_values(lk))
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
-    raise KeyError(key)
-KeyError: 'home_team'
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 36, in _attach
+    stad  = pd.read_csv(ST)[["home_team","Park Factor"]]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['home_team'] not in index"
 
 ---
 
