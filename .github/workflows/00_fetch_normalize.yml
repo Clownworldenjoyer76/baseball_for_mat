@@ -53,19 +53,20 @@ jobs:
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
           run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $1 failed [$(ts)]" >>"$STATUS"; { echo "❌ $1 ERROR [$(ts)]:"; cat step.err; echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $1 ($(ts))" >>"$LOG"; echo >>"$LOG"; }
 
-          run_step normalize_names.py              python scripts/normalize_names.py
-          run_step tag_master_files.py             python scripts/tag_master_files.py
-          run_step validate_tagged_players.py      python scripts/validate_tagged_players.py
-          run_step deduplicate_normalized.py       python scripts/deduplicate_normalized.py
-          run_step normalize_lineups.py            python scripts/normalize_lineups.py
-          run_step normalize_todays_games.py       python scripts/normalize_todays_games.py
-          run_step refresh_stadium_metadata.py     python scripts/refresh_stadium_metadata.py
-          run_step apply_team_name_mapping.py      python scripts/apply_team_name_mapping.py
-          run_step fetch_mlb_ids.py                python scripts/fetch_mlb_ids.py
-          run_step hotfix_team_codes.py            python scripts/hotfix_team_codes.py
-          run_step update_game_time.py             python scripts/update_game_time.py
-          run_step filter_stadium_metadata.py      python scripts/filter_stadium_metadata.py
-          run_step normalize_batter_team_names.py  python scripts/normalize_batter_team_names.py
+          run_step normalize_names.py                  python scripts/normalize_names.py
+          run_step tag_master_files.py                 python scripts/tag_master_files.py
+          run_step validate_tagged_players.py          python scripts/validate_tagged_players.py
+          run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
+          run_step normalize_lineups.py                python scripts/normalize_lineups.py
+          run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
+          run_step refresh_stadium_metadata.py         python scripts/refresh_stadium_metadata.py
+          run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
+          run_step fix_stadium_and_backfill_pf.py      python scripts/fix_stadium_and_backfill_pf.py
+          run_step fetch_mlb_ids.py                    python scripts/fetch_mlb_ids.py
+          run_step hotfix_team_codes.py                python scripts/hotfix_team_codes.py
+          run_step update_game_time.py                 python scripts/update_game_time.py
+          run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
+          run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
