@@ -40,3 +40,53 @@ no changes added to commit (use "git add" and/or "git commit -a")
 ⏹️ END: python (2025-08-31 10:55:01 AM EDT)
 
 ▶️ START: apply_pitcher_park_adjustment.py (2025-08-31 10:55:01 AM EDT)
+✅ Wrote data/adjusted/pitchers_home_park.csv with 10 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 7 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: python (2025-08-31 10:55:02 AM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs.py (2025-08-31 10:55:02 AM EDT)
+✅ Normalized and saved: data/adjusted/pitchers_home_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_home_park.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_weather.csv
+✅ Normalized and saved: data/adjusted/pitchers_away_park.csv
+⏹️ END: python (2025-08-31 10:55:02 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home.py (2025-08-31 10:55:02 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   data/adjusted/pitchers_away_park.csv
+	modified:   data/adjusted/pitchers_away_weather.csv
+	modified:   data/adjusted/pitchers_home_park.csv
+	modified:   data/adjusted/pitchers_home_weather.csv
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'Auto-commit: Cleaned combine pitcher weather + park (home)']' returned non-zero exit status 1.
+⏹️ END: python (2025-08-31 10:55:02 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_away.py (2025-08-31 10:55:02 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   data/adjusted/pitchers_away_park.csv
+	modified:   data/adjusted/pitchers_away_weather.csv
+	modified:   data/adjusted/pitchers_home_park.csv
+	modified:   data/adjusted/pitchers_home_weather.csv
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'Auto-commit: Cleaned combine pitcher weather + park (away)']' returned non-zero exit status 1.
+⏹️ END: python (2025-08-31 10:55:03 AM EDT)
+
