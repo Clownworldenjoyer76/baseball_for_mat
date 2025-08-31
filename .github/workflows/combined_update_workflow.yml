@@ -43,144 +43,46 @@ jobs:
             pip install pandas requests
           fi
 
-      # ---------- LINEUPS ----------
-      - name: Run todayslineups.py -> data/raw/lineups.csv
+      - name: Run with unified logs and commits → summaries/todaysgames
+        shell: bash
         run: |
-          python scripts/todayslineups.py
-          echo "CSV preview (lineups):"
-          head -n 5 data/raw/lineups.csv || true
-          wc -c data/raw/lineups.csv || true
+          set +e
 
-      - name: Commit lineups.csv (separate commit)
-        id: commit_lineups
-        run: |
-          set -e
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/raw/lineups.csv
-          if git diff --cached --quiet; then
-            echo "No changes to lineups.csv; skipping commit."
-          else
-            git commit -m "Update lineups.csv"
-            SHA="$(git rev-parse HEAD)"
-            echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-            echo "Committed $SHA"
-            git log -1 --stat
-          fi
+          mkdir -p summaries/todaysgames data/raw
+          STATUS_FILE="summaries/todaysgames/status.txt"
+          LOG_FILE="summaries/todaysgames/log.txt"
+          ERR_FILE="summaries/todaysgames/errors.txt"
+          SUMMARY_FILE="summaries/todaysgames/summary.txt"
+          : > "$STATUS_FILE"; : > "$LOG_FILE"; : > "$ERR_FILE"; : > "$SUMMARY_FILE"
 
-      - name: Push lineups commit (if any)
-        if: steps.commit_lineups.outputs.sha != ''
-        env:
-          GIT_TRACE: "1"
-          GIT_CURL_VERBOSE: "1"
-        run: |
-          set -e
-          git pull --rebase origin main || true
-          git push origin HEAD:main
+          ts() { TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
 
-      - name: Print lineups commit link
-        if: steps.commit_lineups.outputs.sha != ''
-        run: |
-          echo "Commit: ${{ steps.commit_lineups.outputs.sha }}"
-          echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit_lineups.outputs.sha }}"
+          run_step() {
+            local NAME="$1"; shift
+            local CMD=("$@")
+            echo "▶️ START: ${NAME} ($(ts))" | tee -a "$LOG_FILE"
+            echo "::group::${NAME}"
+            "${CMD[@]}" >> "$LOG_FILE" 2> step.err
+            local RC=$?
+            echo "::endgroup::"
+            if [ $RC -eq 0 ]; then
+              echo "✅ ${NAME} succeeded [$(ts)]" | tee -a "$STATUS_FILE"
+            else
+              echo "❌ ${NAME} failed [$(ts)]" | tee -a "$STATUS_FILE"
+              {
+                echo "❌ ${NAME} ERROR [$(ts)]:"
+                cat step.err
+                echo ""
+                echo "---"
+                echo ""
+              } >> "$ERR_FILE"
+            fi
+            rm -f step.err
+            echo "⏹️ END: ${NAME} ($(ts))" | tee -a "$LOG_FILE"
+            echo "" >> "$LOG_FILE"
+            return $RC
+          }
 
-      # ---------- TODAYS GAMES ----------
-      - name: Run todaysgames.py -> data/raw/todaysgames.csv
-        run: |
-          set -euo pipefail
-          mkdir -p data/raw
-          python -u scripts/todaysgames.py --out data/raw/todaysgames.csv
-          echo "CSV preview (todaysgames):"
-          head -n 5 data/raw/todaysgames.csv || true
-          wc -c data/raw/todaysgames.csv
-
-      - name: Git diagnostics (before add)
-        run: |
-          echo "---- .gitignore ----"
-          [ -f .gitignore ] && sed -n '1,200p' .gitignore || echo "(none)"
-          echo "---- status (porcelain v2) ----"
-          git status --porcelain=v2
-          echo "---- ls-files tracked ----"
-          git ls-files | sed -n '1,50p'
-          echo "---- ls-files others (respect ignore) ----"
-          git ls-files --others --exclude-standard | sed -n '1,50p'
-
-      - name: Stage todaysgames.csv (force) and show index diff
-        run: |
-          set -e
-          git add --force data/raw/todaysgames.csv
-          echo "---- cached diff ----"
-          git diff --cached --stat || true
-          echo "---- status after add ----"
-          git status -vv
-
-      - name: Commit todaysgames.csv (separate commit; allow-empty when no diff)
-        id: commit_games
-        run: |
-          set -e
-          git config user.name  "github-actions"
-          git config user.email "github-actions@github.com"
-          if git diff --cached --quiet; then
-            git commit --allow-empty -m "Keep data/raw/todaysgames.csv (no content change) [run $GITHUB_RUN_ID]"
-          else
-            git commit -m "Update data/raw/todaysgames.csv [run $GITHUB_RUN_ID]"
-          fi
-          SHA="$(git rev-parse HEAD)"
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "Committed $SHA"
-          git log -1 --stat
-
-      - name: Push todaysgames commit
-        env:
-          GIT_TRACE: "1"
-          GIT_CURL_VERBOSE: "1"
-        run: |
-          set -e
-          git pull --rebase origin main || true
-          git push origin HEAD:main
-
-      - name: Print todaysgames commit link
-        run: |
-          echo "Commit: ${{ steps.commit_games.outputs.sha }}"
-          echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit_games.outputs.sha }}"
-
-      # ---------- ENRICH PITCHERS WITH OPP CONTEXT ----------
-      - name: Run enrich_pitchers_with_opp.py -> data/raw/startingpitchers_with_opp_context.csv
-        run: |
-          set -euo pipefail
-          mkdir -p data/raw
-          GAME_DATE="$(date +%F)"  # Uses TZ=America/New_York
-          python -u scripts/enrich_pitchers_with_opp.py \
-            --infile data/end_chain/final/startingpitchers_final.csv \
-            --date "${GAME_DATE}" \
-            --outfile data/raw/startingpitchers_with_opp_context.csv
-          echo "CSV preview (startingpitchers_with_opp_context):"
-          head -n 5 data/raw/startingpitchers_with_opp_context.csv || true
-          wc -c data/raw/startingpitchers_with_opp_context.csv
-
-      - name: Always commit startingpitchers_with_opp_context.csv (force + allow-empty)
-        id: commit_opp
-        run: |
-          set -e
-          git config user.name  "github-actions"
-          git config user.email "github-actions@github.com"
-          git add --force data/raw/startingpitchers_with_opp_context.csv
-          git commit --allow-empty -m "Update data/raw/startingpitchers_with_opp_context.csv [run $GITHUB_RUN_ID]"
-          SHA="$(git rev-parse HEAD)"
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "Committed $SHA"
-          git log -1 --stat
-
-      - name: Push opponent-context commit (always)
-        env:
-          GIT_TRACE: "1"
-          GIT_CURL_VERBOSE: "1"
-        run: |
-          set -e
-          git pull --rebase origin main || true
-          git push origin HEAD:main
-
-      - name: Print opponent-context commit link
-        run: |
-          echo "Commit: ${{ steps.commit_opp.outputs.sha }}"
-          echo "${{ github.server_url }}/${{ github.repository }}/commit/${{ steps.commit_opp.outputs.sha }}"
+          git_cfg() {
+            git config user.name  "github-actions"
+            git config
