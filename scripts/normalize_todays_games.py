@@ -1,76 +1,106 @@
 #!/usr/bin/env python3
-# Purpose: Normalize todaysgames to team abbreviations AND attach MLB numeric IDs.
+# Purpose: Normalize todaysgames to canonical team abbreviations and attach MLB numeric IDs.
 # Inputs:
-#   - data/raw/todaysgames.csv               (from scripts/todaysgames.py)
-#   - data/manual/team_directory.csv         (exact headers: Team Name, Team ID, Abbreviation)
+#   - data/raw/todaysgames.csv
+#   - data/manual/team_directory.csv  (headers: team_id, team_code, canonical_team, team_name, clean_team_name, all_codes, all_names)
 # Output:
-#   - data/raw/todaysgames_normalized.csv    (adds home_team_id, away_team_id; ensures abbreviations)
+#   - data/raw/todaysgames_normalized.csv  (adds home_team_id, away_team_id; ensures abbreviations)
+#
+# Mobile-safe, no external deps beyond pandas.
 
 import pandas as pd
 from pathlib import Path
+import sys
 
-INPUT  = Path("data/raw/todaysgames.csv")
-OUTPUT = Path("data/raw/todaysgames_normalized.csv")
-TEAM_DIR = Path("data/manual/team_directory.csv")
+INPUT   = Path("data/raw/todaysgames.csv")
+OUTPUT  = Path("data/raw/todaysgames_normalized.csv")
+TEAMDIR = Path("data/manual/team_directory.csv")
 
-def load_team_directory() -> pd.DataFrame:
-    # Expect exact headers: Team Name, Team ID, Abbreviation
-    df = pd.read_csv(TEAM_DIR)
-    required = {"Team Name", "Team ID", "Abbreviation"}
-    if set(df.columns) != required and not required.issubset(set(df.columns)):
-        raise ValueError("team_directory.csv must have exact headers: Team Name, Team ID, Abbreviation")
-    return df[["Team Name", "Team ID", "Abbreviation"]].copy()
+# ---- utilities ----
 
-def make_maps(df: pd.DataFrame):
-    # Two lookup paths:
-    # 1) Full team name (upper) -> (abbr, id)
-    # 2) Abbreviation (upper)   -> (abbr, id)  (so already-abbrev inputs still resolve)
-    name_to = {
-        str(row["Team Name"]).upper(): (str(row["Abbreviation"]), int(row["Team ID"]))
-        for _, row in df.iterrows()
-    }
-    abbr_to = {
-        str(row["Abbreviation"]).upper(): (str(row["Abbreviation"]), int(row["Team ID"]))
-        for _, row in df.iterrows()
-    }
-    return name_to, abbr_to
+def _die(msg: str):
+    print(f"INSUFFICIENT INFORMATION\n{msg}")
+    sys.exit(1)
 
-def resolve(team_str: str, name_to, abbr_to):
-    if not isinstance(team_str, str):
-        return team_str, None
-    key = team_str.strip().upper()
-    if key in abbr_to:
-        abbr, tid = abbr_to[key]
-        return abbr, tid
-    if key in name_to:
-        abbr, tid = name_to[key]
-        return abbr, tid
-    # Fallback: leave as-is, id unknown
-    return team_str, None
+def _to_int64(series):
+    return pd.to_numeric(series, errors="coerce").astype("Int64")
+
+def _load_games() -> pd.DataFrame:
+    if not INPUT.exists():
+        _die(f"Missing file: {INPUT}")
+    g = pd.read_csv(INPUT, dtype=str).fillna("")
+    required = {"home_team", "away_team"}
+    if not required.issubset(set(g.columns)):
+        _die(f"{INPUT} must include columns: {', '.join(sorted(required))}")
+    return g
+
+def _load_teamdir() -> pd.DataFrame:
+    if not TEAMDIR.exists():
+        _die(f"Missing file: {TEAMDIR}")
+    td = pd.read_csv(TEAMDIR, dtype=str).fillna("")
+    required = {"team_id","team_code","canonical_team","team_name","clean_team_name","all_codes","all_names"}
+    if not required.issubset(td.columns):
+        _die(f"{TEAMDIR} must include columns: {', '.join(sorted(required))}")
+    return td
+
+def _build_alias_maps(td: pd.DataFrame):
+    """
+    Returns:
+      alias_to_abbr: dict[str->str]  (uppercased key -> team_code)
+      abbr_to_id:    dict[str->Int]  (team_code -> team_id int)
+    """
+    alias_to_abbr = {}
+    abbr_to_id = {}
+
+    def put_alias(alias: str, code: str):
+        k = (alias or "").strip().upper()
+        v = (code or "").strip().upper()
+        if k and v and k not in alias_to_abbr:
+            alias_to_abbr[k] = v
+
+    for _, r in td.iterrows():
+        code = (r.get("team_code","") or "").strip().upper()
+        tid  = r.get("team_id","")
+        if code:
+            abbr_to_id[code] = pd.to_numeric(tid, errors="coerce")
+        # primary names
+        for col in ("team_code","canonical_team","team_name","clean_team_name"):
+            put_alias(r.get(col, ""), code)
+        # explode all_names (pipe-delimited)
+        for name in (r.get("all_names","") or "").split("|"):
+            put_alias(name, code)
+        # explode all_codes as well (treat codes as aliases of themselves)
+        for ac in (r.get("all_codes","") or "").split("|"):
+            put_alias(ac, code)
+
+    return alias_to_abbr, abbr_to_id
+
+def _normalize_team(value: str, alias_to_abbr: dict) -> str:
+    key = (value or "").strip().upper()
+    if not key:
+        return ""
+    return alias_to_abbr.get(key, key)  # if already an abbr in map, returns itself; else pass through
+
+# ---- main ----
 
 def normalize():
-    # Load inputs
-    games = pd.read_csv(INPUT)
-    teams = load_team_directory()
-    name_to, abbr_to = make_maps(teams)
+    games = _load_games()
+    td = _load_teamdir()
+    alias_to_abbr, abbr_to_id = _build_alias_maps(td)
 
-    # Resolve home/away to (abbr, id)
-    home_abbr, home_id = [], []
-    away_abbr, away_id = [], []
-    for _, r in games.iterrows():
-        h_abbr, h_id = resolve(r.get("home_team"), name_to, abbr_to)
-        a_abbr, a_id = resolve(r.get("away_team"), name_to, abbr_to)
-        home_abbr.append(h_abbr)
-        home_id.append(h_id)
-        away_abbr.append(a_abbr)
-        away_id.append(a_id)
+    # normalize abbreviations
+    home_abbr = games["home_team"].map(lambda x: _normalize_team(x, alias_to_abbr))
+    away_abbr = games["away_team"].map(lambda x: _normalize_team(x, alias_to_abbr))
 
-    # Write back normalized values
+    # attach numeric IDs via abbreviation -> team_id
+    home_id = home_abbr.map(lambda c: abbr_to_id.get((c or "").strip().upper()))
+    away_id = away_abbr.map(lambda c: abbr_to_id.get((c or "").strip().upper()))
+
     out = games.copy()
     out["home_team"] = home_abbr
     out["away_team"] = away_abbr
-    out["home_team_id"] = pd.Series(home_id, dtype="Int64")
-    out["away_team_id"] = pd.Series(away_id, dtype="Int64")
+    out["home_team_id"] = _to_int64(pd.Series(home_id))
+    out["away_team_id"] = _to_int64(pd.Series(away_id))
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(OUTPUT, index=False)
