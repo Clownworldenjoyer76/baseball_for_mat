@@ -1,185 +1,167 @@
 #!/usr/bin/env python3
 """
-Builds data/Data/stadium_metadata.csv from manual inputs.
+scripts/refresh_stadium_metadata.py
 
-Reads (preferred locations, in order):
-  - data/manual/mlb_team_ids.csv
-  - data/mlb_team_ids.csv
-  - data/Data/mlb_team_ids.csv
+Purpose
+-------
+Ensure stadium metadata aligns with canonical MLB team identifiers
+using data/manual/team_directory.csv as the single source of truth.
 
-Also uses (under data/manual):
-  - park_factors_day.csv
-  - park_factors_night.csv
-  - park_factors_roof_closed.csv
+Behavior
+--------
+- Loads existing data/Data/stadium_metadata.csv (if present).
+- Loads data/raw/todaysgames_normalized.csv to determine active home teams.
+- Loads data/manual/team_directory.csv (header-agnostic).
+- Canonicalizes team labels to team abbreviations and attaches team_id.
+- Writes back to data/Data/stadium_metadata.csv.
 
-Optional filter to today's home teams if data/raw/todaysgames_normalized.csv exists.
-
-Output:
-  - data/Data/stadium_metadata.csv
+Notes
+-----
+- Header-agnostic reading of team_directory.
+- No external API calls here.
 """
+
+import sys
 from pathlib import Path
 import pandas as pd
 import re
 
-PREF_TEAM_ID_PATHS = [
-    Path("data/manual/mlb_team_ids.csv"),
-    Path("data/mlb_team_ids.csv"),
-    Path("data/Data/mlb_team_ids.csv"),
-]
-MANUAL_DIR = Path("data/manual")
-OUT_PATH   = Path("data/Data/stadium_metadata.csv")
-TODAYS     = Path("data/raw/todaysgames_normalized.csv")
+TEAM_DIR = Path("data/manual/team_directory.csv")
+STADIUM_META = Path("data/Data/stadium_metadata.csv")
+TODAY_GAMES = Path("data/raw/todaysgames_normalized.csv")
 
-# ----------------- helpers -----------------
-def _norm_cols(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    def norm(c: str) -> str:
-        c = c.strip().lower()
-        c = re.sub(r"[^a-z0-9]+", "_", c)
-        return c.strip("_")
-    df.columns = [norm(c) for c in df.columns]
-    return df
 
-def _pick_col(df: pd.DataFrame, want: str) -> str | None:
-    """
-    want: 'name' | 'id' | 'abbr'
-    Extremely permissive selection.
-    """
-    cols = list(df.columns)
+def _norm(s) -> str:
+    if pd.isna(s):
+        return ""
+    s = str(s)
+    s = s.lower().strip()
+    s = re.sub(r"[^a-z0-9]+", "", s)
+    return s
 
-    # exact favorites
-    favorites = {
-        "name": ["team_name", "name", "team", "club_name", "full_name", "fullname"],
-        "id":   ["team_id", "id", "mlb_team_id", "home_team_id"],
-        "abbr": ["abbreviation", "abbr", "team_abbr", "team_code", "code"],
-    }[want]
-    for c in favorites:
-        if c in df.columns:
-            return c
 
-    # heuristic fallback
-    for c in cols:
-        cl = c.lower()
-        if want == "name" and ("name" in cl or "team" in cl):
-            return c
-        if want == "id" and "id" in cl:
-            return c
-        if want == "abbr" and any(k in cl for k in ["abbr", "abbreviation", "code"]):
-            return c
-    return None
+def _load_team_directory(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing team directory: {path}")
 
-def _coerce_int(series: pd.Series) -> pd.Series:
-    return pd.to_numeric(series, errors="coerce").astype("Int64")
-
-def _read_csv_any_header(path: Path) -> pd.DataFrame:
-    """
-    Try normal read; if columns still unusable, try header=None expecting 3 columns.
-    """
     df = pd.read_csv(path)
-    if df.shape[1] >= 3:
-        return df
-    # fallback: attempt no-header
-    df = pd.read_csv(path, header=None)
-    return df
+    df.columns = [_norm(c) for c in df.columns]
 
-def _load_team_ids() -> pd.DataFrame:
-    src = next((p for p in PREF_TEAM_ID_PATHS if p.exists()), None)
-    if not src:
-        raise FileNotFoundError("mlb_team_ids.csv not found in data/manual/, data/, or data/Data/")
+    id_candidates = [c for c in df.columns if c in {"teamid", "id", "mlbid"}]
+    abbr_candidates = [c for c in df.columns if c in {"abbr", "abbreviation", "code", "teamabbr", "teamcode"}]
+    name_candidates = [c for c in df.columns if c in {"name", "teamname", "fullname", "clubname"}]
 
-    df = _read_csv_any_header(src)
-    df = _norm_cols(df)
-
-    # If no useful header, rename first three to generic
-    if df.shape[1] >= 3 and set(df.columns) == {0,1,2}:
-        df = df.rename(columns={0: "team_name", 1: "team_id", 2: "abbreviation"})
-
-    name_col = _pick_col(df, "name")
-    id_col   = _pick_col(df, "id")
-    abbr_col = _pick_col(df, "abbr")
-
-    if not (name_col and id_col and abbr_col):
-        cols_str = ", ".join(df.columns)
+    if not id_candidates or not abbr_candidates or not name_candidates:
         raise ValueError(
-            f"mlb_team_ids.csv missing required columns (name/id/abbreviation). "
-            f"Found columns: [{cols_str}] at {src}"
+            "team_directory.csv must include columns for team id, abbreviation, and name "
+            "(header-agnostic; examples: team_id/id/mlb_id, abbreviation/code, name/team_name)."
         )
 
-    out = pd.DataFrame({
-        "team_id": _coerce_int(df[id_col]),
-        "abbr": df[abbr_col].astype(str).str.strip(),
-        "team_name": df[name_col].astype(str).str.strip(),
-    }).dropna(subset=["team_id"]).drop_duplicates(subset=["team_id"])
+    cid = id_candidates[0]
+    cab = abbr_candidates[0]
+    cnm = name_candidates[0]
 
-    # Normalize specific project codes
-    out["abbr"] = out["abbr"].replace({"OAK": "ATH", "CWS": "CHW"})
+    core = {cid, cab, cnm}
+    alias_cols = [c for c in df.columns if c not in core]
 
-    return out
+    df[cid] = pd.to_numeric(df[cid], errors="coerce").astype("Int64")
 
-def _load_pf(fname: str, value_col_name: str) -> pd.DataFrame:
-    fp = MANUAL_DIR / fname
-    if not fp.exists():
-        # Return empty DF; merges will just yield NaN
-        return pd.DataFrame(columns=["team_id", value_col_name])
-    df = pd.read_csv(fp)
-    df = _norm_cols(df)
+    rows = []
+    for _, r in df.iterrows():
+        tid = r[cid]
+        ab = str(r[cab]).strip() if not pd.isna(r[cab]) else ""
+        nm = str(r[cnm]).strip() if not pd.isna(r[cnm]) else ""
+        keys = {_norm(ab), _norm(nm), _norm(ab.replace(".", ""))}
+        keys.add(_norm(nm.replace("White Sox", "Whitesox")))
+        keys.add(_norm(nm.replace("Red Sox", "Redsox")))
+        for ac in alias_cols:
+            v = r.get(ac)
+            if pd.notna(v) and str(v).strip():
+                keys.add(_norm(v))
+        for k in keys:
+            if k:
+                rows.append({"key": k, "team_id": int(tid) if pd.notna(tid) else None, "abbr": ab, "name": nm})
 
-    id_col = _pick_col(df, "id")
-    if not id_col:
-        cols_str = ", ".join(df.columns)
-        raise ValueError(f"{fname} missing team id column. Found columns: [{cols_str}]")
+    m = pd.DataFrame(rows).drop_duplicates("key")
+    if m.empty:
+        raise ValueError("team_directory.csv produced no usable alias keys.")
 
-    # choose factor column
-    candidates = [c for c in df.columns if c != id_col]
-    prefer = [c for c in candidates if ("factor" in c or c.endswith("_pf") or c == "pf")]
-    col_factor = prefer[0] if prefer else (candidates[0] if candidates else None)
-    if not col_factor:
-        cols_str = ", ".join(df.columns)
-        raise ValueError(f"{fname} missing park factor value column. Found columns: [{cols_str}]")
+    return m[["key", "team_id", "abbr", "name"]]
 
-    out = pd.DataFrame({
-        "team_id": _coerce_int(df[id_col]),
-        value_col_name: pd.to_numeric(df[col_factor], errors="coerce")
-    }).dropna(subset=["team_id"]).drop_duplicates(subset=["team_id"])
 
-    return out
+def _canon(series: pd.Series, dir_map: pd.DataFrame, to_abbr: bool = True) -> pd.Series:
+    lk = dir_map.set_index("key")[["abbr", "name", "team_id"]]
+    out = []
+    for v in series.fillna(""):
+        k = _norm(v)
+        if k in lk.index:
+            out.append(lk.loc[k, "abbr"] if to_abbr else lk.loc[k, "name"])
+        else:
+            out.append(v)
+    return pd.Series(out, index=series.index)
 
-def _load_todays_home_abbrs() -> set:
-    if not TODAYS.exists():
-        return set()
-    df = pd.read_csv(TODAYS)
-    df = _norm_cols(df)
-    col_home = "home_team" if "home_team" in df.columns else None
-    if not col_home:
-        return set()
-    return set(df[col_home].astype(str).str.strip().unique())
 
-# ----------------- main -----------------
+def _attach_id(series: pd.Series, dir_map: pd.DataFrame) -> pd.Series:
+    lk = dir_map.set_index("key")["team_id"]
+    return pd.Series([lk.get(_norm(v), pd.NA) for v in series.fillna("")], index=series.index, dtype="Int64")
+
+
 def main():
-    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    # Load team directory (single source of truth)
+    try:
+        dir_map = _load_team_directory(TEAM_DIR)
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    teams = _load_team_ids()
-    pf_day   = _load_pf("park_factors_day.csv", "park_factor_day")
-    pf_night = _load_pf("park_factors_night.csv", "park_factor_night")
-    pf_roof  = _load_pf("park_factors_roof_closed.csv", "park_factor_roof_closed")
+    # Load stadium metadata if present; otherwise start an empty frame
+    if STADIUM_META.exists():
+        sm = pd.read_csv(STADIUM_META)
+    else:
+        sm = pd.DataFrame()
 
-    meta = teams.merge(pf_day,   on="team_id", how="left") \
-                .merge(pf_night, on="team_id", how="left") \
-                .merge(pf_roof,  on="team_id", how="left")
+    # If todaysgames exists, ensure we have one row per active home team in stadium metadata
+    if TODAY_GAMES.exists():
+        tg = pd.read_csv(TODAY_GAMES)
+        # find home team column
+        lower = {c.lower().strip(): c for c in tg.columns}
+        ht = lower.get("home_team")
+        if ht:
+            homes = tg[[ht]].dropna().drop_duplicates()
+            homes.columns = ["home_team"]
+            # canonicalize home team to ABBR and attach ID
+            homes["home_team"] = _canon(homes["home_team"], dir_map, to_abbr=True)
+            homes["home_team_id"] = _attach_id(homes["home_team"], dir_map)
 
-    todays_home = _load_todays_home_abbrs()
-    if todays_home:
-        meta = meta[ meta["abbr"].isin(todays_home) ].copy()
+            # Merge into sm (by home_team/home_team_id if present)
+            if not sm.empty:
+                sm_cols = {c.lower().strip(): c for c in sm.columns}
+                sm_team_col = sm_cols.get("home_team") or sm_cols.get("team") or None
+                if sm_team_col:
+                    sm = sm.copy()
+                    sm[sm_team_col] = _canon(sm[sm_team_col], dir_map, to_abbr=True)
+                    if "home_team_id" not in sm.columns:
+                        sm["home_team_id"] = _attach_id(sm[sm_team_col], dir_map)
+                    # ensure all active homes exist
+                    key_cols = ["home_team_id"] if "home_team_id" in sm.columns else [sm_team_col]
+                    sm = pd.merge(
+                        homes, sm, left_on=key_cols, right_on=key_cols, how="left", suffixes=("", "_y")
+                    )
+                    # drop any duplicated helper columns from merge
+                    dup_y = [c for c in sm.columns if c.endswith("_y")]
+                    if dup_y:
+                        sm = sm.drop(columns=dup_y)
+                else:
+                    # No recognizable team column: rebuild minimal sheet from homes
+                    sm = homes.copy()
+            else:
+                sm = homes.copy()
 
-    meta = meta.sort_values(["abbr"]).reset_index(drop=True)
-    cols = ["team_id","abbr","team_name","park_factor_day","park_factor_night","park_factor_roof_closed"]
-    for c in cols:
-        if c not in meta.columns:
-            meta[c] = pd.NA
-    meta = meta[cols]
+    # Always write back if we reached here
+    STADIUM_META.parent.mkdir(parents=True, exist_ok=True)
+    sm.to_csv(STADIUM_META, index=False)
+    print(f"Saved updated stadium metadata to {STADIUM_META}")
 
-    meta.to_csv(OUT_PATH, index=False)
-    print(f"Saved updated stadium metadata to {OUT_PATH} (rows={len(meta)})")
 
 if __name__ == "__main__":
     main()
