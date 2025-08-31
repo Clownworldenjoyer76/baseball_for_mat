@@ -1,49 +1,49 @@
-===== RUN TIMESTAMP: 2025-08-31 04:37:29 PM EDT =====
+===== RUN TIMESTAMP: 2025-08-31 04:55:46 PM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-08-31 04:37:19 PM EDT]
-✅ python succeeded [2025-08-31 04:37:29 PM EDT]
-✅ python succeeded [2025-08-31 04:37:29 PM EDT]
-✅ python succeeded [2025-08-31 04:37:29 PM EDT]
+❌ python failed [2025-08-31 04:55:34 PM EDT]
+✅ python succeeded [2025-08-31 04:55:45 PM EDT]
+✅ python succeeded [2025-08-31 04:55:45 PM EDT]
+✅ python succeeded [2025-08-31 04:55:46 PM EDT]
 
 ===== LOG =====
-▶️ START: generate_weather_csv.py (2025-08-31 04:37:18 PM EDT)
-⏹️ END: python (2025-08-31 04:37:19 PM EDT)
+▶️ START: generate_weather_csv.py (2025-08-31 04:55:34 PM EDT)
+⏹️ END: python (2025-08-31 04:55:34 PM EDT)
 
-▶️ START: get_weather_data.py (2025-08-31 04:37:19 PM EDT)
-2025-08-31 08:37:19 PM 🔄 Read data/weather_input.csv...
-2025-08-31 08:37:19 PM 🌍 Fetch weather for 15 venues...
-2025-08-31 08:37:22 PM ⚠️ Unparsable ET for nan, nan: 'nan'.
-2025-08-31 08:37:28 PM ❌ No forecast for nan, nan. Stub row.
-2025-08-31 08:37:29 PM ✅ Wrote data/weather_adjustments.csv with 15 rows.
-⏹️ END: python (2025-08-31 04:37:29 PM EDT)
+▶️ START: get_weather_data.py (2025-08-31 04:55:34 PM EDT)
+2025-08-31 08:55:35 PM 🔄 Read data/weather_input.csv...
+2025-08-31 08:55:35 PM 🌍 Fetch weather for 15 venues...
+2025-08-31 08:55:38 PM ⚠️ Unparsable ET for nan, nan: 'nan'.
+2025-08-31 08:55:44 PM ❌ No forecast for nan, nan. Stub row.
+2025-08-31 08:55:45 PM ✅ Wrote data/weather_adjustments.csv with 15 rows.
+⏹️ END: python (2025-08-31 04:55:45 PM EDT)
 
-▶️ START: weather_data_fix.py (2025-08-31 04:37:29 PM EDT)
+▶️ START: weather_data_fix.py (2025-08-31 04:55:45 PM EDT)
 🔄 Load weather_adjustments.csv...
 🧮 Calculate weather_factor...
 ✅ Done.
-⏹️ END: python (2025-08-31 04:37:29 PM EDT)
+⏹️ END: python (2025-08-31 04:55:45 PM EDT)
 
-▶️ START: attach_game_ids.py (2025-08-31 04:37:29 PM EDT)
+▶️ START: attach_game_ids.py (2025-08-31 04:55:45 PM EDT)
 home: 0 → 0 after attaching game_id/date (dropped 0)
 away: 0 → 0 after attaching game_id/date (dropped 0)
-⏹️ END: python (2025-08-31 04:37:29 PM EDT)
+⏹️ END: python (2025-08-31 04:55:46 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-08-31 04:37:19 PM EDT]:
+❌ python ERROR [2025-08-31 04:55:34 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 30, in main
-    s = s[keep]
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 26, in main
+    g = g[cols]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
     indexer = self.columns._get_indexer_strict(key, "columns")[1]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
     self._raise_if_missing(keyarr, indexer, axis_name)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
     raise KeyError(f"{not_found} not in index")
-KeyError: "['home_team', 'roof_type'] not in index"
+KeyError: "['date'] not in index"
 
 ---
 

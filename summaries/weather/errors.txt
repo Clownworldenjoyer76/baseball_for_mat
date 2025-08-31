@@ -1,16 +1,16 @@
-❌ python ERROR [2025-08-31 04:37:19 PM EDT]:
+❌ python ERROR [2025-08-31 04:55:34 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 30, in main
-    s = s[keep]
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 26, in main
+    g = g[cols]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
     indexer = self.columns._get_indexer_strict(key, "columns")[1]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
     self._raise_if_missing(keyarr, indexer, axis_name)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
     raise KeyError(f"{not_found} not in index")
-KeyError: "['home_team', 'roof_type'] not in index"
+KeyError: "['date'] not in index"
 
 ---
 
