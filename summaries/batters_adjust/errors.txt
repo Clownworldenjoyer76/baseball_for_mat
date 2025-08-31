@@ -1,0 +1,28 @@
+❌ python ERROR [2025-08-31 10:42:59 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 69, in main
+    adj_home = _attach_weather_by_game(bh, wx)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 25, in _attach_weather_by_game
+    _require(batters, ["game_id", "date", "team", "woba"], "batters input")
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 19, in _require
+    raise ValueError(f"{where}: missing columns {miss}")
+ValueError: batters input: missing columns ['game_id', 'date']
+
+---
+
+❌ python ERROR [2025-08-31 10:42:59 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 147, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 130, in main
+    bh2 = _attach_home_team_tod_and_date(bh, sched, tod)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 72, in _attach_home_team_tod_and_date
+    _require(batters, ["team", "woba", "game_id", "date"], "batters input")
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 23, in _require
+    raise ValueError(f"{where}: missing columns {miss}")
+ValueError: batters input: missing columns ['game_id', 'date']
+
+---
+
