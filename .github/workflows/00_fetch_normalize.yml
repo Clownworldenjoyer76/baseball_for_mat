@@ -1,17 +1,13 @@
-name: 00 Fetch & Normalize
+name: "00 Fetch & Normalize"
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: []
-    types: [completed]
 
 permissions:
   contents: write
 
 jobs:
   fetch_normalize:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
