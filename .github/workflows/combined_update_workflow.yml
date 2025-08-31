@@ -85,4 +85,92 @@ jobs:
 
           git_cfg() {
             git config user.name  "github-actions"
-            git config
+            git config user.email "github-actions@github.com"
+          }
+
+          # ---------- LINEUPS ----------
+          run_step "scripts/todayslineups.py" python -u scripts/todayslineups.py
+
+          echo "CSV preview (lineups):" >> "$LOG_FILE"
+          head -n 5 data/raw/lineups.csv >> "$LOG_FILE" 2>/dev/null || true
+          wc -c data/raw/lineups.csv >> "$LOG_FILE" 2>/dev/null || true
+
+          git_cfg
+          git add data/raw/lineups.csv
+          if git diff --cached --quiet; then
+            echo "No changes to data/raw/lineups.csv; skipping commit." >> "$LOG_FILE"
+          else
+            if git commit -m "Update lineups.csv"; then
+              echo "Committed lineups.csv at $(git rev-parse HEAD)" >> "$LOG_FILE"
+              git pull --rebase origin main || true
+              git push origin HEAD:main || echo "Push failed" >> "$ERR_FILE"
+            else
+              echo "Commit failed for lineups.csv" >> "$ERR_FILE"
+            fi
+          fi
+
+          # ---------- TODAYS GAMES ----------
+          run_step "scripts/todaysgames.py" python -u scripts/todaysgames.py --out data/raw/todaysgames.csv
+
+          echo "CSV preview (todaysgames):" >> "$LOG_FILE"
+          head -n 5 data/raw/todaysgames.csv >> "$LOG_FILE" 2>/dev/null || true
+          wc -c data/raw/todaysgames.csv >> "$LOG_FILE" 2>/dev/null || true
+
+          git_cfg
+          git add --force data/raw/todaysgames.csv
+          if git diff --cached --quiet; then
+            git commit --allow-empty -m "Keep data/raw/todaysgames.csv (no content change) [run $GITHUB_RUN_ID]" >> "$LOG_FILE" 2>>"$ERR_FILE"
+          else
+            git commit -m "Update data/raw/todaysgames.csv [run $GITHUB_RUN_ID]" >> "$LOG_FILE" 2>>"$ERR_FILE"
+          fi
+          git pull --rebase origin main || true
+          git push origin HEAD:main || echo "Push failed" >> "$ERR_FILE"
+
+          # ---------- ENRICH PITCHERS WITH OPPONENT CONTEXT ----------
+          GAME_DATE="$(date +%F)"
+          run_step "scripts/enrich_pitchers_with_opp.py" python -u scripts/enrich_pitchers_with_opp.py \
+            --infile data/end_chain/final/startingpitchers_final.csv \
+            --date "${GAME_DATE}" \
+            --outfile data/raw/startingpitchers_with_opp_context.csv
+
+          echo "CSV preview (startingpitchers_with_opp_context):" >> "$LOG_FILE"
+          head -n 5 data/raw/startingpitchers_with_opp_context.csv >> "$LOG_FILE" 2>/dev/null || true
+          wc -c data/raw/startingpitchers_with_opp_context.csv >> "$LOG_FILE" 2>/dev/null || true
+
+          git_cfg
+          git add --force data/raw/startingpitchers_with_opp_context.csv
+          git commit --allow-empty -m "Update data/raw/startingpitchers_with_opp_context.csv [run $GITHUB_RUN_ID]" >> "$LOG_FILE" 2>>"$ERR_FILE"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || echo "Push failed" >> "$ERR_FILE"
+
+          # ---------- WRITE SUMMARY ----------
+          {
+            echo "===== RUN TIMESTAMP: $(ts) ====="
+            echo ""
+            echo "===== STATUS ====="
+            cat "$STATUS_FILE"
+            echo ""
+            echo "===== LOG ====="
+            cat "$LOG_FILE"
+            echo ""
+            echo "===== ERRORS ====="
+            cat "$ERR_FILE"
+          } > "$SUMMARY_FILE"
+
+          # ---------- COMMIT SUMMARIES ----------
+          git_cfg
+          git add summaries/todaysgames/*.txt
+          if git diff --cached --quiet; then
+            echo "No changes to summaries/todaysgames; skipping commit." >> "$LOG_FILE"
+          else
+            git commit -m "Update summaries/todaysgames [run $GITHUB_RUN_ID]" >> "$LOG_FILE" 2>>"$ERR_FILE"
+            git pull --rebase origin main || true
+            git push origin HEAD:main || echo "Push failed" >> "$ERR_FILE"
+          fi
+
+      - name: Upload summaries/todaysgames artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: todaysgames_summaries
+          path: summaries/todaysgames/
+          if-no-files-found: warn
