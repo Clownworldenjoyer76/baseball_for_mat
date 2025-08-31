@@ -1,111 +1,88 @@
 #!/usr/bin/env python3
+# Mobile-safe: reconcile stadium file team identifiers to team_directory.csv
 import sys
 from pathlib import Path
 import pandas as pd
 
-# Paths (inputs and outputs)
-TODAY_GAMES = Path("data/raw/todaysgames_normalized.csv")
-TEAM_DIR    = Path("data/manual/team_directory.csv")
-STADIUM_OUT = Path("data/Data/stadium_metadata.csv")  # keep existing output location
+TEAM_DIR = Path("data/manual/team_directory.csv")
+STADIUM_CSV = Path("data/Data/stadium_metadata.csv")
 
 def _load_team_directory() -> pd.DataFrame:
-    """
-    Load data/manual/team_directory.csv and normalize headers.
-    Requires columns representing team name, team id, abbreviation.
-    """
     if not TEAM_DIR.exists():
         print(f"ERROR: missing {TEAM_DIR}", file=sys.stderr)
         sys.exit(1)
-
-    df = pd.read_csv(TEAM_DIR)
-    # Normalize headers to lowercase strings
-    df.columns = [str(c).strip().lower() for c in df.columns]
-
-    # Supported header variants (header-agnostic)
-    name_cols = [c for c in df.columns if c in {"team name", "team_name", "name"}]
-    id_cols   = [c for c in df.columns if c in {"team id", "team_id", "id"}]
-    abv_cols  = [c for c in df.columns if c in {"abbreviation", "abbr", "abbrev"}]
-
-    if not name_cols or not id_cols or not abv_cols:
-        print("ERROR: team_directory.csv must contain name/id/abbreviation columns.", file=sys.stderr)
+    df = pd.read_csv(TEAM_DIR, dtype=str).fillna("")
+    required = {"team_id","team_code","canonical_team","team_name","clean_team_name","all_codes","all_names"}
+    if not required.issubset(set(df.columns)):
+        print("ERROR: team_directory.csv must contain exact headers: "
+              "team_id, team_code, canonical_team, team_name, clean_team_name, all_codes, all_names", file=sys.stderr)
         sys.exit(1)
+    df["team_id"] = df["team_id"].astype(str).str.strip()
+    df["team_code"] = df["team_code"].astype(str).str.strip()
+    df["canonical_team"] = df["canonical_team"].astype(str).str.strip()
+    df["team_name"] = df["team_name"].astype(str).str.strip()
+    df["clean_team_name"] = df["clean_team_name"].astype(str).str.strip()
+    df["all_codes"] = df["all_codes"].astype(str).str.strip()
+    df["all_names"] = df["all_names"].astype(str).str.strip()
+    return df
 
-    df = df.rename(columns={
-        name_cols[0]: "team_name",
-        id_cols[0]: "team_id",
-        abv_cols[0]: "abbreviation",
-    })
+def _build_alias_map(df: pd.DataFrame) -> dict:
+    m = {}
+    def add(k, code):
+        k = (k or "").strip().upper()
+        code = (code or "").strip()
+        if k and code and k not in m:
+            m[k] = code
+    for _, r in df.iterrows():
+        code = r["team_code"]
+        add(r["team_code"], code)
+        add(r["canonical_team"], code)
+        add(r["team_name"], code)
+        add(r["clean_team_name"], code)
+        for bucket in ("all_codes","all_names"):
+            raw = r[bucket]
+            if raw:
+                parts = [p for token in raw.split("|") for p in token.split(",")]
+                for p in parts:
+                    add(p, code)
+    return m
 
-    # Ensure types
-    df["team_name"] = df["team_name"].astype(str)
-    df["abbreviation"] = df["abbreviation"].astype(str)
-    # team_id may be int-like; coerce to Int64 to tolerate blanks
-    df["team_id"] = pd.to_numeric(df["team_id"], errors="coerce").astype("Int64")
-
-    # Build quick lookups
-    df["_team_name_upper"] = df["team_name"].str.upper()
-    return df[["team_name", "team_id", "abbreviation", "_team_name_upper"]]
-
-def _load_today_games() -> pd.DataFrame:
-    """
-    Read normalized games file with home_team/away_team abbreviations.
-    If absent, return empty DataFrame with expected columns.
-    """
-    cols = ["home_team", "away_team", "game_time"]
-    if TODAY_GAMES.exists():
-        g = pd.read_csv(TODAY_GAMES)
-        # Ensure columns exist, fill if missing
-        for c in cols:
-            if c not in g.columns:
-                g[c] = pd.NA
-        return g[cols]
-    else:
-        return pd.DataFrame(columns=cols)
-
-def _load_existing_stadium() -> pd.DataFrame:
-    """
-    Load existing stadium metadata (any columns). If missing, start empty with 'team' as a key.
-    """
-    if STADIUM_OUT.exists():
-        s = pd.read_csv(STADIUM_OUT)
-        # Guarantee 'team' column exists for keying (store as abbreviation)
-        if "team" not in s.columns:
-            s["team"] = pd.NA
-        s["team"] = s["team"].astype(str)
-        return s
-    else:
-        return pd.DataFrame(columns=["team"])
+def _normalize(series: pd.Series, amap: dict) -> pd.Series:
+    return series.astype(str).apply(lambda v: amap.get(v.strip().upper(), v.strip()))
 
 def main():
-    teams = _load_team_directory()
-    games = _load_today_games()
-    stadium = _load_existing_stadium()
+    if not STADIUM_CSV.exists():
+        print(f"INSUFFICIENT INFORMATION\nMissing file: {STADIUM_CSV}", file=sys.stderr)
+        sys.exit(1)
 
-    # Home teams expected today (abbreviations if normalize_todays_games already ran)
-    home_vals = (games["home_team"].dropna().astype(str).str.upper().unique().tolist()
-                 if not games.empty else [])
+    td = _load_team_directory()
+    amap = _build_alias_map(td)
 
-    # Ensure a row exists for each home team abbreviation.
-    # We do not invent columns; we only add minimal stub rows with 'team' populated if missing.
-    if "team" not in stadium.columns:
-        stadium["team"] = pd.NA
+    s = pd.read_csv(STADIUM_CSV)
+    # Choose an existing team identifier column
+    team_col = None
+    for c in ("team","home_team","Team","HOME_TEAM"):
+        if c in s.columns:
+            team_col = c
+            break
+    if team_col is None:
+        print(f"INSUFFICIENT INFORMATION\nNo team column in {STADIUM_CSV}", file=sys.stderr)
+        sys.exit(1)
 
-    stadium["team"] = stadium["team"].astype(str)
-    have = set(stadium["team"].str.upper().tolist())
-    need = [abbr for abbr in home_vals if abbr not in have]
+    # Normalize to canonical team_code and attach team_id
+    s["team"] = _normalize(s[team_col], amap)
+    if "team_id" not in s.columns:
+        s = s.merge(td[["team_code","team_id"]].rename(columns={"team_code":"team"}),
+                    on="team", how="left")
 
-    if need:
-        add = pd.DataFrame({"team": need})
-        stadium = pd.concat([stadium, add], ignore_index=True)
+    # Drop the old column if different
+    if team_col != "team" and team_col in s.columns:
+        s.drop(columns=[team_col], inplace=True)
 
-    # Sort for stability
-    stadium = stadium.drop_duplicates(subset=["team"], keep="first")
-    stadium = stadium.sort_values(by=["team"], kind="mergesort")
-
-    # Write output
-    STADIUM_OUT.parent.mkdir(parents=True, exist_ok=True)
-    stadium.to_csv(STADIUM_OUT, index=False)
-    print(f"Saved updated stadium metadata to {STADIUM_OUT}")
+    # Write back
+    STADIUM_CSV.parent.mkdir(parents=True, exist_ok=True)
+    s.to_csv(STADIUM_CSV, index=False)
+    print(f"Saved updated stadium metadata to {STADIUM_CSV}")
 
 if __name__ == "__main__":
     main()
