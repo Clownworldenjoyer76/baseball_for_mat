@@ -1,77 +1,70 @@
-===== RUN TIMESTAMP: 2025-08-31 04:25:50 PM EDT =====
+===== RUN TIMESTAMP: 2025-08-31 04:36:03 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-08-31 04:25:46 PM EDT]
-✅ python succeeded [2025-08-31 04:25:46 PM EDT]
-✅ python succeeded [2025-08-31 04:25:47 PM EDT]
-✅ python succeeded [2025-08-31 04:25:47 PM EDT]
-✅ python succeeded [2025-08-31 04:25:48 PM EDT]
-✅ python succeeded [2025-08-31 04:25:48 PM EDT]
-❌ python failed [2025-08-31 04:25:48 PM EDT]
-❌ python failed [2025-08-31 04:25:49 PM EDT]
-✅ python succeeded [2025-08-31 04:25:49 PM EDT]
-✅ python succeeded [2025-08-31 04:25:49 PM EDT]
-✅ python succeeded [2025-08-31 04:25:50 PM EDT]
-✅ python succeeded [2025-08-31 04:25:50 PM EDT]
-✅ python succeeded [2025-08-31 04:25:50 PM EDT]
+✅ python succeeded [2025-08-31 04:35:58 PM EDT]
+✅ python succeeded [2025-08-31 04:35:58 PM EDT]
+✅ python succeeded [2025-08-31 04:35:59 PM EDT]
+✅ python succeeded [2025-08-31 04:35:59 PM EDT]
+✅ python succeeded [2025-08-31 04:35:59 PM EDT]
+✅ python succeeded [2025-08-31 04:36:00 PM EDT]
+✅ python succeeded [2025-08-31 04:36:00 PM EDT]
+✅ python succeeded [2025-08-31 04:36:00 PM EDT]
+✅ python succeeded [2025-08-31 04:36:01 PM EDT]
+✅ python succeeded [2025-08-31 04:36:01 PM EDT]
+✅ python succeeded [2025-08-31 04:36:02 PM EDT]
+✅ python succeeded [2025-08-31 04:36:02 PM EDT]
+✅ python succeeded [2025-08-31 04:36:03 PM EDT]
 
 ===== LOG =====
-▶️ START: normalize_names.py (2025-08-31 04:25:46 PM EDT)
+▶️ START: normalize_names.py (2025-08-31 04:35:57 PM EDT)
 ✅ Batters normalized: 156 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 109 → data/normalized/pitchers_normalized.csv
-⏹️ END: python (2025-08-31 04:25:46 PM EDT)
+⏹️ END: python (2025-08-31 04:35:58 PM EDT)
 
-▶️ START: tag_master_files.py (2025-08-31 04:25:46 PM EDT)
-⏹️ END: python (2025-08-31 04:25:46 PM EDT)
+▶️ START: tag_master_files.py (2025-08-31 04:35:58 PM EDT)
+⏹️ END: python (2025-08-31 04:35:58 PM EDT)
 
-▶️ START: validate_tagged_players.py (2025-08-31 04:25:46 PM EDT)
-⏹️ END: python (2025-08-31 04:25:47 PM EDT)
+▶️ START: validate_tagged_players.py (2025-08-31 04:35:58 PM EDT)
+⏹️ END: python (2025-08-31 04:35:59 PM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-08-31 04:25:47 PM EDT)
-⏹️ END: python (2025-08-31 04:25:47 PM EDT)
+▶️ START: deduplicate_normalized.py (2025-08-31 04:35:59 PM EDT)
+⏹️ END: python (2025-08-31 04:35:59 PM EDT)
 
-▶️ START: normalize_lineups.py (2025-08-31 04:25:47 PM EDT)
+▶️ START: normalize_lineups.py (2025-08-31 04:35:59 PM EDT)
 ✅ normalize_lineups.py completed: 779 rows written to data/raw/lineups_normalized.csv
-⏹️ END: python (2025-08-31 04:25:48 PM EDT)
+⏹️ END: python (2025-08-31 04:35:59 PM EDT)
 
-▶️ START: normalize_todays_games.py (2025-08-31 04:25:48 PM EDT)
+▶️ START: normalize_todays_games.py (2025-08-31 04:35:59 PM EDT)
 ✅ normalize_todays_games wrote 15 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 04:25:48 PM EDT)
+⏹️ END: python (2025-08-31 04:36:00 PM EDT)
 
-▶️ START: refresh_stadium_metadata.py (2025-08-31 04:25:48 PM EDT)
-⏹️ END: python (2025-08-31 04:25:48 PM EDT)
+▶️ START: refresh_stadium_metadata.py (2025-08-31 04:36:00 PM EDT)
+Saved updated stadium metadata to data/Data/stadium_metadata.csv
+⏹️ END: python (2025-08-31 04:36:00 PM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-08-31 04:25:48 PM EDT)
-⏹️ END: python (2025-08-31 04:25:49 PM EDT)
+▶️ START: apply_team_name_mapping.py (2025-08-31 04:36:00 PM EDT)
+Updated: data/raw/todaysgames_normalized.csv (if present)
+Updated: data/Data/stadium_metadata.csv (if present)
+⏹️ END: python (2025-08-31 04:36:00 PM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-08-31 04:25:49 PM EDT)
+▶️ START: fetch_mlb_ids.py (2025-08-31 04:36:00 PM EDT)
 ✅ fetch_mlb_ids: wrote 15 rows -> data/raw/mlb_schedule_today.csv (ET date=2025-08-31)
 ✅ fetch_mlb_ids: enriched data/raw/todaysgames_normalized.csv with game_id/meta; rows=15
-⏹️ END: python (2025-08-31 04:25:49 PM EDT)
+⏹️ END: python (2025-08-31 04:36:01 PM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-08-31 04:25:49 PM EDT)
+▶️ START: hotfix_team_codes.py (2025-08-31 04:36:01 PM EDT)
 ✅ hotfix_team_codes applied fixes -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 04:25:49 PM EDT)
+⏹️ END: python (2025-08-31 04:36:01 PM EDT)
 
-▶️ START: update_game_time.py (2025-08-31 04:25:49 PM EDT)
+▶️ START: update_game_time.py (2025-08-31 04:36:01 PM EDT)
 ✅ Updated park factors in data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 04:25:50 PM EDT)
+⏹️ END: python (2025-08-31 04:36:02 PM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-08-31 04:25:50 PM EDT)
-⏹️ END: python (2025-08-31 04:25:50 PM EDT)
+▶️ START: filter_stadium_metadata.py (2025-08-31 04:36:02 PM EDT)
+⏹️ END: python (2025-08-31 04:36:02 PM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-08-31 04:25:50 PM EDT)
-⏹️ END: python (2025-08-31 04:25:50 PM EDT)
+▶️ START: normalize_batter_team_names.py (2025-08-31 04:36:02 PM EDT)
+⏹️ END: python (2025-08-31 04:36:03 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-08-31 04:25:48 PM EDT]:
-ERROR: team_directory.csv must contain name/id/abbreviation columns.
-
----
-
-❌ python ERROR [2025-08-31 04:25:49 PM EDT]:
-ERROR: team_directory.csv must contain name/id/abbreviation columns.
-
----
-
