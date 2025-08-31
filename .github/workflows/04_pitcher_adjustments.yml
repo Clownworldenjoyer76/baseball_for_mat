@@ -3,20 +3,32 @@ name: 04 Pitcher Adjustments
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["03 Batter Adjustments"]
+    workflows: ["03 Batter Adjustments"]  # MUST match 03's name exactly
     types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
   pitcher_adjustments:
+    # Runs when dispatched manually OR when 03 completed successfully
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
+      - name: Banner
+        run: |
+          echo "04 START $(TZ=America/New_York date)"
+          echo "event_name=${{ github.event_name }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
+
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 0 }
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
@@ -30,7 +42,8 @@ jobs:
           restore-keys: ${{ runner.os }}-py-
 
       - uses: actions/setup-python@v4
-        with: { python-version: "3.10" }
+        with:
+          python-version: "3.10"
 
       - name: Install deps
         run: |
@@ -64,7 +77,8 @@ jobs:
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
-            echo; echo "===== STATUS =====";  cat "$STATUS"
+            echo
+            echo "===== STATUS =====";  cat "$STATUS"
             echo; echo "===== LOG =====";     cat "$LOG"
             echo; echo "===== ERRORS =====";  cat "$ERR"
           } > "$SUM"
