@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Mobile-safe: enforce Int64 IDs and attach park_factor to todaysgames_normalized.csv
+# Mobile-safe: enforce Int64 IDs, attach/retain park_factor, and write a clean todaysgames_normalized.csv
 
 from pathlib import Path
 import pandas as pd
@@ -86,57 +86,63 @@ def main():
     if "away_team" in g.columns:
         g["away_team"] = g["away_team"].map(lambda v: norm_team(v, alias_to_abbr))
 
-    # Rebuild IDs from abbreviations; keep prior if present
+    # Rebuild IDs where missing; enforce Int64
     home_id_from_map = g.get("home_team","").map(lambda c: abbr_to_id.get((c or "").strip().upper()))
     away_id_from_map = g.get("away_team","").map(lambda c: abbr_to_id.get((c or "").strip().upper()))
-
-    # Prefer existing IDs if already numeric; else use map
-    g["home_team_id"] = pd.Series(
-        pd.to_numeric(g.get("home_team_id", pd.Series(index=g.index)), errors="coerce")
-    ).where(lambda x: x.notna(), home_id_from_map)
-    g["away_team_id"] = pd.Series(
-        pd.to_numeric(g.get("away_team_id", pd.Series(index=g.index)), errors="coerce")
-    ).where(lambda x: x.notna(), away_id_from_map)
-
-    # Enforce nullable integer to eliminate .0 on write
+    g["home_team_id"] = pd.to_numeric(g.get("home_team_id", pd.Series(index=g.index)), errors="coerce").where(
+        lambda x: x.notna(), home_id_from_map
+    )
+    g["away_team_id"] = pd.to_numeric(g.get("away_team_id", pd.Series(index=g.index)), errors="coerce").where(
+        lambda x: x.notna(), away_id_from_map
+    )
     g["home_team_id"] = to_int64(g["home_team_id"])
     g["away_team_id"] = to_int64(g["away_team_id"])
 
-    # Attach park factors
-    pf_day  = pd.read_csv(PF_DAY)
-    pf_ngt  = pd.read_csv(PF_NIGHT)
-    pf_roof = pd.read_csv(PF_ROOF)
-    for pf in (pf_day, pf_ngt, pf_roof):
-        pf["team_id"] = to_int64(pf["team_id"])
-
-    merged = g.copy()
-    # Need hour for day/night decide
-    if "game_time" in merged.columns:
-        merged["_hour24"] = merged["game_time"].map(hour24)
+    # Attach PFs if park_factor missing or helper columns absent
+    need_pf = "park_factor" not in g.columns or g["park_factor"].isna().any()
+    if need_pf:
+        pf_day  = pd.read_csv(PF_DAY)
+        pf_ngt  = pd.read_csv(PF_NIGHT)
+        pf_roof = pd.read_csv(PF_ROOF)
+        for pf in (pf_day, pf_ngt, pf_roof):
+            pf["team_id"] = to_int64(pf["team_id"])
+            # Normalize header variants
+            c = {c.lower(): c for c in pf.columns}
+            pf_col = c.get("park_factor") or c.get("park factor")
+            pf.rename(columns={pf_col: "park_factor"}, inplace=True)
+        merged = g.copy()
+        merged["_hour24"] = merged.get("game_time", pd.Series(index=g.index)).map(hour24)
+        merged = merged.merge(
+            pf_day[["team_id","park_factor"]].rename(columns={"park_factor":"pf_day"}),
+            left_on="home_team_id", right_on="team_id", how="left"
+        ).drop(columns=["team_id"])
+        merged = merged.merge(
+            pf_ngt[["team_id","park_factor"]].rename(columns={"park_factor":"pf_night"}),
+            left_on="home_team_id", right_on="team_id", how="left"
+        ).drop(columns=["team_id"])
+        merged = merged.merge(
+            pf_roof[["team_id","park_factor"]].rename(columns={"park_factor":"pf_roof"}),
+            left_on="home_team_id", right_on="team_id", how="left"
+        ).drop(columns=["team_id"])
+        merged["park_factor"] = merged.get("park_factor", pd.Series(index=g.index))
+        merged["park_factor"] = merged["park_factor"].where(merged["park_factor"].notna(), merged.apply(choose_pf, axis=1))
+        merged = merged.drop(columns=["pf_day","pf_night","pf_roof","_hour24"], errors="ignore")
     else:
-        merged["_hour24"] = pd.NA
+        merged = g.copy()
 
-    merged = merged.merge(pf_day[["team_id","Park Factor"]].rename(columns={"Park Factor":"pf_day"}),
-                          left_on="home_team_id", right_on="team_id", how="left").drop(columns=["team_id"])
-    merged = merged.merge(pf_ngt[["team_id","Park Factor"]].rename(columns={"Park Factor":"pf_night"}),
-                          left_on="home_team_id", right_on="team_id", how="left").drop(columns=["team_id"])
-    merged = merged.merge(pf_roof[["team_id","Park Factor"]].rename(columns={"Park Factor":"pf_roof"}),
-                          left_on="home_team_id", right_on="team_id", how="left").drop(columns=["team_id"])
-
-    merged["park_factor"] = merged.apply(choose_pf, axis=1)
-    merged = merged.drop(columns=["pf_day","pf_night","pf_roof","_hour24"], errors="ignore")
-
-    # Preserve original column order; append ids/pf if missing
-    cols = list(g.columns)
+    # Final column order: keep existing columns that still exist, then ensure ids + park_factor
+    desired = [c for c in g.columns if c in merged.columns]
     for c in ("home_team_id","away_team_id","park_factor"):
-        if c not in cols:
-            cols.append(c)
-    out = merged[cols]
+        if c not in desired and c in merged.columns:
+            desired.append(c)
+
+    out = merged[desired]
 
     GAMES_CSV.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(GAMES_CSV, index=False)
-    filled_ids = int(out["home_team_id"].notna().sum())
-    filled_pf  = int(out["park_factor"].notna().sum()) if "park_factor" in out.columns else 0
+
+    filled_ids = int(out["home_team_id"].notna().sum()) if "home_team_id" in out.columns else 0
+    filled_pf  = int(out["park_factor"].notna().sum())   if "park_factor" in out.columns   else 0
     print(f"✅ Wrote {GAMES_CSV} | IDs filled: {filled_ids}/{len(out)} | park_factor filled: {filled_pf}/{len(out)}")
 
 if __name__ == "__main__":
