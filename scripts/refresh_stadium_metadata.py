@@ -1,102 +1,127 @@
 #!/usr/bin/env python3
 """
-Refresh stadium metadata for today's home teams by merging manual park factors.
+Builds data/Data/stadium_metadata.csv from data/manual inputs.
 
-Inputs
-- data/raw/todaysgames_normalized.csv (needs home_team_id, home_team_canonical)
-- data/Data/stadium_metadata.csv      (previous metadata with venue/city/lat/lon/roof if present; optional)
-- data/manual/park_factors_day.csv
-- data/manual/park_factors_night.csv
-- data/manual/park_factors_roof_closed.csv   (optional override)
+Inputs (under data/manual):
+  - mlb_team_ids.csv
+  - park_factors_day.csv
+  - park_factors_night.csv
+  - park_factors_roof_closed.csv
 
-Output
-- data/Data/stadium_metadata.csv  (only today's home teams, enriched)
+Optional (to restrict to teams playing today):
+  - data/raw/todaysgames_normalized.csv  (reads home team abbreviations)
+
+Output:
+  - data/Data/stadium_metadata.csv
 """
-import pandas as pd
+
 from pathlib import Path
+import pandas as pd
 
-GAMES = Path("data/raw/todaysgames_normalized.csv")
-BASE  = Path("data/Data/stadium_metadata.csv")  # used to retain venue/lat/lon/roof if present
-PF_DAY   = Path("data/manual/park_factors_day.csv")
-PF_NIGHT = Path("data/manual/park_factors_night.csv")
-PF_ROOF  = Path("data/manual/park_factors_roof_closed.csv")
+MANUAL_DIR = Path("data/manual")
+OUT_PATH   = Path("data/Data/stadium_metadata.csv")
+TODAYS     = Path("data/raw/todaysgames_normalized.csv")
 
-OUT = BASE  # write back
+# ---------- header-agnostic helpers ----------
+def _norm_cols(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
+    return df
 
-def _load_csv(p: Path) -> pd.DataFrame:
-    if p.exists():
-        df = pd.read_csv(p)
-        df.columns = [c.strip() for c in df.columns]
-        return df
-    return pd.DataFrame()
+def _load_team_ids() -> pd.DataFrame:
+    """
+    Accepts flexible headers. We map to:
+      team_id (int), abbr (string), team_name (string)
+    """
+    fp = MANUAL_DIR / "mlb_team_ids.csv"
+    df = pd.read_csv(fp)
+    df = _norm_cols(df)
 
+    # Known aliases
+    col_team_name = next((c for c in df.columns if c in {"team_name","name"}), None)
+    col_team_id   = next((c for c in df.columns if c in {"team_id","id","mlb_team_id"}), None)
+    col_abbr      = next((c for c in df.columns if c in {"abbreviation","abbr","team_abbr","team_code"}), None)
+
+    if not (col_team_name and col_team_id and col_abbr):
+        raise ValueError("mlb_team_ids.csv must contain team name/id/abbreviation columns (header-agnostic).")
+
+    out = pd.DataFrame({
+        "team_id": pd.to_numeric(df[col_team_id], errors="coerce").astype("Int64"),
+        "abbr": df[col_abbr].astype(str).str.strip(),
+        "team_name": df[col_team_name].astype(str).str.strip(),
+    })
+    out = out.dropna(subset=["team_id"]).drop_duplicates(subset=["team_id"])
+    return out
+
+def _load_pf(fname: str, value_col_name: str) -> pd.DataFrame:
+    """
+    Accepts flexible headers; returns [team_id, value_col_name]
+    """
+    fp = MANUAL_DIR / fname
+    df = pd.read_csv(fp)
+    df = _norm_cols(df)
+
+    col_team_id = next((c for c in df.columns if c in {"team_id","id","home_team_id","mlb_team_id"}), None)
+    if not col_team_id:
+        raise ValueError(f"{fname} must include a team id column.")
+
+    # Any numeric column to serve as the factor if unnamed
+    # Prefer obvious names
+    cand = [c for c in df.columns if c not in {col_team_id}]
+    # Heuristics: look for factor-like columns
+    prefer = [c for c in cand if "factor" in c or "pf" in c]
+    col_factor = prefer[0] if prefer else (cand[0] if cand else None)
+    if not col_factor:
+        raise ValueError(f"{fname} must contain a park factor value column.")
+
+    out = pd.DataFrame({
+        "team_id": pd.to_numeric(df[col_team_id], errors="coerce").astype("Int64"),
+        value_col_name: pd.to_numeric(df[col_factor], errors="coerce")
+    })
+    out = out.dropna(subset=["team_id"]).drop_duplicates(subset=["team_id"])
+    return out
+
+def _load_todays_home_abbrs() -> set:
+    """
+    Reads todaysgames_normalized if present; returns set of home team abbreviations.
+    Header-agnostic: looks for 'home_team' (case-insensitive).
+    """
+    if not TODAYS.exists():
+        return set()
+    df = pd.read_csv(TODAYS)
+    df = _norm_cols(df)
+    col_home = next((c for c in df.columns if c in {"home_team","home"}), None)
+    if not col_home:
+        return set()
+    return set(df[col_home].astype(str).str.strip().unique())
+
+# ---------- main ----------
 def main():
-    games = _load_csv(GAMES)
-    if games.empty:
-        raise SystemExit("todaysgames_normalized.csv is empty or missing")
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    # Keep only today's HOME teams (unique)
-    homes = games[["home_team_id","home_team_canonical"]].drop_duplicates().rename(
-        columns={"home_team_canonical":"home_team"}
-    )
+    teams = _load_team_ids()
+    pf_day   = _load_pf("park_factors_day.csv", "park_factor_day")
+    pf_night = _load_pf("park_factors_night.csv", "park_factor_night")
+    pf_roof  = _load_pf("park_factors_roof_closed.csv", "park_factor_roof_closed")
 
-    # Park factors (expect columns: team_id / home_team / Park Factor or PF value)
-    day = _load_csv(PF_DAY)
-    night = _load_csv(PF_NIGHT)
-    roof = _load_csv(PF_ROOF)
+    # Merge
+    meta = teams.merge(pf_day,   on="team_id", how="left") \
+                .merge(pf_night, on="team_id", how="left") \
+                .merge(pf_roof,  on="team_id", how="left")
 
-    for df in (day, night, roof):
-        if not df.empty and "home_team_id" not in df.columns and "team_id" in df.columns:
-            df.rename(columns={"team_id":"home_team_id"}, inplace=True)
-        if "Park Factor" in df.columns and "park_factor" not in df.columns:
-            df.rename(columns={"Park Factor":"park_factor"}, inplace=True)
+    # Optional: restrict to today’s home teams if that file exists and matches abbreviations
+    todays_home = _load_todays_home_abbrs()
+    if todays_home:
+        meta = meta[ meta["abbr"].isin(todays_home) ].copy()
 
-    day.rename(columns={"park_factor":"park_factor_day"}, inplace=True)
-    night.rename(columns={"park_factor":"park_factor_night"}, inplace=True)
-    roof.rename(columns={"park_factor":"park_factor_roof_closed"}, inplace=True)
+    # Sort & write
+    meta = meta.sort_values(["abbr"]).reset_index(drop=True)
 
-    meta_prev = _load_csv(BASE)
+    # Final column order (stable, compact)
+    meta = meta[["team_id","abbr","team_name","park_factor_day","park_factor_night","park_factor_roof_closed"]]
 
-    # Prefer previous metadata for venue/city/lat/lon/roof_type if present
-    keep_cols = ["home_team","venue","city","state","latitude","longitude","roof_type","time_of_day"]
-    meta_prev = meta_prev[keep_cols] if not meta_prev.empty else pd.DataFrame(columns=keep_cols)
-
-    meta = homes.merge(meta_prev, on="home_team", how="left")
-
-    # Attach numeric team id for joins
-    if "home_team_id" not in meta.columns and "team_id" in homes.columns:
-        meta["home_team_id"] = homes["team_id"]
-
-    # Merge manual PFs
-    if not day.empty:
-        meta = meta.merge(day[["home_team_id","park_factor_day"]], on="home_team_id", how="left")
-    if not night.empty:
-        meta = meta.merge(night[["home_team_id","park_factor_night"]], on="home_team_id", how="left")
-    if not roof.empty:
-        meta = meta.merge(roof[["home_team_id","park_factor_roof_closed"]], on="home_team_id", how="left")
-
-    # Compute selected "Park Factor" using time_of_day and roof_type
-    def _pick_pf(row):
-        # If roof closed and override present, use it
-        if str(row.get("roof_type","")).strip().lower() in {"closed","dome","fixed","roof closed"}:
-            val = row.get("park_factor_roof_closed")
-            if pd.notna(val):
-                return float(val)
-        # Else day/night
-        tod = str(row.get("time_of_day","")).strip().lower()
-        if tod == "day" and pd.notna(row.get("park_factor_day")):
-            return float(row["park_factor_day"])
-        if tod == "night" and pd.notna(row.get("park_factor_night")):
-            return float(row["park_factor_night"])
-        # Fallback: average of available
-        vals = [row.get("park_factor_day"), row.get("park_factor_night")]
-        vals = [float(v) for v in vals if pd.notna(v)]
-        return sum(vals)/len(vals) if vals else None
-
-    meta["Park Factor"] = meta.apply(_pick_pf, axis=1)
-
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    meta.to_csv(OUT, index=False)
+    meta.to_csv(OUT_PATH, index=False)
+    print(f"Saved updated stadium metadata to {OUT_PATH} (rows={len(meta)})")
 
 if __name__ == "__main__":
     main()
