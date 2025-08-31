@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
-# Build consolidated player → team master, inject MLB team_id/team_code via team_directory.csv,
-# and attach player_id from data/Data/batters.csv and data/Data/pitchers.csv.
+# Consolidate player→team master.
+# - Carries player_id from team CSVs when present.
+# - Falls back to data/Data/batters.csv and data/Data/pitchers.csv by normalized name.
+# - Injects team_id/team_code/canonical_team from data/manual/team_directory.csv.
+# - Writes unmatched player_id audit to summaries/fetchrosters/unmatched_player_ids.txt.
 
 import os
 import re
@@ -9,11 +12,13 @@ import pandas as pd
 from pathlib import Path
 
 # ===== Paths =====
-TEAM_CSV_DIR  = Path("data/team_csvs")
-TEAM_DIR_FILE = Path("data/manual/team_directory.csv")  # requires: team_id,team_code,canonical_team,team_name,clean_team_name,all_names
-BATTERS_ID_CSV = Path("data/Data/batters.csv")
-PITCHERS_ID_CSV = Path("data/Data/pitchers.csv")
-OUTPUT_FILE   = Path("data/processed/player_team_master.csv")
+TEAM_CSV_DIR        = Path("data/team_csvs")
+TEAM_DIR_FILE       = Path("data/manual/team_directory.csv")   # requires: team_id,team_code,canonical_team,team_name,clean_team_name,all_names
+BATTERS_ID_CSV      = Path("data/Data/batters.csv")
+PITCHERS_ID_CSV     = Path("data/Data/pitchers.csv")
+OUTPUT_FILE         = Path("data/processed/player_team_master.csv")
+AUDIT_DIR           = Path("summaries/fetchrosters")
+AUDIT_UNMATCHED_IDS = AUDIT_DIR / "unmatched_player_ids.txt"
 
 # ===== Name normalization =====
 def strip_accents(text: str) -> str:
@@ -41,18 +46,22 @@ def normalize_person_name(name: str) -> str:
     name = _capitalize_mc_names_in_string(name)
     return name
 
+_SUFFIX_RE = re.compile(r"\b(Jr|Sr|II|III|IV|V)\.?\b", flags=re.IGNORECASE)
+
+def normalized_join_key(name: str) -> str:
+    """LAST, FIRST key without accents/punct/suffixes; stable for joins."""
+    n = normalize_person_name(name)
+    n = _SUFFIX_RE.sub("", n)
+    n = re.sub(r"\s+", " ", n).strip()
+    return n
+
 # ===== Team key helpers =====
 def norm_key(s: str) -> str:
-    """Uppercase and remove non-alphanumerics to build a merge key."""
     if s is None:
         return ""
     return re.sub(r"[^A-Z0-9]", "", str(s).upper())
 
 def build_team_lookup(team_dir: pd.DataFrame) -> dict:
-    """
-    Build dict: normalized_key -> (team_id, team_code, canonical_team).
-    Keys cover canonical, official, clean, all_names (pipe-delimited), and code.
-    """
     required = ["team_id", "team_code", "canonical_team", "team_name", "clean_team_name", "all_names"]
     missing = [c for c in required if c not in team_dir.columns]
     if missing:
@@ -67,12 +76,12 @@ def build_team_lookup(team_dir: pd.DataFrame) -> dict:
         tcode = str(row["team_code"]).strip()
         canon = str(row["canonical_team"]).strip()
 
-        keys = set()
-        keys.add(norm_key(canon))
-        keys.add(norm_key(row["team_name"]))
-        keys.add(norm_key(row["clean_team_name"]))
-        keys.add(norm_key(tcode))
-
+        keys = {
+            norm_key(canon),
+            norm_key(row["team_name"]),
+            norm_key(row["clean_team_name"]),
+            norm_key(tcode),
+        }
         all_names = row.get("all_names")
         if pd.notna(all_names):
             for alias in str(all_names).split("|"):
@@ -95,7 +104,7 @@ if team_dir["team_id"].isna().any():
     raise RuntimeError(f"{TEAM_DIR_FILE}: null team_id rows: {bad.to_dict(orient='records')}")
 team_lut = build_team_lookup(team_dir)
 
-# ===== Build base rows from team_csvs =====
+# ===== Build base rows from team_csvs (carry player_id when present) =====
 rows = []
 if not TEAM_CSV_DIR.exists():
     raise RuntimeError(f"Missing {TEAM_CSV_DIR}")
@@ -108,28 +117,48 @@ for fn in os.listdir(TEAM_CSV_DIR):
         team_token = fn.replace("batters_", "").replace(".csv", "")
         df = pd.read_csv(fpath)
         if "last_name, first_name" in df.columns:
-            for name in df["last_name, first_name"].dropna():
-                rows.append({"name": normalize_person_name(name), "team": team_token, "type": "batter"})
+            pid_col = "player_id" if "player_id" in df.columns else None
+            for _, r in df.iterrows():
+                nm = r.get("last_name, first_name")
+                if pd.isna(nm):
+                    continue
+                rows.append({
+                    "name": normalize_person_name(nm),
+                    "join_key": normalized_join_key(nm),
+                    "team": team_token,
+                    "type": "batter",
+                    "player_id": pd.to_numeric(r.get(pid_col), errors="coerce").astype("Int64") if pid_col else pd.NA
+                })
     elif fn.startswith("pitchers_"):
         team_token = fn.replace("pitchers_", "").replace(".csv", "")
         df = pd.read_csv(fpath)
         if "last_name, first_name" in df.columns:
-            for name in df["last_name, first_name"].dropna():
-                rows.append({"name": normalize_person_name(name), "team": team_token, "type": "pitcher"})
+            pid_col = "player_id" if "player_id" in df.columns else None
+            for _, r in df.iterrows():
+                nm = r.get("last_name, first_name")
+                if pd.isna(nm):
+                    continue
+                rows.append({
+                    "name": normalize_person_name(nm),
+                    "join_key": normalized_join_key(nm),
+                    "team": team_token,
+                    "type": "pitcher",
+                    "player_id": pd.to_numeric(r.get(pid_col), errors="coerce").astype("Int64") if pid_col else pd.NA
+                })
 
 master = pd.DataFrame(rows)
 
-# If empty, write empty headers and exit
+# If empty, write empty headers and exit cleanly
 if master.empty:
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    out = master.assign(team_id=pd.Series(dtype="Int64"),
-                        team_code=pd.Series(dtype="string"),
-                        canonical_team=pd.Series(dtype="string"),
-                        player_id=pd.Series(dtype="Int64"))
-    out.to_csv(OUTPUT_FILE, index=False)
+    AUDIT_DIR.mkdir(parents=True, exist_ok=True)
+    master = master.reindex(columns=["name","team","type","player_id","team_id","team_code","canonical_team"])
+    master.to_csv(OUTPUT_FILE, index=False)
+    with open(AUDIT_UNMATCHED_IDS, "w") as f:
+        f.write("")  # empty audit
     raise SystemExit(0)
 
-# ===== Inject team_id / team_code =====
+# ===== Inject team_id / team_code / canonical_team =====
 master["team_key"] = master["team"].apply(norm_key)
 
 def map_team(row):
@@ -139,73 +168,59 @@ def map_team(row):
         return pd.Series({"team_id": tid, "team_code": tcode, "canonical_team": canon})
     raise RuntimeError(
         f"Unmapped team token '{row['team']}' → key '{k}'. "
-        f"Ensure it exists in {TEAM_DIR_FILE} (canonical or alias)."
+        f"Add to {TEAM_DIR_FILE} (canonical or alias)."
     )
 
 mapped = master.apply(map_team, axis=1)
 master = pd.concat([master.drop(columns=["team_key"]), mapped], axis=1)
 
-# ===== Build player_id maps from data/Data/*.csv =====
-def _detect_cols(df: pd.DataFrame, want_id: bool) -> tuple[str, str]:
-    """
-    Detect (name_col, id_col?) from a source df.
-    Returns (name_col, id_col_or_empty).
-    Error if name col missing. If want_id and not found, error.
-    """
-    # Candidate name columns (in order of preference)
+# ===== Fallback: fill missing player_id from Data/batters.csv and Data/pitchers.csv =====
+def detect_cols(df: pd.DataFrame) -> tuple[str, str]:
     name_candidates = ["last_name, first_name", "name", "full_name", "player_name", "player"]
-    # Candidate id columns
-    id_candidates = ["player_id", "mlb_id", "id", "person_id"]
-
+    id_candidates   = ["player_id", "mlb_id", "id", "person_id"]
     name_col = next((c for c in name_candidates if c in df.columns), None)
-    if not name_col:
-        raise RuntimeError("ID source file: missing a recognizable name column "
-                           "(expected one of: last_name, first_name | name | full_name | player_name | player)")
+    id_col   = next((c for c in id_candidates if c in df.columns), None)
+    if not name_col or not id_col:
+        return "", ""
+    return name_col, id_col
 
-    id_col = next((c for c in id_candidates if c in df.columns), None)
-    if want_id and not id_col:
-        raise RuntimeError("ID source file: missing a recognizable player id column "
-                           "(expected one of: player_id | mlb_id | id | person_id)")
-
-    return name_col, id_col or ""
-
-def _make_id_map(path: Path) -> dict:
+def make_id_map(path: Path) -> dict:
     if not path.exists():
         return {}
     df = pd.read_csv(path)
-    name_col, id_col = _detect_cols(df, want_id=True)
-    # Normalize names to the same canonical form
-    df["_norm_name"] = df[name_col].astype(str).map(normalize_person_name)
-    # Coerce id numeric (Int64) but keep dictionary as Python int where possible
+    name_col, id_col = detect_cols(df)
+    if not name_col or not id_col:
+        return {}
+    df["_jk"] = df[name_col].astype(str).map(normalized_join_key)
     ids = pd.to_numeric(df[id_col], errors="coerce").astype("Int64")
-    df = df.loc[ids.notna(), ["_norm_name", id_col]]
-    return {n: int(pid) for n, pid in zip(df["_norm_name"], df[id_col])}
+    df = df.loc[df["_jk"].ne("") & ids.notna(), ["_jk", id_col]]
+    return {jk: int(pid) for jk, pid in zip(df["_jk"], df[id_col])}
 
-batter_id_map = _make_id_map(BATTERS_ID_CSV)
-pitcher_id_map = _make_id_map(PITCHERS_ID_CSV)
+batter_map  = make_id_map(BATTERS_ID_CSV)
+pitcher_map = make_id_map(PITCHERS_ID_CSV)
 
-def map_player_id(row) -> pd.Series:
-    nm = row["name"]
-    if row["type"] == "batter":
-        pid = batter_id_map.get(nm)
+mask_missing = master["player_id"].isna()
+if mask_missing.any():
+    bmask = mask_missing & (master["type"] == "batter")
+    pmask = mask_missing & (master["type"] == "pitcher")
+    if bmask.any() and batter_map:
+        master.loc[bmask, "player_id"] = master.loc[bmask, "join_key"].map(batter_map).astype("Int64")
+    if pmask.any() and pitcher_map:
+        master.loc[pmask, "player_id"] = master.loc[pmask, "join_key"].map(pitcher_map).astype("Int64")
+
+# ===== Audit unmatched player_ids =====
+AUDIT_DIR.mkdir(parents=True, exist_ok=True)
+unmatched = master[master["player_id"].isna()][["team","type","name"]]
+with open(AUDIT_UNMATCHED_IDS, "w") as f:
+    if unmatched.empty:
+        f.write("")  # nothing to report
     else:
-        pid = pitcher_id_map.get(nm)
-    return pd.Series({"player_id": pid if pid is not None else pd.NA})
+        for _, r in unmatched.sort_values(["team","type","name"]).iterrows():
+            f.write(f"{r['team']},{r['type']},{r['name']}\n")
 
-master = pd.concat([master, master.apply(map_player_id, axis=1)], axis=1)
-
-# ===== Validate =====
-# Ensure team_id present for all
-if master["team_id"].isna().any():
-    bad = master[master["team_id"].isna()][["team", "name", "type"]].head(20).to_dict(orient="records")
-    raise RuntimeError(f"Null team_id after mapping; sample rows: {bad}")
-
-# Note: player_id may be missing if the name in Data files doesn't match.
-# This is tolerated; downstream can use names or handle missing IDs explicitly.
-
-# ===== Write =====
-master = master[["name", "team", "type", "player_id", "team_id", "team_code", "canonical_team"]]
-master = master.sort_values(["team", "type", "name"]).reset_index(drop=True)
+# ===== Finalize and write =====
+master = master[["name","team","type","player_id","team_id","team_code","canonical_team"]]
+master = master.sort_values(["team","type","name"]).reset_index(drop=True)
 
 OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 master.to_csv(OUTPUT_FILE, index=False)
