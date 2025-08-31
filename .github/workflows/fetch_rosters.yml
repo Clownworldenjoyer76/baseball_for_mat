@@ -1,4 +1,4 @@
-name: Fetch MLB Rosters
+name: 01 Fetch MLB Rosters
 
 on:
   workflow_dispatch:
@@ -26,11 +26,11 @@ jobs:
         run: |
           set +e
 
-          mkdir -p summaries
-          STATUS_FILE="summaries/01_fetch_status.txt"
-          LOG_FILE="summaries/01_fetch_log.txt"
-          ERR_FILE="summaries/01_fetch_errors.txt"
-          SUMMARY_FILE="summaries/01_fetch_summary.txt"
+          mkdir -p summaries/fetchrosters
+          STATUS_FILE="summaries/fetchrosters/status.txt"
+          LOG_FILE="summaries/fetchrosters/log.txt"
+          ERR_FILE="summaries/fetchrosters/errors.txt"
+          SUMMARY_FILE="summaries/fetchrosters/summary.txt"
           : > "$STATUS_FILE"; : > "$LOG_FILE"; : > "$ERR_FILE"; : > "$SUMMARY_FILE"
 
           ts() { TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
@@ -41,11 +41,8 @@ jobs:
             local CMD=("$@")
 
             echo "▶️ START: ${NAME} ($(ts))" | tee -a "$LOG_FILE"
-
-            # Group logs in GitHub UI
             echo "::group::${NAME}"
 
-            # Capture stdout/stderr separately
             "${CMD[@]}" >> "$LOG_FILE" 2> step.err
             local RC=$?
 
@@ -68,11 +65,9 @@ jobs:
             echo "" >> "$LOG_FILE"
           }
 
-          # Steps
           run_step "fetch_rosters.py"                python scripts/fetch_rosters.py
           run_step "normalize_rosters_to_team_csvs"  python scripts/normalize_rosters_to_team_csvs.py
 
-          # Force commit and push updated roster CSVs
           echo "▶️ START: commit_rosters ($(ts))" | tee -a "$LOG_FILE"
           {
             git config user.name "github-actions"
@@ -87,7 +82,6 @@ jobs:
 
           run_step "team_csvs_prep.py"               python scripts/team_csvs_prep.py
 
-          # Force commit and push team_csvs
           echo "▶️ START: commit_team_csvs ($(ts))" | tee -a "$LOG_FILE"
           {
             git config user.name "github-actions"
@@ -101,7 +95,6 @@ jobs:
 
           run_step "build_player_team_master.py"     python scripts/build_player_team_master.py
 
-          # Force commit and push player_team_master
           echo "▶️ START: commit_player_team_master ($(ts))" | tee -a "$LOG_FILE"
           {
             git config user.name "github-actions"
@@ -126,9 +119,10 @@ jobs:
             cat "$ERR_FILE"
           } > "$SUMMARY_FILE"
 
-      - name: Upload summary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: roster_workflow_summaries
-          path: summaries/
-          if-no-files-found: warn
+      - name: Commit summaries
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add summaries/fetchrosters/*
+          git diff --quiet && git diff --staged --quiet || git commit -m "Add Fetch Rosters summaries"
+          git push --force || echo "Nothing to push"
