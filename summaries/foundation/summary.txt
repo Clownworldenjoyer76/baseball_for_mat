@@ -1,94 +1,79 @@
-===== RUN TIMESTAMP: 2025-08-31 07:37:05 PM EDT =====
+===== RUN TIMESTAMP: 2025-08-31 07:42:28 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-08-31 07:37:00 PM EDT]
-✅ python succeeded [2025-08-31 07:37:00 PM EDT]
-✅ python succeeded [2025-08-31 07:37:01 PM EDT]
-✅ python succeeded [2025-08-31 07:37:01 PM EDT]
-✅ python succeeded [2025-08-31 07:37:01 PM EDT]
-✅ python succeeded [2025-08-31 07:37:02 PM EDT]
-✅ python succeeded [2025-08-31 07:37:02 PM EDT]
-✅ python succeeded [2025-08-31 07:37:02 PM EDT]
-✅ python succeeded [2025-08-31 07:37:03 PM EDT]
-✅ python succeeded [2025-08-31 07:37:03 PM EDT]
-✅ python succeeded [2025-08-31 07:37:03 PM EDT]
-✅ python succeeded [2025-08-31 07:37:04 PM EDT]
-❌ python failed [2025-08-31 07:37:04 PM EDT]
-✅ python succeeded [2025-08-31 07:37:04 PM EDT]
-✅ python succeeded [2025-08-31 07:37:05 PM EDT]
+✅ python succeeded [2025-08-31 07:42:23 PM EDT]
+✅ python succeeded [2025-08-31 07:42:24 PM EDT]
+✅ python succeeded [2025-08-31 07:42:24 PM EDT]
+✅ python succeeded [2025-08-31 07:42:25 PM EDT]
+✅ python succeeded [2025-08-31 07:42:25 PM EDT]
+✅ python succeeded [2025-08-31 07:42:25 PM EDT]
+✅ python succeeded [2025-08-31 07:42:26 PM EDT]
+✅ python succeeded [2025-08-31 07:42:26 PM EDT]
+✅ python succeeded [2025-08-31 07:42:26 PM EDT]
+✅ python succeeded [2025-08-31 07:42:27 PM EDT]
+✅ python succeeded [2025-08-31 07:42:27 PM EDT]
+✅ python succeeded [2025-08-31 07:42:27 PM EDT]
+✅ python succeeded [2025-08-31 07:42:28 PM EDT]
+✅ python succeeded [2025-08-31 07:42:28 PM EDT]
+✅ python succeeded [2025-08-31 07:42:28 PM EDT]
 
 ===== LOG =====
-▶️ START: normalize_names.py (2025-08-31 07:36:59 PM EDT)
+▶️ START: normalize_names.py (2025-08-31 07:42:23 PM EDT)
 ✅ Batters normalized: 156 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 109 → data/normalized/pitchers_normalized.csv
-⏹️ END: python (2025-08-31 07:37:00 PM EDT)
+⏹️ END: python (2025-08-31 07:42:23 PM EDT)
 
-▶️ START: tag_master_files.py (2025-08-31 07:37:00 PM EDT)
-⏹️ END: python (2025-08-31 07:37:00 PM EDT)
+▶️ START: tag_master_files.py (2025-08-31 07:42:23 PM EDT)
+⏹️ END: python (2025-08-31 07:42:24 PM EDT)
 
-▶️ START: validate_tagged_players.py (2025-08-31 07:37:00 PM EDT)
-⏹️ END: python (2025-08-31 07:37:01 PM EDT)
+▶️ START: validate_tagged_players.py (2025-08-31 07:42:24 PM EDT)
+⏹️ END: python (2025-08-31 07:42:24 PM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-08-31 07:37:01 PM EDT)
-⏹️ END: python (2025-08-31 07:37:01 PM EDT)
+▶️ START: deduplicate_normalized.py (2025-08-31 07:42:24 PM EDT)
+⏹️ END: python (2025-08-31 07:42:25 PM EDT)
 
-▶️ START: normalize_lineups.py (2025-08-31 07:37:01 PM EDT)
+▶️ START: normalize_lineups.py (2025-08-31 07:42:25 PM EDT)
 ✅ normalize_lineups.py completed: 779 rows written to data/raw/lineups_normalized.csv
-⏹️ END: python (2025-08-31 07:37:01 PM EDT)
+⏹️ END: python (2025-08-31 07:42:25 PM EDT)
 
-▶️ START: normalize_todays_games.py (2025-08-31 07:37:01 PM EDT)
+▶️ START: normalize_todays_games.py (2025-08-31 07:42:25 PM EDT)
 ✅ normalize_todays_games wrote 15 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 07:37:02 PM EDT)
+⏹️ END: python (2025-08-31 07:42:25 PM EDT)
 
-▶️ START: refresh_stadium_metadata.py (2025-08-31 07:37:02 PM EDT)
+▶️ START: refresh_stadium_metadata.py (2025-08-31 07:42:25 PM EDT)
 Saved updated stadium metadata to data/Data/stadium_metadata.csv
-⏹️ END: python (2025-08-31 07:37:02 PM EDT)
+⏹️ END: python (2025-08-31 07:42:26 PM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-08-31 07:37:02 PM EDT)
+▶️ START: apply_team_name_mapping.py (2025-08-31 07:42:26 PM EDT)
 Updated: data/raw/todaysgames_normalized.csv (if present)
 Updated: data/Data/stadium_metadata.csv (if present)
-⏹️ END: python (2025-08-31 07:37:02 PM EDT)
+⏹️ END: python (2025-08-31 07:42:26 PM EDT)
 
-▶️ START: fix_stadium_and_backfill_pf.py (2025-08-31 07:37:02 PM EDT)
+▶️ START: fix_stadium_and_backfill_pf.py (2025-08-31 07:42:26 PM EDT)
 ✅ Wrote data/Data/stadium_metadata.csv | Park Factor filled 14/14
-⏹️ END: python (2025-08-31 07:37:03 PM EDT)
+⏹️ END: python (2025-08-31 07:42:26 PM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-08-31 07:37:03 PM EDT)
+▶️ START: fetch_mlb_ids.py (2025-08-31 07:42:26 PM EDT)
 ✅ fetch_mlb_ids: team_directory.csv schema validated.
-⏹️ END: python (2025-08-31 07:37:03 PM EDT)
+⏹️ END: python (2025-08-31 07:42:27 PM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-08-31 07:37:03 PM EDT)
+▶️ START: hotfix_team_codes.py (2025-08-31 07:42:27 PM EDT)
 ✅ hotfix_team_codes applied fixes -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 07:37:03 PM EDT)
+⏹️ END: python (2025-08-31 07:42:27 PM EDT)
 
-▶️ START: update_game_time.py (2025-08-31 07:37:03 PM EDT)
+▶️ START: update_game_time.py (2025-08-31 07:42:27 PM EDT)
 ✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 14/15)
-⏹️ END: python (2025-08-31 07:37:04 PM EDT)
+⏹️ END: python (2025-08-31 07:42:27 PM EDT)
 
-▶️ START: finalize_todaysgames_types_and_pf.py (2025-08-31 07:37:04 PM EDT)
-⏹️ END: python (2025-08-31 07:37:04 PM EDT)
+▶️ START: finalize_todaysgames_types_and_pf.py (2025-08-31 07:42:27 PM EDT)
+✅ Wrote data/raw/todaysgames_normalized.csv | IDs filled: 14/15 | park_factor filled: 15/15
+⏹️ END: python (2025-08-31 07:42:28 PM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-08-31 07:37:04 PM EDT)
-⏹️ END: python (2025-08-31 07:37:04 PM EDT)
+▶️ START: filter_stadium_metadata.py (2025-08-31 07:42:28 PM EDT)
+⏹️ END: python (2025-08-31 07:42:28 PM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-08-31 07:37:04 PM EDT)
-⏹️ END: python (2025-08-31 07:37:05 PM EDT)
+▶️ START: normalize_batter_team_names.py (2025-08-31 07:42:28 PM EDT)
+⏹️ END: python (2025-08-31 07:42:28 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-08-31 07:37:04 PM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalize_todaysgames_types_and_pf.py", line 143, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalize_todaysgames_types_and_pf.py", line 134, in main
-    out = merged[cols]
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
-    indexer = self.columns._get_indexer_strict(key, "columns")[1]
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
-    self._raise_if_missing(keyarr, indexer, axis_name)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
-    raise KeyError(f"{not_found} not in index")
-KeyError: "['pf_day', 'pf_night', 'pf_roof'] not in index"
-
----
-
