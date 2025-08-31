@@ -1,236 +1,134 @@
-# scripts/update_game_time.py
 #!/usr/bin/env python3
+# Purpose: Attach park factors to data/raw/todaysgames_normalized.csv
+# Key change: join by home_team_id (stable MLB numeric ID), not abbreviations.
+# Sources (exact paths):
+#   - data/manual/park_factors_day.csv
+#   - data/manual/park_factors_night.csv
+#   - data/manual/park_factors_roof_closed.csv
+#
+# Selection logic:
+#   - If a column named "roof_status" exists and equals "closed" (case-insensitive),
+#     use roof-closed park factor.
+#   - Else, determine day/night from game_time (ET string like "1:35 PM"):
+#       night if hour >= 6 PM, else day.
+#
+# Output:
+#   - Overwrites data/raw/todaysgames_normalized.csv with a new/updated column:
+#       park_factor  (float)
+
+from __future__ import annotations
 import sys
-import math
 from pathlib import Path
-from datetime import datetime
+from typing import Optional
 import pandas as pd
 
-GAMES_CSV   = Path("data/raw/todaysgames_normalized.csv")
-STADIUM_CSV = Path("data/Data/stadium_metadata.csv")
+GAMES_CSV = Path("data/raw/todaysgames_normalized.csv")
+PF_DAY_CSV = Path("data/manual/park_factors_day.csv")
+PF_NIGHT_CSV = Path("data/manual/park_factors_night.csv")
+PF_ROOF_CSV = Path("data/manual/park_factors_roof_closed.csv")
 
-PF_DAY_CSV        = Path("data/manual/park_factors_day.csv")
-PF_NIGHT_CSV      = Path("data/manual/park_factors_night.csv")
-PF_ROOF_CLOSED_CSV= Path("data/manual/park_factors_roof_closed.csv")
+REQUIRED_GAME_COLS = {"home_team_id", "game_time"}  # must exist
 
-# ---------- helpers ----------
-def _norm_cols(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
-    return df
-
-def _find_col(df: pd.DataFrame, candidates) -> str | None:
-    cols = set(df.columns)
-    for c in candidates:
-        if c in cols:
-            return c
-    return None
-
-def _parse_time_to_hour_et(s: str) -> int | None:
+def _load_pf(path: Path, label: str) -> pd.DataFrame:
     """
-    Accepts strings like '1:05 PM' or '13:05' and returns hour [0..23] ET.
-    If not parseable -> None.
+    Read a park-factor file with exact headers:
+      - team_id
+      - park_factor
+    Returns DataFrame with columns: team_id (Int64), park_factor_<label> (float)
     """
-    if not isinstance(s, str):
-        return None
-    t = s.strip()
-    if not t:
-        return None
-    for fmt in ("%I:%M %p", "%H:%M", "%I %p", "%H"):
-        try:
-            dt = datetime.strptime(t, fmt)
-            return dt.hour
-        except Exception:
-            continue
-    return None
-
-def _is_day_game(game_time: str) -> bool | None:
-    """
-    Day if hour in [10..17] inclusive by convention.
-    Returns None if unknown.
-    """
-    hr = _parse_time_to_hour_et(game_time)
-    if hr is None:
-        return None
-    return 10 <= hr <= 17
-
-def _coerce_float(x):
-    try:
-        f = float(x)
-        if math.isfinite(f):
-            return f
-    except Exception:
-        pass
-    return None
-
-def _load_pf_table(path: Path) -> pd.DataFrame:
     if not path.exists():
-        return pd.DataFrame()
+        raise FileNotFoundError(f"Missing file: {path}")
     df = pd.read_csv(path)
-    df = _norm_cols(df)
+    cols = [c.strip() for c in df.columns]
+    if set(map(str.lower, cols)) != {"team_id", "park_factor"}:
+        raise ValueError(f"{path} must have exact headers: team_id, park_factor")
+    df.columns = ["team_id", "park_factor"]
+    # types
+    df["team_id"] = pd.to_numeric(df["team_id"], errors="coerce").astype("Int64")
+    df["park_factor"] = pd.to_numeric(df["park_factor"], errors="coerce")
+    return df.rename(columns={"park_factor": f"park_factor_{label}"})
 
-    # detect team key
-    team_col = _find_col(
-        df,
-        ["team","team_name","home_team","mlb_team","abbreviation","code","team_abbreviation"]
-    )
-    if team_col is None:
-        # try to salvage by using first column
-        team_col = df.columns[0] if len(df.columns) else None
-    # detect park factor numeric column
-    pf_col = _find_col(
-        df,
-        ["park_factor","parkfactor","park_factors","park","factor","park_factor_index","park_factor_run"]
-    )
-    if pf_col is None:
-        # fallback: try second column
-        pf_col = df.columns[1] if len(df.columns) > 1 else None
 
-    if team_col is None or pf_col is None:
-        return pd.DataFrame()
-
-    out = df[[team_col, pf_col]].copy()
-    out.columns = ["team_key", "park_factor"]
-    out["team_key"] = out["team_key"].astype(str).str.strip().str.upper()
-    out["park_factor"] = out["park_factor"].apply(_coerce_float)
-    out = out.dropna(subset=["team_key","park_factor"])
-    return out
-
-def _detect_roof_closed(stadium_row: pd.Series) -> bool:
+def _parse_hour_et(timestr: Optional[str]) -> Optional[int]:
     """
-    Detect roof-closed using flexible fields:
-    - is_dome (bool-like)
-    - roof / roof_status (strings: 'closed','open', etc.)
-    - notes may contain 'roof closed'
+    Parse "H:MM AM/PM" or "HH:MM AM/PM" to hour in 24h.
+    Returns None if parse fails.
     """
-    sr = {k: stadium_row.get(k) for k in stadium_row.index}
+    if not isinstance(timestr, str):
+        return None
+    s = timestr.strip().upper()
+    # expected: "12:10 PM", "1:35 PM", etc.
+    try:
+        part_time, part_ampm = s.split()
+        hour_str, _ = part_time.split(":")
+        hour = int(hour_str)
+        if part_ampm == "AM":
+            return 0 if hour == 12 else hour
+        if part_ampm == "PM":
+            return 12 if hour == 12 else hour + 12
+        return None
+    except Exception:
+        return None
 
-    # boolean-ish dome
-    for key in ("is_dome","isdome","dome"):
-        v = sr.get(key)
-        if isinstance(v, str):
-            if v.strip().lower() in {"true","1","yes","y"}:
-                return True
-        elif pd.notna(v) and bool(v):
-            return True
 
-    # explicit roof status
-    for key in ("roof","roof_status","roofstate","roof_mode"):
-        v = sr.get(key)
-        if isinstance(v, str) and v.strip().lower() in {"closed","close","shut"}:
-            return True
+def _choose_pf(row: pd.Series) -> float:
+    """
+    Choose final park_factor using row-level context:
+      - If roof_status == 'closed' -> park_factor_roof
+      - Else if night (hour >= 18) -> park_factor_night
+      - Else -> park_factor_day
+    Missing values propagate as NaN.
+    """
+    roof = str(row.get("roof_status", "")).strip().lower()
+    if roof == "closed":
+        return row.get("park_factor_roof", float("nan"))
+    hour = row.get("_hour24")
+    if isinstance(hour, (int, float)) and pd.notna(hour) and hour >= 18:
+        return row.get("park_factor_night", float("nan"))
+    return row.get("park_factor_day", float("nan"))
 
-    # notes text
-    for key in ("notes","comment"):
-        v = sr.get(key)
-        if isinstance(v, str) and "roof" in v.lower() and "closed" in v.lower():
-            return True
 
-    return False
-
-# ---------- main ----------
-def main():
-    # load inputs
+def main() -> None:
+    # Load games
     if not GAMES_CSV.exists():
-        print(f"ERROR: missing {GAMES_CSV}", file=sys.stderr)
+        print(f"ERROR: {GAMES_CSV} not found", file=sys.stderr)
         sys.exit(1)
-
     games = pd.read_csv(GAMES_CSV)
-    games = _norm_cols(games)
 
-    # require minimal columns
-    home_col = _find_col(games, ["home_team","home","home_abbr","hometeam"])
-    time_col = _find_col(games, ["game_time","time","start_time","scheduled"])
-    if home_col is None:
-        print("ERROR: games file missing home_team column.", file=sys.stderr)
-        sys.exit(1)
-    # time is optional; if missing we’ll treat as night (conservative)
-    if time_col is None:
-        time_col = None
-
-    # standardize home key
-    games["__home_key__"] = games[home_col].astype(str).str.strip().str.upper()
-
-    # stadium metadata (optional but used for roof detection)
-    stad = pd.DataFrame()
-    if STADIUM_CSV.exists():
-        stad = pd.read_csv(STADIUM_CSV)
-        stad = _norm_cols(stad)
-        # discover team join key
-        stad_team = _find_col(stad, ["team","team_name","home_team","abbreviation","code","team_abbreviation"])
-        if stad_team is None and len(stad.columns):
-            stad_team = stad.columns[0]
-        if stad_team is not None:
-            stad["__home_key__"] = stad[stad_team].astype(str).str.strip().str.upper()
-            # keep only fields helpful for roof detection
-            keep = ["__home_key__","is_dome","isdome","dome","roof","roof_status","roofstate","roof_mode","notes","comment"]
-            keep = [c for c in keep if c in stad.columns]
-            stad = stad[keep].drop_duplicates("__home_key__", keep="first")
-        else:
-            stad = pd.DataFrame()
-
-    # load park factor tables
-    pf_day   = _load_pf_table(PF_DAY_CSV)
-    pf_night = _load_pf_table(PF_NIGHT_CSV)
-    pf_roof  = _load_pf_table(PF_ROOF_CLOSED_CSV)
-
-    if pf_day.empty and pf_night.empty and pf_roof.empty:
-        print("ERROR: no usable park factor tables found in data/manual/.", file=sys.stderr)
+    # Validate required columns
+    missing = [c for c in REQUIRED_GAME_COLS if c not in games.columns]
+    if missing:
+        print(f"ERROR: {GAMES_CSV} missing required columns: {', '.join(missing)}", file=sys.stderr)
         sys.exit(1)
 
-    # decide source per game
-    def _pick_pf_source(row) -> str:
-        # roof check via stadium metadata if available
-        if not stad.empty:
-            srow = stad.loc[stad["__home_key__"] == row["__home_key__"]]
-            if not srow.empty and _detect_roof_closed(srow.iloc[0]):
-                return "roof"
-        # if no roof-closed, use day/night from game time (if available)
-        if time_col is not None:
-            is_day = _is_day_game(str(row[time_col]))
-            if is_day is True:
-                return "day"
-            if is_day is False:
-                return "night"
-        # fallback: night
-        return "night"
+    # Types
+    games["home_team_id"] = pd.to_numeric(games["home_team_id"], errors="coerce").astype("Int64")
 
-    games["__pf_source__"] = games.apply(_pick_pf_source, axis=1)
+    # Derive hour for day/night selection
+    games["_hour24"] = games["game_time"].apply(_parse_hour_et)
 
-    # attach factor
-    games["Park Factor"] = None
+    # Load park factors (exact headers enforced)
+    pf_day = _load_pf(PF_DAY_CSV, "day")
+    pf_night = _load_pf(PF_NIGHT_CSV, "night")
+    pf_roof = _load_pf(PF_ROOF_CSV, "roof")
 
-    # merge helpers
-    def _attach(gdf, src_name, pf_df):
-        if pf_df.empty:
-            return gdf
-        subset = gdf[gdf["__pf_source__"] == src_name].copy()
-        if subset.empty:
-            return gdf
-        merged = subset.merge(
-            pf_df.rename(columns={"team_key":"__home_key__"}),
-            on="__home_key__", how="left"
-        )
-        # write back
-        gdf.loc[merged.index, "Park Factor"] = merged["park_factor"].where(
-            pd.notna(merged["park_factor"]), gdf.loc[merged.index, "Park Factor"]
-        )
-        return gdf
+    # Merge by numeric team ID
+    merged = games.merge(pf_day, how="left", left_on="home_team_id", right_on="team_id")
+    merged = merged.drop(columns=["team_id"])
+    merged = merged.merge(pf_night, how="left", left_on="home_team_id", right_on="team_id")
+    merged = merged.drop(columns=["team_id"])
+    merged = merged.merge(pf_roof, how="left", left_on="home_team_id", right_on="team_id")
+    merged = merged.drop(columns=["team_id"])
 
-    games = _attach(games, "roof",  pf_roof)
-    games = _attach(games, "day",   pf_day)
-    games = _attach(games, "night", pf_night)
+    # Compute final park_factor
+    merged["park_factor"] = merged.apply(_choose_pf, axis=1)
 
-    # finalize
-    games.drop(columns=["__home_key__","__pf_source__"], inplace=True, errors="ignore")
-    # keep original column order; if Park Factor new, append
-    if "Park Factor" not in games.columns:
-        games["Park Factor"] = None
-
-    # save back
+    # Clean and write back
+    merged = merged.drop(columns=["_hour24"], errors="ignore")
     GAMES_CSV.parent.mkdir(parents=True, exist_ok=True)
-    games.to_csv(GAMES_CSV, index=False)
-    print(f"✅ Updated park factors in {GAMES_CSV}")
+    merged.to_csv(GAMES_CSV, index=False)
+
+    print("✅ Updated park factors in data/raw/todaysgames_normalized.csv (joined by home_team_id)")
 
 if __name__ == "__main__":
     main()
