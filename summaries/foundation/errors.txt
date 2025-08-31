@@ -1,17 +1,16 @@
-❌ python ERROR [2025-08-31 07:28:35 PM EDT]:
-ERROR: team_directory.csv must have EXACT headers: 'Team Name','Team ID','Abbreviation'
-
----
-
-❌ python ERROR [2025-08-31 07:28:36 PM EDT]:
+❌ python ERROR [2025-08-31 07:37:04 PM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/update_game_time.py", line 134, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalize_todaysgames_types_and_pf.py", line 143, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/update_game_time.py", line 111, in main
-    pf_day = _load_pf(PF_DAY_CSV, "day")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/update_game_time.py", line 44, in _load_pf
-    raise ValueError(f"{path} must have exact headers: team_id, park_factor")
-ValueError: data/manual/park_factors_day.csv must have exact headers: team_id, park_factor
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalize_todaysgames_types_and_pf.py", line 134, in main
+    out = merged[cols]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['pf_day', 'pf_night', 'pf_roof'] not in index"
 
 ---
 
