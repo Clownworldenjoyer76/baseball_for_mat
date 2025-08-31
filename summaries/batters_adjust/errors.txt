@@ -1,4 +1,4 @@
-❌ python ERROR [2025-08-31 04:38:08 PM EDT]:
+❌ python ERROR [2025-08-31 04:56:23 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
     main()
@@ -12,21 +12,23 @@ ValueError: batters input: missing columns ['game_id', 'date']
 
 ---
 
-❌ python ERROR [2025-08-31 04:38:08 PM EDT]:
+❌ python ERROR [2025-08-31 04:56:24 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 74, in <module>
     main()
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 66, in main
     out_h = _attach(bh, "home")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 36, in _attach
-    stad  = pd.read_csv(ST)[["home_team","Park Factor"]]
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 35, in _attach
+    games = _prep_games()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 32, in _prep_games
+    return g[["home_team","away_team","home_team_id","away_team_id","date"]]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
     indexer = self.columns._get_indexer_strict(key, "columns")[1]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
     self._raise_if_missing(keyarr, indexer, axis_name)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
     raise KeyError(f"{not_found} not in index")
-KeyError: "['home_team'] not in index"
+KeyError: "['home_team_id', 'away_team_id', 'date'] not in index"
 
 ---
 
