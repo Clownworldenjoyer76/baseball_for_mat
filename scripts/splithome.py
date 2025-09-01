@@ -20,11 +20,16 @@ Ensures:
 import sys
 import pandas as pd
 
+def enforce_int(df: pd.DataFrame, cols) -> pd.DataFrame:
+    for col in cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+    return df
+
 def main(batters_path, games_path, output_path):
     batters = pd.read_csv(batters_path, dtype=str, keep_default_na=False)
     games = pd.read_csv(games_path, dtype=str, keep_default_na=False)
 
-    # Keep only home side
     merged = batters.merge(
         games,
         left_on="team_id",
@@ -34,16 +39,12 @@ def main(batters_path, games_path, output_path):
         suffixes=("", "_g")
     )
 
-    # Add side and opponent
     merged["side"] = "home"
     merged["opponent_team_id"] = merged["away_team_id"]
 
-    # Cast IDs to Int64 to remove decimals
-    for col in ["team_id", "home_team_id", "away_team_id", "opponent_team_id", "game_id"]:
-        if col in merged.columns:
-            merged[col] = pd.to_numeric(merged[col], errors="coerce").astype("Int64")
+    id_cols = ["team_id", "home_team_id", "away_team_id", "opponent_team_id", "game_id"]
+    merged = enforce_int(merged, id_cols)
 
-    # Reorder: batter cols first, then context
     batter_cols = [c for c in batters.columns if c in merged.columns]
     extra_cols = [c for c in merged.columns if c not in batter_cols]
     merged = merged[batter_cols + extra_cols]
