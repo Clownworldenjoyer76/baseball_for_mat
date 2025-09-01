@@ -1,34 +1,34 @@
-===== RUN TIMESTAMP: 2025-08-31 09:23:18 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 07:12:14 AM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-08-31 09:23:17 PM EDT]
-❌ python failed [2025-08-31 09:23:17 PM EDT]
-✅ python succeeded [2025-08-31 09:23:17 PM EDT]
-✅ python succeeded [2025-08-31 09:23:18 PM EDT]
+❌ python failed [2025-09-01 07:12:13 AM EDT]
+❌ python failed [2025-09-01 07:12:13 AM EDT]
+✅ python succeeded [2025-09-01 07:12:14 AM EDT]
+✅ python succeeded [2025-09-01 07:12:14 AM EDT]
 
 ===== LOG =====
-▶️ START: generate_weather_csv.py (2025-08-31 09:23:16 PM EDT)
-⏹️ END: python (2025-08-31 09:23:17 PM EDT)
+▶️ START: generate_weather_csv.py (2025-09-01 07:12:12 AM EDT)
+⏹️ END: python (2025-09-01 07:12:13 AM EDT)
 
-▶️ START: get_weather_data.py (2025-08-31 09:23:17 PM EDT)
-2025-09-01 01:23:17 AM 🔄 Read data/weather_input.csv...
-⏹️ END: python (2025-08-31 09:23:17 PM EDT)
+▶️ START: get_weather_data.py (2025-09-01 07:12:13 AM EDT)
+2025-09-01 11:12:13 AM 🔄 Read data/weather_input.csv...
+⏹️ END: python (2025-09-01 07:12:13 AM EDT)
 
-▶️ START: weather_data_fix.py (2025-08-31 09:23:17 PM EDT)
+▶️ START: weather_data_fix.py (2025-09-01 07:12:13 AM EDT)
 🔄 Load weather_adjustments.csv...
 ⚠️ Name map skipped: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
 ✅ weather_factor exists; skip calc.
 ✅ Done.
-⏹️ END: python (2025-08-31 09:23:17 PM EDT)
+⏹️ END: python (2025-09-01 07:12:14 AM EDT)
 
-▶️ START: attach_game_ids.py (2025-08-31 09:23:17 PM EDT)
-home: 66 → 0 after attaching game_id/date (dropped 66)
-away: 61 → 0 after attaching game_id/date (dropped 61)
-⏹️ END: python (2025-08-31 09:23:18 PM EDT)
+▶️ START: attach_game_ids.py (2025-09-01 07:12:14 AM EDT)
+home: 65 → 0 after attaching game_id/date (dropped 65)
+away: 60 → 0 after attaching game_id/date (dropped 60)
+⏹️ END: python (2025-09-01 07:12:14 AM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-08-31 09:23:17 PM EDT]:
+❌ python ERROR [2025-09-01 07:12:13 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
@@ -44,7 +44,7 @@ KeyError: "['date'] not in index"
 
 ---
 
-❌ python ERROR [2025-08-31 09:23:17 PM EDT]:
+❌ python ERROR [2025-09-01 07:12:13 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 276, in <module>
     main()
