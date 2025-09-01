@@ -30,14 +30,27 @@ def to_int64(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     return df
 
 def int64_to_str_digits(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    # Render Int64 columns as digit-only strings for CSV (NA -> "")
     for c in cols:
         if c in df.columns:
             df[c] = df[c].astype("Int64").astype("string").replace({"<NA>": ""})
     return df
 
+def first_series(df: pd.DataFrame, col: str) -> pd.Series | None:
+    """Return the first occurrence of 'col' as a Series even if duplicates exist."""
+    if col not in df.columns:
+        return None
+    obj = df.loc[:, [c for c in df.columns if c == col]]
+    return obj if isinstance(obj, pd.Series) else obj.iloc[:, 0]
+
+def drop_all(df: pd.DataFrame, name: str) -> pd.DataFrame:
+    """Drop ALL columns matching 'name' (handles duplicates)."""
+    return df.drop(columns=[c for c in df.columns if c == name], errors="ignore")
+
+def dedupe_cols(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep first occurrence when duplicate column names exist."""
+    return df.loc[:, ~df.columns.duplicated()]
+
 def merge_home(bh: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
-    # Left merge on IDs: team_id -> home_team_id
     m = bh.merge(
         games[["game_id", "home_team_id", "away_team_id", "home_team", "away_team"]],
         left_on="team_id",
@@ -46,17 +59,23 @@ def merge_home(bh: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
         validate="m:1",
         suffixes=("", "_g"),
     )
-    # Fill game_id from games if missing
-    if "game_id_g" in m.columns:
-        if "game_id" in m.columns:
-            m["game_id"] = m["game_id"].astype("Int64").combine_first(m["game_id_g"].astype("Int64"))
+    # Collapse duplicate columns first
+    m = dedupe_cols(m)
+
+    # Safely fill game_id from right side
+    right_gid = first_series(m, "game_id_g")
+    if right_gid is not None:
+        left_gid = first_series(m, "game_id")
+        if left_gid is not None:
+            m["game_id"] = pd.to_numeric(left_gid, errors="coerce").astype("Int64") \
+                .combine_first(pd.to_numeric(right_gid, errors="coerce").astype("Int64"))
         else:
-            m["game_id"] = m["game_id_g"]
-        m.drop(columns=["game_id_g"], inplace=True)
+            m["game_id"] = pd.to_numeric(right_gid, errors="coerce").astype("Int64")
+        m = drop_all(m, "game_id_g")
+
     return m
 
 def merge_away(ba: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
-    # Left merge on IDs: team_id -> away_team_id
     m = ba.merge(
         games[["game_id", "home_team_id", "away_team_id", "home_team", "away_team"]],
         left_on="team_id",
@@ -65,13 +84,20 @@ def merge_away(ba: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
         validate="m:1",
         suffixes=("", "_g"),
     )
-    # Fill game_id from games if missing
-    if "game_id_g" in m.columns:
-        if "game_id" in m.columns:
-            m["game_id"] = m["game_id"].astype("Int64").combine_first(m["game_id_g"].astype("Int64"))
+    # Collapse duplicate columns first
+    m = dedupe_cols(m)
+
+    # Safely fill game_id from right side
+    right_gid = first_series(m, "game_id_g")
+    if right_gid is not None:
+        left_gid = first_series(m, "game_id")
+        if left_gid is not None:
+            m["game_id"] = pd.to_numeric(left_gid, errors="coerce").astype("Int64") \
+                .combine_first(pd.to_numeric(right_gid, errors="coerce").astype("Int64"))
         else:
-            m["game_id"] = m["game_id_g"]
-        m.drop(columns=["game_id_g"], inplace=True)
+            m["game_id"] = pd.to_numeric(right_gid, errors="coerce").astype("Int64")
+        m = drop_all(m, "game_id_g")
+
     return m
 
 def main():
@@ -85,7 +111,7 @@ def main():
     required(ba, ["team_id"], str(AWAY_FILE))
     required(g,  ["game_id", "home_team_id", "away_team_id", "home_team", "away_team"], str(GAMES_FILE))
 
-    # Clean
+    # Clean and types
     bh = strip_strings(bh); ba = strip_strings(ba); g = strip_strings(g)
     bh = to_int64(bh, ["team_id", "game_id"])
     ba = to_int64(ba, ["team_id", "game_id"])
@@ -95,18 +121,18 @@ def main():
     bhm = merge_home(bh, g)
     bam = merge_away(ba, g)
 
-    # Ensure clean integer-looking IDs for CSV
+    # Finalize ID formatting for CSV export
     bhm = int64_to_str_digits(bhm, ["team_id", "home_team_id", "away_team_id", "game_id"])
     bam = int64_to_str_digits(bam, ["team_id", "home_team_id", "away_team_id", "game_id"])
 
-    # Drop duplicates (safety)
+    # Safety: drop exact duplicate rows
     bhm.drop_duplicates(inplace=True)
     bam.drop_duplicates(inplace=True)
 
     # Write back
     bhm.to_csv(HOME_FILE, index=False)
     bam.to_csv(AWAY_FILE, index=False)
-    print("✅ Updated batters_home.csv and batters_away.csv using ID-based merge with games file.")
+    print("✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.")
 
 if __name__ == "__main__":
     main()
