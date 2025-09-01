@@ -1,104 +1,139 @@
 #!/usr/bin/env python3
 """
-Build data/weather_input.csv from normalized games + stadium master.
+Build data/weather_input.csv with team IDs + stadium fields.
 
 Inputs
 - data/raw/todaysgames_normalized.csv
-    required: home_team_id, away_team_id, home_team, away_team, date, game_time, park_factor
+- data/manual/team_directory.csv
 - data/manual/stadium_master.csv
-    required: team_id, venue, city, latitude, longitude, roof_type, time_of_day
 
 Output
-- data/weather_input.csv
-    columns: home_team_id, away_team_id, home_team, away_team, date, game_time,
-             park_factor, venue, city, latitude, longitude, roof_type, time_of_day
+- data/weather_input.csv (columns: date, game_time, home_team_id, away_team_id, venue, city, latitude, longitude, roof_type, is_dome)
 """
-from pathlib import Path
 import pandas as pd
+from pathlib import Path
+from datetime import datetime
 
 GAMES = Path("data/raw/todaysgames_normalized.csv")
-STAD  = Path("data/manual/stadium_master.csv")   # ← use the master you saved
+TEAMS = Path("data/manual/team_directory.csv")
+STAD  = Path("data/manual/stadium_master.csv")
 OUT   = Path("data/weather_input.csv")
 
-REQ_G = ["home_team_id","away_team_id","home_team","away_team","date","game_time","park_factor"]
-REQ_S = ["team_id","venue","city","latitude","longitude","roof_type","time_of_day"]
+def _norm(s):
+    return str(s).strip().lower()
 
-def strip_strings(df: pd.DataFrame) -> pd.DataFrame:
-    obj = df.select_dtypes(include=["object"]).columns
-    if len(obj):
-        df[obj] = df[obj].apply(lambda s: s.str.strip())
-        df[obj] = df[obj].replace({"": pd.NA})
-    return df
+def _require(df, cols, where):
+    miss = [c for c in cols if c not in df.columns]
+    if miss:
+        raise RuntimeError(f"{where}: missing required columns: {miss}")
 
-def to_int64(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    for c in cols:
+def _best_col(df, options):
+    for c in options:
         if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
+            return c
+    return None
+
+def _ensure_date_time(df):
+    # Try to produce 'date' and 'game_time' columns
+    date_col = _best_col(df, ["date", "game_date"])
+    time_col = _best_col(df, ["game_time", "start_time", "time"])
+
+    if date_col is None:
+        # Try to parse from a combined datetime column if exists
+        combo = _best_col(df, ["start_datetime", "game_datetime", "datetime"])
+        if combo and combo in df.columns:
+            dt = pd.to_datetime(df[combo], errors="coerce")
+            df["date"] = dt.dt.strftime("%Y-%m-%d")
+            df["game_time"] = dt.dt.strftime("%I:%M %p")
+        else:
+            # Fallback to today (ET not enforced here)
+            today = datetime.now().strftime("%Y-%m-%d")
+            df["date"] = today
+    else:
+        df["date"] = pd.to_datetime(df[date_col], errors="coerce").dt.strftime("%Y-%m-%d")
+
+    if time_col is not None and "game_time" not in df.columns:
+        # Normalize to e.g. "07:05 PM" if parsable
+        parsed = pd.to_datetime(df[time_col], errors="coerce")
+        mask = parsed.notna()
+        df.loc[mask, "game_time"] = parsed[mask].dt.strftime("%I:%M %p")
+        df.loc[~mask, "game_time"] = df.loc[~mask, time_col].astype(str)
+    elif "game_time" not in df.columns:
+        df["game_time"] = ""
+
     return df
 
-def required(df: pd.DataFrame, cols: list[str], where: str):
-    missing = [c for c in cols if c not in df.columns]
-    if missing:
-        raise RuntimeError(f"{where}: missing required columns: {missing}")
+def _build_team_id_map(team_df):
+    # Accept flexible team directory schemas
+    id_col = _best_col(team_df, ["team_id", "id"])
+    name_col = _best_col(team_df, ["canonical_team", "team_code", "team", "name", "abbr"])
+    if id_col is None or name_col is None:
+        raise RuntimeError("team_directory: need team_id and a team name/code column")
+    m = {}
+    for n, i in zip(team_df[name_col], team_df[id_col]):
+        if pd.isna(n) or pd.isna(i): 
+            continue
+        m[_norm(n)] = str(i).strip()
+    return m
+
+def _coalesce_team_id(df, side, team_map):
+    # Prefer existing *_team_id; otherwise derive from name/code columns.
+    id_col = _best_col(df, [f"{side}_team_id", f"{side}_id"])
+    if id_col is not None:
+        df[f"{side}_team_id"] = df[id_col].astype(str)
+        return df
+
+    name_col = _best_col(df, [f"{side}_team_canonical", f"{side}_team", side, f"{side}_name", f"{side}_team_code"])
+    if name_col is None:
+        df[f"{side}_team_id"] = None
+        return df
+
+    df[f"{side}_team_id"] = df[name_col].map(lambda s: team_map.get(_norm(s), None))
+    return df
+
+def _derive_is_dome(roof_type_series):
+    s = roof_type_series.astype(str).str.lower().str.strip()
+    return s.isin(["dome", "closed", "fixed", "indoor", "retractable-closed", "roof closed", "indoor dome"])
 
 def main():
-    if not GAMES.exists():
-        raise FileNotFoundError(f"Missing input: {GAMES}")
-    if not STAD.exists():
-        raise FileNotFoundError(f"Missing input: {STAD}")
+    g = pd.read_csv(GAMES)
+    t = pd.read_csv(TEAMS)
+    s = pd.read_csv(STAD)
 
-    g = pd.read_csv(GAMES, dtype=str, keep_default_na=False)
-    s = pd.read_csv(STAD,  dtype=str, keep_default_na=False)
+    # Ensure required stadium fields exist
+    _require(s, ["team_id", "venue", "city", "latitude", "longitude", "roof_type"], str(STAD))
 
-    g = strip_strings(g)
-    s = strip_strings(s)
+    # Build team id map
+    team_map = _build_team_id_map(t)
 
-    required(g, REQ_G, str(GAMES))
-    required(s, REQ_S, str(STAD))
+    # Normalize date/time
+    g = _ensure_date_time(g)
 
-    # Coerce IDs to Int64 for a clean merge, then back to strings at the end
-    g  = to_int64(g, ["home_team_id","away_team_id"])
-    s  = to_int64(s, ["team_id"])
+    # Derive team IDs for both sides
+    g = _coalesce_team_id(g, "home", team_map)
+    g = _coalesce_team_id(g, "away", team_map)
 
-    # Select minimal game fields needed downstream
-    g_keep = ["home_team_id","away_team_id","home_team","away_team","date","game_time","park_factor"]
-    g = g[g_keep].copy()
+    # Keep essentials from games
+    keep_games = ["date", "game_time", "home_team_id", "away_team_id"]
+    g = g[keep_games]
 
-    # Stadium fields keyed by team_id (home team)
-    s_keep = ["team_id","venue","city","latitude","longitude","roof_type","time_of_day"]
-    s = s[s_keep].rename(columns={"team_id":"home_team_id"})
+    # Join stadium by home_team_id
+    s_trim = s[["team_id", "venue", "city", "latitude", "longitude", "roof_type"]].rename(columns={"team_id": "home_team_id"})
+    x = g.merge(s_trim, on="home_team_id", how="left")
 
-    # Merge by home_team_id (ID, not names)
-    x = g.merge(s, on="home_team_id", how="left", validate="m:1")
+    # Derive is_dome flag
+    x["is_dome"] = _derive_is_dome(x["roof_type"].fillna(""))
 
-    # Surface any missing required stadium fields
-    req_after = ["venue","city","latitude","longitude","roof_type","time_of_day"]
-    miss_mask = x[req_after].isna().any(axis=1)
-    if miss_mask.any():
-        print("⚠️ Warning: missing stadium fields for some rows (by home_team_id):")
-        print(x.loc[miss_mask, ["home_team_id","home_team","away_team"] + req_after]
-                .drop_duplicates()
-                .to_string(index=False))
-
-    # Render IDs back to digit-only strings
-    for c in ["home_team_id","away_team_id"]:
-        if c in x.columns:
-            x[c] = x[c].astype("Int64").astype("string").replace({"<NA>": ""})
-
-    # Column order for output
-    out_cols = [
-        "home_team_id","away_team_id","home_team","away_team",
-        "date","game_time","park_factor",
-        "venue","city","latitude","longitude","roof_type","time_of_day",
-    ]
-    # Ensure all exist
-    for c in out_cols:
-        if c not in x.columns:
-            x[c] = pd.NA
+    # Surface missing join data
+    req = ["date", "game_time", "home_team_id", "away_team_id", "venue", "city", "latitude", "longitude", "roof_type"]
+    missing = x[req].isna().any(axis=1)
+    if missing.any():
+        bad = x.loc[missing, ["home_team_id", "away_team_id", "venue", "city"]].head(10)
+        print("⚠️ Warning: missing stadium join for some rows. Examples:")
+        print(bad.to_string(index=False))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    x[out_cols].to_csv(OUT, index=False)
-    print(f"✅ Wrote {len(x)} rows -> {OUT}")
+    x.to_csv(OUT, index=False)
 
 if __name__ == "__main__":
     main()
