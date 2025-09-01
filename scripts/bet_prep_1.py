@@ -1,13 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
+"""
+scripts/bet_prep_1.py
+
+Build mlb_sched.csv using normalized games and stadium metadata.
+
+Inputs:
+  - data/raw/todaysgames_normalized.csv
+      required: game_id, home_team_id, away_team_id, home_team, away_team
+      optional: game_datetime (UTC ISO)
+
+  - data/Data/stadium_metadata.csv
+      required: home_team_id, venue
+
+Output:
+  - data/bets/mlb_sched.csv
+      columns: game_id, date, home_team, home_team_id, away_team, away_team_id, venue_name
+"""
+
 from pathlib import Path
 import pandas as pd
 
-INPUT_FILE  = Path("data/raw/mlb_schedule_today.csv")
-MAP_FILE    = Path("data/manual/team_directory.csv")
-OUTPUT_FILE = Path("data/bets/mlb_sched.csv")
+GAMES_FILE   = Path("data/raw/todaysgames_normalized.csv")
+STADIUM_FILE = Path("data/Data/stadium_metadata.csv")
+OUTPUT_FILE  = Path("data/bets/mlb_sched.csv")
+
+REQ_GAMES = ["game_id", "home_team_id", "away_team_id", "home_team", "away_team"]
+REQ_STADIUM = ["home_team_id", "venue"]
 
 def ensure_parent(p: Path):
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -17,57 +37,66 @@ def required(df: pd.DataFrame, cols: list[str], where: str):
     if missing:
         raise RuntimeError(f"{where}: missing required columns: {missing}")
 
-def to_et_date(series: pd.Series) -> pd.Series:
-    ts = pd.to_datetime(series, utc=True, errors="coerce")
-    return ts.dt.tz_convert("America/New_York").dt.date.astype("string")
+def strip_strings(df: pd.DataFrame) -> pd.DataFrame:
+    obj = df.select_dtypes(include=["object"]).columns
+    if len(obj):
+        df[obj] = df[obj].apply(lambda s: s.str.strip())
+        df[obj] = df[obj].replace({"": pd.NA})
+    return df
 
-def today_et_str() -> str:
-    return pd.Timestamp.now(tz="America/New_York").date().isoformat()
+def to_int64(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
+    return df
 
-def build_name_map(df_map: pd.DataFrame) -> dict:
-    # Use multiple sources to map to team_name (spaced form), which
-    # aligns with todaysgames_normalized.csv naming.
-    required(df_map,
-             ["team_name", "clean_team_name", "canonical_team"],
-             "team_directory.csv")
-    m = {}
-    for _, r in df_map.iterrows():
-        tn = str(r["team_name"]).strip()
-        ct = str(r["canonical_team"]).strip()
-        cl = str(r["clean_team_name"]).strip()
-        # keys as lowercase for case-insensitive matching
-        m[tn.lower()] = tn
-        m[ct.lower()] = tn
-        m[cl.lower()] = tn
-    return m
+def ints_to_str_digits(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].astype("Int64").astype("string").replace({"<NA>": ""})
+    return df
+
+def compute_date_column(games: pd.DataFrame) -> pd.Series:
+    # If game_datetime exists, convert UTC -> America/New_York; else use ET today.
+    if "game_datetime" in games.columns:
+        ts = pd.to_datetime(games["game_datetime"], utc=True, errors="coerce")
+        return ts.dt.tz_convert("America/New_York").dt.date.astype("string")
+    else:
+        today_et = pd.Timestamp.now(tz="America/New_York").date().isoformat()
+        return pd.Series([today_et] * len(games), index=games.index, dtype="string")
 
 def main():
-    if not INPUT_FILE.exists():
-        raise FileNotFoundError(f"Missing input: {INPUT_FILE}")
+    if not GAMES_FILE.exists():
+        raise FileNotFoundError(f"Missing input: {GAMES_FILE}")
+    if not STADIUM_FILE.exists():
+        raise FileNotFoundError(f"Missing input: {STADIUM_FILE}")
 
-    df = pd.read_csv(INPUT_FILE)
-    required(df,
-        ["game_id", "game_datetime",
-         "home_team_name", "home_team_id",
-         "away_team_name", "away_team_id",
-         "venue_name"],
-        str(INPUT_FILE),
+    games = pd.read_csv(GAMES_FILE, dtype=str, keep_default_na=False)
+    stadium = pd.read_csv(STADIUM_FILE, dtype=str, keep_default_na=False)
+
+    games = strip_strings(games)
+    stadium = strip_strings(stadium)
+
+    required(games, REQ_GAMES, str(GAMES_FILE))
+    required(stadium, REQ_STADIUM, str(STADIUM_FILE))
+
+    # Coerce IDs to Int64 internally
+    games = to_int64(games, ["game_id", "home_team_id", "away_team_id"])
+    stadium = to_int64(stadium, ["home_team_id"])
+
+    # Date column
+    games["date"] = compute_date_column(games)
+
+    # Join venue by home_team_id
+    merged = games.merge(
+        stadium[["home_team_id", "venue"]],
+        on="home_team_id",
+        how="left",
+        validate="m:1",
     )
+    merged.rename(columns={"venue": "venue_name"}, inplace=True)
 
-    df_map = pd.read_csv(MAP_FILE)
-    name_map = build_name_map(df_map)
-
-    df["date"] = to_et_date(df["game_datetime"])
-    et_today = today_et_str()
-    df = df[df["date"] == et_today].copy()
-
-    def canon(name: str) -> str:
-        key = str(name).strip().lower()
-        return name_map.get(key, str(name).strip())
-
-    df["home_team"] = df["home_team_name"].map(canon)
-    df["away_team"] = df["away_team_name"].map(canon)
-
+    # Final schema
     out_cols = [
         "game_id",
         "date",
@@ -78,13 +107,17 @@ def main():
         "venue_name",
     ]
     for c in out_cols:
-        if c not in df.columns:
-            df[c] = pd.NA
-    df = df[out_cols].drop_duplicates()
+        if c not in merged.columns:
+            merged[c] = pd.NA
+
+    out = merged[out_cols].drop_duplicates()
+
+    # Render IDs as digit-only strings for CSV
+    out = ints_to_str_digits(out, ["game_id", "home_team_id", "away_team_id"])
 
     ensure_parent(OUTPUT_FILE)
-    df.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Wrote {len(df)} rows for ET {et_today} -> {OUTPUT_FILE}")
+    out.to_csv(OUTPUT_FILE, index=False)
+    print(f"✅ Wrote {len(out)} rows -> {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
