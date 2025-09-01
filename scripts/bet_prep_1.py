@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import os
 from pathlib import Path
-from datetime import datetime, timezone
 import pandas as pd
 
-# ---- Inputs / Output ----
-INPUT_FILE   = Path("data/raw/mlb_schedule_today.csv")
-MAP_FILE     = Path("data/Data/team_name_map.csv")   # columns: name, team
-OUTPUT_FILE  = Path("data/bets/mlb_sched.csv")
+INPUT_FILE  = Path("data/raw/mlb_schedule_today.csv")
+MAP_FILE    = Path("data/manual/team_directory.csv")
+OUTPUT_FILE = Path("data/bets/mlb_sched.csv")
 
-# ---- Helpers ----
 def ensure_parent(p: Path):
     p.parent.mkdir(parents=True, exist_ok=True)
 
@@ -19,24 +18,29 @@ def required(df: pd.DataFrame, cols: list[str], where: str):
         raise RuntimeError(f"{where}: missing required columns: {missing}")
 
 def to_et_date(series: pd.Series) -> pd.Series:
-    # MLB gameDate is UTC ISO (e.g., 2025-08-16T23:05:00Z)
     ts = pd.to_datetime(series, utc=True, errors="coerce")
-    # Convert to America/New_York via tz_convert; using IANA name keeps DST correct
     return ts.dt.tz_convert("America/New_York").dt.date.astype("string")
 
 def today_et_str() -> str:
-    # Compute 'today' in America/New_York
-    # Use pandas for tz correctness
-    now_et = pd.Timestamp.now(tz="America/New_York")
-    return now_et.date().isoformat()
+    return pd.Timestamp.now(tz="America/New_York").date().isoformat()
 
-def build_map(df_map: pd.DataFrame) -> dict:
-    # MAP_FILE has columns: name (source full name), team (desired short name)
-    # Create a case-insensitive map on 'name'
-    required(df_map, ["name", "team"], "team_name_map.csv")
-    return {str(n).strip().lower(): t for n, t in zip(df_map["name"], df_map["team"])}
+def build_name_map(df_map: pd.DataFrame) -> dict:
+    # Use multiple sources to map to team_name (spaced form), which
+    # aligns with todaysgames_normalized.csv naming.
+    required(df_map,
+             ["team_name", "clean_team_name", "canonical_team"],
+             "team_directory.csv")
+    m = {}
+    for _, r in df_map.iterrows():
+        tn = str(r["team_name"]).strip()
+        ct = str(r["canonical_team"]).strip()
+        cl = str(r["clean_team_name"]).strip()
+        # keys as lowercase for case-insensitive matching
+        m[tn.lower()] = tn
+        m[ct.lower()] = tn
+        m[cl.lower()] = tn
+    return m
 
-# ---- Main ----
 def main():
     if not INPUT_FILE.exists():
         raise FileNotFoundError(f"Missing input: {INPUT_FILE}")
@@ -51,16 +55,12 @@ def main():
     )
 
     df_map = pd.read_csv(MAP_FILE)
-    name_map = build_map(df_map)
+    name_map = build_name_map(df_map)
 
-    # Convert UTC -> ET, then take the ET calendar date
     df["date"] = to_et_date(df["game_datetime"])
-
-    # Filter to ET today only
     et_today = today_et_str()
     df = df[df["date"] == et_today].copy()
 
-    # Map canonical team names using map file (fallback to original if not found)
     def canon(name: str) -> str:
         key = str(name).strip().lower()
         return name_map.get(key, str(name).strip())
@@ -68,7 +68,6 @@ def main():
     df["home_team"] = df["home_team_name"].map(canon)
     df["away_team"] = df["away_team_name"].map(canon)
 
-    # Final column order expected by downstream scripts
     out_cols = [
         "game_id",
         "date",
@@ -78,8 +77,6 @@ def main():
         "away_team_id",
         "venue_name",
     ]
-
-    # Align + write
     for c in out_cols:
         if c not in df.columns:
             df[c] = pd.NA
