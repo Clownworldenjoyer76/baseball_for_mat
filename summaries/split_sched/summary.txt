@@ -1,58 +1,39 @@
-===== RUN TIMESTAMP: 2025-09-01 12:31:38 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 12:53:52 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-01 12:31:36 PM EDT]
-✅ python succeeded [2025-09-01 12:31:37 PM EDT]
-✅ python succeeded [2025-09-01 12:31:37 PM EDT]
-✅ python succeeded [2025-09-01 12:31:37 PM EDT]
-✅ python succeeded [2025-09-01 12:31:38 PM EDT]
-✅ python succeeded [2025-09-01 12:31:38 PM EDT]
-❌ python failed [2025-09-01 12:31:38 PM EDT]
+✅ python succeeded [2025-09-01 12:53:50 PM EDT]
+✅ python succeeded [2025-09-01 12:53:50 PM EDT]
+✅ python succeeded [2025-09-01 12:53:51 PM EDT]
+✅ python succeeded [2025-09-01 12:53:51 PM EDT]
+✅ python succeeded [2025-09-01 12:53:51 PM EDT]
+✅ python succeeded [2025-09-01 12:53:51 PM EDT]
+✅ python succeeded [2025-09-01 12:53:52 PM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-09-01 12:31:36 PM EDT)
-⏹️ END: python (2025-09-01 12:31:36 PM EDT)
+▶️ START: splitaway.py (2025-09-01 12:53:49 PM EDT)
+⏹️ END: python (2025-09-01 12:53:50 PM EDT)
 
-▶️ START: splithome.py (2025-09-01 12:31:36 PM EDT)
-⏹️ END: python (2025-09-01 12:31:37 PM EDT)
+▶️ START: splithome.py (2025-09-01 12:53:50 PM EDT)
+⏹️ END: python (2025-09-01 12:53:50 PM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-09-01 12:31:37 PM EDT)
+▶️ START: updatesplitcsvs.py (2025-09-01 12:53:50 PM EDT)
 ✅ Corrected home_team and away_team values added to both files.
-⏹️ END: python (2025-09-01 12:31:37 PM EDT)
+⏹️ END: python (2025-09-01 12:53:51 PM EDT)
 
-▶️ START: commit_split_batters.py (2025-09-01 12:31:37 PM EDT)
-⏹️ END: python (2025-09-01 12:31:37 PM EDT)
+▶️ START: commit_split_batters.py (2025-09-01 12:53:51 PM EDT)
+⏹️ END: python (2025-09-01 12:53:51 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-09-01 12:31:37 PM EDT)
-⏹️ END: python (2025-09-01 12:31:38 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-09-01 12:53:51 PM EDT)
+⏹️ END: python (2025-09-01 12:53:51 PM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-09-01 12:31:38 PM EDT)
+▶️ START: pitcherfilecleanup.py (2025-09-01 12:53:51 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-09-01 12:31:38 PM EDT)
+⏹️ END: python (2025-09-01 12:53:51 PM EDT)
 
-▶️ START: bet_prep_1.py (2025-09-01 12:31:38 PM EDT)
-⏹️ END: python (2025-09-01 12:31:38 PM EDT)
+▶️ START: bet_prep_1.py (2025-09-01 12:53:51 PM EDT)
+✅ Wrote 0 rows for ET 2025-09-01 -> data/bets/mlb_sched.csv
+⏹️ END: python (2025-09-01 12:53:52 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-01 12:31:38 PM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/bet_prep_1.py", line 93, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/bet_prep_1.py", line 53, in main
-    df_map = pd.read_csv(MAP_FILE)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
-    return _read(filepath_or_buffer, kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
-    parser = TextFileReader(filepath_or_buffer, **kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
-    self._engine = self._make_engine(f, self.engine)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
-    self.handles = get_handle(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
-    handle = open(
-FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
-
----
-
