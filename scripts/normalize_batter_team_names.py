@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Inject team_id and normalize team names for batters_today.csv
-# Uses data/manual/team_directory.csv (manual source of truth).
+# Normalize team names in batters_today.csv and inject team_id
+# Uses data/manual/team_directory.csv as the source of truth.
 
 import pandas as pd
 import logging
@@ -8,11 +8,11 @@ from pathlib import Path
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+                    format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 BATTERS_FILE = "data/cleaned/batters_today.csv"
-TEAM_DIRECTORY_FILE = "data/manual/team_directory.csv"  # replaced obsolete team_name_master
+TEAM_DIRECTORY_FILE = "data/manual/team_directory.csv"
 OUTPUT_FILE = "data/cleaned/batters_today.csv"
 SUMMARY_FILE = Path("summaries/summary.txt")
 
@@ -28,18 +28,11 @@ def write_summary_line(success: bool, rows: int):
     with open(SUMMARY_FILE, "a") as f:
         f.write(line)
 
-def _build_alias_maps(teamdir: pd.DataFrame):
-    """
-    Build two maps from team_directory.csv:
-      alias_to_id   : any alias -> team_id (string)
-      alias_to_name : any alias -> official team_name (string)
-    Aliases include team_code, canonical_team, team_name, clean_team_name,
-    and pipe-delimited entries in all_codes and all_names.
-    """
+def build_alias_maps(teamdir: pd.DataFrame):
     alias_to_id = {}
     alias_to_name = {}
 
-    def _put(alias: str, tid: str, name: str):
+    def put(alias: str, tid: str, name: str):
         k = (alias or "").strip().upper()
         if not k:
             return
@@ -55,15 +48,15 @@ def _build_alias_maps(teamdir: pd.DataFrame):
         canon = (r.get("canonical_team", "") or "").strip()
         clean = (r.get("clean_team_name", "") or "").strip()
 
-        # primary fields
+        # Primary fields
         for alias in (code, name, canon, clean):
-            _put(alias, tid, name)
+            put(alias, tid, name)
 
-        # lists
+        # Lists
         for alias in (r.get("all_codes", "") or "").split("|"):
-            _put(alias, tid, name)
+            put(alias, tid, name)
         for alias in (r.get("all_names", "") or "").split("|"):
-            _put(alias, tid, name)
+            put(alias, tid, name)
 
     return alias_to_id, alias_to_name
 
@@ -79,41 +72,34 @@ def main():
 
         missing = REQUIRED_TEAMDIR_COLS - set(teamdir.columns)
         if missing:
-            raise ValueError(
-                f"{TEAM_DIRECTORY_FILE} missing required columns: {', '.join(sorted(missing))}"
-            )
+            raise ValueError(f"{TEAM_DIRECTORY_FILE} missing required columns: {', '.join(sorted(missing))}")
 
-        # Build alias maps
-        alias_to_id, alias_to_name = _build_alias_maps(teamdir)
+        alias_to_id, alias_to_name = build_alias_maps(teamdir)
 
-        # Preserve original team strings for ID resolution
+        # Preserve original team strings
         original_team = batters["team"].astype(str)
 
-        # Compute team_id via alias map (nullable Int64)
-        team_id_series = original_team.map(
-            lambda v: alias_to_id.get((v or "").strip().upper())
-        )
-        # Cast to nullable integer
+        # Map to team_id (nullable Int64)
+        team_id_series = original_team.map(lambda v: alias_to_id.get((v or "").strip().upper()))
         team_id_series = pd.to_numeric(team_id_series, errors="coerce").astype("Int64")
 
-        # Normalize display team name via alias map; fall back to original
-        normalized_team_name = original_team.map(
-            lambda v: alias_to_name.get((v or "").strip().upper(), v)
-        )
+        # Map to normalized team_name
+        normalized_team_name = original_team.map(lambda v: alias_to_name.get((v or "").strip().upper(), v))
 
-        # Report unmapped share (informational only)
+        # Report unmapped
         unmapped = team_id_series.isna().sum()
         if unmapped:
             pct = (unmapped / len(batters)) * 100
-            logger.warning(f"ℹ️ {unmapped} rows ({pct:.2f}%) have no team_id mapping in {TEAM_DIRECTORY_FILE}")
+            logger.warning(f"ℹ️ {unmapped} rows ({pct:.2f}%) missing team_id mapping in {TEAM_DIRECTORY_FILE}")
 
-        # Inject columns and save
+        # Inject into DataFrame
         batters["team_id"] = team_id_series
-        batters["team"] = normalized_team_name  # keep existing behavior: official team names
+        batters["team"] = normalized_team_name
 
-        logger.info(f"✅ Normalized {len(batters)} rows and injected team_id. Saving to {OUTPUT_FILE}...")
+        # Save
         Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
         batters.to_csv(OUTPUT_FILE, index=False)
+        logger.info(f"✅ Normalized {len(batters)} rows and injected team_id -> {OUTPUT_FILE}")
         write_summary_line(True, len(batters))
 
     except Exception as e:
