@@ -1,16 +1,16 @@
-===== RUN TIMESTAMP: 2025-08-31 07:57:26 PM EDT =====
+===== RUN TIMESTAMP: 2025-08-31 08:06:50 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-08-31 07:57:24 PM EDT]
-✅ python succeeded [2025-08-31 07:57:24 PM EDT]
-✅ python succeeded [2025-08-31 07:57:25 PM EDT]
-✅ python succeeded [2025-08-31 07:57:25 PM EDT]
-✅ python succeeded [2025-08-31 07:57:25 PM EDT]
-✅ python succeeded [2025-08-31 07:57:26 PM EDT]
-✅ python succeeded [2025-08-31 07:57:26 PM EDT]
+✅ python succeeded [2025-08-31 08:06:48 PM EDT]
+✅ python succeeded [2025-08-31 08:06:48 PM EDT]
+✅ python succeeded [2025-08-31 08:06:49 PM EDT]
+✅ python succeeded [2025-08-31 08:06:49 PM EDT]
+✅ python succeeded [2025-08-31 08:06:49 PM EDT]
+✅ python succeeded [2025-08-31 08:06:50 PM EDT]
+✅ python succeeded [2025-08-31 08:06:50 PM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-08-31 07:57:24 PM EDT)
+▶️ START: splitaway.py (2025-08-31 08:06:47 PM EDT)
 --- Starting populate_away_batters for data/adjusted/batters_away.csv ---
 Using batters_today from: data/temp_inputs/batters_today_copy.csv
 Using todaysgames_normalized from: data/temp_inputs/todaysgames_normalized_copy.csv
@@ -24,42 +24,42 @@ WARNING: No away team batters found after filtering. The output file will contai
 Ensured directory 'data/adjusted' exists.
 SUCCESS: Populated 'data/adjusted/batters_away.csv' with 0 away team batters.
 --- Finished populate_away_batters ---
-⏹️ END: python (2025-08-31 07:57:24 PM EDT)
+⏹️ END: python (2025-08-31 08:06:48 PM EDT)
 
-▶️ START: splithome.py (2025-08-31 07:57:24 PM EDT)
+▶️ START: splithome.py (2025-08-31 08:06:48 PM EDT)
 --- Starting populate_home_batters for data/adjusted/batters_home.csv ---
 Using batters_today from: data/temp_inputs/batters_today_copy.csv
 Using todaysgames_normalized from: data/temp_inputs/todaysgames_normalized_copy.csv
 Read 'data/temp_inputs/batters_today_copy.csv'. Initial shape: (127, 190)
 Unique teams in data/temp_inputs/batters_today_copy.csv (cleaned): ['ATHLETICS', 'NATIONALS', 'CUBS', 'DODGERS', 'TIGERS', 'ANGELS', 'YANKEES', 'MARINERS', 'RANGERS', 'GIANTS', 'BLUE JAYS', 'ASTROS', 'PHILLIES', 'WHITE SOX', 'DIAMONDBACKS', 'TWINS', 'REDS', 'CARDINALS', 'ROYALS', 'GUARDIANS', 'RAYS', 'ROCKIES', 'METS', 'MARLINS', 'RED SOX', 'ORIOLES', 'PADRES', 'BREWERS', 'PIRATES', 'BRAVES']
 Read 'data/temp_inputs/todaysgames_normalized_copy.csv'. Initial shape: (15, 8)
-Unique home teams in data/temp_inputs/todaysgames_normalized_copy.csv (cleaned): ['CIN', 'MIN', 'BOS', 'WSH', 'TOR', 'CLE', 'NYM', 'HOU', 'KC', 'CWS', 'COL', 'SF', 'ATH', 'LAD', 'PHI']
-Identified 15 unique CLEANED home teams: ['CIN', 'MIN', 'BOS', 'WSH', 'TOR', 'CLE', 'NYM', 'HOU', 'KC', 'CWS', 'COL', 'SF', 'ATH', 'LAD', 'PHI']
+Unique home teams in data/temp_inputs/todaysgames_normalized_copy.csv (cleaned): ['CIN', 'MIN', 'BOS', 'WSH', 'TOR', 'CLE', 'NYM', 'HOU', 'KC', 'CHW', 'COL', 'SF', 'ATH', 'LAD', 'PHI']
+Identified 15 unique CLEANED home teams: ['CIN', 'MIN', 'BOS', 'WSH', 'TOR', 'CLE', 'NYM', 'HOU', 'KC', 'CHW', 'COL', 'SF', 'ATH', 'LAD', 'PHI']
 Filtered batters for home teams. Resulting DataFrame shape: (0, 190)
 WARNING: No home team batters found after filtering. The output file will contain only headers.
 Ensured directory 'data/adjusted' exists.
 SUCCESS: Populated 'data/adjusted/batters_home.csv' with 0 home team batters.
 --- Finished populate_home_batters ---
-⏹️ END: python (2025-08-31 07:57:24 PM EDT)
+⏹️ END: python (2025-08-31 08:06:48 PM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-08-31 07:57:24 PM EDT)
+▶️ START: updatesplitcsvs.py (2025-08-31 08:06:48 PM EDT)
 ✅ Corrected home_team and away_team values added to both files.
-⏹️ END: python (2025-08-31 07:57:25 PM EDT)
+⏹️ END: python (2025-08-31 08:06:49 PM EDT)
 
-▶️ START: commit_split_batters.py (2025-08-31 07:57:25 PM EDT)
-⏹️ END: python (2025-08-31 07:57:25 PM EDT)
+▶️ START: commit_split_batters.py (2025-08-31 08:06:49 PM EDT)
+⏹️ END: python (2025-08-31 08:06:49 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-08-31 07:57:25 PM EDT)
-⏹️ END: python (2025-08-31 07:57:25 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-08-31 08:06:49 PM EDT)
+⏹️ END: python (2025-08-31 08:06:49 PM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-08-31 07:57:25 PM EDT)
+▶️ START: pitcherfilecleanup.py (2025-08-31 08:06:49 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-08-31 07:57:26 PM EDT)
+⏹️ END: python (2025-08-31 08:06:50 PM EDT)
 
-▶️ START: bet_prep_1.py (2025-08-31 07:57:26 PM EDT)
+▶️ START: bet_prep_1.py (2025-08-31 08:06:50 PM EDT)
 ✅ Wrote 0 rows for ET 2025-08-31 -> data/bets/mlb_sched.csv
-⏹️ END: python (2025-08-31 07:57:26 PM EDT)
+⏹️ END: python (2025-08-31 08:06:50 PM EDT)
 
 
 ===== ERRORS =====
