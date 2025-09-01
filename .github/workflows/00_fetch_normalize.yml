@@ -68,6 +68,7 @@ jobs:
           run_step finalize_todaysgames_types_and_pf.py  python scripts/finalize_todaysgames_types_and_pf.py
           run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
+          run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --game-date "$(date -u +%Y%m%d)"
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -82,6 +83,7 @@ jobs:
           git add data/raw/todaysgames_normalized.csv || true
           git add data/Data/stadium_metadata.csv || true
           git add data/cleaned/batters_today.csv || true
+          git add data/cleaned/pitchers_normalized_cleaned.csv || true
           git add summaries/foundation/* || true
           git diff --cached --quiet || git commit -m "00 foundation outputs"
           git pull --rebase origin main || true
