@@ -1,16 +1,16 @@
-===== RUN TIMESTAMP: 2025-09-01 09:16:53 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 10:44:52 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-01 09:16:50 AM EDT]
-✅ python succeeded [2025-09-01 09:16:51 AM EDT]
-✅ python succeeded [2025-09-01 09:16:51 AM EDT]
-✅ python succeeded [2025-09-01 09:16:52 AM EDT]
-❌ python failed [2025-09-01 09:16:52 AM EDT]
-✅ python succeeded [2025-09-01 09:16:52 AM EDT]
-❌ python failed [2025-09-01 09:16:53 AM EDT]
+✅ python succeeded [2025-09-01 10:44:50 AM EDT]
+✅ python succeeded [2025-09-01 10:44:50 AM EDT]
+✅ python succeeded [2025-09-01 10:44:51 AM EDT]
+✅ python succeeded [2025-09-01 10:44:51 AM EDT]
+❌ python failed [2025-09-01 10:44:52 AM EDT]
+✅ python succeeded [2025-09-01 10:44:52 AM EDT]
+❌ python failed [2025-09-01 10:44:52 AM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-09-01 09:16:50 AM EDT)
+▶️ START: splitaway.py (2025-09-01 10:44:49 AM EDT)
 --- splitaway.py (IDs only) ---
 batters: data/temp_inputs/batters_today_copy.csv
 games:   data/temp_inputs/todaysgames_normalized_copy.csv
@@ -18,9 +18,9 @@ output:  data/adjusted/batters_away.csv
 away_team_id count: 13
 wrote data/adjusted/batters_away.csv rows=55 (IDs only)
 --- done ---
-⏹️ END: python (2025-09-01 09:16:50 AM EDT)
+⏹️ END: python (2025-09-01 10:44:50 AM EDT)
 
-▶️ START: splithome.py (2025-09-01 09:16:50 AM EDT)
+▶️ START: splithome.py (2025-09-01 10:44:50 AM EDT)
 --- splithome.py (IDs only) ---
 batters: data/temp_inputs/batters_today_copy.csv
 games:   data/temp_inputs/todaysgames_normalized_copy.csv
@@ -28,32 +28,32 @@ output:  data/adjusted/batters_home.csv
 home_team_id count: 13
 wrote data/adjusted/batters_home.csv rows=46 (IDs only)
 --- done ---
-⏹️ END: python (2025-09-01 09:16:51 AM EDT)
+⏹️ END: python (2025-09-01 10:44:50 AM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-09-01 09:16:51 AM EDT)
+▶️ START: updatesplitcsvs.py (2025-09-01 10:44:50 AM EDT)
 ✅ Corrected home_team and away_team values added to both files.
-⏹️ END: python (2025-09-01 09:16:51 AM EDT)
+⏹️ END: python (2025-09-01 10:44:51 AM EDT)
 
-▶️ START: commit_split_batters.py (2025-09-01 09:16:51 AM EDT)
-⏹️ END: python (2025-09-01 09:16:52 AM EDT)
+▶️ START: commit_split_batters.py (2025-09-01 10:44:51 AM EDT)
+⏹️ END: python (2025-09-01 10:44:51 AM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-09-01 09:16:52 AM EDT)
-⏹️ END: python (2025-09-01 09:16:52 AM EDT)
+▶️ START: normalize_pitcher_home_away (2025-09-01 10:44:51 AM EDT)
+⏹️ END: python (2025-09-01 10:44:52 AM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-09-01 09:16:52 AM EDT)
+▶️ START: pitcherfilecleanup.py (2025-09-01 10:44:52 AM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-09-01 09:16:52 AM EDT)
+⏹️ END: python (2025-09-01 10:44:52 AM EDT)
 
-▶️ START: bet_prep_1.py (2025-09-01 09:16:52 AM EDT)
-⏹️ END: python (2025-09-01 09:16:53 AM EDT)
+▶️ START: bet_prep_1.py (2025-09-01 10:44:52 AM EDT)
+⏹️ END: python (2025-09-01 10:44:52 AM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-01 09:16:52 AM EDT]:
-2025-09-01 13:16:52,372 - INFO - Starting pitcher data processing and standardization.
-2025-09-01 13:16:52,372 - CRITICAL - ❌ Missing team mapping file: data/Data/team_name_master.csv
-2025-09-01 13:16:52,372 - CRITICAL - An unhandled error occurred during script execution: data/Data/team_name_master.csv does not exist.
+❌ python ERROR [2025-09-01 10:44:52 AM EDT]:
+2025-09-01 14:44:52,027 - INFO - Starting pitcher data processing and standardization.
+2025-09-01 14:44:52,027 - CRITICAL - ❌ Missing team mapping file: data/Data/team_name_master.csv
+2025-09-01 14:44:52,027 - CRITICAL - An unhandled error occurred during script execution: data/Data/team_name_master.csv does not exist.
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 139, in <module>
     process_pitcher_data(pitchers_input, games_input, output_home, output_away)
@@ -65,7 +65,7 @@ FileNotFoundError: data/Data/team_name_master.csv does not exist.
 
 ---
 
-❌ python ERROR [2025-09-01 09:16:53 AM EDT]:
+❌ python ERROR [2025-09-01 10:44:52 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/bet_prep_1.py", line 93, in <module>
     main()
