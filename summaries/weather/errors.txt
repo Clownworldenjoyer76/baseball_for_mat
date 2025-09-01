@@ -1,4 +1,4 @@
-❌ python ERROR [2025-08-31 08:49:45 PM EDT]:
+❌ python ERROR [2025-08-31 09:23:17 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
@@ -11,6 +11,28 @@ Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
     raise KeyError(f"{not_found} not in index")
 KeyError: "['date'] not in index"
+
+---
+
+❌ python ERROR [2025-08-31 09:23:17 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 276, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 151, in main
+    name_map = _build_team_map(MAP_FILE)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 44, in _build_team_map
+    m = pd.read_csv(path)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
 
 ---
 

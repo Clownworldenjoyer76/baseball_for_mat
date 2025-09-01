@@ -1,37 +1,34 @@
-===== RUN TIMESTAMP: 2025-08-31 08:49:56 PM EDT =====
+===== RUN TIMESTAMP: 2025-08-31 09:23:18 PM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-08-31 08:49:45 PM EDT]
-✅ python succeeded [2025-08-31 08:49:56 PM EDT]
-✅ python succeeded [2025-08-31 08:49:56 PM EDT]
-✅ python succeeded [2025-08-31 08:49:56 PM EDT]
+❌ python failed [2025-08-31 09:23:17 PM EDT]
+❌ python failed [2025-08-31 09:23:17 PM EDT]
+✅ python succeeded [2025-08-31 09:23:17 PM EDT]
+✅ python succeeded [2025-08-31 09:23:18 PM EDT]
 
 ===== LOG =====
-▶️ START: generate_weather_csv.py (2025-08-31 08:49:45 PM EDT)
-⏹️ END: python (2025-08-31 08:49:45 PM EDT)
+▶️ START: generate_weather_csv.py (2025-08-31 09:23:16 PM EDT)
+⏹️ END: python (2025-08-31 09:23:17 PM EDT)
 
-▶️ START: get_weather_data.py (2025-08-31 08:49:45 PM EDT)
-2025-09-01 12:49:46 AM 🔄 Read data/weather_input.csv...
-2025-09-01 12:49:46 AM 🌍 Fetch weather for 15 venues...
-2025-09-01 12:49:48 AM ⚠️ Unparsable ET for nan, nan: 'nan'.
-2025-09-01 12:49:54 AM ❌ No forecast for nan, nan. Stub row.
-2025-09-01 12:49:55 AM ✅ Wrote data/weather_adjustments.csv with 15 rows.
-⏹️ END: python (2025-08-31 08:49:56 PM EDT)
+▶️ START: get_weather_data.py (2025-08-31 09:23:17 PM EDT)
+2025-09-01 01:23:17 AM 🔄 Read data/weather_input.csv...
+⏹️ END: python (2025-08-31 09:23:17 PM EDT)
 
-▶️ START: weather_data_fix.py (2025-08-31 08:49:56 PM EDT)
+▶️ START: weather_data_fix.py (2025-08-31 09:23:17 PM EDT)
 🔄 Load weather_adjustments.csv...
-🧮 Calculate weather_factor...
+⚠️ Name map skipped: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
+✅ weather_factor exists; skip calc.
 ✅ Done.
-⏹️ END: python (2025-08-31 08:49:56 PM EDT)
+⏹️ END: python (2025-08-31 09:23:17 PM EDT)
 
-▶️ START: attach_game_ids.py (2025-08-31 08:49:56 PM EDT)
+▶️ START: attach_game_ids.py (2025-08-31 09:23:17 PM EDT)
 home: 66 → 0 after attaching game_id/date (dropped 66)
 away: 61 → 0 after attaching game_id/date (dropped 61)
-⏹️ END: python (2025-08-31 08:49:56 PM EDT)
+⏹️ END: python (2025-08-31 09:23:18 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-08-31 08:49:45 PM EDT]:
+❌ python ERROR [2025-08-31 09:23:17 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
@@ -44,6 +41,28 @@ Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
     raise KeyError(f"{not_found} not in index")
 KeyError: "['date'] not in index"
+
+---
+
+❌ python ERROR [2025-08-31 09:23:17 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 276, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 151, in main
+    name_map = _build_team_map(MAP_FILE)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 44, in _build_team_map
+    m = pd.read_csv(path)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
 
 ---
 
