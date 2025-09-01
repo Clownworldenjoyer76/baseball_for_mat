@@ -1,20 +1,20 @@
-===== RUN TIMESTAMP: 2025-09-01 05:07:21 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 06:59:05 PM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-09-01 05:07:19 PM EDT]
-❌ python failed [2025-09-01 05:07:19 PM EDT]
-✅ python succeeded [2025-09-01 05:07:20 PM EDT]
-✅ python succeeded [2025-09-01 05:07:21 PM EDT]
+❌ python failed [2025-09-01 06:59:03 PM EDT]
+❌ python failed [2025-09-01 06:59:04 PM EDT]
+✅ python succeeded [2025-09-01 06:59:05 PM EDT]
+✅ python succeeded [2025-09-01 06:59:05 PM EDT]
 
 ===== LOG =====
-▶️ START: apply_weather_adjustment.py (2025-09-01 05:07:18 PM EDT)
-⏹️ END: python (2025-09-01 05:07:19 PM EDT)
+▶️ START: apply_weather_adjustment.py (2025-09-01 06:59:03 PM EDT)
+⏹️ END: python (2025-09-01 06:59:03 PM EDT)
 
-▶️ START: apply_park_adjustment.py (2025-09-01 05:07:19 PM EDT)
-⏹️ END: python (2025-09-01 05:07:19 PM EDT)
+▶️ START: apply_park_adjustment.py (2025-09-01 06:59:03 PM EDT)
+⏹️ END: python (2025-09-01 06:59:04 PM EDT)
 
-▶️ START: combine_weather_park_home.py (2025-09-01 05:07:19 PM EDT)
-[main 6a5e35f4] Auto-commit: Combined home batter adjustments
+▶️ START: combine_weather_park_home.py (2025-09-01 06:59:04 PM EDT)
+[main c654cd11] Auto-commit: Combined home batter adjustments
 📥 Loading input CSVs...
 🔹 Weather rows: 65
 🔹 Park rows: 65
@@ -24,10 +24,10 @@
 📝 Log written to: data/adjusted/log_combined_home.txt
 📤 Committing and pushing to repo...
 ✅ Git commit and push successful.
-⏹️ END: python (2025-09-01 05:07:20 PM EDT)
+⏹️ END: python (2025-09-01 06:59:05 PM EDT)
 
-▶️ START: combine_weather_park_away.py (2025-09-01 05:07:20 PM EDT)
-[main 06164104] Auto-commit: Combined away batter adjustments
+▶️ START: combine_weather_park_away.py (2025-09-01 06:59:05 PM EDT)
+[main 9f5478c6] Auto-commit: Combined away batter adjustments
 📥 Loading input CSVs...
 🔹 Weather rows before dedup: 58
 🔹 Park rows before dedup: 58
@@ -40,11 +40,11 @@
 📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
 📤 Committing and pushing results...
 ✅ Git commit & push successful.
-⏹️ END: python (2025-09-01 05:07:21 PM EDT)
+⏹️ END: python (2025-09-01 06:59:05 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-01 05:07:19 PM EDT]:
+❌ python ERROR [2025-09-01 06:59:03 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
     main()
@@ -58,7 +58,7 @@ ValueError: batters input: missing columns ['date']
 
 ---
 
-❌ python ERROR [2025-09-01 05:07:19 PM EDT]:
+❌ python ERROR [2025-09-01 06:59:04 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 74, in <module>
     main()
