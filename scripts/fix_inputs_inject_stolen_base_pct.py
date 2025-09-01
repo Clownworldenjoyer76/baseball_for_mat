@@ -1,4 +1,3 @@
-# /mnt/data/baseball_for_mat-main/baseball_for_mat-main/scripts/fix_inputs_inject_stolen_base_pct.py
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -15,7 +14,8 @@ Tasks:
 All operations are in-place and write a summary.
 """
 
-import sys, os
+import sys
+import os
 import pandas as pd
 import numpy as np
 
@@ -42,9 +42,11 @@ TARGET_GAME = "game_id"
 
 def to_float_safe(x):
     try:
-        if x is None: return np.nan
+        if x is None:
+            return np.nan
         s = str(x).strip()
-        if s == "": return np.nan
+        if s == "":
+            return np.nan
         return float(s)
     except Exception:
         return np.nan
@@ -60,18 +62,23 @@ def inject_stolen_base(df):
     return int((pct != "").sum()), int(len(df) - (pct != "").sum())
 
 def inject_batters_game_id(df):
-    if not os.path.exists(GAMES_CSV): return 0, "MISSING: " + GAMES_CSV
-    if not os.path.exists(TEAMS_CSV): return 0, "MISSING: " + TEAMS_CSV
+    if not os.path.exists(GAMES_CSV):
+        return 0, "MISSING: " + GAMES_CSV
+    if not os.path.exists(TEAMS_CSV):
+        return 0, "MISSING: " + TEAMS_CSV
 
     games = pd.read_csv(GAMES_CSV, dtype=str, keep_default_na=False, na_values=[])
     teams = pd.read_csv(TEAMS_CSV, dtype=str, keep_default_na=False, na_values=[])
 
     for need in REQ_GAMES_B:
-        if need not in games.columns: return 0, f"MISSING COLUMN {need} in {GAMES_CSV}"
+        if need not in games.columns:
+            return 0, f"MISSING COLUMN {need} in {GAMES_CSV}"
     for need in REQ_TEAMS_B:
-        if need not in teams.columns: return 0, f"MISSING COLUMN {need} in {TEAMS_CSV}"
+        if need not in teams.columns:
+            return 0, f"MISSING COLUMN {need} in {TEAMS_CSV}"
 
     code_to_clean = dict(zip(teams["team_code"], teams["clean_team_name"]))
+    games = games.copy()
     games["home_clean"] = games["home_team"].map(code_to_clean).fillna("")
     gm = games.loc[games["home_clean"] != "", ["home_clean", "game_id"]].drop_duplicates()
     clean_to_gid = dict(zip(gm["home_clean"], gm["game_id"]))
@@ -80,17 +87,22 @@ def inject_batters_game_id(df):
     return int((df[TARGET_GAME] != "").sum()), ""
 
 def inject_pitchers_game_id(df):
-    if not os.path.exists(GAMES_CSV): return 0, "MISSING: " + GAMES_CSV
-    if not os.path.exists(TEAMS_CSV): return 0, "MISSING: " + TEAMS_CSV
-    if "team_id" not in df.columns: return 0, "MISSING COLUMN team_id in pitchers file"
+    if not os.path.exists(GAMES_CSV):
+        return 0, "MISSING: " + GAMES_CSV
+    if not os.path.exists(TEAMS_CSV):
+        return 0, "MISSING: " + TEAMS_CSV
+    if "team_id" not in df.columns:
+        return 0, "MISSING COLUMN team_id in pitchers file"
 
     games = pd.read_csv(GAMES_CSV, dtype=str, keep_default_na=False, na_values=[])
     teams = pd.read_csv(TEAMS_CSV, dtype=str, keep_default_na=False, na_values=[])
 
     for need in REQ_GAMES_P:
-        if need not in games.columns: return 0, f"MISSING COLUMN {need} in {GAMES_CSV}"
+        if need not in games.columns:
+            return 0, f"MISSING COLUMN {need} in {GAMES_CSV}"
     for need in REQ_TEAMS_P:
-        if need not in teams.columns: return 0, f"MISSING COLUMN {need} in {TEAMS_CSV}"
+        if need not in teams.columns:
+            return 0, f"MISSING COLUMN {need} in {TEAMS_CSV}"
 
     id_to_code = dict(zip(teams["team_id"], teams["team_code"]))
 
@@ -99,8 +111,10 @@ def inject_pitchers_game_id(df):
         gid = row.get("game_id", "")
         h = row.get("home_team", "")
         a = row.get("away_team", "")
-        if h: code_to_gids.setdefault(h, set()).add(gid)
-        if a: code_to_gids.setdefault(a, set()).add(gid)
+        if h:
+            code_to_gids.setdefault(h, set()).add(gid)
+        if a:
+            code_to_gids.setdefault(a, set()).add(gid)
 
     out, ambiguous = [], 0
     for tid in df["team_id"]:
@@ -110,7 +124,8 @@ def inject_pitchers_game_id(df):
             out.append(next(iter(gids)))
         else:
             out.append("")
-            if len(gids) > 1: ambiguous += 1
+            if len(gids) > 1:
+                ambiguous += 1
 
     df[TARGET_GAME] = pd.Series(out, index=df.index, dtype=str)
     filled = int((df[TARGET_GAME] != "").sum())
@@ -157,35 +172,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-'''
-with open(script_path, "w", encoding="utf-8") as f:
-    f.write(new)
-
-# Run script
-!python "{script_path}"
-
-# Show summary
-with open(os.path.join(repo_root, "summaries", "pre_split", "fix_inputs_summary.txt"), "r") as f:
-    print(f.read())
-
-Action:
-Updated the pre-workflow script to inject `game_id` into `data/cleaned/pitchers_normalized_cleaned.csv` using `team_id` mapping.
-
-Script path:
-`/mnt/data/baseball_for_mat-main/baseball_for_mat-main/scripts/fix_inputs_inject_stolen_base_pct.py`
-
-What it does:
-• Maps `team_id` → `team_code` via `data/manual/team_directory.csv`.  
-• Maps `team_code` → `game_id` from `data/raw/todaysgames.csv`, checking both `home_team` and `away_team`.  
-• If multiple `game_id` values exist for a `team_code`, leaves blank (no assumptions).  
-• Writes updated CSV in place and a summary log.
-
-Execution result:
-• `PITCHERS rows: 94`  
-• `game_id` filled: 75  
-• Summary: `/mnt/data/baseball_for_mat-main/baseball_for_mat-main/summaries/pre_split/fix_inputs_summary.txt`  
-[Download summary](sandbox:/mnt/data/baseball_for_mat-main/baseball_for_mat-main/summaries/pre_split/fix_inputs_summary.txt?_chatgptios_conversationID=68b58b5a-44f0-8321-8e62-8643b6e8a88e&_chatgptios_messageID=4e0a96b9-abe4-4019-b0ab-1a73a8209c08)
-
-Full code (mobile-formatted) included in previous message; file on disk is authoritative.
-
-Usage:
