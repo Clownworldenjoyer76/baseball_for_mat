@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # /home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py
 
+import os
+import time
 import pandas as pd
 import requests
-import time
 from datetime import datetime
 from pathlib import Path
 from requests.exceptions import RequestException
@@ -16,9 +17,9 @@ except Exception:
 INPUT_FILE   = "data/weather_input.csv"
 OUTPUT_FILE  = "data/weather_adjustments.csv"
 SCHED_FILE   = "data/bets/mlb_sched.csv"
-MAP_FILE     = "data/Data/team_name_map.csv"
+
 FORECAST_URL = "https://api.weatherapi.com/v1/forecast.json"
-API_KEY      = "45d9502513854b489c3162411251907"
+API_KEY      = os.environ.get("WEATHER_API_KEY", "45d9502513854b489c3162411251907")
 
 def timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
@@ -37,16 +38,9 @@ def _require(df: pd.DataFrame, cols: list[str], where: str) -> None:
     if miss:
         raise RuntimeError(f"{where}: missing columns {miss}")
 
-def _norm(s: str) -> str:
-    return str(s).strip().lower()
-
-def _build_team_map(path: str) -> dict:
-    m = pd.read_csv(path)
-    _require(m, ["name", "team"], path)
-    return { _norm(n): str(t).strip() for n, t in zip(m["name"], m["team"]) }
-
-def _canon(series: pd.Series, name_map: dict) -> pd.Series:
-    return series.map(lambda s: name_map.get(_norm(s), str(s).strip()))
+def _bad(v) -> bool:
+    s = str(v).strip().lower()
+    return s in {"", "nan", "none", "null"}
 
 def parse_game_time_et(raw_time, raw_date=None):
     s = (str(raw_time) or "").strip()
@@ -115,19 +109,18 @@ def pick_hour_block(forecast_json, target_local_dt, tzinfo):
                 best_day_str = day.get("date")
     return best, best_day_str
 
-def _attach_sched_keys(wx_df: pd.DataFrame, name_map: dict) -> pd.DataFrame:
+def _attach_sched_keys(wx_df: pd.DataFrame) -> pd.DataFrame:
     sched = pd.read_csv(SCHED_FILE, dtype=str)
-    _require(sched, ["game_id", "date", "home_team", "away_team"], SCHED_FILE)
-    sched["home_team"] = _canon(sched["home_team"], name_map)
-    sched["away_team"] = _canon(sched["away_team"], name_map)
-    # de-dup by teams; keep first per matchup/date
-    sched = sched[["game_id", "date", "home_team", "away_team"]].drop_duplicates()
-    # merge to get game_id/date into weather rows
+    _require(sched, ["game_id", "date", "home_team_id", "away_team_id"], SCHED_FILE)
+    sched = sched[["game_id", "date", "home_team_id", "away_team_id"]].drop_duplicates()
+
+    # merge on IDs, not names
     out = wx_df.merge(
         sched,
-        on=["home_team", "away_team"],
+        on=["home_team_id", "away_team_id"],
         how="left",
-        suffixes=("", "_sched")
+        validate="m:1",
+        suffixes=("", "_sched"),
     )
     # Ensure string keys
     out["game_id"] = out["game_id"].astype("string")
@@ -143,16 +136,14 @@ def main():
         return
 
     df.columns = [c.strip() for c in df.columns]
-    for col in ["venue", "city", "latitude", "longitude",
-                "is_dome", "game_time", "home_team", "away_team"]:
-        if col not in df.columns:
-            print(f"{timestamp()} ⚠️ Missing column: {col}")
 
-    name_map = _build_team_map(MAP_FILE)
-    if "home_team" in df.columns:
-        df["home_team"] = _canon(df["home_team"], name_map)
-    if "away_team" in df.columns:
-        df["away_team"] = _canon(df["away_team"], name_map)
+    # Hard requirements: we are ID-driven
+    try:
+        _require(df, ["home_team_id", "away_team_id", "venue", "city", "latitude", "longitude", "roof_type", "game_time", "date"], INPUT_FILE)
+    except RuntimeError as e:
+        print(f"{timestamp()} ❌ {e}")
+        print(f"{timestamp()} ❌ Upstream must emit team IDs and stadium fields in {INPUT_FILE}.")
+        return
 
     print(f"{timestamp()} 🌍 Fetch weather for {len(df)} venues...")
     rows = []
@@ -162,14 +153,21 @@ def main():
         city  = str(row.get("city", "")).strip()
         lat   = row.get("latitude", "")
         lon   = row.get("longitude", "")
-        is_dome = row.get("is_dome", False)
-        home_team = row.get("home_team", "UNKNOWN")
-        away_team = row.get("away_team", "UNKNOWN")
-        game_time_raw = row.get("game_time", "")
-        game_date = row.get("game_date", None)
+        roof  = str(row.get("roof_type", "")).strip().lower()
+        # classify roof into dome/closed vs open
+        is_dome = roof in {
+            "dome", "fixed", "indoor",
+            "retractable-closed", "retractable (closed)",
+            "closed", "roof closed"
+        }
 
-        if isinstance(is_dome, str):
-            is_dome = is_dome.strip().lower() in {"true", "1", "yes", "y"}
+        home_team_id = str(row.get("home_team_id", "")).strip()
+        away_team_id = str(row.get("away_team_id", "")).strip()
+        home_team    = str(row.get("home_team", "UNKNOWN")).strip()  # optional, pass-through
+        away_team    = str(row.get("away_team", "UNKNOWN")).strip()  # optional, pass-through
+
+        game_time_raw = row.get("game_time", "")
+        game_date     = row.get("date", None)
 
         location = f"{venue}, {city}".strip(", ")
 
@@ -179,10 +177,20 @@ def main():
             dt_et = (datetime.now(ZoneInfo("America/New_York"))
                      if ZoneInfo else datetime.now())
 
-        # default empty payload; will be filled on success
         record = {
+            # identification (IDs first)
+            "home_team_id": home_team_id,
+            "away_team_id": away_team_id,
+            "home_team": home_team,       # passthrough if present
+            "away_team": away_team,       # passthrough if present
+            # venue/meta
             "venue": venue,
-            "location": location,
+            "city": city,
+            "latitude": lat,
+            "longitude": lon,
+            "roof_type": roof,
+            "notes": ("Roof closed" if is_dome else "Roof open"),
+            # weather payload (filled if we fetch)
             "matched_forecast_day": None,
             "matched_forecast_time": None,
             "temperature": None,
@@ -191,26 +199,24 @@ def main():
             "humidity": None,
             "precipitation": None,
             "condition": None,
-            "notes": ("Roof closed" if is_dome else "Roof open"),
+            # bookkeeping
             "game_time_et": str(game_time_raw),
-            "home_team": home_team,
-            "away_team": away_team,
             "fetched_at": timestamp(),
         }
 
-        # Skip API only if coords missing; still write stub row
-        if not lat or not lon:
+        # if missing coords, write a stub row but keep IDs for later joins
+        if _bad(lat) or _bad(lon):
             print(f"{timestamp()} ⚠️ Missing coords for {location}. Stub row.")
             rows.append(record)
             continue
 
-        # Fetch forecast
+        # Fetch forecast with simple retry/backoff
         attempts, data = 0, None
         while attempts < 5 and data is None:
             data = fetch_forecast(lat, lon, days=3)
             if data is None:
                 attempts += 1
-                time.sleep(1)
+                time.sleep(1.5 * attempts)
 
         if data is None:
             print(f"{timestamp()} ❌ No forecast for {location}. Stub row.")
@@ -265,8 +271,13 @@ def main():
 
     wx = pd.DataFrame(rows)
 
-    # Attach schedule keys (game_id, date) by canonical teams
-    wx = _attach_sched_keys(wx, name_map)
+    # Attach schedule keys (game_id, date) by canonical IDs
+    try:
+        wx = _attach_sched_keys(wx)
+    except Exception as e:
+        print(f"{timestamp()} ❌ Failed to attach schedule keys: {e}")
+        # still write what we have so downstream can inspect
+        pass
 
     Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
     wx.to_csv(OUTPUT_FILE, index=False)
