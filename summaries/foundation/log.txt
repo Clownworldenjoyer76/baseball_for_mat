@@ -1,57 +1,57 @@
-▶️ START: normalize_names.py (2025-08-31 08:42:28 PM EDT)
+▶️ START: normalize_names.py (2025-08-31 08:48:29 PM EDT)
 ✅ Batters normalized: 156 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 109 → data/normalized/pitchers_normalized.csv
-⏹️ END: python (2025-08-31 08:42:29 PM EDT)
+⏹️ END: python (2025-08-31 08:48:30 PM EDT)
 
-▶️ START: tag_master_files.py (2025-08-31 08:42:29 PM EDT)
-⏹️ END: python (2025-08-31 08:42:29 PM EDT)
+▶️ START: tag_master_files.py (2025-08-31 08:48:30 PM EDT)
+⏹️ END: python (2025-08-31 08:48:30 PM EDT)
 
-▶️ START: validate_tagged_players.py (2025-08-31 08:42:29 PM EDT)
-⏹️ END: python (2025-08-31 08:42:30 PM EDT)
+▶️ START: validate_tagged_players.py (2025-08-31 08:48:30 PM EDT)
+⏹️ END: python (2025-08-31 08:48:30 PM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-08-31 08:42:30 PM EDT)
-⏹️ END: python (2025-08-31 08:42:31 PM EDT)
+▶️ START: deduplicate_normalized.py (2025-08-31 08:48:30 PM EDT)
+⏹️ END: python (2025-08-31 08:48:31 PM EDT)
 
-▶️ START: normalize_lineups.py (2025-08-31 08:42:31 PM EDT)
+▶️ START: normalize_lineups.py (2025-08-31 08:48:31 PM EDT)
 ✅ normalize_lineups.py completed: 779 rows written to data/raw/lineups_normalized.csv
-⏹️ END: python (2025-08-31 08:42:31 PM EDT)
+⏹️ END: python (2025-08-31 08:48:31 PM EDT)
 
-▶️ START: normalize_todays_games.py (2025-08-31 08:42:31 PM EDT)
+▶️ START: normalize_todays_games.py (2025-08-31 08:48:31 PM EDT)
 ✅ normalize_todays_games wrote 15 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 08:42:31 PM EDT)
+⏹️ END: python (2025-08-31 08:48:32 PM EDT)
 
-▶️ START: refresh_stadium_metadata.py (2025-08-31 08:42:31 PM EDT)
+▶️ START: refresh_stadium_metadata.py (2025-08-31 08:48:32 PM EDT)
 Saved updated stadium metadata to data/Data/stadium_metadata.csv
-⏹️ END: python (2025-08-31 08:42:32 PM EDT)
+⏹️ END: python (2025-08-31 08:48:32 PM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-08-31 08:42:32 PM EDT)
+▶️ START: apply_team_name_mapping.py (2025-08-31 08:48:32 PM EDT)
 Updated: data/raw/todaysgames_normalized.csv (if present)
 Updated: data/Data/stadium_metadata.csv (if present)
-⏹️ END: python (2025-08-31 08:42:32 PM EDT)
+⏹️ END: python (2025-08-31 08:48:32 PM EDT)
 
-▶️ START: fix_stadium_and_backfill_pf.py (2025-08-31 08:42:32 PM EDT)
+▶️ START: fix_stadium_and_backfill_pf.py (2025-08-31 08:48:32 PM EDT)
 ✅ Wrote data/Data/stadium_metadata.csv | Park Factor filled 14/14
-⏹️ END: python (2025-08-31 08:42:32 PM EDT)
+⏹️ END: python (2025-08-31 08:48:33 PM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-08-31 08:42:32 PM EDT)
+▶️ START: fetch_mlb_ids.py (2025-08-31 08:48:33 PM EDT)
 ✅ fetch_mlb_ids: team_directory.csv schema validated.
-⏹️ END: python (2025-08-31 08:42:33 PM EDT)
+⏹️ END: python (2025-08-31 08:48:33 PM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-08-31 08:42:33 PM EDT)
+▶️ START: hotfix_team_codes.py (2025-08-31 08:48:33 PM EDT)
 ✅ hotfix_team_codes applied fixes -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-08-31 08:42:33 PM EDT)
+⏹️ END: python (2025-08-31 08:48:33 PM EDT)
 
-▶️ START: update_game_time.py (2025-08-31 08:42:33 PM EDT)
+▶️ START: update_game_time.py (2025-08-31 08:48:33 PM EDT)
 ✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 15/15)
-⏹️ END: python (2025-08-31 08:42:33 PM EDT)
+⏹️ END: python (2025-08-31 08:48:34 PM EDT)
 
-▶️ START: finalize_todaysgames_types_and_pf.py (2025-08-31 08:42:33 PM EDT)
+▶️ START: finalize_todaysgames_types_and_pf.py (2025-08-31 08:48:34 PM EDT)
 ✅ Wrote data/raw/todaysgames_normalized.csv | rows=15 | dtype(park_factor)=Int64
-⏹️ END: python (2025-08-31 08:42:34 PM EDT)
+⏹️ END: python (2025-08-31 08:48:34 PM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-08-31 08:42:34 PM EDT)
-⏹️ END: python (2025-08-31 08:42:34 PM EDT)
+▶️ START: filter_stadium_metadata.py (2025-08-31 08:48:34 PM EDT)
+⏹️ END: python (2025-08-31 08:48:34 PM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-08-31 08:42:34 PM EDT)
-⏹️ END: python (2025-08-31 08:42:34 PM EDT)
+▶️ START: normalize_batter_team_names.py (2025-08-31 08:48:34 PM EDT)
+⏹️ END: python (2025-08-31 08:48:35 PM EDT)
 
