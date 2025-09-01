@@ -1,0 +1,16 @@
+❌ python ERROR [2025-09-01 01:24:03 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/updatesplitcsvs.py", line 112, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/updatesplitcsvs.py", line 95, in main
+    bhm = merge_home(bh, g)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/updatesplitcsvs.py", line 52, in merge_home
+    m["game_id"] = m["game_id"].astype("Int64").combine_first(m["game_id_g"].astype("Int64"))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/series.py", line 3534, in combine_first
+    if self.dtype == other.dtype:
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 6318, in __getattr__
+    return object.__getattribute__(self, name)
+AttributeError: 'DataFrame' object has no attribute 'dtype'. Did you mean: 'dtypes'?
+
+---
+

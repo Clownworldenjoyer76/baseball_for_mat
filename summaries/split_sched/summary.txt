@@ -1,39 +1,54 @@
-===== RUN TIMESTAMP: 2025-09-01 12:53:52 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 01:24:04 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-01 12:53:50 PM EDT]
-✅ python succeeded [2025-09-01 12:53:50 PM EDT]
-✅ python succeeded [2025-09-01 12:53:51 PM EDT]
-✅ python succeeded [2025-09-01 12:53:51 PM EDT]
-✅ python succeeded [2025-09-01 12:53:51 PM EDT]
-✅ python succeeded [2025-09-01 12:53:51 PM EDT]
-✅ python succeeded [2025-09-01 12:53:52 PM EDT]
+✅ python succeeded [2025-09-01 01:24:02 PM EDT]
+✅ python succeeded [2025-09-01 01:24:03 PM EDT]
+❌ python failed [2025-09-01 01:24:03 PM EDT]
+✅ python succeeded [2025-09-01 01:24:03 PM EDT]
+✅ python succeeded [2025-09-01 01:24:04 PM EDT]
+✅ python succeeded [2025-09-01 01:24:04 PM EDT]
+✅ python succeeded [2025-09-01 01:24:04 PM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-09-01 12:53:49 PM EDT)
-⏹️ END: python (2025-09-01 12:53:50 PM EDT)
+▶️ START: splitaway.py (2025-09-01 01:24:02 PM EDT)
+⏹️ END: python (2025-09-01 01:24:02 PM EDT)
 
-▶️ START: splithome.py (2025-09-01 12:53:50 PM EDT)
-⏹️ END: python (2025-09-01 12:53:50 PM EDT)
+▶️ START: splithome.py (2025-09-01 01:24:02 PM EDT)
+⏹️ END: python (2025-09-01 01:24:03 PM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-09-01 12:53:50 PM EDT)
-✅ Corrected home_team and away_team values added to both files.
-⏹️ END: python (2025-09-01 12:53:51 PM EDT)
+▶️ START: updatesplitcsvs.py (2025-09-01 01:24:03 PM EDT)
+⏹️ END: python (2025-09-01 01:24:03 PM EDT)
 
-▶️ START: commit_split_batters.py (2025-09-01 12:53:51 PM EDT)
-⏹️ END: python (2025-09-01 12:53:51 PM EDT)
+▶️ START: commit_split_batters.py (2025-09-01 01:24:03 PM EDT)
+⏹️ END: python (2025-09-01 01:24:03 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-09-01 12:53:51 PM EDT)
-⏹️ END: python (2025-09-01 12:53:51 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-09-01 01:24:03 PM EDT)
+⏹️ END: python (2025-09-01 01:24:04 PM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-09-01 12:53:51 PM EDT)
+▶️ START: pitcherfilecleanup.py (2025-09-01 01:24:04 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-09-01 12:53:51 PM EDT)
+⏹️ END: python (2025-09-01 01:24:04 PM EDT)
 
-▶️ START: bet_prep_1.py (2025-09-01 12:53:51 PM EDT)
+▶️ START: bet_prep_1.py (2025-09-01 01:24:04 PM EDT)
 ✅ Wrote 0 rows for ET 2025-09-01 -> data/bets/mlb_sched.csv
-⏹️ END: python (2025-09-01 12:53:52 PM EDT)
+⏹️ END: python (2025-09-01 01:24:04 PM EDT)
 
 
 ===== ERRORS =====
+❌ python ERROR [2025-09-01 01:24:03 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/updatesplitcsvs.py", line 112, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/updatesplitcsvs.py", line 95, in main
+    bhm = merge_home(bh, g)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/updatesplitcsvs.py", line 52, in merge_home
+    m["game_id"] = m["game_id"].astype("Int64").combine_first(m["game_id_g"].astype("Int64"))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/series.py", line 3534, in combine_first
+    if self.dtype == other.dtype:
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 6318, in __getattr__
+    return object.__getattribute__(self, name)
+AttributeError: 'DataFrame' object has no attribute 'dtype'. Did you mean: 'dtypes'?
+
+---
+
