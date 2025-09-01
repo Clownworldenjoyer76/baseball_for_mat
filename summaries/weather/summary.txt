@@ -1,97 +1,37 @@
-===== RUN TIMESTAMP: 2025-09-01 05:06:46 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 06:58:27 PM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-09-01 05:06:45 PM EDT]
-❌ python failed [2025-09-01 05:06:46 PM EDT]
-✅ python succeeded [2025-09-01 05:06:46 PM EDT]
-❌ python failed [2025-09-01 05:06:46 PM EDT]
+❌ python failed [2025-09-01 06:58:27 PM EDT]
+✅ python succeeded [2025-09-01 06:58:27 PM EDT]
+✅ python succeeded [2025-09-01 06:58:27 PM EDT]
 
 ===== LOG =====
-▶️ START: generate_weather_csv.py (2025-09-01 05:06:45 PM EDT)
-⏹️ END: python (2025-09-01 05:06:45 PM EDT)
+▶️ START: generate_weather_csv.py (2025-09-01 06:58:26 PM EDT)
+⏹️ END: python (2025-09-01 06:58:27 PM EDT)
 
-▶️ START: get_weather_data.py (2025-09-01 05:06:45 PM EDT)
-2025-09-01 09:06:46 PM 🔄 Read data/weather_input.csv...
-⏹️ END: python (2025-09-01 05:06:46 PM EDT)
+▶️ START: get_weather_data.py (2025-09-01 06:58:27 PM EDT)
+2025-09-01 10:58:27 PM 🔄 Read data/weather_input.csv...
+2025-09-01 10:58:27 PM ❌ data/weather_input.csv: missing columns ['home_team_id', 'away_team_id', 'roof_type', 'date']
+2025-09-01 10:58:27 PM ❌ Upstream must emit team IDs and stadium fields in data/weather_input.csv.
+⏹️ END: python (2025-09-01 06:58:27 PM EDT)
 
-▶️ START: weather_data_fix.py (2025-09-01 05:06:46 PM EDT)
+▶️ START: weather_data_fix.py (2025-09-01 06:58:27 PM EDT)
 🔄 Load weather_adjustments.csv...
-⚠️ Name map skipped: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
 ✅ weather_factor exists; skip calc.
 ✅ Done.
-⏹️ END: python (2025-09-01 05:06:46 PM EDT)
-
-▶️ START: attach_game_ids.py (2025-09-01 05:06:46 PM EDT)
-⏹️ END: python (2025-09-01 05:06:46 PM EDT)
+⏹️ END: python (2025-09-01 06:58:27 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-01 05:06:45 PM EDT]:
+❌ python ERROR [2025-09-01 06:58:27 PM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 104, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 21, in main
-    s = pd.read_csv(STAD)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
-    return _read(filepath_or_buffer, kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
-    parser = TextFileReader(filepath_or_buffer, **kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
-    self._engine = self._make_engine(f, self.engine)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
-    self.handles = get_handle(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
-    handle = open(
-FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/stadium_metadata.csv'
-
----
-
-❌ python ERROR [2025-09-01 05:06:46 PM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 276, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 151, in main
-    name_map = _build_team_map(MAP_FILE)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 44, in _build_team_map
-    m = pd.read_csv(path)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
-    return _read(filepath_or_buffer, kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
-    parser = TextFileReader(filepath_or_buffer, **kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
-    self._engine = self._make_engine(f, self.engine)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
-    self.handles = get_handle(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
-    handle = open(
-FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
-
----
-
-❌ python ERROR [2025-09-01 05:06:46 PM EDT]:
-Traceback (most recent call last):
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
-    return self._engine.get_loc(casted_key)
-  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
-KeyError: 'gid_home'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/attach_game_ids.py", line 74, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/attach_game_ids.py", line 66, in main
-    bh = _attach_gid(bh, sched, "home")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/attach_game_ids.py", line 48, in _attach_gid
-    b["game_id"] = m_home["gid_home"].where(m_home["gid_home"].notna(), m_away["gid_away"])
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
-    indexer = self.columns.get_loc(key)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
-    raise KeyError(key) from err
-KeyError: 'gid_home'
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 56, in main
+    required(g, REQ_G, str(GAMES))
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 42, in required
+    raise RuntimeError(f"{where}: missing required columns: {missing}")
+RuntimeError: data/raw/todaysgames_normalized.csv: missing required columns: ['date']
 
 ---
 
