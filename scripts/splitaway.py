@@ -1,72 +1,115 @@
 #!/usr/bin/env python3
-# Populate data/adjusted/batters_away.csv by matching on numeric team_id.
+# -*- coding: utf-8 -*-
 
-import pandas as pd
-import os
-import sys
+"""
+Split batters by AWAY side using IDs only.
+
+INPUTS
+- data/cleaned/batters_today.csv            (must contain: team_id)
+- data/raw/todaysgames_normalized.csv       (must contain: home_team_id, away_team_id, game_time, park_factor)
+
+OUTPUT
+- data/adjusted/batters_away.csv            (all batter cols + side/opponent/game context)
+
+Notes:
+- Joins strictly on IDs. No team names/abbreviations are referenced or created.
+"""
+
 from pathlib import Path
+import pandas as pd
+import sys
 
 BATTERS_TODAY_FILE = "data/cleaned/batters_today.csv"
-GAMES_FILE = "data/raw/todaysgames_normalized.csv"
-TEAMDIR_FILE = "data/manual/team_directory.csv"
-OUTPUT_FILE = "data/adjusted/batters_away.csv"
+TODAYS_GAMES_FILE  = "data/raw/todaysgames_normalized.csv"
+OUTPUT_FILE        = "data/adjusted/batters_away.csv"
 
-def to_int64(s):
-    return pd.to_numeric(s, errors="coerce").astype("Int64")
+REQUIRED_BATTER_COLS = {"team_id"}
+REQUIRED_GAME_COLS   = {"home_team_id", "away_team_id", "game_time", "park_factor"}
 
-def build_alias_to_id(teamdir_path: Path):
-    td = pd.read_csv(teamdir_path, dtype=str).fillna("")
-    need = {"team_id","team_code","canonical_team","team_name","clean_team_name","all_codes","all_names"}
-    missing = need - set(td.columns)
-    if missing:
-        raise ValueError(f"{teamdir_path} missing: {', '.join(sorted(missing))}")
-    alias_to_id = {}
-    def put(alias, tid):
-        k = (alias or "").strip().upper()
-        if k and tid and k not in alias_to_id:
-            alias_to_id[k] = tid
-    for _, r in td.iterrows():
-        tid = str(r["team_id"])
-        for col in ("team_code","canonical_team","team_name","clean_team_name"):
-            put(r.get(col,""), tid)
-        for name in (r.get("all_names","") or "").split("|"):
-            put(name, tid)
-        for code in (r.get("all_codes","") or "").split("|"):
-            put(code, tid)
-    return alias_to_id
 
-def ensure_team_id(batters: pd.DataFrame) -> pd.Series:
-    if "team_id" in batters.columns:
-        return to_int64(batters["team_id"])
-    # fallback: derive from team_directory via alias map using 'team' column
-    alias_to_id = build_alias_to_id(Path(TEAMDIR_FILE))
-    derived = batters["team"].astype(str).map(lambda v: alias_to_id.get((v or "").strip().upper()))
-    return to_int64(derived)
+def main(batters_path: str = BATTERS_TODAY_FILE,
+         games_path: str = TODAYS_GAMES_FILE,
+         out_path: str = OUTPUT_FILE) -> None:
 
-def main(batters_path: str, games_path: str, out_path: str):
-    print(f"--- splitaway: {out_path} ---")
-    bat = pd.read_csv(batters_path, dtype=str).fillna("")
-    if "team" not in bat.columns:
-        print(f"INSUFFICIENT INFORMATION\nMissing 'team' in {batters_path}")
-        return
-    bat["team_id"] = ensure_team_id(bat)
+    print(f"--- splitaway.py (IDs only) ---")
+    print(f"batters: {batters_path}")
+    print(f"games:   {games_path}")
+    print(f"output:  {out_path}")
 
-    games = pd.read_csv(games_path, dtype=str).fillna("")
-    if "away_team_id" not in games.columns:
-        print(f"INSUFFICIENT INFORMATION\nMissing 'away_team_id' in {games_path}")
-        return
-    games["away_team_id"] = to_int64(games["away_team_id"])
+    # Load inputs
+    try:
+        bat = pd.read_csv(batters_path)
+    except Exception as e:
+        print(f"INSUFFICIENT INFORMATION: cannot read {batters_path} ({e})"); return
 
-    away_ids = set(games["away_team_id"].dropna().tolist())
-    out = bat[bat["team_id"].isin(away_ids)].copy()
-    out = out.drop(columns=["team_id"], errors="ignore")
+    try:
+        g = pd.read_csv(games_path)
+    except Exception as e:
+        print(f"INSUFFICIENT INFORMATION: cannot read {games_path} ({e})"); return
 
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    out.to_csv(out_path, index=False)
-    print(f"✅ Wrote {out_path} rows={len(out)}")
+    # Validate required columns
+    if not REQUIRED_BATTER_COLS.issubset(bat.columns):
+        missing = REQUIRED_BATTER_COLS - set(bat.columns)
+        print(f"INSUFFICIENT INFORMATION: {batters_path} missing columns: {sorted(missing)}"); return
+
+    if not REQUIRED_GAME_COLS.issubset(g.columns):
+        missing = REQUIRED_GAME_COLS - set(g.columns)
+        print(f"INSUFFICIENT INFORMATION: {games_path} missing columns: {sorted(missing)}"); return
+
+    # Prepare away index (IDs only)
+    away_ids = g["away_team_id"].dropna().astype("Int64").unique()
+    print(f"away_team_id count: {len(away_ids)}")
+
+    # Filter batters whose team_id is an away ID
+    # Ensure consistent dtype for safe matching
+    if bat["team_id"].dtype.name != "Int64":
+        # try converting; if fails, error out cleanly
+        try:
+            bat["team_id"] = bat["team_id"].astype("Int64")
+        except Exception as e:
+            print(f"INSUFFICIENT INFORMATION: team_id in {batters_path} not convertible to integer ({e})")
+            return
+
+    away_bat = bat[bat["team_id"].isin(away_ids)].copy()
+
+    # Join minimal game context (IDs only)
+    # Merge on away_team_id == team_id
+    ctx_cols = ["away_team_id", "home_team_id", "game_time", "park_factor"]
+    g_ctx = g[ctx_cols].copy()
+
+    merged = away_bat.merge(
+        g_ctx,
+        left_on="team_id",
+        right_on="away_team_id",
+        how="left",
+        validate="m:1"
+    )
+
+    # Add normalized side/opponent columns (IDs only)
+    merged.insert(len(merged.columns), "side", "away")
+    merged.insert(len(merged.columns), "opponent_team_id", merged["home_team_id"])
+
+    # Reorder: keep original batter cols first, then ID-only game context
+    batter_cols = [c for c in bat.columns]
+    extra_cols = ["side", "opponent_team_id", "home_team_id", "away_team_id", "game_time", "park_factor"]
+    ordered_cols = batter_cols + [c for c in extra_cols if c not in batter_cols]
+    merged = merged[ordered_cols]
+
+    # Ensure output dir
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+
+    # If empty, still emit headers
+    merged.to_csv(out_path, index=False)
+    print(f"wrote {out_path} rows={len(merged)} (IDs only)")
+    print(f"--- done ---")
+
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4:
-        main(sys.argv[1], sys.argv[2], sys.argv[3])
+    # Optional CLI override: python scripts/splitaway.py [batters_csv] [games_csv] [out_csv]
+    if len(sys.argv) >= 2:
+        bat_path = sys.argv[1]
+        games_path = sys.argv[2] if len(sys.argv) >= 3 else TODAYS_GAMES_FILE
+        out_path = sys.argv[3] if len(sys.argv) >= 4 else OUTPUT_FILE
+        main(bat_path, games_path, out_path)
     else:
-        main(BATTERS_TODAY_FILE, GAMES_FILE, OUTPUT_FILE)
+        main()
