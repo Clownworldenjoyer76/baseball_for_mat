@@ -81,6 +81,7 @@ jobs:
         run: |
           git add data/raw/todaysgames_normalized.csv || true
           git add data/Data/stadium_metadata.csv || true
+          git add data/cleaned/batters_today.csv || true
           git add summaries/foundation/* || true
           git diff --cached --quiet || git commit -m "00 foundation outputs"
           git pull --rebase origin main || true
