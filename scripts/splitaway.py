@@ -4,40 +4,40 @@
 """
 scripts/splitaway.py
 
-Split Away Batters
-
-Input:
-  - Batters file (e.g., data/cleaned/batters_today.csv)
-  - Games file   (e.g., data/raw/todaysgames_normalized.csv)
-
-Output:
-  - Away batters file (e.g., data/adjusted/batters_away.csv)
-
-Guarantees:
-  - Merge away-team batters with their game row
-  - ID columns exported as integers (no decimals): team_id, home_team_id, away_team_id, opponent_team_id, game_id
+Split away batters and ensure ID columns export as plain integers.
 """
 
 import sys
 import pandas as pd
 
-# --- helpers ---
+ID_COLS = [
+    "team_id",
+    "home_team_id",
+    "away_team_id",
+    "opponent_team_id",
+    "game_id",
+]
+
 def strip_strings(df: pd.DataFrame) -> pd.DataFrame:
-    """Trim whitespace in all object columns, convert empty strings to <NA>."""
-    obj_cols = df.select_dtypes(include=['object']).columns
-    if len(obj_cols):
-        df[obj_cols] = df[obj_cols].apply(lambda s: s.str.strip())
-        df[obj_cols] = df[obj_cols].replace({'': pd.NA})
+    obj = df.select_dtypes(include=["object"]).columns
+    if len(obj):
+        df[obj] = df[obj].apply(lambda s: s.str.strip())
+        df[obj] = df[obj].replace({"": pd.NA})
     return df
 
-def enforce_int(df: pd.DataFrame, cols) -> pd.DataFrame:
-    """Coerce listed columns to pandas nullable integer (Int64) without decimals."""
-    for col in cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+def enforce_int64(df: pd.DataFrame, cols) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
     return df
 
-# --- main ---
+def render_int_cols_for_csv(df: pd.DataFrame, cols) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].astype("Int64").astype("string")
+            df[c] = df[c].replace({"<NA>": ""})
+    return df
+
 def main(batters_path: str, games_path: str, output_path: str) -> None:
     batters = pd.read_csv(batters_path, dtype=str, keep_default_na=False)
     games = pd.read_csv(games_path, dtype=str, keep_default_na=False)
@@ -57,13 +57,13 @@ def main(batters_path: str, games_path: str, output_path: str) -> None:
     merged["side"] = "away"
     merged["opponent_team_id"] = merged["home_team_id"]
 
-    id_cols = ["team_id", "home_team_id", "away_team_id", "opponent_team_id", "game_id"]
-    merged = enforce_int(merged, id_cols)
+    merged = enforce_int64(merged, ID_COLS)
 
-    # Keep all original batter columns first, then the rest
     batter_cols = [c for c in batters.columns if c in merged.columns]
     extra_cols = [c for c in merged.columns if c not in batter_cols]
     merged = merged[batter_cols + extra_cols]
+
+    merged = render_int_cols_for_csv(merged, ID_COLS)
 
     merged.to_csv(output_path, index=False)
 
