@@ -1,91 +1,84 @@
-===== RUN TIMESTAMP: 2025-09-01 07:37:39 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-01 07:54:57 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-01 07:37:33 AM EDT]
-✅ python succeeded [2025-09-01 07:37:33 AM EDT]
-✅ python succeeded [2025-09-01 07:37:34 AM EDT]
-✅ python succeeded [2025-09-01 07:37:35 AM EDT]
-✅ python succeeded [2025-09-01 07:37:35 AM EDT]
-✅ python succeeded [2025-09-01 07:37:35 AM EDT]
-✅ python succeeded [2025-09-01 07:37:36 AM EDT]
-✅ python succeeded [2025-09-01 07:37:36 AM EDT]
-✅ python succeeded [2025-09-01 07:37:37 AM EDT]
-✅ python succeeded [2025-09-01 07:37:37 AM EDT]
-✅ python succeeded [2025-09-01 07:37:37 AM EDT]
-✅ python succeeded [2025-09-01 07:37:38 AM EDT]
-❌ python failed [2025-09-01 07:37:38 AM EDT]
-✅ python succeeded [2025-09-01 07:37:38 AM EDT]
-✅ python succeeded [2025-09-01 07:37:39 AM EDT]
-✅ python succeeded [2025-09-01 07:37:39 AM EDT]
+✅ python succeeded [2025-09-01 07:54:52 AM EDT]
+✅ python succeeded [2025-09-01 07:54:52 AM EDT]
+✅ python succeeded [2025-09-01 07:54:52 AM EDT]
+✅ python succeeded [2025-09-01 07:54:53 AM EDT]
+✅ python succeeded [2025-09-01 07:54:54 AM EDT]
+✅ python succeeded [2025-09-01 07:54:54 AM EDT]
+✅ python succeeded [2025-09-01 07:54:54 AM EDT]
+✅ python succeeded [2025-09-01 07:54:55 AM EDT]
+✅ python succeeded [2025-09-01 07:54:55 AM EDT]
+✅ python succeeded [2025-09-01 07:54:55 AM EDT]
+✅ python succeeded [2025-09-01 07:54:56 AM EDT]
+✅ python succeeded [2025-09-01 07:54:56 AM EDT]
+✅ python succeeded [2025-09-01 07:54:56 AM EDT]
+✅ python succeeded [2025-09-01 07:54:57 AM EDT]
+✅ python succeeded [2025-09-01 07:54:57 AM EDT]
+✅ python succeeded [2025-09-01 07:54:57 AM EDT]
 
 ===== LOG =====
-▶️ START: normalize_names.py (2025-09-01 07:37:32 AM EDT)
+▶️ START: normalize_names.py (2025-09-01 07:54:51 AM EDT)
 ✅ Batters normalized: 156 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 109 → data/normalized/pitchers_normalized.csv
-⏹️ END: python (2025-09-01 07:37:33 AM EDT)
+⏹️ END: python (2025-09-01 07:54:52 AM EDT)
 
-▶️ START: tag_master_files.py (2025-09-01 07:37:33 AM EDT)
-⏹️ END: python (2025-09-01 07:37:33 AM EDT)
+▶️ START: tag_master_files.py (2025-09-01 07:54:52 AM EDT)
+⏹️ END: python (2025-09-01 07:54:52 AM EDT)
 
-▶️ START: validate_tagged_players.py (2025-09-01 07:37:33 AM EDT)
-⏹️ END: python (2025-09-01 07:37:34 AM EDT)
+▶️ START: validate_tagged_players.py (2025-09-01 07:54:52 AM EDT)
+⏹️ END: python (2025-09-01 07:54:52 AM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-09-01 07:37:34 AM EDT)
-⏹️ END: python (2025-09-01 07:37:35 AM EDT)
+▶️ START: deduplicate_normalized.py (2025-09-01 07:54:52 AM EDT)
+⏹️ END: python (2025-09-01 07:54:53 AM EDT)
 
-▶️ START: normalize_lineups.py (2025-09-01 07:37:35 AM EDT)
+▶️ START: normalize_lineups.py (2025-09-01 07:54:53 AM EDT)
 ✅ normalize_lineups.py completed: 778 rows written to data/raw/lineups_normalized.csv
-⏹️ END: python (2025-09-01 07:37:35 AM EDT)
+⏹️ END: python (2025-09-01 07:54:54 AM EDT)
 
-▶️ START: normalize_todays_games.py (2025-09-01 07:37:35 AM EDT)
+▶️ START: normalize_todays_games.py (2025-09-01 07:54:54 AM EDT)
 ✅ normalize_todays_games wrote 13 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-09-01 07:37:35 AM EDT)
+⏹️ END: python (2025-09-01 07:54:54 AM EDT)
 
-▶️ START: refresh_stadium_metadata.py (2025-09-01 07:37:35 AM EDT)
+▶️ START: refresh_stadium_metadata.py (2025-09-01 07:54:54 AM EDT)
 Saved updated stadium metadata to data/Data/stadium_metadata.csv
-⏹️ END: python (2025-09-01 07:37:36 AM EDT)
+⏹️ END: python (2025-09-01 07:54:54 AM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-09-01 07:37:36 AM EDT)
+▶️ START: apply_team_name_mapping.py (2025-09-01 07:54:54 AM EDT)
 Updated: data/raw/todaysgames_normalized.csv (if present)
 Updated: data/Data/stadium_metadata.csv (if present)
-⏹️ END: python (2025-09-01 07:37:36 AM EDT)
+⏹️ END: python (2025-09-01 07:54:55 AM EDT)
 
-▶️ START: fix_stadium_and_backfill_pf.py (2025-09-01 07:37:36 AM EDT)
+▶️ START: fix_stadium_and_backfill_pf.py (2025-09-01 07:54:55 AM EDT)
 ✅ Wrote data/Data/stadium_metadata.csv | Park Factor filled 14/14
-⏹️ END: python (2025-09-01 07:37:37 AM EDT)
+⏹️ END: python (2025-09-01 07:54:55 AM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-09-01 07:37:37 AM EDT)
+▶️ START: fetch_mlb_ids.py (2025-09-01 07:54:55 AM EDT)
 ✅ fetch_mlb_ids: team_directory.csv schema validated.
-⏹️ END: python (2025-09-01 07:37:37 AM EDT)
+⏹️ END: python (2025-09-01 07:54:55 AM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-09-01 07:37:37 AM EDT)
+▶️ START: hotfix_team_codes.py (2025-09-01 07:54:55 AM EDT)
 ✅ hotfix_team_codes applied fixes -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-09-01 07:37:37 AM EDT)
+⏹️ END: python (2025-09-01 07:54:56 AM EDT)
 
-▶️ START: update_game_time.py (2025-09-01 07:37:37 AM EDT)
-✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 12/13)
-⏹️ END: python (2025-09-01 07:37:38 AM EDT)
+▶️ START: update_game_time.py (2025-09-01 07:54:56 AM EDT)
+✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 13/13)
+⏹️ END: python (2025-09-01 07:54:56 AM EDT)
 
-▶️ START: finalize_todaysgames_types_and_pf.py (2025-09-01 07:37:38 AM EDT)
-INSUFFICIENT INFORMATION
-park_factor missing for rows with home_team_id present:
-home_team away_team  home_team_id
-      ARI       TEX           109
-⏹️ END: python (2025-09-01 07:37:38 AM EDT)
+▶️ START: finalize_todaysgames_types_and_pf.py (2025-09-01 07:54:56 AM EDT)
+✅ Wrote data/raw/todaysgames_normalized.csv | rows=13 | dtype(park_factor)=Int64
+⏹️ END: python (2025-09-01 07:54:56 AM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-09-01 07:37:38 AM EDT)
-⏹️ END: python (2025-09-01 07:37:38 AM EDT)
+▶️ START: filter_stadium_metadata.py (2025-09-01 07:54:56 AM EDT)
+⏹️ END: python (2025-09-01 07:54:57 AM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-09-01 07:37:38 AM EDT)
-⏹️ END: python (2025-09-01 07:37:39 AM EDT)
+▶️ START: normalize_batter_team_names.py (2025-09-01 07:54:57 AM EDT)
+⏹️ END: python (2025-09-01 07:54:57 AM EDT)
 
-▶️ START: post_normalize_fixups.py (2025-09-01 07:37:39 AM EDT)
+▶️ START: post_normalize_fixups.py (2025-09-01 07:54:57 AM EDT)
 ✅ post_normalize_fixups complete (no game_id injected)
-⏹️ END: python (2025-09-01 07:37:39 AM EDT)
+⏹️ END: python (2025-09-01 07:54:57 AM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-01 07:37:38 AM EDT]:
-
----
-
