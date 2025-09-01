@@ -1,12 +1,12 @@
-❌ python ERROR [2025-09-01 06:58:27 PM EDT]:
+❌ python ERROR [2025-09-01 07:14:32 PM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 104, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 139, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 56, in main
-    required(g, REQ_G, str(GAMES))
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 42, in required
-    raise RuntimeError(f"{where}: missing required columns: {missing}")
-RuntimeError: data/raw/todaysgames_normalized.csv: missing required columns: ['date']
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 104, in main
+    _require(s, ["team_id", "venue", "city", "latitude", "longitude", "roof_type"], str(STAD))
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 28, in _require
+    raise RuntimeError(f"{where}: missing required columns: {miss}")
+RuntimeError: data/manual/stadium_master.csv: missing required columns: ['roof_type']
 
 ---
 
