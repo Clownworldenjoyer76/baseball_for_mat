@@ -1,123 +1,72 @@
+#!/usr/bin/env python3
+# Populate data/adjusted/batters_away.csv by matching on numeric team_id.
+
 import pandas as pd
 import os
-import sys # Import sys module to access command-line arguments
+import sys
+from pathlib import Path
 
-def populate_away_batters(
-    batters_today_path: str, todaysgames_normalized_path: str, batters_away_output_path: str
-) -> None:
-    """
-    Populates batters_away.csv with rows from batters_today.csv where the 'team'
-    matches an 'away_team' from todaysgames_normalized.csv.
-    All columns from the matching rows in batters_today.csv will be included.
-    Includes robust string cleaning and detailed logging for debugging.
+BATTERS_TODAY_FILE = "data/cleaned/batters_today.csv"
+GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+TEAMDIR_FILE = "data/manual/team_directory.csv"
+OUTPUT_FILE = "data/adjusted/batters_away.csv"
 
-    Args:
-        batters_today_path (str): Path to the batters_today.csv file.
-        todaysgames_normalized_path (str): Path to the todaysgames_normalized.csv file.
-        batters_away_output_path (str): Path where the resulting batters_away.csv will be saved.
-    """
-    print(f"--- Starting populate_away_batters for {batters_away_output_path} ---")
-    print(f"Using batters_today from: {batters_today_path}")
-    print(f"Using todaysgames_normalized from: {todaysgames_normalized_path}")
+def to_int64(s):
+    return pd.to_numeric(s, errors="coerce").astype("Int64")
 
-    # --- Load batters_today.csv ---
-    try:
-        batters_df = pd.read_csv(batters_today_path)
-        print(f"Read '{batters_today_path}'. Initial shape: {batters_df.shape}")
-        if batters_df.empty:
-            print(f"Error: '{batters_today_path}' is empty. No batters to process.")
-            return
-        if 'team' not in batters_df.columns:
-            print(f"Error: '{batters_today_path}' does not contain a 'team' column. Columns found: {batters_df.columns.tolist()}")
-            return
-        # Clean 'team' column for consistent matching
-        batters_df['team_cleaned'] = batters_df['team'].astype(str).str.strip().str.upper()
-        print(f"Unique teams in {batters_today_path} (cleaned): {batters_df['team_cleaned'].unique().tolist()}")
+def build_alias_to_id(teamdir_path: Path):
+    td = pd.read_csv(teamdir_path, dtype=str).fillna("")
+    need = {"team_id","team_code","canonical_team","team_name","clean_team_name","all_codes","all_names"}
+    missing = need - set(td.columns)
+    if missing:
+        raise ValueError(f"{teamdir_path} missing: {', '.join(sorted(missing))}")
+    alias_to_id = {}
+    def put(alias, tid):
+        k = (alias or "").strip().upper()
+        if k and tid and k not in alias_to_id:
+            alias_to_id[k] = tid
+    for _, r in td.iterrows():
+        tid = str(r["team_id"])
+        for col in ("team_code","canonical_team","team_name","clean_team_name"):
+            put(r.get(col,""), tid)
+        for name in (r.get("all_names","") or "").split("|"):
+            put(name, tid)
+        for code in (r.get("all_codes","") or "").split("|"):
+            put(code, tid)
+    return alias_to_id
 
-    except FileNotFoundError:
-        print(f"Error: Input file not found: '{batters_today_path}'. Please ensure the path is correct and file exists.")
+def ensure_team_id(batters: pd.DataFrame) -> pd.Series:
+    if "team_id" in batters.columns:
+        return to_int64(batters["team_id"])
+    # fallback: derive from team_directory via alias map using 'team' column
+    alias_to_id = build_alias_to_id(Path(TEAMDIR_FILE))
+    derived = batters["team"].astype(str).map(lambda v: alias_to_id.get((v or "").strip().upper()))
+    return to_int64(derived)
+
+def main(batters_path: str, games_path: str, out_path: str):
+    print(f"--- splitaway: {out_path} ---")
+    bat = pd.read_csv(batters_path, dtype=str).fillna("")
+    if "team" not in bat.columns:
+        print(f"INSUFFICIENT INFORMATION\nMissing 'team' in {batters_path}")
         return
-    except pd.errors.EmptyDataError:
-        print(f"Error: Input file is empty: '{batters_today_path}'. No batters to process.")
+    bat["team_id"] = ensure_team_id(bat)
+
+    games = pd.read_csv(games_path, dtype=str).fillna("")
+    if "away_team_id" not in games.columns:
+        print(f"INSUFFICIENT INFORMATION\nMissing 'away_team_id' in {games_path}")
         return
-    except Exception as e:
-        print(f"An unexpected error occurred reading '{batters_today_path}': {e}")
-        return
+    games["away_team_id"] = to_int64(games["away_team_id"])
 
-    # --- Load todaysgames_normalized.csv ---
-    try:
-        games_df = pd.read_csv(todaysgames_normalized_path)
-        print(f"Read '{todaysgames_normalized_path}'. Initial shape: {games_df.shape}")
-        if games_df.empty:
-            print(f"Error: '{todaysgames_normalized_path}' is empty. Cannot determine away teams.")
-            return
-        if 'away_team' not in games_df.columns:
-            print(f"Error: '{todaysgames_normalized_path}' does not contain an 'away_team' column. Columns found: {games_df.columns.tolist()}")
-            return
-        # Clean 'away_team' column for consistent matching
-        games_df['away_team_cleaned'] = games_df['away_team'].astype(str).str.strip().str.upper()
-        print(f"Unique away teams in {todaysgames_normalized_path} (cleaned): {games_df['away_team_cleaned'].unique().tolist()}")
+    away_ids = set(games["away_team_id"].dropna().tolist())
+    out = bat[bat["team_id"].isin(away_ids)].copy()
+    out = out.drop(columns=["team_id"], errors="ignore")
 
-    except FileNotFoundError:
-        print(f"Error: Input file not found: '{todaysgames_normalized_path}'. Please ensure the path is correct and file exists.")
-        return
-    except pd.errors.EmptyDataError:
-        print(f"Error: Input file is empty: '{todaysgames_normalized_path}'. Cannot determine away teams.")
-        return
-    except Exception as e:
-        print(f"An unexpected error occurred reading '{todaysgames_normalized_path}': {e}")
-        return
-
-    # --- Get away teams and filter batters ---
-    away_teams_cleaned = games_df["away_team_cleaned"].unique()
-    print(f"Identified {len(away_teams_cleaned)} unique CLEANED away teams: {away_teams_cleaned.tolist()}")
-    
-    # Filter batters_df using the cleaned 'team' column
-    away_batters_df = batters_df[batters_df["team_cleaned"].isin(away_teams_cleaned)].copy()
-    
-    # Drop the temporary cleaned team column before saving
-    away_batters_df = away_batters_df.drop(columns=['team_cleaned'])
-
-    print(f"Filtered batters for away teams. Resulting DataFrame shape: {away_batters_df.shape}")
-
-    if away_batters_df.empty:
-        print(f"WARNING: No away team batters found after filtering. The output file will contain only headers.")
-        # To ensure an empty file with correct headers is written if no data matches
-        if not batters_df.empty: # If batters_df was not empty, but filtering yielded nothing
-            away_batters_df = pd.DataFrame(columns=batters_df.drop(columns=['team_cleaned']).columns)
-        else: # If batters_df was already empty, just pass an empty df (no columns)
-            away_batters_df = pd.DataFrame()
-
-
-    # --- Ensure output directory exists ---
-    output_dir = os.path.dirname(batters_away_output_path)
-    if output_dir: # Check if output_dir is not empty (i.e., path is not just a filename)
-        os.makedirs(output_dir, exist_ok=True)
-        print(f"Ensured directory '{output_dir}' exists.")
-
-    # --- Write the updated data to CSV ---
-    try:
-        away_batters_df.to_csv(batters_away_output_path, index=False)
-        print(f"SUCCESS: Populated '{batters_away_output_path}' with {away_batters_df.shape[0]} away team batters.")
-    except Exception as e:
-        print(f"ERROR: Failed to write to '{batters_away_output_path}': {e}")
-
-    print(f"--- Finished populate_away_batters ---")
-
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    out.to_csv(out_path, index=False)
+    print(f"✅ Wrote {out_path} rows={len(out)}")
 
 if __name__ == "__main__":
-    # When run from the command line, sys.argv will contain the arguments.
-    # sys.argv[0] is the script name itself.
-    # sys.argv[1] should be batters_today_path
-    # sys.argv[2] should be todaysgames_normalized_path
-    # sys.argv[3] should be batters_away_output_path
-    if len(sys.argv) != 4:
-        print("Usage: python splitaway.py <batters_today_path> <todaysgames_normalized_path> <batters_away_output_path>")
-        # Fallback to hardcoded paths if run directly without args, but prefer args for GH Actions
-        BATTERS_TODAY_FILE = "data/cleaned/batters_today.csv"
-        TODAYS_GAMES_NORMALIZED_FILE = "data/raw/todaysgames_normalized.csv"
-        BATTERS_AWAY_OUTPUT_FILE = "data/adjusted/batters_away.csv"
-        print("Falling back to default paths for local execution.")
-        populate_away_batters(BATTERS_TODAY_FILE, TODAYS_GAMES_NORMALIZED_FILE, BATTERS_AWAY_OUTPUT_FILE)
+    if len(sys.argv) == 4:
+        main(sys.argv[1], sys.argv[2], sys.argv[3])
     else:
-        populate_away_batters(sys.argv[1], sys.argv[2], sys.argv[3])
+        main(BATTERS_TODAY_FILE, GAMES_FILE, OUTPUT_FILE)
