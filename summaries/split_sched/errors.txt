@@ -1,0 +1,35 @@
+❌ python ERROR [2025-08-31 09:22:39 PM EDT]:
+2025-09-01 01:22:39,178 - INFO - Starting pitcher data processing and standardization.
+2025-09-01 01:22:39,178 - CRITICAL - ❌ Missing team mapping file: data/Data/team_name_master.csv
+2025-09-01 01:22:39,178 - CRITICAL - An unhandled error occurred during script execution: data/Data/team_name_master.csv does not exist.
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 139, in <module>
+    process_pitcher_data(pitchers_input, games_input, output_home, output_away)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 30, in process_pitcher_data
+    team_map = load_team_map()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 18, in load_team_map
+    raise FileNotFoundError(f"{TEAM_MAP_FILE} does not exist.")
+FileNotFoundError: data/Data/team_name_master.csv does not exist.
+
+---
+
+❌ python ERROR [2025-08-31 09:22:39 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/bet_prep_1.py", line 93, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/bet_prep_1.py", line 53, in main
+    df_map = pd.read_csv(MAP_FILE)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_map.csv'
+
+---
+
