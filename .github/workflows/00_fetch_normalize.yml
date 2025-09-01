@@ -1,3 +1,4 @@
+# .github/workflows/00_fetch_and_normalize.yml
 name: "00 Fetch & Normalize"
 
 on:
@@ -69,6 +70,7 @@ jobs:
           run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --game-date "$(date -u +%Y%m%d)"
+          run_step fix_inputs_inject_stolen_base_pct.py  python scripts/fix_inputs_inject_stolen_base_pct.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -85,6 +87,7 @@ jobs:
           git add data/cleaned/batters_today.csv || true
           git add data/cleaned/pitchers_normalized_cleaned.csv || true
           git add summaries/foundation/* || true
+          git add summaries/pre_split/* || true
           git diff --cached --quiet || git commit -m "00 foundation outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
