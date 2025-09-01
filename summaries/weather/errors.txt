@@ -1,20 +1,24 @@
-❌ python ERROR [2025-09-01 02:47:28 PM EDT]:
+❌ python ERROR [2025-09-01 05:06:45 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 44, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 26, in main
-    g = g[cols]
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
-    indexer = self.columns._get_indexer_strict(key, "columns")[1]
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
-    self._raise_if_missing(keyarr, indexer, axis_name)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
-    raise KeyError(f"{not_found} not in index")
-KeyError: "['date'] not in index"
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/generate_weather_csv.py", line 21, in main
+    s = pd.read_csv(STAD)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/stadium_metadata.csv'
 
 ---
 
-❌ python ERROR [2025-09-01 02:47:28 PM EDT]:
+❌ python ERROR [2025-09-01 05:06:46 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/get_weather_data.py", line 276, in <module>
     main()
@@ -36,7 +40,7 @@ FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_map
 
 ---
 
-❌ python ERROR [2025-09-01 02:47:29 PM EDT]:
+❌ python ERROR [2025-09-01 05:06:46 PM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
