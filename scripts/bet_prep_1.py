@@ -4,15 +4,15 @@
 """
 scripts/bet_prep_1.py
 
-Build mlb_sched.csv using normalized games and stadium metadata.
+Build mlb_sched.csv using normalized games and stadium master.
 
 Inputs:
   - data/raw/todaysgames_normalized.csv
       required: game_id, home_team_id, away_team_id, home_team, away_team
       optional: game_datetime (UTC ISO)
 
-  - data/Data/stadium_metadata.csv
-      required: home_team_id, venue
+  - data/manual/stadium_master.csv
+      required: team_id, venue
 
 Output:
   - data/bets/mlb_sched.csv
@@ -23,11 +23,11 @@ from pathlib import Path
 import pandas as pd
 
 GAMES_FILE   = Path("data/raw/todaysgames_normalized.csv")
-STADIUM_FILE = Path("data/Data/stadium_metadata.csv")
+STADIUM_FILE = Path("data/manual/stadium_master.csv")
 OUTPUT_FILE  = Path("data/bets/mlb_sched.csv")
 
-REQ_GAMES = ["game_id", "home_team_id", "away_team_id", "home_team", "away_team"]
-REQ_STADIUM = ["home_team_id", "venue"]
+REQ_GAMES   = ["game_id", "home_team_id", "away_team_id", "home_team", "away_team"]
+REQ_STADIUM = ["team_id", "venue"]
 
 def ensure_parent(p: Path):
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -61,9 +61,8 @@ def compute_date_column(games: pd.DataFrame) -> pd.Series:
     if "game_datetime" in games.columns:
         ts = pd.to_datetime(games["game_datetime"], utc=True, errors="coerce")
         return ts.dt.tz_convert("America/New_York").dt.date.astype("string")
-    else:
-        today_et = pd.Timestamp.now(tz="America/New_York").date().isoformat()
-        return pd.Series([today_et] * len(games), index=games.index, dtype="string")
+    today_et = pd.Timestamp.now(tz="America/New_York").date().isoformat()
+    return pd.Series([today_et] * len(games), index=games.index, dtype="string")
 
 def main():
     if not GAMES_FILE.exists():
@@ -81,19 +80,21 @@ def main():
     required(stadium, REQ_STADIUM, str(STADIUM_FILE))
 
     # Coerce IDs to Int64 internally
-    games = to_int64(games, ["game_id", "home_team_id", "away_team_id"])
-    stadium = to_int64(stadium, ["home_team_id"])
+    games   = to_int64(games,   ["game_id", "home_team_id", "away_team_id"])
+    stadium = to_int64(stadium, ["team_id"])
 
     # Date column
     games["date"] = compute_date_column(games)
 
-    # Join venue by home_team_id
+    # Join venue by home_team_id (schedule) -> team_id (stadium master)
     merged = games.merge(
-        stadium[["home_team_id", "venue"]],
-        on="home_team_id",
+        stadium[["team_id", "venue"]],
+        left_on="home_team_id",
+        right_on="team_id",
         how="left",
         validate="m:1",
-    )
+    ).drop(columns=["team_id"])
+
     merged.rename(columns={"venue": "venue_name"}, inplace=True)
 
     # Final schema
