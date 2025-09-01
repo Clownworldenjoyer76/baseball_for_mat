@@ -1,0 +1,83 @@
+===== RUN TIMESTAMP: 2025-09-01 06:59:46 PM EDT =====
+
+===== STATUS =====
+❌ python failed [2025-09-01 06:59:41 PM EDT]
+✅ python succeeded [2025-09-01 06:59:42 PM EDT]
+✅ python succeeded [2025-09-01 06:59:42 PM EDT]
+✅ python succeeded [2025-09-01 06:59:43 PM EDT]
+✅ python succeeded [2025-09-01 06:59:43 PM EDT]
+✅ python succeeded [2025-09-01 06:59:44 PM EDT]
+✅ python succeeded [2025-09-01 06:59:45 PM EDT]
+✅ python succeeded [2025-09-01 06:59:45 PM EDT]
+✅ python succeeded [2025-09-01 06:59:45 PM EDT]
+✅ python succeeded [2025-09-01 06:59:46 PM EDT]
+
+===== LOG =====
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-01 06:59:41 PM EDT)
+⏹️ END: python (2025-09-01 06:59:41 PM EDT)
+
+▶️ START: fix_away_team_column.py (2025-09-01 06:59:41 PM EDT)
+❌ Failed to process file: No columns to parse from file
+⏹️ END: python (2025-09-01 06:59:42 PM EDT)
+
+▶️ START: preprocess_pitcher_weather_park_away (2025-09-01 06:59:42 PM EDT)
+⏹️ END: python (2025-09-01 06:59:42 PM EDT)
+
+▶️ START: add_team_alias_columns.py (2025-09-01 06:59:42 PM EDT)
+[main 99a20a6c] Add team alias columns to pitcher files
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+✅ Added 'home_team' to data/adjusted/pitchers_home.csv (8 rows)
+✅ Added 'away_team' to data/adjusted/pitchers_away.csv (3 rows)
+📝 Log saved to log_add_team_alias_columns.txt
+⏹️ END: python (2025-09-01 06:59:43 PM EDT)
+
+▶️ START: add_team_columns_to_weather.py (2025-09-01 06:59:43 PM EDT)
+✅ Wrote home_team and away_team to data/weather_teams.csv
+⏹️ END: python (2025-09-01 06:59:43 PM EDT)
+
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-01 06:59:43 PM EDT)
+✅ Git commit and push complete for pitcher weather adjustments.
+⏹️ END: python (2025-09-01 06:59:44 PM EDT)
+
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-01 06:59:44 PM EDT)
+❌ Error loading park factor files: [Errno 2] No such file or directory: 'data/Data/park_factors_day.csv'
+⚠️ Skipping park adjustments due to missing or empty park factor data.
+✅ Wrote data/adjusted/pitchers_home_park.csv with 0 rows.
+📝 Log written to log_pitchers_home_park.txt
+✅ Wrote data/adjusted/pitchers_away_park.csv with 0 rows.
+📝 Log written to log_pitchers_away_park.txt
+✅ Git commit and push complete for pitcher park adjustments.
+⏹️ END: python (2025-09-01 06:59:45 PM EDT)
+
+▶️ START: normalize_pitcher_merge_inputs.py (2025-09-01 06:59:45 PM EDT)
+❌ Error: [Errno 2] No such file or directory: 'data/Data/team_name_master.csv'
+⏹️ END: python (2025-09-01 06:59:45 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-01 06:59:45 PM EDT)
+⏹️ END: python (2025-09-01 06:59:45 PM EDT)
+
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-01 06:59:45 PM EDT)
+⏹️ END: python (2025-09-01 06:59:46 PM EDT)
+
+
+===== ERRORS =====
+❌ python ERROR [2025-09-01 06:59:41 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_weather_outputs.py", line 53, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_weather_outputs.py", line 47, in main
+    teams = pd.read_csv(TEAM_MASTER)["team_name"].dropna().unique().tolist()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_master.csv'
+
+---
+
