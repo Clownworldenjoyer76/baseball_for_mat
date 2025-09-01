@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Creates data/raw/todaysgames.csv with columns:
-  home_team,away_team,game_time,pitcher_home,pitcher_away
+  game_id,home_team,away_team,game_time,pitcher_home,pitcher_away
 - Uses MLB Stats API schedule
+- game_id comes from MLB Stats API "gamePk"
 - Times shown in America/New_York
 - Pitchers "Last, First"
 - CSV values always quoted
@@ -71,6 +72,7 @@ def fetch_games(date_str:str)->list:
 def build_rows(games:list)->list:
     rows=[]
     for i,g in enumerate(games,1):
+        game_id = g.get("gamePk")  # MLB game identifier
         home = (g.get("teams",{}).get("home") or {})
         away = (g.get("teams",{}).get("away") or {})
         home_abbr = map_team_abbr((home.get("team") or {}))
@@ -78,8 +80,8 @@ def build_rows(games:list)->list:
         game_time = fmt_time_local(g.get("gameDate",""))
         home_pp = pitcher_name(home.get("probablePitcher"))
         away_pp = pitcher_name(away.get("probablePitcher"))
-        debug(f"[{i}] {away_abbr}@{home_abbr} time='{game_time}' pitchers: home='{home_pp}', away='{away_pp}'")
-        rows.append({"home_team":home_abbr,"away_team":away_abbr,"game_time":game_time,
+        debug(f"[{i}] game_id={game_id} {away_abbr}@{home_abbr} time='{game_time}' pitchers: home='{home_pp}', away='{away_pp}'")
+        rows.append({"game_id":game_id,"home_team":home_abbr,"away_team":away_abbr,"game_time":game_time,
                      "pitcher_home":home_pp,"pitcher_away":away_pp})
     return rows
 
@@ -89,7 +91,7 @@ def ensure_parent(path:Path):
 
 def write_csv(rows:list, out_path:Path):
     ensure_parent(out_path)
-    fns = ["home_team","away_team","game_time","pitcher_home","pitcher_away"]
+    fns = ["game_id","home_team","away_team","game_time","pitcher_home","pitcher_away"]
     debug(f"Writing CSV -> {out_path.resolve()}"); debug(f"Row count: {len(rows)}")
     if rows[:3]: debug(f"Row preview: {json.dumps(rows[:3], indent=2)}")
     with out_path.open("w", newline="", encoding="utf-8") as f:
