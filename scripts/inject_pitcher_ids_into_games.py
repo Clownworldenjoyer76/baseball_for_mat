@@ -3,109 +3,99 @@
 
 import pandas as pd
 from pathlib import Path
-from unidecode import unidecode
 import glob
 import sys
 
-GAMES_FILE = Path("data/raw/todaysgames_normalized.csv")
-MASTER_FILE = Path("data/processed/player_team_master.csv")
-ROSTERS_GLOB = "data/rosters/ready/p_*.csv"
+GAMES_FILE = "data/raw/todaysgames_normalized.csv"
+PRIMARY_MASTER = "data/processed/player_team_master.csv"  # must have: name, player_id
+FALLBACK_GLOB = "data/team_csvs/pitchers_*.csv"          # must have: name, player_id
+OUT_FILE = "data/raw/todaysgames_normalized.csv"         # in-place update
 
-REQ_GAMES_COLS = {"pitcher_home", "pitcher_away"}
-REQ_MASTER_COLS = {"name", "player_id"}
-REQ_ROSTER_COLS = {"name", "player_id"}
+REQUIRED_GAMES_COLS = ["game_id", "pitcher_home", "pitcher_away"]
 
-def norm_name(s):
+def norm_name(s: str) -> str:
     if pd.isna(s):
         return ""
-    return unidecode(str(s)).strip()
+    s = str(s).strip()
+    return s
 
-def load_master_map():
-    if not MASTER_FILE.exists():
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {MASTER_FILE} not found")
-    df = pd.read_csv(MASTER_FILE)
-    missing = REQ_MASTER_COLS - set(df.columns)
+def load_primary() -> dict:
+    df = pd.read_csv(PRIMARY_MASTER)
+    missing = [c for c in ["name", "player_id"] if c not in df.columns]
     if missing:
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {MASTER_FILE} missing columns: {sorted(missing)}")
-    df["name_key"] = df["name"].apply(norm_name).str.casefold()
-    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
-    df = df.dropna(subset=["name_key", "player_id"])
-    # Keep first occurrence per name_key
-    df = df.drop_duplicates(subset=["name_key"])
-    return dict(zip(df["name_key"], df["player_id"]))
+        raise RuntimeError(f"INSUFFICIENT INFORMATION: {PRIMARY_MASTER} missing columns: {missing}")
+    df = df.dropna(subset=["name", "player_id"]).copy()
+    df["name"] = df["name"].apply(norm_name)
+    # Ensure numeric IDs stay numeric-like strings (no decimals)
+    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64").astype("string").replace({"<NA>": ""})
+    return dict(zip(df["name"], df["player_id"]))
 
-def load_roster_fallback_map():
+def load_fallback() -> dict:
     mapping = {}
-    paths = sorted(glob.glob(ROSTERS_GLOB))
+    paths = sorted(glob.glob(FALLBACK_GLOB))
     for p in paths:
         try:
             df = pd.read_csv(p)
         except Exception:
             continue
-        if not REQ_ROSTER_COLS.issubset(df.columns):
-            # Skip silently if schema doesn’t match
+        if not {"name", "player_id"}.issubset(df.columns):
+            # Strict: skip files without required columns
             continue
-        df["name_key"] = df["name"].apply(norm_name).str.casefold()
-        df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
-        df = df.dropna(subset=["name_key", "player_id"]).drop_duplicates(subset=["name_key"])
-        for k, v in zip(df["name_key"], df["player_id"]):
-            # Do not overwrite if already present
-            if k and k not in mapping:
-                mapping[k] = v
+        df = df.dropna(subset=["name", "player_id"]).copy()
+        df["name"] = df["name"].apply(norm_name)
+        df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64").astype("string").replace({"<NA>": ""})
+        # Latest seen wins; names are keys
+        mapping.update(dict(zip(df["name"], df["player_id"])))
     return mapping
 
 def main():
-    if not GAMES_FILE.exists():
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {GAMES_FILE} not found")
-
+    # Load games
     games = pd.read_csv(GAMES_FILE)
-    missing_games = REQ_GAMES_COLS - set(games.columns)
-    if missing_games:
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {GAMES_FILE} missing columns: {sorted(missing_games)}")
+    missing = [c for c in REQUIRED_GAMES_COLS if c not in games.columns]
+    if missing:
+        raise RuntimeError(f"INSUFFICIENT INFORMATION: {GAMES_FILE} missing columns: {missing}")
 
-    # Ensure ID columns exist
-    if "pitcher_home_id" not in games.columns:
-        games["pitcher_home_id"] = pd.NA
-    if "pitcher_away_id" not in games.columns:
-        games["pitcher_away_id"] = pd.NA
+    # Ensure target ID columns exist
+    for col in ["pitcher_home_id", "pitcher_away_id"]:
+        if col not in games.columns:
+            games[col] = pd.NA
 
-    # Normalize name fields
-    games["pitcher_home_norm"] = games["pitcher_home"].apply(norm_name)
-    games["pitcher_away_norm"] = games["pitcher_away"].apply(norm_name)
+    # Normalize names
+    games["pitcher_home"] = games["pitcher_home"].apply(norm_name)
+    games["pitcher_away"] = games["pitcher_away"].apply(norm_name)
 
-    master_map = load_master_map()
-    roster_map = load_roster_fallback_map()
+    # Load mappings
+    primary = load_primary()
+    fallback = load_fallback()
 
-    def resolve_id(name):
-        if not name or name.lower() == "undecided":
-            return pd.NA  # accepted empty
-        key = unidecode(name).strip().casefold()
-        if key in master_map:
-            return master_map[key]
-        if key in roster_map:
-            return roster_map[key]
-        return pd.NA  # unresolved is accepted
+    # Inject IDs
+    def inject_id(name: str, existing_id):
+        # Accept existing IDs
+        if pd.notna(existing_id) and str(existing_id).strip() != "":
+            return pd.to_numeric(existing_id, errors="coerce").astype("Int64")
+        if name == "" or name.lower() == "undecided":
+            return pd.NA
+        pid = primary.get(name)
+        if pid is None or pid == "":
+            pid = fallback.get(name, "")
+        if pid == "":
+            return pd.NA
+        return pd.to_numeric(pid, errors="coerce").astype("Int64")
 
-    # Resolve IDs
-    games["pitcher_home_id"] = games["pitcher_home_norm"].apply(resolve_id).astype("Int64")
-    games["pitcher_away_id"] = games["pitcher_away_norm"].apply(resolve_id).astype("Int64")
+    games["pitcher_home_id"] = games.apply(lambda r: inject_id(r["pitcher_home"], r["pitcher_home_id"]), axis=1)
+    games["pitcher_away_id"] = games.apply(lambda r: inject_id(r["pitcher_away"], r["pitcher_away_id"]), axis=1)
 
-    # Clean temp cols
-    games.drop(columns=["pitcher_home_norm", "pitcher_away_norm"], inplace=True)
+    # Write back (IDs as digit-only strings in CSV)
+    for col in ["pitcher_home_id", "pitcher_away_id"]:
+        games[col] = games[col].astype("Int64").astype("string").replace({"<NA>": ""})
 
-    # Persist (nullable Int64 saves without .0)
-    GAMES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    games.to_csv(GAMES_FILE, index=False)
+    games.to_csv(OUT_FILE, index=False)
 
-    # Simple run summary
+    # Minimal console summary (mobile-friendly)
     total = len(games)
-    h_nonnull = int(games["pitcher_home_id"].notna().sum())
-    a_nonnull = int(games["pitcher_away_id"].notna().sum())
-    print(f"✅ Injected pitcher IDs -> {GAMES_FILE} (home_id non-null: {h_nonnull}/{total}, away_id non-null: {a_nonnull}/{total})")
+    h_filled = games["pitcher_home_id"].ne("").sum()
+    a_filled = games["pitcher_away_id"].ne("").sum()
+    print(f"✅ Injected pitcher IDs -> {OUT_FILE} (home filled: {h_filled}/{total}, away filled: {a_filled}/{total})")
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print(str(e))
-        sys.exit(1)
+    main()
