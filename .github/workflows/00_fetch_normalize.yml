@@ -1,4 +1,3 @@
-# .github/workflows/00_fetch_and_normalize.yml
 name: "00 Fetch & Normalize"
 
 on:
@@ -60,8 +59,11 @@ jobs:
           run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
           run_step normalize_lineups.py                python scripts/normalize_lineups.py
           run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
-          run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
 
+          # NEW: inject pitcher IDs after normalize_names + normalize_todays_games
+          run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
+
+          run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
           run_step fetch_mlb_ids.py                    python scripts/fetch_mlb_ids.py
           run_step hotfix_team_codes.py                python scripts/hotfix_team_codes.py
           run_step update_game_time.py                 python scripts/update_game_time.py
@@ -82,6 +84,7 @@ jobs:
       - name: Commit stage outputs
         run: |
           git add data/raw/todaysgames_normalized.csv || true
+          git add data/Data/stadium_metadata.csv || true
           git add data/cleaned/batters_today.csv || true
           git add data/cleaned/pitchers_normalized_cleaned.csv || true
           git add summaries/foundation/* || true
