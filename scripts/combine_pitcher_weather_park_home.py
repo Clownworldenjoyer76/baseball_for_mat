@@ -1,81 +1,100 @@
+# scripts/combine_pitcher_weather_park_home.py
+
 import pandas as pd
-from unidecode import unidecode
 import subprocess
+from pathlib import Path
 
 WEATHER_FILE = "data/adjusted/pitchers_home_weather.csv"
-PARK_FILE = "data/adjusted/pitchers_home_park.csv"
-TEAM_MASTER = "data/Data/team_name_master.csv"
-OUTPUT_FILE = "data/adjusted/pitchers_home_weather_park.csv"
-LOG_FILE = "log_pitchers_home_weather_park.txt"
+PARK_FILE    = "data/adjusted/pitchers_home_park.csv"
+OUTPUT_FILE  = "data/adjusted/pitchers_home_weather_park.csv"
+LOG_FILE     = "log_pitchers_home_weather_park.txt"
 
-def normalize_name(name):
-    if pd.isna(name): return name
-    return unidecode(name).strip()
+REQUIRED_WEATHER_COLS = {"player_id", "game_id", "adj_woba_weather"}
+REQUIRED_PARK_COLS    = {"player_id", "game_id", "adj_woba_park"}
+OUTPUT_COLS           = ["player_id", "game_id", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
 
-def normalize_team(team, valid_teams):
-    team = unidecode(str(team)).strip()
-    matches = [vt for vt in valid_teams if vt.lower() == team.lower()]
-    return matches[0] if matches else team
+def write_log(lines):
+    Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+    with open(LOG_FILE, "w") as f:
+        f.write("\n".join(lines) + "\n")
 
-def merge_and_combine(weather_df, park_df, valid_teams):
-    weather_df["last_name, first_name"] = weather_df["last_name, first_name"].apply(normalize_name)
-    park_df["last_name, first_name"] = park_df["last_name, first_name"].apply(normalize_name)
-
-    weather_df["home_team"] = weather_df["home_team"].apply(lambda x: normalize_team(x, valid_teams))
-    park_df["home_team"] = park_df["home_team"].apply(lambda x: normalize_team(x, valid_teams))
-
-    merged = pd.merge(
-        weather_df,
-        park_df,
-        on=["last_name, first_name", "home_team"],
-        how="inner"
-    )
-
-    if "adj_woba_weather" in merged.columns and "adj_woba_park" in merged.columns:
-        merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
-
-    return merged
-
-def reduce_columns(df):
-    keep_cols = ["last_name, first_name", "home_team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
-    return df[keep_cols]
+def safe_to_numeric(df, cols):
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
 
 def main():
-    log_entries = []
-
+    logs = []
     try:
         weather = pd.read_csv(WEATHER_FILE)
-        park = pd.read_csv(PARK_FILE)
-        teams = pd.read_csv(TEAM_MASTER)["team_name"].dropna().unique().tolist()
+        park    = pd.read_csv(PARK_FILE)
+        logs.append(f"Loaded {WEATHER_FILE} ({len(weather)} rows)")
+        logs.append(f"Loaded {PARK_FILE} ({len(park)} rows)")
     except Exception as e:
-        with open(LOG_FILE, "w") as log:
-            log.write(f"❌ Failed to read input files: {e}\n")
+        write_log([f"❌ Failed to read inputs: {e}"])
         return
 
-    try:
-        combined = merge_and_combine(weather, park, teams)
-        cleaned = reduce_columns(combined)
-        cleaned.to_csv(OUTPUT_FILE, index=False)
+    missing_w = REQUIRED_WEATHER_COLS - set(weather.columns)
+    missing_p = REQUIRED_PARK_COLS - set(park.columns)
 
-        if cleaned.empty:
-            log_entries.append("⚠️ WARNING: Merge returned 0 rows. Check for mismatched names or teams.")
-        else:
-            top5 = cleaned.sort_values(by="adj_woba_combined", ascending=False).head(5)
-            log_entries.append("Top 5 Combined Pitchers by adj_woba_combined:")
-            log_entries.append(top5.to_string(index=False))
-    except Exception as e:
-        log_entries.append(f"❌ Error during processing: {str(e)}")
+    if missing_w or missing_p:
+        lines = []
+        if missing_w:
+            lines.append(f"INSUFFICIENT INFORMATION: Missing columns in {WEATHER_FILE}: {sorted(missing_w)}")
+        if missing_p:
+            lines.append(f"INSUFFICIENT INFORMATION: Missing columns in {PARK_FILE}: {sorted(missing_p)}")
+        # Write empty output with headers for downstream stability
+        pd.DataFrame(columns=OUTPUT_COLS).to_csv(OUTPUT_FILE, index=False)
+        write_log(lines)
+        return
 
-    with open(LOG_FILE, "w") as log:
-        for entry in log_entries:
-            log.write(entry + "\n")
+    # Keep only required columns
+    weather = weather[list(REQUIRED_WEATHER_COLS)].copy()
+    park    = park[list(REQUIRED_PARK_COLS)].copy()
 
+    # Ensure numeric for combination
+    weather = safe_to_numeric(weather, ["player_id", "game_id", "adj_woba_weather"])
+    park    = safe_to_numeric(park,    ["player_id", "game_id", "adj_woba_park"])
+
+    merged = pd.merge(
+        weather,
+        park,
+        on=["player_id", "game_id"],
+        how="inner",
+        validate="one_to_one"
+    )
+
+    if merged.empty:
+        logs.append("⚠️ Merge produced 0 rows on ['player_id','game_id'].")
+
+    # Compute combined adjustment
+    merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2.0
+
+    # Order/limit columns
+    merged = merged[OUTPUT_COLS]
+
+    # Save
+    Path(OUTPUT_FILE).parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(OUTPUT_FILE, index=False)
+    logs.append(f"✅ Wrote {OUTPUT_FILE} ({len(merged)} rows)")
+
+    # Log top 5 if available
+    if "adj_woba_combined" in merged.columns and not merged.empty:
+        top5 = merged.sort_values("adj_woba_combined", ascending=False).head(5)
+        logs.append("Top 5 by adj_woba_combined:")
+        logs.append(top5.to_string(index=False))
+
+    write_log(logs)
+
+    # Commit
     try:
         subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-commit: Cleaned combine pitcher weather + park (home)"], check=True)
+        subprocess.run(["git", "commit", "-m", "Combine pitcher weather+park (home) on player_id+game_id"], check=True)
         subprocess.run(["git", "push"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit/push skipped or failed: {e}")
+    except subprocess.CalledProcessError:
+        # No-op if nothing to commit or push fails in CI
+        pass
 
 if __name__ == "__main__":
     main()
