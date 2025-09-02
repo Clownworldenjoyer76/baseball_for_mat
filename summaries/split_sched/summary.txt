@@ -1,43 +1,43 @@
-===== RUN TIMESTAMP: 2025-09-02 03:07:23 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-02 03:16:04 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-02 03:07:21 PM EDT]
-✅ python succeeded [2025-09-02 03:07:21 PM EDT]
-✅ python succeeded [2025-09-02 03:07:22 PM EDT]
-✅ python succeeded [2025-09-02 03:07:22 PM EDT]
-❌ python failed [2025-09-02 03:07:22 PM EDT]
-✅ python succeeded [2025-09-02 03:07:22 PM EDT]
-✅ python succeeded [2025-09-02 03:07:23 PM EDT]
+✅ python succeeded [2025-09-02 03:16:01 PM EDT]
+✅ python succeeded [2025-09-02 03:16:02 PM EDT]
+✅ python succeeded [2025-09-02 03:16:02 PM EDT]
+✅ python succeeded [2025-09-02 03:16:02 PM EDT]
+❌ python failed [2025-09-02 03:16:03 PM EDT]
+✅ python succeeded [2025-09-02 03:16:03 PM EDT]
+✅ python succeeded [2025-09-02 03:16:04 PM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-09-02 03:07:20 PM EDT)
-⏹️ END: python (2025-09-02 03:07:21 PM EDT)
+▶️ START: splitaway.py (2025-09-02 03:16:01 PM EDT)
+⏹️ END: python (2025-09-02 03:16:01 PM EDT)
 
-▶️ START: splithome.py (2025-09-02 03:07:21 PM EDT)
-⏹️ END: python (2025-09-02 03:07:21 PM EDT)
+▶️ START: splithome.py (2025-09-02 03:16:01 PM EDT)
+⏹️ END: python (2025-09-02 03:16:02 PM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-09-02 03:07:21 PM EDT)
+▶️ START: updatesplitcsvs.py (2025-09-02 03:16:02 PM EDT)
 ✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.
-⏹️ END: python (2025-09-02 03:07:22 PM EDT)
+⏹️ END: python (2025-09-02 03:16:02 PM EDT)
 
-▶️ START: commit_split_batters.py (2025-09-02 03:07:22 PM EDT)
-⏹️ END: python (2025-09-02 03:07:22 PM EDT)
+▶️ START: commit_split_batters.py (2025-09-02 03:16:02 PM EDT)
+⏹️ END: python (2025-09-02 03:16:02 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-09-02 03:07:22 PM EDT)
-⏹️ END: python (2025-09-02 03:07:22 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-09-02 03:16:02 PM EDT)
+⏹️ END: python (2025-09-02 03:16:03 PM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-09-02 03:07:22 PM EDT)
+▶️ START: pitcherfilecleanup.py (2025-09-02 03:16:03 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-09-02 03:07:22 PM EDT)
+⏹️ END: python (2025-09-02 03:16:03 PM EDT)
 
-▶️ START: bet_prep_1.py (2025-09-02 03:07:22 PM EDT)
+▶️ START: bet_prep_1.py (2025-09-02 03:16:03 PM EDT)
 ✅ Wrote 14 rows -> data/bets/mlb_sched.csv
-⏹️ END: python (2025-09-02 03:07:23 PM EDT)
+⏹️ END: python (2025-09-02 03:16:04 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-02 03:07:22 PM EDT]:
+❌ python ERROR [2025-09-02 03:16:03 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 122, in <module>
     process_pitcher_data(
