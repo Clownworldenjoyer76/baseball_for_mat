@@ -8,8 +8,8 @@ from pathlib import Path
 
 BH = Path("data/adjusted/batters_home.csv")
 BA = Path("data/adjusted/batters_away.csv")
-G  = Path("data/raw/todaysgames_normalized.csv")     # home_team_id, away_team_id
-ST = Path("data/manual/stadium_master.csv")          # team_id, Park Factor
+G  = Path("data/raw/todaysgames_normalized.csv")   # home_team_id, away_team_id
+ST = Path("data/manual/stadium_master.csv")        # team_id, Park Factor
 
 OUT_H = Path("data/adjusted/batters_home_park.csv")
 OUT_A = Path("data/adjusted/batters_away_park.csv")
