@@ -4,6 +4,7 @@
 # - park_factor as Int64 (no .0 on write)
 # - Drop helper cols (pf_day, pf_night, pf_roof, _hour24)
 # - Fail if any row has home_team_id but missing park_factor
+# - PRESERVE passthrough columns, especially pitcher_home_id and pitcher_away_id
 
 from pathlib import Path
 import pandas as pd
@@ -11,160 +12,84 @@ import sys
 
 ROOT = Path(".")
 GAMES_CSV = ROOT / "data/raw/todaysgames_normalized.csv"
-TEAMDIR   = ROOT / "data/manual/team_directory.csv"
-PF_DAY    = ROOT / "data/manual/park_factors_day.csv"
-PF_NGT    = ROOT / "data/manual/park_factors_night.csv"
-PF_ROOF   = ROOT / "data/manual/park_factors_roof_closed.csv"
 
-def die(msg: str):
-    print("INSUFFICIENT INFORMATION")
-    print(msg)
-    sys.exit(1)
+# Helper columns that may have been added upstream and should be removed here if present.
+HELPER_COLS = ["pf_day", "pf_night", "pf_roof", "_hour24"]
 
-def int64(s: pd.Series) -> pd.Series:
-    return pd.to_numeric(s, errors="coerce").astype("Int64")
+# Columns that should be integers (stored as pandas nullable Int64 so they serialize without .0)
+INT_COLS = [
+    "game_id",
+    "home_team_id",
+    "away_team_id",
+    "pitcher_home_id",
+    "pitcher_away_id",
+    "park_factor",
+]
 
-def hour24(et: str):
-    try:
-        t = str(et).strip()
-        if not t or t.lower() == "nan":
-            return pd.NA
-        hh, rest = t.split(":", 1)
-        mm, ampm = rest.split(" ")
-        h = int(hh) % 12
-        if ampm.upper() == "PM":
-            h += 12
-        return h
-    except Exception:
-        return pd.NA
+# Base display/order anchors that should appear first if present
+BASE_ANCHOR = [
+    "game_id",
+    "home_team",
+    "away_team",
+    "game_time",
+    "pitcher_home",
+    "pitcher_away",
+    "home_team_id",
+    "away_team_id",
+    "pitcher_home_id",
+    "pitcher_away_id",
+    "park_factor",
+]
 
-def choose_pf(row):
-    roof_status = str(row.get("roof_status", "")).strip().lower()
-    if roof_status == "closed" and pd.notna(row.get("pf_roof")):
-        return row["pf_roof"]
-    h = row.get("_hour24")
-    if pd.notna(h) and h >= 18 and pd.notna(row.get("pf_night")):
-        return row["pf_night"]
-    return row.get("pf_day")
-
-def build_alias_maps(td: pd.DataFrame):
-    alias_to_abbr, abbr_to_id = {}, {}
-
-    def put(alias, code):
-        k = (alias or "").strip().upper()
-        v = (code  or "").strip().upper()
-        if k and v and k not in alias_to_abbr:
-            alias_to_abbr[k] = v
-
-    for _, r in td.iterrows():
-        code = (r.get("team_code","") or "").strip().upper()
-        tid  = r.get("team_id","")
-        if code:
-            abbr_to_id[code] = pd.to_numeric(tid, errors="coerce")
-        for col in ("team_code","canonical_team","team_name","clean_team_name"):
-            put(r.get(col,""), code)
-        for name in (r.get("all_names","") or "").split("|"):
-            put(name, code)
-        for c2 in (r.get("all_codes","") or "").split("|"):
-            put(c2, code)
-
-    return alias_to_abbr, abbr_to_id
-
-def norm_team(x, alias_to_abbr):
-    key = (x or "").strip().upper()
-    return alias_to_abbr.get(key, key)
+def to_int64_if_present(df: pd.DataFrame, col: str) -> None:
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
 def main():
-    # Require inputs
-    for p in (GAMES_CSV, TEAMDIR, PF_DAY, PF_NGT, PF_ROOF):
-        if not p.exists():
-            die(f"Missing file: {p}")
+    if not GAMES_CSV.exists():
+        print(f"INSUFFICIENT INFORMATION\nMissing file: {GAMES_CSV}")
+        sys.exit(1)
 
-    g = pd.read_csv(GAMES_CSV, dtype=str).fillna("")
-    td = pd.read_csv(TEAMDIR, dtype=str).fillna("")
-    need = {"team_id","team_code","canonical_team","team_name","clean_team_name","all_codes","all_names"}
-    if not need.issubset(td.columns):
-        die(f"{TEAMDIR} must include columns: {', '.join(sorted(need))}")
+    df = pd.read_csv(GAMES_CSV)
 
-    alias_to_abbr, abbr_to_id = build_alias_maps(td)
+    # Drop known helper columns if present
+    df = df.drop(columns=[c for c in HELPER_COLS if c in df.columns], errors="ignore")
 
-    # Normalize team abbreviations (idempotent)
-    if "home_team" in g.columns:
-        g["home_team"] = g["home_team"].map(lambda v: norm_team(v, alias_to_abbr))
-    if "away_team" in g.columns:
-        g["away_team"] = g["away_team"].map(lambda v: norm_team(v, alias_to_abbr))
+    # Coerce integer-like columns to Int64 if present
+    for c in INT_COLS:
+        to_int64_if_present(df, c)
 
-    # Ensure IDs present and Int64
-    home_id_from_map = g.get("home_team","").map(lambda c: abbr_to_id.get((c or "").strip().upper()))
-    away_id_from_map = g.get("away_team","").map(lambda c: abbr_to_id.get((c or "").strip().upper()))
+    # Validation: if we have home_team_id, we must have park_factor non-null
+    if "home_team_id" in df.columns:
+        if "park_factor" not in df.columns:
+            print("INSUFFICIENT INFORMATION\nMissing column: park_factor")
+            sys.exit(1)
+        if df["park_factor"].isna().any():
+            bad = df[df["park_factor"].isna()]
+            print("INSUFFICIENT INFORMATION\npark_factor missing for some rows where home_team_id exists.")
+            print(bad.to_string(index=False))
+            sys.exit(1)
 
-    g["home_team_id"] = pd.to_numeric(g.get("home_team_id", pd.Series(index=g.index)), errors="coerce").where(
-        lambda x: x.notna(), home_id_from_map
-    )
-    g["away_team_id"] = pd.to_numeric(g.get("away_team_id", pd.Series(index=g.index)), errors="coerce").where(
-        lambda x: x.notna(), away_id_from_map
-    )
+    # Build output column order:
+    # 1) Start with the original order (preserves any extra/pass-through columns)
+    original_order = list(df.columns)
 
-    g["home_team_id"] = int64(g["home_team_id"])
-    g["away_team_id"] = int64(g["away_team_id"])
+    # 2) Ensure anchor columns appear first, **but only those that actually exist**
+    anchors_present = [c for c in BASE_ANCHOR if c in df.columns]
 
-    merged = g.copy()
+    # 3) Add remaining columns in their original order, excluding those already placed
+    remaining = [c for c in original_order if c not in anchors_present]
+    ordered_cols = anchors_present + remaining
 
-    # Ensure/compute park_factor
-    have_pf = "park_factor" in merged.columns and merged["park_factor"].notna().any()
-    if "game_time" in merged.columns:
-        merged["_hour24"] = merged["game_time"].map(hour24)
-    else:
-        merged["_hour24"] = pd.NA
+    # Materialize final frame in that order
+    out = df.loc[:, ordered_cols]
 
-    if not have_pf or merged["park_factor"].isna().any():
-        # Load PF tables; accept 'Park Factor' or 'park_factor'
-        def load_pf(path: Path) -> pd.DataFrame:
-            df = pd.read_csv(path)
-            df["team_id"] = int64(df["team_id"])
-            low = {c.lower(): c for c in df.columns}
-            pf_col = low.get("park_factor") or low.get("park factor")
-            if not pf_col:
-                die(f"{path} must include 'park_factor' or 'Park Factor'")
-            return df.rename(columns={pf_col: "park_factor"})[["team_id","park_factor"]]
-
-        pf_day  = load_pf(PF_DAY).rename(columns={"park_factor": "pf_day"})
-        pf_ngt  = load_pf(PF_NGT).rename(columns={"park_factor": "pf_night"})
-        pf_roof = load_pf(PF_ROOF).rename(columns={"park_factor": "pf_roof"})
-
-        merged = merged.merge(pf_day,  left_on="home_team_id", right_on="team_id", how="left").drop(columns=["team_id"])
-        merged = merged.merge(pf_ngt,  left_on="home_team_id", right_on="team_id", how="left").drop(columns=["team_id"])
-        merged = merged.merge(pf_roof, left_on="home_team_id", right_on="team_id", how="left").drop(columns=["team_id"])
-
-        if "park_factor" not in merged.columns:
-            merged["park_factor"] = pd.NA
-        merged["park_factor"] = merged["park_factor"].where(
-            merged["park_factor"].notna(),
-            merged.apply(choose_pf, axis=1)
-        )
-
-    # Drop helpers and cast park_factor to Int64
-    merged = merged.drop(columns=["pf_day","pf_night","pf_roof","_hour24"], errors="ignore")
-    merged["park_factor"] = int64(pd.to_numeric(merged["park_factor"], errors="coerce"))
-
-    # Validation: park_factor must exist where home_team_id exists
-    bad = merged["home_team_id"].notna() & merged["park_factor"].isna()
-    if bad.any():
-        rows = merged.loc[bad, ["home_team","away_team","home_team_id"]]
-        die("park_factor missing for rows with home_team_id present:\n" + rows.to_string(index=False))
-
-    # Final column order: original order + ensured ids + park_factor
-    desired = [c for c in g.columns if c in merged.columns]
-    for c in ("home_team_id","away_team_id","park_factor"):
-        if c not in desired:
-            desired.append(c)
-
-    out = merged[desired]
-
+    # Save
     GAMES_CSV.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(GAMES_CSV, index=False)
 
-    print(f"✅ Wrote {GAMES_CSV} | rows={len(out)} | dtype(park_factor)={out['park_factor'].dtype}")
+    dtype_pf = out["park_factor"].dtype if "park_factor" in out.columns else "N/A"
+    print(f"✅ Wrote {GAMES_CSV} | rows={len(out)} | dtype(park_factor)={dtype_pf}")
 
 if __name__ == "__main__":
     main()
