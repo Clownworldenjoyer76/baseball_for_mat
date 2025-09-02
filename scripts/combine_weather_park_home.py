@@ -17,17 +17,20 @@ def merge_and_combine(weather, park):
     weather = weather[weather["type"] == "batter"]
     park = park[park["type"] == "batter"]
 
+    if "player_id" not in weather.columns or "player_id" not in park.columns:
+        raise ValueError("player_id column missing in one of the input files")
+
     merged = pd.merge(
         weather,
-        park[["last_name, first_name", "team", "adj_woba_park"]],
-        on=["last_name, first_name", "team"],
+        park[["player_id", "adj_woba_park"]],
+        on="player_id",
         how="inner"
     )
     print(f"✅ Merged rows: {len(merged)}")
     if len(merged) == 0:
-        print("⚠️ No rows matched. Check name or team column mismatches.")
-    if merged.duplicated(subset=["last_name, first_name", "team"]).any():
-        print("⚠️ Warning: Duplicate rows detected in merged result.")
+        print("⚠️ No rows matched. Check player_id column contents.")
+    if merged.duplicated(subset=["player_id"]).any():
+        print("⚠️ Warning: Duplicate player_id rows detected in merged result.")
 
     merged["adj_woba_combined"] = (merged["adj_woba_weather"] + merged["adj_woba_park"]) / 2
     return merged
@@ -41,7 +44,7 @@ def save_output(df):
     print(f"💾 Saved to: {output_file}")
 
     log_file = out_path / "log_combined_home.txt"
-    top5 = df[["last_name, first_name", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]] \
+    top5 = df[["player_id", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]] \
         .sort_values(by="adj_woba_combined", ascending=False).head(5)
 
     with open(log_file, "w") as f:
