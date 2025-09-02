@@ -82,7 +82,6 @@ jobs:
       - name: Commit stage outputs
         run: |
           git add data/raw/todaysgames_normalized.csv || true
-          git add data/Data/stadium_metadata.csv || true
           git add data/cleaned/batters_today.csv || true
           git add data/cleaned/pitchers_normalized_cleaned.csv || true
           git add summaries/foundation/* || true
