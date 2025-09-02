@@ -1,34 +1,18 @@
-❌ python ERROR [2025-09-02 07:48:52 AM EDT]:
+❌ python ERROR [2025-09-02 07:52:10 AM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 64, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 69, in main
-    adj_home = _attach_weather_by_game(bh, wx)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 25, in _attach_weather_by_game
-    _require(batters, ["game_id", "date", "team", "woba"], "batters input")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 19, in _require
-    raise ValueError(f"{where}: missing columns {miss}")
-ValueError: batters input: missing columns ['date']
-
----
-
-❌ python ERROR [2025-09-02 07:48:52 AM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 72, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 64, in main
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 56, in main
     out_h = _attach(bh, "home")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 31, in _attach
-    games = _prep_games()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 28, in _prep_games
-    return g[["home_team_id","away_team_id","date"]]
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 27, in _attach
+    stad  = pd.read_csv(ST, dtype=str)[["team_id","Park Factor"]]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
     indexer = self.columns._get_indexer_strict(key, "columns")[1]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
     self._raise_if_missing(keyarr, indexer, axis_name)
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
     raise KeyError(f"{not_found} not in index")
-KeyError: "['date'] not in index"
+KeyError: "['Park Factor'] not in index"
 
 ---
 
