@@ -1,134 +1,237 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+scripts/inject_pitcher_ids_into_games.py
+
+Inject pitcher_home_id and pitcher_away_id into data/raw/todaysgames_normalized.csv
+using data/processed/player_team_master.csv first, then falling back to team
+rosters in data/team_csvs/*.csv.
+
+Strict rules:
+- No assumptions beyond provided files.
+- Match by name only (games file provides names); do robust normalization.
+- Preserve ALL existing columns; only update/insert pitcher_home_id, pitcher_away_id.
+- Accept 'Undecided' => leave ID blank.
+- Write IDs as plain digit strings (no '.0').
+"""
+
 import pandas as pd
 from pathlib import Path
-import os
+from unidecode import unidecode
+import re
+import glob
 
 GAMES_FILE = Path("data/raw/todaysgames_normalized.csv")
-PLAYER_MASTER_FILE = Path("data/processed/player_team_master.csv")
+MASTER_FILE = Path("data/processed/player_team_master.csv")
+ROSTERS_DIR = Path("data/team_csvs")  # files like pitchers_Tigers.csv, pitchers_Twins.csv
 
-# Optional fallback dirs (kept as-is; will be used if present)
-TEAM_CSV_DIR = Path("data/team_csvs")             # e.g., pitchers_Twins.csv
-ROSTERS_READY_DIR = Path("data/rosters/ready")    # e.g., p_Tigers.csv
+# --------------------------
+# Helpers
+# --------------------------
+def clean_spaces(s: str) -> str:
+    s = re.sub(r"\s+", " ", s.strip())
+    return s
 
-REQUIRED_GAME_COLS = [
-    "game_id", "home_team", "away_team", "game_time",
-    "pitcher_home", "pitcher_away", "home_team_id", "away_team_id"
-]
+def normalize_person_name(name: str) -> str:
+    """
+    Return a canonical 'Last, First Middle' (title case), accent-folded, commas kept.
+    Handles inputs in either 'Last, First [Middle]' or 'First [Middle] Last'.
+    """
+    if name is None:
+        return ""
+    s = str(name).strip()
+    if s == "" or s.lower() == "undecided":
+        return ""
 
-def load_games(path: Path) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    missing = [c for c in REQUIRED_GAME_COLS if c not in df.columns]
+    # fold accents, remove extra punctuation noise but keep comma
+    s = unidecode(s)
+    s = s.replace(".", " ")
+    s = clean_spaces(s)
+
+    if "," in s:
+        # assume already "Last, First [Middle]"
+        parts = [p.strip() for p in s.split(",", 1)]
+        last = parts[0]
+        firstmid = clean_spaces(parts[1]) if len(parts) > 1 else ""
+        canon = f"{last.title()}, {firstmid.title()}".strip().rstrip(",")
+        return canon
+
+    # assume "First [Middle] Last"
+    tokens = s.split(" ")
+    if len(tokens) == 1:
+        # single token name; return as-is
+        return tokens[0].title()
+    last = tokens[-1]
+    firstmid = " ".join(tokens[:-1])
+    canon = f"{last.title()}, {firstmid.title()}"
+    canon = clean_spaces(canon)
+    return canon
+
+def alt_variants(name: str) -> list:
+    """
+    Generate conservative alternate variants to improve matching.
+    """
+    if not name:
+        return []
+    base = normalize_person_name(name)
+    variants = {base}
+
+    # Variant without spaces after comma
+    variants.add(base.replace(", ", ","))
+
+    # Swap first/middle order (e.g., 'Richardson, Simeon Woods' <-> 'Richardson, Simeon W')
+    if ", " in base:
+        last, firstmid = base.split(", ", 1)
+        fm_tokens = firstmid.split(" ")
+        if len(fm_tokens) >= 2:
+            # move middle to end/start variants
+            # e.g., Simeon Woods -> Woods Simeon (rarely needed, but harmless)
+            variants.add(f"{last}, {' '.join(reversed(fm_tokens))}")
+
+    # Lowercase accentless compact
+    compact = unidecode(base).lower().replace(", ", ",").replace(" ", "")
+    variants.add(compact)
+
+    return list(variants)
+
+def build_master_index(master_path: Path) -> dict:
+    """
+    Build name->player_id mapping from player_team_master.csv.
+    Requires columns: name, player_id.
+    """
+    if not master_path.exists():
+        raise FileNotFoundError(f"INSUFFICIENT INFORMATION: {master_path} is missing.")
+
+    df = pd.read_csv(master_path)
+    required = {"name", "player_id"}
+    missing = required - set(df.columns)
     if missing:
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {path} missing columns: {missing}")
-    # Ensure passthrough ID columns exist
-    if "pitcher_home_id" not in df.columns:
-        df["pitcher_home_id"] = pd.NA
-    if "pitcher_away_id" not in df.columns:
-        df["pitcher_away_id"] = pd.NA
-    return df
+        raise RuntimeError(f"INSUFFICIENT INFORMATION: {master_path} missing columns: {sorted(missing)}")
 
-def load_player_master(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {path} not found")
-    df = pd.read_csv(path)
-    need = {"name", "player_id"}
-    if not need.issubset(df.columns):
-        missing = sorted(list(need - set(df.columns)))
-        raise RuntimeError(f"INSUFFICIENT INFORMATION: {path} missing columns: {missing}")
-    # normalize
-    df["name_norm"] = df["name"].astype(str).str.strip()
-    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce")
-    return df[["name_norm", "player_id"]].dropna(subset=["player_id"]).drop_duplicates()
+    df = df.dropna(subset=["name", "player_id"]).copy()
+    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
+    df = df.dropna(subset=["player_id"])
+    df["canon"] = df["name"].apply(normalize_person_name)
+    df["compact"] = df["canon"].apply(lambda s: unidecode(s).lower().replace(", ", ",").replace(" ", ""))
 
-def build_fallback_index() -> dict:
-    idx = {}
-    # TEAM_CSV_DIR fallback
-    if TEAM_CSV_DIR.exists():
-        for p in TEAM_CSV_DIR.glob("pitchers_*.csv"):
-            try:
-                tdf = pd.read_csv(p)
-                if {"name", "player_id"}.issubset(tdf.columns):
-                    tdf = tdf.copy()
-                    tdf["name_norm"] = tdf["name"].astype(str).str.strip()
-                    tdf["player_id"] = pd.to_numeric(tdf["player_id"], errors="coerce")
-                    for _, r in tdf.dropna(subset=["player_id"]).iterrows():
-                        nm = r["name_norm"]
-                        if nm not in idx:
-                            idx[nm] = int(r["player_id"])
-            except Exception:
-                pass
-    # ROSTERS_READY_DIR fallback
-    if ROSTERS_READY_DIR.exists():
-        for p in ROSTERS_READY_DIR.glob("p_*.csv"):
-            try:
-                tdf = pd.read_csv(p)
-                # accept common header variants
-                name_col = "name" if "name" in tdf.columns else None
-                pid_col = "player_id" if "player_id" in tdf.columns else None
-                if name_col and pid_col:
-                    tdf = tdf.copy()
-                    tdf["name_norm"] = tdf[name_col].astype(str).str.strip()
-                    tdf["player_id"] = pd.to_numeric(tdf[pid_col], errors="coerce")
-                    for _, r in tdf.dropna(subset=["player_id"]).iterrows():
-                        nm = r["name_norm"]
-                        if nm not in idx:
-                            idx[nm] = int(r["player_id"])
-            except Exception:
-                pass
-    return idx
+    index = {}
+    for _, r in df.iterrows():
+        pid = str(int(r["player_id"]))
+        index.setdefault(r["canon"], set()).add(pid)
+        index.setdefault(r["compact"], set()).add(pid)
+    return index
 
-def make_lookup(master: pd.DataFrame) -> dict:
-    base = dict(zip(master["name_norm"], master["player_id"].astype(int)))
-    # supplement with fallbacks (if present)
-    fall = build_fallback_index()
-    base.update({k: v for k, v in fall.items() if k not in base})
-    return base
-
-def resolve_id(name_val, existing_id, lookup: dict):
-    # Pass through existing if valid
-    if pd.notna(existing_id):
+def build_roster_index(rosters_dir: Path) -> dict:
+    """
+    Build supplemental name->player_id mapping from data/team_csvs/*.csv
+    (e.g., pitchers_Tigers.csv, pitchers_Twins.csv). Must have columns: name, player_id.
+    """
+    index = {}
+    for path in glob.glob(str(rosters_dir / "*.csv")):
         try:
-            iv = pd.to_numeric(existing_id, errors="coerce")
-            if pd.notna(iv):
-                return int(iv)
+            df = pd.read_csv(path)
         except Exception:
-            pass
-    # Undecided -> NA
-    if pd.isna(name_val):
-        return pd.NA
-    name = str(name_val).strip()
-    if name.lower() == "undecided":
-        return pd.NA
-    # Lookup by normalized name
-    pid = lookup.get(name)
-    if pid is None:
-        return pd.NA
-    return int(pid)
+            continue
+        if not {"name", "player_id"}.issubset(df.columns):
+            continue
+        df = df.dropna(subset=["name", "player_id"]).copy()
+        df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
+        df = df.dropna(subset=["player_id"])
+        df["canon"] = df["name"].apply(normalize_person_name)
+        df["compact"] = df["canon"].apply(lambda s: unidecode(s).lower().replace(", ", ",").replace(" ", ""))
 
+        for _, r in df.iterrows():
+            pid = str(int(r["player_id"]))
+            index.setdefault(r["canon"], set()).add(pid)
+            index.setdefault(r["compact"], set()).add(pid)
+    return index
+
+def lookup_player_id(name: str, primary_idx: dict, fallback_idx: dict) -> str:
+    """
+    Try to find a single player_id for the given name using:
+      1) normalized forms in primary index
+      2) variants
+      3) fallback roster index
+    If multiple PIDs are found, choose the lowest (deterministic). If none, return "".
+    """
+    if not name or name.lower() == "undecided":
+        return ""
+
+    # Try canonical + compact in primary
+    canon = normalize_person_name(name)
+    compact = unidecode(canon).lower().replace(", ", ",").replace(" ", "")
+    candidates = set()
+    for key in (canon, compact):
+        if key in primary_idx:
+            candidates |= primary_idx[key]
+    if candidates:
+        return sorted(candidates, key=lambda x: int(x))[0]
+
+    # Try variants in primary
+    for v in alt_variants(name):
+        if v in primary_idx:
+            return sorted(primary_idx[v], key=lambda x: int(x))[0]
+
+    # Fall back to roster index
+    for key in (canon, compact, *alt_variants(name)):
+        if key in fallback_idx:
+            return sorted(fallback_idx[key], key=lambda x: int(x))[0]
+
+    return ""
+
+# --------------------------
+# Main
+# --------------------------
 def main():
-    games = load_games(GAMES_FILE)
-    master = load_player_master(PLAYER_MASTER_FILE)
-    lookup = make_lookup(master)
+    # Load games
+    if not GAMES_FILE.exists():
+        raise FileNotFoundError(f"INSUFFICIENT INFORMATION: {GAMES_FILE} is missing.")
+    games = pd.read_csv(GAMES_FILE)
 
-    # Compute Series without casting per-row
-    home_ids = games.apply(lambda r: resolve_id(r["pitcher_home"], r.get("pitcher_home_id", pd.NA), lookup), axis=1)
-    away_ids = games.apply(lambda r: resolve_id(r["pitcher_away"], r.get("pitcher_away_id", pd.NA), lookup), axis=1)
+    required_g_cols = {"game_id", "home_team", "away_team", "pitcher_home", "pitcher_away"}
+    missing_g = required_g_cols - set(games.columns)
+    if missing_g:
+        raise RuntimeError(f"INSUFFICIENT INFORMATION: {GAMES_FILE} missing columns: {sorted(missing_g)}")
 
-    # Now enforce nullable integer dtype on the full Series
-    games["pitcher_home_id"] = pd.to_numeric(home_ids, errors="coerce").astype(pd.Int64Dtype())
-    games["pitcher_away_id"] = pd.to_numeric(away_ids, errors="coerce").astype(pd.Int64Dtype())
+    # Ensure ID columns exist as strings (preserve blanks cleanly)
+    for col in ("pitcher_home_id", "pitcher_away_id"):
+        if col not in games.columns:
+            games[col] = ""
+        else:
+            # Convert any float-looking values like 622503.0 -> "622503"
+            games[col] = pd.to_numeric(games[col], errors="coerce").astype("Int64").astype("string").replace({"<NA>": ""})
 
-    # Preserve passthrough columns; do NOT drop any columns
-    # Just write back in current column order
-    GAMES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    games.to_csv(GAMES_FILE, index=False)
+    # Build indices
+    primary_idx = build_master_index(MASTER_FILE)
+    roster_idx = build_roster_index(ROSTERS_DIR)
 
-    # Minimal console info for CI logs
-    non_null_home = int(games["pitcher_home_id"].notna().sum())
-    non_null_away = int(games["pitcher_away_id"].notna().sum())
-    print(f"✅ Injected pitcher IDs -> {GAMES_FILE} (home_id non-null: {non_null_home}, away_id non-null: {non_null_away})")
+    # Inject IDs
+    def inject(existing: str, name: str) -> str:
+        # keep existing if already a valid integer string
+        if existing and existing.isdigit():
+            return existing
+        pid = lookup_player_id(name, primary_idx, roster_idx)
+        return pid
+
+    games["pitcher_home_id"] = [
+        inject(str(games.at[i, "pitcher_home_id"]), games.at[i, "pitcher_home"])
+        for i in range(len(games))
+    ]
+    games["pitcher_away_id"] = [
+        inject(str(games.at[i, "pitcher_away_id"]), games.at[i, "pitcher_away"])
+        for i in range(len(games))
+    ]
+
+    # Preserve all columns; only update the two ID fields
+    out_cols = list(games.columns)
+    games[out_cols].to_csv(GAMES_FILE, index=False)
+
+    # Quick summary
+    h_ok = sum(bool(x) for x in games["pitcher_home_id"])
+    a_ok = sum(bool(x) for x in games["pitcher_away_id"])
+    total = len(games)
+    print(f"✅ Injected pitcher IDs -> {GAMES_FILE} (home_id non-null: {h_ok}/{total}, away_id non-null: {a_ok}/{total})")
 
 if __name__ == "__main__":
     main()
