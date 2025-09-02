@@ -63,11 +63,11 @@ jobs:
           # NEW: inject pitcher IDs after normalize_names + normalize_todays_games
           run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
 
-          run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
+          # run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
           run_step fetch_mlb_ids.py                    python scripts/fetch_mlb_ids.py
-          run_step hotfix_team_codes.py                python scripts/hotfix_team_codes.py
-          run_step update_game_time.py                 python scripts/update_game_time.py
-          run_step finalize_todaysgames_types_and_pf.py  python scripts/finalize_todaysgames_types_and_pf.py
+          # run_step hotfix_team_codes.py                python scripts/hotfix_team_codes.py
+          # run_step update_game_time.py                 python scripts/update_game_time.py
+          # run_step finalize_todaysgames_types_and_pf.py  python scripts/finalize_todaysgames_types_and_pf.py
           run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --game-date "$(date -u +%Y%m%d)"
