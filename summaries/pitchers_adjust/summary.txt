@@ -1,19 +1,19 @@
-===== RUN TIMESTAMP: 2025-09-02 10:27:59 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-02 10:36:56 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-02 10:27:57 AM EDT]
-✅ python succeeded [2025-09-02 10:27:58 AM EDT]
-✅ python succeeded [2025-09-02 10:27:58 AM EDT]
-✅ python succeeded [2025-09-02 10:27:59 AM EDT]
-✅ python succeeded [2025-09-02 10:27:59 AM EDT]
+✅ python succeeded [2025-09-02 10:36:55 AM EDT]
+✅ python succeeded [2025-09-02 10:36:55 AM EDT]
+❌ python failed [2025-09-02 10:36:55 AM EDT]
+✅ python succeeded [2025-09-02 10:36:56 AM EDT]
+✅ python succeeded [2025-09-02 10:36:56 AM EDT]
 
 ===== LOG =====
-▶️ START: normalize_pitcher_weather_outputs.py (2025-09-02 10:27:56 AM EDT)
-[main ffecd209] Normalize pitchers before weather adjustment
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-02 10:36:54 AM EDT)
+[main fade4aed] Normalize pitchers before weather adjustment
 Committed normalization stage outputs.
-⏹️ END: python (2025-09-02 10:27:57 AM EDT)
+⏹️ END: python (2025-09-02 10:36:55 AM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment.py (2025-09-02 10:27:57 AM EDT)
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-02 10:36:55 AM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -26,45 +26,50 @@ Changes not staged for commit:
 
 no changes added to commit (use "git add" and/or "git commit -a")
 Git error: Command '['git', 'commit', '-m', 'Apply pitcher weather factor by game_id']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-02 10:27:58 AM EDT)
+⏹️ END: python (2025-09-02 10:36:55 AM EDT)
 
-▶️ START: apply_pitcher_park_adjustment.py (2025-09-02 10:27:58 AM EDT)
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-02 10:36:55 AM EDT)
+⏹️ END: python (2025-09-02 10:36:55 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-02 10:36:55 AM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/errors.txt
 	modified:   summaries/pitchers_adjust/log.txt
 	modified:   summaries/pitchers_adjust/status.txt
 	modified:   summaries/pitchers_adjust/summary.txt
 
 no changes added to commit (use "git add" and/or "git commit -a")
-✅ Wrote data/adjusted/pitchers_home_park.csv (8 rows)
-📝 Log written to log_pitchers_home_park.txt
-✅ Wrote data/adjusted/pitchers_away_park.csv (3 rows)
-📝 Log written to log_pitchers_away_park.txt
-⚠️ Git operation failed: Command '['git', 'commit', '-m', 'Apply pitcher park adjustments (game_id merge only)']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-02 10:27:58 AM EDT)
+⏹️ END: python (2025-09-02 10:36:56 AM EDT)
 
-▶️ START: combine_pitcher_weather_park_home.py (2025-09-02 10:27:58 AM EDT)
-[main b37581d0] Combine pitcher weather+park (home) on player_id+game_id
- 2 files changed, 19 insertions(+), 2 deletions(-)
-⏹️ END: python (2025-09-02 10:27:59 AM EDT)
-
-▶️ START: combine_pitcher_weather_park_away.py (2025-09-02 10:27:59 AM EDT)
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-02 10:36:56 AM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/errors.txt
 	modified:   summaries/pitchers_adjust/log.txt
 	modified:   summaries/pitchers_adjust/status.txt
 	modified:   summaries/pitchers_adjust/summary.txt
 
 no changes added to commit (use "git add" and/or "git commit -a")
-⏹️ END: python (2025-09-02 10:27:59 AM EDT)
+⏹️ END: python (2025-09-02 10:36:56 AM EDT)
 
 
 ===== ERRORS =====
+❌ python ERROR [2025-09-02 10:36:55 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_pitcher_park_adjustment.py", line 131, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_pitcher_park_adjustment.py", line 122, in main
+    adj_home, log_home = apply_ark(home, games, "home")  # type: ignore[name-defined]
+NameError: name 'apply_ark' is not defined. Did you mean: 'apply_park'?
+
+---
+
