@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # /home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py
-
 import pandas as pd
 from pathlib import Path
 
@@ -18,21 +17,19 @@ def _require(df: pd.DataFrame, cols: list[str], where: str) -> None:
     if miss:
         raise ValueError(f"{where}: missing columns {miss}")
 
-def _as_key(series: pd.Series) -> pd.Series:
-    return series.astype("string").fillna("").astype(str)
+def _as_key(s: pd.Series) -> pd.Series:
+    return s.astype("string").fillna("").astype(str)
 
 def _attach_weather_by_game(batters: pd.DataFrame, wx: pd.DataFrame) -> pd.DataFrame:
-    _require(batters, ["game_id", "date", "team", "woba"], "batters input")
+    _require(batters, ["game_id", "team", "woba"], "batters input")
     b = batters.copy()
     b["game_id"] = _as_key(b["game_id"])
-    b["date"]    = _as_key(b["date"])
 
-    _require(wx, ["game_id", "date"], WEATHER_FILE)
+    _require(wx, ["game_id"], WEATHER_FILE)
     w = wx.copy()
     w["game_id"] = _as_key(w["game_id"])
-    w["date"]    = _as_key(w["date"])
 
-    out = b.merge(w, on=["game_id", "date"], how="left")
+    out = b.merge(w, on=["game_id"], how="left")
 
     woba_num = pd.to_numeric(out["woba"], errors="coerce")
     out["adj_woba_weather"] = woba_num
@@ -47,19 +44,15 @@ def _attach_weather_by_game(batters: pd.DataFrame, wx: pd.DataFrame) -> pd.DataF
     return out
 
 def _write_log(df: pd.DataFrame, path: str) -> None:
-    if "last_name, first_name" not in df.columns:
-        return
-    if "adj_woba_weather" not in df.columns:
+    if "last_name, first_name" not in df.columns or "adj_woba_weather" not in df.columns:
         return
     top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
     with open(path, "w") as f:
         for _, r in top5.iterrows():
             try:
-                f.write(f"{r['last_name, first_name']} - {r['team']} - "
-                        f"{float(r['adj_woba_weather']):.3f}\n")
+                f.write(f"{r['last_name, first_name']} - {r.get('team','')} - {float(r['adj_woba_weather']):.3f}\n")
             except Exception:
-                f.write(f"{r['last_name, first_name']} - {r['team']} - "
-                        f"{r['adj_woba_weather']}\n")
+                f.write(f"{r['last_name, first_name']} - {r.get('team','')} - {r['adj_woba_weather']}\n")
 
 def main():
     bh = pd.read_csv(BATTERS_HOME, dtype=str)
