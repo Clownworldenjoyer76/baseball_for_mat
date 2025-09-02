@@ -1,65 +1,57 @@
 #!/usr/bin/env python3
+# /home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py
 """
-Apply park-factor adjustment to batter wOBA using manual park factors.
-
-Inputs
-- data/adjusted/batters_home.csv
-- data/adjusted/batters_away.csv
-- data/raw/todaysgames_normalized.csv   (contains home_team_id, away_team_id)
-- data/manual/stadium_master.csv        (team_id, Park Factor)
-
-Outputs
-- data/adjusted/batters_home_park.csv
-- data/adjusted/batters_away_park.csv
+Adjust batter wOBA using Park Factor by host team_id.
 """
 import pandas as pd
 from pathlib import Path
 
 BH = Path("data/adjusted/batters_home.csv")
 BA = Path("data/adjusted/batters_away.csv")
-G  = Path("data/raw/todaysgames_normalized.csv")
-ST = Path("data/manual/stadium_master.csv")
+G  = Path("data/raw/todaysgames_normalized.csv")     # home_team_id, away_team_id
+ST = Path("data/manual/stadium_master.csv")          # team_id, Park Factor
 
 OUT_H = Path("data/adjusted/batters_home_park.csv")
 OUT_A = Path("data/adjusted/batters_away_park.csv")
 
 def _prep_games():
-    g = pd.read_csv(G)
-    return g[["home_team_id","away_team_id","date"]]
+    g = pd.read_csv(G, dtype=str)
+    req = ["home_team_id","away_team_id"]
+    miss = [c for c in req if c not in g.columns]
+    if miss:
+        raise KeyError(f"todaysgames_normalized missing {miss}")
+    return g[["home_team_id","away_team_id"]]
 
 def _attach(df: pd.DataFrame, side: str) -> pd.DataFrame:
     games = _prep_games()
-    stad  = pd.read_csv(ST)[["team_id","Park Factor"]]
+    stad  = pd.read_csv(ST, dtype=str)[["team_id","Park Factor"]]
+
+    if "team_id" not in df.columns:
+        raise KeyError("batters input missing team_id")
 
     if side == "home":
-        # join batter team_id to games.home_team_id
-        x = df.merge(games[["home_team_id","date"]],
-                     left_on="team_id", right_on="home_team_id", how="left")
+        x = df.merge(games[["home_team_id"]], left_on="team_id", right_on="home_team_id", how="left")
         host_id_col = "home_team_id"
     else:
-        # join batter team_id to games.away_team_id, map to host home_team_id
-        x = df.merge(games[["away_team_id","home_team_id","date"]],
+        x = df.merge(games[["away_team_id","home_team_id"]],
                      left_on="team_id", right_on="away_team_id", how="left")
         host_id_col = "home_team_id"
 
-    # bring Park Factor by host team_id
     x = x.merge(stad, left_on=host_id_col, right_on="team_id", how="left", suffixes=("",""))
 
-    # ensure woba exists
     if "woba" not in x.columns:
         x["woba"] = pd.to_numeric(x.get("xwoba", 0), errors="coerce")
 
     pf = pd.to_numeric(x["Park Factor"], errors="coerce")
     x["adj_woba_park"] = pd.to_numeric(x["woba"], errors="coerce") * (pf / 100.0)
 
-    # housekeeping
     drop_cols = [c for c in ["home_team_id","away_team_id","team_id"] if c in x.columns and c not in df.columns]
     x = x.drop(columns=drop_cols)
     return x
 
 def main():
-    bh = pd.read_csv(BH)
-    ba = pd.read_csv(BA)
+    bh = pd.read_csv(BH, dtype=str)
+    ba = pd.read_csv(BA, dtype=str)
 
     out_h = _attach(bh, "home")
     out_a = _attach(ba, "away")
