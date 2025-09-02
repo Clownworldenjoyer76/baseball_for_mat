@@ -18,10 +18,17 @@ def _require(df: pd.DataFrame, cols: list[str], where: str) -> None:
         raise ValueError(f"{where}: missing columns {miss}")
 
 def _as_key(s: pd.Series) -> pd.Series:
-    return s.astype("string").fillna("").astype(str)
+    return s.astype("string").fillna("")
+
+def _get_woba(df: pd.DataFrame) -> pd.Series:
+    if "woba" in df.columns:
+        return pd.to_numeric(df["woba"], errors="coerce")
+    if "xwoba" in df.columns:
+        return pd.to_numeric(df["xwoba"], errors="coerce")
+    raise ValueError("batters input: missing 'woba' and 'xwoba'")
 
 def _attach_weather_by_game(batters: pd.DataFrame, wx: pd.DataFrame) -> pd.DataFrame:
-    _require(batters, ["game_id", "team", "woba"], "batters input")
+    _require(batters, ["game_id"], "batters input")
     b = batters.copy()
     b["game_id"] = _as_key(b["game_id"])
 
@@ -29,9 +36,9 @@ def _attach_weather_by_game(batters: pd.DataFrame, wx: pd.DataFrame) -> pd.DataF
     w = wx.copy()
     w["game_id"] = _as_key(w["game_id"])
 
-    out = b.merge(w, on=["game_id"], how="left")
+    out = b.merge(w, on="game_id", how="left")
 
-    woba_num = pd.to_numeric(out["woba"], errors="coerce")
+    woba_num = _get_woba(out)
     out["adj_woba_weather"] = woba_num
 
     if "temperature" in out.columns:
