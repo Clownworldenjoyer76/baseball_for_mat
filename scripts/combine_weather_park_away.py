@@ -10,9 +10,11 @@ def load_data():
     print(f"🔹 Weather rows before dedup: {len(weather)}")
     print(f"🔹 Park rows before dedup: {len(park)}")
 
-    # Drop duplicates before merging
-    weather = weather.drop_duplicates(subset=["last_name, first_name", "team"])
-    park = park.drop_duplicates(subset=["last_name, first_name", "team"])
+    # Drop duplicates on player_id before merging
+    if "player_id" in weather.columns:
+        weather = weather.drop_duplicates(subset=["player_id"])
+    if "player_id" in park.columns:
+        park = park.drop_duplicates(subset=["player_id"])
 
     print(f"🔹 Weather rows after dedup: {len(weather)}")
     print(f"🔹 Park rows after dedup: {len(park)}")
@@ -22,10 +24,13 @@ def load_data():
 def merge_and_combine(weather, park):
     print("🔀 Merging weather and park adjustment files...")
 
+    if "player_id" not in weather.columns or "player_id" not in park.columns:
+        raise ValueError("player_id column missing in one of the input files")
+
     merged = pd.merge(
         weather,
-        park[["last_name, first_name", "team", "adj_woba_park"]],
-        on=["last_name, first_name", "team"],
+        park[["player_id", "adj_woba_park"]],
+        on="player_id",
         how="inner"
     )
 
@@ -33,7 +38,7 @@ def merge_and_combine(weather, park):
     print("📊 Columns in merged data:", merged.columns.tolist())
 
     if len(merged) == 0:
-        print("⚠️ No rows matched between weather and park files. Check name/team formatting.")
+        print("⚠️ No rows matched between weather and park files. Check player_id values.")
     elif len(merged) < min(len(weather), len(park)) * 0.9:
         print("⚠️ Significant row loss detected in merge. Manual inspection recommended.")
 
@@ -55,7 +60,7 @@ def save_output(df):
     print(f"💾 Saved combined file to: {output_file}")
 
     log_file = out_path / "log_combined_away.txt"
-    top5 = df[["last_name, first_name", "team", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]] \
+    top5 = df[["player_id", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]] \
         .sort_values(by="adj_woba_combined", ascending=False).head(5)
 
     with open(log_file, "w") as f:
