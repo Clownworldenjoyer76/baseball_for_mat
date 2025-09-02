@@ -62,6 +62,9 @@ jobs:
             echo; echo "===== ERRORS =====";  cat "$ERR"
           } > "$SUM"
 
+      - name: Finalize weather outputs
+        run: python scripts/finalize_weather_outputs.py
+
       - name: Commit stage outputs
         run: |
           git add data/weather_input.csv || true
