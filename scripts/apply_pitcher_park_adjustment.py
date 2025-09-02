@@ -1,5 +1,3 @@
-# scripts/apply_pitcher_park_adjustment.py
-
 import pandas as pd
 from pathlib import Path
 import subprocess
@@ -16,13 +14,12 @@ OUTPUT_AWAY_FILE = "data/adjusted/pitchers_away_park.csv"
 LOG_HOME = "log_pitchers_home_park.txt"
 LOG_AWAY = "log_pitchers_away_park.txt"
 
-# Stats to scale by park factor (percent-like; e.g., 101, 98, etc.)
-# NOTE: 'woba' is intentionally NOT mutated. We compute adj_woba_park from the original.
+# Stats to scale by park factor (percent-like; data provides Park Factor such as 101, 98, etc.)
 STATS_TO_ADJUST = [
     "home_run",
     "slg_percent",
     "xslg",
-    # "woba",  # do not overwrite original woba
+    "woba",
     "xwoba",
     "barrel_batted_rate",
     "hard_hit_percent",
@@ -53,25 +50,20 @@ def apply_park(df_pitchers: pd.DataFrame, df_games: pd.DataFrame, side: str):
     if missing_pf:
         log.append(f"⚠️ {missing_pf} rows missing park_factor after merge on game_id")
 
-    # Capture original woba before any scaling
-    original_woba = pd.to_numeric(merged.get("woba"), errors="coerce")
-
-    # Scale selected stats by park_factor/100 (leave woba untouched)
     scale = merged["park_factor"] / 100.0
     for col in STATS_TO_ADJUST:
         if col in merged.columns:
-            merged[col] = pd.to_numeric(merged[col], errors="coerce") * scale
+            merged[col] = pd.to_numeric(merged[col], errors="coerce")
+            merged[col] = merged[col] * scale
         else:
             log.append(f"ℹ️ '{col}' not present in input — skipped")
 
-    # Compute adj_woba_park from the original woba (not scaled)
-    if original_woba is not None and not original_woba.isna().all():
-        merged["adj_woba_park"] = original_woba * scale
+    if "woba" in merged.columns:
+        merged["adj_woba_park"] = merged["woba"]
     else:
         merged["adj_woba_park"] = pd.NA
         log.append("❌ 'woba' missing — 'adj_woba_park' set to NA")
 
-    # Top-5 log by adj_woba_park (if available)
     try:
         if merged["adj_woba_park"].notna().any():
             top5_cols = [c for c in ["name", "team", "adj_woba_park", "game_id", "park_factor"] if c in merged.columns]
@@ -96,13 +88,10 @@ def save_output(df: pd.DataFrame, log_lines, file_path: str, log_path: str):
 
 def git_commit_and_push():
     try:
-        subprocess.run(
-            ["git", "add", OUTPUT_HOME_FILE, OUTPUT_AWAY_FILE, LOG_HOME, LOG_AWAY],
-            check=True
-        )
+        subprocess.run(["git", "add", "data/adjusted/pitchers_*_park.csv", "log_pitchers_*_park.txt"], check=True)
         status = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if status.strip():
-            subprocess.run(["git", "commit", "-m", "Apply pitcher park adjustments (preserve woba; compute adj_woba_park separately)"], check=True)
+            subprocess.run(["git", "commit", "-m", "Apply pitcher park adjustments (game_id merge only)"], check=True)
             subprocess.run(["git", "push"], check=True)
             print("✅ Git commit and push complete for pitcher park adjustments")
         else:
@@ -119,8 +108,8 @@ def main():
         print(f"❌ Load error: {e}")
         return
 
-    adj_home, log_home = apply_ark(home, games, "home")  # type: ignore[name-defined]
-    adj_away, log_away = apply_ark(away, games, "away")  # type: ignore[name-defined]
+    adj_home, log_home = apply_park(home, games, "home")
+    adj_away, log_away = apply_park(away, games, "away")
 
     save_output(adj_home, log_home, OUTPUT_HOME_FILE, LOG_HOME)
     save_output(adj_away, log_away, OUTPUT_AWAY_FILE, LOG_AWAY)
