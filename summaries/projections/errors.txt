@@ -1,24 +1,20 @@
-❌ python ERROR [2025-08-31 10:55:38 AM EDT]:
+❌ python ERROR [2025-09-02 07:50:12 AM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 143, in <module>
-    project_prep()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 97, in project_prep
-    df_startingpitchers = df_startingpitchers.merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
-    return op.get_result(copy=copy)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
-    result = self._reindex_and_concat(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
-    llabels, rlabels = _items_overlap_with_suffix(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
-    raise MergeError(
-pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'weather_factor_x'} is not allowed.
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/align_weather_team_keys.py", line 53, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/align_weather_team_keys.py", line 46, in main
+    out = df[["home_team", "away_team"]].copy()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6261, in _raise_if_missing
+    raise KeyError(f"None of [{key}] are in the [{axis_name}]")
+KeyError: "None of [Index(['home_team', 'away_team'], dtype='object')] are in the [columns]"
 
 ---
 
-❌ python ERROR [2025-08-31 10:55:40 AM EDT]:
+❌ python ERROR [2025-09-02 07:50:12 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
