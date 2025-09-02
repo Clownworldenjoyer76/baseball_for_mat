@@ -1,77 +1,105 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-inject_pitcher_ids_into_games.py
-
-Inject pitcher_home_id and pitcher_away_id into todaysgames_normalized.csv
-using player_team_master.csv and fallback rosters.
-"""
+# scripts/inject_pitcher_ids_into_games.py
 
 import pandas as pd
 from pathlib import Path
+import glob
 
 GAMES_FILE = Path("data/raw/todaysgames_normalized.csv")
 MASTER_FILE = Path("data/processed/player_team_master.csv")
-ROSTER_DIR = Path("data/team_csvs")
-OUTPUT_FILE = GAMES_FILE  # overwrite in place
+TEAM_PITCHERS_GLOB = "data/team_csvs/pitchers_*.csv"
 
-# Explicit overrides for known problem cases
-OVERRIDE_IDS = {
+# Hard overrides (authoritative)
+OVERRIDES = {
     "Richardson, Simeon Woods": 680573,
     "Gipson-Long, Sawyer": 687830,
+    "Berríos, José": 621244,
 }
 
-def load_master():
-    if not MASTER_FILE.exists():
-        raise FileNotFoundError(f"{MASTER_FILE} not found")
-    df = pd.read_csv(MASTER_FILE)
-    return df[["name", "player_id"]]
-
-def load_rosters():
-    roster_files = ROSTER_DIR.glob("pitchers_*.csv")
-    frames = []
-    for f in roster_files:
-        try:
-            df = pd.read_csv(f)
-            if {"name", "player_id"}.issubset(df.columns):
-                frames.append(df[["name", "player_id"]])
-        except Exception:
-            continue
-    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["name", "player_id"])
-
-def build_lookup():
-    master = load_master()
-    rosters = load_rosters()
-    combined = pd.concat([master, rosters], ignore_index=True).drop_duplicates(subset=["name"])
-    return dict(zip(combined["name"], combined["player_id"]))
-
-def main():
+def load_games() -> pd.DataFrame:
     if not GAMES_FILE.exists():
         raise FileNotFoundError(f"{GAMES_FILE} not found")
-    games = pd.read_csv(GAMES_FILE)
+    df = pd.read_csv(GAMES_FILE)
+    req = {"game_id", "home_team", "away_team", "pitcher_home", "pitcher_away"}
+    missing = req - set(df.columns)
+    if missing:
+        raise RuntimeError(f"INSUFFICIENT INFORMATION: {GAMES_FILE} missing columns: {sorted(missing)}")
+    # Ensure id columns exist for passthrough
+    for col in ("pitcher_home_id", "pitcher_away_id"):
+        if col not in df.columns:
+            df[col] = pd.NA
+    return df
 
-    lookup = build_lookup()
+def build_name_to_id() -> dict:
+    name_to_id: dict[str, int] = {}
 
-    def resolve_id(name, current_id):
-        # Preserve existing if present
-        if pd.notna(current_id) and str(current_id).strip() != "":
-            return current_id
-        # Override map first
-        if name in OVERRIDE_IDS:
-            return OVERRIDE_IDS[name]
-        # Lookup by name
-        return lookup.get(name, pd.NA)
+    # 1) master file
+    if MASTER_FILE.exists():
+        mf = pd.read_csv(MASTER_FILE)
+        if {"name", "player_id"}.issubset(mf.columns):
+            mf = mf.dropna(subset=["name", "player_id"])
+            for _, r in mf.iterrows():
+                try:
+                    pid = int(pd.to_numeric(r["player_id"], errors="coerce"))
+                except Exception:
+                    continue
+                name_to_id[str(r["name"]).strip()] = pid
 
+    # 2) team pitchers files
+    for p in glob.glob(TEAM_PITCHERS_GLOB):
+        try:
+            df = pd.read_csv(p)
+        except Exception:
+            continue
+        if {"name", "player_id"}.issubset(df.columns):
+            df = df.dropna(subset=["name", "player_id"])
+            for _, r in df.iterrows():
+                try:
+                    pid = int(pd.to_numeric(r["player_id"], errors="coerce"))
+                except Exception:
+                    continue
+                name_to_id[str(r["name"]).strip()] = pid
+
+    # 3) overrides (authoritative)
+    name_to_id.update(OVERRIDES)
+
+    return name_to_id
+
+def resolve_id(pitcher_name: str, existing_id):
+    # Leave "Undecided" as missing
+    if isinstance(pitcher_name, str) and pitcher_name.strip().lower() == "undecided":
+        return pd.NA
+
+    # If already present, keep
+    if pd.notna(existing_id):
+        return existing_id
+
+    # Lookup by exact name
+    pid = NAME_TO_ID.get(str(pitcher_name).strip())
+    return pid if pid is not None else pd.NA
+
+def main():
+    games = load_games()
+    global NAME_TO_ID
+    NAME_TO_ID = build_name_to_id()
+
+    # Inject IDs
     games["pitcher_home_id"] = games.apply(
-        lambda r: resolve_id(r["pitcher_home"], r.get("pitcher_home_id", None)), axis=1
+        lambda r: resolve_id(r["pitcher_home"], r.get("pitcher_home_id", pd.NA)), axis=1
     )
     games["pitcher_away_id"] = games.apply(
-        lambda r: resolve_id(r["pitcher_away"], r.get("pitcher_away_id", None)), axis=1
+        lambda r: resolve_id(r["pitcher_away"], r.get("pitcher_away_id", pd.NA)), axis=1
     )
 
-    games.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Injected pitcher IDs -> {OUTPUT_FILE} (home_id non-null: {games['pitcher_home_id'].notna().sum()}, away_id non-null: {games['pitcher_away_id'].notna().sum()})")
+    # Normalize dtype to pandas nullable Int64
+    for col in ("pitcher_home_id", "pitcher_away_id"):
+        games[col] = pd.to_numeric(games[col], errors="coerce").astype("Int64")
+
+    # Preserve all passthrough columns and write back
+    GAMES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    games.to_csv(GAMES_FILE, index=False)
 
 if __name__ == "__main__":
     main()
