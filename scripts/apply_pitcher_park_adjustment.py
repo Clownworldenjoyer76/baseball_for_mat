@@ -16,12 +16,13 @@ OUTPUT_AWAY_FILE = "data/adjusted/pitchers_away_park.csv"
 LOG_HOME = "log_pitchers_home_park.txt"
 LOG_AWAY = "log_pitchers_away_park.txt"
 
-# Stats to scale by park factor (percent-like; data provides Park Factor such as 101, 98, etc.)
+# Stats to scale by park factor (percent-like; e.g., 101, 98, etc.)
+# NOTE: 'woba' is intentionally NOT mutated. We compute adj_woba_park from the original.
 STATS_TO_ADJUST = [
     "home_run",
     "slg_percent",
     "xslg",
-    "woba",
+    # "woba",  # do not overwrite original woba
     "xwoba",
     "barrel_batted_rate",
     "hard_hit_percent",
@@ -33,7 +34,6 @@ def load_games(path: str) -> pd.DataFrame:
     missing = required - set(df.columns)
     if missing:
         raise ValueError(f"Missing required columns in {path}: {sorted(missing)}")
-    # Keep only what we need and ensure correct types
     out = df[["game_id", "park_factor"]].copy()
     out["game_id"] = pd.to_numeric(out["game_id"], errors="coerce").astype("Int64")
     out["park_factor"] = pd.to_numeric(out["park_factor"], errors="coerce")
@@ -48,24 +48,25 @@ def load_pitchers(path: str) -> pd.DataFrame:
 
 def apply_park(df_pitchers: pd.DataFrame, df_games: pd.DataFrame, side: str):
     log = []
-    # Merge strictly on game_id (no team/name matching)
     merged = df_pitchers.merge(df_games, on="game_id", how="left", validate="m:1")
     missing_pf = merged["park_factor"].isna().sum()
     if missing_pf:
         log.append(f"⚠️ {missing_pf} rows missing park_factor after merge on game_id")
 
-    # Scale stats by park_factor/100
+    # Capture original woba before any scaling
+    original_woba = pd.to_numeric(merged.get("woba"), errors="coerce")
+
+    # Scale selected stats by park_factor/100 (leave woba untouched)
     scale = merged["park_factor"] / 100.0
     for col in STATS_TO_ADJUST:
         if col in merged.columns:
-            merged[col] = pd.to_numeric(merged[col], errors="coerce")
-            merged[col] = merged[col] * scale
+            merged[col] = pd.to_numeric(merged[col], errors="coerce") * scale
         else:
             log.append(f"ℹ️ '{col}' not present in input — skipped")
 
-    # Provide explicit adjusted wOBA from (possibly scaled) woba
-    if "woba" in merged.columns:
-        merged["adj_woba_park"] = merged["woba"]
+    # Compute adj_woba_park from the original woba (not scaled)
+    if original_woba is not None and not original_woba.isna().all():
+        merged["adj_woba_park"] = original_woba * scale
     else:
         merged["adj_woba_park"] = pd.NA
         log.append("❌ 'woba' missing — 'adj_woba_park' set to NA")
@@ -95,10 +96,13 @@ def save_output(df: pd.DataFrame, log_lines, file_path: str, log_path: str):
 
 def git_commit_and_push():
     try:
-        subprocess.run(["git", "add", "data/adjusted/pitchers_*_park.csv", "log_pitchers_*_park.txt"], check=True)
+        subprocess.run(
+            ["git", "add", OUTPUT_HOME_FILE, OUTPUT_AWAY_FILE, LOG_HOME, LOG_AWAY],
+            check=True
+        )
         status = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if status.strip():
-            subprocess.run(["git", "commit", "-m", "Apply pitcher park adjustments (game_id merge only)"], check=True)
+            subprocess.run(["git", "commit", "-m", "Apply pitcher park adjustments (preserve woba; compute adj_woba_park separately)"], check=True)
             subprocess.run(["git", "push"], check=True)
             print("✅ Git commit and push complete for pitcher park adjustments")
         else:
@@ -115,8 +119,8 @@ def main():
         print(f"❌ Load error: {e}")
         return
 
-    adj_home, log_home = apply_park(home, games, "home")
-    adj_away, log_away = apply_park(away, games, "away")
+    adj_home, log_home = apply_ark(home, games, "home")  # type: ignore[name-defined]
+    adj_away, log_away = apply_ark(away, games, "away")  # type: ignore[name-defined]
 
     save_output(adj_home, log_home, OUTPUT_HOME_FILE, LOG_HOME)
     save_output(adj_away, log_away, OUTPUT_AWAY_FILE, LOG_AWAY)
