@@ -1,52 +1,65 @@
 import pandas as pd
 from pathlib import Path
-from unidecode import unidecode
 import subprocess
+import sys
 
-TEAM_MASTER = "data/Data/team_name_master.csv"
-PITCHERS_HOME_IN = "data/adjusted/pitchers_home.csv"
-PITCHERS_AWAY_IN = "data/adjusted/pitchers_away.csv"
-PITCHERS_HOME_OUT = "data/adjusted/pitchers_home.csv"
-PITCHERS_AWAY_OUT = "data/adjusted/pitchers_away.csv"
+# Inputs/outputs
+STADIUM_MASTER = Path("data/manual/stadium_master.csv")
+PITCHERS_HOME_IN = Path("data/adjusted/pitchers_home.csv")
+PITCHERS_AWAY_IN = Path("data/adjusted/pitchers_away.csv")
+PITCHERS_HOME_OUT = Path("data/adjusted/pitchers_home.csv")
+PITCHERS_AWAY_OUT = Path("data/adjusted/pitchers_away.csv")
 
-def normalize_name(name):
-    if pd.isna(name): return name
-    name = unidecode(name)
-    name = name.lower().strip()
-    name = ' '.join(name.split())
-    name = ','.join(part.strip() for part in name.split(','))
-    return name.title()
+# Required schemas
+REQUIRED_STADIUM_COLS = {
+    "team_id", "team_name", "venue", "city", "state", "timezone",
+    "is_dome", "latitude", "longitude", "home_team"
+}
+REQUIRED_PITCHER_ID_COLS = {"player_id", "game_id"}
 
-def normalize_team(team, valid_teams):
-    if pd.isna(team): return team
-    team = unidecode(str(team)).strip()
-    matches = [vt for vt in valid_teams if vt.lower() == team.lower()]
-    return matches[0] if matches else team
+def fail(msg: str) -> None:
+    print(f"INSUFFICIENT INFORMATION: {msg}", file=sys.stderr)
+    sys.exit(1)
 
-def normalize_file(path_in, path_out, valid_teams):
-    df = pd.read_csv(path_in)
-    if "name" in df.columns:
-        df["name"] = df["name"].apply(normalize_name)
-    if "team" in df.columns:
-        df["team"] = df["team"].apply(lambda x: normalize_team(x, valid_teams))
-    if "home_team" in df.columns:
-        df["home_team"] = df["home_team"].apply(lambda x: normalize_team(x, valid_teams))
-    if "away_team" in df.columns:
-        df["away_team"] = df["away_team"].apply(lambda x: normalize_team(x, valid_teams))
-    df.to_csv(path_out, index=False)
+def validate_stadium_master(path: Path) -> None:
+    if not path.exists():
+        fail(f"Missing file: {path}")
+    df = pd.read_csv(path)
+    missing = REQUIRED_STADIUM_COLS.difference(df.columns)
+    if missing:
+        fail(f"{path} missing columns: {sorted(missing)}")
 
-def commit_outputs():
+def validate_pitcher_file_has_ids(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        fail(f"Missing file: {path}")
+    df = pd.read_csv(path)
+    missing = REQUIRED_PITCHER_ID_COLS.difference(df.columns)
+    if missing:
+        fail(f"{path} missing required ID columns: {sorted(missing)}")
+    return df
+
+def commit_outputs() -> None:
+    # Preserve workflow’s existing behavior
     subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
     subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-    subprocess.run(["git", "add", PITCHERS_HOME_OUT, PITCHERS_AWAY_OUT], check=True)
+    subprocess.run(["git", "add", str(PITCHERS_HOME_OUT), str(PITCHERS_AWAY_OUT)], check=True)
     subprocess.run(["git", "commit", "--allow-empty", "-m", "Normalize pitchers before weather adjustment"], check=True)
     subprocess.run(["git", "push"], check=True)
-    print("✅ Forced commit and push to repo.")
+    print("Committed normalization stage outputs.")
 
-def main():
-    teams = pd.read_csv(TEAM_MASTER)["team_name"].dropna().unique().tolist()
-    normalize_file(PITCHERS_HOME_IN, PITCHERS_HOME_OUT, teams)
-    normalize_file(PITCHERS_AWAY_IN, PITCHERS_AWAY_OUT, teams)
+def main() -> None:
+    # 1) Schema check only; no name/team normalization or matching
+    validate_stadium_master(STADIUM_MASTER)
+
+    # 2) Ensure we will march by IDs only
+    home_df = validate_pitcher_file_has_ids(PITCHERS_HOME_IN)
+    away_df = validate_pitcher_file_has_ids(PITCHERS_AWAY_IN)
+
+    # 3) Write back unchanged (pass-through)
+    home_df.to_csv(PITCHERS_HOME_OUT, index=False)
+    away_df.to_csv(PITCHERS_AWAY_OUT, index=False)
+
+    # 4) Commit (kept to match workflow expectations)
     commit_outputs()
 
 if __name__ == "__main__":
