@@ -1,4 +1,4 @@
-❌ python ERROR [2025-09-01 06:59:41 PM EDT]:
+❌ python ERROR [2025-09-02 07:08:37 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_weather_outputs.py", line 53, in <module>
     main()
@@ -15,6 +15,24 @@ Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
     handle = open(
 FileNotFoundError: [Errno 2] No such file or directory: 'data/Data/team_name_master.csv'
+
+---
+
+❌ python ERROR [2025-09-02 07:08:39 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/add_team_columns_to_weather.py", line 24, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/add_team_columns_to_weather.py", line 21, in main
+    create_weather_teams_file()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/add_team_columns_to_weather.py", line 14, in create_weather_teams_file
+    output_df = df[["home_team", "away_team"]]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6261, in _raise_if_missing
+    raise KeyError(f"None of [{key}] are in the [{axis_name}]")
+KeyError: "None of [Index(['home_team', 'away_team'], dtype='object')] are in the [columns]"
 
 ---
 
