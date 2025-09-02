@@ -1,62 +1,62 @@
-===== RUN TIMESTAMP: 2025-09-02 05:45:30 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-02 06:03:22 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-02 05:45:25 PM EDT]
-✅ python succeeded [2025-09-02 05:45:25 PM EDT]
-✅ python succeeded [2025-09-02 05:45:26 PM EDT]
-✅ python succeeded [2025-09-02 05:45:27 PM EDT]
-✅ python succeeded [2025-09-02 05:45:27 PM EDT]
-✅ python succeeded [2025-09-02 05:45:28 PM EDT]
-✅ python succeeded [2025-09-02 05:45:28 PM EDT]
-✅ python succeeded [2025-09-02 05:45:28 PM EDT]
-✅ python succeeded [2025-09-02 05:45:29 PM EDT]
-✅ python succeeded [2025-09-02 05:45:29 PM EDT]
-✅ python succeeded [2025-09-02 05:45:29 PM EDT]
-✅ python succeeded [2025-09-02 05:45:30 PM EDT]
+✅ python succeeded [2025-09-02 06:03:17 PM EDT]
+✅ python succeeded [2025-09-02 06:03:18 PM EDT]
+✅ python succeeded [2025-09-02 06:03:18 PM EDT]
+✅ python succeeded [2025-09-02 06:03:19 PM EDT]
+✅ python succeeded [2025-09-02 06:03:19 PM EDT]
+✅ python succeeded [2025-09-02 06:03:20 PM EDT]
+✅ python succeeded [2025-09-02 06:03:20 PM EDT]
+✅ python succeeded [2025-09-02 06:03:21 PM EDT]
+✅ python succeeded [2025-09-02 06:03:21 PM EDT]
+✅ python succeeded [2025-09-02 06:03:21 PM EDT]
+✅ python succeeded [2025-09-02 06:03:22 PM EDT]
+✅ python succeeded [2025-09-02 06:03:22 PM EDT]
 
 ===== LOG =====
-▶️ START: normalize_names.py (2025-09-02 05:45:24 PM EDT)
+▶️ START: normalize_names.py (2025-09-02 06:03:17 PM EDT)
 ✅ Batters normalized: 156 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 109 → data/normalized/pitchers_normalized.csv
-⏹️ END: python (2025-09-02 05:45:25 PM EDT)
+⏹️ END: python (2025-09-02 06:03:17 PM EDT)
 
-▶️ START: tag_master_files.py (2025-09-02 05:45:25 PM EDT)
-⏹️ END: python (2025-09-02 05:45:25 PM EDT)
+▶️ START: tag_master_files.py (2025-09-02 06:03:17 PM EDT)
+⏹️ END: python (2025-09-02 06:03:18 PM EDT)
 
-▶️ START: validate_tagged_players.py (2025-09-02 05:45:25 PM EDT)
-⏹️ END: python (2025-09-02 05:45:26 PM EDT)
+▶️ START: validate_tagged_players.py (2025-09-02 06:03:18 PM EDT)
+⏹️ END: python (2025-09-02 06:03:18 PM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-09-02 05:45:26 PM EDT)
-⏹️ END: python (2025-09-02 05:45:27 PM EDT)
+▶️ START: deduplicate_normalized.py (2025-09-02 06:03:18 PM EDT)
+⏹️ END: python (2025-09-02 06:03:19 PM EDT)
 
-▶️ START: normalize_lineups.py (2025-09-02 05:45:27 PM EDT)
+▶️ START: normalize_lineups.py (2025-09-02 06:03:19 PM EDT)
 ✅ normalize_lineups.py completed: 839 rows written to data/raw/lineups_normalized.csv
-⏹️ END: python (2025-09-02 05:45:27 PM EDT)
+⏹️ END: python (2025-09-02 06:03:19 PM EDT)
 
-▶️ START: normalize_todays_games.py (2025-09-02 05:45:27 PM EDT)
+▶️ START: normalize_todays_games.py (2025-09-02 06:03:19 PM EDT)
 ✅ normalize_todays_games wrote 14 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: python (2025-09-02 05:45:28 PM EDT)
+⏹️ END: python (2025-09-02 06:03:20 PM EDT)
 
-▶️ START: inject_pitcher_ids_into_games.py (2025-09-02 05:45:28 PM EDT)
-✅ Injected pitcher IDs -> data/raw/todaysgames_normalized.csv (home_id non-null: 12, away_id non-null: 11)
-⏹️ END: python (2025-09-02 05:45:28 PM EDT)
+▶️ START: inject_pitcher_ids_into_games.py (2025-09-02 06:03:20 PM EDT)
+✅ Injected pitcher IDs -> data/raw/todaysgames_normalized.csv (home_id non-null: 12/14, away_id non-null: 12/14)
+⏹️ END: python (2025-09-02 06:03:20 PM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-09-02 05:45:28 PM EDT)
+▶️ START: fetch_mlb_ids.py (2025-09-02 06:03:20 PM EDT)
 ✅ fetch_mlb_ids: team_directory.csv schema validated.
-⏹️ END: python (2025-09-02 05:45:28 PM EDT)
+⏹️ END: python (2025-09-02 06:03:21 PM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-09-02 05:45:28 PM EDT)
-⏹️ END: python (2025-09-02 05:45:29 PM EDT)
+▶️ START: filter_stadium_metadata.py (2025-09-02 06:03:21 PM EDT)
+⏹️ END: python (2025-09-02 06:03:21 PM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-09-02 05:45:29 PM EDT)
-⏹️ END: python (2025-09-02 05:45:29 PM EDT)
+▶️ START: normalize_batter_team_names.py (2025-09-02 06:03:21 PM EDT)
+⏹️ END: python (2025-09-02 06:03:21 PM EDT)
 
-▶️ START: post_normalize_fixups.py (2025-09-02 05:45:29 PM EDT)
+▶️ START: post_normalize_fixups.py (2025-09-02 06:03:21 PM EDT)
 ✅ post_normalize_fixups complete (no game_id injected)
-⏹️ END: python (2025-09-02 05:45:29 PM EDT)
+⏹️ END: python (2025-09-02 06:03:22 PM EDT)
 
-▶️ START: fix_inputs_inject_stolen_base_pct.py (2025-09-02 05:45:29 PM EDT)
-⏹️ END: python (2025-09-02 05:45:30 PM EDT)
+▶️ START: fix_inputs_inject_stolen_base_pct.py (2025-09-02 06:03:22 PM EDT)
+⏹️ END: python (2025-09-02 06:03:22 PM EDT)
 
 
 ===== ERRORS =====
