@@ -1,105 +1,106 @@
+# scripts/apply_pitcher_weather_adjustment.py
+
+import os
 import pandas as pd
 import subprocess
-import os
 from pathlib import Path
 
-# File paths
+# Inputs
 PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
 PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
-WEATHER_FILE = "data/weather_adjustments.csv"
+WEATHER_FILE       = "data/weather_adjustments.csv"
+
+# Outputs
 OUTPUT_HOME = "data/adjusted/pitchers_home_weather.csv"
 OUTPUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
-LOG_HOME = "log_pitchers_home_weather.txt"
-LOG_AWAY = "log_pitchers_away_weather.txt"
+LOG_HOME    = "log_pitchers_home_weather.txt"
+LOG_AWAY    = "log_pitchers_away_weather.txt"
 
-def adjust_temperature(temp):
-    if pd.isna(temp):
-        return 1.0
-    if temp > 85:
-        return 1.02
-    elif temp < 60:
-        return 0.98
-    return 1.0
+REQUIRED_PITCHER_COLS = {"game_id", "woba"}
+REQUIRED_WEATHER_COLS = {"game_id", "weather_factor"}
 
-def apply_adjustment(df, team_col, weather_df, side):
-    if team_col in df.columns:
-        df[team_col] = df[team_col].astype(str).str.strip().str.upper()
-    if team_col in weather_df.columns:
-        weather_df[team_col] = weather_df[team_col].astype(str).str.strip().str.upper()
+def validate_columns(df: pd.DataFrame, required: set, source_path: str) -> None:
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"{source_path} missing columns: {missing}")
 
-    merged = df.merge(weather_df, left_on=team_col, right_on=team_col, how='left')
-
-    if 'temperature' not in merged.columns:
-        print(f"WARNING: 'temperature' column not found in merged dataframe for {side} team. Setting adj_woba_weather to None.")
-        merged['adj_woba_weather'] = None
-        merged['temperature'] = None
-    else:
-        merged['adj_woba_weather'] = merged['woba'] * merged['temperature'].apply(adjust_temperature)
+def apply_weather_factor(pitch_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd.DataFrame:
+    # Merge strictly on game_id
+    merged = pitch_df.merge(
+        weather_df[["game_id", "weather_factor"]],
+        on="game_id",
+        how="left",
+        validate="m:1"
+    )
+    # Compute adjusted wOBA using provided factor; if factor missing, result is NaN
+    merged["adj_woba_weather"] = merged["woba"] * merged["weather_factor"]
     return merged
 
-def log_top5(df, log_path, side):
-    Path(log_path).parent.mkdir(parents=True, exist_ok=True) 
+def log_top5(df: pd.DataFrame, log_path: str, label: str) -> None:
+    Path(log_path).parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w") as f:
-        f.write(f"Top 5 {side.capitalize()} Pitchers by adj_woba_weather:\n")
+        f.write(f"Top 5 {label} pitchers by adj_woba_weather\n")
         if "adj_woba_weather" in df.columns:
-            top5 = df.sort_values('adj_woba_weather', ascending=False).head(5)
-            cols_to_log = ["name", "team", "woba", "temperature", "adj_woba_weather"]
-            existing_cols = [col for col in cols_to_log if col in top5.columns]
-            f.write(top5[existing_cols].to_string(index=False))
+            top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
+            cols_pref = ["name", "player_id", "game_id", "woba", "weather_factor", "adj_woba_weather"]
+            cols = [c for c in cols_pref if c in top5.columns]
+            f.write(top5[cols].to_string(index=False))
         else:
-            f.write("No adjusted wOBA data available.")
+            f.write("adj_woba_weather not present")
 
-
-def git_commit_and_push():
+def git_commit_and_push() -> None:
     try:
-        subprocess.run(["git", "add", "."], check=True, capture_output=True, text=True)
-        
-        status_output = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
-        if not status_output.strip():
-            print("✅ No changes to commit.")
+        subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY, LOG_HOME, LOG_AWAY], check=True)
+        status = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
+        if status.strip():
+            subprocess.run(["git", "commit", "-m", "Apply pitcher weather factor by game_id"], check=True)
+            subprocess.run(["git", "push"], check=True)
         else:
-            subprocess.run(["git", "commit", "-m", "📝 Apply pitcher weather adjustment and update data files"], check=True, capture_output=True, text=True)
-            subprocess.run(["git", "push"], check=True, capture_output=True, text=True)
-            print("✅ Git commit and push complete for pitcher weather adjustments.")
-
+            print("No changes to commit.")
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Git commit/push failed for pitcher weather adjustments:")
-        print(f"  Command: {e.cmd}")
-        print(f"  Return Code: {e.returncode}")
-        print(f"  STDOUT: {e.stdout}")
-        print(f"  STDERR: {e.stderr}")
-    except Exception as e:
-        print(f"❌ An unexpected error occurred during Git operations for pitcher weather adjustments: {e}")
+        print(f"Git error: {e}")
 
-def main():
+def main() -> None:
+    # Load
+    if not os.path.exists(PITCHERS_HOME_FILE) or not os.path.exists(PITCHERS_AWAY_FILE) or not os.path.exists(WEATHER_FILE):
+        print("CANNOT COMPLY: Missing required input file(s). Expected:")
+        print(f" - {PITCHERS_HOME_FILE}")
+        print(f" - {PITCHERS_AWAY_FILE}")
+        print(f" - {WEATHER_FILE}")
+        return
+
     try:
-        home_df = pd.read_csv(PITCHERS_HOME_FILE)
-        away_df = pd.read_csv(PITCHERS_AWAY_FILE)
-        
-        if not os.path.exists(WEATHER_FILE):
-            print(f"❌ Error: WEATHER_FILE not found at {WEATHER_FILE}. Cannot apply weather adjustments.")
-            weather_df = pd.DataFrame() 
-        else:
-            weather_df = pd.read_csv(WEATHER_FILE)
-
-    except FileNotFoundError as e:
-        print(f"❌ File not found during initial loading: {e}")
-        return
+        home_df   = pd.read_csv(PITCHERS_HOME_FILE)
+        away_df   = pd.read_csv(PITCHERS_AWAY_FILE)
+        weather_df= pd.read_csv(WEATHER_FILE)
     except Exception as e:
-        print(f"❌ Error loading input files: {e}")
+        print(f"CANNOT COMPLY: Failed to read input CSVs: {e}")
         return
 
-    adjusted_home = apply_adjustment(home_df, "home_team", weather_df, "home") 
-    adjusted_away = apply_adjustment(away_df, "away_team", weather_df, "away")
+    # Validate columns
+    try:
+        validate_columns(home_df, REQUIRED_PITCHER_COLS, PITCHERS_HOME_FILE)
+        validate_columns(away_df, REQUIRED_PITCHER_COLS, PITCHERS_AWAY_FILE)
+        validate_columns(weather_df, REQUIRED_WEATHER_COLS, WEATHER_FILE)
+    except ValueError as e:
+        print(f"CANNOT COMPLY: {e}")
+        return
 
+    # Apply
+    adjusted_home = apply_weather_factor(home_df, weather_df)
+    adjusted_away = apply_weather_factor(away_df, weather_df)
+
+    # Save
     Path(OUTPUT_HOME).parent.mkdir(parents=True, exist_ok=True)
     adjusted_home.to_csv(OUTPUT_HOME, index=False)
     Path(OUTPUT_AWAY).parent.mkdir(parents=True, exist_ok=True)
     adjusted_away.to_csv(OUTPUT_AWAY, index=False)
 
+    # Logs
     log_top5(adjusted_home, LOG_HOME, "home")
     log_top5(adjusted_away, LOG_AWAY, "away")
 
+    # Commit
     git_commit_and_push()
 
 if __name__ == "__main__":
