@@ -36,10 +36,8 @@ def _attach_weather_by_game(batters: pd.DataFrame, wx: pd.DataFrame) -> pd.DataF
 
     if "temperature" in out.columns:
         t = pd.to_numeric(out["temperature"], errors="coerce")
-        hot = t.notna() & (t >= 85)
-        cold = t.notna() & (t <= 50)
-        out.loc[hot,  "adj_woba_weather"] = woba_num.loc[hot]  * 1.03
-        out.loc[cold, "adj_woba_weather"] = woba_num.loc[cold] * 0.97
+        out.loc[t >= 85, "adj_woba_weather"] = woba_num.loc[t >= 85] * 1.03
+        out.loc[t <= 50, "adj_woba_weather"] = woba_num.loc[t <= 50] * 0.97
 
     return out
 
@@ -49,10 +47,12 @@ def _write_log(df: pd.DataFrame, path: str) -> None:
     top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
     with open(path, "w") as f:
         for _, r in top5.iterrows():
+            name = r.get("last_name, first_name", "")
+            team = r.get("team", "")
             try:
-                f.write(f"{r['last_name, first_name']} - {r.get('team','')} - {float(r['adj_woba_weather']):.3f}\n")
+                f.write(f"{name} - {team} - {float(r['adj_woba_weather']):.3f}\n")
             except Exception:
-                f.write(f"{r['last_name, first_name']} - {r.get('team','')} - {r['adj_woba_weather']}\n")
+                f.write(f"{name} - {team} - {r['adj_woba_weather']}\n")
 
 def main():
     bh = pd.read_csv(BATTERS_HOME, dtype=str)
