@@ -1,20 +1,21 @@
-===== RUN TIMESTAMP: 2025-09-02 07:08:02 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-02 07:48:54 AM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-09-02 07:08:00 AM EDT]
-❌ python failed [2025-09-02 07:08:00 AM EDT]
-✅ python succeeded [2025-09-02 07:08:01 AM EDT]
-✅ python succeeded [2025-09-02 07:08:02 AM EDT]
+❌ python failed [2025-09-02 07:48:52 AM EDT]
+❌ python failed [2025-09-02 07:48:52 AM EDT]
+✅ python succeeded [2025-09-02 07:48:53 AM EDT]
+✅ python succeeded [2025-09-02 07:48:54 AM EDT]
 
 ===== LOG =====
-▶️ START: apply_weather_adjustment.py (2025-09-02 07:07:59 AM EDT)
-⏹️ END: python (2025-09-02 07:08:00 AM EDT)
+▶️ START: apply_weather_adjustment.py (2025-09-02 07:48:51 AM EDT)
+⏹️ END: python (2025-09-02 07:48:52 AM EDT)
 
-▶️ START: apply_park_adjustment.py (2025-09-02 07:08:00 AM EDT)
-⏹️ END: python (2025-09-02 07:08:00 AM EDT)
+▶️ START: apply_park_adjustment.py (2025-09-02 07:48:52 AM EDT)
+⏹️ END: python (2025-09-02 07:48:52 AM EDT)
 
-▶️ START: combine_weather_park_home.py (2025-09-02 07:08:00 AM EDT)
-[main df29b75e] Auto-commit: Combined home batter adjustments
+▶️ START: combine_weather_park_home.py (2025-09-02 07:48:52 AM EDT)
+[main 0650f579] Auto-commit: Combined home batter adjustments
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 📥 Loading input CSVs...
 🔹 Weather rows: 65
 🔹 Park rows: 65
@@ -24,10 +25,11 @@
 📝 Log written to: data/adjusted/log_combined_home.txt
 📤 Committing and pushing to repo...
 ✅ Git commit and push successful.
-⏹️ END: python (2025-09-02 07:08:01 AM EDT)
+⏹️ END: python (2025-09-02 07:48:53 AM EDT)
 
-▶️ START: combine_weather_park_away.py (2025-09-02 07:08:01 AM EDT)
-[main ff19ada7] Auto-commit: Combined away batter adjustments
+▶️ START: combine_weather_park_away.py (2025-09-02 07:48:53 AM EDT)
+[main e102cab3] Auto-commit: Combined away batter adjustments
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 📥 Loading input CSVs...
 🔹 Weather rows before dedup: 58
 🔹 Park rows before dedup: 58
@@ -40,11 +42,11 @@
 📝 Wrote top 5 log to: data/adjusted/log_combined_away.txt
 📤 Committing and pushing results...
 ✅ Git commit & push successful.
-⏹️ END: python (2025-09-02 07:08:02 AM EDT)
+⏹️ END: python (2025-09-02 07:48:54 AM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-02 07:08:00 AM EDT]:
+❌ python ERROR [2025-09-02 07:48:52 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
     main()
@@ -58,16 +60,16 @@ ValueError: batters input: missing columns ['date']
 
 ---
 
-❌ python ERROR [2025-09-02 07:08:00 AM EDT]:
+❌ python ERROR [2025-09-02 07:48:52 AM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 74, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 72, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 66, in main
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 64, in main
     out_h = _attach(bh, "home")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 35, in _attach
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 31, in _attach
     games = _prep_games()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 32, in _prep_games
-    return g[["home_team","away_team","home_team_id","away_team_id","date"]]
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 28, in _prep_games
+    return g[["home_team_id","away_team_id","date"]]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
     indexer = self.columns._get_indexer_strict(key, "columns")[1]
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
