@@ -3,15 +3,17 @@ import os
 import subprocess
 import pandas as pd
 
-GAMES_FILE = "/data/end_chain/cleaned/games_today_cleaned.csv"           # context (game_id, teams, game_time, pitchers)
-GAMES_ALT  = "/data/raw/todaysgames_normalized.csv"                      # fallback/extra context if needed
-BATTERS_FILE = "/data/Data/batters.csv"                                  # all batter metrics keyed by player_id
-AWR_FILE  = "/data/end_chain/first/raw/bat_awp_dirty.csv"                # player_id, game_id, adj_woba_*
-WEATHER_FILE = "/data/weather_adjustments.csv"                            # weather keyed by game_id
-OUT_DIR   = "/data/end_chain/final"
-OUT_FILE  = os.path.join(OUT_DIR, "finalbatawp.csv")
+# -------------------------------
+# Paths (RELATIVE; no leading "/")
+# -------------------------------
+AWR_FILE      = "data/end_chain/first/raw/bat_awp_dirty.csv"   # must have: player_id, game_id
+BATTERS_FILE  = "data/Data/batters.csv"                        # must have: player_id
+GAMES_FILE    = "data/raw/todaysgames_normalized.csv"          # must have: game_id
+WEATHER_FILE  = "data/weather_adjustments.csv"                 # must have: game_id
+OUT_DIR       = "data/end_chain/final"
+OUT_FILE      = os.path.join(OUT_DIR, "finalbatawp.csv")
 
-def _read_csv(path):
+def read_csv_safe(path):
     try:
         return pd.read_csv(path)
     except FileNotFoundError:
@@ -21,40 +23,59 @@ def _read_csv(path):
         print(f"❌ Error loading {path}: {e}")
         return None
 
-def _coerce_numeric(df, cols):
+def coerce_numeric(df, cols):
     for c in cols:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
 
-def main():
-    # Load inputs
-    awr = _read_csv(AWR_FILE)
-    bat = _read_csv(BATTERS_FILE)
-    games = _read_csv(GAMES_FILE)
-    games_alt = _read_csv(GAMES_ALT)
-    weather = _read_csv(WEATHER_FILE)
+def git_add_commit_push(filepath, message):
+    try:
+        subprocess.run(["git", "add", filepath], check=True)
+        # Commit only if there is something to commit
+        status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True)
+        if status.stdout.strip():
+            subprocess.run(["git", "commit", "-m", message], check=True)
+            subprocess.run(["git", "push"], check=True)
+            print("✅ Pushed to repository.")
+        else:
+            print("ℹ️ No changes to commit.")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Git operation failed: {e}")
 
+def main():
+    # Load inputs (assumption-free beyond keys)
+    awr = read_csv_safe(AWR_FILE)
+    bat = read_csv_safe(BATTERS_FILE)
+    games = read_csv_safe(GAMES_FILE)
+    weather = read_csv_safe(WEATHER_FILE)
+
+    # Hard-stop validations (keys only)
     if awr is None or bat is None:
         return
-
-    # Validate minimal required columns
-    req_awr = {"player_id", "game_id", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"}
-    missing_awr = req_awr - set(awr.columns)
-    if missing_awr:
-        print(f"❌ {AWR_FILE} missing columns: {sorted(missing_awr)}")
-        return
-
+    for req_col in ["player_id", "game_id"]:
+        if req_col not in awr.columns:
+            print(f"❌ {AWR_FILE} missing required column: {req_col}")
+            return
     if "player_id" not in bat.columns:
-        print(f"❌ {BATTERS_FILE} missing 'player_id'")
+        print(f"❌ {BATTERS_FILE} missing required column: player_id")
         return
+    if games is not None and "game_id" not in games.columns:
+        print(f"❌ {GAMES_FILE} missing required column: game_id")
+        games = None
+    if weather is not None and "game_id" not in weather.columns:
+        print(f"❌ {WEATHER_FILE} missing required column: game_id")
+        weather = None
 
-    # Normalize ids
-    awr = _coerce_numeric(awr, ["player_id", "game_id"])
-    bat = _coerce_numeric(bat, ["player_id"])
+    # Normalize ID types
+    awr = coerce_numeric(awr, ["player_id", "game_id"])
+    bat = coerce_numeric(bat, ["player_id"])
+    if games is not None:
+        games = coerce_numeric(games, ["game_id"])
+    if weather is not None:
+        weather = coerce_numeric(weather, ["game_id"])
 
-    # --- Merge 1: player-level batter metrics ---
-    # Keep all batter columns; AWR is the driver (left merge)
+    # Merge 1: player metrics on player_id (left join)
     merged = pd.merge(
         awr,
         bat,
@@ -63,65 +84,46 @@ def main():
         suffixes=("", "_bat")
     )
 
-    # --- Merge 2: game/team context on game_id ---
-    # Prefer cleaned games; if not available, fall back to normalized.
-    game_ctx = None
-    if games is not None and "game_id" in games.columns:
-        game_ctx = games.copy()
-    elif games_alt is not None and "game_id" in games_alt.columns:
-        game_ctx = games_alt.copy()
-
-    if game_ctx is not None:
-        # Select common context columns if present
-        wanted_game_cols = [
-            "game_id", "home_team", "away_team", "game_time",
-            "pitcher_home", "pitcher_away", "stadium", "location", "Park Factor", "time_of_day"
-        ]
-        have_game_cols = [c for c in wanted_game_cols if c in game_ctx.columns]
-        game_ctx = game_ctx[have_game_cols].drop_duplicates()
-
+    # Merge 2: team/game context on game_id (left join)
+    if games is not None:
+        game_cols = ["game_id"] + [c for c in games.columns if c != "game_id"]
         merged = pd.merge(
             merged,
-            game_ctx,
+            games[game_cols].drop_duplicates(subset=["game_id"]),
             on="game_id",
             how="left",
             suffixes=("", "_game")
         )
 
-    # --- Merge 3: weather on game_id ---
-    if weather is not None and "game_id" in weather.columns:
-        # Pass through all weather columns except those already present to avoid clobber
-        weather_cols = [c for c in weather.columns if c != "game_id"]
-        weather_use = ["game_id"] + weather_cols
+    # Merge 3: weather on game_id (left join)
+    if weather is not None:
+        wx_cols = ["game_id"] + [c for c in weather.columns if c != "game_id"]
+        overlap = set(wx_cols[1:]).intersection(set(merged.columns))
+        wx = weather[wx_cols].copy()
+        if overlap:
+            wx = wx.rename(columns={c: f"{c}_wx" for c in overlap})
         merged = pd.merge(
             merged,
-            weather[weather_use],
+            wx,
             on="game_id",
             how="left",
             suffixes=("", "_wx")
         )
 
-    # Deduplicate by (player_id, game_id) if accidental one-to-many joins occurred
-    # Keep the first occurrence deterministically
+    # Deduplicate on (player_id, game_id)
     before = len(merged)
     merged = merged.sort_values(["player_id", "game_id"]).drop_duplicates(subset=["player_id", "game_id"], keep="first")
-    after = len(merged)
-    if after < before:
-        print(f"ℹ️ Removed {before - after} duplicate rows on (player_id, game_id).")
+    removed = before - len(merged)
+    if removed > 0:
+        print(f"ℹ️ Removed {removed} duplicate rows on (player_id, game_id).")
 
-    # Output
+    # Write output
     os.makedirs(OUT_DIR, exist_ok=True)
     merged.to_csv(OUT_FILE, index=False)
     print(f"✅ Created {OUT_FILE} (rows={len(merged)})")
 
-    # Git commit/push
-    try:
-        subprocess.run(["git", "add", OUT_FILE], check=True)
-        subprocess.run(["git", "commit", "-m", "📊 Build finalbatawp.csv from dirty AWP; merge on player_id + game_id context"], check=True)
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Pushed to repository.")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Git operation failed: {e}")
+    # Git
+    git_add_commit_push(OUT_FILE, "📊 Build finalbatawp.csv from dirty AWP; player_id & game_id merges (relative paths)")
 
 if __name__ == "__main__":
     main()
