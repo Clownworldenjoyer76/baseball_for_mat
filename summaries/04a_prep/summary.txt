@@ -1,0 +1,275 @@
+===== RUN TIMESTAMP: 2025-09-03 07:40:54 AM EDT =====
+
+===== STATUS =====
+✅ python succeeded [2025-09-03 07:40:47 AM EDT]
+✅ python succeeded [2025-09-03 07:40:47 AM EDT]
+❌ python failed [2025-09-03 07:40:47 AM EDT]
+✅ python succeeded [2025-09-03 07:40:48 AM EDT]
+✅ python succeeded [2025-09-03 07:40:48 AM EDT]
+✅ python succeeded [2025-09-03 07:40:48 AM EDT]
+✅ python succeeded [2025-09-03 07:40:49 AM EDT]
+✅ python succeeded [2025-09-03 07:40:49 AM EDT]
+✅ python succeeded [2025-09-03 07:40:49 AM EDT]
+❌ python failed [2025-09-03 07:40:50 AM EDT]
+❌ python failed [2025-09-03 07:40:50 AM EDT]
+✅ python succeeded [2025-09-03 07:40:50 AM EDT]
+✅ python succeeded [2025-09-03 07:40:51 AM EDT]
+✅ python succeeded [2025-09-03 07:40:51 AM EDT]
+✅ python succeeded [2025-09-03 07:40:51 AM EDT]
+✅ python succeeded [2025-09-03 07:40:52 AM EDT]
+✅ python succeeded [2025-09-03 07:40:52 AM EDT]
+❌ python failed [2025-09-03 07:40:53 AM EDT]
+✅ python succeeded [2025-09-03 07:40:53 AM EDT]
+✅ python succeeded [2025-09-03 07:40:53 AM EDT]
+✅ python succeeded [2025-09-03 07:40:54 AM EDT]
+✅ python succeeded [2025-09-03 07:40:54 AM EDT]
+✅ python succeeded [2025-09-03 07:40:54 AM EDT]
+
+===== LOG =====
+▶️ START: prep_merge.py (2025-09-03 07:40:46 AM EDT)
+[main 950b4ec0] prep_merge: stage files (player_id/game_id-based)
+ 3 files changed, 43 insertions(+), 33 deletions(-)
+Saved pitchers home → data/end_chain/first/pit_hwp.csv
+Saved pitchers away → data/end_chain/first/pit_awp.csv
+Warning: data/adjusted/batters_away_weather_park.csv not found. Skipping.
+Warning: data/adjusted/batters_home_weather_park.csv not found. Skipping.
+Copied games file → data/end_chain/first/games_today.csv
+Git commit/push complete.
+⏹️ END: python (2025-09-03 07:40:47 AM EDT)
+
+▶️ START: chain_load_data.py (2025-09-03 07:40:47 AM EDT)
+--- Starting Data Loading Process ---
+Loading games from data/end_chain/first/games_today.csv...
+✅ Loaded games. Shape: (14, 11)
+Loading batters_home from data/end_chain/first/raw/bat_hwp_dirty.csv...
+✅ Loaded batters_home. Shape: (125, 71)
+Loading batters_away from data/end_chain/first/raw/bat_awp_dirty.csv...
+✅ Loaded batters_away. Shape: (131, 65)
+Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
+✅ Loaded pitchers_home. Shape: (14, 5)
+Loading pitchers_away from data/end_chain/first/pit_awp.csv...
+✅ Loaded pitchers_away. Shape: (12, 5)
+--- Data Loading Complete ---
+⏹️ END: python (2025-09-03 07:40:47 AM EDT)
+
+▶️ START: clean_and_preprocess_games.py (2025-09-03 07:40:47 AM EDT)
+⏹️ END: python (2025-09-03 07:40:47 AM EDT)
+
+▶️ START: attach_pitcher_ids.py (2025-09-03 07:40:47 AM EDT)
+✅ Attached pitcher IDs (where available) to games file.
+⏹️ END: python (2025-09-03 07:40:48 AM EDT)
+
+▶️ START: normalize_pitchers_xtra.py (2025-09-03 07:40:48 AM EDT)
+🔄 Normalizing names in pitchers_xtra.csv...
+✅ Output written to data/end_chain/cleaned/pitchers_xtra_normalized.csv
+⏹️ END: python (2025-09-03 07:40:48 AM EDT)
+
+▶️ START: clean_merge_files.py (2025-09-03 07:40:48 AM EDT)
+Cleaned data/end_chain/first/pit_hwp.csv → removed 0, remaining: 0
+Cleaned data/end_chain/first/pit_awp.csv → removed 0, remaining: 0
+Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed 10, remaining: 0
+Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed 6, remaining: 0
+
+✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
+⏹️ END: python (2025-09-03 07:40:48 AM EDT)
+
+▶️ START: clean_and_preprocess_batters.py (2025-09-03 07:40:48 AM EDT)
+⏹️ END: python (2025-09-03 07:40:49 AM EDT)
+
+▶️ START: enrich_batters_away.py (2025-09-03 07:40:49 AM EDT)
+2025-09-03 07:40:49,467 - INFO - 📥 Loading data...
+2025-09-03 07:40:49,472 - INFO - ✅ Loaded 121 batters and 14 weather rows
+2025-09-03 07:40:49,472 - INFO - 📐 Normalizing columns...
+2025-09-03 07:40:49,475 - INFO - 🔗 Merging...
+2025-09-03 07:40:49,482 - INFO - ✅ Enriched file saved to: data/end_chain/cleaned/bat_awp_cleaned.csv
+⏹️ END: python (2025-09-03 07:40:49 AM EDT)
+
+▶️ START: cleanup_enriched_batters_away.py (2025-09-03 07:40:49 AM EDT)
+✅ Cleaned and saved: data/end_chain/cleaned/bat_awp_cleaned.csv
+⏹️ END: python (2025-09-03 07:40:49 AM EDT)
+
+▶️ START: finalbatawp.py (2025-09-03 07:40:49 AM EDT)
+⏹️ END: python (2025-09-03 07:40:50 AM EDT)
+
+▶️ START: finalbathwp.py (2025-09-03 07:40:50 AM EDT)
+⏹️ END: python (2025-09-03 07:40:50 AM EDT)
+
+▶️ START: bat_1.py (2025-09-03 07:40:50 AM EDT)
+🔄 Processing data/end_chain/final/finalbatawp.csv...
+  🗑️ Identified columns ending in '_y' for deletion: ['home_team_y', 'game_time_y', 'location_y', 'temperature_y', 'wind_speed_y', 'wind_direction_y', 'humidity_y', 'precipitation_y', 'condition_y', 'notes_y', 'Park Factor_y']
+  🗑️ Dropped total columns: ['humidity_y', 'wind_direction_y', 'precipitation_y', 'notes_y', 'wind_speed_y', 'Park Factor_y', 'game_time_y', 'home_team_y', 'location_y', 'condition_y', 'temperature_y']
+  ✏️ Renamed columns ending in '_x': {'location_x': 'location', 'temperature_x': 'temperature', 'wind_speed_x': 'wind_speed', 'wind_direction_x': 'wind_direction', 'humidity_x': 'humidity', 'precipitation_x': 'precipitation', 'condition_x': 'condition', 'notes_x': 'notes', 'game_time_x': 'game_time', 'home_team_x': 'home_team', 'Park Factor_x': 'Park Factor'}
+✅ Successfully saved processed data to data/end_chain/final/updating/bat_away1.csv
+------------------------------
+Beginning processing for bat_away2.csv with specific column deletions...
+🔄 Processing data/end_chain/final/finalbatawp.csv...
+  🗑️ Identified columns ending in '_y' for deletion: ['home_team_y', 'game_time_y', 'location_y', 'temperature_y', 'wind_speed_y', 'wind_direction_y', 'humidity_y', 'precipitation_y', 'condition_y', 'notes_y', 'Park Factor_y']
+  🗑️ Identified additional columns for deletion: ['pitcher_away', 'pitcher_home', 'team']
+  🗑️ Dropped total columns: ['humidity_y', 'wind_direction_y', 'precipitation_y', 'notes_y', 'wind_speed_y', 'Park Factor_y', 'game_time_y', 'home_team_y', 'location_y', 'condition_y', 'temperature_y']
+  ✏️ Renamed columns ending in '_x': {'location_x': 'location', 'temperature_x': 'temperature', 'wind_speed_x': 'wind_speed', 'wind_direction_x': 'wind_direction', 'humidity_x': 'humidity', 'precipitation_x': 'precipitation', 'condition_x': 'condition', 'notes_x': 'notes', 'game_time_x': 'game_time', 'home_team_x': 'home_team', 'Park Factor_x': 'Park Factor'}
+✅ Successfully saved processed data to data/end_chain/final/updating/bat_away2.csv
+------------------------------
+🔄 Processing data/end_chain/final/finalbathwp.csv...
+  🗑️ Identified columns ending in '_y' for deletion: ['adj_woba_weather_y', 'adj_woba_combined_y']
+  🗑️ Dropped total columns: ['adj_woba_weather_y', 'adj_woba_combined_y']
+  ✏️ Renamed columns ending in '_x': {'adj_woba_weather_x': 'adj_woba_weather', 'adj_woba_combined_x': 'adj_woba_combined'}
+✅ Successfully saved processed data to data/end_chain/final/updating/bat_home1.csv
+
+Processing complete for bat_1.py.
+⏹️ END: python (2025-09-03 07:40:50 AM EDT)
+
+▶️ START: bat_2.py (2025-09-03 07:40:50 AM EDT)
+🔄 Processing data/end_chain/final/updating/bat_home1.csv for bat_home2.csv...
+  Checking for _input and _adj columns for conditional processing...
+    - Dropping 'temperature' and renaming 'temperature_adj' to 'temperature'
+    - Dropping 'wind_speed' and renaming 'wind_speed_adj' to 'wind_speed'
+    - Dropping 'wind_direction' and renaming 'wind_direction_adj' to 'wind_direction'
+    - Dropping 'humidity' and renaming 'humidity_adj' to 'humidity'
+    - Dropping 'condition' and renaming 'condition_adj' to 'condition'
+    - Dropping 'game_time' and renaming 'game_time_adj' to 'game_time'
+    - Dropping 'venue' and renaming 'venue_adj' to 'venue'
+  🗑️ Dropped: ['temperature', 'wind_speed', 'wind_direction', 'humidity', 'condition', 'game_time', 'venue']
+  ✏️ Renamed: {'temperature_adj': 'temperature', 'wind_speed_adj': 'wind_speed', 'wind_direction_adj': 'wind_direction', 'humidity_adj': 'humidity', 'condition_adj': 'condition', 'game_time_adj': 'game_time', 'venue_adj': 'venue'}
+  ➕ Added column: 'location'
+  ➕ Added column: 'notes'
+  ➕ Added column: 'precipitation'
+✅ Normalized 'home_team' to title case.
+✅ Saved processed data to data/end_chain/final/updating/bat_home2.csv
+
+==================================================
+
+🔄 Processing data/end_chain/final/updating/bat_away1.csv for bat_away2.csv...
+  ➕ Added column: 'latitude'
+  ➕ Added column: 'longitude'
+  ➕ Added column: 'city'
+  ➕ Added column: 'state'
+  ➕ Added column: 'timezone'
+  ➕ Added column: 'is_dome'
+  🗑️ Deleted column: 'stadium'
+✅ Saved processed data to data/end_chain/final/updating/bat_away2.csv
+
+Processing complete for bat_2.py.
+⏹️ END: python (2025-09-03 07:40:51 AM EDT)
+
+▶️ START: bat_away3.py (2025-09-03 07:40:51 AM EDT)
+⏹️ END: python (2025-09-03 07:40:51 AM EDT)
+
+▶️ START: bat_home3.py (2025-09-03 07:40:51 AM EDT)
+⏹️ END: python (2025-09-03 07:40:51 AM EDT)
+
+▶️ START: bat4.py (2025-09-03 07:40:51 AM EDT)
+✅ Fixed bat file written to: data/end_chain/final/updating/bat_away4.csv
+⏹️ END: python (2025-09-03 07:40:52 AM EDT)
+
+▶️ START: woba_calc.py (2025-09-03 07:40:52 AM EDT)
+✅ Updated: data/end_chain/final/updating/bat_home3.csv
+✅ Updated: data/end_chain/final/updating/bat_away4.csv
+⏹️ END: python (2025-09-03 07:40:52 AM EDT)
+
+▶️ START: pit1.py (2025-09-03 07:40:52 AM EDT)
+⏹️ END: python (2025-09-03 07:40:53 AM EDT)
+
+▶️ START: pit2.py (2025-09-03 07:40:53 AM EDT)
+⏹️ END: python (2025-09-03 07:40:53 AM EDT)
+
+▶️ START: end_prep.py (2025-09-03 07:40:53 AM EDT)
+🔄 Loading files...
+✅ Files loaded. Normalizing names...
+🔄 Updating batter files...
+💾 Saving final files...
+✅ Done.
+⏹️ END: python (2025-09-03 07:40:53 AM EDT)
+
+▶️ START: pit3.py (2025-09-03 07:40:53 AM EDT)
+✅ Updated pitcher stats and saved to: data/end_chain/final/startingpitchers_final.csv
+⏹️ END: python (2025-09-03 07:40:54 AM EDT)
+
+▶️ START: normalize_batters_projection_columns.py (2025-09-03 07:40:54 AM EDT)
+✅ Saved normalized batter projection data to: data/end_chain/final/normalize_end/all_bat_col.csv
+⏹️ END: python (2025-09-03 07:40:54 AM EDT)
+
+▶️ START: bat5.py (2025-09-03 07:40:54 AM EDT)
+🔄 Loading input files...
+🛠️ Filling batter_home_final.csv...
+✅ Updated: data/end_chain/final/batter_home_final.csv
+🛠️ Filling batter_away_final.csv...
+✅ Updated: data/end_chain/final/batter_away_final.csv
+⏹️ END: python (2025-09-03 07:40:54 AM EDT)
+
+
+===== ERRORS =====
+❌ python ERROR [2025-09-03 07:40:47 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/clean_and_preprocess_games.py", line 58, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/clean_and_preprocess_games.py", line 51, in main
+    out = g[keep_order + others]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['game_datetime', 'game_number'] not in index"
+
+---
+
+❌ python ERROR [2025-09-03 07:40:50 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 131, in <module>
+    final_bat_awp()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 46, in final_bat_awp
+    weather_adjustments_df[weather_cols_to_merge],
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns._get_indexer_strict(key, "columns")[1]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
+    self._raise_if_missing(keyarr, indexer, axis_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
+    raise KeyError(f"{not_found} not in index")
+KeyError: "['location'] not in index"
+
+---
+
+❌ python ERROR [2025-09-03 07:40:50 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbathwp.py", line 193, in <module>
+    final_bat_hwp()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbathwp.py", line 112, in final_bat_hwp
+    final_df = pd.merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
+    op = _MergeOperation(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
+    ) = self._get_merge_keys()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1298, in _get_merge_keys
+    right_keys.append(right._get_label_or_level_values(rk))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
+    raise KeyError(key)
+KeyError: 'home_team'
+
+---
+
+❌ python ERROR [2025-09-03 07:40:53 AM EDT]:
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'last_name, first_name'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pit1.py", line 65, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pit1.py", line 37, in main
+    today_pitchers["name_key"] = today_pitchers["last_name, first_name"].apply(normalize_name)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'last_name, first_name'
+
+---
+
