@@ -93,26 +93,11 @@ jobs:
           run_step prep_merge.py                           python scripts/prep_merge.py
           run_step chain_load_data.py                      python scripts/chain_load_data.py
           run_step clean_and_preprocess_games.py           python scripts/clean_and_preprocess_games.py
-          # [OBSOLETE] attach_pitcher_ids.py                python scripts/attach_pitcher_ids.py
           run_step normalize_pitchers_xtra.py              python scripts/normalize_pitchers_xtra.py
           run_step clean_merge_files.py                    python scripts/clean_merge_files.py
-          # [OBSOLETE] clean_and_preprocess_batters.py      python scripts/clean_and_preprocess_batters.py
-          # [OBSOLETE] enrich_batters_away.py               python scripts/enrich_batters_away.py
-          # [OBSOLETE] cleanup_enriched_batters_away.py     python scripts/cleanup_enriched_batters_away.py
           run_step finalbatawp.py                          python scripts/finalbatawp.py
           run_step finalbathwp.py                          python scripts/finalbathwp.py
-          # [OBSOLETE] bat_1.py                             python scripts/bat_1.py
-          # [OBSOLETE] bat_2.py                             python scripts/bat_2.py
-          # [OBSOLETE] bat_away3.py                         python scripts/bat_away3.py
-          # [OBSOLETE] bat_home3.py                         python scripts/bat_home3.py
-          # [OBSOLETE] bat4.py                              python scripts/bat4.py
-          # [OBSOLETE] woba_calc.py                         python scripts/woba_calc.py
           run_step pit1.py                                 python scripts/pit1.py
-          # [OBSOLETE] pit2.py                              python scripts/pit2.py
-          # [OBSOLETE] end_prep.py                          python scripts/end_prep.py
-          # [OBSOLETE] pit3.py                              python scripts/pit3.py
-          # [OBSOLETE] normalize_batters_projection_columns.py python scripts/normalize_batters_projection_columns.py
-          # [OBSOLETE] bat5.py                              python scripts/bat5.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
