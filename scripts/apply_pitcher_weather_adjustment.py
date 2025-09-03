@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# scripts/apply_pitcher_weather_adjustment.py
+#
+# Purpose:
+# - Merge pitcher splits (home/away) with weather factors by game_id.
+# - Inject pitcher woba from data/Data/pitchers.csv, fallback data/manual/pitchersWoba.csv.
+# - Default any remaining missing woba to 0.320 and log to summaries/pitchers_adjust/missing_woba.txt.
+# - Write adj_woba_weather = woba * weather_factor.
+# - Commit outputs.
+
 import os
 import pandas as pd
 import subprocess
@@ -10,112 +19,175 @@ from pathlib import Path
 PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
 PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
 WEATHER_FILE       = "data/weather_adjustments.csv"
-PITCHERS_MAIN_FILE = "data/Data/pitchers.csv"
-PITCHERS_WOBA_FILE = "data/manual/pitchersWoba.csv"
+
+# wOBA sources (primary then fallback)
+PITCHERS_MASTER    = "data/Data/pitchers.csv"
+PITCHERS_FALLBACK  = "data/manual/pitchersWoba.csv"
 
 # Outputs
 OUTPUT_HOME = "data/adjusted/pitchers_home_weather.csv"
 OUTPUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
+
+# Logs
 LOG_HOME    = "log_pitchers_home_weather.txt"
 LOG_AWAY    = "log_pitchers_away_weather.txt"
+LOG_MISSING = "summaries/pitchers_adjust/missing_woba.txt"
 
-REQUIRED_PITCHER_COLS = {"game_id", "player_id"}
-REQUIRED_WEATHER_COLS = {"game_id", "weather_factor"}
+REQUIRED_PITCHER_KEYS  = {"player_id", "game_id"}
+REQUIRED_WEATHER_COLS  = {"game_id", "weather_factor"}
+W_DEFAULT              = 0.320  # neutral league-average wOBA allowed
 
-def load_woba_sources():
-    """Load wOBA values from both pitchers.csv and pitchersWoba.csv"""
+
+def validate_columns(df: pd.DataFrame, required: set, source_path: str) -> None:
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"{source_path} missing columns: {missing}")
+
+
+def load_woba_map() -> pd.DataFrame:
     frames = []
-    if os.path.exists(PITCHERS_MAIN_FILE):
-        frames.append(pd.read_csv(PITCHERS_MAIN_FILE, usecols=["player_id", "woba"]))
-    if os.path.exists(PITCHERS_WOBA_FILE):
-        frames.append(pd.read_csv(PITCHERS_WOBA_FILE, usecols=["player_id", "woba"]))
+
+    # Primary
+    if os.path.exists(PITCHERS_MASTER):
+        df1 = pd.read_csv(PITCHERS_MASTER, low_memory=False)
+        if "player_id" in df1.columns and "woba" in df1.columns:
+            frames.append(df1[["player_id", "woba"]].copy())
+
+    # Fallback (manual)
+    if os.path.exists(PITCHERS_FALLBACK):
+        df2 = pd.read_csv(PITCHERS_FALLBACK, low_memory=False)
+        # allow either "woba" or "wOBA" headers; normalize
+        cols_lower = {c.lower(): c for c in df2.columns}
+        woba_col = cols_lower.get("woba")
+        if woba_col and "player_id" in df2.columns:
+            frames.append(df2[["player_id", woba_col]].rename(columns={woba_col: "woba"}))
+
     if not frames:
-        raise FileNotFoundError("No wOBA sources found.")
-    return pd.concat(frames).dropna().drop_duplicates("player_id")
+        # No sources present -> produce empty frame; callers will default to W_DEFAULT
+        return pd.DataFrame(columns=["player_id", "woba"])
 
-def inject_woba(pitch_df: pd.DataFrame, woba_df: pd.DataFrame) -> pd.DataFrame:
-    if "woba" not in pitch_df.columns or pitch_df["woba"].isna().all():
-        merged = pitch_df.merge(woba_df, on="player_id", how="left")
-    else:
-        # fill missing values only
-        merged = pitch_df.merge(woba_df, on="player_id", how="left", suffixes=("", "_src"))
-        merged["woba"] = merged["woba"].fillna(merged["woba_src"])
-        merged.drop(columns=["woba_src"], inplace=True)
-    return merged
+    woba = pd.concat(frames, ignore_index=True)
+    # enforce numeric
+    woba["player_id"] = pd.to_numeric(woba["player_id"], errors="coerce").astype("Int64")
+    woba["woba"] = pd.to_numeric(woba["woba"], errors="coerce")
+    # last-one-wins for duplicates (manual may override master)
+    woba = woba.dropna(subset=["player_id"]).drop_duplicates(subset=["player_id"], keep="last")
+    return woba
 
-def apply_weather_factor(pitch_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd.DataFrame:
+
+def merge_and_adjust(pitch_df: pd.DataFrame, weather_df: pd.DataFrame,
+                     woba_map: pd.DataFrame, side_label: str) -> pd.DataFrame:
+    # Merge weather by game_id
     merged = pitch_df.merge(
         weather_df[["game_id", "weather_factor"]],
         on="game_id",
         how="left",
         validate="m:1"
     )
+
+    # Inject woba via player_id
+    merged = merged.merge(
+        woba_map,
+        on="player_id",
+        how="left",
+        validate="m:1"
+    )
+
+    # Default missing woba and log
+    missing_mask = merged["woba"].isna()
+    if missing_mask.any():
+        Path(LOG_MISSING).parent.mkdir(parents=True, exist_ok=True)
+        with open(LOG_MISSING, "a", encoding="utf-8") as f:
+            for _, r in merged.loc[missing_mask, ["player_id", "game_id"]].drop_duplicates().iterrows():
+                f.write(
+                    f"[weather/{side_label}] used_default_woba={W_DEFAULT} "
+                    f"player_id={r['player_id']} game_id={r['game_id']}\n"
+                )
+        merged.loc[missing_mask, "woba"] = W_DEFAULT
+
+    # Compute adjusted value
     merged["adj_woba_weather"] = merged["woba"] * merged["weather_factor"]
+
     return merged
+
 
 def log_top5(df: pd.DataFrame, log_path: str, label: str) -> None:
     Path(log_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(log_path, "w") as f:
+    with open(log_path, "w", encoding="utf-8") as f:
         f.write(f"Top 5 {label} pitchers by adj_woba_weather\n")
-        if "adj_woba_weather" in df.columns:
-            top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
-            cols_pref = ["pitcher_name", "player_id", "game_id", "woba", "weather_factor", "adj_woba_weather"]
-            cols = [c for c in cols_pref if c in top5.columns]
+        cols_pref = ["pitcher_name", "player_id", "game_id", "woba", "weather_factor", "adj_woba_weather"]
+        cols = [c for c in cols_pref if c in df.columns]
+        top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
+        f.write("\n")
+        if len(cols):
             f.write(top5[cols].to_string(index=False))
         else:
-            f.write("adj_woba_weather not present")
+            f.write("no columns available")
 
-def git_commit_and_push() -> None:
+
+def git_commit_and_push(paths) -> None:
     try:
-        subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY, LOG_HOME, LOG_AWAY], check=True)
+        subprocess.run(["git", "add"] + paths, check=True)
         status = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if status.strip():
-            subprocess.run(["git", "commit", "-m", "Apply pitcher weather factor by game_id with woba injection"], check=True)
+            subprocess.run(["git", "commit", "-m", "Apply pitcher weather factor with woba injection + defaults"], check=True)
             subprocess.run(["git", "push"], check=True)
-        else:
-            print("No changes to commit.")
     except subprocess.CalledProcessError as e:
         print(f"Git error: {e}")
 
+
 def main() -> None:
-    if not os.path.exists(PITCHERS_HOME_FILE) or not os.path.exists(PITCHERS_AWAY_FILE) or not os.path.exists(WEATHER_FILE):
-        print("CANNOT COMPLY: Missing required input file(s).")
-        return
+    # Load inputs
+    for p in [PITCHERS_HOME_FILE, PITCHERS_AWAY_FILE, WEATHER_FILE]:
+        if not os.path.exists(p):
+            print(f"CANNOT COMPLY: Missing required input file: {p}")
+            return
 
     try:
-        home_df   = pd.read_csv(PITCHERS_HOME_FILE)
-        away_df   = pd.read_csv(PITCHERS_AWAY_FILE)
-        weather_df= pd.read_csv(WEATHER_FILE)
-        woba_df   = load_woba_sources()
+        home_df = pd.read_csv(PITCHERS_HOME_FILE)
+        away_df = pd.read_csv(PITCHERS_AWAY_FILE)
+        weather_df = pd.read_csv(WEATHER_FILE)
     except Exception as e:
         print(f"CANNOT COMPLY: Failed to read input CSVs: {e}")
         return
 
-    for df in (home_df, away_df):
-        missing = REQUIRED_PITCHER_COLS - set(df.columns)
-        if missing:
-            print(f"CANNOT COMPLY: Pitcher file missing columns: {missing}")
-            return
-    if REQUIRED_WEATHER_COLS - set(weather_df.columns):
-        print(f"CANNOT COMPLY: Weather file missing required columns")
+    # Basic validations
+    try:
+        validate_columns(home_df, REQUIRED_PITCHER_KEYS, PITCHERS_HOME_FILE)
+        validate_columns(away_df, REQUIRED_PITCHER_KEYS, PITCHERS_AWAY_FILE)
+        validate_columns(weather_df, REQUIRED_WEATHER_COLS, WEATHER_FILE)
+    except ValueError as e:
+        print(f"CANNOT COMPLY: {e}")
         return
 
-    # Inject wOBA
-    home_df = inject_woba(home_df, woba_df)
-    away_df = inject_woba(away_df, woba_df)
+    # Normalize key dtypes
+    for df in (home_df, away_df, weather_df):
+        if "player_id" in df.columns:
+            df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce").astype("Int64")
+        if "game_id" in df.columns:
+            df["game_id"] = pd.to_numeric(df["game_id"], errors="coerce").astype("Int64")
+    weather_df["weather_factor"] = pd.to_numeric(weather_df["weather_factor"], errors="coerce")
 
-    # Apply weather factor
-    adjusted_home = apply_weather_factor(home_df, weather_df)
-    adjusted_away = apply_weather_factor(away_df, weather_df)
+    # wOBA map
+    woba_map = load_woba_map()
 
+    # Process
+    adjusted_home = merge_and_adjust(home_df, weather_df, woba_map, "home")
+    adjusted_away = merge_and_adjust(away_df, weather_df, woba_map, "away")
+
+    # Save
     Path(OUTPUT_HOME).parent.mkdir(parents=True, exist_ok=True)
     adjusted_home.to_csv(OUTPUT_HOME, index=False)
+    Path(OUTPUT_AWAY).parent.mkdir(parents=True, exist_ok=True)
     adjusted_away.to_csv(OUTPUT_AWAY, index=False)
 
+    # Logs
     log_top5(adjusted_home, LOG_HOME, "home")
     log_top5(adjusted_away, LOG_AWAY, "away")
 
-    git_commit_and_push()
+    # Commit
+    git_commit_and_push([OUTPUT_HOME, OUTPUT_AWAY, LOG_HOME, LOG_AWAY, LOG_MISSING])
+
 
 if __name__ == "__main__":
     main()
