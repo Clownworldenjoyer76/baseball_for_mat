@@ -1,36 +1,38 @@
-===== RUN TIMESTAMP: 2025-09-02 09:05:16 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-02 09:52:17 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-02 09:05:13 PM EDT]
-✅ python succeeded [2025-09-02 09:05:13 PM EDT]
-✅ python succeeded [2025-09-02 09:05:14 PM EDT]
-✅ python succeeded [2025-09-02 09:05:15 PM EDT]
-✅ python succeeded [2025-09-02 09:05:16 PM EDT]
+✅ python succeeded [2025-09-02 09:52:13 PM EDT]
+✅ python succeeded [2025-09-02 09:52:14 PM EDT]
+✅ python succeeded [2025-09-02 09:52:15 PM EDT]
+✅ python succeeded [2025-09-02 09:52:16 PM EDT]
+✅ python succeeded [2025-09-02 09:52:17 PM EDT]
 
 ===== LOG =====
-▶️ START: normalize_pitcher_weather_outputs.py (2025-09-02 09:05:12 PM EDT)
-[main b6f0e360] Normalize pitchers before weather adjustment
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-02 09:52:12 PM EDT)
+[main 1b34e9d7] Normalize pitchers before weather adjustment
 Committed normalization stage outputs.
-⏹️ END: python (2025-09-02 09:05:13 PM EDT)
+⏹️ END: python (2025-09-02 09:52:13 PM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment.py (2025-09-02 09:05:13 PM EDT)
-[main b862acc6] Apply pitcher weather factor by game_id with woba injection
- 4 files changed, 24 insertions(+), 24 deletions(-)
-⏹️ END: python (2025-09-02 09:05:13 PM EDT)
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-02 09:52:13 PM EDT)
+[main 6bfc98b4] Apply pitcher weather factor with woba injection + defaults
+ 5 files changed, 37 insertions(+), 34 deletions(-)
+ create mode 100644 summaries/pitchers_adjust/missing_woba.txt
+⏹️ END: python (2025-09-02 09:52:14 PM EDT)
 
-▶️ START: apply_pitcher_park_adjustment.py (2025-09-02 09:05:13 PM EDT)
-CANNOT COMPLY: Pitcher file missing columns: {'park_factor'}
-⏹️ END: python (2025-09-02 09:05:14 PM EDT)
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-02 09:52:14 PM EDT)
+[main 7bbfb1e2] Apply pitcher park factor with woba injection + defaults
+ 5 files changed, 41 insertions(+), 38 deletions(-)
+⏹️ END: python (2025-09-02 09:52:15 PM EDT)
 
-▶️ START: combine_pitcher_weather_park_home.py (2025-09-02 09:05:14 PM EDT)
-[main 93bc68f1] Combine pitcher weather+park (home) on player_id+game_id
- 1 file changed, 7 insertions(+), 7 deletions(-)
-⏹️ END: python (2025-09-02 09:05:15 PM EDT)
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-02 09:52:15 PM EDT)
+[main 6b73d5d2] Combine pitcher weather+park (home) on player_id+game_id
+ 2 files changed, 19 insertions(+), 19 deletions(-)
+⏹️ END: python (2025-09-02 09:52:16 PM EDT)
 
-▶️ START: combine_pitcher_weather_park_away.py (2025-09-02 09:05:15 PM EDT)
-[main 2e4ffe49] Combine pitcher weather+park (away) on player_id+game_id
- 1 file changed, 5 insertions(+), 5 deletions(-)
-⏹️ END: python (2025-09-02 09:05:16 PM EDT)
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-02 09:52:16 PM EDT)
+[main 77549f4a] Combine pitcher weather+park (away) on player_id+game_id
+ 2 files changed, 17 insertions(+), 17 deletions(-)
+⏹️ END: python (2025-09-02 09:52:17 PM EDT)
 
 
 ===== ERRORS =====
