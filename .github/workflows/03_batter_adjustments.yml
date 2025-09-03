@@ -55,10 +55,9 @@ jobs:
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
           run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $1 failed [$(ts)]" >>"$STATUS"; { echo "❌ $1 ERROR [$(ts)]:"; cat step.err; echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $1 ($(ts))" >>"$LOG"; echo >>"$LOG"; }
 
-          run_step apply_weather_adjustment.py  python scripts/apply_weather_adjustment.py
-          run_step apply_park_adjustment.py     python scripts/apply_park_adjustment.py
-          run_step combine_weather_park_home.py python scripts/combine_weather_park_home.py
-          run_step combine_weather_park_away.py python scripts/combine_weather_park_away.py
+          run_step apply_weather_adjustment.py       python scripts/apply_weather_adjustment.py
+          run_step apply_park_adjustment.py          python scripts/apply_park_adjustment.py
+          run_step combine_batter_weather_park.py    python scripts/combine_batter_weather_park.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -71,7 +70,7 @@ jobs:
         run: |
           git add data/adjusted/batters_*_weather.csv || true
           git add data/adjusted/batters_*_park.csv || true
-          git add data/adjusted/batters_*_adjusted.csv || true
+          git add data/adjusted/batters_*_weather_park.csv || true
           git add summaries/batters_adjust/* || true
           git diff --cached --quiet || git commit -m "03 batter adjustments outputs"
           git pull --rebase origin main || true
