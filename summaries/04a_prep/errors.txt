@@ -1,4 +1,4 @@
-❌ python ERROR [2025-09-03 12:03:44 PM EDT]:
+❌ python ERROR [2025-09-03 12:26:16 PM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -23,7 +23,27 @@ KeyError: 'last_name, first_name'
 
 ---
 
-❌ python ERROR [2025-09-03 12:03:45 PM EDT]:
+❌ python ERROR [2025-09-03 12:26:17 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pit2.py", line 39, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pit2.py", line 27, in main
+    merged = bat_away.merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
+    return op.get_result(copy=copy)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
+    result = self._reindex_and_concat(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
+    llabels, rlabels = _items_overlap_with_suffix(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
+    raise MergeError(
+pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'pitcher_home_x'} is not allowed.
+
+---
+
+❌ python ERROR [2025-09-03 12:26:17 PM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
