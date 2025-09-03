@@ -1,78 +1,127 @@
 #!/usr/bin/env python3
-import pandas as pd
 import os
 import subprocess
+import pandas as pd
 
-def final_bat_awp():
-    """
-    Build final batting-away (AWP) dataset.
+GAMES_FILE = "/data/end_chain/cleaned/games_today_cleaned.csv"           # context (game_id, teams, game_time, pitchers)
+GAMES_ALT  = "/data/raw/todaysgames_normalized.csv"                      # fallback/extra context if needed
+BATTERS_FILE = "/data/Data/batters.csv"                                  # all batter metrics keyed by player_id
+AWR_FILE  = "/data/end_chain/first/raw/bat_awp_dirty.csv"                # player_id, game_id, adj_woba_*
+WEATHER_FILE = "/data/weather_adjustments.csv"                            # weather keyed by game_id
+OUT_DIR   = "/data/end_chain/final"
+OUT_FILE  = os.path.join(OUT_DIR, "finalbatawp.csv")
 
-    Input:
-      - data/end_chain/cleaned/games_today_cleaned.csv
-      - data/end_chain/cleaned/bat_awp_cleaned.csv
-
-    Output:
-      - data/end_chain/final/finalbatawp.csv
-    """
-
-    games_file = "data/end_chain/cleaned/games_today_cleaned.csv"
-    bat_file = "data/end_chain/cleaned/bat_awp_cleaned.csv"
-    output_dir = "data/end_chain/final"
-    output_file = os.path.join(output_dir, "finalbatawp.csv")
-
-    # Load inputs
+def _read_csv(path):
     try:
-        games = pd.read_csv(games_file)
-        batters = pd.read_csv(bat_file)
-    except FileNotFoundError as e:
-        print(f"❌ Missing input file: {e.filename}")
-        return
+        return pd.read_csv(path)
+    except FileNotFoundError:
+        print(f"❌ Missing input file: {path}")
+        return None
     except Exception as e:
-        print(f"❌ Error loading input: {e}")
+        print(f"❌ Error loading {path}: {e}")
+        return None
+
+def _coerce_numeric(df, cols):
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
+def main():
+    # Load inputs
+    awr = _read_csv(AWR_FILE)
+    bat = _read_csv(BATTERS_FILE)
+    games = _read_csv(GAMES_FILE)
+    games_alt = _read_csv(GAMES_ALT)
+    weather = _read_csv(WEATHER_FILE)
+
+    if awr is None or bat is None:
         return
 
-    # Ensure merge keys exist
-    needed_cols = {"away_team", "home_team"}
-    if not needed_cols.issubset(games.columns):
-        print(f"❌ games_today_cleaned.csv missing columns: {needed_cols - set(games.columns)}")
-        return
-    if "away_team" not in batters.columns:
-        print("❌ bat_awp_cleaned.csv missing 'away_team' column.")
+    # Validate minimal required columns
+    req_awr = {"player_id", "game_id", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"}
+    missing_awr = req_awr - set(awr.columns)
+    if missing_awr:
+        print(f"❌ {AWR_FILE} missing columns: {sorted(missing_awr)}")
         return
 
-    # Defensive type normalization
-    for col in ["away_team", "home_team"]:
-        if col in games.columns:
-            games[col] = games[col].astype(str).str.strip()
-        if col in batters.columns:
-            batters[col] = batters[col].astype(str).str.strip()
+    if "player_id" not in bat.columns:
+        print(f"❌ {BATTERS_FILE} missing 'player_id'")
+        return
 
-    # Merge on both away_team and home_team to attach game_id
+    # Normalize ids
+    awr = _coerce_numeric(awr, ["player_id", "game_id"])
+    bat = _coerce_numeric(bat, ["player_id"])
+
+    # --- Merge 1: player-level batter metrics ---
+    # Keep all batter columns; AWR is the driver (left merge)
     merged = pd.merge(
-        batters,
-        games[["game_id", "away_team", "home_team", "game_time"]],
-        on=["away_team", "home_team"],
-        how="left"
+        awr,
+        bat,
+        on="player_id",
+        how="left",
+        suffixes=("", "_bat")
     )
 
-    if merged["game_id"].isna().any():
-        missing = merged[merged["game_id"].isna()][["away_team", "home_team"]]
-        print("⚠️ Warning: Some rows missing game_id after merge:")
-        print(missing.drop_duplicates().to_string(index=False))
+    # --- Merge 2: game/team context on game_id ---
+    # Prefer cleaned games; if not available, fall back to normalized.
+    game_ctx = None
+    if games is not None and "game_id" in games.columns:
+        game_ctx = games.copy()
+    elif games_alt is not None and "game_id" in games_alt.columns:
+        game_ctx = games_alt.copy()
+
+    if game_ctx is not None:
+        # Select common context columns if present
+        wanted_game_cols = [
+            "game_id", "home_team", "away_team", "game_time",
+            "pitcher_home", "pitcher_away", "stadium", "location", "Park Factor", "time_of_day"
+        ]
+        have_game_cols = [c for c in wanted_game_cols if c in game_ctx.columns]
+        game_ctx = game_ctx[have_game_cols].drop_duplicates()
+
+        merged = pd.merge(
+            merged,
+            game_ctx,
+            on="game_id",
+            how="left",
+            suffixes=("", "_game")
+        )
+
+    # --- Merge 3: weather on game_id ---
+    if weather is not None and "game_id" in weather.columns:
+        # Pass through all weather columns except those already present to avoid clobber
+        weather_cols = [c for c in weather.columns if c != "game_id"]
+        weather_use = ["game_id"] + weather_cols
+        merged = pd.merge(
+            merged,
+            weather[weather_use],
+            on="game_id",
+            how="left",
+            suffixes=("", "_wx")
+        )
+
+    # Deduplicate by (player_id, game_id) if accidental one-to-many joins occurred
+    # Keep the first occurrence deterministically
+    before = len(merged)
+    merged = merged.sort_values(["player_id", "game_id"]).drop_duplicates(subset=["player_id", "game_id"], keep="first")
+    after = len(merged)
+    if after < before:
+        print(f"ℹ️ Removed {before - after} duplicate rows on (player_id, game_id).")
 
     # Output
-    os.makedirs(output_dir, exist_ok=True)
-    merged.to_csv(output_file, index=False)
-    print(f"✅ Successfully created {output_file} (rows={len(merged)})")
+    os.makedirs(OUT_DIR, exist_ok=True)
+    merged.to_csv(OUT_FILE, index=False)
+    print(f"✅ Created {OUT_FILE} (rows={len(merged)})")
 
-    # Git commit
+    # Git commit/push
     try:
-        subprocess.run(["git", "add", output_file], check=True)
-        subprocess.run(["git", "commit", "-m", "📊 Auto-update finalbatawp.csv"], check=True)
+        subprocess.run(["git", "add", OUT_FILE], check=True)
+        subprocess.run(["git", "commit", "-m", "📊 Build finalbatawp.csv from dirty AWP; merge on player_id + game_id context"], check=True)
         subprocess.run(["git", "push"], check=True)
         print("✅ Pushed to repository.")
     except subprocess.CalledProcessError as e:
         print(f"❌ Git operation failed: {e}")
 
 if __name__ == "__main__":
-    final_bat_awp()
+    main()
