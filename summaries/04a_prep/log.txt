@@ -1,4 +1,4 @@
-▶️ START: prep_merge.py (2025-09-03 11:43:09 AM EDT)
+▶️ START: prep_merge.py (2025-09-03 12:03:38 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -17,9 +17,9 @@ Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
 Git operation failed: Command '['git', 'commit', '-m', 'prep_merge: stage files (player_id/game_id-based)']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 11:43:10 AM EDT)
+⏹️ END: python (2025-09-03 12:03:39 PM EDT)
 
-▶️ START: chain_load_data.py (2025-09-03 11:43:10 AM EDT)
+▶️ START: chain_load_data.py (2025-09-03 12:03:39 PM EDT)
 --- Starting Data Loading Process ---
 Loading games from data/end_chain/first/games_today.csv...
 ✅ Loaded games. Shape: (14, 11)
@@ -32,33 +32,34 @@ Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
 Loading pitchers_away from data/end_chain/first/pit_awp.csv...
 ✅ Loaded pitchers_away. Shape: (12, 5)
 --- Data Loading Complete ---
-⏹️ END: python (2025-09-03 11:43:10 AM EDT)
+⏹️ END: python (2025-09-03 12:03:39 PM EDT)
 
-▶️ START: clean_and_preprocess_games.py (2025-09-03 11:43:10 AM EDT)
+▶️ START: clean_and_preprocess_games.py (2025-09-03 12:03:39 PM EDT)
 ✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=14)
-⏹️ END: python (2025-09-03 11:43:11 AM EDT)
+⏹️ END: python (2025-09-03 12:03:39 PM EDT)
 
-▶️ START: normalize_pitchers_xtra.py (2025-09-03 11:43:11 AM EDT)
+▶️ START: normalize_pitchers_xtra.py (2025-09-03 12:03:39 PM EDT)
 ✅ Wrote 25 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
-⏹️ END: python (2025-09-03 11:43:11 AM EDT)
+⏹️ END: python (2025-09-03 12:03:40 PM EDT)
 
-▶️ START: clean_merge_files.py (2025-09-03 11:43:11 AM EDT)
+▶️ START: clean_merge_files.py (2025-09-03 12:03:40 PM EDT)
 Cleaned data/end_chain/first/pit_hwp.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/pit_awp.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed 0, remaining: 0
 
 ✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
-⏹️ END: python (2025-09-03 11:43:12 AM EDT)
+⏹️ END: python (2025-09-03 12:03:40 PM EDT)
 
-▶️ START: finalbatawp.py (2025-09-03 11:43:12 AM EDT)
-[main f4be3e30] 📊 Build finalbatawp.csv from dirty AWP; player_id & game_id merges (relative paths)
- 1 file changed, 49 insertions(+), 122 deletions(-)
-✅ Created data/end_chain/final/finalbatawp.csv (rows=48)
-✅ Pushed to repository.
-⏹️ END: python (2025-09-03 11:43:12 AM EDT)
+▶️ START: finalbatawp.py (2025-09-03 12:03:40 PM EDT)
+[main 3f3d0b03] 📊 Build finalbatawp.csv from dirty AWP; player_id & game_id merges; 100-based park factors
+ 1 file changed, 49 insertions(+), 49 deletions(-)
+— Building finalbatawp (dirty AWP, player_id & game_id merges) —
+📝 Wrote data/end_chain/final/finalbatawp.csv (rows=48)
+↗️ Pushed to repository.
+⏹️ END: python (2025-09-03 12:03:41 PM EDT)
 
-▶️ START: finalbathwp.py (2025-09-03 11:43:12 AM EDT)
+▶️ START: finalbathwp.py (2025-09-03 12:03:41 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -73,9 +74,9 @@ Changes not staged for commit:
 no changes added to commit (use "git add" and/or "git commit -a")
 ✅ Built data/end_chain/final/finalbathwp.csv (rows=42, cols=10)
 ⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'finalbathwp: game_id merge of bat_hwp_dirty with games']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 11:43:13 AM EDT)
+⏹️ END: python (2025-09-03 12:03:41 PM EDT)
 
-▶️ START: bat_1.py (2025-09-03 11:43:13 AM EDT)
+▶️ START: bat_1.py (2025-09-03 12:03:41 PM EDT)
 🔄 Processing data/end_chain/final/finalbatawp.csv...
   ✅ No columns ending in '_y' found to drop.
   ✅ No columns identified for deletion in this step.
@@ -97,9 +98,9 @@ Beginning processing for bat_away2.csv with specific column deletions...
 ✅ Successfully saved processed data to data/end_chain/final/updating/bat_home1.csv
 
 Processing complete for bat_1.py.
-⏹️ END: python (2025-09-03 11:43:13 AM EDT)
+⏹️ END: python (2025-09-03 12:03:42 PM EDT)
 
-▶️ START: bat_2.py (2025-09-03 11:43:13 AM EDT)
+▶️ START: bat_2.py (2025-09-03 12:03:42 PM EDT)
 🔄 Processing data/end_chain/final/updating/bat_home1.csv for bat_home2.csv...
   Checking for _input and _adj columns for conditional processing...
   ✅ No conditional drops or renames.
@@ -118,48 +119,48 @@ Processing complete for bat_1.py.
 ✅ Saved processed data to data/end_chain/final/updating/bat_away2.csv
 
 Processing complete for bat_2.py.
-⏹️ END: python (2025-09-03 11:43:13 AM EDT)
+⏹️ END: python (2025-09-03 12:03:42 PM EDT)
 
-▶️ START: bat_away3.py (2025-09-03 11:43:13 AM EDT)
-⏹️ END: python (2025-09-03 11:43:14 AM EDT)
+▶️ START: bat_away3.py (2025-09-03 12:03:42 PM EDT)
+⏹️ END: python (2025-09-03 12:03:43 PM EDT)
 
-▶️ START: bat_home3.py (2025-09-03 11:43:14 AM EDT)
-⏹️ END: python (2025-09-03 11:43:14 AM EDT)
+▶️ START: bat_home3.py (2025-09-03 12:03:43 PM EDT)
+⏹️ END: python (2025-09-03 12:03:43 PM EDT)
 
-▶️ START: bat4.py (2025-09-03 11:43:14 AM EDT)
+▶️ START: bat4.py (2025-09-03 12:03:43 PM EDT)
 ❌ Failed to inject 'pitcher_away'. Check for team name mismatches.
-⏹️ END: python (2025-09-03 11:43:14 AM EDT)
+⏹️ END: python (2025-09-03 12:03:43 PM EDT)
 
-▶️ START: woba_calc.py (2025-09-03 11:43:14 AM EDT)
+▶️ START: woba_calc.py (2025-09-03 12:03:43 PM EDT)
 ⚠️ 'woba' column missing in bat_home3.csv, skipping adj_woba_weather
 ✅ Updated: data/end_chain/final/updating/bat_home3.csv
 ✅ Updated: data/end_chain/final/updating/bat_away4.csv
-⏹️ END: python (2025-09-03 11:43:15 AM EDT)
+⏹️ END: python (2025-09-03 12:03:44 PM EDT)
 
-▶️ START: pit1.py (2025-09-03 11:43:15 AM EDT)
-⏹️ END: python (2025-09-03 11:43:15 AM EDT)
+▶️ START: pit1.py (2025-09-03 12:03:44 PM EDT)
+⏹️ END: python (2025-09-03 12:03:44 PM EDT)
 
-▶️ START: pit2.py (2025-09-03 11:43:15 AM EDT)
-⏹️ END: python (2025-09-03 11:43:15 AM EDT)
+▶️ START: pit2.py (2025-09-03 12:03:44 PM EDT)
+⏹️ END: python (2025-09-03 12:03:44 PM EDT)
 
-▶️ START: end_prep.py (2025-09-03 11:43:15 AM EDT)
+▶️ START: end_prep.py (2025-09-03 12:03:44 PM EDT)
 🔄 Loading files...
 ✅ Files loaded. Normalizing names...
-⏹️ END: python (2025-09-03 11:43:16 AM EDT)
+⏹️ END: python (2025-09-03 12:03:45 PM EDT)
 
-▶️ START: pit3.py (2025-09-03 11:43:16 AM EDT)
+▶️ START: pit3.py (2025-09-03 12:03:45 PM EDT)
 ✅ Updated pitcher stats and saved to: data/end_chain/final/startingpitchers_final.csv
-⏹️ END: python (2025-09-03 11:43:16 AM EDT)
+⏹️ END: python (2025-09-03 12:03:45 PM EDT)
 
-▶️ START: normalize_batters_projection_columns.py (2025-09-03 11:43:16 AM EDT)
+▶️ START: normalize_batters_projection_columns.py (2025-09-03 12:03:45 PM EDT)
 ✅ Saved normalized batter projection data to: data/end_chain/final/normalize_end/all_bat_col.csv
-⏹️ END: python (2025-09-03 11:43:16 AM EDT)
+⏹️ END: python (2025-09-03 12:03:45 PM EDT)
 
-▶️ START: bat5.py (2025-09-03 11:43:16 AM EDT)
+▶️ START: bat5.py (2025-09-03 12:03:45 PM EDT)
 🔄 Loading input files...
 🛠️ Filling batter_home_final.csv...
 ✅ Updated: data/end_chain/final/batter_home_final.csv
 🛠️ Filling batter_away_final.csv...
 ✅ Updated: data/end_chain/final/batter_away_final.csv
-⏹️ END: python (2025-09-03 11:43:17 AM EDT)
+⏹️ END: python (2025-09-03 12:03:46 PM EDT)
 
