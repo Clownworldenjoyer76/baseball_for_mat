@@ -1,47 +1,24 @@
-❌ python ERROR [2025-09-03 09:23:20 AM EDT]:
-python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/attach_pitcher_ids.py': [Errno 2] No such file or directory
-
----
-
-❌ python ERROR [2025-09-03 09:23:21 AM EDT]:
-
----
-
-❌ python ERROR [2025-09-03 09:23:22 AM EDT]:
+❌ python ERROR [2025-09-03 10:15:13 AM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 131, in <module>
-    final_bat_awp()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 46, in final_bat_awp
-    weather_adjustments_df[weather_cols_to_merge],
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4113, in __getitem__
-    indexer = self.columns._get_indexer_strict(key, "columns")[1]
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6212, in _get_indexer_strict
-    self._raise_if_missing(keyarr, indexer, axis_name)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 6264, in _raise_if_missing
-    raise KeyError(f"{not_found} not in index")
-KeyError: "['location'] not in index"
-
----
-
-❌ python ERROR [2025-09-03 09:23:22 AM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbathwp.py", line 193, in <module>
-    final_bat_hwp()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbathwp.py", line 112, in final_bat_hwp
-    final_df = pd.merge(
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 80, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 64, in main
+    bat = attach_game_id_if_needed(bat, games)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 34, in attach_game_id_if_needed
+    merged = bat.merge(games_small[["game_id", "away_team", "home_team"]],
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
     op = _MergeOperation(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
-    ) = self._get_merge_keys()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1298, in _get_merge_keys
-    right_keys.append(right._get_label_or_level_values(rk))
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
-    raise KeyError(key)
-KeyError: 'home_team'
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 807, in __init__
+    self._maybe_coerce_merge_keys()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1509, in _maybe_coerce_merge_keys
+    raise ValueError(msg)
+ValueError: You are trying to merge on float64 and object columns for key 'home_team'. If you wish to proceed you should use pd.concat
 
 ---
 
-❌ python ERROR [2025-09-03 09:23:25 AM EDT]:
+❌ python ERROR [2025-09-03 10:15:17 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -66,15 +43,28 @@ KeyError: 'last_name, first_name'
 
 ---
 
-❌ python ERROR [2025-09-03 09:23:25 AM EDT]:
+❌ python ERROR [2025-09-03 10:15:18 AM EDT]:
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'last_name, first_name'
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 92, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 77, in main
-    innings_map = pitchers_xtra.set_index("last_name_first_name")["innings_pitched"].to_dict()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 6129, in set_index
-    raise KeyError(f"None of {missing} are in the columns")
-KeyError: "None of ['last_name_first_name'] are in the columns"
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 47, in main
+    bat_home["last_name, first_name"] = bat_home["last_name, first_name"].apply(enforce_last_first)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'last_name, first_name'
 
 ---
 
