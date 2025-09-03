@@ -1,4 +1,23 @@
-# scripts/apply_pitcher_weather_adjustment.py
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+# baseball_for_mat-main/scripts/apply_pitcher_weather_adjustment.py
+#
+# Apply per-game weather_factor to pitcher rows (home/away) by strict game_id join.
+# Requirements:
+#   Inputs:
+#     - data/adjusted/pitchers_home.csv  (must include: game_id, woba)
+#     - data/adjusted/pitchers_away.csv  (must include: game_id, woba)
+#     - data/weather_adjustments.csv     (must include: game_id, weather_factor)
+#   Outputs:
+#     - data/adjusted/pitchers_home_weather.csv
+#     - data/adjusted/pitchers_away_weather.csv
+#     - log_pitchers_home_weather.txt
+#     - log_pitchers_away_weather.txt
+#
+# Notes:
+#   - Join is m:1 on game_id only.
+#   - If weather_factor is missing for a game_id, adj_woba_weather remains NaN (no assumptions).
 
 import os
 import pandas as pd
@@ -24,16 +43,29 @@ def validate_columns(df: pd.DataFrame, required: set, source_path: str) -> None:
     if missing:
         raise ValueError(f"{source_path} missing columns: {missing}")
 
+def coerce_numeric(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    return df
+
 def apply_weather_factor(pitch_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd.DataFrame:
-    # Merge strictly on game_id
+    # Merge strictly on game_id (many pitchers to one weather row)
     merged = pitch_df.merge(
         weather_df[["game_id", "weather_factor"]],
         on="game_id",
         how="left",
         validate="m:1"
     )
-    # Compute adjusted wOBA using provided factor; if factor missing, result is NaN
+    # Ensure numeric for multiplication (preserves NaN if factor missing)
+    merged = coerce_numeric(merged, ["woba", "weather_factor"])
     merged["adj_woba_weather"] = merged["woba"] * merged["weather_factor"]
+
+    # Stable column order (non-destructive): put key/metrics first if present
+    preferred = ["player_id", "game_id", "name", "woba", "weather_factor", "adj_woba_weather"]
+    existing_pref = [c for c in preferred if c in merged.columns]
+    remaining = [c for c in merged.columns if c not in existing_pref]
+    merged = merged[existing_pref + remaining]
     return merged
 
 def log_top5(df: pd.DataFrame, log_path: str, label: str) -> None:
@@ -70,9 +102,9 @@ def main() -> None:
         return
 
     try:
-        home_df   = pd.read_csv(PITCHERS_HOME_FILE)
-        away_df   = pd.read_csv(PITCHERS_AWAY_FILE)
-        weather_df= pd.read_csv(WEATHER_FILE)
+        home_df    = pd.read_csv(PITCHERS_HOME_FILE)
+        away_df    = pd.read_csv(PITCHERS_AWAY_FILE)
+        weather_df = pd.read_csv(WEATHER_FILE)
     except Exception as e:
         print(f"CANNOT COMPLY: Failed to read input CSVs: {e}")
         return
