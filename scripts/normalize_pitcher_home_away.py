@@ -4,21 +4,40 @@
 """
 scripts/normalize_pitcher_home_away.py
 
-Strict player_id-based export of pitchers_home.csv and pitchers_away.csv.
-No name/team-string matching. Joins only on player_id (and attaches game_id).
-ID columns are written as digit-only strings (no decimals).
-Usage:
-  python scripts/normalize_pitcher_home_away.py <pitchers_input> <games_input> <out_home> <out_away>
+Export pitchers_home.csv and pitchers_away.csv directly from games file.
+No name/team-string matching beyond fields present in games file.
+Strict ID handling: player_id and game_id are written as digit-only strings.
+
+Accepted CLI forms (backward compatible):
+  NEW (preferred):
+    python scripts/normalize_pitcher_home_away.py <games_input> <out_home> <out_away>
+
+  LEGACY (ignored first arg to maintain workflow compatibility):
+    python scripts/normalize_pitcher_home_away.py <_ignored_pitchers_input> <games_input> <out_home> <out_away>
 """
 
-import pandas as pd
-import logging
-from pathlib import Path
 import sys
 import os
+from pathlib import Path
+import logging
+import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+REQUIRED_COLUMNS = {
+    "game_id",
+    "home_team",
+    "away_team",
+    "game_time",
+    "pitcher_home",
+    "pitcher_away",
+    "home_team_id",
+    "away_team_id",
+    "pitcher_home_id",
+    "pitcher_away_id",
+    "park_factor",
+}
 
 ID_COLS_OUT = ["player_id", "game_id"]
 
@@ -42,70 +61,78 @@ def ints_to_digit_strings(df: pd.DataFrame, cols) -> pd.DataFrame:
     return df
 
 def ensure_games_columns(g: pd.DataFrame):
-    required = {"game_id", "home_team", "away_team", "pitcher_home_id", "pitcher_away_id"}
-    missing = required - set(g.columns)
+    missing = REQUIRED_COLUMNS - set(g.columns)
     if missing:
         raise RuntimeError(
             "INSUFFICIENT INFORMATION: data/raw/todaysgames_normalized.csv is missing required columns: "
             + ", ".join(sorted(missing))
         )
 
-def build_side(pitchers_df: pd.DataFrame, games_df: pd.DataFrame, side: str) -> pd.DataFrame:
-    # Map side -> column with pitcher ID
-    pid_col = "pitcher_home_id" if side == "home" else "pitcher_away_id"
+def build_side(games_df: pd.DataFrame, side: str) -> pd.DataFrame:
+    if side not in ("home", "away"):
+        raise ValueError("side must be 'home' or 'away'")
 
-    # Select just needed game cols to avoid accidental merges on names
-    g = games_df[["game_id", "home_team", "away_team", pid_col]].copy()
+    pid_col = "pitcher_home_id" if side == "home" else "pitcher_away_id"
+    pname_col = "pitcher_home" if side == "home" else "pitcher_away"
+
+    # Base selection from games
+    cols = [
+        "game_id",
+        "home_team",
+        "away_team",
+        pid_col,
+        pname_col,
+    ]
+    g = games_df[cols].copy()
+
+    # Coerce IDs, drop rows missing game_id or pitcher_id
     g = to_int64(g, ["game_id", pid_col]).dropna(subset=["game_id", pid_col])
 
-    # Prepare pitchers
-    p = pitchers_df.copy()
-    p = to_int64(p, ["player_id"]).dropna(subset=["player_id"])
+    # Normalize output schema
+    out = pd.DataFrame({
+        "player_id": g[pid_col],
+        "game_id": g["game_id"],
+        "pitcher_name": g[pname_col],
+        "game_home_team": g["home_team"],
+        "game_away_team": g["away_team"],
+    })
 
-    # Strict merge by player_id only; attach game metadata afterwards
-    merged = p.merge(g, left_on="player_id", right_on=pid_col, how="inner", validate="m:m")
-
-    # Attach team + home_away label using the games row
+    # Attach team flag/context
     if side == "home":
-        merged["team"] = merged["home_team"]
-        merged["home_away"] = "home"
-        merged["game_home_team"] = merged["home_team"]
-        merged["game_away_team"] = merged["away_team"]
+        out["team"] = out["game_home_team"]
+        out["home_away"] = "home"
     else:
-        merged["team"] = merged["away_team"]
-        merged["home_away"] = "away"
-        merged["game_home_team"] = merged["home_team"]
-        merged["game_away_team"] = merged["away_team"]
+        out["team"] = out["game_away_team"]
+        out["home_away"] = "away"
 
-    # Keep a clean schema; drop helper key
-    merged.drop(columns=[pid_col], inplace=True)
-    merged = strip_strings(merged).drop_duplicates()
+    # Final cleanup: IDs as digit-only strings, trim strings, drop dups
+    out = strip_strings(out).drop_duplicates()
+    out = to_int64(out, ID_COLS_OUT)
+    out = ints_to_digit_strings(out, ID_COLS_OUT)
 
-    # IDs as digit-only strings for CSV
-    merged = to_int64(merged, ID_COLS_OUT)
-    merged = ints_to_digit_strings(merged, ID_COLS_OUT)
+    # Column order
+    out = out[[
+        "player_id",
+        "game_id",
+        "pitcher_name",
+        "team",
+        "home_away",
+        "game_home_team",
+        "game_away_team",
+    ]]
 
-    return merged
+    return out
 
-def process_pitcher_data(pitchers_input_path: Path,
-                         games_input_path: Path,
-                         output_home_path: Path,
-                         output_away_path: Path):
-    if not pitchers_input_path.exists():
-        raise FileNotFoundError(f"{pitchers_input_path} does not exist.")
+def process(games_input_path: Path, output_home_path: Path, output_away_path: Path):
     if not games_input_path.exists():
         raise FileNotFoundError(f"{games_input_path} does not exist.")
 
-    pitchers_df = pd.read_csv(pitchers_input_path)
     games_df = pd.read_csv(games_input_path)
-
-    pitchers_df = strip_strings(pitchers_df)
     games_df = strip_strings(games_df)
-
     ensure_games_columns(games_df)
 
-    home_df = build_side(pitchers_df, games_df, "home")
-    away_df = build_side(pitchers_df, games_df, "away")
+    home_df = build_side(games_df, "home")
+    away_df = build_side(games_df, "away")
 
     os.makedirs(output_home_path.parent, exist_ok=True)
     os.makedirs(output_away_path.parent, exist_ok=True)
@@ -116,12 +143,16 @@ def process_pitcher_data(pitchers_input_path: Path,
     logger.info(f"Home rows: {len(home_df)} | Away rows: {len(away_df)}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        print("INSUFFICIENT INFORMATION: usage requires 4 arguments — <pitchers_input> <games_input> <out_home> <out_away>")
+    # NEW: 3 args (games, out_home, out_away)
+    # LEGACY: 4 args (ignored_pitchers, games, out_home, out_away)
+    if len(sys.argv) == 4:
+        _, games_in, out_home, out_away = sys.argv
+    elif len(sys.argv) == 5:
+        # Ignore first arg for backward compatibility
+        _, _ignored, games_in, out_home, out_away = sys.argv
+    else:
+        print("INSUFFICIENT INFORMATION: usage requires either 3 args <games_input> <out_home> <out_away> "
+              "or 4 args <ignored_pitchers_input> <games_input> <out_home> <out_away>")
         sys.exit(1)
-    process_pitcher_data(
-        Path(sys.argv[1]),
-        Path(sys.argv[2]),
-        Path(sys.argv[3]),
-        Path(sys.argv[4]),
-    )
+
+    process(Path(games_in), Path(out_home), Path(out_away))
