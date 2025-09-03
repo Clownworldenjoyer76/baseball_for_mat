@@ -1,8 +1,13 @@
-❌ python ERROR [2025-09-03 08:58:47 AM EDT]:
+❌ python ERROR [2025-09-03 09:23:20 AM EDT]:
+python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/attach_pitcher_ids.py': [Errno 2] No such file or directory
 
 ---
 
-❌ python ERROR [2025-09-03 08:58:48 AM EDT]:
+❌ python ERROR [2025-09-03 09:23:21 AM EDT]:
+
+---
+
+❌ python ERROR [2025-09-03 09:23:22 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 131, in <module>
     final_bat_awp()
@@ -18,7 +23,7 @@ KeyError: "['location'] not in index"
 
 ---
 
-❌ python ERROR [2025-09-03 08:58:48 AM EDT]:
+❌ python ERROR [2025-09-03 09:23:22 AM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbathwp.py", line 193, in <module>
     final_bat_hwp()
@@ -36,7 +41,7 @@ KeyError: 'home_team'
 
 ---
 
-❌ python ERROR [2025-09-03 08:58:51 AM EDT]:
+❌ python ERROR [2025-09-03 09:23:25 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -58,6 +63,18 @@ Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
     raise KeyError(key) from err
 KeyError: 'last_name, first_name'
+
+---
+
+❌ python ERROR [2025-09-03 09:23:25 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 92, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 77, in main
+    innings_map = pitchers_xtra.set_index("last_name_first_name")["innings_pitched"].to_dict()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 6129, in set_index
+    raise KeyError(f"None of {missing} are in the columns")
+KeyError: "None of ['last_name_first_name'] are in the columns"
 
 ---
 
