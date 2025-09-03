@@ -1,28 +1,28 @@
-===== RUN TIMESTAMP: 2025-09-03 10:44:00 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-03 11:27:39 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-03 10:43:53 AM EDT]
-✅ python succeeded [2025-09-03 10:43:53 AM EDT]
-✅ python succeeded [2025-09-03 10:43:54 AM EDT]
-✅ python succeeded [2025-09-03 10:43:54 AM EDT]
-✅ python succeeded [2025-09-03 10:43:54 AM EDT]
-✅ python succeeded [2025-09-03 10:43:55 AM EDT]
-✅ python succeeded [2025-09-03 10:43:56 AM EDT]
-✅ python succeeded [2025-09-03 10:43:56 AM EDT]
-✅ python succeeded [2025-09-03 10:43:56 AM EDT]
-✅ python succeeded [2025-09-03 10:43:57 AM EDT]
-✅ python succeeded [2025-09-03 10:43:57 AM EDT]
-✅ python succeeded [2025-09-03 10:43:58 AM EDT]
-✅ python succeeded [2025-09-03 10:43:58 AM EDT]
-❌ python failed [2025-09-03 10:43:58 AM EDT]
-✅ python succeeded [2025-09-03 10:43:59 AM EDT]
-❌ python failed [2025-09-03 10:43:59 AM EDT]
-✅ python succeeded [2025-09-03 10:43:59 AM EDT]
-✅ python succeeded [2025-09-03 10:44:00 AM EDT]
-✅ python succeeded [2025-09-03 10:44:00 AM EDT]
+✅ python succeeded [2025-09-03 11:27:33 AM EDT]
+✅ python succeeded [2025-09-03 11:27:33 AM EDT]
+✅ python succeeded [2025-09-03 11:27:34 AM EDT]
+✅ python succeeded [2025-09-03 11:27:34 AM EDT]
+✅ python succeeded [2025-09-03 11:27:34 AM EDT]
+✅ python succeeded [2025-09-03 11:27:35 AM EDT]
+✅ python succeeded [2025-09-03 11:27:35 AM EDT]
+✅ python succeeded [2025-09-03 11:27:35 AM EDT]
+✅ python succeeded [2025-09-03 11:27:36 AM EDT]
+✅ python succeeded [2025-09-03 11:27:36 AM EDT]
+✅ python succeeded [2025-09-03 11:27:37 AM EDT]
+✅ python succeeded [2025-09-03 11:27:37 AM EDT]
+✅ python succeeded [2025-09-03 11:27:37 AM EDT]
+❌ python failed [2025-09-03 11:27:38 AM EDT]
+✅ python succeeded [2025-09-03 11:27:38 AM EDT]
+❌ python failed [2025-09-03 11:27:38 AM EDT]
+✅ python succeeded [2025-09-03 11:27:39 AM EDT]
+✅ python succeeded [2025-09-03 11:27:39 AM EDT]
+✅ python succeeded [2025-09-03 11:27:39 AM EDT]
 
 ===== LOG =====
-▶️ START: prep_merge.py (2025-09-03 10:43:53 AM EDT)
+▶️ START: prep_merge.py (2025-09-03 11:27:32 AM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -41,9 +41,9 @@ Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
 Git operation failed: Command '['git', 'commit', '-m', 'prep_merge: stage files (player_id/game_id-based)']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 10:43:53 AM EDT)
+⏹️ END: python (2025-09-03 11:27:33 AM EDT)
 
-▶️ START: chain_load_data.py (2025-09-03 10:43:53 AM EDT)
+▶️ START: chain_load_data.py (2025-09-03 11:27:33 AM EDT)
 --- Starting Data Loading Process ---
 Loading games from data/end_chain/first/games_today.csv...
 ✅ Loaded games. Shape: (14, 11)
@@ -56,50 +56,34 @@ Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
 Loading pitchers_away from data/end_chain/first/pit_awp.csv...
 ✅ Loaded pitchers_away. Shape: (12, 5)
 --- Data Loading Complete ---
-⏹️ END: python (2025-09-03 10:43:53 AM EDT)
+⏹️ END: python (2025-09-03 11:27:33 AM EDT)
 
-▶️ START: clean_and_preprocess_games.py (2025-09-03 10:43:53 AM EDT)
+▶️ START: clean_and_preprocess_games.py (2025-09-03 11:27:33 AM EDT)
 ✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=14)
-⏹️ END: python (2025-09-03 10:43:54 AM EDT)
+⏹️ END: python (2025-09-03 11:27:34 AM EDT)
 
-▶️ START: normalize_pitchers_xtra.py (2025-09-03 10:43:54 AM EDT)
+▶️ START: normalize_pitchers_xtra.py (2025-09-03 11:27:34 AM EDT)
 ✅ Wrote 25 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
-⏹️ END: python (2025-09-03 10:43:54 AM EDT)
+⏹️ END: python (2025-09-03 11:27:34 AM EDT)
 
-▶️ START: clean_merge_files.py (2025-09-03 10:43:54 AM EDT)
+▶️ START: clean_merge_files.py (2025-09-03 11:27:34 AM EDT)
 Cleaned data/end_chain/first/pit_hwp.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/pit_awp.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed 0, remaining: 0
 
 ✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
-⏹️ END: python (2025-09-03 10:43:54 AM EDT)
+⏹️ END: python (2025-09-03 11:27:34 AM EDT)
 
-▶️ START: finalbatawp.py (2025-09-03 10:43:54 AM EDT)
-[main 8cbc8ab0] 📊 Auto-update finalbatawp.csv
- 1 file changed, 122 insertions(+), 122 deletions(-)
-⚠️ Warning: Some rows missing game_id after merge:
-away_team home_team
-   Angels       nan
-  Yankees       nan
-Athletics       nan
-   Royals       nan
-   Astros       nan
-Cardinals       nan
-  Brewers       nan
-   Padres       nan
-   Tigers       nan
-   Giants       nan
-White Sox       nan
-    Twins       nan
-  Orioles       nan
-  Red Sox       nan
-     Reds       nan
-✅ Successfully created data/end_chain/final/finalbatawp.csv (rows=121)
-✅ Pushed to repository.
-⏹️ END: python (2025-09-03 10:43:55 AM EDT)
+▶️ START: finalbatawp.py (2025-09-03 11:27:34 AM EDT)
+❌ Missing input file: /data/end_chain/first/raw/bat_awp_dirty.csv
+❌ Missing input file: /data/Data/batters.csv
+❌ Missing input file: /data/end_chain/cleaned/games_today_cleaned.csv
+❌ Missing input file: /data/raw/todaysgames_normalized.csv
+❌ Missing input file: /data/weather_adjustments.csv
+⏹️ END: python (2025-09-03 11:27:35 AM EDT)
 
-▶️ START: finalbathwp.py (2025-09-03 10:43:55 AM EDT)
+▶️ START: finalbathwp.py (2025-09-03 11:27:35 AM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -114,9 +98,9 @@ Changes not staged for commit:
 no changes added to commit (use "git add" and/or "git commit -a")
 ✅ Built data/end_chain/final/finalbathwp.csv (rows=42, cols=10)
 ⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'finalbathwp: game_id merge of bat_hwp_dirty with games']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 10:43:56 AM EDT)
+⏹️ END: python (2025-09-03 11:27:35 AM EDT)
 
-▶️ START: bat_1.py (2025-09-03 10:43:56 AM EDT)
+▶️ START: bat_1.py (2025-09-03 11:27:35 AM EDT)
 🔄 Processing data/end_chain/final/finalbatawp.csv...
   🗑️ Identified columns ending in '_y' for deletion: ['game_time_y']
   🗑️ Dropped total columns: ['game_time_y']
@@ -138,9 +122,9 @@ Beginning processing for bat_away2.csv with specific column deletions...
 ✅ Successfully saved processed data to data/end_chain/final/updating/bat_home1.csv
 
 Processing complete for bat_1.py.
-⏹️ END: python (2025-09-03 10:43:56 AM EDT)
+⏹️ END: python (2025-09-03 11:27:35 AM EDT)
 
-▶️ START: bat_2.py (2025-09-03 10:43:56 AM EDT)
+▶️ START: bat_2.py (2025-09-03 11:27:35 AM EDT)
 🔄 Processing data/end_chain/final/updating/bat_home1.csv for bat_home2.csv...
   Checking for _input and _adj columns for conditional processing...
   ✅ No conditional drops or renames.
@@ -163,54 +147,54 @@ Processing complete for bat_1.py.
 ✅ Saved processed data to data/end_chain/final/updating/bat_away2.csv
 
 Processing complete for bat_2.py.
-⏹️ END: python (2025-09-03 10:43:56 AM EDT)
+⏹️ END: python (2025-09-03 11:27:36 AM EDT)
 
-▶️ START: bat_away3.py (2025-09-03 10:43:56 AM EDT)
-⏹️ END: python (2025-09-03 10:43:57 AM EDT)
+▶️ START: bat_away3.py (2025-09-03 11:27:36 AM EDT)
+⏹️ END: python (2025-09-03 11:27:36 AM EDT)
 
-▶️ START: bat_home3.py (2025-09-03 10:43:57 AM EDT)
-⏹️ END: python (2025-09-03 10:43:57 AM EDT)
+▶️ START: bat_home3.py (2025-09-03 11:27:36 AM EDT)
+⏹️ END: python (2025-09-03 11:27:37 AM EDT)
 
-▶️ START: bat4.py (2025-09-03 10:43:57 AM EDT)
+▶️ START: bat4.py (2025-09-03 11:27:37 AM EDT)
 ✅ Fixed bat file written to: data/end_chain/final/updating/bat_away4.csv
-⏹️ END: python (2025-09-03 10:43:58 AM EDT)
+⏹️ END: python (2025-09-03 11:27:37 AM EDT)
 
-▶️ START: woba_calc.py (2025-09-03 10:43:58 AM EDT)
+▶️ START: woba_calc.py (2025-09-03 11:27:37 AM EDT)
 ⚠️ 'woba' column missing in bat_home3.csv, skipping adj_woba_weather
 ✅ Updated: data/end_chain/final/updating/bat_home3.csv
 ✅ Updated: data/end_chain/final/updating/bat_away4.csv
-⏹️ END: python (2025-09-03 10:43:58 AM EDT)
+⏹️ END: python (2025-09-03 11:27:37 AM EDT)
 
-▶️ START: pit1.py (2025-09-03 10:43:58 AM EDT)
-⏹️ END: python (2025-09-03 10:43:58 AM EDT)
+▶️ START: pit1.py (2025-09-03 11:27:37 AM EDT)
+⏹️ END: python (2025-09-03 11:27:38 AM EDT)
 
-▶️ START: pit2.py (2025-09-03 10:43:58 AM EDT)
-⏹️ END: python (2025-09-03 10:43:59 AM EDT)
+▶️ START: pit2.py (2025-09-03 11:27:38 AM EDT)
+⏹️ END: python (2025-09-03 11:27:38 AM EDT)
 
-▶️ START: end_prep.py (2025-09-03 10:43:59 AM EDT)
+▶️ START: end_prep.py (2025-09-03 11:27:38 AM EDT)
 🔄 Loading files...
 ✅ Files loaded. Normalizing names...
-⏹️ END: python (2025-09-03 10:43:59 AM EDT)
+⏹️ END: python (2025-09-03 11:27:38 AM EDT)
 
-▶️ START: pit3.py (2025-09-03 10:43:59 AM EDT)
+▶️ START: pit3.py (2025-09-03 11:27:38 AM EDT)
 ✅ Updated pitcher stats and saved to: data/end_chain/final/startingpitchers_final.csv
-⏹️ END: python (2025-09-03 10:43:59 AM EDT)
+⏹️ END: python (2025-09-03 11:27:39 AM EDT)
 
-▶️ START: normalize_batters_projection_columns.py (2025-09-03 10:43:59 AM EDT)
+▶️ START: normalize_batters_projection_columns.py (2025-09-03 11:27:39 AM EDT)
 ✅ Saved normalized batter projection data to: data/end_chain/final/normalize_end/all_bat_col.csv
-⏹️ END: python (2025-09-03 10:44:00 AM EDT)
+⏹️ END: python (2025-09-03 11:27:39 AM EDT)
 
-▶️ START: bat5.py (2025-09-03 10:44:00 AM EDT)
+▶️ START: bat5.py (2025-09-03 11:27:39 AM EDT)
 🔄 Loading input files...
 🛠️ Filling batter_home_final.csv...
 ✅ Updated: data/end_chain/final/batter_home_final.csv
 🛠️ Filling batter_away_final.csv...
 ✅ Updated: data/end_chain/final/batter_away_final.csv
-⏹️ END: python (2025-09-03 10:44:00 AM EDT)
+⏹️ END: python (2025-09-03 11:27:39 AM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-03 10:43:58 AM EDT]:
+❌ python ERROR [2025-09-03 11:27:38 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -235,7 +219,7 @@ KeyError: 'last_name, first_name'
 
 ---
 
-❌ python ERROR [2025-09-03 10:43:59 AM EDT]:
+❌ python ERROR [2025-09-03 11:27:38 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
