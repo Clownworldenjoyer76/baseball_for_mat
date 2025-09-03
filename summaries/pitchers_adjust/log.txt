@@ -1,13 +1,14 @@
-▶️ START: normalize_pitcher_weather_outputs.py (2025-09-02 08:18:05 PM EDT)
-[main 10c33db0] Normalize pitchers before weather adjustment
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-02 08:24:52 PM EDT)
+[main 6b7b82a2] Normalize pitchers before weather adjustment
 Committed normalization stage outputs.
-⏹️ END: python (2025-09-02 08:18:06 PM EDT)
+⏹️ END: python (2025-09-02 08:24:53 PM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment.py (2025-09-02 08:18:06 PM EDT)
-CANNOT COMPLY: data/adjusted/pitchers_home.csv missing columns: ['woba']
-⏹️ END: python (2025-09-02 08:18:07 PM EDT)
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-02 08:24:53 PM EDT)
+[main 7659fdcc] Apply pitcher weather factor by game_id
+ 4 files changed, 32 insertions(+), 23 deletions(-)
+⏹️ END: python (2025-09-02 08:24:54 PM EDT)
 
-▶️ START: apply_pitcher_park_adjustment.py (2025-09-02 08:18:07 PM EDT)
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-02 08:24:54 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -24,33 +25,15 @@ no changes added to commit (use "git add" and/or "git commit -a")
 ✅ Wrote data/adjusted/pitchers_away_park.csv (12 rows)
 📝 Log written to log_pitchers_away_park.txt
 ⚠️ Git operation failed: Command '['git', 'commit', '-m', 'Apply pitcher park adjustments (game_id merge only)']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-02 08:18:07 PM EDT)
+⏹️ END: python (2025-09-02 08:24:54 PM EDT)
 
-▶️ START: combine_pitcher_weather_park_home.py (2025-09-02 08:18:07 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-02 08:24:54 PM EDT)
+[main 6c333c9c] Combine pitcher weather+park (home) on player_id+game_id
+ 2 files changed, 23 insertions(+), 3 deletions(-)
+⏹️ END: python (2025-09-02 08:24:55 PM EDT)
 
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   summaries/pitchers_adjust/log.txt
-	modified:   summaries/pitchers_adjust/status.txt
-	modified:   summaries/pitchers_adjust/summary.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
-⏹️ END: python (2025-09-02 08:18:07 PM EDT)
-
-▶️ START: combine_pitcher_weather_park_away.py (2025-09-02 08:18:07 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   summaries/pitchers_adjust/log.txt
-	modified:   summaries/pitchers_adjust/status.txt
-	modified:   summaries/pitchers_adjust/summary.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
-⏹️ END: python (2025-09-02 08:18:08 PM EDT)
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-02 08:24:55 PM EDT)
+[main 87a07450] Combine pitcher weather+park (away) on player_id+game_id
+ 2 files changed, 19 insertions(+), 1 deletion(-)
+⏹️ END: python (2025-09-02 08:24:56 PM EDT)
 
