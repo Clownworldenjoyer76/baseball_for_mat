@@ -1,132 +1,80 @@
-import pandas as pd
+#!/usr/bin/env python3
 import os
-import subprocess
+import sys
+import pandas as pd
 
-def final_bat_awp():
+BAT_AWP_CLEAN = "data/end_chain/cleaned/bat_awp_cleaned.csv"
+GAMES_CLEAN   = "data/end_chain/cleaned/games_today_cleaned.csv"
+OUT_DIR       = "data/end_chain/final"
+OUT_FILE      = os.path.join(OUT_DIR, "finalbatawp.csv")
+
+def ts(msg):  # tiny helper for readable logs
+    print(msg, flush=True)
+
+def ensure_cols(df, needed, name):
+    missing = [c for c in needed if c not in df.columns]
+    if missing:
+        raise SystemExit(f"❌ {name} missing columns: {missing}")
+
+def attach_game_id_if_needed(bat, games):
     """
-    Processes baseball data by merging various input files to create a final
-    batting average with runners in scoring position (AWP) dataset.
-
-    Input files:
-    - data/end_chain/cleaned/games_today_cleaned.csv
-    - data/weather_adjustments.csv
-    - data/weather_input.csv
-    - data/end_chain/cleaned/bat_awp_cleaned.csv
-
-    Output file:
-    - data/end_chain/final/finalbatawp.csv
+    If batters file lacks game_id, attempt to attach it from games by
+    matching (away_team, home_team) when both exist, otherwise by away_team only.
     """
+    if "game_id" in bat.columns and bat["game_id"].notna().any():
+        return bat  # already present
 
-    # Load input files
+    # Prefer attaching with both away/home teams if available
+    keys_both = {"away_team", "home_team"}
+    keys_away = {"away_team"}
+
+    games_small = games[["game_id", "away_team", "home_team", "game_time"]].drop_duplicates()
+
+    if keys_both.issubset(bat.columns):
+        merged = bat.merge(games_small[["game_id", "away_team", "home_team"]],
+                           on=["away_team", "home_team"], how="left")
+        if merged["game_id"].notna().any():
+            ts("⚠️ bat_awp_cleaned.csv had no game_id; attached via (away_team, home_team).")
+            return merged
+
+    if keys_away.issubset(bat.columns):
+        merged = bat.merge(games_small[["game_id", "away_team"]],
+                           on=["away_team"], how="left")
+        if merged["game_id"].notna().any():
+            ts("⚠️ bat_awp_cleaned.csv had no game_id; attached via away_team.")
+            return merged
+
+    ts("⚠️ Unable to attach game_id from games; proceeding without games join.")
+    return bat
+
+def main():
+    # Load inputs
     try:
-        games_today_df = pd.read_csv('data/end_chain/cleaned/games_today_cleaned.csv')
-        weather_adjustments_df = pd.read_csv('data/weather_adjustments.csv')
-        weather_input_df = pd.read_csv('data/weather_input.csv')
-        bat_awp_df = pd.read_csv('data/end_chain/cleaned/bat_awp_cleaned.csv')
+        bat = pd.read_csv(BAT_AWP_CLEAN)
+        games = pd.read_csv(GAMES_CLEAN)
     except FileNotFoundError as e:
-        print(f"Error: One of the input files was not found. Please ensure all files are in the correct directory.")
-        print(f"Missing file: {e.filename}")
-        return
+        print(f"❌ Missing input file: {e.filename}")
+        sys.exit(1)
 
-    # Merge with games_today_cleaned.csv to get home_team and game_time
-    final_df = pd.merge(
-        bat_awp_df,
-        games_today_df[['away_team', 'home_team', 'game_time']],
-        on='away_team',
-        how='left'
-    )
+    # Basic schema checks
+    ensure_cols(games, ["game_id", "home_team", "away_team", "game_time"], "games_today_cleaned.csv")
 
-    # Merge with weather_adjustments.csv
-    weather_cols_to_merge = [
-        'away_team', 'venue', 'location', 'temperature', 'wind_speed',
-        'wind_direction', 'humidity', 'precipitation', 'condition', 'notes'
-    ]
-    final_df = pd.merge(
-        final_df,
-        weather_adjustments_df[weather_cols_to_merge],
-        on='away_team',
-        how='left'
-    )
+    # Ensure/attach game_id in batters file if needed
+    if "game_id" not in bat.columns or not bat["game_id"].notna().any():
+        bat = attach_game_id_if_needed(bat, games)
 
-    # Merge with weather_input.csv to get Park Factor
-    final_df = pd.merge(
-        final_df,
-        weather_input_df[['away_team', 'Park Factor']],
-        on='away_team',
-        how='left'
-    )
+    # If we still don't have game_id, we’ll save without the games join
+    if "game_id" in bat.columns and bat["game_id"].notna().any():
+        # Merge strictly on game_id, bringing over canonical matchup/time
+        games_small = games[["game_id", "home_team", "away_team", "game_time"]].drop_duplicates()
+        final_df = bat.merge(games_small, on="game_id", how="left")
+    else:
+        final_df = bat.copy()
 
-    # Define the output path and filename for finalbatawp.csv
-    output_directory = 'data/end_chain/final'
-    output_filename = 'finalbatawp.csv'
-    output_filepath = os.path.join(output_directory, output_filename)
-
-    # Ensure the output directory exists
-    os.makedirs(output_directory, exist_ok=True)
-
-    # Save the final DataFrame to a CSV file
-    final_df.to_csv(output_filepath, index=False)
-    print(f"✅ Successfully created '{output_filepath}'")
-
-    # --- Section for bat_hwp_cleaned.csv normalization ---
-    hwp_input_filepath = 'data/end_chain/cleaned/prep/bat_hwp_cleaned.csv'
-    hwp_output_filepath = 'data/end_chain/cleaned/bat_awp_clean2.csv' # Keep output location the same
-
-    try:
-        hwp_df = pd.read_csv(hwp_input_filepath)
-
-        # Normalize 'home_team' column based on 'team' column's values
-        if 'home_team' in hwp_df.columns and 'team' in hwp_df.columns:
-            # Map values from 'team' column to 'home_team' and apply normalization
-            # Create a mapping from original 'team' values to their normalized versions
-            # Assuming 'team' column already has the correct values you want to map from.
-            # If 'team' itself needs normalization before mapping, add it here:
-            # hwp_df['team_normalized'] = hwp_df['team'].astype(str).str.capitalize().str.replace(r',$', '', regex=True).str.strip()
-            # mapping = hwp_df.set_index('team')['team_normalized'].to_dict()
-
-            # For now, directly normalize 'home_team' based on its own value's first letter capitalized, no trailing comma/whitespace
-            hwp_df['home_team'] = hwp_df['home_team'].astype(str).str.capitalize().str.replace(r',$', '', regex=True).str.strip()
-
-            print(f"✅ Normalized 'home_team' column in '{hwp_input_filepath}'.")
-        else:
-            if 'home_team' not in hwp_df.columns:
-                print(f"⚠️ Warning: 'home_team' column not found in '{hwp_input_filepath}'. Skipping normalization.")
-            if 'team' not in hwp_df.columns:
-                print(f"⚠️ Warning: 'team' column not found in '{hwp_input_filepath}'. Cannot use it for reference.")
-
-
-        # Ensure output directory for bat_awp_clean2.csv exists
-        os.makedirs(os.path.dirname(hwp_output_filepath), exist_ok=True)
-
-        # Output updated file
-        hwp_df.to_csv(hwp_output_filepath, index=False)
-        print(f"✅ Successfully created '{hwp_output_filepath}' with normalized data.")
-
-    except FileNotFoundError:
-        print(f"❌ Error: Input file for normalization not found: '{hwp_input_filepath}'.")
-    except Exception as e:
-        print(f"❌ Error during bat_hwp_cleaned.csv normalization: {e}")
-    # --- End of New Section ---
-
-    # Git commit and push for both files
-    try:
-        # Add finalbatawp.csv
-        subprocess.run(["git", "add", output_filepath], check=True)
-        # Add bat_awp_clean2.csv
-        subprocess.run(["git", "add", hwp_output_filepath], check=True)
-
-        commit_message = f"📊 Auto-update {output_filename} and normalize bat_hwp_cleaned.csv"
-        subprocess.run(["git", "commit", "-m", commit_message], check=True)
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Pushed to repository.")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Git push failed: {e}")
-        # Detailed error output for debugging
-        if e.stderr:
-            print("Git stderr:", e.stderr.decode())
-        if e.stdout:
-            print("Git stdout:", e.stdout.decode())
+    # Write output
+    os.makedirs(OUT_DIR, exist_ok=True)
+    final_df.to_csv(OUT_FILE, index=False)
+    ts(f"✅ Successfully created '{OUT_FILE}' (rows={len(final_df)})")
 
 if __name__ == "__main__":
-    final_bat_awp()
-
+    main()
