@@ -1,22 +1,17 @@
-===== RUN TIMESTAMP: 2025-09-03 04:01:16 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-03 04:37:45 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-03 04:01:11 PM EDT]
-✅ python succeeded [2025-09-03 04:01:12 PM EDT]
-✅ python succeeded [2025-09-03 04:01:12 PM EDT]
-✅ python succeeded [2025-09-03 04:01:12 PM EDT]
-✅ python succeeded [2025-09-03 04:01:13 PM EDT]
-✅ python succeeded [2025-09-03 04:01:13 PM EDT]
-✅ python succeeded [2025-09-03 04:01:13 PM EDT]
-✅ python succeeded [2025-09-03 04:01:14 PM EDT]
-❌ python failed [2025-09-03 04:01:14 PM EDT]
-❌ python failed [2025-09-03 04:01:14 PM EDT]
-✅ python succeeded [2025-09-03 04:01:15 PM EDT]
-✅ python succeeded [2025-09-03 04:01:15 PM EDT]
-✅ python succeeded [2025-09-03 04:01:16 PM EDT]
+✅ python succeeded [2025-09-03 04:37:43 PM EDT]
+✅ python succeeded [2025-09-03 04:37:43 PM EDT]
+✅ python succeeded [2025-09-03 04:37:43 PM EDT]
+✅ python succeeded [2025-09-03 04:37:44 PM EDT]
+✅ python succeeded [2025-09-03 04:37:44 PM EDT]
+✅ python succeeded [2025-09-03 04:37:45 PM EDT]
+✅ python succeeded [2025-09-03 04:37:45 PM EDT]
+✅ python succeeded [2025-09-03 04:37:45 PM EDT]
 
 ===== LOG =====
-▶️ START: prep_merge.py (2025-09-03 04:01:11 PM EDT)
+▶️ START: prep_merge.py (2025-09-03 04:37:42 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -35,9 +30,9 @@ Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
 Git operation failed: Command '['git', 'commit', '-m', 'prep_merge: stage files (player_id/game_id-based)']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 04:01:11 PM EDT)
+⏹️ END: python (2025-09-03 04:37:43 PM EDT)
 
-▶️ START: chain_load_data.py (2025-09-03 04:01:11 PM EDT)
+▶️ START: chain_load_data.py (2025-09-03 04:37:43 PM EDT)
 --- Starting Data Loading Process ---
 Loading games from data/end_chain/first/games_today.csv...
 ✅ Loaded games. Shape: (15, 11)
@@ -50,26 +45,26 @@ Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
 Loading pitchers_away from data/end_chain/first/pit_awp.csv...
 ✅ Loaded pitchers_away. Shape: (13, 5)
 --- Data Loading Complete ---
-⏹️ END: python (2025-09-03 04:01:12 PM EDT)
+⏹️ END: python (2025-09-03 04:37:43 PM EDT)
 
-▶️ START: clean_and_preprocess_games.py (2025-09-03 04:01:12 PM EDT)
+▶️ START: clean_and_preprocess_games.py (2025-09-03 04:37:43 PM EDT)
 ✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=15)
-⏹️ END: python (2025-09-03 04:01:12 PM EDT)
+⏹️ END: python (2025-09-03 04:37:43 PM EDT)
 
-▶️ START: normalize_pitchers_xtra.py (2025-09-03 04:01:12 PM EDT)
+▶️ START: normalize_pitchers_xtra.py (2025-09-03 04:37:43 PM EDT)
 ✅ Wrote 27 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
-⏹️ END: python (2025-09-03 04:01:12 PM EDT)
+⏹️ END: python (2025-09-03 04:37:44 PM EDT)
 
-▶️ START: clean_merge_files.py (2025-09-03 04:01:12 PM EDT)
+▶️ START: clean_merge_files.py (2025-09-03 04:37:44 PM EDT)
 Cleaned data/end_chain/first/pit_hwp.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/pit_awp.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed 0, remaining: 0
 Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed 0, remaining: 0
 
 ✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
-⏹️ END: python (2025-09-03 04:01:13 PM EDT)
+⏹️ END: python (2025-09-03 04:37:44 PM EDT)
 
-▶️ START: finalbatawp.py (2025-09-03 04:01:13 PM EDT)
+▶️ START: finalbatawp.py (2025-09-03 04:37:44 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -84,9 +79,9 @@ Changes not staged for commit:
 no changes added to commit (use "git add" and/or "git commit -a")
 📝 Wrote data/end_chain/final/finalbatawp.csv (rows=48)
 ⚠️ Git operation failed: Command '['git', 'commit', '-m', '📊 Build finalbatawp.csv; add default park_factor (100.0) + src=default fallback']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 04:01:13 PM EDT)
+⏹️ END: python (2025-09-03 04:37:45 PM EDT)
 
-▶️ START: finalbathwp.py (2025-09-03 04:01:13 PM EDT)
+▶️ START: finalbathwp.py (2025-09-03 04:37:45 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
@@ -101,81 +96,12 @@ Changes not staged for commit:
 no changes added to commit (use "git add" and/or "git commit -a")
 📝 Wrote data/end_chain/final/finalbathwp.csv (rows=42, cols=10)
 ⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'finalbathwp: add default park_factor (100.0) + src=default fallback']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-03 04:01:13 PM EDT)
+⏹️ END: python (2025-09-03 04:37:45 PM EDT)
 
-▶️ START: pit1.py (2025-09-03 04:01:13 PM EDT)
+▶️ START: pit1.py (2025-09-03 04:37:45 PM EDT)
 ✅ Merged pitcher data saved to: data/end_chain/final/startingpitchers.csv
 ℹ️ Rows: 27 | Matched to xtra by player_id (has any xtra data): 27
-⏹️ END: python (2025-09-03 04:01:14 PM EDT)
-
-▶️ START: pit2.py (2025-09-03 04:01:14 PM EDT)
-⏹️ END: python (2025-09-03 04:01:14 PM EDT)
-
-▶️ START: end_prep.py (2025-09-03 04:01:14 PM EDT)
-🔄 Loading files...
-✅ Files loaded. Normalizing names...
-⏹️ END: python (2025-09-03 04:01:14 PM EDT)
-
-▶️ START: pit3.py (2025-09-03 04:01:14 PM EDT)
-✅ Updated pitcher stats and saved to: data/end_chain/final/startingpitchers_final.csv
-⏹️ END: python (2025-09-03 04:01:15 PM EDT)
-
-▶️ START: normalize_batters_projection_columns.py (2025-09-03 04:01:15 PM EDT)
-✅ Saved normalized batter projection data to: data/end_chain/final/normalize_end/all_bat_col.csv
-⏹️ END: python (2025-09-03 04:01:15 PM EDT)
-
-▶️ START: bat5.py (2025-09-03 04:01:15 PM EDT)
-🔄 Loading input files...
-🛠️ Filling batter_home_final.csv...
-✅ Updated: data/end_chain/final/batter_home_final.csv
-🛠️ Filling batter_away_final.csv...
-✅ Updated: data/end_chain/final/batter_away_final.csv
-⏹️ END: python (2025-09-03 04:01:16 PM EDT)
+⏹️ END: python (2025-09-03 04:37:45 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-03 04:01:14 PM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pit2.py", line 39, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pit2.py", line 27, in main
-    merged = bat_away.merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
-    return op.get_result(copy=copy)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
-    result = self._reindex_and_concat(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
-    llabels, rlabels = _items_overlap_with_suffix(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
-    raise MergeError(
-pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'pitcher_home_x'} is not allowed.
-
----
-
-❌ python ERROR [2025-09-03 04:01:14 PM EDT]:
-Traceback (most recent call last):
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
-    return self._engine.get_loc(casted_key)
-  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
-KeyError: 'last_name, first_name'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 92, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/end_prep.py", line 47, in main
-    bat_home["last_name, first_name"] = bat_home["last_name, first_name"].apply(enforce_last_first)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
-    indexer = self.columns.get_loc(key)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
-    raise KeyError(key) from err
-KeyError: 'last_name, first_name'
-
----
-
