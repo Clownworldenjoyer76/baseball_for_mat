@@ -1,54 +1,54 @@
-===== RUN TIMESTAMP: 2025-09-02 10:46:34 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-02 08:18:53 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-02 10:46:30 AM EDT]
-✅ python succeeded [2025-09-02 10:46:31 AM EDT]
-✅ python succeeded [2025-09-02 10:46:31 AM EDT]
-❌ python failed [2025-09-02 10:46:31 AM EDT]
-❌ python failed [2025-09-02 10:46:32 AM EDT]
-✅ python succeeded [2025-09-02 10:46:32 AM EDT]
-✅ python succeeded [2025-09-02 10:46:32 AM EDT]
-✅ python succeeded [2025-09-02 10:46:33 AM EDT]
-✅ python succeeded [2025-09-02 10:46:34 AM EDT]
+✅ python succeeded [2025-09-02 08:18:50 PM EDT]
+✅ python succeeded [2025-09-02 08:18:50 PM EDT]
+✅ python succeeded [2025-09-02 08:18:51 PM EDT]
+❌ python failed [2025-09-02 08:18:51 PM EDT]
+❌ python failed [2025-09-02 08:18:51 PM EDT]
+✅ python succeeded [2025-09-02 08:18:52 PM EDT]
+✅ python succeeded [2025-09-02 08:18:52 PM EDT]
+✅ python succeeded [2025-09-02 08:18:53 PM EDT]
+✅ python succeeded [2025-09-02 08:18:53 PM EDT]
 
 ===== LOG =====
-▶️ START: project_prep.py (2025-09-02 10:46:30 AM EDT)
+▶️ START: project_prep.py (2025-09-02 08:18:49 PM EDT)
 Load error: [Errno 2] No such file or directory: 'data/Data/stadium_metadata.csv'
-⏹️ END: python (2025-09-02 10:46:30 AM EDT)
+⏹️ END: python (2025-09-02 08:18:50 PM EDT)
 
-▶️ START: fix_missing_batter_stats.py (2025-09-02 10:46:30 AM EDT)
-⏹️ END: python (2025-09-02 10:46:31 AM EDT)
+▶️ START: fix_missing_batter_stats.py (2025-09-02 08:18:50 PM EDT)
+⏹️ END: python (2025-09-02 08:18:50 PM EDT)
 
-▶️ START: normalize_batters_for_builder.py (2025-09-02 10:46:31 AM EDT)
+▶️ START: normalize_batters_for_builder.py (2025-09-02 08:18:50 PM EDT)
 ✅ normalize_batters_for_builder: wrote data/tagged/batters_normalized.csv  (kept 157/157, dropped 0)
-⏹️ END: python (2025-09-02 10:46:31 AM EDT)
+⏹️ END: python (2025-09-02 08:18:51 PM EDT)
 
-▶️ START: align_weather_team_keys.py (2025-09-02 10:46:31 AM EDT)
-⏹️ END: python (2025-09-02 10:46:31 AM EDT)
+▶️ START: align_weather_team_keys.py (2025-09-02 08:18:51 PM EDT)
+⏹️ END: python (2025-09-02 08:18:51 PM EDT)
 
-▶️ START: project_batter_props.py (2025-09-02 10:46:31 AM EDT)
-⏹️ END: python (2025-09-02 10:46:32 AM EDT)
+▶️ START: project_batter_props.py (2025-09-02 08:18:51 PM EDT)
+⏹️ END: python (2025-09-02 08:18:51 PM EDT)
 
-▶️ START: project_pitcher_props.py (2025-09-02 10:46:32 AM EDT)
+▶️ START: project_pitcher_props.py (2025-09-02 08:18:51 PM EDT)
 Using enriched opponent context: data/raw/startingpitchers_with_opp_context.csv
 Wrote: data/_projections/pitcher_props_projected.csv (15 rows)
-⏹️ END: python (2025-09-02 10:46:32 AM EDT)
+⏹️ END: python (2025-09-02 08:18:52 PM EDT)
 
-▶️ START: build_expanded_batter_props.py (2025-09-02 10:46:32 AM EDT)
-✅ Wrote per-game expanded batter props → data/_projections/batter_props_z_expanded.csv (rows=101)
-⏹️ END: python (2025-09-02 10:46:32 AM EDT)
+▶️ START: build_expanded_batter_props.py (2025-09-02 08:18:52 PM EDT)
+✅ Wrote per-game expanded batter props → data/_projections/batter_props_z_expanded.csv (rows=90)
+⏹️ END: python (2025-09-02 08:18:52 PM EDT)
 
-▶️ START: pitcher_mega_z.py (2025-09-02 10:46:32 AM EDT)
+▶️ START: pitcher_mega_z.py (2025-09-02 08:18:52 PM EDT)
 ✅ Wrote: data/_projections/pitcher_mega_z.csv  (rows=545)
-⏹️ END: python (2025-09-02 10:46:33 AM EDT)
+⏹️ END: python (2025-09-02 08:18:53 PM EDT)
 
-▶️ START: project_final_score.py (2025-09-02 10:46:33 AM EDT)
+▶️ START: project_final_score.py (2025-09-02 08:18:53 PM EDT)
 ✅ Wrote: data/_projections/final_scores_projected.csv (games=15)
-⏹️ END: python (2025-09-02 10:46:34 AM EDT)
+⏹️ END: python (2025-09-02 08:18:53 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-02 10:46:31 AM EDT]:
+❌ python ERROR [2025-09-02 08:18:51 PM EDT]:
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/align_weather_team_keys.py", line 53, in <module>
     main()
@@ -64,7 +64,7 @@ KeyError: "None of [Index(['home_team', 'away_team'], dtype='object')] are in th
 
 ---
 
-❌ python ERROR [2025-09-02 10:46:32 AM EDT]:
+❌ python ERROR [2025-09-02 08:18:51 PM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
