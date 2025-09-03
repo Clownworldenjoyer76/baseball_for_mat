@@ -1,24 +1,4 @@
-❌ python ERROR [2025-09-03 10:15:13 AM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 80, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 64, in main
-    bat = attach_game_id_if_needed(bat, games)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/finalbatawp.py", line 34, in attach_game_id_if_needed
-    merged = bat.merge(games_small[["game_id", "away_team", "home_team"]],
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
-    op = _MergeOperation(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 807, in __init__
-    self._maybe_coerce_merge_keys()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1509, in _maybe_coerce_merge_keys
-    raise ValueError(msg)
-ValueError: You are trying to merge on float64 and object columns for key 'home_team'. If you wish to proceed you should use pd.concat
-
----
-
-❌ python ERROR [2025-09-03 10:15:17 AM EDT]:
+❌ python ERROR [2025-09-03 10:27:31 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
@@ -43,7 +23,7 @@ KeyError: 'last_name, first_name'
 
 ---
 
-❌ python ERROR [2025-09-03 10:15:18 AM EDT]:
+❌ python ERROR [2025-09-03 10:27:31 AM EDT]:
 Traceback (most recent call last):
   File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
     return self._engine.get_loc(casted_key)
