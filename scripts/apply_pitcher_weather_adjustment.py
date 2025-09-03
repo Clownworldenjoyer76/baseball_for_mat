@@ -3,21 +3,10 @@
 
 # baseball_for_mat-main/scripts/apply_pitcher_weather_adjustment.py
 #
-# Apply per-game weather_factor to pitcher rows (home/away) by strict game_id join.
-# Requirements:
-#   Inputs:
-#     - data/adjusted/pitchers_home.csv  (must include: game_id, woba)
-#     - data/adjusted/pitchers_away.csv  (must include: game_id, woba)
-#     - data/weather_adjustments.csv     (must include: game_id, weather_factor)
-#   Outputs:
-#     - data/adjusted/pitchers_home_weather.csv
-#     - data/adjusted/pitchers_away_weather.csv
-#     - log_pitchers_home_weather.txt
-#     - log_pitchers_away_weather.txt
-#
-# Notes:
-#   - Join is m:1 on game_id only.
-#   - If weather_factor is missing for a game_id, adj_woba_weather remains NaN (no assumptions).
+# Merge per-game weather_factor into pitcher rows (home/away) by strict game_id.
+# If 'woba' exists, compute adj_woba_weather = woba * weather_factor.
+# If 'woba' is missing, still write weather_factor and an empty adj_woba_weather column.
+# No assumptions beyond columns present.
 
 import os
 import pandas as pd
@@ -35,7 +24,8 @@ OUTPUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
 LOG_HOME    = "log_pitchers_home_weather.txt"
 LOG_AWAY    = "log_pitchers_away_weather.txt"
 
-REQUIRED_PITCHER_COLS = {"game_id", "woba"}
+# Minimum required columns
+REQUIRED_PITCHER_COLS = {"game_id"}
 REQUIRED_WEATHER_COLS = {"game_id", "weather_factor"}
 
 def validate_columns(df: pd.DataFrame, required: set, source_path: str) -> None:
@@ -57,11 +47,17 @@ def apply_weather_factor(pitch_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd
         how="left",
         validate="m:1"
     )
-    # Ensure numeric for multiplication (preserves NaN if factor missing)
-    merged = coerce_numeric(merged, ["woba", "weather_factor"])
-    merged["adj_woba_weather"] = merged["woba"] * merged["weather_factor"]
 
-    # Stable column order (non-destructive): put key/metrics first if present
+    # Ensure numeric for multiplication (preserves NaN if factor missing)
+    merged = coerce_numeric(merged, ["weather_factor"])
+    if "woba" in merged.columns:
+        merged = coerce_numeric(merged, ["woba"])
+        merged["adj_woba_weather"] = merged["woba"] * merged["weather_factor"]
+    else:
+        # Create empty column to preserve downstream schema
+        merged["adj_woba_weather"] = pd.NA
+
+    # Stable column order: keys/metrics first if present
     preferred = ["player_id", "game_id", "name", "woba", "weather_factor", "adj_woba_weather"]
     existing_pref = [c for c in preferred if c in merged.columns]
     remaining = [c for c in merged.columns if c not in existing_pref]
@@ -72,13 +68,14 @@ def log_top5(df: pd.DataFrame, log_path: str, label: str) -> None:
     Path(log_path).parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w") as f:
         f.write(f"Top 5 {label} pitchers by adj_woba_weather\n")
-        if "adj_woba_weather" in df.columns:
+        if "adj_woba_weather" in df.columns and df["adj_woba_weather"].notna().any():
             top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
             cols_pref = ["name", "player_id", "game_id", "woba", "weather_factor", "adj_woba_weather"]
             cols = [c for c in cols_pref if c in top5.columns]
+            f.write("\n")
             f.write(top5[cols].to_string(index=False))
         else:
-            f.write("adj_woba_weather not present")
+            f.write("\nNo non-empty adj_woba_weather values available.")
 
 def git_commit_and_push() -> None:
     try:
@@ -93,14 +90,15 @@ def git_commit_and_push() -> None:
         print(f"Git error: {e}")
 
 def main() -> None:
-    # Load
-    if not os.path.exists(PITCHERS_HOME_FILE) or not os.path.exists(PITCHERS_AWAY_FILE) or not os.path.exists(WEATHER_FILE):
-        print("CANNOT COMPLY: Missing required input file(s). Expected:")
-        print(f" - {PITCHERS_HOME_FILE}")
-        print(f" - {PITCHERS_AWAY_FILE}")
-        print(f" - {WEATHER_FILE}")
+    # Load guard
+    missing_inputs = [p for p in (PITCHERS_HOME_FILE, PITCHERS_AWAY_FILE, WEATHER_FILE) if not os.path.exists(p)]
+    if missing_inputs:
+        print("CANNOT COMPLY: Missing required input file(s):")
+        for p in missing_inputs:
+            print(f" - {p}")
         return
 
+    # Read
     try:
         home_df    = pd.read_csv(PITCHERS_HOME_FILE)
         away_df    = pd.read_csv(PITCHERS_AWAY_FILE)
@@ -109,7 +107,7 @@ def main() -> None:
         print(f"CANNOT COMPLY: Failed to read input CSVs: {e}")
         return
 
-    # Validate columns
+    # Validate required columns
     try:
         validate_columns(home_df, REQUIRED_PITCHER_COLS, PITCHERS_HOME_FILE)
         validate_columns(away_df, REQUIRED_PITCHER_COLS, PITCHERS_AWAY_FILE)
@@ -118,7 +116,7 @@ def main() -> None:
         print(f"CANNOT COMPLY: {e}")
         return
 
-    # Apply
+    # Process
     adjusted_home = apply_weather_factor(home_df, weather_df)
     adjusted_away = apply_weather_factor(away_df, weather_df)
 
