@@ -3,7 +3,7 @@ name: 04-A Prep
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["04 Pitcher Adjustments"]  # MUST match 04's name exactly
+    workflows: ["04 Pitcher Adjustments"]
     types: [completed]
     branches: [main]
 
@@ -55,7 +55,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run stage with unified logs
+      - name: Run 04-A Prep with unified logs
         shell: bash
         run: |
           set +e
@@ -89,29 +89,30 @@ jobs:
             echo >>"$LOG"
           }
 
-          # --- 04-A Prep block (exact order) ---
-          run_step prep_merge.py                              python scripts/prep_merge.py
-          run_step clean_and_preprocess_games.py              python scripts/clean_and_preprocess_games.py
-          run_step attach_pitcher_ids.py                      python scripts/attach_pitcher_ids.py
-          run_step normalize_pitchers_xtra.py                 python scripts/normalize_pitchers_xtra.py
-          run_step clean_merge_files.py                       python scripts/clean_merge_files.py
-          run_step clean_and_preprocess_batters.py            python scripts/clean_and_preprocess_batters.py
-          run_step enrich_batters_away.py                     python scripts/enrich_batters_away.py
-          run_step cleanup_enriched_batters_away.py           python scripts/cleanup_enriched_batters_away.py
-          run_step finalbatawp.py                             python scripts/finalbatawp.py
-          run_step finalbathwp.py                             python scripts/finalbathwp.py
-          run_step bat_1.py                                   python scripts/bat_1.py
-          run_step bat_2.py                                   python scripts/bat_2.py
-          run_step bat_away3.py                               python scripts/bat_away3.py
-          run_step bat_home3.py                               python scripts/bat_home3.py
-          run_step bat4.py                                    python scripts/bat4.py
-          run_step woba_calc.py                               python scripts/woba_calc.py
-          run_step pit1.py                                    python scripts/pit1.py
-          run_step pit2.py                                    python scripts/pit2.py
-          run_step end_prep.py                                python scripts/end_prep.py
-          run_step pit3.py                                    python scripts/pit3.py
-          run_step normalize_batters_projection_columns.py    python scripts/normalize_batters_projection_columns.py
-          run_step bat5.py                                    python scripts/bat5.py
+          # === 04-A Prep sequence ===
+          run_step prep_merge.py                           python scripts/prep_merge.py
+          run_step chain_load_data.py                      python scripts/chain_load_data.py
+          run_step clean_and_preprocess_games.py           python scripts/clean_and_preprocess_games.py
+          run_step attach_pitcher_ids.py                   python scripts/attach_pitcher_ids.py
+          run_step normalize_pitchers_xtra.py              python scripts/normalize_pitchers_xtra.py
+          run_step clean_merge_files.py                    python scripts/clean_merge_files.py
+          run_step clean_and_preprocess_batters.py         python scripts/clean_and_preprocess_batters.py
+          run_step enrich_batters_away.py                  python scripts/enrich_batters_away.py
+          run_step cleanup_enriched_batters_away.py        python scripts/cleanup_enriched_batters_away.py
+          run_step finalbatawp.py                          python scripts/finalbatawp.py
+          run_step finalbathwp.py                          python scripts/finalbathwp.py
+          run_step bat_1.py                                python scripts/bat_1.py
+          run_step bat_2.py                                python scripts/bat_2.py
+          run_step bat_away3.py                            python scripts/bat_away3.py
+          run_step bat_home3.py                            python scripts/bat_home3.py
+          run_step bat4.py                                 python scripts/bat4.py
+          run_step woba_calc.py                            python scripts/woba_calc.py
+          run_step pit1.py                                 python scripts/pit1.py
+          run_step pit2.py                                 python scripts/pit2.py
+          run_step end_prep.py                             python scripts/end_prep.py
+          run_step pit3.py                                 python scripts/pit3.py
+          run_step normalize_batters_projection_columns.py python scripts/normalize_batters_projection_columns.py
+          run_step bat5.py                                 python scripts/bat5.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -121,13 +122,10 @@ jobs:
             echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
 
-      - name: Commit stage outputs
+      - name: Commit 04-A Prep outputs
         run: |
+          git add data/**/* || true
           git add summaries/04a_prep/* || true
-          git add data/end_chain/** || true
-          git add data/processed/** || true
-          git add data/final/** || true
-          git add data/adjusted/** || true
-          git diff --cached --quiet || git commit -m "04-A prep outputs"
+          git diff --cached --quiet || git commit -m "04-A Prep block outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
