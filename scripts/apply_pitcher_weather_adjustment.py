@@ -1,12 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# baseball_for_mat-main/scripts/apply_pitcher_weather_adjustment.py
-#
-# Merge per-game weather_factor into pitcher rows (home/away) by strict game_id.
-# If 'woba' exists, compute adj_woba_weather = woba * weather_factor.
-# If 'woba' is missing, still write weather_factor and an empty adj_woba_weather column.
-# No assumptions beyond columns present.
+# scripts/apply_pitcher_weather_adjustment.py
 
 import os
 import pandas as pd
@@ -14,9 +9,10 @@ import subprocess
 from pathlib import Path
 
 # Inputs
-PITCHERS_HOME_FILE = "data/adjusted/pitchers_home.csv"
-PITCHERS_AWAY_FILE = "data/adjusted/pitchers_away.csv"
-WEATHER_FILE       = "data/weather_adjustments.csv"
+PITCHERS_HOME_FILE   = "data/adjusted/pitchers_home.csv"
+PITCHERS_AWAY_FILE   = "data/adjusted/pitchers_away.csv"
+WEATHER_FILE         = "data/weather_adjustments.csv"
+PITCHERS_WOBA_FILE   = "data/Data/pitchers.csv"   # source of pitcher woba
 
 # Outputs
 OUTPUT_HOME = "data/adjusted/pitchers_home_weather.csv"
@@ -24,101 +20,134 @@ OUTPUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
 LOG_HOME    = "log_pitchers_home_weather.txt"
 LOG_AWAY    = "log_pitchers_away_weather.txt"
 
-# Minimum required columns
-REQUIRED_PITCHER_COLS = {"game_id"}
-REQUIRED_WEATHER_COLS = {"game_id", "weather_factor"}
+REQUIRED_PITCHER_KEYS   = {"player_id", "game_id"}          # we inject woba
+REQUIRED_WEATHER_COLS   = {"game_id", "weather_factor"}
+REQUIRED_WOBA_COLS      = {"player_id", "woba"}             # optional 'year' for dedupe
 
-def validate_columns(df: pd.DataFrame, required: set, source_path: str) -> None:
+def _validate_cols(df: pd.DataFrame, required: set, src: str) -> None:
     missing = [c for c in required if c not in df.columns]
     if missing:
-        raise ValueError(f"{source_path} missing columns: {missing}")
+        raise ValueError(f"{src} missing columns: {missing}")
 
-def coerce_numeric(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
-    for c in cols:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
+def _strip(df: pd.DataFrame) -> pd.DataFrame:
+    obj = df.select_dtypes(include=["object"]).columns
+    if len(obj):
+        df[obj] = df[obj].apply(lambda s: s.str.strip())
+        df[obj] = df[obj].replace({"": pd.NA})
     return df
 
-def apply_weather_factor(pitch_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd.DataFrame:
-    # Merge strictly on game_id (many pitchers to one weather row)
-    merged = pitch_df.merge(
+def _to_int64(df: pd.DataFrame, cols) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
+    return df
+
+def _ints_to_digit_str(df: pd.DataFrame, cols) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].astype("Int64").astype("string").replace({"<NA>": ""})
+    return df
+
+def _prepare_woba_map(woba_df: pd.DataFrame) -> pd.DataFrame:
+    # Keep latest year per player_id if 'year' exists; else just drop duplicates
+    base_cols = ["player_id", "woba"]
+    if "year" in woba_df.columns:
+        woba_df = woba_df.copy()
+        woba_df = _to_int64(woba_df, ["player_id", "year"])
+        woba_df = woba_df.dropna(subset=["player_id", "woba"])
+        woba_df = woba_df.sort_values(["player_id", "year"], ascending=[True, False])
+        woba_df = woba_df.drop_duplicates(subset=["player_id"], keep="first")
+        return woba_df[base_cols]
+    else:
+        woba_df = woba_df.copy()
+        woba_df = _to_int64(woba_df, ["player_id"])
+        woba_df = woba_df.dropna(subset=["player_id", "woba"])
+        woba_df = woba_df.drop_duplicates(subset=["player_id"], keep="first")
+        return woba_df[base_cols]
+
+def _apply_weather(pitch_df: pd.DataFrame, weather_df: pd.DataFrame, woba_map: pd.DataFrame) -> pd.DataFrame:
+    # Ensure keys
+    pitch_df = _to_int64(pitch_df, ["player_id", "game_id"])
+    weather_df = _to_int64(weather_df, ["game_id"])
+
+    # Join woba by player_id
+    merged = pitch_df.merge(woba_map, on="player_id", how="left", validate="m:1")
+
+    # Join weather_factor by game_id
+    merged = merged.merge(
         weather_df[["game_id", "weather_factor"]],
         on="game_id",
         how="left",
         validate="m:1"
     )
 
-    # Ensure numeric for multiplication (preserves NaN if factor missing)
-    merged = coerce_numeric(merged, ["weather_factor"])
-    if "woba" in merged.columns:
-        merged = coerce_numeric(merged, ["woba"])
+    # Compute adjusted
+    if "woba" in merged.columns and "weather_factor" in merged.columns:
         merged["adj_woba_weather"] = merged["woba"] * merged["weather_factor"]
     else:
-        # Create empty column to preserve downstream schema
         merged["adj_woba_weather"] = pd.NA
 
-    # Stable column order: keys/metrics first if present
-    preferred = ["player_id", "game_id", "name", "woba", "weather_factor", "adj_woba_weather"]
-    existing_pref = [c for c in preferred if c in merged.columns]
-    remaining = [c for c in merged.columns if c not in existing_pref]
-    merged = merged[existing_pref + remaining]
+    # ID columns as digit strings
+    merged = _ints_to_digit_str(merged, ["player_id", "game_id"])
     return merged
 
-def log_top5(df: pd.DataFrame, log_path: str, label: str) -> None:
+def _log_top5(df: pd.DataFrame, log_path: str, label: str) -> None:
     Path(log_path).parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w") as f:
         f.write(f"Top 5 {label} pitchers by adj_woba_weather\n")
-        if "adj_woba_weather" in df.columns and df["adj_woba_weather"].notna().any():
+        cols_pref = ["pitcher_name", "player_id", "game_id", "woba", "weather_factor", "adj_woba_weather", "team", "home_away"]
+        cols = [c for c in cols_pref if c in df.columns]
+        try:
             top5 = df.sort_values("adj_woba_weather", ascending=False).head(5)
-            cols_pref = ["name", "player_id", "game_id", "woba", "weather_factor", "adj_woba_weather"]
-            cols = [c for c in cols_pref if c in top5.columns]
-            f.write("\n")
             f.write(top5[cols].to_string(index=False))
-        else:
-            f.write("\nNo non-empty adj_woba_weather values available.")
+        except Exception:
+            f.write("No sortable data.\n")
 
-def git_commit_and_push() -> None:
+def _git_commit(files, message: str) -> None:
     try:
-        subprocess.run(["git", "add", OUTPUT_HOME, OUTPUT_AWAY, LOG_HOME, LOG_AWAY], check=True)
+        subprocess.run(["git", "add", *files], check=True)
         status = subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout
         if status.strip():
-            subprocess.run(["git", "commit", "-m", "Apply pitcher weather factor by game_id"], check=True)
+            subprocess.run(["git", "commit", "-m", message], check=True)
             subprocess.run(["git", "push"], check=True)
-        else:
-            print("No changes to commit.")
     except subprocess.CalledProcessError as e:
         print(f"Git error: {e}")
 
 def main() -> None:
-    # Load guard
-    missing_inputs = [p for p in (PITCHERS_HOME_FILE, PITCHERS_AWAY_FILE, WEATHER_FILE) if not os.path.exists(p)]
-    if missing_inputs:
-        print("CANNOT COMPLY: Missing required input file(s):")
-        for p in missing_inputs:
+    # Basic presence
+    needed = [PITCHERS_HOME_FILE, PITCHERS_AWAY_FILE, WEATHER_FILE, PITCHERS_WOBA_FILE]
+    if any(not os.path.exists(p) for p in needed):
+        print("CANNOT COMPLY: Missing required input file(s). Expected:")
+        for p in needed:
             print(f" - {p}")
         return
 
-    # Read
+    # Load
     try:
-        home_df    = pd.read_csv(PITCHERS_HOME_FILE)
-        away_df    = pd.read_csv(PITCHERS_AWAY_FILE)
-        weather_df = pd.read_csv(WEATHER_FILE)
+        home_df   = _strip(pd.read_csv(PITCHERS_HOME_FILE))
+        away_df   = _strip(pd.read_csv(PITCHERS_AWAY_FILE))
+        weather_df= _strip(pd.read_csv(WEATHER_FILE))
+        woba_df   = _strip(pd.read_csv(PITCHERS_WOBA_FILE))
     except Exception as e:
         print(f"CANNOT COMPLY: Failed to read input CSVs: {e}")
         return
 
-    # Validate required columns
+    # Validate columns
     try:
-        validate_columns(home_df, REQUIRED_PITCHER_COLS, PITCHERS_HOME_FILE)
-        validate_columns(away_df, REQUIRED_PITCHER_COLS, PITCHERS_AWAY_FILE)
-        validate_columns(weather_df, REQUIRED_WEATHER_COLS, WEATHER_FILE)
+        _validate_cols(home_df, REQUIRED_PITCHER_KEYS, PITCHERS_HOME_FILE)
+        _validate_cols(away_df, REQUIRED_PITCHER_KEYS, PITCHERS_AWAY_FILE)
+        _validate_cols(weather_df, REQUIRED_WEATHER_COLS, WEATHER_FILE)
+        _validate_cols(woba_df, REQUIRED_WOBA_COLS, PITCHERS_WOBA_FILE)
     except ValueError as e:
         print(f"CANNOT COMPLY: {e}")
         return
 
-    # Process
-    adjusted_home = apply_weather_factor(home_df, weather_df)
-    adjusted_away = apply_weather_factor(away_df, weather_df)
+    # Prepare woba map (latest year per player if available)
+    woba_map = _prepare_woba_map(woba_df)
+
+    # Apply weather factor
+    adjusted_home = _apply_weather(home_df, weather_df, woba_map)
+    adjusted_away = _apply_weather(away_df, weather_df, woba_map)
 
     # Save
     Path(OUTPUT_HOME).parent.mkdir(parents=True, exist_ok=True)
@@ -127,11 +156,14 @@ def main() -> None:
     adjusted_away.to_csv(OUTPUT_AWAY, index=False)
 
     # Logs
-    log_top5(adjusted_home, LOG_HOME, "home")
-    log_top5(adjusted_away, LOG_AWAY, "away")
+    _log_top5(adjusted_home, LOG_HOME, "home")
+    _log_top5(adjusted_away, LOG_AWAY, "away")
 
     # Commit
-    git_commit_and_push()
+    _git_commit(
+        [OUTPUT_HOME, OUTPUT_AWAY, LOG_HOME, LOG_AWAY],
+        "Apply pitcher weather factor by game_id with woba injection from data/Data/pitchers.csv"
+    )
 
 if __name__ == "__main__":
     main()
