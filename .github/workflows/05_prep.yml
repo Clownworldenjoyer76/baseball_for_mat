@@ -1,20 +1,28 @@
 # .github/workflows/05_prep.yml
-
 name: 05 Prep
 
 on:
+  # keep manual runs available
   workflow_dispatch:
+  # auto-run strictly after 04 completes, no branch filter (avoids missed triggers)
   workflow_run:
     workflows: ["04 Pitcher Adjustments"]
     types: [completed]
-    branches: [main]
 
 permissions:
   contents: write
 
+concurrency:
+  group: 05-prep-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prep_block:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # auto only when upstream succeeded; manual still works via workflow_dispatch
+    if: >
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success')
+      || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
@@ -92,14 +100,14 @@ jobs:
           }
 
           # === 05 Prep sequence ===
-          run_step prep_merge.py             python scripts/prep_merge.py
-          run_step chain_load_data.py        python scripts/chain_load_data.py
-          run_step clean_and_preprocess_games.py  python scripts/clean_and_preprocess_games.py
-          run_step normalize_pitchers_xtra.py     python scripts/normalize_pitchers_xtra.py
-          run_step clean_merge_files.py           python scripts/clean_merge_files.py
-          run_step finalbatawp.py            python scripts/finalbatawp.py
-          run_step finalbathwp.py            python scripts/finalbathwp.py
-          run_step pit1.py                   python scripts/pit1.py
+          run_step prep_merge.py                   python scripts/prep_merge.py
+          run_step chain_load_data.py              python scripts/chain_load_data.py
+          run_step clean_and_preprocess_games.py   python scripts/clean_and_preprocess_games.py
+          run_step normalize_pitchers_xtra.py      python scripts/normalize_pitchers_xtra.py
+          run_step clean_merge_files.py            python scripts/clean_merge_files.py
+          run_step finalbatawp.py                  python scripts/finalbatawp.py
+          run_step finalbathwp.py                  python scripts/finalbathwp.py
+          run_step pit1.py                         python scripts/pit1.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
