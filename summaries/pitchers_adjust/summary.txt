@@ -1,37 +1,75 @@
-===== RUN TIMESTAMP: 2025-09-04 08:06:55 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-04 08:49:04 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-04 08:06:52 AM EDT]
-✅ python succeeded [2025-09-04 08:06:53 AM EDT]
-✅ python succeeded [2025-09-04 08:06:53 AM EDT]
-✅ python succeeded [2025-09-04 08:06:54 AM EDT]
-✅ python succeeded [2025-09-04 08:06:55 AM EDT]
+✅ python succeeded [2025-09-04 08:49:03 AM EDT]
+✅ python succeeded [2025-09-04 08:49:03 AM EDT]
+✅ python succeeded [2025-09-04 08:49:03 AM EDT]
+✅ python succeeded [2025-09-04 08:49:04 AM EDT]
+✅ python succeeded [2025-09-04 08:49:04 AM EDT]
 
 ===== LOG =====
-▶️ START: normalize_pitcher_weather_outputs.py (2025-09-04 08:06:51 AM EDT)
-[main cff1f8d0] Normalize pitchers before weather adjustment
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-04 08:49:01 AM EDT)
+[main 3f4cde08] Normalize pitchers before weather adjustment
 Committed normalization stage outputs.
-⏹️ END: python (2025-09-04 08:06:52 AM EDT)
+⏹️ END: python (2025-09-04 08:49:03 AM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment.py (2025-09-04 08:06:52 AM EDT)
-[main 00f0a2e8] Apply pitcher weather factor with woba injection + defaults
- 4 files changed, 20 insertions(+), 38 deletions(-)
-⏹️ END: python (2025-09-04 08:06:53 AM EDT)
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-04 08:49:03 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
 
-▶️ START: apply_pitcher_park_adjustment.py (2025-09-04 08:06:53 AM EDT)
-[main 74f9215e] Apply pitcher park factor with woba injection + defaults
- 4 files changed, 21 insertions(+), 39 deletions(-)
-⏹️ END: python (2025-09-04 08:06:53 AM EDT)
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+	modified:   summaries/pitchers_adjust/summary.txt
 
-▶️ START: combine_pitcher_weather_park_home.py (2025-09-04 08:06:53 AM EDT)
-[main fc3bca7e] Combine pitcher weather+park (home) on player_id+game_id
- 2 files changed, 14 insertions(+), 22 deletions(-)
-⏹️ END: python (2025-09-04 08:06:54 AM EDT)
+no changes added to commit (use "git add" and/or "git commit -a")
+Git error: Command '['git', 'commit', '-m', 'Apply pitcher weather factor with woba injection + defaults']' returned non-zero exit status 1.
+⏹️ END: python (2025-09-04 08:49:03 AM EDT)
 
-▶️ START: combine_pitcher_weather_park_away.py (2025-09-04 08:06:54 AM EDT)
-[main e122d0ee] Combine pitcher weather+park (away) on player_id+game_id
- 2 files changed, 8 insertions(+), 18 deletions(-)
-⏹️ END: python (2025-09-04 08:06:55 AM EDT)
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-04 08:49:03 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+	modified:   summaries/pitchers_adjust/summary.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+Git error: Command '['git', 'commit', '-m', 'Apply pitcher park factor with woba injection + defaults']' returned non-zero exit status 1.
+⏹️ END: python (2025-09-04 08:49:03 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-04 08:49:03 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+	modified:   summaries/pitchers_adjust/summary.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⏹️ END: python (2025-09-04 08:49:04 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-04 08:49:04 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+	modified:   summaries/pitchers_adjust/summary.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⏹️ END: python (2025-09-04 08:49:04 AM EDT)
 
 
 ===== ERRORS =====
