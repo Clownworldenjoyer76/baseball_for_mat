@@ -1,89 +1,62 @@
-▶️ START: prep_merge.py (2025-09-04 03:10:01 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   summaries/05_prep/log.txt
-	modified:   summaries/05_prep/status.txt
-	modified:   summaries/05_prep/summary.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
+▶️ START: prep_merge.py (2025-09-04 03:21:28 PM EDT)
+[main 2f226168] prep_merge: stage files (player_id/game_id-based)
+ 2 files changed, 196 insertions(+), 23 deletions(-)
 Saved pitchers home → data/end_chain/first/pit_hwp.csv
 Saved pitchers away → data/end_chain/first/pit_awp.csv
 Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
-Git operation failed: Command '['git', 'commit', '-m', 'prep_merge: stage files (player_id/game_id-based)']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-04 03:10:01 PM EDT)
+Git commit/push complete.
+⏹️ END: python (2025-09-04 03:21:28 PM EDT)
 
-▶️ START: chain_load_data.py (2025-09-04 03:10:01 PM EDT)
+▶️ START: chain_load_data.py (2025-09-04 03:21:28 PM EDT)
 --- Starting Data Loading Process ---
 Loading games from data/end_chain/first/games_today.csv...
 ✅ Loaded games. Shape: (6, 11)
 Loading batters_home from data/end_chain/first/raw/bat_hwp_dirty.csv...
-✅ Loaded batters_home. Shape: (14, 5)
+✅ Loaded batters_home. Shape: (85, 5)
 Loading batters_away from data/end_chain/first/raw/bat_awp_dirty.csv...
-✅ Loaded batters_away. Shape: (9, 5)
+✅ Loaded batters_away. Shape: (111, 5)
 Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
 ✅ Loaded pitchers_home. Shape: (6, 5)
 Loading pitchers_away from data/end_chain/first/pit_awp.csv...
 ✅ Loaded pitchers_away. Shape: (4, 5)
 --- Data Loading Complete ---
-⏹️ END: python (2025-09-04 03:10:02 PM EDT)
+⏹️ END: python (2025-09-04 03:21:29 PM EDT)
 
-▶️ START: clean_and_preprocess_games.py (2025-09-04 03:10:02 PM EDT)
+▶️ START: clean_and_preprocess_games.py (2025-09-04 03:21:29 PM EDT)
 ✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=6)
-⏹️ END: python (2025-09-04 03:10:02 PM EDT)
+⏹️ END: python (2025-09-04 03:21:29 PM EDT)
 
-▶️ START: normalize_pitchers_xtra.py (2025-09-04 03:10:02 PM EDT)
+▶️ START: normalize_pitchers_xtra.py (2025-09-04 03:21:29 PM EDT)
 ✅ Wrote 10 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
-⏹️ END: python (2025-09-04 03:10:02 PM EDT)
+⏹️ END: python (2025-09-04 03:21:29 PM EDT)
 
-▶️ START: clean_merge_files.py (2025-09-04 03:10:02 PM EDT)
+▶️ START: clean_merge_files.py (2025-09-04 03:21:29 PM EDT)
 Cleaned data/end_chain/first/pit_hwp.csv → removed_dupes: 0, rows_after: 6, dupes_remaining: 0
 Cleaned data/end_chain/first/pit_awp.csv → removed_dupes: 0, rows_after: 4, dupes_remaining: 0
-Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed_dupes: 0, rows_after: 9, dupes_remaining: 0
-Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed_dupes: 0, rows_after: 14, dupes_remaining: 0
+Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed_dupes: 0, rows_after: 111, dupes_remaining: 0
+Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed_dupes: 0, rows_after: 85, dupes_remaining: 0
 
 ✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
-⏹️ END: python (2025-09-04 03:10:03 PM EDT)
+⏹️ END: python (2025-09-04 03:21:30 PM EDT)
 
-▶️ START: finalbatawp.py (2025-09-04 03:10:03 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
+▶️ START: finalbatawp.py (2025-09-04 03:21:30 PM EDT)
+[main 988a3956] 📊 Build finalbatawp.csv; add default park_factor (100.0) + src=default fallback
+ 1 file changed, 111 insertions(+), 9 deletions(-)
+📝 Wrote data/end_chain/final/finalbatawp.csv (rows=111)
+↗️ Pushed to repository.
+⏹️ END: python (2025-09-04 03:21:30 PM EDT)
 
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   summaries/05_prep/log.txt
-	modified:   summaries/05_prep/status.txt
-	modified:   summaries/05_prep/summary.txt
+▶️ START: finalbathwp.py (2025-09-04 03:21:30 PM EDT)
+[main b942d36d] finalbathwp: add default park_factor (100.0) + src=default fallback
+ 1 file changed, 85 insertions(+), 14 deletions(-)
+📝 Wrote data/end_chain/final/finalbathwp.csv (rows=85, cols=10)
+✅ Committed and pushed finalbathwp.csv
+⏹️ END: python (2025-09-04 03:21:31 PM EDT)
 
-no changes added to commit (use "git add" and/or "git commit -a")
-📝 Wrote data/end_chain/final/finalbatawp.csv (rows=9)
-⚠️ Git operation failed: Command '['git', 'commit', '-m', '📊 Build finalbatawp.csv; add default park_factor (100.0) + src=default fallback']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-04 03:10:03 PM EDT)
-
-▶️ START: finalbathwp.py (2025-09-04 03:10:03 PM EDT)
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   summaries/05_prep/log.txt
-	modified:   summaries/05_prep/status.txt
-	modified:   summaries/05_prep/summary.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
-📝 Wrote data/end_chain/final/finalbathwp.csv (rows=14, cols=10)
-⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'finalbathwp: add default park_factor (100.0) + src=default fallback']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-04 03:10:03 PM EDT)
-
-▶️ START: pit1.py (2025-09-04 03:10:03 PM EDT)
+▶️ START: pit1.py (2025-09-04 03:21:31 PM EDT)
 ✅ Merged pitcher data saved to: data/end_chain/final/startingpitchers.csv
 ℹ️ Rows: 10 | Matched to xtra by player_id (has any xtra data): 10
-⏹️ END: python (2025-09-04 03:10:04 PM EDT)
+⏹️ END: python (2025-09-04 03:21:32 PM EDT)
 
