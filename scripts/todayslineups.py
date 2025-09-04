@@ -16,20 +16,58 @@ def _strip(s: str) -> str:
 
 def to_last_first(full_name: str) -> str:
     """
-    Convert 'First [Middle ...] Last' → 'Last, First [Middle ...]'.
-    If a comma is already present, assume it's already 'Last, First' and return as-is.
+    Convert 'First [Middle ...] Last [SUFFIX]' → 'Last [SUFFIX], First [Middle ...]'.
+    Handles surname particles (Del, De, De la, Van, Von, Di, ...) and suffixes (Jr., II, III, ...).
+    If a comma already exists, return normalized spacing as-is.
     """
-    full_name = _strip(full_name)
-    if not full_name:
-        return full_name
-    if "," in full_name:
-        return " ".join(full_name.split())  # normalize spacing
-    parts = full_name.split()
-    if len(parts) >= 2:
-        last = parts[-1]
-        first = " ".join(parts[:-1])
-        return f"{last}, {first}"
-    return full_name
+    import re, unicodedata
+
+    def _strip(s): return (s or "").strip()
+    name = _strip(full_name)
+    if not name:
+        return name
+    if "," in name:
+        # Already 'Last, First' → normalize spaces only
+        return " ".join(re.sub(r"\s*,\s*", ", ", name).split())
+
+    # Tokenize
+    tokens = name.split()
+
+    # 1) Pull off suffix if present
+    SUFFIXES = {"jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"}
+    suffix = ""
+    if tokens and tokens[-1].rstrip(".").lower() in SUFFIXES:
+        suffix = tokens.pop()  # keep original casing/punct
+
+    if not tokens:
+        # name was only a suffix (weird) → just return it
+        return suffix
+
+    # 2) Build last name from the end, attaching particles
+    PARTICLES = {
+        "de","del","della","de la","de las","de los","da","dos","do",
+        "di","du","le","la","las","los","van","von","der","st","st.","san","santa",
+        "bin","binti","al","ap","ibn"
+    }
+
+    last_parts = [tokens[-1]]  # base surname
+    i = len(tokens) - 2
+    while i >= 0:
+        low = tokens[i].lower()
+        # if token is a known particle or entirely lowercase (defensive), attach to surname
+        if low in PARTICLES or tokens[i].islower():
+            last_parts.append(tokens[i])
+            i -= 1
+            continue
+        break
+
+    # Remaining tokens (0..i) are the given names (first + middles)
+    given = " ".join(tokens[: i + 1])
+    last = " ".join(reversed(last_parts))  # restore original order
+    if suffix:
+        last = f"{last} {suffix}"
+
+    return f"{last}, {given}".strip()
 
 def get_team_map() -> Dict[int, str]:
     """{team_id:int -> team_abbreviation:str} for active MLB teams."""
