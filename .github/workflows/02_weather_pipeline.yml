@@ -6,10 +6,10 @@ on:
   workflow_run:
     workflows: ["01 Split & Schedule"]
     types: [completed]
-    branches: [main]
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   weather_pipeline:
@@ -18,7 +18,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 0 }
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
@@ -32,7 +34,8 @@ jobs:
           restore-keys: ${{ runner.os }}-py-
 
       - uses: actions/setup-python@v4
-        with: { python-version: "3.10" }
+        with:
+          python-version: "3.10"
 
       - name: Install deps
         run: |
@@ -75,3 +78,15 @@ jobs:
           git diff --cached --quiet || git commit -m "02 weather pipeline outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
+
+      - name: Trigger 03 Batter Adjustments
+        if: ${{ success() && github.ref_name == 'main' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          curl -sSf -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$REPO/actions/workflows/03_batter_adjustments.yml/dispatches \
+            -d '{"ref":"main"}'
