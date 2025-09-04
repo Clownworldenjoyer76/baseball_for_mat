@@ -1,72 +1,84 @@
 import pandas as pd
 import os
+import tempfile
+import shutil
 
 def clean_merge_files():
     """
-    Identifies, removes, and logs duplicate rows across specified input CSV files.
+    Deduplicate rows in-place for:
+      - data/end_chain/first/pit_hwp.csv
+      - data/end_chain/first/pit_awp.csv
+      - data/end_chain/first/raw/bat_awp_dirty.csv
+      - data/end_chain/first/raw/bat_hwp_dirty.csv
 
-    Input files:
-    - data/end_chain/first/pit_hwp.csv
-    - data/end_chain/first/pit_awp.csv
-    - data/end_chain/first/raw/bat_awp_dirty.csv
-    - data/end_chain/first/raw/bat_hwp_dirty.csv
-
-    Output:
-    - Overwrites each file with duplicates removed
-    - Logs summary to: data/end_chain/duplicates.txt
+    Writes summary to data/end_chain/duplicates.txt
     """
-
     input_files = [
         'data/end_chain/first/pit_hwp.csv',
         'data/end_chain/first/pit_awp.csv',
         'data/end_chain/first/raw/bat_awp_dirty.csv',
         'data/end_chain/first/raw/bat_hwp_dirty.csv'
     ]
+    summary_path = 'data/end_chain/duplicates.txt'
+    os.makedirs(os.path.dirname(summary_path), exist_ok=True)
 
-    output_summary_file = 'data/end_chain/duplicates.txt'
+    def dedup_subset_for(df: pd.DataFrame) -> list | None:
+        # Prefer id-based dedup if available; otherwise full-row
+        keys = []
+        for k in ('player_id', 'game_id'):
+            if k in df.columns:
+                keys.append(k)
+        return keys or None
 
-    # Ensure the output directory exists
-    os.makedirs(os.path.dirname(output_summary_file), exist_ok=True)
-
-    with open(output_summary_file, 'w') as f:
+    with open(summary_path, 'w') as f:
         f.write("--- Duplicate Row Analysis and Cleaning ---\n\n")
-
         for file_path in input_files:
             if not os.path.exists(file_path):
-                f.write(f"File not found: {file_path}\n")
-                print(f"Warning: {file_path} not found. Skipping.")
+                msg = f"File not found: {file_path}\n"
+                f.write(msg)
+                print(f"Warning: {msg.strip()} Skipping.")
                 continue
 
             try:
-                df = pd.read_csv(file_path)
+                df = pd.read_csv(file_path, low_memory=False)
                 initial_rows = len(df)
-                pre_dedup = df.duplicated()
-                num_duplicates = pre_dedup.sum()
+                subset = dedup_subset_for(df)
+                pre_dupe_mask = df.duplicated(subset=subset, keep='first')
+                num_dupes = int(pre_dupe_mask.sum())
 
                 f.write(f"Analysis for: {file_path}\n")
                 f.write(f"  Total rows before: {initial_rows}\n")
-                f.write(f"  Duplicate rows found: {num_duplicates}\n")
-
-                if num_duplicates > 0:
+                f.write(f"  Dedup subset: {subset if subset else 'FULL ROW'}\n")
+                f.write(f"  Duplicate rows found: {num_dupes}\n")
+                if num_dupes > 0:
                     f.write("  Sample duplicates (first 5):\n")
-                    f.write(df[pre_dedup].head().to_string() + "\n")
+                    f.write(df[pre_dupe_mask].head().to_string() + "\n")
 
-                # Remove duplicates
-                df_cleaned = df.drop_duplicates()
-                df_cleaned.to_csv(file_path, index=False)
+                df_clean = df.drop_duplicates(subset=subset, keep='first')
+                remaining_dupes = int(df_clean.duplicated(subset=subset, keep='first').sum())
+                rows_after = len(df_clean)
 
-                # Recheck for remaining duplicates
-                remaining_duplicates = df_cleaned.duplicated().sum()
-                f.write(f"  Rows after deduplication: {len(df_cleaned)}\n")
-                f.write(f"  Remaining duplicates after cleanup: {remaining_duplicates}\n\n")
+                # Atomic write: tmp → replace
+                d = os.path.dirname(file_path) or "."
+                with tempfile.NamedTemporaryFile('w', delete=False, dir=d, suffix='.csv') as tmp:
+                    df_clean.to_csv(tmp.name, index=False)
+                    tmp_path = tmp.name
+                shutil.move(tmp_path, file_path)
 
-                print(f"Cleaned {file_path} → removed {num_duplicates}, remaining: {remaining_duplicates}")
+                f.write(f"  Rows after deduplication: {rows_after}\n")
+                f.write(f"  Remaining duplicates after cleanup: {remaining_dupes}\n\n")
+
+                # Clear, accurate console message
+                print(
+                    f"Cleaned {file_path} → removed_dupes: {num_dupes}, "
+                    f"rows_after: {rows_after}, dupes_remaining: {remaining_dupes}"
+                )
 
             except Exception as e:
                 f.write(f"Error processing {file_path}: {e}\n\n")
                 print(f"Error processing {file_path}: {e}")
 
-    print(f"\n✅ Duplicate cleanup complete. Summary written to {output_summary_file}")
+    print(f"\n✅ Duplicate cleanup complete. Summary written to {summary_path}")
 
 if __name__ == "__main__":
     clean_merge_files()
