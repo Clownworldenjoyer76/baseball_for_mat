@@ -6,7 +6,8 @@ from scipy.stats import zscore
 import math
 
 # ---------- File paths ----------
-PITCHERS_FILE = Path("data/tagged/pitchers_normalized.csv")   # provided normalized pitcher stats
+# Switched to the cleaned pitchers file
+PITCHERS_FILE = Path("data/cleaned/pitchers_normalized_cleaned.csv")
 OUTPUT_FILE   = Path("data/_projections/pitcher_mega_z.csv")  # output used by bet_tracker.py
 
 # ---------- Helpers ----------
@@ -60,7 +61,7 @@ def poisson_p_ge(k, lam):
 
 def clamp(x, lo, hi):
     try:
-        return max(lo, min(hi, float(x)))
+        return max(lo, min(hi, float(x))))
     except Exception:
         return lo
 
@@ -103,7 +104,7 @@ df["K_per_ip"] = (df["K_season"] / df["ip_season"]).replace([np.inf, -np.inf], n
 df["BB_per_ip"] = (df["BB_season"] / df["ip_season"]).replace([np.inf, -np.inf], np.nan)
 
 # fallback sensible league-ish rates if missing
-df["K_per_ip"] = df["K_per_ip"].fillna(df["K_per_ip"].median()).fillna(1.0)   # ~1 K/IP for good starters, adjust if needed
+df["K_per_ip"] = df["K_per_ip"].fillna(df["K_per_ip"].median()).fillna(1.0)   # ~1 K/IP for good starters
 df["BB_per_ip"] = df["BB_per_ip"].fillna(df["BB_per_ip"].median()).fillna(0.35)
 
 # Per-start projections (lambda)
