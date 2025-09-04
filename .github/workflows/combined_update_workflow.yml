@@ -96,6 +96,7 @@ jobs:
 
           # ---------- LINEUPS ----------
           run_step "scripts/todayslineups.py" python -u scripts/todayslineups.py
+          run_step "scripts/lineups_fix.py"   python -u scripts/lineups_fix.py
 
           echo "CSV preview (lineups):" >> "$LOG_FILE"
           head -n 5 data/raw/lineups.csv >> "$LOG_FILE" 2>/dev/null || true
