@@ -98,15 +98,17 @@ PY
             echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
 
-      - name: Commit stage outputs
-        run: |
-          git add data/raw/lineups_normalized.csv || true
-          git add data/raw/todaysgames_normalized.csv || true
-          git add data/Data/stadium_metadata.csv || true
-          git add data/cleaned/batters_today.csv || true
-          git add data/cleaned/pitchers_normalized_cleaned.csv || true
-          git add summaries/foundation/* || true
-          git add summaries/pre_split/* || true
-          git diff --cached --quiet || git commit -m "00 foundation outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+            - name: Commit stage outputs
+              run: |
+                git add data/raw/lineups.csv || true
+                git add data/raw/lineups_normalized.csv || true
+                git add data/raw/todaysgames_normalized.csv || true
+                git add data/Data/stadium_metadata.csv || true
+                git add data/cleaned/batters_today.csv || true
+                git add data/cleaned/pitchers_normalized_cleaned.csv || true
+                git add summaries/summary.txt || true
+                git add summaries/foundation/* || true
+                git add summaries/pre_split/* || true
+                git diff --cached --quiet || git commit -m "00 foundation outputs"
+                git pull --rebase origin main || true
+                git push origin HEAD:main || true
