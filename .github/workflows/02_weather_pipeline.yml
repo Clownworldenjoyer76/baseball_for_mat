@@ -1,3 +1,4 @@
+# .github/workflows/02_weather_pipeline.yml
 name: 02 Weather Pipeline
 
 on:
@@ -5,6 +6,7 @@ on:
   workflow_run:
     workflows: ["01 Split & Schedule"]
     types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
