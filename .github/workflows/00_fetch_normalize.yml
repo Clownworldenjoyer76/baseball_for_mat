@@ -84,16 +84,28 @@ jobs:
           } > "$SUM"
 
       - name: Commit stage outputs
+        shell: bash
         run: |
+          # stage expected data outputs (existence may vary run-to-run)
           git add data/raw/lineups.csv || true
           git add data/raw/lineups_normalized.csv || true
           git add data/raw/todaysgames_normalized.csv || true
-          git add data/Data/stadium_metadata.csv || true
           git add data/cleaned/batters_today.csv || true
           git add data/cleaned/pitchers_normalized_cleaned.csv || true
-          git add summaries/summary.txt || true
+
+          # ✅ correct stadium file path (canonical)
+          git add data/manual/stadium_master.csv || true
+
+          # summaries
           git add summaries/foundation/* || true
           git add summaries/pre_split/* || true
-          git diff --cached --quiet || git commit -m "00 foundation outputs"
-          git pull --rebase origin main || true
+          git add summaries/summary.txt || true
+
+          # commit if anything staged
+          if ! git diff --cached --quiet; then
+            git commit -m "00 foundation outputs"
+          fi
+
+          # pull with autostash to avoid 'unstaged changes' failures
+          git pull --rebase --autostash origin main || true
           git push origin HEAD:main || true
