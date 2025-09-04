@@ -17,7 +17,6 @@ concurrency:
 
 jobs:
   projections_builder:
-    # Manual-only for now
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
@@ -117,6 +116,24 @@ jobs:
             echo "One or more steps failed. See summaries/projections/summary.txt"
             exit 1
           fi
+
+      - name: Force push 06 summary logs
+        run: |
+          mkdir -p summaries/06_projection
+          {
+            echo "===== STATUS ====="
+            cat summaries/projections/status.txt
+            echo
+            echo "===== LOG ====="
+            cat summaries/projections/log.txt
+            echo
+            echo "===== ERRORS ====="
+            cat summaries/projections/errors.txt
+          } > summaries/06_projection/summary.txt
+          git add summaries/06_projection/summary.txt
+          git commit -m "06 projection forced summary logs" || true
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
 
       - name: Commit stage outputs
         run: |
