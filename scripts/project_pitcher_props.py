@@ -10,10 +10,12 @@ from projection_formulas import calculate_all_projections
 # Preferred enriched context (created by enrich_pitchers_with_opp.py)
 ENRICHED_FILE   = Path("data/raw/startingpitchers_with_opp_context.csv")
 
-# Original inputs (fallbacks if enriched file not present)
-PITCHERS_BASE   = Path("data/end_chain/final/startingpitchers_final.csv")
-PITCHERS_XTRA   = Path("data/end_chain/pitchers_xtra.csv")
-PITCHERS_CLEAN  = Path("data/cleaned/pitchers_normalized_cleaned.csv")
+# Updated priority:
+#  - Use cleaned, normalized pitchers as the base
+#  - Use xtra + startingpitchers_final as auxiliary context (for joins/opponent)
+PITCHERS_BASE   = Path("data/cleaned/pitchers_normalized_cleaned.csv")   # primary base
+PITCHERS_XTRA   = Path("data/end_chain/pitchers_xtra.csv")               # aux context
+PITCHERS_CLEAN  = Path("data/end_chain/final/startingpitchers_final.csv")# aux context
 
 OUTPUT_FILE     = Path("data/_projections/pitcher_props_projected.csv")
 
@@ -81,7 +83,7 @@ def main():
         base = _standardize_opponent_cols(base)
         print(f"Using enriched opponent context: {ENRICHED_FILE}")
     else:
-        # Fallback to original inputs/merges
+        # Fallback to updated priority: cleaned base, then merge aux context
         try:
             base = pd.read_csv(PITCHERS_BASE)
         except Exception as e:
