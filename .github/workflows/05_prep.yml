@@ -1,3 +1,5 @@
+# .github/workflows/05_prep.yml
+
 name: 05 Prep
 
 on:
@@ -20,7 +22,7 @@ jobs:
     steps:
       - name: Banner
         run: |
-          echo "05 PREP START $(TZ=America/New_York date)"
+          echo "05 START $(TZ=America/New_York date)"
           echo "event_name=${{ github.event_name }}"
           echo "ref_name=${{ github.ref_name }}"
           echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
@@ -90,14 +92,14 @@ jobs:
           }
 
           # === 05 Prep sequence ===
-          run_step prep_merge.py                 python scripts/prep_merge.py
-          run_step chain_load_data.py            python scripts/chain_load_data.py
-          run_step clean_and_preprocess_games.py python scripts/clean_and_preprocess_games.py
-          run_step normalize_pitchers_xtra.py    python scripts/normalize_pitchers_xtra.py
-          run_step clean_merge_files.py          python scripts/clean_merge_files.py
-          run_step finalbatawp.py                python scripts/finalbatawp.py
-          run_step finalbathwp.py                python scripts/finalbathwp.py
-          run_step pit1.py                       python scripts/pit1.py
+          run_step prep_merge.py             python scripts/prep_merge.py
+          run_step chain_load_data.py        python scripts/chain_load_data.py
+          run_step clean_and_preprocess_games.py  python scripts/clean_and_preprocess_games.py
+          run_step normalize_pitchers_xtra.py     python scripts/normalize_pitchers_xtra.py
+          run_step clean_merge_files.py           python scripts/clean_merge_files.py
+          run_step finalbatawp.py            python scripts/finalbatawp.py
+          run_step finalbathwp.py            python scripts/finalbathwp.py
+          run_step pit1.py                   python scripts/pit1.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
