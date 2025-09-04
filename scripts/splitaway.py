@@ -9,6 +9,7 @@ Split away batters and ensure ID columns export as plain integers.
 
 import sys
 import pandas as pd
+from pathlib import Path
 
 ID_COLS = [
     "team_id",
@@ -17,6 +18,8 @@ ID_COLS = [
     "opponent_team_id",
     "game_id",
 ]
+
+TEAM_DIR = Path("data/manual/team_directory.csv")  # optional fallback mapping
 
 def strip_strings(df: pd.DataFrame) -> pd.DataFrame:
     obj = df.select_dtypes(include=["object"]).columns
@@ -34,9 +37,23 @@ def enforce_int64(df: pd.DataFrame, cols) -> pd.DataFrame:
 def render_int_cols_for_csv(df: pd.DataFrame, cols) -> pd.DataFrame:
     for c in cols:
         if c in df.columns:
-            df[c] = df[c].astype("Int64").astype("string")
-            df[c] = df[c].replace({"<NA>": ""})
+            df[c] = df[c].astype("Int64").astype("string").replace({"<NA>": ""})
     return df
+
+def fill_team_id_from_directory(batters: pd.DataFrame) -> pd.DataFrame:
+    if "team_id" in batters.columns and batters["team_id"].notna().any():
+        return batters
+    if "team_code" not in batters.columns or not TEAM_DIR.exists():
+        return batters
+    dir_df = pd.read_csv(TEAM_DIR, dtype=str, keep_default_na=False)
+    dir_df = strip_strings(dir_df)
+    # prefer exact team_code column; fall back to searching all_codes later if present
+    if "team_code" in dir_df.columns and "team_id" in dir_df.columns:
+        m = batters.merge(dir_df[["team_code", "team_id"]].drop_duplicates(),
+                          on="team_code", how="left")
+        batters["team_id"] = batters.get("team_id", pd.Series([pd.NA]*len(batters)))
+        batters.loc[batters["team_id"].isna(), "team_id"] = m.loc[batters["team_id"].isna(), "team_id"]
+    return batters
 
 def main(batters_path: str, games_path: str, output_path: str) -> None:
     batters = pd.read_csv(batters_path, dtype=str, keep_default_na=False)
@@ -45,8 +62,26 @@ def main(batters_path: str, games_path: str, output_path: str) -> None:
     batters = strip_strings(batters)
     games = strip_strings(games)
 
-    merged = batters.merge(
-        games,
+    # OPTIONAL: backfill team_id if missing using team_directory
+    batters = fill_team_id_from_directory(batters)
+
+    # --- Coerce join keys to integers BEFORE merge
+    # batters needs team_id
+    if "team_id" not in batters.columns:
+        # no way to join; write empty with same columns as batters to avoid crash
+        batters.assign(side="away").to_csv(output_path, index=False)
+        return
+
+    batters["team_id"] = pd.to_numeric(batters["team_id"], errors="coerce").astype("Int64")
+    games["away_team_id"] = pd.to_numeric(games.get("away_team_id"), errors="coerce").astype("Int64")
+    games["home_team_id"] = pd.to_numeric(games.get("home_team_id"), errors="coerce").astype("Int64")
+
+    # drop rows with missing ids on either side to avoid spurious joins
+    b_keyed = batters.dropna(subset=["team_id"]).copy()
+    g_keyed = games.dropna(subset=["away_team_id"]).copy()
+
+    merged = b_keyed.merge(
+        g_keyed,
         left_on="team_id",
         right_on="away_team_id",
         how="inner",
