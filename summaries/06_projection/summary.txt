@@ -1,90 +1,49 @@
-===== RUN TIMESTAMP: 2025-09-04 07:13:32 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-04 07:52:34 PM EDT =====
 
 ===== STATUS =====
-✅ project_prep.py succeeded [2025-09-04 07:13:30 PM EDT]
-✅ fix_missing_batter_stats.py succeeded [2025-09-04 07:13:31 PM EDT]
-✅ normalize_batters_for_builder.py succeeded [2025-09-04 07:13:31 PM EDT]
-❌ project_batter_props.py failed [2025-09-04 07:13:31 PM EDT]
-✅ project_pitcher_props.py succeeded [2025-09-04 07:13:32 PM EDT]
-❌ build_expanded_batter_props.py failed [2025-09-04 07:13:32 PM EDT]
-❌ pitcher_mega_z.py failed [2025-09-04 07:13:32 PM EDT]
+✅ project_prep.py succeeded [2025-09-04 07:52:31 PM EDT]
+✅ fix_missing_batter_stats.py succeeded [2025-09-04 07:52:31 PM EDT]
+✅ normalize_batters_for_builder.py succeeded [2025-09-04 07:52:31 PM EDT]
+✅ project_batter_props.py succeeded [2025-09-04 07:52:32 PM EDT]
+✅ project_pitcher_props.py succeeded [2025-09-04 07:52:32 PM EDT]
+✅ build_expanded_batter_props.py succeeded [2025-09-04 07:52:33 PM EDT]
+✅ pitcher_mega_z.py succeeded [2025-09-04 07:52:34 PM EDT]
 
 ===== LOG =====
-▶️ START: project_prep.py (2025-09-04 07:13:30 PM EDT)
+▶️ START: project_prep.py (2025-09-04 07:52:30 PM EDT)
 Load error: [Errno 2] No such file or directory: 'data/Data/stadium_metadata.csv'
-⏹️ END: project_prep.py (2025-09-04 07:13:30 PM EDT)
+⏹️ END: project_prep.py (2025-09-04 07:52:31 PM EDT)
 
-▶️ START: fix_missing_batter_stats.py (2025-09-04 07:13:30 PM EDT)
+▶️ START: fix_missing_batter_stats.py (2025-09-04 07:52:31 PM EDT)
 ⚠️ Adding missing column: hr
 ⚠️ Adding missing column: slg
 ⚠️ Adding missing column: obp
 ⚠️ Adding missing column: hr
 ⚠️ Adding missing column: slg
 ⚠️ Adding missing column: obp
-⏹️ END: fix_missing_batter_stats.py (2025-09-04 07:13:31 PM EDT)
+⏹️ END: fix_missing_batter_stats.py (2025-09-04 07:52:31 PM EDT)
 
-▶️ START: normalize_batters_for_builder.py (2025-09-04 07:13:31 PM EDT)
+▶️ START: normalize_batters_for_builder.py (2025-09-04 07:52:31 PM EDT)
 ✅ normalize_batters_for_builder: wrote data/tagged/batters_normalized.csv  (kept 157/157, dropped 0)
-⏹️ END: normalize_batters_for_builder.py (2025-09-04 07:13:31 PM EDT)
+⏹️ END: normalize_batters_for_builder.py (2025-09-04 07:52:31 PM EDT)
 
-▶️ START: project_batter_props.py (2025-09-04 07:13:31 PM EDT)
-⏹️ END: project_batter_props.py (2025-09-04 07:13:31 PM EDT)
+▶️ START: project_batter_props.py (2025-09-04 07:52:31 PM EDT)
+✅ Wrote 90 rows -> data/_projections/batter_props_projected.csv
+Backfill summary (share missing BEFORE backfill): {'pa': 0.0, 'avg': 0.0, 'iso': 0.0, 'hr_rate': 0.0}
+⏹️ END: project_batter_props.py (2025-09-04 07:52:32 PM EDT)
 
-▶️ START: project_pitcher_props.py (2025-09-04 07:13:31 PM EDT)
+▶️ START: project_pitcher_props.py (2025-09-04 07:52:32 PM EDT)
 Using enriched opponent context: data/raw/startingpitchers_with_opp_context.csv
 Wrote: data/_projections/pitcher_props_projected.csv (15 rows)
-⏹️ END: project_pitcher_props.py (2025-09-04 07:13:32 PM EDT)
+⏹️ END: project_pitcher_props.py (2025-09-04 07:52:32 PM EDT)
 
-▶️ START: build_expanded_batter_props.py (2025-09-04 07:13:32 PM EDT)
-⏹️ END: build_expanded_batter_props.py (2025-09-04 07:13:32 PM EDT)
+▶️ START: build_expanded_batter_props.py (2025-09-04 07:52:32 PM EDT)
+✅ Wrote: data/_projections/batter_props_expanded.csv (90 rows)
+⏹️ END: build_expanded_batter_props.py (2025-09-04 07:52:33 PM EDT)
 
-▶️ START: pitcher_mega_z.py (2025-09-04 07:13:32 PM EDT)
-⏹️ END: pitcher_mega_z.py (2025-09-04 07:13:32 PM EDT)
+▶️ START: pitcher_mega_z.py (2025-09-04 07:52:33 PM EDT)
+✅ Wrote: data/_projections/pitcher_mega_z.csv  (rows=2865)
+⏹️ END: pitcher_mega_z.py (2025-09-04 07:52:34 PM EDT)
 
 
 ===== ERRORS =====
-❌ project_batter_props.py ERROR [2025-09-04 07:13:31 PM EDT]:
-Traceback (most recent call last):
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
-    return self._engine.get_loc(casted_key)
-  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
-  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
-KeyError: 'avg'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_props.py", line 251, in <module>
-    project_batter_props()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_props.py", line 162, in project_batter_props
-    z = _backfill_from_batters(z, bats)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_props.py", line 145, in _backfill_from_batters
-    fill(["proj_avg", "proj_ba", "avg", "ba"], "avg")
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_props.py", line 137, in fill
-    z[col_z] = z[col_z].where(z[col_z].notna(), z[col_b])
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
-    indexer = self.columns.get_loc(key)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
-    raise KeyError(key) from err
-KeyError: 'avg'
-
----
-
-❌ build_expanded_batter_props.py ERROR [2025-09-04 07:13:32 PM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/build_expanded_batter_props.py", line 8, in <module>
-    if "team_id" in z.columns:
-NameError: name 'z' is not defined
-
----
-
-❌ pitcher_mega_z.py ERROR [2025-09-04 07:13:32 PM EDT]:
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/pitcher_mega_z.py", line 64
-    return max(lo, min(hi, float(x))))
-                                     ^
-SyntaxError: unmatched ')'
-
----
-
