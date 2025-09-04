@@ -5,6 +5,7 @@ on:
   workflow_run:
     workflows: ["00 Fetch & Normalize"]
     types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
