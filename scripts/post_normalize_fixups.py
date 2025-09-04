@@ -33,21 +33,29 @@ def main():
 
     # --- batters
     b = pd.read_csv(args.batters, low_memory=False)
+
+    # Make sure 'type' is a string before using .str
     if "type" in b.columns:
+        b["type"] = b["type"].astype(str)
         b = b[b["type"].str.lower().eq("batter")]
+
     if "team_id" in b.columns:
         b["team_id"] = pd.to_numeric(b["team_id"], errors="coerce").astype("Int64")
-        b = b[b["team_id"].isin(valid_team_ids)]
+        if valid_team_ids:
+            b = b[b["team_id"].isin(valid_team_ids)]
+
     if "player_id" in b.columns:
         if "pa" in b.columns:
             b = b.sort_values(by=["pa"], ascending=False).drop_duplicates("player_id", keep="first")
         else:
             b = b.drop_duplicates("player_id", keep="first")
+
     b.to_csv(args.batters, index=False)
 
     # --- pitchers
     p = pd.read_csv(args.pitchers, low_memory=False)
     if "type" in p.columns:
+        p["type"] = p["type"].astype(str)
         p = p[p["type"].str.lower().eq("pitcher")]
     if "team_id" in p.columns:
         p["team_id"] = pd.to_numeric(p["team_id"], errors="coerce").astype("Int64")
