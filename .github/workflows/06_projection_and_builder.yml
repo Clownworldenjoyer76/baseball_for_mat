@@ -1,12 +1,7 @@
 # .github/workflows/06_projection_and_builder.yml
 name: 06 Projections & Builder
-
 on:
   workflow_dispatch:
-  # workflow_run:
-  #   workflows: ["05 Prep"]  # Temporarily disabled
-  #   types: [completed]
-  #   branches: [main]
 
 permissions:
   contents: write
@@ -23,14 +18,6 @@ jobs:
       TZ: America/New_York
 
     steps:
-      - name: Banner
-        run: |
-          echo "06 START $(TZ=America/New_York date)"
-          echo "event_name=${{ github.event_name }}"
-          echo "ref_name=${{ github.ref_name }}"
-          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
-          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
-
       - name: Checkout main
         uses: actions/checkout@v4
         with:
@@ -42,13 +29,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-          restore-keys: ${{ runner.os }}-py-
 
       - name: Setup Python 3.10
         uses: actions/setup-python@v4
@@ -92,6 +72,7 @@ jobs:
             rm -f step.err
             echo "⏹️ END: ${NAME} ($(ts))" >>"$LOG"
             echo >>"$LOG"
+            return $rc
           }
 
           # --- Projections & Builder ---
@@ -111,34 +92,47 @@ jobs:
             echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
 
-          # Fail the job if any step failed
+          # Write a failure marker instead of exiting, so later steps can push logs
           if grep -q "❌" "$STATUS"; then
-            echo "One or more steps failed. See summaries/projections/summary.txt"
-            exit 1
+            echo "FAIL" > summaries/projections/FAIL
           fi
 
+      # Always push a consolidated summary to summaries/06_projection/
       - name: Force push 06 summary logs
+        if: ${{ always() }}
         run: |
           mkdir -p summaries/06_projection
           {
             echo "===== STATUS ====="
-            cat summaries/projections/status.txt
+            cat summaries/projections/status.txt || true
             echo
             echo "===== LOG ====="
-            cat summaries/projections/log.txt
+            cat summaries/projections/log.txt || true
             echo
             echo "===== ERRORS ====="
-            cat summaries/projections/errors.txt
+            cat summaries/projections/errors.txt || true
           } > summaries/06_projection/summary.txt
+
           git add summaries/06_projection/summary.txt
           git commit -m "06 projection forced summary logs" || true
           git pull --rebase origin main || true
           git push origin HEAD:main || true
 
+      # Commit CSV outputs even on failure (optional; keep if you want artifacts)
       - name: Commit stage outputs
+        if: ${{ always() }}
         run: |
           git add data/_projections/*.csv || true
           git add summaries/projections/* || true
           git diff --cached --quiet || git commit -m "06 projections & builder outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
+
+      # Finally, fail the job if any step failed
+      - name: Set job result based on FAIL marker
+        if: ${{ always() }}
+        run: |
+          if [ -f summaries/projections/FAIL ]; then
+            echo "One or more steps failed. See summaries/06_projection/summary.txt"
+            exit 1
+          fi
