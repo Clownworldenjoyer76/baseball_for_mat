@@ -1,83 +1,117 @@
-===== RUN TIMESTAMP: 2025-09-04 02:26:15 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-04 02:42:46 PM EDT =====
 
 ===== STATUS =====
-❌ python failed [2025-09-04 02:26:13 PM EDT]
-❌ python failed [2025-09-04 02:26:14 PM EDT]
-✅ python succeeded [2025-09-04 02:26:14 PM EDT]
-✅ python succeeded [2025-09-04 02:26:14 PM EDT]
-✅ python succeeded [2025-09-04 02:26:15 PM EDT]
-✅ python succeeded [2025-09-04 02:26:15 PM EDT]
-✅ python succeeded [2025-09-04 02:26:15 PM EDT]
+❌ python failed [2025-09-04 02:42:44 PM EDT]
+❌ python failed [2025-09-04 02:42:45 PM EDT]
+✅ python succeeded [2025-09-04 02:42:45 PM EDT]
+✅ python succeeded [2025-09-04 02:42:45 PM EDT]
+✅ python succeeded [2025-09-04 02:42:46 PM EDT]
+✅ python succeeded [2025-09-04 02:42:46 PM EDT]
+✅ python succeeded [2025-09-04 02:42:46 PM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-09-04 02:26:13 PM EDT)
-⏹️ END: python (2025-09-04 02:26:13 PM EDT)
+▶️ START: splitaway.py (2025-09-04 02:42:44 PM EDT)
+⏹️ END: python (2025-09-04 02:42:44 PM EDT)
 
-▶️ START: splithome.py (2025-09-04 02:26:13 PM EDT)
-⏹️ END: python (2025-09-04 02:26:14 PM EDT)
+▶️ START: splithome.py (2025-09-04 02:42:44 PM EDT)
+⏹️ END: python (2025-09-04 02:42:45 PM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-09-04 02:26:14 PM EDT)
+▶️ START: updatesplitcsvs.py (2025-09-04 02:42:45 PM EDT)
 ✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.
-⏹️ END: python (2025-09-04 02:26:14 PM EDT)
+⏹️ END: python (2025-09-04 02:42:45 PM EDT)
 
-▶️ START: commit_split_batters.py (2025-09-04 02:26:14 PM EDT)
-⏹️ END: python (2025-09-04 02:26:14 PM EDT)
+▶️ START: commit_split_batters.py (2025-09-04 02:42:45 PM EDT)
+⏹️ END: python (2025-09-04 02:42:45 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-09-04 02:26:14 PM EDT)
-⏹️ END: python (2025-09-04 02:26:15 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-09-04 02:42:45 PM EDT)
+⏹️ END: python (2025-09-04 02:42:46 PM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-09-04 02:26:15 PM EDT)
+▶️ START: pitcherfilecleanup.py (2025-09-04 02:42:46 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-09-04 02:26:15 PM EDT)
+⏹️ END: python (2025-09-04 02:42:46 PM EDT)
 
-▶️ START: bet_prep_1.py (2025-09-04 02:26:15 PM EDT)
+▶️ START: bet_prep_1.py (2025-09-04 02:42:46 PM EDT)
 ✅ Wrote 6 rows -> data/bets/mlb_sched.csv
-⏹️ END: python (2025-09-04 02:26:15 PM EDT)
+⏹️ END: python (2025-09-04 02:42:46 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-04 02:26:13 PM EDT]:
+❌ python ERROR [2025-09-04 02:42:44 PM EDT]:
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'team_id'
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 115, in <module>
     main(batters_file, games_file, output_file)
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 66, in main
     batters = fill_team_id_from_directory(batters)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 52, in fill_team_id_from_directory
-    m = batters.merge(dir_df[["team_code", "team_id"]].drop_duplicates(),
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
-    return op.get_result(copy=copy)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
-    result = self._reindex_and_concat(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
-    llabels, rlabels = _items_overlap_with_suffix(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
-    raise MergeError(
-pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'team_id_x'} is not allowed.
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 55, in fill_team_id_from_directory
+    batters.loc[batters["team_id"].isna(), "team_id"] = m.loc[batters["team_id"].isna(), "team_id"]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1184, in __getitem__
+    return self._getitem_tuple(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1368, in _getitem_tuple
+    return self._getitem_lowerdim(tup)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1065, in _getitem_lowerdim
+    section = self._getitem_axis(key, axis=i)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1431, in _getitem_axis
+    return self._get_label(key, axis=axis)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1381, in _get_label
+    return self.obj.xs(label, axis=axis)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 4306, in xs
+    return self[key]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'team_id'
 
 ---
 
-❌ python ERROR [2025-09-04 02:26:14 PM EDT]:
+❌ python ERROR [2025-09-04 02:42:45 PM EDT]:
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'team_id'
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 110, in <module>
     main(batters_file, games_file, output_file)
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 65, in main
     batters = fill_team_id_from_directory(batters)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 51, in fill_team_id_from_directory
-    m = batters.merge(dir_df[["team_code", "team_id"]].drop_duplicates(),
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
-    return op.get_result(copy=copy)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
-    result = self._reindex_and_concat(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
-    llabels, rlabels = _items_overlap_with_suffix(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
-    raise MergeError(
-pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'team_id_x'} is not allowed.
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 54, in fill_team_id_from_directory
+    batters.loc[batters["team_id"].isna(), "team_id"] = m.loc[batters["team_id"].isna(), "team_id"]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1184, in __getitem__
+    return self._getitem_tuple(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1368, in _getitem_tuple
+    return self._getitem_lowerdim(tup)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1065, in _getitem_lowerdim
+    section = self._getitem_axis(key, axis=i)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1431, in _getitem_axis
+    return self._get_label(key, axis=axis)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexing.py", line 1381, in _get_label
+    return self.obj.xs(label, axis=axis)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 4306, in xs
+    return self[key]
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'team_id'
 
 ---
 
