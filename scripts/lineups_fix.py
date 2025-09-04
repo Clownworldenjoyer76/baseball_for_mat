@@ -1,212 +1,155 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-scripts/lineups_fix.py
-
-Post-process data/raw/lineups.csv to inject:
-- player_id          (primary: Data/batters.csv; fallback: team_csvs/batters_*.csv;
-                      then primary: Data/pitchers.csv; fallback: team_csvs/pitchers_*.csv)
-- type               ("batter" if found in batters, "pitcher" if found in pitchers)
-- team_id            (from manual/team_directory.csv via team_code; fallback to 'all_codes')
-"""
-
-from __future__ import annotations
-import re
-import unicodedata
+import glob
+import sys
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
 
 import pandas as pd
 
-# --- File paths ---
-LINEUPS_PATH = Path("data/raw/lineups.csv")
-BATTERS_PATH = Path("data/Data/batters.csv")          # columns: "last_name, first_name", "player_id"
-PITCHERS_PATH = Path("data/Data/pitchers.csv")        # columns: "last_name, first_name", "player_id"
-TEAM_BATTERS_GLOB = "data/team_csvs/batters_*.csv"    # fallback set
-TEAM_PITCHERS_GLOB = "data/team_csvs/pitchers_*.csv"  # fallback set
-TEAMS_PATH   = Path("data/manual/team_directory.csv") # "team_code","team_id" and optional "all_codes"
+LINEUPS = Path("data/raw/lineups.csv")
+TEAM_DIR = Path("data/manual/team_directory.csv")
+BATTERS = Path("data/Data/batters.csv")
+PITCHERS = Path("data/Data/pitchers.csv")
 
-# --- Expected columns in lineups.csv ---
-REQUIRED_LINEUPS_COLS = ["team_code", "last_name, first_name", "type", "player_id", "team_id"]
-
-
-# ------------- helpers -------------
-def _strip(s: str) -> str:
-    return (s or "").strip()
-
-def _norm_name(s: str) -> str:
-    """
-    Normalize 'last_name, first_name' for robust matching:
-    - Unicode NFKD, strip diacritics
-    - lowercase
-    - collapse spaces
-    - standardize comma spacing to ', '
-    """
-    s = _strip(s)
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    s = s.lower()
-    s = re.sub(r"\s*,\s*", ", ", s)
-    s = re.sub(r"\s+", " ", s)
-    return s
-
-def _norm_code(s: str) -> str:
-    """Normalize team codes for matching in manual directory."""
-    return _strip(s).upper()
-
-
-# ------------- load lookups -------------
-def _mapping_from_df(df: pd.DataFrame) -> Dict[str, str]:
-    """
-    Build name->player_id from a DataFrame with columns:
-    - 'last_name, first_name'
-    - 'player_id'
-    """
-    m: Dict[str, str] = {}
-    if "last_name, first_name" not in df.columns or "player_id" not in df.columns:
-        return m
-    for _, row in df.iterrows():
-        name = _norm_name(row["last_name, first_name"])
-        pid  = _strip(str(row["player_id"]))
-        if name and pid and name not in m:
-            m[name] = pid
-    return m
-
-def load_name_to_id_map(csv_path: Path) -> Dict[str, str]:
-    """Single CSV → mapping."""
+def load_name_id_map(csv_path: Path) -> pd.DataFrame:
     if not csv_path.exists():
-        return {}
+        return pd.DataFrame(columns=["last_name, first_name", "player_id"])
     df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
-    return _mapping_from_df(df)
+    # standardize the key column name
+    if "last_name, first_name" not in df.columns:
+        # try common alternatives
+        for cand in ("name", "Name", "player_name", "last_first"):
+            if cand in df.columns:
+                df = df.rename(columns={cand: "last_name, first_name"})
+                break
+    # keep only required
+    cols = [c for c in ["last_name, first_name", "player_id"] if c in df.columns]
+    return df[cols].dropna().drop_duplicates()
 
-def load_name_to_id_map_many(paths: Iterable[Path]) -> Dict[str, str]:
+def build_team_code_to_id(team_dir: Path) -> pd.DataFrame:
     """
-    Multiple CSVs (e.g., globbed team files) → merged mapping.
-    First non-empty assignment wins to preserve precedence ordering in our caller.
+    team_directory.csv needs columns: team_id, team_code, all_codes
+      - all_codes: pipe or comma-separated aliases (e.g., "NYY|Yankees|NYY-2024")
     """
-    merged: Dict[str, str] = {}
-    for p in paths:
-        try:
-            df = pd.read_csv(p, dtype=str, keep_default_na=False)
-        except Exception:
-            continue
-        part = _mapping_from_df(df)
-        for k, v in part.items():
-            if k not in merged:
-                merged[k] = v
-    return merged
+    tdf = pd.read_csv(team_dir, dtype=str, keep_default_na=False)
+    # explode all_codes into rows
+    if "all_codes" in tdf.columns:
+        alias = (
+            tdf.assign(all_codes=tdf["all_codes"].str.replace(",", "|"))
+               .assign(all_codes=tdf["all_codes"].str.split(r"\|"))
+               .explode("all_codes")
+        )
+        alias["alias"] = alias["all_codes"].str.strip()
+        code_map = pd.concat([
+            tdf[["team_code", "team_id"]].rename(columns={"team_code": "alias"}),
+            alias[["alias", "team_id"]],
+        ], ignore_index=True).drop_duplicates()
+    else:
+        # no alias list; just use team_code
+        code_map = tdf[["team_code", "team_id"]].rename(columns={"team_code": "alias"}).drop_duplicates()
+    code_map["alias"] = code_map["alias"].str.strip()
+    return code_map
 
-def load_team_maps(csv_path: Path) -> Tuple[Dict[str, str], Dict[str, str]]:
-    """
-    Returns:
-      - direct_map: {team_code -> team_id}
-      - alias_map : {alias_code -> team_id} from 'all_codes' (if present)
-    """
-    direct_map: Dict[str, str] = {}
-    alias_map : Dict[str, str] = {}
+def main():
+    if not LINEUPS.exists():
+        print(f"❌ {LINEUPS} not found")
+        sys.exit(1)
 
-    if not csv_path.exists():
-        return direct_map, alias_map
+    df = pd.read_csv(LINEUPS, dtype=str, keep_default_na=False)
 
-    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
-
-    if "team_code" in df.columns and "team_id" in df.columns:
-        for _, row in df.iterrows():
-            code = _norm_code(row["team_code"])
-            tid  = _strip(str(row["team_id"]))
-            if code and tid:
-                direct_map[code] = tid
-
-    if "all_codes" in df.columns and "team_id" in df.columns:
-        for _, row in df.iterrows():
-            tid = _strip(str(row["team_id"]))
-            ac  = _strip(row["all_codes"])
-            if not tid or not ac:
-                continue
-            parts = [p for p in re.split(r"[,\|/\s]+", ac) if p]
-            for p in parts:
-                alias_map[_norm_code(p)] = tid
-
-    return direct_map, alias_map
-
-
-# ------------- main logic -------------
-def main(
-    lineups_path: Path = LINEUPS_PATH,
-    batters_path: Path = BATTERS_PATH,
-    pitchers_path: Path = PITCHERS_PATH,
-    teams_path: Path = TEAMS_PATH,
-) -> None:
-
-    # Load lineups
-    if not lineups_path.exists():
-        raise FileNotFoundError(f"{lineups_path} not found")
-
-    df = pd.read_csv(lineups_path, dtype=str, keep_default_na=False)
-
-    # Ensure required columns exist (create blanks if missing)
-    for col in REQUIRED_LINEUPS_COLS:
+    # Ensure required columns exist
+    for col in ["team_code", "last_name, first_name", "type", "player_id", "team_id"]:
         if col not in df.columns:
             df[col] = ""
 
-    # ---- Build name→id maps with precedence and fallbacks ----
-    # Precedence order we want (first hit wins):
-    #   1) Data/batters.csv
-    #   2) data/team_csvs/batters_*.csv
-    #   3) Data/pitchers.csv
-    #   4) data/team_csvs/pitchers_*.csv
-    bat_primary   = load_name_to_id_map(batters_path)
-    bat_fallbacks = load_name_to_id_map_many(sorted(Path().glob(TEAM_BATTERS_GLOB)))
-    pit_primary   = load_name_to_id_map(pitchers_path)
-    pit_fallbacks = load_name_to_id_map_many(sorted(Path().glob(TEAM_PITCHERS_GLOB)))
+    # ---- Build name→id maps (priority order) ----
+    src_maps = []
+    bat_master = load_name_id_map(BATTERS)
+    if not bat_master.empty:
+        bat_master["src_type"] = "batter"
+        src_maps.append(bat_master)
 
-    # Combine into ordered lookup stages
-    stages = [
-        ("batter", bat_primary),
-        ("batter", bat_fallbacks),
-        ("pitcher", pit_primary),
-        ("pitcher", pit_fallbacks),
-    ]
+    pit_master = load_name_id_map(PITCHERS)
+    if not pit_master.empty:
+        pit_master["src_type"] = "pitcher"
+        src_maps.append(pit_master)
 
-    # Team maps
-    direct_map, alias_map = load_team_maps(teams_path)
+    # team_csv fallbacks
+    for path in sorted(glob.glob("data/team_csvs/batters_*.csv")):
+        d = load_name_id_map(Path(path))
+        if not d.empty:
+            d["src_type"] = "batter"
+            src_maps.append(d)
 
-    # Inject player_id and type
-    def _resolve_player(row) -> Tuple[str, str]:
-        name = _norm_name(row["last_name, first_name"])
-        if not name:
-            return "", ""
-        for role, mapping in stages:
-            pid = mapping.get(name, "")
-            if pid:
-                return pid, role
-        return "", ""  # not found anywhere
+    for path in sorted(glob.glob("data/team_csvs/pitchers_*.csv")):
+        d = load_name_id_map(Path(path))
+        if not d.empty:
+            d["src_type"] = "pitcher"
+            src_maps.append(d)
 
-    pid_type = df.apply(_resolve_player, axis=1, result_type="expand")
-    df["player_id"] = pid_type[0]
-    df["type"]      = pid_type[1]
+    if src_maps:
+        name_map = pd.concat(src_maps, ignore_index=True).drop_duplicates(subset=["last_name, first_name", "player_id"])
+    else:
+        name_map = pd.DataFrame(columns=["last_name, first_name", "player_id", "src_type"])
 
-    # Inject team_id (direct code first, then aliases)
-    def _resolve_team_id(row) -> str:
-        code = _norm_code(row["team_code"])
-        if code in direct_map:
-            return direct_map[code]
-        if code in alias_map:
-            return alias_map[code]
-        return ""
+    # Merge to fill player_id/type
+    df = df.merge(name_map, on="last_name, first_name", how="left")
+    # prefer existing if already present; else take merged
+    df["player_id"] = df["player_id"].where(df["player_id"].astype(bool), df["player_id_y"])
+    # fill type from src_type only when empty
+    df["type"] = df["type"].where(df["type"].astype(bool), df["src_type"].fillna(""))
 
-    df["team_id"] = df.apply(_resolve_team_id, axis=1)
+    # clean up columns from merge
+    drop_cols = [c for c in ["player_id_y", "src_type"] if c in df.columns]
+    df = df.drop(columns=drop_cols, errors="ignore")
+    df = df.rename(columns={"player_id_x": "player_id"})
 
-    # Reorder columns to expected order (keep any extras at the end)
-    ordered = [c for c in REQUIRED_LINEUPS_COLS if c in df.columns]
-    extras  = [c for c in df.columns if c not in ordered]
-    df = df[ordered + extras]
+    # ---- Map team_code → team_id ----
+    code_map = build_team_code_to_id(TEAM_DIR)
+    code_map = code_map.rename(columns={"alias": "team_code"})
+    df = df.merge(code_map, on="team_code", how="left", suffixes=("", "_mapped"))
+    df["team_id"] = df["team_id"].where(df["team_id"].astype(bool), df["team_id_mapped"])
+    df = df.drop(columns=[c for c in ["team_id_mapped"] if c in df.columns], errors="ignore")
 
-    # Overwrite the original lineups CSV
-    lineups_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(lineups_path, index=False)
+    # ---- Validators (warnings only) ----
+    missing_ids = df[~df["player_id"].astype(bool)]
+    if not missing_ids.empty:
+        print(f"⚠️ {len(missing_ids)} rows still missing player_id (will remain blank). Examples:")
+        print(missing_ids.head(10)[["team_code", "last_name, first_name"]].to_string(index=False))
 
+    # player_id bound to multiple team_codes in this file
+    multi_team = (
+        df[df["player_id"].astype(bool)]
+        .groupby("player_id")["team_code"]
+        .nunique()
+        .reset_index(name="n_codes")
+    )
+    conflicts = multi_team[multi_team["n_codes"] > 1]
+    if not conflicts.empty:
+        print(f"⚠️ {len(conflicts)} player_id values appear with multiple team_code entries in lineups.csv.")
+
+    # team_code should exist as an alias for the mapped team_id (sanity)
+    if "team_id" in df.columns and not code_map.empty:
+        valid = code_map.groupby("team_id")["team_code"].apply(set).to_dict()
+        bad = []
+        for _, r in df.iterrows():
+            tid = r.get("team_id", "").strip()
+            tcode = r.get("team_code", "").strip()
+            if tid and tcode and tid in valid and tcode not in valid[tid]:
+                bad.append((tid, tcode, r["last_name, first_name"]))
+        if bad:
+            print(f"⚠️ {len(bad)} rows have team_code not listed for their mapped team_id. First 10:")
+            for (tid, tcode, name) in bad[:10]:
+                print(f"  team_id={tid} team_code={tcode} name={name}")
+
+    # ---- Write back (in place) ----
+    # keep only expected columns & order
+    cols = ["team_code", "last_name, first_name", "type", "player_id", "team_id"]
+    for c in cols:
+        if c not in df.columns:
+            df[c] = ""
+    df = df[cols].drop_duplicates()
+    df.to_csv(LINEUPS, index=False, encoding="utf-8")
+    print(f"✅ lineups_fix.py updated {LINEUPS} with player_id/type/team_id (rows={len(df)})")
 
 if __name__ == "__main__":
     main()
