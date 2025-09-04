@@ -1,155 +1,214 @@
 #!/usr/bin/env python3
-import glob
-import sys
-from pathlib import Path
-
 import pandas as pd
+import unicodedata
+import re
+from pathlib import Path
+from glob import glob
 
 LINEUPS = Path("data/raw/lineups.csv")
 TEAM_DIR = Path("data/manual/team_directory.csv")
 BATTERS = Path("data/Data/batters.csv")
 PITCHERS = Path("data/Data/pitchers.csv")
+TEAM_BATS_GLOB = "data/team_csvs/batters_*.csv"
+TEAM_PITS_GLOB = "data/team_csvs/pitchers_*.csv"
+REPORT = Path("summaries/todaysgames/lineups_fix_unmatched.txt")
 
-def load_name_id_map(csv_path: Path) -> pd.DataFrame:
-    if not csv_path.exists():
+# -------- helpers --------
+def strip_accents(text: str) -> str:
+    if not isinstance(text, str):
+        return ""
+    text = unicodedata.normalize("NFD", text)
+    return "".join(c for c in text if unicodedata.category(c) != "Mn")
+
+def normalize_name(name: str) -> str:
+    """
+    Normalize to 'Last [Suffix], First' with basic handling of Jr./Sr./II etc
+    and keep multi-word last names like 'Del Castillo' intact.
+    """
+    if not isinstance(name, str):
+        return ""
+    name = strip_accents(name)
+    name = re.sub(r"[^a-zA-Z.,' ]", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
+
+    # if already in "Last, First" form, trust it (light clean)
+    if "," in name:
+        last, first = [x.strip() for x in name.split(",", 1)]
+        return f"{last}, {first}"
+
+    # From "First ... Last [Suffix?]" -> "Last [Suffix], First ..."
+    suffixes = {"Jr", "Sr", "II", "III", "IV", "Jr.", "Sr."}
+    tokens = name.split()
+    if len(tokens) >= 2:
+        last_parts = [tokens[-1]]
+        # bring suffix with last name if present
+        if tokens[-1].replace(".", "") in suffixes and len(tokens) >= 3:
+            last_parts = [tokens[-2], tokens[-1]]
+        first = " ".join(tokens[:-len(last_parts)])
+        last = " ".join(last_parts)
+        return f"{last.strip()}, {first.strip()}"
+
+    return name.title()
+
+def normalize_team_code(s: str) -> str:
+    if not isinstance(s, str):
+        return ""
+    return re.sub(r"\s+", "", s.strip()).upper()
+
+def explode_team_aliases(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Build a mapping of alias -> team_id from team_directory all_codes.
+    Supports comma/pipe/slash/space separators.
+    """
+    out = {}
+    for _, r in df.iterrows():
+        tid = r.get("team_id")
+        code = normalize_team_code(r.get("team_code", ""))
+        if code:
+            out[code] = tid
+        aliases = r.get("all_codes", "")
+        if isinstance(aliases, str) and aliases.strip():
+            for a in re.split(r"[,\|/ ]+", aliases):
+                a = normalize_team_code(a)
+                if a:
+                    out[a] = tid
+    return pd.DataFrame(
+        [{"code": k, "team_id": v} for k, v in out.items()]
+    ).drop_duplicates(subset=["code"])
+
+def load_master(path: Path) -> pd.DataFrame:
+    if not path.exists():
         return pd.DataFrame(columns=["last_name, first_name", "player_id"])
-    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
-    # standardize the key column name
-    if "last_name, first_name" not in df.columns:
-        # try common alternatives
-        for cand in ("name", "Name", "player_name", "last_first"):
-            if cand in df.columns:
-                df = df.rename(columns={cand: "last_name, first_name"})
-                break
-    # keep only required
-    cols = [c for c in ["last_name, first_name", "player_id"] if c in df.columns]
-    return df[cols].dropna().drop_duplicates()
+    df = pd.read_csv(path, dtype=str)
+    # normalize the key
+    key = "last_name, first_name"
+    # some sources might use 'name'
+    if key not in df.columns and "name" in df.columns:
+        df = df.rename(columns={"name": key})
+    if key not in df.columns or "player_id" not in df.columns:
+        return pd.DataFrame(columns=[key, "player_id"])
+    df[key] = df[key].map(normalize_name)
+    df["player_id"] = df["player_id"].astype(str)
+    return df[[key, "player_id"]].dropna().drop_duplicates()
 
-def build_team_code_to_id(team_dir: Path) -> pd.DataFrame:
-    """
-    team_directory.csv needs columns: team_id, team_code, all_codes
-      - all_codes: pipe or comma-separated aliases (e.g., "NYY|Yankees|NYY-2024")
-    """
-    tdf = pd.read_csv(team_dir, dtype=str, keep_default_na=False)
-    # explode all_codes into rows
-    if "all_codes" in tdf.columns:
-        alias = (
-            tdf.assign(all_codes=tdf["all_codes"].str.replace(",", "|"))
-               .assign(all_codes=tdf["all_codes"].str.split(r"\|"))
-               .explode("all_codes")
-        )
-        alias["alias"] = alias["all_codes"].str.strip()
-        code_map = pd.concat([
-            tdf[["team_code", "team_id"]].rename(columns={"team_code": "alias"}),
-            alias[["alias", "team_id"]],
-        ], ignore_index=True).drop_duplicates()
-    else:
-        # no alias list; just use team_code
-        code_map = tdf[["team_code", "team_id"]].rename(columns={"team_code": "alias"}).drop_duplicates()
-    code_map["alias"] = code_map["alias"].str.strip()
-    return code_map
+def load_team_files(pattern: str) -> pd.DataFrame:
+    frames = []
+    for p in glob(pattern):
+        try:
+            tdf = pd.read_csv(p, dtype=str)
+            if "last_name, first_name" in tdf.columns and "player_id" in tdf.columns:
+                tdf["last_name, first_name"] = tdf["last_name, first_name"].map(normalize_name)
+                tdf["player_id"] = tdf["player_id"].astype(str)
+                frames.append(tdf[["last_name, first_name", "player_id"]])
+        except Exception:
+            pass
+    if frames:
+        return pd.concat(frames, ignore_index=True).drop_duplicates()
+    return pd.DataFrame(columns=["last_name, first_name", "player_id"])
 
+# -------- main --------
 def main():
-    if not LINEUPS.exists():
-        print(f"❌ {LINEUPS} not found")
-        sys.exit(1)
+    LINEUPS.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(LINEUPS, dtype=str, keep_default_na=False)
+    # Load and normalize lineups
+    df = pd.read_csv(LINEUPS, dtype=str).fillna("")
+    # ensure required cols exist
+    for col in ["team_code", "last_name, first_name"]:
+        if col not in df.columns:
+            df[col] = ""
+    df["team_code"] = df["team_code"].map(normalize_team_code)
+    df["last_name, first_name"] = df["last_name, first_name"].map(normalize_name)
 
-    # Ensure required columns exist
-    for col in ["team_code", "last_name, first_name", "type", "player_id", "team_id"]:
+    # Ensure output columns exist
+    for col in ["type", "player_id", "team_id"]:
         if col not in df.columns:
             df[col] = ""
 
-    # ---- Build name→id maps (priority order) ----
-    src_maps = []
-    bat_master = load_name_id_map(BATTERS)
-    if not bat_master.empty:
-        bat_master["src_type"] = "batter"
-        src_maps.append(bat_master)
+    # Load master sources
+    bat = load_master(BATTERS)
+    pit = load_master(PITCHERS)
+    bat_team = load_team_files(TEAM_BATS_GLOB)
+    pit_team = load_team_files(TEAM_PITS_GLOB)
 
-    pit_master = load_name_id_map(PITCHERS)
-    if not pit_master.empty:
-        pit_master["src_type"] = "pitcher"
-        src_maps.append(pit_master)
+    # Build name->player_id maps (priority order)
+    # 1) master batters, 2) master pitchers, 3) team batters, 4) team pitchers
+    name_to_pid = {}
+    for source in (bat, pit, bat_team, pit_team):
+        for _, r in source.iterrows():
+            nm = r["last_name, first_name"]
+            pid = r["player_id"]
+            if nm and pid and nm not in name_to_pid:
+                name_to_pid[nm] = pid
 
-    # team_csv fallbacks
-    for path in sorted(glob.glob("data/team_csvs/batters_*.csv")):
-        d = load_name_id_map(Path(path))
-        if not d.empty:
-            d["src_type"] = "batter"
-            src_maps.append(d)
-
-    for path in sorted(glob.glob("data/team_csvs/pitchers_*.csv")):
-        d = load_name_id_map(Path(path))
-        if not d.empty:
-            d["src_type"] = "pitcher"
-            src_maps.append(d)
-
-    if src_maps:
-        name_map = pd.concat(src_maps, ignore_index=True).drop_duplicates(subset=["last_name, first_name", "player_id"])
-    else:
-        name_map = pd.DataFrame(columns=["last_name, first_name", "player_id", "src_type"])
-
-    # Merge to fill player_id/type
-    df = df.merge(name_map, on="last_name, first_name", how="left")
-    # prefer existing if already present; else take merged
-    df["player_id"] = df["player_id"].where(df["player_id"].astype(bool), df["player_id_y"])
-    # fill type from src_type only when empty
-    df["type"] = df["type"].where(df["type"].astype(bool), df["src_type"].fillna(""))
-
-    # clean up columns from merge
-    drop_cols = [c for c in ["player_id_y", "src_type"] if c in df.columns]
-    df = df.drop(columns=drop_cols, errors="ignore")
-    df = df.rename(columns={"player_id_x": "player_id"})
-
-    # ---- Map team_code → team_id ----
-    code_map = build_team_code_to_id(TEAM_DIR)
-    code_map = code_map.rename(columns={"alias": "team_code"})
-    df = df.merge(code_map, on="team_code", how="left", suffixes=("", "_mapped"))
-    df["team_id"] = df["team_id"].where(df["team_id"].astype(bool), df["team_id_mapped"])
-    df = df.drop(columns=[c for c in ["team_id_mapped"] if c in df.columns], errors="ignore")
-
-    # ---- Validators (warnings only) ----
-    missing_ids = df[~df["player_id"].astype(bool)]
-    if not missing_ids.empty:
-        print(f"⚠️ {len(missing_ids)} rows still missing player_id (will remain blank). Examples:")
-        print(missing_ids.head(10)[["team_code", "last_name, first_name"]].to_string(index=False))
-
-    # player_id bound to multiple team_codes in this file
-    multi_team = (
-        df[df["player_id"].astype(bool)]
-        .groupby("player_id")["team_code"]
-        .nunique()
-        .reset_index(name="n_codes")
+    # Fill player_id
+    df["player_id"] = df.apply(
+        lambda r: name_to_pid.get(r["last_name, first_name"], r["player_id"]),
+        axis=1
     )
-    conflicts = multi_team[multi_team["n_codes"] > 1]
-    if not conflicts.empty:
-        print(f"⚠️ {len(conflicts)} player_id values appear with multiple team_code entries in lineups.csv.")
 
-    # team_code should exist as an alias for the mapped team_id (sanity)
-    if "team_id" in df.columns and not code_map.empty:
-        valid = code_map.groupby("team_id")["team_code"].apply(set).to_dict()
-        bad = []
-        for _, r in df.iterrows():
-            tid = r.get("team_id", "").strip()
-            tcode = r.get("team_code", "").strip()
-            if tid and tcode and tid in valid and tcode not in valid[tid]:
-                bad.append((tid, tcode, r["last_name, first_name"]))
-        if bad:
-            print(f"⚠️ {len(bad)} rows have team_code not listed for their mapped team_id. First 10:")
-            for (tid, tcode, name) in bad[:10]:
-                print(f"  team_id={tid} team_code={tcode} name={name}")
+    # Fill type based on where name matched
+    bat_names = set(bat["last_name, first_name"].tolist()) | set(bat_team["last_name, first_name"].tolist())
+    pit_names = set(pit["last_name, first_name"].tolist()) | set(pit_team["last_name, first_name"].tolist())
 
-    # ---- Write back (in place) ----
-    # keep only expected columns & order
-    cols = ["team_code", "last_name, first_name", "type", "player_id", "team_id"]
-    for c in cols:
-        if c not in df.columns:
-            df[c] = ""
-    df = df[cols].drop_duplicates()
-    df.to_csv(LINEUPS, index=False, encoding="utf-8")
-    print(f"✅ lineups_fix.py updated {LINEUPS} with player_id/type/team_id (rows={len(df)})")
+    def infer_type(r):
+        nm = r["last_name, first_name"]
+        if nm in bat_names:
+            return "batter"
+        if nm in pit_names:
+            return "pitcher"
+        return r["type"]
+
+    df["type"] = df.apply(infer_type, axis=1)
+
+    # Team ID mapping
+    if TEAM_DIR.exists():
+        td = pd.read_csv(TEAM_DIR, dtype=str).fillna("")
+        # normalize incoming directory columns
+        if "team_code" in td.columns:
+            td["team_code"] = td["team_code"].map(normalize_team_code)
+        if "team_id" in td.columns:
+            td["team_id"] = td["team_id"].astype(str)
+
+        # direct code match
+        direct = td[["team_code", "team_id"]].drop_duplicates()
+        code_map = dict(zip(direct["team_code"], direct["team_id"]))
+
+        # alias map
+        alias_df = explode_team_aliases(td)
+        alias_map = dict(zip(alias_df["code"], alias_df["team_id"]))
+
+        def map_team_id(code: str, current: str) -> str:
+            if current:  # keep existing if present
+                return current
+            if code in code_map:
+                return code_map[code]
+            if code in alias_map:
+                return alias_map[code]
+            return ""
+
+        df["team_id"] = df.apply(lambda r: map_team_id(r["team_code"], r["team_id"]), axis=1)
+
+    # Save and report
+    df.to_csv(LINEUPS, index=False)
+
+    # Debug: who didn’t match?
+    missing_pid = df[df["player_id"].astype(str).eq("")][["team_code", "last_name, first_name"]]
+    missing_tid = df[df["team_id"].astype(str).eq("")][["team_code", "last_name, first_name"]]
+    with REPORT.open("w", encoding="utf-8") as f:
+        f.write("Missing player_id:\n")
+        if len(missing_pid):
+            f.write(missing_pid.to_csv(index=False))
+        else:
+            f.write("None\n")
+        f.write("\nMissing team_id:\n")
+        if len(missing_tid):
+            f.write(missing_tid.to_csv(index=False))
+        else:
+            f.write("None\n")
+
+    print(f"✅ lineups_fix.py: wrote {len(df)} rows to {LINEUPS}")
+    print(f"📝 unmatched report: {REPORT}")
 
 if __name__ == "__main__":
     main()
