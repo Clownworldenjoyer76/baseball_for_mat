@@ -1,39 +1,83 @@
-===== RUN TIMESTAMP: 2025-09-04 02:02:41 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-04 02:15:48 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-04 02:02:39 PM EDT]
-✅ python succeeded [2025-09-04 02:02:40 PM EDT]
-✅ python succeeded [2025-09-04 02:02:40 PM EDT]
-✅ python succeeded [2025-09-04 02:02:40 PM EDT]
-✅ python succeeded [2025-09-04 02:02:41 PM EDT]
-✅ python succeeded [2025-09-04 02:02:41 PM EDT]
-✅ python succeeded [2025-09-04 02:02:41 PM EDT]
+❌ python failed [2025-09-04 02:15:46 PM EDT]
+❌ python failed [2025-09-04 02:15:46 PM EDT]
+✅ python succeeded [2025-09-04 02:15:47 PM EDT]
+✅ python succeeded [2025-09-04 02:15:47 PM EDT]
+✅ python succeeded [2025-09-04 02:15:47 PM EDT]
+✅ python succeeded [2025-09-04 02:15:47 PM EDT]
+✅ python succeeded [2025-09-04 02:15:48 PM EDT]
 
 ===== LOG =====
-▶️ START: splitaway.py (2025-09-04 02:02:38 PM EDT)
-⏹️ END: python (2025-09-04 02:02:39 PM EDT)
+▶️ START: splitaway.py (2025-09-04 02:15:45 PM EDT)
+⏹️ END: python (2025-09-04 02:15:46 PM EDT)
 
-▶️ START: splithome.py (2025-09-04 02:02:39 PM EDT)
-⏹️ END: python (2025-09-04 02:02:40 PM EDT)
+▶️ START: splithome.py (2025-09-04 02:15:46 PM EDT)
+⏹️ END: python (2025-09-04 02:15:46 PM EDT)
 
-▶️ START: updatesplitcsvs.py (2025-09-04 02:02:40 PM EDT)
+▶️ START: updatesplitcsvs.py (2025-09-04 02:15:46 PM EDT)
 ✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.
-⏹️ END: python (2025-09-04 02:02:40 PM EDT)
+⏹️ END: python (2025-09-04 02:15:47 PM EDT)
 
-▶️ START: commit_split_batters.py (2025-09-04 02:02:40 PM EDT)
-⏹️ END: python (2025-09-04 02:02:40 PM EDT)
+▶️ START: commit_split_batters.py (2025-09-04 02:15:47 PM EDT)
+⏹️ END: python (2025-09-04 02:15:47 PM EDT)
 
-▶️ START: normalize_pitcher_home_away (2025-09-04 02:02:40 PM EDT)
-⏹️ END: python (2025-09-04 02:02:41 PM EDT)
+▶️ START: normalize_pitcher_home_away (2025-09-04 02:15:47 PM EDT)
+⏹️ END: python (2025-09-04 02:15:47 PM EDT)
 
-▶️ START: pitcherfilecleanup.py (2025-09-04 02:02:41 PM EDT)
+▶️ START: pitcherfilecleanup.py (2025-09-04 02:15:47 PM EDT)
 ✅ Cleaned: data/adjusted/pitchers_away.csv
 ✅ Cleaned: data/adjusted/pitchers_home.csv
-⏹️ END: python (2025-09-04 02:02:41 PM EDT)
+⏹️ END: python (2025-09-04 02:15:47 PM EDT)
 
-▶️ START: bet_prep_1.py (2025-09-04 02:02:41 PM EDT)
+▶️ START: bet_prep_1.py (2025-09-04 02:15:47 PM EDT)
 ✅ Wrote 6 rows -> data/bets/mlb_sched.csv
-⏹️ END: python (2025-09-04 02:02:41 PM EDT)
+⏹️ END: python (2025-09-04 02:15:48 PM EDT)
 
 
 ===== ERRORS =====
+❌ python ERROR [2025-09-04 02:15:46 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 115, in <module>
+    main(batters_file, games_file, output_file)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 66, in main
+    batters = fill_team_id_from_directory(batters)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splitaway.py", line 52, in fill_team_id_from_directory
+    m = batters.merge(dir_df[["team_code", "team_id"]].drop_duplicates(),
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
+    return op.get_result(copy=copy)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
+    result = self._reindex_and_concat(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
+    llabels, rlabels = _items_overlap_with_suffix(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
+    raise MergeError(
+pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'team_id_x'} is not allowed.
+
+---
+
+❌ python ERROR [2025-09-04 02:15:46 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 110, in <module>
+    main(batters_file, games_file, output_file)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 65, in main
+    batters = fill_team_id_from_directory(batters)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/splithome.py", line 51, in fill_team_id_from_directory
+    m = batters.merge(dir_df[["team_code", "team_id"]].drop_duplicates(),
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 184, in merge
+    return op.get_result(copy=copy)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 888, in get_result
+    result = self._reindex_and_concat(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 840, in _reindex_and_concat
+    llabels, rlabels = _items_overlap_with_suffix(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 2757, in _items_overlap_with_suffix
+    raise MergeError(
+pandas.errors.MergeError: Passing 'suffixes' which cause duplicate columns {'team_id_x'} is not allowed.
+
+---
+
