@@ -1,7 +1,13 @@
+# .github/workflows/combined_update_workflow.yml
+
 name: Second Update Lineups and Todays Games CSVs
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Start Chain - Fetch Rosters"]  # ← runs right after fetch_rosters.yml completes
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
