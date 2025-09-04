@@ -62,7 +62,7 @@ jobs:
           run_step tag_master_files.py                 python scripts/tag_master_files.py
           run_step validate_tagged_players.py          python scripts/validate_tagged_players.py
           run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
-          run_step normalize_lineups.py                python scripts/normalize_lineups.py
+          # run_step normalize_lineups.py                python scripts/normalize_lineups.py
           run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
           run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
           run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
