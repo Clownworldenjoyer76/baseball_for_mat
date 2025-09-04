@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import csv
+import re
+import unicodedata
 from pathlib import Path
 from typing import Dict, List
 
@@ -8,110 +10,105 @@ import requests
 TEAMS_URL = "https://statsapi.mlb.com/api/v1/teams"
 ROSTER_URL_TMPL = "https://statsapi.mlb.com/api/v1/teams/{team_id}/roster"
 
-OUTPUT_PATH = Path("data/raw/lineups.csv")
-HEADERS = ["team_code", "last_name, first_name", "type", "player_id", "team_id"]
+OUT = Path("data/raw/lineups.csv")
+HEADERS = ["team_code", "last_name, first_name", "type", "player_id", "team_id"]  # type/player_id/team_id left blank
 
-def _strip(s: str) -> str:
-    return (s or "").strip()
+# ---------- name helpers ----------
+def strip_accents(text: str) -> str:
+    text = unicodedata.normalize("NFD", text or "")
+    return "".join(c for c in text if unicodedata.category(c) != "Mn")
 
-def to_last_first(full_name: str) -> str:
+_SUFFIXES = {"Jr", "Sr", "II", "III", "IV", "Jr.", "Sr."}
+
+def normalize_last_first(full_name: str) -> str:
     """
-    Convert 'First [Middle ...] Last [SUFFIX]' → 'Last [SUFFIX], First [Middle ...]'.
-    Handles surname particles (Del, De, De la, Van, Von, Di, ...) and suffixes (Jr., II, III, ...).
-    If a comma already exists, return normalized spacing as-is.
+    Convert 'First Middle Last Suffix' -> 'Last Suffix, First Middle'
+    Examples:
+      'Adrian Del Castillo' -> 'Del Castillo, Adrian'
+      'Nacho Alvarez Jr.'   -> 'Alvarez Jr., Nacho'
+      'Michael Harris II'   -> 'Harris II, Michael'
     """
-    import re, unicodedata
+    if not full_name:
+        return ""
+    name = strip_accents(full_name)
+    name = re.sub(r"[^A-Za-z .,'-]", "", name)
+    name = re.sub(r"\s+", " ", name).strip()
 
-    def _strip(s): return (s or "").strip()
-    name = _strip(full_name)
-    if not name:
+    tokens = [t for t in name.replace(",", "").split(" ") if t]
+    if len(tokens) < 2:
         return name
-    if "," in name:
-        # Already 'Last, First' → normalize spaces only
-        return " ".join(re.sub(r"\s*,\s*", ", ", name).split())
 
-    # Tokenize
-    tokens = name.split()
-
-    # 1) Pull off suffix if present
-    SUFFIXES = {"jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"}
+    # pull suffix if present at the end
     suffix = ""
-    if tokens and tokens[-1].rstrip(".").lower() in SUFFIXES:
-        suffix = tokens.pop()  # keep original casing/punct
+    if tokens[-1].replace(".", "") in _SUFFIXES:
+        suffix = tokens[-1]
+        tokens = tokens[:-1]
 
-    if not tokens:
-        # name was only a suffix (weird) → just return it
-        return suffix
-
-    # 2) Build last name from the end, attaching particles
-    PARTICLES = {
-        "de","del","della","de la","de las","de los","da","dos","do",
-        "di","du","le","la","las","los","van","von","der","st","st.","san","santa",
-        "bin","binti","al","ap","ibn"
-    }
-
-    last_parts = [tokens[-1]]  # base surname
+    # try to detect multi-word last name patterns (e.g., "Del Castillo", "De La Cruz", "Van Wagenen")
+    # common lowercase particles that can be part of last names
+    particles = {"da", "de", "del", "della", "di", "du", "la", "le", "van", "von"}
+    last_parts = [tokens[-1]]
     i = len(tokens) - 2
-    while i >= 0:
-        low = tokens[i].lower()
-        # if token is a known particle or entirely lowercase (defensive), attach to surname
-        if low in PARTICLES or tokens[i].islower():
-            last_parts.append(tokens[i])
-            i -= 1
-            continue
-        break
+    while i >= 0 and tokens[i].lower() in particles:
+        last_parts.insert(0, tokens[i])
+        i -= 1
 
-    # Remaining tokens (0..i) are the given names (first + middles)
-    given = " ".join(tokens[: i + 1])
-    last = " ".join(reversed(last_parts))  # restore original order
-    if suffix:
-        last = f"{last} {suffix}"
+    first_parts = tokens[: i + 1]
+    last = " ".join(last_parts + ([suffix] if suffix else []))
+    first = " ".join(first_parts).strip()
+    return f"{last}, {first}".strip(", ")
 
-    return f"{last}, {given}".strip()
-
+# ---------- data fetch ----------
 def get_team_map() -> Dict[int, str]:
-    """{team_id:int -> team_abbreviation:str} for active MLB teams."""
     params = {"sportId": 1, "activeStatus": "Y"}
-    resp = requests.get(TEAMS_URL, params=params, timeout=20)
-    resp.raise_for_status()
-    teams = resp.json().get("teams", [])
-    return {t["id"]: _strip(t.get("abbreviation", "")) for t in teams}
+    r = requests.get(TEAMS_URL, params=params, timeout=20)
+    r.raise_for_status()
+    teams = r.json().get("teams", [])
+    return {int(t["id"]): (t.get("abbreviation") or "").strip() for t in teams}
 
 def get_active_roster(team_id: int) -> List[dict]:
-    """Fetch the 26-man ACTIVE roster for team_id."""
-    params = {"rosterType": "active"}
     url = ROSTER_URL_TMPL.format(team_id=team_id)
-    resp = requests.get(url, params=params, timeout=20)
-    resp.raise_for_status()
-    return resp.json().get("roster", [])
+    r = requests.get(url, params={"rosterType": "active"}, timeout=20)
+    r.raise_for_status()
+    return r.json().get("roster", [])
 
 def main():
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     team_map = get_team_map()
+
     rows = []
-    for api_team_id, team_code in team_map.items():
-        roster = get_active_roster(api_team_id)
+    for tid, tcode in team_map.items():
+        roster = get_active_roster(tid)
+
+        # sanity: if the API ever returned an empty/foreign roster, we still tag with the loop's team code
         for entry in roster:
             person = entry.get("person", {}) or {}
-            full_name = _strip(person.get("fullName") or "")
+            full_name = (person.get("fullName") or "").strip()
             if not full_name:
                 continue
-            last_first = to_last_first(full_name)
+            norm = normalize_last_first(full_name)
             rows.append({
-                "team_code": team_code,
-                "last_name, first_name": last_first,
-                "type": "",
-                "player_id": "",
-                "team_id": "",
+                "team_code": tcode,                 # authoritative from teams endpoint
+                "last_name, first_name": norm,      # normalized “Last, First”
+                "type": "",                         # left blank (to be filled by lineups_fix.py)
+                "player_id": "",                    # left blank
+                "team_id": "",                      # left blank
             })
 
+    # Sort deterministically
     rows.sort(key=lambda r: (r["team_code"], r["last_name, first_name"]))
 
-    with OUTPUT_PATH.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=HEADERS)
-        writer.writeheader()
-        writer.writerows(rows)
+    # Write CSV
+    with OUT.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=HEADERS)
+        w.writeheader()
+        w.writerows(rows)
+
+    # quick self-check (no hard fail)
+    missing = [r for r in rows if not r["team_code"] or not r["last_name, first_name"]]
+    print(f"✅ todayslineups: wrote {len(rows)} rows to {OUT}")
+    if missing:
+        print(f"⚠️ {len(missing)} rows had missing team_code or name (kept for review).")
 
 if __name__ == "__main__":
     main()
