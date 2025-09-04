@@ -1,0 +1,28 @@
+❌ python ERROR [2025-09-04 03:06:55 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 83, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 69, in main
+    adj_home = _attach_weather_by_game(bh, wx)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 41, in _attach_weather_by_game
+    woba_num = _get_woba(out)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_weather_adjustment.py", line 28, in _get_woba
+    raise ValueError("batters input: missing 'woba' and 'xwoba'")
+ValueError: batters input: missing 'woba' and 'xwoba'
+
+---
+
+❌ python ERROR [2025-09-04 03:06:55 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 85, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 77, in main
+    out_h = _attach_park(bh, "home", games)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 67, in _attach_park
+    woba_num = _ensure_woba(x)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/apply_park_adjustment.py", line 36, in _ensure_woba
+    raise KeyError("batters input missing both 'woba' and 'xwoba'")
+KeyError: "batters input missing both 'woba' and 'xwoba'"
+
+---
+
