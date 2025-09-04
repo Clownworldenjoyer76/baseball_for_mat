@@ -1,7 +1,6 @@
 name: 04 Pitcher Adjustments
 
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: ["03 Batter Adjustments"]
     types: [completed]
@@ -10,19 +9,23 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: 04_pitcher_adjustments-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   pitcher_adjustments:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # Only proceed when 03 finished successfully on main
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Banner
         run: |
           echo "04 START $(TZ=America/New_York date)"
-          echo "event_name=${{ github.event_name }}"
-          echo "ref_name=${{ github.ref_name }}"
-          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
-          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
+          echo "triggered_by=${{ github.event.workflow_run.name }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion }}"
+          echo "head_branch=${{ github.event.workflow_run.head_branch }}"
 
       - uses: actions/checkout@v4
         with:
