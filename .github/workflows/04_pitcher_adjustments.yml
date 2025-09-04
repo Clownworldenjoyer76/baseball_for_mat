@@ -1,31 +1,32 @@
+# .github/workflows/04_pitcher_adjustments.yml
 name: 04 Pitcher Adjustments
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["03 Batter Adjustments"]
     types: [completed]
-    branches: [main]
 
 permissions:
   contents: write
 
 concurrency:
-  group: 04_pitcher_adjustments-${{ github.event.workflow_run.head_branch || github.ref }}
+  group: 04_pitcher_adjustments-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   pitcher_adjustments:
-    # Only proceed when 03 finished successfully on main
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    # Allow manual runs; auto-run only when 03 succeeded (no branch gating)
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Banner
         run: |
           echo "04 START $(TZ=America/New_York date)"
-          echo "triggered_by=${{ github.event.workflow_run.name }}"
-          echo "conclusion=${{ github.event.workflow_run.conclusion }}"
-          echo "head_branch=${{ github.event.workflow_run.head_branch }}"
+          echo "event_name=${{ github.event_name }}"
+          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
 
       - uses: actions/checkout@v4
         with:
@@ -64,7 +65,8 @@ jobs:
           : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $1 failed [$(ts)]" >>"$STATUS"; { echo "❌ $1 ERROR [$(ts)]:"; cat step.err; echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $1 ($(ts))" >>"$LOG"; echo >>"$LOG"; }
+          run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $1 failed [$(ts)]" >>"$STATUS"; { echo "❌ $1 ERROR [$(ts)]:"
+            cat step.err; echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $1 ($(ts))" >>"$LOG"; echo >>"$LOG"; }
 
           run_step normalize_pitcher_weather_outputs.py python scripts/normalize_pitcher_weather_outputs.py
           run_step apply_pitcher_weather_adjustment.py  python scripts/apply_pitcher_weather_adjustment.py
