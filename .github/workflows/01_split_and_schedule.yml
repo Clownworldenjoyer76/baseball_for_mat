@@ -73,8 +73,8 @@ jobs:
 
       - name: Commit stage outputs
         run: |
-          git add data/adjusted/batters_*.csv || true
-          git add data/adjusted/pitchers_*.csv || true
+          git add --force data/adjusted/batters_*.csv || true
+          git add --force data/adjusted/pitchers_*.csv || true
           git add data/bets/mlb_sched.csv || true
           git add summaries/split_sched/* || true
           git diff --cached --quiet || git commit -m "01 split & schedule outputs"
