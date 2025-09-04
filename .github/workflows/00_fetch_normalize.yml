@@ -63,6 +63,21 @@ jobs:
           run_step validate_tagged_players.py          python scripts/validate_tagged_players.py
           run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
           run_step normalize_lineups.py                python scripts/normalize_lineups.py
+
+          # Seed a fresh batters_today.csv from the latest normalized lineups
+          run_step seed_batters_today_from_lineups     python - <<'PY'
+import pandas as pd, os
+src = "data/raw/lineups_normalized.csv"
+dst = "data/cleaned/batters_today.csv"
+df = pd.read_csv(src)
+for col in ["type","player_id","team_id"]:
+    if col not in df.columns:
+        df[col] = ""
+os.makedirs(os.path.dirname(dst), exist_ok=True)
+df.to_csv(dst, index=False)
+print(f"Seeded {dst} from {src} with {len(df)} rows.")
+PY
+
           run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
           run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
           run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
@@ -85,6 +100,7 @@ jobs:
 
       - name: Commit stage outputs
         run: |
+          git add data/raw/lineups_normalized.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add data/Data/stadium_metadata.csv || true
           git add data/cleaned/batters_today.csv || true
