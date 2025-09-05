@@ -1,0 +1,128 @@
+name: 07_final_projections
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/project_game_scores.py"
+      - "data/**"
+      - ".github/workflows/07_final_projections.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: "3.11"
+  OUTPUT_FILE: "data/end_chain/final/game_score_projections.csv"
+
+jobs:
+  run-final-projections:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies (best-effort)
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt || true
+          fi
+
+      - name: Run project_game_scores.py
+        id: run_scores
+        shell: bash
+        run: |
+          set -o pipefail
+          echo "Running score projection script…"
+          if [ -f scripts/project_game_scores.py ]; then
+            python scripts/project_game_scores.py | tee run.log
+          else
+            echo "ERROR: scripts/project_game_scores.py not found" | tee run.log
+            exit 1
+          fi
+
+      - name: Show output preview (if exists)
+        if: always()
+        run: |
+          if [ -f "${OUTPUT_FILE}" ]; then
+            echo "Output file found: ${OUTPUT_FILE}"
+            echo "---- head -n 20 ----"
+            head -n 20 "${OUTPUT_FILE}" || true
+            echo "---- tail -n 5 ----"
+            tail -n 5 "${OUTPUT_FILE}" || true
+          else
+            echo "No output file at ${OUTPUT_FILE}"
+          fi
+
+      - name: Upload artifact (output CSV) - always
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game_score_projections
+          path: ${{ env.OUTPUT_FILE }}
+          if-no-files-found: warn
+
+      - name: Commit & push results (if changed)
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Add only the final outputs directory; adjust if you want more committed automatically.
+          git add "${OUTPUT_FILE}" || true
+          if ! git diff --cached --quiet; then
+            git commit -m "CI: update game score projections [${{ github.run_id }}]"
+            git push
+            echo "Changes committed and pushed."
+          else
+            echo "No changes to commit."
+          fi
+
+      - name: Write job summary (ALWAYS)
+        if: always()
+        shell: bash
+        run: |
+          echo "# Final Projections Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Workflow: **07_final_projections**" >> $GITHUB_STEP_SUMMARY
+          echo "- Run ID: \`${{ github.run_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Script: \`scripts/project_game_scores.py\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "${OUTPUT_FILE}" ]; then
+            ROWS=$(($(wc -l < "${OUTPUT_FILE}")))
+            echo "## Output" >> $GITHUB_STEP_SUMMARY
+            echo "- File: \`${OUTPUT_FILE}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Rows (including header): **${ROWS}**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Head (first 10 lines)" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`csv" >> $GITHUB_STEP_SUMMARY
+            head -n 10 "${OUTPUT_FILE}" >> $GITHUB_STEP_SUMMARY || true
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Output" >> $GITHUB_STEP_SUMMARY
+            echo "- File: \`${OUTPUT_FILE}\` **NOT FOUND**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "## Logs" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          if [ -f run.log ]; then
+            tail -n 100 run.log >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "No run.log captured." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Status" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "- Job status: ✅ **success**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Job status: ❌ **failure** (summary written by always-on step)" >> $GITHUB_STEP_SUMMARY
+          fi
