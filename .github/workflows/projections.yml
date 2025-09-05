@@ -1,0 +1,114 @@
+name: Daily Projections
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/**.py"
+      - "data/**"
+      - "requirements.txt"
+      - ".github/workflows/projections.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-run:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: 🧾 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 📦 Install dependencies (best-effort)
+        shell: bash
+        run: |
+          set -e
+          if [[ -f requirements.txt ]]; then
+            pip install -r requirements.txt
+          else
+            # minimal runtime for this repo
+            pip install pandas numpy pyarrow
+          fi
+
+      - name: 🕒 Stamp start time
+        id: stamp
+        run: |
+          echo "started_at=$(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_OUTPUT
+
+      - name: ▶️ Run pipeline
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runlogs
+          {
+            echo "===== RUN TIMESTAMP: $(date) ====="
+            echo
+            echo "===== STATUS ====="
+            python scripts/project_prep.py
+            python scripts/fix_missing_batter_stats.py
+            python scripts/normalize_batters_for_builder.py
+            python scripts/project_batter_props.py
+            python scripts/project_pitcher_props.py
+            python scripts/build_expanded_batter_props.py
+            python scripts/pitcher_mega_z.py
+            python scripts/post_normalize_pitchers.py
+            # NEW: finalize step writes *both* _projections and end_chain/final
+            python scripts/finalize_projections.py
+            echo
+            echo "===== LISTING OUTPUTS ====="
+            echo "::group::data/_projections/"
+            ls -lh data/_projections || true
+            echo "::endgroup::"
+            echo "::group::data/end_chain/final/"
+            ls -lh data/end_chain/final || true
+            echo "::endgroup::"
+          } 2>&1 | tee runlogs/pipeline.log
+
+      - name: 📄 Summarize for mobile
+        if: always()
+        env:
+          STARTED: ${{ steps.stamp.outputs.started_at }}
+        run: |
+          {
+            echo "### ✅ Projections Pipeline"
+            echo ""
+            echo "- **Started:** $STARTED"
+            echo "- **Finished:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+            echo ""
+            echo "#### Final CSVs (tap to download from the Artifacts below):"
+            echo "- \`data/_projections/batter_props_expanded_final.csv\`"
+            echo "- \`data/_projections/batter_props_projected_final.csv\`"
+            echo "- \`data/_projections/pitcher_props_projected_final.csv\`"
+            echo "- \`data/_projections/pitcher_mega_z_final.csv\` (if present)"
+            echo ""
+            echo "Raw log is attached as an artifact (**pipeline.log**)."
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: 📦 Upload final CSVs (mobile-friendly)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: final-csvs
+          path: |
+            data/_projections/*_final.csv
+            data/end_chain/final/*_final.csv
+          if-no-files-found: warn
+          compression-level: 9
+          retention-days: 7
+
+      - name: 🧰 Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-log
+          path: runlogs/pipeline.log
+          if-no-files-found: warn
+          retention-days: 7
