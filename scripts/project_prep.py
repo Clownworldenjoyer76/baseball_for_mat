@@ -11,7 +11,7 @@ def project_prep():
         "todays_games": "data/raw/todaysgames_normalized.csv",
         "weather_input": "data/weather_input.csv",
         "weather_adjustments": "data/weather_adjustments.csv",
-        "stadium_metadata": "data/Data/stadium_metadata.csv",
+        "stadium_metadata": "data/manual/stadium_master.csv",  # ✅ fixed path
         "final_scores_projected": "data/_projections/final_scores_projected.csv"
     }
 
@@ -45,7 +45,6 @@ def project_prep():
         df_startingpitchers.drop(columns=["name"], inplace=True)
 
     # ---- FIX 2: Inject game_id ----
-    # Match pitchers to games using home/away alignment
     games_long = pd.concat([
         df_todays_games[["game_id", "home_team", "pitcher_home"]].rename(
             columns={"home_team": "team", "pitcher_home": "last_name, first_name"}
