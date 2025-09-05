@@ -12,7 +12,6 @@ concurrency:
 
 jobs:
   projections_builder:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
@@ -56,6 +55,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run stage with unified logs
+        id: run_stage
         shell: bash
         run: |
           set +e
@@ -99,30 +99,36 @@ jobs:
           run_step pitcher_mega_z.py                python scripts/pitcher_mega_z.py
           run_step post_normalize_pitchers.py       python scripts/post_normalize_pitchers.py
 
-          {
-            echo "===== RUN TIMESTAMP: $(ts) ====="
-            echo
-            echo "===== STATUS =====";  cat "$STATUS"
-            echo; echo "===== LOG =====";   cat "$LOG"
-            echo; echo "===== ERRORS =====";cat "$ERR"
-          } > "$SUM"
-
-          # Always push summary, even on failure
+      - name: Always write & push summary
+        if: always()
+        run: |
           mkdir -p summaries/06_projection
-          cp "$SUM" summaries/06_projection/summary.txt || true
-          cp "$LOG" summaries/06_projection/log.txt || true
-          cp "$ERR" summaries/06_projection/errors.txt || true
+          {
+            echo "===== RUN TIMESTAMP: $(TZ=America/New_York date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
+            echo
+            echo "===== STATUS =====";  cat summaries/projections/status.txt
+            echo; echo "===== LOG =====";   cat summaries/projections/log.txt
+            echo; echo "===== ERRORS =====";cat summaries/projections/errors.txt
+          } > summaries/06_projection/summary.txt
 
-          if grep -q "❌" "$STATUS"; then
+          git add summaries/06_projection/summary.txt || true
+          git diff --cached --quiet || git commit -m "06 projection summary"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
+
+      - name: Fail if errors
+        if: always()
+        run: |
+          if grep -q "❌" summaries/projections/status.txt; then
             echo "One or more steps failed. See summaries/06_projection/summary.txt"
             exit 1
           fi
 
       - name: Commit stage outputs
+        if: always()
         run: |
           git add data/_projections/*.csv || true
           git add summaries/projections/* || true
-          git add summaries/06_projection/* || true
           git diff --cached --quiet || git commit -m "06 projections & builder outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
