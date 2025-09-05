@@ -1,16 +1,14 @@
-# scripts/project_prep.py
 import pandas as pd
-import numpy as np
 
 def project_prep():
     PATHS = {
         "bat_today_final": "data/end_chain/final/bat_today_final.csv",
         "batter_away_final": "data/end_chain/final/batter_away_final.csv",
         "batter_home_final": "data/end_chain/final/batter_home_final.csv",
-        "startingpitchers_final": "data/end_chain/final/startingpitchers_final.csv",
+        "startingpitchers": "data/end_chain/final/startingpitchers.csv",
         "pitchers_normalized_cleaned": "data/cleaned/pitchers_normalized_cleaned.csv",
         "todays_games": "data/raw/todaysgames_normalized.csv",
-        "stadium_master": "data/manual/stadium_master.csv",
+        "stadium_metadata": "data/manual/stadium_master.csv",
         "final_scores_projected": "data/_projections/final_scores_projected.csv"
     }
 
@@ -18,10 +16,10 @@ def project_prep():
         df_bat_today = pd.read_csv(PATHS["bat_today_final"])
         df_batter_away = pd.read_csv(PATHS["batter_away_final"])
         df_batter_home = pd.read_csv(PATHS["batter_home_final"])
-        df_startingpitchers = pd.read_csv(PATHS["startingpitchers_final"])
+        df_startingpitchers = pd.read_csv(PATHS["startingpitchers"])
         df_pitchers_normalized = pd.read_csv(PATHS["pitchers_normalized_cleaned"])
         df_todays_games = pd.read_csv(PATHS["todays_games"])
-        df_stadium_master = pd.read_csv(PATHS["stadium_master"])
+        df_stadium_metadata = pd.read_csv(PATHS["stadium_metadata"])
         try:
             df_final_scores_projected = pd.read_csv(PATHS["final_scores_projected"])
         except FileNotFoundError:
@@ -30,18 +28,19 @@ def project_prep():
         print(f"Load error: {e}")
         return
 
-    # ---- FIX 1: Inject player_id ----
-    if "last_name, first_name" in df_startingpitchers.columns and "name" in df_pitchers_normalized.columns:
-        df_startingpitchers = df_startingpitchers.merge(
-            df_pitchers_normalized[["name", "player_id"]],
-            left_on="last_name, first_name",
-            right_on="name",
-            how="left"
-        )
-        df_startingpitchers["player_id"] = df_startingpitchers["player_id"].fillna("UNKNOWN")
-        df_startingpitchers.drop(columns=["name"], inplace=True)
+    # ---- Ensure player_id exists ----
+    if "player_id" not in df_startingpitchers.columns:
+        if "last_name, first_name" in df_startingpitchers.columns and "name" in df_pitchers_normalized.columns:
+            df_startingpitchers = df_startingpitchers.merge(
+                df_pitchers_normalized[["name", "player_id"]],
+                left_on="last_name, first_name",
+                right_on="name",
+                how="left"
+            )
+            df_startingpitchers["player_id"] = df_startingpitchers["player_id"].fillna("UNKNOWN")
+            df_startingpitchers.drop(columns=["name"], inplace=True)
 
-    # ---- FIX 2: Inject game_id ----
+    # ---- Inject game_id ----
     games_long = pd.concat([
         df_todays_games[["game_id", "home_team", "pitcher_home"]].rename(
             columns={"home_team": "team", "pitcher_home": "last_name, first_name"}
@@ -58,26 +57,23 @@ def project_prep():
     )
     df_startingpitchers["game_id"] = df_startingpitchers["game_id"].fillna("UNKNOWN")
 
-    # ---- FIX 3: Merge stadium + park metadata ----
-    df_todays_games = df_todays_games.merge(
-        df_stadium_master[["team_id", "city", "state", "timezone", "is_dome"]],
-        left_on="home_team_id",
-        right_on="team_id",
-        how="left"
-    )
-
-    # Inject enriched fields
-    df_todays_games["city_input"] = df_todays_games["city"]
-    df_todays_games["state_input"] = df_todays_games["state"]
-    df_todays_games["timezone_input"] = df_todays_games["timezone"]
-    df_todays_games["is_dome_input"] = df_todays_games["is_dome"]
-    df_todays_games["park_factor_input"] = df_todays_games["park_factor"]
+    # ---- Merge stadium metadata ----
+    if "team_id" in df_todays_games.columns:
+        df_startingpitchers = df_startingpitchers.merge(
+            df_todays_games[["game_id", "home_team_id"]].rename(columns={"home_team_id": "team_id"}),
+            on="game_id",
+            how="left"
+        )
+        df_startingpitchers = df_startingpitchers.merge(
+            df_stadium_metadata[["team_id", "city", "state", "timezone", "is_dome"]],
+            on="team_id",
+            how="left"
+        )
 
     # ---- Save updated outputs ----
     df_batter_away.to_csv(PATHS["batter_away_final"], index=False)
     df_batter_home.to_csv(PATHS["batter_home_final"], index=False)
-    df_startingpitchers.to_csv(PATHS["startingpitchers_final"], index=False)
-    df_todays_games.to_csv(PATHS["todays_games"], index=False)
+    df_startingpitchers.to_csv(PATHS["startingpitchers"], index=False)
     df_final_scores_projected.to_csv(PATHS["final_scores_projected"], index=False)
 
 if __name__ == "__main__":
