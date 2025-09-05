@@ -124,6 +124,12 @@ jobs:
             exit 1
           fi
 
+      # ---- NEW: Run fix script only after all steps succeed ----
+      - name: Generate *_fixed outputs
+        if: success()
+        run: |
+          python scripts/fix_outputs_generate_fixed_files.py
+
       - name: Commit stage outputs
         if: always()
         run: |
