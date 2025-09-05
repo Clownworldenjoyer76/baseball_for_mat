@@ -1,54 +1,54 @@
-===== RUN TIMESTAMP: 2025-09-05 04:08:34 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-05 04:25:56 PM EDT =====
 
 ===== STATUS =====
-✅ project_prep.py succeeded [2025-09-05 04:08:30 PM EDT]
-✅ fix_missing_batter_stats.py succeeded [2025-09-05 04:08:31 PM EDT]
-✅ normalize_batters_for_builder.py succeeded [2025-09-05 04:08:31 PM EDT]
-✅ project_batter_props.py succeeded [2025-09-05 04:08:31 PM EDT]
-✅ project_pitcher_props.py succeeded [2025-09-05 04:08:32 PM EDT]
-✅ build_expanded_batter_props.py succeeded [2025-09-05 04:08:32 PM EDT]
-✅ pitcher_mega_z.py succeeded [2025-09-05 04:08:33 PM EDT]
-✅ post_normalize_pitchers.py succeeded [2025-09-05 04:08:34 PM EDT]
+✅ project_prep.py succeeded [2025-09-05 04:25:52 PM EDT]
+✅ fix_missing_batter_stats.py succeeded [2025-09-05 04:25:53 PM EDT]
+✅ normalize_batters_for_builder.py succeeded [2025-09-05 04:25:53 PM EDT]
+✅ project_batter_props.py succeeded [2025-09-05 04:25:53 PM EDT]
+✅ project_pitcher_props.py succeeded [2025-09-05 04:25:54 PM EDT]
+✅ build_expanded_batter_props.py succeeded [2025-09-05 04:25:54 PM EDT]
+✅ pitcher_mega_z.py succeeded [2025-09-05 04:25:55 PM EDT]
+✅ post_normalize_pitchers.py succeeded [2025-09-05 04:25:56 PM EDT]
 
 ===== LOG =====
-▶️ START: project_prep.py (2025-09-05 04:08:30 PM EDT)
+▶️ START: project_prep.py (2025-09-05 04:25:52 PM EDT)
 ✅ project_prep: wrote data/end_chain/final/startingpitchers.csv and data/raw/startingpitchers_with_opp_context.csv (rows=10)
-⏹️ END: project_prep.py (2025-09-05 04:08:30 PM EDT)
+⏹️ END: project_prep.py (2025-09-05 04:25:52 PM EDT)
 
-▶️ START: fix_missing_batter_stats.py (2025-09-05 04:08:30 PM EDT)
+▶️ START: fix_missing_batter_stats.py (2025-09-05 04:25:52 PM EDT)
 ⚠️ Adding missing column: hr
 ⚠️ Adding missing column: slg
 ⚠️ Adding missing column: obp
 ⚠️ Adding missing column: hr
 ⚠️ Adding missing column: slg
 ⚠️ Adding missing column: obp
-⏹️ END: fix_missing_batter_stats.py (2025-09-05 04:08:31 PM EDT)
+⏹️ END: fix_missing_batter_stats.py (2025-09-05 04:25:53 PM EDT)
 
-▶️ START: normalize_batters_for_builder.py (2025-09-05 04:08:31 PM EDT)
+▶️ START: normalize_batters_for_builder.py (2025-09-05 04:25:53 PM EDT)
 ✅ normalize_batters_for_builder: wrote data/tagged/batters_normalized.csv  (kept 157/157, dropped 0)
-⏹️ END: normalize_batters_for_builder.py (2025-09-05 04:08:31 PM EDT)
+⏹️ END: normalize_batters_for_builder.py (2025-09-05 04:25:53 PM EDT)
 
-▶️ START: project_batter_props.py (2025-09-05 04:08:31 PM EDT)
+▶️ START: project_batter_props.py (2025-09-05 04:25:53 PM EDT)
 ✅ Wrote 90 rows -> data/_projections/batter_props_projected.csv
 Backfill summary (share missing BEFORE backfill): {'pa': 0.0, 'avg': 0.0, 'iso': 0.0, 'hr_rate': 0.0}
-⏹️ END: project_batter_props.py (2025-09-05 04:08:31 PM EDT)
+⏹️ END: project_batter_props.py (2025-09-05 04:25:53 PM EDT)
 
-▶️ START: project_pitcher_props.py (2025-09-05 04:08:31 PM EDT)
+▶️ START: project_pitcher_props.py (2025-09-05 04:25:53 PM EDT)
 Wrote: data/_projections/pitcher_props_projected.csv (10 rows)  source=enriched
-⏹️ END: project_pitcher_props.py (2025-09-05 04:08:32 PM EDT)
+⏹️ END: project_pitcher_props.py (2025-09-05 04:25:54 PM EDT)
 
-▶️ START: build_expanded_batter_props.py (2025-09-05 04:08:32 PM EDT)
+▶️ START: build_expanded_batter_props.py (2025-09-05 04:25:54 PM EDT)
 ✅ Wrote: data/_projections/batter_props_expanded.csv (90 rows)
-⏹️ END: build_expanded_batter_props.py (2025-09-05 04:08:32 PM EDT)
+⏹️ END: build_expanded_batter_props.py (2025-09-05 04:25:54 PM EDT)
 
-▶️ START: pitcher_mega_z.py (2025-09-05 04:08:32 PM EDT)
+▶️ START: pitcher_mega_z.py (2025-09-05 04:25:54 PM EDT)
 ✅ Wrote: data/_projections/pitcher_mega_z.csv  (rows=2865)  source=data/cleaned/pitchers_normalized_cleaned.csv
-⏹️ END: pitcher_mega_z.py (2025-09-05 04:08:33 PM EDT)
+⏹️ END: pitcher_mega_z.py (2025-09-05 04:25:55 PM EDT)
 
-▶️ START: post_normalize_pitchers.py (2025-09-05 04:08:33 PM EDT)
+▶️ START: post_normalize_pitchers.py (2025-09-05 04:25:55 PM EDT)
 ✅ Cleaned data/_projections/pitcher_props_projected.csv (10/10 rows kept)
 ✅ Cleaned data/_projections/pitcher_mega_z.csv (2865/2865 rows kept)
-⏹️ END: post_normalize_pitchers.py (2025-09-05 04:08:34 PM EDT)
+⏹️ END: post_normalize_pitchers.py (2025-09-05 04:25:56 PM EDT)
 
 
 ===== ERRORS =====
