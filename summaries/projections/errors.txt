@@ -1,0 +1,20 @@
+❌ project_prep.py ERROR [2025-09-05 09:52:38 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 234, in <module>
+    project_prep()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 207, in project_prep
+    starters = _attach_skills(starters, pc)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 134, in _attach_skills
+    merged = long.merge(pc[use_cols].drop_duplicates("player_id"), on="player_id", how="left", suffixes=("", "_pc"))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
+    op = _MergeOperation(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 807, in __init__
+    self._maybe_coerce_merge_keys()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1509, in _maybe_coerce_merge_keys
+    raise ValueError(msg)
+ValueError: You are trying to merge on object and int64 columns for key 'player_id'. If you wish to proceed you should use pd.concat
+
+---
+
