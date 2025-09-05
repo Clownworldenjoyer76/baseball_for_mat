@@ -1,3 +1,4 @@
+# scripts/project_prep.py
 import pandas as pd
 import numpy as np
 
@@ -9,9 +10,7 @@ def project_prep():
         "startingpitchers_final": "data/end_chain/final/startingpitchers_final.csv",
         "pitchers_normalized_cleaned": "data/cleaned/pitchers_normalized_cleaned.csv",
         "todays_games": "data/raw/todaysgames_normalized.csv",
-        "weather_input": "data/weather_input.csv",
-        "weather_adjustments": "data/weather_adjustments.csv",
-        "stadium_metadata": "data/manual/stadium_master.csv",  # ✅ fixed path
+        "stadium_master": "data/manual/stadium_master.csv",
         "final_scores_projected": "data/_projections/final_scores_projected.csv"
     }
 
@@ -22,9 +21,7 @@ def project_prep():
         df_startingpitchers = pd.read_csv(PATHS["startingpitchers_final"])
         df_pitchers_normalized = pd.read_csv(PATHS["pitchers_normalized_cleaned"])
         df_todays_games = pd.read_csv(PATHS["todays_games"])
-        df_weather_input = pd.read_csv(PATHS["weather_input"])
-        df_weather_adjustments = pd.read_csv(PATHS["weather_adjustments"])
-        df_stadium_metadata = pd.read_csv(PATHS["stadium_metadata"])
+        df_stadium_master = pd.read_csv(PATHS["stadium_master"])
         try:
             df_final_scores_projected = pd.read_csv(PATHS["final_scores_projected"])
         except FileNotFoundError:
@@ -61,10 +58,26 @@ def project_prep():
     )
     df_startingpitchers["game_id"] = df_startingpitchers["game_id"].fillna("UNKNOWN")
 
+    # ---- FIX 3: Merge stadium + park metadata ----
+    df_todays_games = df_todays_games.merge(
+        df_stadium_master[["team_id", "city", "state", "timezone", "is_dome"]],
+        left_on="home_team_id",
+        right_on="team_id",
+        how="left"
+    )
+
+    # Inject enriched fields
+    df_todays_games["city_input"] = df_todays_games["city"]
+    df_todays_games["state_input"] = df_todays_games["state"]
+    df_todays_games["timezone_input"] = df_todays_games["timezone"]
+    df_todays_games["is_dome_input"] = df_todays_games["is_dome"]
+    df_todays_games["park_factor_input"] = df_todays_games["park_factor"]
+
     # ---- Save updated outputs ----
     df_batter_away.to_csv(PATHS["batter_away_final"], index=False)
     df_batter_home.to_csv(PATHS["batter_home_final"], index=False)
     df_startingpitchers.to_csv(PATHS["startingpitchers_final"], index=False)
+    df_todays_games.to_csv(PATHS["todays_games"], index=False)
     df_final_scores_projected.to_csv(PATHS["final_scores_projected"], index=False)
 
 if __name__ == "__main__":
