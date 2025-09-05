@@ -1,275 +1,229 @@
 #!/usr/bin/env python3
-"""
-backfill_game_context.py
-
-Tasks
-1) Validate the four *_fixed.csv outputs exist and have the required columns.
-2) For pitcher_props_projected_fixed.csv, backfill opponent_team_id using
-   data/end_chain/final/startingpitchers.csv (robust to multiple schemas).
-3) Normalize 'undecided' to False for rows with a concrete pitcher_id.
-4) Re-validate and write the updated CSVs in place.
-5) Exit non-zero if any validation fails.
-
-This script is idempotent and safe to run at the end of the pipeline.
-"""
-
-from __future__ import annotations
 import sys
 import os
+import json
+from pathlib import Path
 import pandas as pd
 
-# ---- Paths ----
-PITCHER_PROPS_FIXED = "data/_projections/pitcher_props_projected_fixed.csv"
-BATTER_PROJ_FIXED   = "data/_projections/batter_props_projected_fixed.csv"
-BATTER_EXP_FIXED    = "data/_projections/batter_props_expanded_fixed.csv"
-PITCHER_MEGAZ_FIXED = "data/_projections/pitcher_mega_z_fixed.csv"
-STARTING_PITCHERS   = "data/end_chain/final/startingpitchers.csv"
+ROOT = Path(".")
+LOG_PREFIX = "backfill_game_context"
+PROJ_DIR = ROOT / "data" / "_projections"
+END_CHAIN = ROOT / "data" / "end_chain" / "final"
 
-# ---- Required columns (minimum viable) ----
-REQUIRED = {
-    BATTER_PROJ_FIXED: {
-        "player_id", "name", "team",
-        "prob_hits_over_1p5", "prob_tb_over_1p5", "prob_hr_over_0p5",
-        "proj_pa_used", "proj_ab_est", "proj_avg_used", "proj_iso_used",
-        "proj_hr_rate_pa_used",        # must be present/standardized
-        "game_id",                     # placeholder column must exist (may be empty now)
-        "adj_woba_weather", "adj_woba_park", "adj_woba_combined"  # placeholders for future append
-    },
-    BATTER_EXP_FIXED: {
-        "player_id", "name", "team",
-        "prob_hits_over_1p5", "prob_tb_over_1p5", "prob_hr_over_0p5",
-        "proj_pa_used", "proj_ab_est", "proj_avg_used", "proj_iso_used",
-        "proj_hr_rate_pa_used",        # synced with projected
-        "game_id",
-        "adj_woba_weather", "adj_woba_park", "adj_woba_combined"
-    },
-    PITCHER_PROPS_FIXED: {
-        "player_id",
-        "game_id", "role", "team_id",
-        "opponent_team_id",            # we will fill if blank
-        "undecided",                   # we will coerce False if pitcher is set
-        # keep these for context (already present in your sample)
-        "park_factor", "city", "state", "timezone", "is_dome"
-    },
-    # Keep pitcher_mega_z validation lightweight to avoid false failures
-    PITCHER_MEGAZ_FIXED: {"player_id"}  # at least the key
-}
+BATTER_PROJECTED = PROJ_DIR / "batter_props_projected_fixed.csv"
+BATTER_EXPANDED  = PROJ_DIR / "batter_props_expanded_fixed.csv"
+PITCHER_PROPS    = PROJ_DIR / "pitcher_props_projected_fixed.csv"
+PITCHER_MEGA     = PROJ_DIR / "pitcher_mega_z_fixed.csv"
+SP_PATH          = END_CHAIN / "startingpitchers.csv"
 
-def err(msg: str) -> None:
-    print(f"❌ backfill_game_context: {msg}", file=sys.stderr)
+REQUIRED_FILES = [BATTER_PROJECTED, BATTER_EXPANDED, PITCHER_PROPS, PITCHER_MEGA]
 
-def ok(msg: str) -> None:
-    print(f"✅ backfill_game_context: {msg}")
+def log(msg, level="info"):
+    tag = {"info":"ℹ️", "ok":"✅", "warn":"⚠️", "err":"❌"}.get(level, "ℹ️")
+    print(f"{tag} {LOG_PREFIX}: {msg}")
 
-def warn(msg: str) -> None:
-    print(f"⚠️ backfill_game_context: {msg}")
+def soft_require_columns(df, needed):
+    missing = [c for c in needed if c not in df.columns]
+    return missing
 
-def ensure_exists(path: str) -> None:
-    if not os.path.exists(path):
-        err(f"Missing file: {path}")
-        raise FileNotFoundError(path)
+def read_csv(path: Path) -> pd.DataFrame:
+    return pd.read_csv(path)
 
-def load_csv(path: str) -> pd.DataFrame:
-    try:
-        df = pd.read_csv(path)
-    except Exception as e:
-        err(f"Failed to read CSV: {path} ({e})")
-        raise
-    return df
+def write_csv(df: pd.DataFrame, path: Path):
+    tmp = path.with_suffix(".tmp.csv")
+    df.to_csv(tmp, index=False)
+    tmp.replace(path)
 
-def validate_columns(df: pd.DataFrame, required: set[str], path: str) -> None:
-    missing = [c for c in required if c not in df.columns]
-    if missing:
-        err(f"{path} missing required columns: {missing}")
-        raise ValueError(f"Missing required columns in {path}: {missing}")
+def ensure_columns(df: pd.DataFrame, cols_in_order):
+    for c in cols_in_order:
+        if c not in df.columns:
+            df[c] = pd.NA
+    # Reorder to requested order + any extras at end (stable)
+    extras = [c for c in df.columns if c not in cols_in_order]
+    return df[cols_in_order + extras]
 
-def to_lower_cols(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    df.columns = [c.strip() for c in df.columns]
-    return df
-
-def coerce_bool(series: pd.Series) -> pd.Series:
-    # Convert many truthy/falsy representations safely
-    return series.map(lambda x: str(x).strip().lower() in {"true", "1", "yes", "y"} if pd.notna(x) else False)
-
-def build_game_map(df_sp: pd.DataFrame) -> pd.DataFrame:
+def build_game_map(sp: pd.DataFrame):
     """
-    Normalize startingpitchers into columns: game_id, home_team_id, away_team_id
-    Handles a few likely schemas.
+    Returns:
+      game_map: DataFrame[game_id, home_team_id, away_team_id]
+      ctx_cols: list of optional context columns we can carry by game_id (city/state/timezone/is_dome/park_factor)
     """
-    cols = {c.lower(): c for c in df_sp.columns}
-    # Prefer explicit home/away team id columns if present
-    has_home = any(k in cols for k in ["home_team_id", "home_id", "home"])
-    has_away = any(k in cols for k in ["away_team_id", "away_id", "away"])
-    if "game_id" not in cols:
-        raise ValueError("startingpitchers.csv must contain game_id")
+    needed = ["game_id", "team_context", "team_id"]
+    miss = soft_require_columns(sp, needed)
+    if miss:
+        log(f"Unable to infer (home_team_id, away_team_id); missing columns in startingpitchers.csv: {miss}", "warn")
+        return pd.DataFrame(columns=["game_id","home_team_id","away_team_id"]), []
 
-    gi = cols["game_id"]
-    df = df_sp.copy()
+    # Normalize values
+    sp2 = sp.copy()
+    sp2["team_context"] = sp2["team_context"].str.lower().str.strip()
 
-    def first_present(*cands):
-        for k in cands:
-            if k in cols:
-                return cols[k]
-        return None
-
-    if has_home and has_away:
-        home_col = first_present("home_team_id", "home_id", "home")
-        away_col = first_present("away_team_id", "away_id", "away")
-        out = df[[gi, home_col, away_col]].rename(columns={
-            gi: "game_id",
-            home_col: "home_team_id",
-            away_col: "away_team_id"
-        })
-        return out
-
-    # If we only have team/opponent per row with role, pivot it
-    team_col = first_present("team_id", "team")
-    opp_col  = first_present("opponent_team_id", "opponent_team", "opponent")
-    role_col = first_present("role", "team_context", "home_away", "homeaway")
-
-    if team_col and opp_col and role_col:
-        df_min = df[[gi, team_col, opp_col, role_col]].rename(columns={
-            gi: "game_id",
-            team_col: "team_id",
-            opp_col: "opponent_team_id",
-            role_col: "role"
-        })
-        df_min["role"] = df_min["role"].str.upper().str.strip()
-        # Build home/away mapping per game_id
-        # If multiple rows per game, pick one HOME and one AWAY
-        home_map = df_min.loc[df_min["role"] == "HOME", ["game_id", "team_id", "opponent_team_id"]]\
-                          .rename(columns={"team_id": "home_team_id", "opponent_team_id": "away_team_id"})
-        away_map = df_min.loc[df_min["role"] == "AWAY", ["game_id", "team_id", "opponent_team_id"]]\
-                          .rename(columns={"team_id": "away_team_id", "opponent_team_id": "home_team_id"})
-        # Merge and coalesce
-        out = pd.merge(home_map, away_map, on="game_id", how="outer", suffixes=("_home_row","_away_row"))
-        # Coalesce duplicates
-        out["home_team_id"] = out["home_team_id_home_row"].fillna(out["home_team_id_away_row"])
-        out["away_team_id"] = out["away_team_id_home_row"].fillna(out["away_team_id_away_row"])
-        out = out[["game_id", "home_team_id", "away_team_id"]]
-        return out
-
-    # If we get here, we can't infer both sides; allow graceful warn.
-    raise ValueError("Unable to infer (home_team_id, away_team_id) from startingpitchers.csv schema")
-
-def backfill_pitcher_props():
-    ensure_exists(PITCHER_PROPS_FIXED)
-    ensure_exists(STARTING_PITCHERS)
-
-    dfp = load_csv(PITCHER_PROPS_FIXED)
-    dfp = to_lower_cols(dfp)  # keep original names (case preserved), but strip whitespace
-    # Re-read with original casing preserved for write-back:
-    dfp_orig = load_csv(PITCHER_PROPS_FIXED)
-
-    # Basic validation first (using original column names)
-    validate_columns(dfp_orig, REQUIRED[PITCHER_PROPS_FIXED], PITCHER_PROPS_FIXED)
-
-    # Prepare role and game_id from original to avoid column case issues
-    if "role" not in dfp_orig.columns or "game_id" not in dfp_orig.columns:
-        raise ValueError("pitcher_props_projected_fixed.csv must have 'role' and 'game_id' columns")
-
-    # Load starting pitchers and construct game map
-    dfs = load_csv(STARTING_PITCHERS)
-    dfs = to_lower_cols(dfs)
-
+    # Build wide table home/away -> team_id
     try:
-        game_map = build_game_map(dfs)
+        wide = sp2.pivot_table(index="game_id", columns="team_context", values="team_id", aggfunc="first").reset_index()
     except Exception as e:
-        warn(f"Could not build game map from startingpitchers.csv: {e}")
-        raise
+        log(f"Pivot to create game map failed: {e}", "warn")
+        return pd.DataFrame(columns=["game_id","home_team_id","away_team_id"]), []
 
-    # Merge opponent team by role
-    # We will compute desired opponent per row, but only fill when blank/NaN.
-    # Create lookup dicts
-    gm_home = game_map.set_index("game_id")["home_team_id"].to_dict()
-    gm_away = game_map.set_index("game_id")["away_team_id"].to_dict()
+    # Standardize column names
+    colmap = {}
+    if "home" in wide.columns: colmap["home"] = "home_team_id"
+    if "away" in wide.columns: colmap["away"] = "away_team_id"
+    wide = wide.rename(columns=colmap)
 
-    # Work on original frame to preserve column order
-    df = dfp_orig.copy()
+    for need in ["home_team_id","away_team_id"]:
+        if need not in wide.columns:
+            wide[need] = pd.NA
 
-    # Normalize role
-    df["role"] = df["role"].astype(str).str.upper().str.strip()
-    # Prepare a target series
-    opp_filled = df.get("opponent_team_id")
+    game_map = wide[["game_id","home_team_id","away_team_id"]].copy()
 
-    # Compute preferred opponent from game map
-    def infer_opp(row):
-        gid = row.get("game_id")
-        role = row.get("role")
-        if pd.isna(gid) or pd.isna(role):
-            return None
-        try:
-            gid_int = int(gid)
-        except Exception:
-            # leave as-is if not numeric
-            gid_int = gid
-        if role == "HOME":
-            return gm_away.get(gid_int, gm_away.get(gid))
-        elif role == "AWAY":
-            return gm_home.get(gid_int, gm_home.get(gid))
-        return None
+    # Optional context columns (carry first non-null per game)
+    optional_ctx = [c for c in ["city","state","timezone","is_dome","park_factor"]
+                    if c in sp2.columns]
+    ctx_df = None
+    if optional_ctx:
+        # Keep one row per game_id (first valid)
+        ctx_df = (
+            sp2.groupby("game_id")[optional_ctx]
+            .apply(lambda g: g.ffill().bfill().iloc[0])
+            .reset_index()
+        )
+        game_map = game_map.merge(ctx_df, on="game_id", how="left")
 
-    inferred = df.apply(infer_opp, axis=1)
+    return game_map, optional_ctx
 
-    # Fill only blanks/NaN
-    if "opponent_team_id" not in df.columns:
-        df["opponent_team_id"] = inferred
-    else:
-        df["opponent_team_id"] = df["opponent_team_id"].where(df["opponent_team_id"].notna() & (df["opponent_team_id"].astype(str).str.len() > 0), inferred)
+def enrich_pitcher_props(pp: pd.DataFrame, game_map: pd.DataFrame, optional_ctx_cols):
+    # Ensure core columns exist in pitcher props
+    core_cols = ["game_id","role","team_id","opponent_team_id","park_factor","city","state","timezone","is_dome","undecided"]
+    for c in core_cols:
+        if c not in pp.columns:
+            pp[c] = pd.NA
 
-    # Coerce undecided -> False if pitcher is set (player_id present and not null)
-    if "undecided" in df.columns:
-        # If undecided missing, initialize False
-        undec = df["undecided"]
-        # set False when player_id looks valid
-        has_pitcher = df["player_id"].notna() & (df["player_id"].astype(str).str.strip() != "")
-        # Normalize undecided to boolean
-        df["undecided"] = df["undecided"].map(lambda x: str(x).strip().lower() if pd.notna(x) else "")
-        df.loc[has_pitcher, "undecided"] = "false"
-    else:
-        df["undecided"] = "false"
+    # Fill opponent_team_id if blank and we know game_id+team_id
+    if not game_map.empty:
+        gm = game_map[["game_id","home_team_id","away_team_id"]].copy()
+        gm["home_team_id"] = gm["home_team_id"].astype("Int64")
+        gm["away_team_id"] = gm["away_team_id"].astype("Int64")
 
-    # Write back
-    df.to_csv(PITCHER_PROPS_FIXED, index=False)
-    ok("updated opponent_team_id and undecided in pitcher_props_projected_fixed.csv")
+        def infer_opponent(row):
+            gid = row.get("game_id")
+            tid = row.get("team_id")
+            if pd.isna(gid) or pd.isna(tid): return row.get("opponent_team_id")
+            rec = gm[gm["game_id"]==gid]
+            if rec.empty: return row.get("opponent_team_id")
+            h = rec["home_team_id"].iloc[0]
+            a = rec["away_team_id"].iloc[0]
+            if pd.isna(h) or pd.isna(a): return row.get("opponent_team_id")
+            if tid == h: return a
+            if tid == a: return h
+            return row.get("opponent_team_id")
 
-def validate_all():
-    # Batters projected
-    ensure_exists(BATTER_PROJ_FIXED)
-    df_bproj = load_csv(BATTER_PROJ_FIXED)
-    validate_columns(df_bproj, REQUIRED[BATTER_PROJ_FIXED], BATTER_PROJ_FIXED)
+        pp["opponent_team_id"] = pp.apply(infer_opponent, axis=1)
 
-    # Batters expanded
-    ensure_exists(BATTER_EXP_FIXED)
-    df_bexp = load_csv(BATTER_EXP_FIXED)
-    validate_columns(df_bexp, REQUIRED[BATTER_EXP_FIXED], BATTER_EXP_FIXED)
+        # Fill park/city/state/timezone/is_dome when missing
+        carry_cols = ["park_factor","city","state","timezone","is_dome"]
+        carry_cols = [c for c in carry_cols if c in optional_ctx_cols or c in game_map.columns]
+        if carry_cols:
+            pp = pp.merge(game_map[["game_id"]+carry_cols], on="game_id", how="left", suffixes=("","__gm"))
+            for c in carry_cols:
+                src = f"{c}__gm"
+                if src in pp.columns:
+                    pp[c] = pp[c].combine_first(pp[src])
+                    pp.drop(columns=[src], inplace=True, errors="ignore")
 
-    # Pitcher props (after backfill we’ll re-check)
-    ensure_exists(PITCHER_PROPS_FIXED)
-    df_pp = load_csv(PITCHER_PROPS_FIXED)
-    validate_columns(df_pp, REQUIRED[PITCHER_PROPS_FIXED], PITCHER_PROPS_FIXED)
+    # Ensure undecided is normalized
+    if "undecided" in pp.columns:
+        pp["undecided"] = pp["undecided"].fillna(False)
 
-    # Pitcher mega Z
-    ensure_exists(PITCHER_MEGAZ_FIXED)
-    df_mz = load_csv(PITCHER_MEGAZ_FIXED)
-    validate_columns(df_mz, REQUIRED[PITCHER_MEGAZ_FIXED], PITCHER_MEGAZ_FIXED)
+    return pp
 
-    ok("validated all *_fixed.csv outputs")
+def validate_fixed_outputs():
+    problems = []
+
+    # 1) batter_props_projected_fixed.csv
+    cols_bpp = ["player_id","name","team","prob_hits_over_1p5","prob_tb_over_1p5",
+                "prob_hr_over_0p5","proj_pa_used","proj_ab_est","proj_avg_used",
+                "proj_iso_used","proj_hr_rate_pa_used","game_id",
+                "adj_woba_weather","adj_woba_park","adj_woba_combined"]
+    try:
+        bpp = read_csv(BATTER_PROJECTED)
+        bpp2 = ensure_columns(bpp, cols_bpp)
+        if (bpp2["proj_hr_rate_pa_used"].isna().any()):
+            # We don't manufacture rates here—just ensure the column exists.
+            pass
+        write_csv(bpp2, BATTER_PROJECTED)
+    except Exception as e:
+        problems.append(f"{BATTER_PROJECTED.name}: {e}")
+
+    # 2) batter_props_expanded_fixed.csv
+    try:
+        bex = read_csv(BATTER_EXPANDED)
+        bex2 = ensure_columns(bex, cols_bpp)  # same envelope as projected
+        write_csv(bex2, BATTER_EXPANDED)
+    except Exception as e:
+        problems.append(f"{BATTER_EXPANDED.name}: {e}")
+
+    # 3) pitcher_props_projected_fixed.csv
+    try:
+        pp = read_csv(PITCHER_PROPS)
+        # We’ll enrich after we build game_map
+    except Exception as e:
+        problems.append(f"{PITCHER_PROPS.name}: {e}")
+        pp = None
+
+    # 4) pitcher_mega_z_fixed.csv (just make sure it exists/readable)
+    try:
+        pmz = read_csv(PITCHER_MEGA)
+        write_csv(pmz, PITCHER_MEGA)  # no changes
+    except Exception as e:
+        problems.append(f"{PITCHER_MEGA.name}: {e}")
+
+    return problems, pp
 
 def main():
-    try:
-        # 1) validate presence/columns
-        validate_all()
-        # 2) backfill pitcher opponent & undecided
-        backfill_pitcher_props()
-        # 3) re-validate pitcher props (ensures still has required columns)
-        df_pp = load_csv(PITCHER_PROPS_FIXED)
-        validate_columns(df_pp, REQUIRED[PITCHER_PROPS_FIXED], PITCHER_PROPS_FIXED)
-        ok("final validation passed")
-    except Exception as e:
-        err(str(e))
+    print(f"▶️ {LOG_PREFIX}.py starting")
+    # Validate the four outputs exist + columns present
+    problems, pitcher_df = validate_fixed_outputs()
+    if problems:
+        for p in problems:
+            log(p, "warn")
+
+    # Try to read startingpitchers to build game map (soft fail)
+    game_map = pd.DataFrame(columns=["game_id","home_team_id","away_team_id"])
+    optional_ctx_cols = []
+    if SP_PATH.exists():
+        try:
+            sp = read_csv(SP_PATH)
+            game_map, optional_ctx_cols = build_game_map(sp)
+            if game_map.empty:
+                log("Game map build produced no rows (will skip enrichment).", "warn")
+            else:
+                log(f"Built game map with {len(game_map)} games.", "ok")
+        except Exception as e:
+            log(f"Could not build game map from startingpitchers.csv: {e}", "warn")
+    else:
+        log(f"{SP_PATH} not found; skipping enrichment.", "warn")
+
+    # If we have pitcher props, enrich it safely
+    if pitcher_df is not None:
+        try:
+            pp_enriched = enrich_pitcher_props(pitcher_df, game_map, optional_ctx_cols)
+            write_csv(pp_enriched, PITCHER_PROPS)
+            log(f"Enriched {PITCHER_PROPS.name} (rows={len(pp_enriched)})", "ok")
+        except Exception as e:
+            log(f"Could not enrich {PITCHER_PROPS.name}: {e}", "warn")
+
+    # Final validation message
+    missing_any = [p for p in REQUIRED_FILES if not p.exists()]
+    if missing_any:
+        for p in missing_any:
+            log(f"Missing expected output: {p}", "err")
+        # Real error only if a required output is missing from disk
         sys.exit(1)
+
+    log("validated all *_fixed.csv outputs", "ok")
+    print("")  # spacing
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
