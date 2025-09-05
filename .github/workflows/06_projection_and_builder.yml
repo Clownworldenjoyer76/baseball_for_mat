@@ -1,8 +1,11 @@
-# .github/workflows/06_projection_and_builder.yml
 name: 06 Projections & Builder
 
 on:
   workflow_dispatch:
+  # workflow_run:
+  #   workflows: ["05 Prep"]  # Temporarily disabled
+  #   types: [completed]
+  #   branches: [main]
 
 permissions:
   contents: write
@@ -13,6 +16,7 @@ concurrency:
 
 jobs:
   projections_builder:
+    # Manual-only for now
     if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     env:
@@ -60,11 +64,11 @@ jobs:
         shell: bash
         run: |
           set +e
-          mkdir -p summaries/projections
-          STATUS="summaries/projections/status.txt"
-          LOG="summaries/projections/log.txt"
-          ERR="summaries/projections/errors.txt"
-          SUM="summaries/projections/summary.txt"
+          mkdir -p summaries/06_projection
+          STATUS="summaries/06_projection/status.txt"
+          LOG="summaries/06_projection/log.txt"
+          ERR="summaries/06_projection/errors.txt"
+          SUM="summaries/06_projection/summary.txt"
           : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
@@ -90,13 +94,16 @@ jobs:
             echo >>"$LOG"
           }
 
+          # --- Projections & Builder (ALIGN/FINAL SCORE REMOVED) ---
           run_step project_prep.py                  python scripts/project_prep.py
           run_step fix_missing_batter_stats.py      python scripts/fix_missing_batter_stats.py
           run_step normalize_batters_for_builder.py python scripts/normalize_batters_for_builder.py
+          # run_step align_weather_team_keys.py       python scripts/align_weather_team_keys.py   # REMOVED
           run_step project_batter_props.py          python scripts/project_batter_props.py
           run_step project_pitcher_props.py         python scripts/project_pitcher_props.py
           run_step build_expanded_batter_props.py   python scripts/build_expanded_batter_props.py
           run_step pitcher_mega_z.py                python scripts/pitcher_mega_z.py
+          # run_step project_final_score.py           python scripts/project_final_score.py        # REMOVED
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -106,17 +113,28 @@ jobs:
             echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
 
-          # mark failure
+          # marker file to force a commit every run
+          echo "$(ts)" > summaries/06_projection/.last_run.txt
+
+          # Expose failure to later step but DO NOT fail here (we want to commit first)
           if grep -q "❌" "$STATUS"; then
-            exit 1
+            echo "ANY_FAILED=1" >> $GITHUB_ENV
+          else
+            echo "ANY_FAILED=0" >> $GITHUB_ENV
           fi
 
-      - name: Force write & push 06 summary
-        if: always()
+      - name: Commit stage outputs (CSV + logs) even on failure
+        if: ${{ always() }}
         run: |
-          mkdir -p summaries/06_projection
-          cat summaries/projections/summary.txt > summaries/06_projection/summary.txt || echo "No summary generated" > summaries/06_projection/summary.txt
-          git add summaries/06_projection/summary.txt || true
-          git commit -m "06 summary (auto)" || true
+          git add data/_projections/*.csv 2>/dev/null || true
+          git add summaries/06_projection/* || true
+          git status --porcelain
+          git diff --cached --quiet || git commit -m "06 projections & builder: commit CSVs and logs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
+
+      - name: Fail job if any step failed
+        if: ${{ env.ANY_FAILED == '1' }}
+        run: |
+          echo "One or more steps failed. See summaries/06_projection/summary.txt"
+          exit 1
