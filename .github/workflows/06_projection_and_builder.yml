@@ -89,7 +89,7 @@ jobs:
             echo >>"$LOG"
           }
 
-          # --- Projections & Builder ---
+          # --- Projections & Builder pipeline ---
           run_step project_prep.py                  python scripts/project_prep.py
           run_step fix_missing_batter_stats.py      python scripts/fix_missing_batter_stats.py
           run_step normalize_batters_for_builder.py python scripts/normalize_batters_for_builder.py
@@ -98,6 +98,7 @@ jobs:
           run_step build_expanded_batter_props.py   python scripts/build_expanded_batter_props.py
           run_step pitcher_mega_z.py                python scripts/pitcher_mega_z.py
           run_step post_normalize_pitchers.py       python scripts/post_normalize_pitchers.py
+          run_step finalize_projections.py          python scripts/finalize_projections.py
 
       - name: Always write & push summary
         if: always()
@@ -130,22 +131,5 @@ jobs:
           git add data/_projections/*.csv || true
           git add summaries/projections/* || true
           git diff --cached --quiet || git commit -m "06 projections & builder outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
-
-      # ---- NEW: Backfill opponent team + normalize 'undecided' on *_fixed.csv ----
-      - name: Backfill game context & validate fixed outputs
-        if: ${{ success() }}
-        run: |
-          echo "▶️ backfill_game_context.py starting at $(TZ=America/New_York date)"
-          python scripts/backfill_game_context.py
-          echo "⏹️ backfill_game_context.py finished at $(TZ=America/New_York date)"
-
-      - name: Commit backfill updates
-        if: always()
-        run: |
-          git add data/_projections/*_fixed.csv || true
-          git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "Backfill opponent team, normalize undecided, validate *_fixed.csv"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
