@@ -1,73 +1,78 @@
-===== RUN TIMESTAMP: 2025-09-05 09:52:41 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-05 10:00:42 AM EDT =====
 
 ===== STATUS =====
-❌ project_prep.py failed [2025-09-05 09:52:38 AM EDT]
-✅ fix_missing_batter_stats.py succeeded [2025-09-05 09:52:38 AM EDT]
-✅ normalize_batters_for_builder.py succeeded [2025-09-05 09:52:38 AM EDT]
-✅ project_batter_props.py succeeded [2025-09-05 09:52:39 AM EDT]
-✅ project_pitcher_props.py succeeded [2025-09-05 09:52:39 AM EDT]
-✅ build_expanded_batter_props.py succeeded [2025-09-05 09:52:39 AM EDT]
-✅ pitcher_mega_z.py succeeded [2025-09-05 09:52:40 AM EDT]
-✅ post_normalize_pitchers.py succeeded [2025-09-05 09:52:41 AM EDT]
+❌ project_prep.py failed [2025-09-05 10:00:38 AM EDT]
+✅ fix_missing_batter_stats.py succeeded [2025-09-05 10:00:39 AM EDT]
+✅ normalize_batters_for_builder.py succeeded [2025-09-05 10:00:39 AM EDT]
+✅ project_batter_props.py succeeded [2025-09-05 10:00:39 AM EDT]
+✅ project_pitcher_props.py succeeded [2025-09-05 10:00:40 AM EDT]
+✅ build_expanded_batter_props.py succeeded [2025-09-05 10:00:40 AM EDT]
+✅ pitcher_mega_z.py succeeded [2025-09-05 10:00:41 AM EDT]
+✅ post_normalize_pitchers.py succeeded [2025-09-05 10:00:42 AM EDT]
 
 ===== LOG =====
-▶️ START: project_prep.py (2025-09-05 09:52:37 AM EDT)
-⏹️ END: project_prep.py (2025-09-05 09:52:38 AM EDT)
+▶️ START: project_prep.py (2025-09-05 10:00:38 AM EDT)
+⏹️ END: project_prep.py (2025-09-05 10:00:38 AM EDT)
 
-▶️ START: fix_missing_batter_stats.py (2025-09-05 09:52:38 AM EDT)
+▶️ START: fix_missing_batter_stats.py (2025-09-05 10:00:38 AM EDT)
 ⚠️ Adding missing column: hr
 ⚠️ Adding missing column: slg
 ⚠️ Adding missing column: obp
 ⚠️ Adding missing column: hr
 ⚠️ Adding missing column: slg
 ⚠️ Adding missing column: obp
-⏹️ END: fix_missing_batter_stats.py (2025-09-05 09:52:38 AM EDT)
+⏹️ END: fix_missing_batter_stats.py (2025-09-05 10:00:39 AM EDT)
 
-▶️ START: normalize_batters_for_builder.py (2025-09-05 09:52:38 AM EDT)
+▶️ START: normalize_batters_for_builder.py (2025-09-05 10:00:39 AM EDT)
 ✅ normalize_batters_for_builder: wrote data/tagged/batters_normalized.csv  (kept 157/157, dropped 0)
-⏹️ END: normalize_batters_for_builder.py (2025-09-05 09:52:38 AM EDT)
+⏹️ END: normalize_batters_for_builder.py (2025-09-05 10:00:39 AM EDT)
 
-▶️ START: project_batter_props.py (2025-09-05 09:52:38 AM EDT)
+▶️ START: project_batter_props.py (2025-09-05 10:00:39 AM EDT)
 ✅ Wrote 90 rows -> data/_projections/batter_props_projected.csv
 Backfill summary (share missing BEFORE backfill): {'pa': 0.0, 'avg': 0.0, 'iso': 0.0, 'hr_rate': 0.0}
-⏹️ END: project_batter_props.py (2025-09-05 09:52:39 AM EDT)
+⏹️ END: project_batter_props.py (2025-09-05 10:00:39 AM EDT)
 
-▶️ START: project_pitcher_props.py (2025-09-05 09:52:39 AM EDT)
+▶️ START: project_pitcher_props.py (2025-09-05 10:00:39 AM EDT)
 Wrote: data/_projections/pitcher_props_projected.csv (15 rows)  source=enriched
-⏹️ END: project_pitcher_props.py (2025-09-05 09:52:39 AM EDT)
+⏹️ END: project_pitcher_props.py (2025-09-05 10:00:40 AM EDT)
 
-▶️ START: build_expanded_batter_props.py (2025-09-05 09:52:39 AM EDT)
+▶️ START: build_expanded_batter_props.py (2025-09-05 10:00:40 AM EDT)
 ✅ Wrote: data/_projections/batter_props_expanded.csv (90 rows)
-⏹️ END: build_expanded_batter_props.py (2025-09-05 09:52:39 AM EDT)
+⏹️ END: build_expanded_batter_props.py (2025-09-05 10:00:40 AM EDT)
 
-▶️ START: pitcher_mega_z.py (2025-09-05 09:52:39 AM EDT)
+▶️ START: pitcher_mega_z.py (2025-09-05 10:00:40 AM EDT)
 ✅ Wrote: data/_projections/pitcher_mega_z.csv  (rows=2865)  source=data/cleaned/pitchers_normalized_cleaned.csv
-⏹️ END: pitcher_mega_z.py (2025-09-05 09:52:40 AM EDT)
+⏹️ END: pitcher_mega_z.py (2025-09-05 10:00:41 AM EDT)
 
-▶️ START: post_normalize_pitchers.py (2025-09-05 09:52:40 AM EDT)
+▶️ START: post_normalize_pitchers.py (2025-09-05 10:00:41 AM EDT)
 ✅ Cleaned data/_projections/pitcher_props_projected.csv (0/15 rows kept)
 ✅ Cleaned data/_projections/pitcher_mega_z.csv (2865/2865 rows kept)
-⏹️ END: post_normalize_pitchers.py (2025-09-05 09:52:41 AM EDT)
+⏹️ END: post_normalize_pitchers.py (2025-09-05 10:00:42 AM EDT)
 
 
 ===== ERRORS =====
-❌ project_prep.py ERROR [2025-09-05 09:52:38 AM EDT]:
+❌ project_prep.py ERROR [2025-09-05 10:00:38 AM EDT]:
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 234, in <module>
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'game_id'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 89, in <module>
     project_prep()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 207, in project_prep
-    starters = _attach_skills(starters, pc)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 134, in _attach_skills
-    merged = long.merge(pc[use_cols].drop_duplicates("player_id"), on="player_id", how="left", suffixes=("", "_pc"))
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
-    return merge(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
-    op = _MergeOperation(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 807, in __init__
-    self._maybe_coerce_merge_keys()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1509, in _maybe_coerce_merge_keys
-    raise ValueError(msg)
-ValueError: You are trying to merge on object and int64 columns for key 'player_id'. If you wish to proceed you should use pd.concat
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 67, in project_prep
+    df_startingpitchers["game_id"] = df_startingpitchers["game_id"].fillna("UNKNOWN")
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'game_id'
 
 ---
 
