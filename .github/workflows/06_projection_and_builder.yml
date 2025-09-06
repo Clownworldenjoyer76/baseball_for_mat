@@ -111,9 +111,9 @@ jobs:
           {
             echo "===== RUN TIMESTAMP: $(TZ=America/New_York date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
             echo
-            echo "===== STATUS =====";  cat summaries/projections/status.txt
-            echo; echo "===== LOG =====";   cat summaries/projections/log.txt
-            echo; echo "===== ERRORS =====";cat summaries/projections/errors.txt
+            echo "===== STATUS =====";  cat summaries/projections/status.txt || true
+            echo; echo "===== LOG =====";   cat summaries/projections/log.txt || true
+            echo; echo "===== ERRORS =====";cat summaries/projections/errors.txt || true
           } > summaries/06_projection/summary.txt
 
           git add summaries/06_projection/summary.txt || true
@@ -121,11 +121,78 @@ jobs:
           git pull --rebase origin main || true
           git push origin HEAD:main || true
 
-      - name: Fail if errors
+      - name: Upload summaries as artifact
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 06-projection-summaries
+          path: |
+            summaries/06_projection/summary.txt
+            summaries/projections/status.txt
+            summaries/projections/log.txt
+            summaries/projections/errors.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Parse failures and annotate
+        if: always()
+        id: annotate
+        shell: bash
         run: |
-          if grep -q "[FAIL]" summaries/projections/status.txt; then
-            echo "One or more steps failed. See summaries/06_projection/summary.txt"
+          STATUS="summaries/projections/status.txt"
+          ERR="summaries/projections/errors.txt"
+          LOG="summaries/projections/log.txt"
+
+          OK_COUNT=$(grep -c "^\[OK\]" "$STATUS" 2>/dev/null || echo 0)
+          FAIL_COUNT=$(grep -c "^\[FAIL\]" "$STATUS" 2>/dev/null || echo 0)
+          LAST_FAIL_NAME=$(grep "^\[FAIL\]" "$STATUS" | tail -1 | sed 's/^\[FAIL\] \(.*\) failed.*/\1/')
+
+          {
+            echo "## 06 Projections & Builder — Run Summary"
+            echo ""
+            echo "| OK | FAIL |"
+            echo "|---:|----:|"
+            echo "| $OK_COUNT | $FAIL_COUNT |"
+            echo ""
+            if [ -n "$LAST_FAIL_NAME" ]; then
+              echo "### Last failing step"
+              echo "\`$LAST_FAIL_NAME\`"
+              echo ""
+              echo "#### Error excerpt"
+              awk -v name="$LAST_FAIL_NAME" 'BEGIN{p=0}
+                $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
+                p{print}
+                /^---$/ && p{exit}' "$ERR" | sed 's/^/> /' | head -n 80
+              echo ""
+              echo "#### Tail of unified log"
+              echo '```text'
+              tail -n 120 "$LOG" || true
+              echo '```'
+            else
+              echo "_No failures detected._"
+            fi
+            echo ""
+            echo "**Files:** \`summaries/06_projection/summary.txt\` • \`summaries/projections/{status,log,errors}.txt\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if errors (print concise diagnosis)
+        if: always()
+        shell: bash
+        run: |
+          if grep -q "^\[FAIL\]" summaries/projections/status.txt 2>/dev/null; then
+            FAILED_STEP=$(grep "^\[FAIL\]" summaries/projections/status.txt | tail -1 | sed 's/^\[FAIL\] \(.*\) failed.*/\1/')
+            echo "❌ One or more steps failed."
+            echo "• Summary: summaries/06_projection/summary.txt"
+            echo "• Status : summaries/projections/status.txt"
+            echo "• Errors : summaries/projections/errors.txt"
+            echo
+            echo "Last failing step: $FAILED_STEP"
+            echo "---- Error excerpt ----"
+            awk -v name="$FAILED_STEP" 'BEGIN{p=0}
+              $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
+              p{print}
+              /^---$/ && p{exit}' summaries/projections/errors.txt | head -n 80
+            echo "-----------------------"
             exit 1
           fi
 
