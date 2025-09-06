@@ -1,0 +1,174 @@
+name: Audit Unused Files
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_changes:
+        description: "Move unused files to _archive/ on main (no PR)"
+        required: true
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+      TZ: America/New_York
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run audit
+        run: |
+          python - <<'PY'
+          import csv, os, pathlib, subprocess, re
+
+          ROOT = pathlib.Path(".")
+          OUT_CSV = ROOT / "_audit_unused_report.csv"
+          OUT_TXT = ROOT / "_candidates_to_archive.txt"
+
+          def git_last_date(path):
+              try:
+                  return subprocess.check_output(
+                      ["git","log","-1","--format=%cs","--", str(path)],
+                      text=True
+                  ).strip() or "NO_HISTORY"
+              except Exception:
+                  return "NO_HISTORY"
+
+          SEARCH_GLOBS = ["*.py","*.md","*.yml","*.yaml","*.toml","*.json","*.sh","*.txt",
+                          "*.ipynb","*.html","Makefile",".github/workflows/*.yml","Dockerfile",
+                          "setup.cfg","setup.py","pyproject.toml"]
+          searchable = []
+          for g in SEARCH_GLOBS:
+              searchable += [p for p in ROOT.rglob(g) if ".git" not in p.parts and "venv" not in p.parts]
+
+          def referenced_any(path):
+              name = os.path.basename(path)
+              name_l = name.lower().encode()
+              for f in searchable:
+                  try:
+                      b = f.read_bytes().lower()
+                  except Exception:
+                      continue
+                  if name_l in b:
+                      return True
+              return False
+
+          py_files = [p for p in ROOT.rglob("*.py") if ".git" not in p.parts and "venv" not in p.parts]
+          imported_mods = set()
+          imp_re = re.compile(r'^\s*(?:from|import)\s+([a-zA-Z0-9_\.]+)')
+          for p in py_files:
+              try:
+                  for line in p.read_text(errors="ignore").splitlines():
+                      m = imp_re.match(line)
+                      if m:
+                          imported_mods.add(m.group(1).split('.')[0])
+              except Exception:
+                  pass
+
+          def module_name(p: pathlib.Path):
+              return p.stem
+
+          rows = [("path","type","git_last_modified","referenced_anywhere","imported_by_others","archive_candidate")]
+          candidates = []
+
+          for p in ROOT.rglob("*"):
+              if p.is_dir(): continue
+              if ".git" in p.parts or "venv" in p.parts: continue
+              if p.suffix not in {".py",".csv"}: continue
+
+              typ = p.suffix.lstrip(".")
+              refd = referenced_any(p)
+              impd = "N/A"
+              if typ == "py":
+                  impd = module_name(p) in imported_mods
+
+              shebang = False
+              try:
+                  shebang = p.read_bytes().startswith(b"#!")
+              except Exception:
+                  pass
+
+              archive = False
+              if typ == "csv":
+                  archive = (not refd)
+              elif typ == "py":
+                  archive = (not refd) and (impd is False) and (not shebang)
+
+              rows.append((
+                  str(p),
+                  typ,
+                  git_last_date(p),
+                  "YES" if refd else "NO",
+                  "YES" if impd is True else ("NO" if impd is False else "N/A"),
+                  "YES" if archive else "NO"
+              ))
+              if archive:
+                  candidates.append(str(p))
+
+          with OUT_CSV.open("w", newline="") as f:
+              csv.writer(f).writerows(rows)
+          with OUT_TXT.open("w") as f:
+              for c in candidates:
+                  f.write(c + "\n")
+
+          print(f"WROTE {OUT_CSV}")
+          print(f"WROTE {OUT_TXT} ({len(candidates)} candidates)")
+          PY
+
+      - name: Summarize results
+        run: |
+          echo "## Unused candidates (archived when apply_changes=true)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Path | Type | Last Modified | Referenced | Imported | Archive |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          awk -F',' 'NR>1 && $6=="YES" {printf "| %s | %s | %s | %s | %s | %s |\n",$1,$2,$3,$4,$5,$6}' _audit_unused_report.csv >> $GITHUB_STEP_SUMMARY || true
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Full report:** \`_audit_unused_report.csv\` (download from artifacts below)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-unused-report
+          path: |
+            _audit_unused_report.csv
+            _candidates_to_archive.txt
+
+      - name: Apply changes directly to main (no PR)
+        if: ${{ inputs.apply_changes == 'true' }}
+        run: |
+          set -e
+          if [ ! -s "_candidates_to_archive.txt" ]; then
+            echo "No candidates to archive."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Ensure we're on main and up to date
+          git checkout main
+          git pull --ff-only origin main
+
+          mkdir -p _archive
+          while IFS= read -r f; do
+            git mv "$f" "_archive/" || true
+          done < _candidates_to_archive.txt
+
+          git add -A
+          git commit -m "chore: archive unused .py/.csv (no PR)"
+          git push origin main
