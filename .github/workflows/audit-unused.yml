@@ -2,16 +2,9 @@ name: Audit Unused Files
 
 on:
   workflow_dispatch:
-    inputs:
-      persist_to_repo:
-        description: "Commit summaries/archive/* to main"
-        required: true
-        default: "false"
-        type: choice
-        options: ["false","true"]
 
 permissions:
-  contents: write   # needed only if persist_to_repo=true; harmless otherwise
+  contents: write
 
 jobs:
   audit:
@@ -24,17 +17,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Run audit (generate summaries/archive files)
-        id: audit
+      - name: Generate summaries (always)
         run: |
           set -euo pipefail
+          mkdir -p summaries/archive
+
           python - <<'PY'
-          import csv, os, pathlib, subprocess, re, sys
+          import csv, os, pathlib, subprocess, re
 
           ROOT = pathlib.Path(".")
           OUT_DIR = ROOT / "summaries" / "archive"
@@ -132,12 +121,9 @@ jobs:
           with OUT_TXT.open("w") as f:
               for c in candidates:
                   f.write(c + "\n")
-
-          print(f"WROTE {OUT_CSV}")
-          print(f"WROTE {OUT_TXT} ({len(candidates)} candidates)")
           PY
 
-      - name: Upload artifacts (report + candidates)
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -146,19 +132,21 @@ jobs:
             summaries/archive/audit_unused_report.csv
             summaries/archive/candidates.txt
 
-      - name: Commit summaries to repo (optional)
-        if: ${{ inputs.persist_to_repo == 'true' }}
+      - name: Commit summaries to main (always)
+        if: always()
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout main
           git pull --ff-only origin main
-          git add summaries/archive/audit_unused_report.csv summaries/archive/candidates.txt
+          # Ensure the directory is tracked even if empty
+          touch summaries/archive/.gitkeep
+          git add summaries/archive/audit_unused_report.csv summaries/archive/candidates.txt summaries/archive/.gitkeep
           git commit -m "chore: update audit summaries (no file moves)" || echo "No changes to commit."
-          git push origin main
+          git push origin main || echo "::warning::Push to main failed (branch protections?). Files still attached as artifacts."
 
-      - name: Job Summary (always write)
+      - name: Job Summary (always)
         if: always()
         run: |
           echo "## Potential archive candidates" >> $GITHUB_STEP_SUMMARY
@@ -174,4 +162,4 @@ jobs:
             echo "No candidates found." >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Full CSV:** \`summaries/archive/audit_unused_report.csv\` (also attached as artifact)" >> $GITHUB_STEP_SUMMARY
+          echo "**CSV path:** \`summaries/archive/audit_unused_report.csv\`" >> $GITHUB_STEP_SUMMARY
