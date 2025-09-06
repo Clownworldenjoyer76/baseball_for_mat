@@ -99,6 +99,8 @@ jobs:
           run_step pitcher_mega_z.py                python scripts/pitcher_mega_z.py
           run_step post_normalize_pitchers.py       python scripts/post_normalize_pitchers.py
           run_step finalize_projections.py          python scripts/finalize_projections.py
+          run_step clean_inject_team_ids.py         python scripts/clean_inject_team_ids.py
+          run_step inject_game_ids_from_schedule.py python scripts/inject_game_ids_from_schedule.py
 
       - name: Always write & push summary
         if: always()
@@ -129,7 +131,8 @@ jobs:
         if: always()
         run: |
           git add data/_projections/*.csv || true
+          git add data/raw/todaysgames_normalized.csv || true
           git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs"
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (with team_ids and game_ids)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
