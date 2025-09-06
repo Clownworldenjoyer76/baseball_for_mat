@@ -35,8 +35,12 @@ jobs:
         continue-on-error: true
         run: |
           echo "Running scripts/project_game_scores.py"
+          START_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
           if [ -f scripts/project_game_scores.py ]; then
-            python scripts/project_game_scores.py | tee run.log
+            echo "▶️ START: project_game_scores.py (${START_TS})"
+            python scripts/project_game_scores.py 2>&1 | tee run.log
+            END_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
+            echo "⏹️ END: project_game_scores.py (${END_TS})" | tee -a run.log
           else
             echo "ERROR: scripts/project_game_scores.py not found" | tee run.log
             exit 1
@@ -69,64 +73,59 @@ jobs:
             echo "Output CSV not found; nothing to commit."
           fi
 
-      - name: Always write summary and error log to /summaries/07_final
+      - name: Write summary + error log to /summaries/07_final (always)
         if: always()
         run: |
           mkdir -p summaries/07_final
-          SUMMARY_FILE="summaries/07_final/summary_${GITHUB_RUN_ID}.md"
-          ERROR_FILE="summaries/07_final/errorlog_${GITHUB_RUN_ID}.log"
+
+          SUMMARY_FILE="summaries/07_final/summary_${GITHUB_RUN_ID}.log"
+          ERROR_FILE="summaries/07_final/errors_${GITHUB_RUN_ID}.log"
+
+          RUN_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
+          STATUS_ICON="✅"
+          if [ "${{ steps.run_scores.outcome }}" != "success" ]; then
+            STATUS_ICON="❌"
+          fi
 
           {
-            echo "# 07_final_projections"
-            echo "- Run ID: \`$GITHUB_RUN_ID\`"
-            echo "- Script: \`scripts/project_game_scores.py\`"
-            echo "- Step outcome: **${{ steps.run_scores.outcome }}**"
+            echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
             echo
-            FILE="data/end_chain/final/game_score_projections.csv"
-            if [ -f "$FILE" ]; then
-              ROWS=$(wc -l < "$FILE")
-              echo "## Output"
-              echo "- File: \`$FILE\`"
-              echo "- Rows (incl. header): **$ROWS**"
-              echo
-              echo "### Preview (first 10)"
-              echo '```csv'
-              head -n 10 "$FILE" || true
-              echo '```'
-            else
-              echo "## Output"
-              echo "- File not found: \`$FILE\`"
-            fi
+            echo "===== STATUS ====="
+            echo "${STATUS_ICON} project_game_scores.py ${{ steps.run_scores.outcome }} $(printf '[%s' "$(date +"%Y-%m-%d %I:%M:%S %p %Z")"); echo ']' )"
             echo
-            echo "## Tail of run.log"
-            echo '```'
+            echo "===== LOG ====="
+            # Mirror the structured START/END lines and script output
             if [ -f run.log ]; then
-              tail -n 200 run.log || true
+              cat run.log
             else
               echo "No run.log captured."
             fi
-            echo '```'
-          } >> "$SUMMARY_FILE"
+            echo
+            echo
+            echo "===== ERRORS ====="
+            if [ -f run.log ]; then
+              # Grep common error keywords; if none, leave section present but empty.
+              ERR_LINES="$(grep -i -E 'error|traceback|exception|failed' run.log || true)"
+              if [ -n "$ERR_LINES" ]; then
+                echo "$ERR_LINES"
+              fi
+            else
+              echo "No run.log captured."
+            fi
+          } > "$SUMMARY_FILE"
 
+          # Error log file is the raw run.log (or a placeholder)
           if [ -f run.log ]; then
             cp run.log "$ERROR_FILE" || true
           else
             echo "No run.log captured." > "$ERROR_FILE"
           fi
 
-          # Also mirror key details to the GitHub job summary
-          {
-            echo "# 07_final_projections"
-            echo "- Run ID: \`$GITHUB_RUN_ID\`"
-            echo "- Step outcome: **${{ steps.run_scores.outcome }}**"
-            echo
-            echo "Summary and error log saved to \`summaries/07_final/\` and committed."
-          } >> "$GITHUB_STEP_SUMMARY"
-
+          # Commit summary + errors
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/07_final/ || true
           if ! git diff --cached --quiet; then
-            git commit -m "CI: add summaries/07_final for run ${GITHUB_RUN_ID}"
+            git commit -m "CI: summaries/07_final for run ${GITHUB_RUN_ID}"
             git push
           fi
