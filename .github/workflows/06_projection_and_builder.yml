@@ -45,7 +45,7 @@ jobs:
           restore-keys: ${{ runner.os }}-py-
 
       - name: Setup Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -136,34 +136,33 @@ jobs:
 
       - name: Parse failures and annotate
         if: always()
-        id: annotate
         shell: bash
         run: |
           STATUS="summaries/projections/status.txt"
           ERR="summaries/projections/errors.txt"
           LOG="summaries/projections/log.txt"
 
-          OK_COUNT=$(grep -c "^\[OK\]" "$STATUS" 2>/dev/null || echo 0)
-          FAIL_COUNT=$(grep -c "^\[FAIL\]" "$STATUS" 2>/dev/null || echo 0)
-          LAST_FAIL_NAME=$(grep "^\[FAIL\]" "$STATUS" | tail -1 | sed 's/^\[FAIL\] \(.*\) failed.*/\1/')
+          OK_COUNT=$(grep -cE '^\[OK\]' "$STATUS" 2>/dev/null || echo 0)
+          FAIL_COUNT=$(grep -cE '^\[FAIL\]' "$STATUS" 2>/dev/null || echo 0)
+          LAST_FAIL_NAME=$(grep -E '^\[FAIL\]' "$STATUS" | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
 
           {
             echo "## 06 Projections & Builder — Run Summary"
-            echo ""
+            echo
             echo "| OK | FAIL |"
             echo "|---:|----:|"
             echo "| $OK_COUNT | $FAIL_COUNT |"
-            echo ""
+            echo
             if [ -n "$LAST_FAIL_NAME" ]; then
               echo "### Last failing step"
               echo "\`$LAST_FAIL_NAME\`"
-              echo ""
+              echo
               echo "#### Error excerpt"
               awk -v name="$LAST_FAIL_NAME" 'BEGIN{p=0}
                 $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
                 p{print}
                 /^---$/ && p{exit}' "$ERR" | sed 's/^/> /' | head -n 80
-              echo ""
+              echo
               echo "#### Tail of unified log"
               echo '```text'
               tail -n 120 "$LOG" || true
@@ -171,22 +170,20 @@ jobs:
             else
               echo "_No failures detected._"
             fi
-            echo ""
+            echo
             echo "**Files:** \`summaries/06_projection/summary.txt\` • \`summaries/projections/{status,log,errors}.txt\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Fail if errors (print concise diagnosis)
+      - name: Fail if errors
         if: always()
         shell: bash
         run: |
-          if grep -q "^\[FAIL\]" summaries/projections/status.txt 2>/dev/null; then
-            FAILED_STEP=$(grep "^\[FAIL\]" summaries/projections/status.txt | tail -1 | sed 's/^\[FAIL\] \(.*\) failed.*/\1/')
+          if grep -qE '^\[FAIL\]' summaries/projections/status.txt 2>/dev/null; then
+            FAILED_STEP=$(grep -E '^\[FAIL\]' summaries/projections/status.txt | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
             echo "❌ One or more steps failed."
-            echo "• Summary: summaries/06_projection/summary.txt"
-            echo "• Status : summaries/projections/status.txt"
-            echo "• Errors : summaries/projections/errors.txt"
-            echo
             echo "Last failing step: $FAILED_STEP"
+            echo "See: summaries/06_projection/summary.txt"
+            echo
             echo "---- Error excerpt ----"
             awk -v name="$FAILED_STEP" 'BEGIN{p=0}
               $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
