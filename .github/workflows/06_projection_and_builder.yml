@@ -138,13 +138,15 @@ jobs:
         if: always()
         shell: bash
         run: |
+          # Avoid step failure when there are no FAIL lines
+          set +e
+
           STATUS="summaries/projections/status.txt"
           ERR="summaries/projections/errors.txt"
           LOG="summaries/projections/log.txt"
 
           OK_COUNT=$(grep -cE '^\[OK\]' "$STATUS" 2>/dev/null || echo 0)
           FAIL_COUNT=$(grep -cE '^\[FAIL\]' "$STATUS" 2>/dev/null || echo 0)
-          LAST_FAIL_NAME=$(grep -E '^\[FAIL\]' "$STATUS" | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
 
           {
             echo "## 06 Projections & Builder — Run Summary"
@@ -153,7 +155,11 @@ jobs:
             echo "|---:|----:|"
             echo "| $OK_COUNT | $FAIL_COUNT |"
             echo
-            if [ -n "$LAST_FAIL_NAME" ]; then
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$FAIL_COUNT" -gt 0 ]; then
+            LAST_FAIL_NAME=$(grep -E '^\[FAIL\]' "$STATUS" | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
+            {
               echo "### Last failing step"
               echo "\`$LAST_FAIL_NAME\`"
               echo
@@ -167,12 +173,12 @@ jobs:
               echo '```text'
               tail -n 120 "$LOG" || true
               echo '```'
-            else
-              echo "_No failures detected._"
-            fi
-            echo
-            echo "**Files:** \`summaries/06_projection/summary.txt\` • \`summaries/projections/{status,log,errors}.txt\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+              echo
+              echo "**Files:** \`summaries/06_projection/summary.txt\` • \`summaries/projections/{status,log,errors}.txt\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Fail if errors
         if: always()
