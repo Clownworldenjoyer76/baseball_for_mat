@@ -54,78 +54,60 @@ jobs:
           path: data/end_chain/final/game_score_projections.csv
           if-no-files-found: warn
 
-      - name: Commit CSV to repo (if changed)
-        if: always()
-        run: |
-          FILE="data/end_chain/final/game_score_projections.csv"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -f "$FILE" ]; then
-            git add "$FILE" || true
-            if ! git diff --cached --quiet; then
-              git commit -m "CI: update game score projections (${GITHUB_RUN_ID})"
-              git push
-              echo "Committed and pushed $FILE"
-            else
-              echo "No changes to commit."
-            fi
-          else
-            echo "Output CSV not found; nothing to commit."
-          fi
-
-      - name: Write summary + error log to /summaries/07_final (always)
+      - name: Prepare /summaries/07_final files (overwrite)
         if: always()
         run: |
           mkdir -p summaries/07_final
 
-          SUMMARY_FILE="summaries/07_final/summary_${GITHUB_RUN_ID}.log"
-          ERROR_FILE="summaries/07_final/errors_${GITHUB_RUN_ID}.log"
-
           RUN_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
           STATUS_ICON="✅"
-          if [ "${{ steps.run_scores.outcome }}" != "success" ]; then
-            STATUS_ICON="❌"
+          [ "${{ steps.run_scores.outcome }}" = "success" ] || STATUS_ICON="❌"
+          NOW_BRACKET="[$(date +"%Y-%m-%d %I:%M:%S %p %Z")]"
+
+          # ----- log.txt -----
+          if [ -f run.log ]; then
+            cp run.log summaries/07_final/log.txt
+          else
+            echo "No run.log captured." > summaries/07_final/log.txt
           fi
 
+          # ----- status.txt -----
+          echo "${STATUS_ICON} project_game_scores.py ${{ steps.run_scores.outcome }} ${NOW_BRACKET}" > summaries/07_final/status.txt
+
+          # ----- errors.txt -----
+          if [ -f run.log ]; then
+            (grep -i -E 'error|traceback|exception|failed' run.log || true) > summaries/07_final/errors.txt
+          else
+            echo "No run.log captured." > summaries/07_final/errors.txt
+          fi
+
+          # ----- summary.txt -----
           {
             echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
             echo
             echo "===== STATUS ====="
-            echo "${STATUS_ICON} project_game_scores.py ${{ steps.run_scores.outcome }} $(printf '[%s' "$(date +"%Y-%m-%d %I:%M:%S %p %Z")"); echo ']' )"
+            cat summaries/07_final/status.txt
             echo
             echo "===== LOG ====="
-            # Mirror the structured START/END lines and script output
-            if [ -f run.log ]; then
-              cat run.log
-            else
-              echo "No run.log captured."
-            fi
+            cat summaries/07_final/log.txt
             echo
             echo
             echo "===== ERRORS ====="
-            if [ -f run.log ]; then
-              # Grep common error keywords; if none, leave section present but empty.
-              ERR_LINES="$(grep -i -E 'error|traceback|exception|failed' run.log || true)"
-              if [ -n "$ERR_LINES" ]; then
-                echo "$ERR_LINES"
-              fi
-            else
-              echo "No run.log captured."
-            fi
-          } > "$SUMMARY_FILE"
+            cat summaries/07_final/errors.txt
+          } > summaries/07_final/summary.txt
 
-          # Error log file is the raw run.log (or a placeholder)
-          if [ -f run.log ]; then
-            cp run.log "$ERROR_FILE" || true
-          else
-            echo "No run.log captured." > "$ERROR_FILE"
-          fi
-
-          # Commit summary + errors
+      - name: Commit CSV and summaries (overwrite)
+        if: always()
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add summaries/07_final/ || true
+
+          git add data/end_chain/final/game_score_projections.csv || true
+          git add summaries/07_final/log.txt summaries/07_final/status.txt summaries/07_final/errors.txt summaries/07_final/summary.txt
+
           if ! git diff --cached --quiet; then
-            git commit -m "CI: summaries/07_final for run ${GITHUB_RUN_ID}"
+            git commit -m "CI: update game_score_projections and overwrite summaries/07_final"
             git push
+          else
+            echo "No changes to commit."
           fi
