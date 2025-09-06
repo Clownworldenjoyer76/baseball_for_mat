@@ -65,37 +65,51 @@ jobs:
             fi
           else
             echo "Output CSV not found; nothing to commit."
-          fi
 
       - name: Always write summary
         if: always()
         run: |
-          echo "# 07_final_projections" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Run ID: \`$GITHUB_RUN_ID\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Script: \`scripts/project_game_scores.py\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Step outcome: **${{ steps.run_scores.outcome }}**" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p summaries/07_final
+          SUMMARY_FILE="summaries/07_final/summary_${GITHUB_RUN_ID}.md"
+          LOG_FILE="summaries/07_final/errorlog_${GITHUB_RUN_ID}.log"
+
+          echo "# 07_final_projections" >> "$SUMMARY_FILE"
+          echo "- Run ID: \`$GITHUB_RUN_ID\`" >> "$SUMMARY_FILE"
+          echo "- Script: \`scripts/project_game_scores.py\`" >> "$SUMMARY_FILE"
+          echo "- Step outcome: **${{ steps.run_scores.outcome }}**" >> "$SUMMARY_FILE"
+          echo "" >> "$SUMMARY_FILE"
+
           FILE="data/end_chain/final/game_score_projections.csv"
           if [ -f "$FILE" ]; then
             ROWS=$(wc -l < "$FILE")
-            echo "## Output" >> "$GITHUB_STEP_SUMMARY"
-            echo "- File: \`$FILE\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "- Rows (incl. header): **$ROWS**" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "### Preview (first 10)" >> "$GITHUB_STEP_SUMMARY"
-            echo '```csv' >> "$GITHUB_STEP_SUMMARY"
-            head -n 10 "$FILE" >> "$GITHUB_STEP_SUMMARY" || true
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "## Output" >> "$SUMMARY_FILE"
+            echo "- File: \`$FILE\`" >> "$SUMMARY_FILE"
+            echo "- Rows (incl. header): **$ROWS**" >> "$SUMMARY_FILE"
+            echo "" >> "$SUMMARY_FILE"
+            echo "### Preview (first 10)" >> "$SUMMARY_FILE"
+            echo '```csv' >> "$SUMMARY_FILE"
+            head -n 10 "$FILE" >> "$SUMMARY_FILE" || true
+            echo '```' >> "$SUMMARY_FILE"
           else
-            echo "## Output" >> "$GITHUB_STEP_SUMMARY"
-            echo "- File not found: \`$FILE\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "## Output" >> "$SUMMARY_FILE"
+            echo "- File not found: \`$FILE\`" >> "$SUMMARY_FILE"
           fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "## Tail of run.log" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$SUMMARY_FILE"
+          echo "## Tail of run.log" >> "$SUMMARY_FILE"
+          echo '```' >> "$SUMMARY_FILE"
           if [ -f run.log ]; then
-            tail -n 100 run.log >> "$GITHUB_STEP_SUMMARY" || true
+            tail -n 100 run.log >> "$SUMMARY_FILE" || true
+            cp run.log "$LOG_FILE" || true
           else
-            echo "No run.log captured." >> "$GITHUB_STEP_SUMMARY"
+            echo "No run.log captured." >> "$SUMMARY_FILE"
+            echo "No run.log captured." >> "$LOG_FILE"
           fi
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$SUMMARY_FILE"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add summaries/07_final/ || true
+          if ! git diff --cached --quiet; then
+            git commit -m "CI: update summaries 07_final (${GITHUB_RUN_ID})"
+            git push
+          fi
