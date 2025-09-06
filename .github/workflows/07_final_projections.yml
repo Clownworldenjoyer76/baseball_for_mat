@@ -9,6 +9,8 @@ permissions:
 jobs:
   run-final-projections:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
 
     steps:
       - name: Checkout
@@ -65,51 +67,66 @@ jobs:
             fi
           else
             echo "Output CSV not found; nothing to commit."
+          fi
 
-      - name: Always write summary
+      - name: Always write summary and error log to /summaries/07_final
         if: always()
         run: |
           mkdir -p summaries/07_final
           SUMMARY_FILE="summaries/07_final/summary_${GITHUB_RUN_ID}.md"
-          LOG_FILE="summaries/07_final/errorlog_${GITHUB_RUN_ID}.log"
+          ERROR_FILE="summaries/07_final/errorlog_${GITHUB_RUN_ID}.log"
 
-          echo "# 07_final_projections" >> "$SUMMARY_FILE"
-          echo "- Run ID: \`$GITHUB_RUN_ID\`" >> "$SUMMARY_FILE"
-          echo "- Script: \`scripts/project_game_scores.py\`" >> "$SUMMARY_FILE"
-          echo "- Step outcome: **${{ steps.run_scores.outcome }}**" >> "$SUMMARY_FILE"
-          echo "" >> "$SUMMARY_FILE"
+          {
+            echo "# 07_final_projections"
+            echo "- Run ID: \`$GITHUB_RUN_ID\`"
+            echo "- Script: \`scripts/project_game_scores.py\`"
+            echo "- Step outcome: **${{ steps.run_scores.outcome }}**"
+            echo
+            FILE="data/end_chain/final/game_score_projections.csv"
+            if [ -f "$FILE" ]; then
+              ROWS=$(wc -l < "$FILE")
+              echo "## Output"
+              echo "- File: \`$FILE\`"
+              echo "- Rows (incl. header): **$ROWS**"
+              echo
+              echo "### Preview (first 10)"
+              echo '```csv'
+              head -n 10 "$FILE" || true
+              echo '```'
+            else
+              echo "## Output"
+              echo "- File not found: \`$FILE\`"
+            fi
+            echo
+            echo "## Tail of run.log"
+            echo '```'
+            if [ -f run.log ]; then
+              tail -n 200 run.log || true
+            else
+              echo "No run.log captured."
+            fi
+            echo '```'
+          } >> "$SUMMARY_FILE"
 
-          FILE="data/end_chain/final/game_score_projections.csv"
-          if [ -f "$FILE" ]; then
-            ROWS=$(wc -l < "$FILE")
-            echo "## Output" >> "$SUMMARY_FILE"
-            echo "- File: \`$FILE\`" >> "$SUMMARY_FILE"
-            echo "- Rows (incl. header): **$ROWS**" >> "$SUMMARY_FILE"
-            echo "" >> "$SUMMARY_FILE"
-            echo "### Preview (first 10)" >> "$SUMMARY_FILE"
-            echo '```csv' >> "$SUMMARY_FILE"
-            head -n 10 "$FILE" >> "$SUMMARY_FILE" || true
-            echo '```' >> "$SUMMARY_FILE"
-          else
-            echo "## Output" >> "$SUMMARY_FILE"
-            echo "- File not found: \`$FILE\`" >> "$SUMMARY_FILE"
-          fi
-          echo "" >> "$SUMMARY_FILE"
-          echo "## Tail of run.log" >> "$SUMMARY_FILE"
-          echo '```' >> "$SUMMARY_FILE"
           if [ -f run.log ]; then
-            tail -n 100 run.log >> "$SUMMARY_FILE" || true
-            cp run.log "$LOG_FILE" || true
+            cp run.log "$ERROR_FILE" || true
           else
-            echo "No run.log captured." >> "$SUMMARY_FILE"
-            echo "No run.log captured." >> "$LOG_FILE"
+            echo "No run.log captured." > "$ERROR_FILE"
           fi
-          echo '```' >> "$SUMMARY_FILE"
+
+          # Also mirror key details to the GitHub job summary
+          {
+            echo "# 07_final_projections"
+            echo "- Run ID: \`$GITHUB_RUN_ID\`"
+            echo "- Step outcome: **${{ steps.run_scores.outcome }}**"
+            echo
+            echo "Summary and error log saved to \`summaries/07_final/\` and committed."
+          } >> "$GITHUB_STEP_SUMMARY"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/07_final/ || true
           if ! git diff --cached --quiet; then
-            git commit -m "CI: update summaries 07_final (${GITHUB_RUN_ID})"
+            git commit -m "CI: add summaries/07_final for run ${GITHUB_RUN_ID}"
             git push
           fi
