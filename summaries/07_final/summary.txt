@@ -1,28 +1,23 @@
-===== RUN TIMESTAMP: 2025-09-07 12:41:20 EDT =====
+===== RUN TIMESTAMP: 2025-09-07 12:47:57 EDT =====
 
 ===== STATUS =====
-FAIL project_game_scores.py [2025-09-07 12:41:20 EDT]
+FAIL project_game_scores.py [2025-09-07 12:47:57 EDT]
 
 ===== LOG (tail) =====
-START 2025-09-07 12:41:19 EDT
-/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py:125: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
-  .apply(lambda g: weighted_mean(g, rate_cols, "pa"))
+START 2025-09-07 12:47:57 EDT
 LOAD: daily and season inputs
-KEY CHECK: (player_id, game_id) coverage for adjustments
-MERGE: drop preexisting adj columns from projected, then merge expanded
-RATES: season priors and opponent staff
-JOIN: add batter season rates and opponent staff
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 203, in <module>
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 231, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 142, in main
-    raise RuntimeError("Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv")
-RuntimeError: Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 87, in main
+    raise RuntimeError(
+RuntimeError: One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; see summaries/07_final/missing_opponent_starter_games.csv
 
 ===== ERRORS =====
 Traceback (most recent call last):
-    raise RuntimeError("Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv")
-RuntimeError: Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv
+    raise RuntimeError(
+RuntimeError: One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; see summaries/07_final/missing_opponent_starter_games.csv
 
 ===== DIAGNOSTIC CSVs (if any) =====
+summaries/07_final/missing_opponent_starter_games.csv
 summaries/07_final/missing_rates_after_join.csv
