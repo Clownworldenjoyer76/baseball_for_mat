@@ -1,10 +1,10 @@
-===== RUN TIMESTAMP: 2025-09-07 10:42:13 EDT =====
+===== RUN TIMESTAMP: 2025-09-07 11:06:46 EDT =====
 
 ===== STATUS =====
-FAIL project_game_scores.py [2025-09-07 10:42:13 EDT]
+FAIL project_game_scores.py [2025-09-07 11:06:46 EDT]
 
 ===== LOG (tail) =====
-START 2025-09-07 10:42:13 EDT
+START 2025-09-07 11:06:45 EDT
 /home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py:125: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
   .apply(lambda g: weighted_mean(g, rate_cols, "pa"))
 LOAD: daily and season inputs
@@ -23,3 +23,6 @@ RuntimeError: Null outcome rates after join; see summaries/07_final/missing_rate
 Traceback (most recent call last):
     raise RuntimeError("Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv")
 RuntimeError: Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv
+
+===== DIAGNOSTIC CSVs (if any) =====
+summaries/07_final/missing_rates_after_join.csv
