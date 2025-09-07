@@ -37,6 +37,7 @@ def safe_rate(n, d):
     return (n / d).fillna(0.0).clip(0.0)
 
 def weighted_mean(g, cols, wcol):
+    # weight-aware average; if total weight is 0, fall back to simple mean
     w = pd.to_numeric(g[wcol], errors="coerce").fillna(0.0)
     den = float(w.sum())
     out = {}
@@ -74,6 +75,20 @@ def main():
     to_num(bat_s, ["pa","strikeout","walk","single","double","triple","home_run"])
     to_num(pit_s, ["pa","strikeout","walk","single","double","triple","home_run"])
 
+    # ========= NEW: hard gate on game coverage (starters-only invariant) =========
+    bat_games = set(pd.unique(bat_d["game_id"]))
+    pit_games = set(pd.unique(pit_d["game_id"]))
+    missing_games = sorted(list(bat_games - pit_games))
+    if missing_games:
+        # Emit explicit diagnostic and fail before we ever compute/join rates
+        pd.DataFrame({"game_id": missing_games}).to_csv(
+            SUM_DIR / "missing_opponent_starter_games.csv", index=False
+        )
+        raise RuntimeError(
+            "One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; "
+            "see summaries/07_final/missing_opponent_starter_games.csv"
+        )
+    # ============================================================================
     print("KEY CHECK: (player_id, game_id) coverage for adjustments")
     keys_proj = set(zip(bat_d["player_id"], bat_d["game_id"]))
     keys_exp  = set(zip(bat_x["player_id"], bat_x["game_id"]))
@@ -98,7 +113,8 @@ def main():
             bad.to_csv(SUM_DIR / f"missing_{c}.csv", index=False)
             raise RuntimeError(f"{c} invalid after merge; see summaries/07_final/missing_{c}.csv")
 
-    print("RATES: season priors and opponent staff")
+    print("RATES: season priors and opponent starter (starters-only)")
+    # Batter priors from season totals
     bat_rates = pd.DataFrame({
         "player_id": bat_s["player_id"],
         "p_k_b":  safe_rate(bat_s["strikeout"], bat_s["pa"]),
@@ -108,6 +124,8 @@ def main():
         "p_3b_b": safe_rate(bat_s["triple"],    bat_s["pa"]),
         "p_hr_b": safe_rate(bat_s["home_run"],  bat_s["pa"]),
     })
+
+    # Opponent starter priors from season totals (map by pitcher_id)
     pit_rates = pd.DataFrame({
         "player_id": pit_s["player_id"],
         "p_k_p":  safe_rate(pit_s["strikeout"], pit_s["pa"]),
@@ -118,25 +136,32 @@ def main():
         "p_hr_p": safe_rate(pit_s["home_run"],  pit_s["pa"]),
     })
 
+    # Attach pitcher season rates to each daily starter row
     pit_d_enh = pit_d.merge(pit_rates, on="player_id", how="left")
+
+    # Build opponent map per (game_id, team_id_of_batters)
+    # Each batter row belongs to team_id = T. Its opponent starter row is the one in pit_d where opponent_team_id == T for the same game_id.
     rate_cols = ["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]
     opp_rates = (
-        pit_d_enh.groupby(["game_id","opponent_team_id"], dropna=True)
-        .apply(lambda g: weighted_mean(g, rate_cols, "pa"))
-        .reset_index()
+        pit_d_enh
+        .groupby(["game_id","opponent_team_id"], as_index=False)
+        .apply(lambda g: weighted_mean(g, rate_cols, "pa"), include_groups=False)
         .rename(columns={
+            "opponent_team_id":"team_id",  # key for merging to batter's team
             "p_k_p":"p_k_opp","p_bb_p":"p_bb_opp","p_1b_p":"p_1b_opp",
             "p_2b_p":"p_2b_opp","p_3b_p":"p_3b_opp","p_hr_p":"p_hr_opp"
         })
     )
 
-    print("JOIN: add batter season rates and opponent staff")
+    print("JOIN: add batter season rates and opponent starter")
     bat = bat.merge(bat_rates, on="player_id", how="left")
-    bat = bat.merge(opp_rates, left_on=["game_id","team_id"], right_on=["game_id","opponent_team_id"], how="left")
+    bat = bat.merge(opp_rates, on=["game_id","team_id"], how="left")
 
-    need = ["p_k_b","p_bb_b","p_1b_b","p_2b_b","p_3b_b","p_hr_b","p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]
+    need = ["p_k_b","p_bb_b","p_1b_b","p_2b_b","p_3b_b","p_hr_b",
+            "p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]
     if bat[need].isna().any().any():
-        bat.loc[bat[need].isna().any(axis=1), ["player_id","game_id","team_id","team"]+need].to_csv(
+        bat.loc[bat[need].isna().any(axis=1),
+                ["player_id","game_id","team_id","team"]+need].to_csv(
             SUM_DIR / "missing_rates_after_join.csv", index=False
         )
         raise RuntimeError("Null outcome rates after join; see summaries/07_final/missing_rates_after_join.csv")
@@ -169,7 +194,8 @@ def main():
     s = bat[["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].sum(axis=1)
     over = s > 1.0
     if over.any():
-        bat.loc[over, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]] = bat.loc[over, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].div(s[over], axis=0)
+        bat.loc[over, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]] = \
+            bat.loc[over, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].div(s[over], axis=0)
         s = bat[["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].sum(axis=1)
     bat["p_out"] = (1.0 - s).clip(0.0, 1.0)
 
@@ -184,9 +210,11 @@ def main():
     print("AGG: to game/team")
     team = (
         bat.groupby(["game_id","team_id","team"], dropna=True)["expected_runs_batter"]
-        .sum().reset_index()
+        .sum()
+        .reset_index()
         .rename(columns={"expected_runs_batter":"expected_runs"})
-        .sort_values(["game_id","team_id"]).reset_index(drop=True)
+        .sort_values(["game_id","team_id"])
+        .reset_index(drop=True)
     )
 
     # Ensure an output file exists even if zero rows (no defaults used in calculations)
