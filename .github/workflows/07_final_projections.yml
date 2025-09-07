@@ -30,9 +30,52 @@ jobs:
             pip install -r requirements.txt || true
           fi
 
-      - name: Run game score projection
+      - name: Run projections (capture log, never swallow failures)
+        id: run_scores
+        shell: bash
         run: |
-          python scripts/project_game_scores.py 2>&1 | tee run.log
+          set -euo pipefail
+          mkdir -p summaries/07_final
+          echo "START $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee run.log
+          python scripts/project_game_scores.py 2>&1 | tee -a run.log
+
+      - name: Summarize run log
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p summaries/07_final
+          RUN_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+
+          if [ -f run.log ]; then
+            cp run.log summaries/07_final/log.txt
+          else
+            echo "no run.log" > summaries/07_final/log.txt
+          fi
+
+          STATUS_ICON="OK"
+          if [ "${{ steps.run_scores.outcome }}" != "success" ]; then
+            STATUS_ICON="FAIL"
+          fi
+          echo "${STATUS_ICON} project_game_scores.py [${RUN_TS}]" > summaries/07_final/status.txt
+
+          if [ -f summaries/07_final/log.txt ]; then
+            (grep -i -E 'error|traceback|exception' summaries/07_final/log.txt || true) > summaries/07_final/errors.txt
+          else
+            echo "no log" > summaries/07_final/errors.txt
+          fi
+
+          {
+            echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
+            echo
+            echo "===== STATUS ====="
+            cat summaries/07_final/status.txt
+            echo
+            echo "===== LOG (tail) ====="
+            tail -n 200 summaries/07_final/log.txt || true
+            echo
+            echo "===== ERRORS ====="
+            cat summaries/07_final/errors.txt
+          } > summaries/07_final/summary.txt
 
       - name: Upload artifacts
         if: always()
@@ -41,17 +84,22 @@ jobs:
           name: game_score_projections
           path: |
             data/end_chain/final/game_score_projections.csv
-            summaries/07_final/*.txt
+            summaries/07_final/log.txt
+            summaries/07_final/status.txt
+            summaries/07_final/errors.txt
+            summaries/07_final/summary.txt
           if-no-files-found: warn
 
-      - name: Commit results
+      - name: Commit outputs and summaries
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/end_chain/final/game_score_projections.csv || true
-          git add summaries/07_final/*.txt || true
+          git add summaries/07_final/log.txt summaries/07_final/status.txt summaries/07_final/errors.txt summaries/07_final/summary.txt || true
           if ! git diff --cached --quiet; then
-            git commit -m "CI: update game_score_projections and summaries/07_final"
+            git commit -m "CI: update final projections and summaries/07_final"
             git push
+          else
+            echo "No changes to commit."
           fi
