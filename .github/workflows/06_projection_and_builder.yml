@@ -209,3 +209,7 @@ jobs:
           git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
+
+      - name: Fix missing PA in pitcher daily (run helper)
+        run: |
+          python scripts/fix_missing_pa_in_pitcher_daily.py
