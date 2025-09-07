@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Game score projections using daily pipeline outputs
-# Strict: no defaults; fail with diagnostics if joins drop adjustments
+# Strict joins; no defaults; diagnostics on mismatch
 
 import pandas as pd
 import numpy as np
@@ -20,6 +20,8 @@ PITCHERS_DAILY = DAILY_DIR / "pitcher_props_projected_final.csv"
 BATTERS_SEASON = SEASON_DIR / "batters.csv"
 PITCHERS_SEASON = SEASON_DIR / "pitchers.csv"
 OUT_FILE = OUT_DIR / "game_score_projections.csv"
+
+ADJ_COLS = ["adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
 
 # Helpers
 def require(df, cols, name):
@@ -60,7 +62,7 @@ bat_s = pd.read_csv(BATTERS_SEASON)
 pit_s = pd.read_csv(PITCHERS_SEASON)
 
 require(bat_d, ["player_id","team_id","team","game_id","proj_pa_used"], str(BATTERS_DAILY))
-require(bat_x, ["player_id","game_id","adj_woba_weather","adj_woba_park","adj_woba_combined"], str(BATTERS_EXP))
+require(bat_x, ["player_id","game_id"] + ADJ_COLS, str(BATTERS_EXP))
 require(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"], str(PITCHERS_DAILY))
 require(bat_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(BATTERS_SEASON))
 require(pit_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(PITCHERS_SEASON))
@@ -80,14 +82,26 @@ if missing:
     pd.DataFrame(list(missing), columns=["player_id","game_id"]).to_csv(
         SUM_DIR / "merge_mismatch_batters.csv", index=False
     )
-    raise RuntimeError(f"adjustments missing for {len(missing)} players -> summaries/07_final/merge_mismatch_batters.csv")
+    raise RuntimeError(
+        f"adjustments missing for {len(missing)} (player_id,game_id) -> summaries/07_final/merge_mismatch_batters.csv"
+    )
 
-# Merge park/weather
-bat = bat_d.merge(
-    bat_x[["player_id","game_id","adj_woba_weather","adj_woba_park","adj_woba_combined"]],
+# Drop any adj_woba_* already present in bat_d to prevent suffixed columns after merge
+bat_d_noadj = bat_d.drop(columns=[c for c in ADJ_COLS if c in bat_d.columns], errors="ignore")
+
+# Strict merge of adjustment columns from expanded file
+bat = bat_d_noadj.merge(
+    bat_x[["player_id","game_id"] + ADJ_COLS],
     on=["player_id","game_id"],
     how="inner"
 )
+
+# Post-merge validation: adjustments must exist and be non-null
+for c in ADJ_COLS:
+    if c not in bat.columns or bat[c].isna().any():
+        bad = bat.loc[bat[c].isna()] if c in bat.columns else bat[["player_id","game_id"]]
+        bad.to_csv(SUM_DIR / f"missing_{c}.csv", index=False)
+        raise RuntimeError(f"{c} invalid after merge -> summaries/07_final/missing_{c}.csv")
 
 # Season outcome rates
 bat_rates = pd.DataFrame({
@@ -126,7 +140,14 @@ opp_rates = (
 bat = bat.merge(bat_rates, on="player_id", how="left")
 bat = bat.merge(opp_rates, left_on=["game_id","team_id"], right_on=["game_id","opponent_team_id"], how="left")
 
-# League averages
+need = ["p_k_b","p_bb_b","p_1b_b","p_2b_b","p_3b_b","p_hr_b","p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]
+if bat[need].isna().any().any():
+    bat.loc[bat[need].isna().any(axis=1), ["player_id","game_id","team_id","team"]+need].to_csv(
+        SUM_DIR / "missing_rates_after_join.csv", index=False
+    )
+    raise RuntimeError("null outcome rates after join -> summaries/07_final/missing_rates_after_join.csv")
+
+# League rates
 lg_pa = float(bat_s["pa"].sum())
 lg = {
     "k":  float(bat_s["strikeout"].sum() / lg_pa),
