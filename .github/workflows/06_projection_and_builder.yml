@@ -104,6 +104,8 @@ jobs:
           run_step inject_batter_woba_adjustments.py python scripts/inject_batter_woba_adjustments.py
           run_step clean_pitcher_files.py           python scripts/clean_pitcher_files.py
           run_step impute_missing_batter_adj_woba.py python scripts/impute_missing_batter_adj_woba.py
+          # ensure pitcher daily has PA before downstream usage; logged & commit-able
+          run_step fix_missing_pa_in_pitcher_daily.py python scripts/fix_missing_pa_in_pitcher_daily.py
 
       - name: Always write & push summary
         if: always()
@@ -139,16 +141,12 @@ jobs:
         if: always()
         shell: bash
         run: |
-          # Avoid step failure when there are no FAIL lines
           set +e
-
           STATUS="summaries/projections/status.txt"
           ERR="summaries/projections/errors.txt"
           LOG="summaries/projections/log.txt"
-
           OK_COUNT=$(grep -cE '^\[OK\]' "$STATUS" 2>/dev/null || echo 0)
           FAIL_COUNT=$(grep -cE '^\[FAIL\]' "$STATUS" 2>/dev/null || echo 0)
-
           {
             echo "## 06 Projections & Builder — Run Summary"
             echo
@@ -157,7 +155,6 @@ jobs:
             echo "| $OK_COUNT | $FAIL_COUNT |"
             echo
           } >> "$GITHUB_STEP_SUMMARY"
-
           if [ "$FAIL_COUNT" -gt 0 ]; then
             LAST_FAIL_NAME=$(grep -E '^\[FAIL\]' "$STATUS" | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
             {
@@ -179,7 +176,6 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Fail if errors
         if: always()
@@ -206,10 +202,6 @@ jobs:
           git add data/_projections/*.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation)"
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation, PA fix)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
-
-      - name: Fix missing PA in pitcher daily (run helper)
-        run: |
-          python scripts/fix_missing_pa_in_pitcher_daily.py
