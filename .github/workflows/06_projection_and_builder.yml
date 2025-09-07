@@ -89,6 +89,10 @@ jobs:
             echo >>"$LOG"
           }
 
+          # --- NEW: backfill missing pitcher IDs from names, then apply to raw schedule ---
+          run_step fix_outputs_generate_fixed_files.py   python scripts/fix_outputs_generate_fixed_files.py
+          run_step apply_fixed_todaysgames                bash -lc 'test -f data/_projections/todaysgames_normalized_fixed.csv && cp data/_projections/todaysgames_normalized_fixed.csv data/raw/todaysgames_normalized.csv || true'
+
           # --- Projections & Builder pipeline ---
           run_step project_prep.py                  python scripts/project_prep.py
           run_step fix_missing_batter_stats.py      python scripts/fix_missing_batter_stats.py
@@ -176,7 +180,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
-          fi   # <-- FIX ADDED HERE
+          fi
 
       - name: Fail if errors
         if: always()
@@ -203,6 +207,6 @@ jobs:
           git add data/_projections/*.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation, PA fix)"
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (ID backfill applied; team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation, PA fix)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
