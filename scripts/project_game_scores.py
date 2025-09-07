@@ -2,176 +2,99 @@
 # -*- coding: utf-8 -*-
 
 """
-FINAL: Game score projections using YOUR daily pipeline data.
-- No defaults/fillers. Hard-fail with precise diagnostics if joins drop adjustments.
-- Uses park/weather (adj_woba_*), opponent pitchers, and season outcome rates blended via log5.
-- Writes a diagnostics CSV on any key mismatch, then raises.
+Game score projections using YOUR pipeline outputs.
+Strict: no silent defaults; fail with diagnostics if joins drop adjustments.
 
-Inputs (must exist with required columns):
-  data/_projections/batter_props_projected_final.csv
-    - player_id, team_id, team, game_id, proj_pa_used
-  data/_projections/batter_props_expanded_final.csv
-    - player_id, game_id, adj_woba_weather, adj_woba_park, adj_woba_combined
-  data/_projections/pitcher_props_projected_final.csv
-    - player_id, game_id, team_id, opponent_team_id, pa
-  data/_projections/pitcher_mega_z_final.csv
-    - player_id, game_id (optional enrichment; not required but allowed)
-
-  data/Data/batters.csv
-    - player_id, pa, strikeout, walk, single, double, triple, home_run
-  data/Data/pitchers.csv
-    - player_id, pa, strikeout, walk, single, double, triple, home_run
-
-Output:
+Outputs:
   data/end_chain/final/game_score_projections.csv  (game_id, team_id, team, expected_runs)
-
-Diagnostics (only on failure):
-  summaries/07_final/merge_mismatch_batters.csv
-  summaries/07_final/missing_season_rates_batters.csv
-  summaries/07_final/missing_season_rates_pitchers.csv
-  summaries/07_final/missing_opponent_staff.csv
 """
 
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple
 
-# ----------------------------
-# Paths
-# ----------------------------
 DAILY_DIR   = Path("data/_projections")
 SEASON_DIR  = Path("data/Data")
 SUM_DIR     = Path("summaries/07_final")
 OUT_DIR     = Path("data/end_chain/final")
+SUM_DIR.mkdir(parents=True, exist_ok=True)
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 BATTERS_DAILY   = DAILY_DIR / "batter_props_projected_final.csv"
 BATTERS_EXP     = DAILY_DIR / "batter_props_expanded_final.csv"
 PITCHERS_DAILY  = DAILY_DIR / "pitcher_props_projected_final.csv"
-PITCHERS_MEGA   = DAILY_DIR / "pitcher_mega_z_final.csv"
-
 BATTERS_SEASON  = SEASON_DIR / "batters.csv"
 PITCHERS_SEASON = SEASON_DIR / "pitchers.csv"
 
 OUT_FILE = OUT_DIR / "game_score_projections.csv"
 
-SUM_DIR.mkdir(parents=True, exist_ok=True)
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+def require(df, cols, name):
+    miss = [c for c in cols if c not in df.columns]
+    if miss:
+        raise RuntimeError(f"{name} missing required columns: {miss}")
 
-# ----------------------------
-# Utilities
-# ----------------------------
-def require_cols(df: pd.DataFrame, cols: List[str], name: str):
-    missing = [c for c in cols if c not in df.columns]
-    if missing:
-        raise RuntimeError(f"{name} missing required columns: {missing}")
-
-def to_num(df: pd.DataFrame, cols: List[str]):
+def to_num(df, cols):
     for c in cols:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
-def safe_rate(n: pd.Series, d: pd.Series) -> pd.Series:
-    d = pd.to_numeric(d, errors="coerce")
+def safe_rate(n, d):
     n = pd.to_numeric(n, errors="coerce")
-    r = n.div(d.replace(0, np.nan))
-    return r.fillna(0.0).clip(0.0)
+    d = pd.to_numeric(d, errors="coerce").replace(0, np.nan)
+    return (n / d).fillna(0.0).clip(0.0)
 
-def weighted_mean_frame(g: pd.DataFrame, cols: List[str], wcol: str) -> pd.Series:
+def weighted_mean(g, cols, wcol):
     w = pd.to_numeric(g[wcol], errors="coerce").fillna(0.0)
-    out: Dict[str, float] = {}
     den = float(w.sum())
+    out = {}
     for c in cols:
         x = pd.to_numeric(g[c], errors="coerce").fillna(0.0)
         out[c] = float((x * w).sum() / den) if den > 0 else float(x.mean())
     return pd.Series(out)
 
-def log5_element(b: pd.Series, p: pd.Series, lg: float) -> pd.Series:
+def log5(b, p, lg):
     if lg <= 0:
-        raise RuntimeError("League rate <= 0 encountered in log5_element.")
+        raise RuntimeError("League rate <= 0")
     return (pd.to_numeric(b, errors="coerce").fillna(0.0) *
             pd.to_numeric(p, errors="coerce").fillna(0.0)) / lg
 
-def clamp_outcomes(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
-    for c in cols:
-        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0.0).clip(0.0, 1.0)
-    s = df[cols].sum(axis=1)
-    over = s > 1.0
-    if over.any():
-        df.loc[over, cols] = df.loc[over, cols].div(s[over], axis=0)
-        s = df[cols].sum(axis=1)
-    df["p_out"] = (1.0 - s).clip(0.0, 1.0)
-    return df
-
-def write_diag(df: pd.DataFrame, path: Path):
-    if df is not None and not df.empty:
-        df.to_csv(path, index=False)
-
-# ----------------------------
-# Load daily projection products
-# ----------------------------
+# Load
 bat_d = pd.read_csv(BATTERS_DAILY)
 bat_x = pd.read_csv(BATTERS_EXP)
 pit_d = pd.read_csv(PITCHERS_DAILY)
-
-require_cols(bat_d, ["player_id","team_id","team","game_id","proj_pa_used"], BATTERS_DAILY.name)
-require_cols(bat_x, ["player_id","game_id","adj_woba_weather","adj_woba_park","adj_woba_combined"], BATTERS_EXP.name)
-require_cols(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"], PITCHERS_DAILY.name)
-
-# Numeric coercions (NO default values assigned beyond NaN -> we will hard fail if needed)
-to_num(bat_d, ["player_id","team_id","game_id","proj_pa_used"])
-to_num(bat_x, ["player_id","game_id"])
-to_num(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"])
-
-# ----------------------------
-# Validate batter adjustments will merge
-# ----------------------------
-keys_proj = set(zip(bat_d["player_id"], bat_d["game_id"]))
-keys_exp  = set(zip(bat_x["player_id"], bat_x["game_id"]))
-
-missing_in_exp = keys_proj - keys_exp
-if missing_in_exp:
-    sample = pd.DataFrame(list(missing_in_exp), columns=["player_id","game_id"])
-    diag = bat_d.merge(sample, on=["player_id","game_id"], how="inner")
-    write_diag(diag, SUM_DIR / "merge_mismatch_batters.csv")
-    raise RuntimeError(
-        f"Adjustment rows missing in batter_props_expanded_final.csv for {len(missing_in_exp)} (player_id, game_id) keys. "
-        f"See {SUM_DIR/'merge_mismatch_batters.csv'}"
-    )
-
-# Merge adjustments
-bat = bat_d.merge(
-    bat_x[["player_id","game_id","adj_woba_weather","adj_woba_park","adj_woba_combined"]],
-    on=["player_id","game_id"],
-    how="inner"  # inner to enforce exact alignment; no silent drops
-)
-
-# Post-merge validation: NO NaNs allowed in adj_woba_* (strict)
-for c in ["adj_woba_weather","adj_woba_park","adj_woba_combined"]:
-    if bat[c].isna().any():
-        bad = bat.loc[bat[c].isna(), ["player_id","game_id","team_id","team"]]
-        write_diag(bad, SUM_DIR / f"missing_{c}.csv")
-        raise RuntimeError(f"Found NaN in {c} after merge. See {SUM_DIR/f'missing_{c}.csv'}")
-
-# proj_pa_used must be present and numeric
-if bat["proj_pa_used"].isna().any():
-    bad = bat.loc[bat["proj_pa_used"].isna(), ["player_id","game_id","team_id","team"]]
-    write_diag(bad, SUM_DIR / "missing_proj_pa_used.csv")
-    raise RuntimeError(f"Missing proj_pa_used for some batters. See {SUM_DIR/'missing_proj_pa_used.csv'}")
-
-# ----------------------------
-# Season priors (strict)
-# ----------------------------
 bat_s = pd.read_csv(BATTERS_SEASON)
 pit_s = pd.read_csv(PITCHERS_SEASON)
 
-require_cols(bat_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], BATTERS_SEASON.name)
-require_cols(pit_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], PITCHERS_SEASON.name)
+require(bat_d, ["player_id","team_id","team","game_id","proj_pa_used"], str(BATTERS_DAILY))
+require(bat_x, ["player_id","game_id","adj_woba_weather","adj_woba_park","adj_woba_combined"], str(BATTERS_EXP))
+require(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"], str(PITCHERS_DAILY))
+require(bat_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(BATTERS_SEASON))
+require(pit_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(PITCHERS_SEASON))
 
+to_num(bat_d, ["player_id","team_id","game_id","proj_pa_used"])
+to_num(bat_x, ["player_id","game_id"])
+to_num(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"])
 to_num(bat_s, ["pa","strikeout","walk","single","double","triple","home_run"])
 to_num(pit_s, ["pa","strikeout","walk","single","double","triple","home_run"])
 
-# Batter rates
+# Validate key coverage BEFORE merge
+keys_proj = set(zip(bat_d["player_id"], bat_d["game_id"]))
+keys_exp  = set(zip(bat_x["player_id"], bat_x["game_id"]))
+missing_in_exp = keys_proj - keys_exp
+if missing_in_exp:
+    pd.DataFrame(list(missing_in_exp), columns=["player_id","game_id"]).to_csv(
+        SUM_DIR / "merge_mismatch_batters.csv", index=False
+    )
+    raise RuntimeError(f"adjustments missing for {len(missing_in_exp)} batter (player_id,game_id) keys -> summaries/07_final/merge_mismatch_batters.csv")
+
+# Merge park/weather strictly (inner)
+bat = bat_d.merge(
+    bat_x[["player_id","game_id","adj_woba_weather","adj_woba_park","adj_woba_combined"]],
+    on=["player_id","game_id"],
+    how="inner"
+)
+
+# Season rates
 bat_rates = pd.DataFrame({
     "player_id": bat_s["player_id"],
     "p_k_b":  safe_rate(bat_s["strikeout"], bat_s["pa"]),
@@ -181,8 +104,6 @@ bat_rates = pd.DataFrame({
     "p_3b_b": safe_rate(bat_s["triple"],    bat_s["pa"]),
     "p_hr_b": safe_rate(bat_s["home_run"],  bat_s["pa"]),
 })
-
-# Pitcher-allowed rates
 pit_rates = pd.DataFrame({
     "player_id": pit_s["player_id"],
     "p_k_p":  safe_rate(pit_s["strikeout"], pit_s["pa"]),
@@ -193,36 +114,27 @@ pit_rates = pd.DataFrame({
     "p_hr_p": safe_rate(pit_s["home_run"],  pit_s["pa"]),
 })
 
-# Verify every batter in today's file has season rates
-missing_bat_ids = set(bat["player_id"]) - set(bat_rates["player_id"])
-if missing_bat_ids:
-    write_diag(pd.DataFrame({"player_id": list(missing_bat_ids)}),
-               SUM_DIR / "missing_season_rates_batters.csv")
-    raise RuntimeError(f"Season rates missing for {len(missing_bat_ids)} batters. See {SUM_DIR/'missing_season_rates_batters.csv'}")
+# Confirm every batter/pitcher has season rows
+miss_b = set(bat["player_id"]) - set(bat_rates["player_id"])
+if miss_b:
+    pd.DataFrame({"player_id": list(miss_b)}).to_csv(SUM_DIR/"missing_season_rates_batters.csv", index=False)
+    raise RuntimeError("season rates missing for some batters -> summaries/07_final/missing_season_rates_batters.csv")
+miss_p = set(pit_d["player_id"]) - set(pit_rates["player_id"])
+if miss_p:
+    pd.DataFrame({"player_id": list(miss_p)}).to_csv(SUM_DIR/"missing_season_rates_pitchers.csv", index=False)
+    raise RuntimeError("season rates missing for some pitchers -> summaries/07_final/missing_season_rates_pitchers.csv")
 
-# Verify every pitcher in today's file has season rates
-missing_pit_ids = set(pit_d["player_id"]) - set(pit_rates["player_id"])
-if missing_pit_ids:
-    write_diag(pd.DataFrame({"player_id": list(missing_pit_ids)}),
-               SUM_DIR / "missing_season_rates_pitchers.csv")
-    raise RuntimeError(f"Season rates missing for {len(missing_pit_ids)} pitchers. See {SUM_DIR/'missing_season_rates_pitchers.csv'}")
-
-# ----------------------------
-# Build opponent-allowed rates per (game_id, opponent_team_id)
-# ----------------------------
+# Opponent staff weighted rates per (game_id, opponent_team_id)
 pit_d_enh = pit_d.merge(pit_rates, on="player_id", how="left")
-if pit_d_enh[["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]].isna().any().any():
-    bad = pit_d_enh.loc[
-        pit_d_enh[["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]].isna().any(axis=1),
-        ["player_id","game_id","team_id","opponent_team_id"]
-    ]
-    write_diag(bad, SUM_DIR / "missing_pitcher_allowed_rates.csv")
-    raise RuntimeError(f"NaNs in pitcher allowed rates after merge. See {SUM_DIR/'missing_pitcher_allowed_rates.csv'}")
+rate_cols = ["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]
+if pit_d_enh[rate_cols].isna().any().any():
+    bad = pit_d_enh.loc[pit_d_enh[rate_cols].isna().any(axis=1), ["player_id","game_id","team_id","opponent_team_id"]]
+    bad.to_csv(SUM_DIR/"missing_pitcher_allowed_rates.csv", index=False)
+    raise RuntimeError("NaNs in pitcher allowed rates -> summaries/07_final/missing_pitcher_allowed_rates.csv")
 
-opp_cols = ["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]
 opp_rates = (
     pit_d_enh.groupby(["game_id","opponent_team_id"], dropna=True)
-    .apply(lambda g: weighted_mean_frame(g, opp_cols, "pa"))
+    .apply(lambda g: weighted_mean(g, rate_cols, "pa"))
     .reset_index()
     .rename(columns={
         "p_k_p":"p_k_opp","p_bb_p":"p_bb_opp","p_1b_p":"p_1b_opp",
@@ -230,95 +142,78 @@ opp_rates = (
     })
 )
 
-# Verify every batting (game_id, team_id) has an opponent staff row
-bat_keys = bat[["game_id","team_id"]].drop_duplicates()
-opp_keys = opp_rates[["game_id","opponent_team_id"]].drop_duplicates()
-opp_keys = opp_keys.rename(columns={"opponent_team_id":"team_id"})
+# Ensure each batting side finds an opponent staff row
+want = bat[["game_id","team_id"]].drop_duplicates()
+have = opp_rates.rename(columns={"opponent_team_id":"team_id"})[["game_id","team_id"]].drop_duplicates()
+anti = want.merge(have, on=["game_id","team_id"], how="left", indicator=True)
+anti = anti[anti["_merge"]=="left_only"].drop(columns=["_merge"])
+if not anti.empty:
+    anti.to_csv(SUM_DIR/"missing_opponent_staff.csv", index=False)
+    raise RuntimeError("opponent staff not found for some (game_id,team_id) -> summaries/07_final/missing_opponent_staff.csv")
 
-missing_staff = bat_keys.merge(opp_keys, on=["game_id","team_id"], how="left", indicator=True)
-missing_staff = missing_staff[missing_staff["_merge"] == "left_only"].drop(columns=["_merge"])
-if not missing_staff.empty:
-    write_diag(missing_staff, SUM_DIR / "missing_opponent_staff.csv")
-    raise RuntimeError(f"Opponent staff rates missing for some (game_id, team_id). See {SUM_DIR/'missing_opponent_staff.csv'}")
-
-# ----------------------------
-# Assemble batter frame with season rates + opponent rates + park/weather
-# ----------------------------
+# Assemble per-batter outcomes
 bat = bat.merge(bat_rates, on="player_id", how="left")
 bat = bat.merge(opp_rates, left_on=["game_id","team_id"], right_on=["game_id","opponent_team_id"], how="left")
 
-# All required rate columns must be present and non-null
-need_cols = ["p_k_b","p_bb_b","p_1b_b","p_2b_b","p_3b_b","p_hr_b",
-             "p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]
-if bat[need_cols].isna().any().any():
-    bad = bat.loc[bat[need_cols].isna().any(axis=1), ["player_id","game_id","team_id","team"] + need_cols]
-    write_diag(bad, SUM_DIR / "missing_rates_after_join.csv")
-    raise RuntimeError(f"Null outcome rates after joins. See {SUM_DIR/'missing_rates_after_join.csv'}")
+need = ["p_k_b","p_bb_b","p_1b_b","p_2b_b","p_3b_b","p_hr_b","p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]
+if bat[need].isna().any().any():
+    bat.loc[bat[need].isna().any(axis=1), ["player_id","game_id","team_id","team"]+need].to_csv(
+        SUM_DIR/"missing_rates_after_join.csv", index=False
+    )
+    raise RuntimeError("null outcome rates after join -> summaries/07_final/missing_rates_after_join.csv")
 
-# ----------------------------
-# Log5 blend per outcome
-# ----------------------------
-lg_pa = float(pd.read_csv(BATTERS_SEASON)["pa"].sum())
-if lg_pa <= 0:
-    raise RuntimeError("League PA is zero in batters.csv.")
-
-bat_s_full = pd.read_csv(BATTERS_SEASON)
+# League averages (from batter season totals)
+lg_pa = float(pd.to_numeric(bat_s["pa"], errors="coerce").sum())
 lg = {
-    "k":  float(bat_s_full["strikeout"].sum() / lg_pa),
-    "bb": float(bat_s_full["walk"].sum()      / lg_pa),
-    "1b": float(bat_s_full["single"].sum()    / lg_pa),
-    "2b": float(bat_s_full["double"].sum()    / lg_pa),
-    "3b": float(bat_s_full["triple"].sum()    / lg_pa),
-    "hr": float(bat_s_full["home_run"].sum()  / lg_pa),
+    "k":  float(bat_s["strikeout"].sum() / lg_pa),
+    "bb": float(bat_s["walk"].sum()      / lg_pa),
+    "1b": float(bat_s["single"].sum()    / lg_pa),
+    "2b": float(bat_s["double"].sum()    / lg_pa),
+    "3b": float(bat_s["triple"].sum()    / lg_pa),
+    "hr": float(bat_s["home_run"].sum()  / lg_pa),
 }
-# Validate league rates strictly
-for k,v in lg.items():
-    if v <= 0:
-        raise RuntimeError(f"League rate {k} <= 0")
 
-bat["p_k"]  = log5_element(bat["p_k_b"],  bat["p_k_opp"],  lg["k"])
-bat["p_bb"] = log5_element(bat["p_bb_b"], bat["p_bb_opp"], lg["bb"])
-bat["p_1b"] = log5_element(bat["p_1b_b"], bat["p_1b_opp"], lg["1b"])
-bat["p_2b"] = log5_element(bat["p_2b_b"], bat["p_2b_opp"], lg["2b"])
-bat["p_3b"] = log5_element(bat["p_3b_b"], bat["p_3b_opp"], lg["3b"])
-bat["p_hr"] = log5_element(bat["p_hr_b"], bat["p_hr_opp"], lg["hr"])
+bat["p_k"]  = log5(bat["p_k_b"],  bat["p_k_opp"],  lg["k"])
+bat["p_bb"] = log5(bat["p_bb_b"], bat["p_bb_opp"], lg["bb"])
+bat["p_1b"] = log5(bat["p_1b_b"], bat["p_1b_opp"], lg["1b"])
+bat["p_2b"] = log5(bat["p_2b_b"], bat["p_2b_opp"], lg["2b"])
+bat["p_3b"] = log5(bat["p_3b_b"], bat["p_3b_opp"], lg["3b"])
+bat["p_hr"] = log5(bat["p_hr_b"], bat["p_hr_opp"], lg["hr"])
 
-# Apply park+weather environment (strict: use exactly your provided adjustments; no defaults)
-for c in ["p_1b","p_2b","p_3b","p_hr"]:
-    bat[c] = bat[c] * bat["adj_woba_combined"]
+# Apply YOUR park+weather environment
+bat["p_1b"] *= bat["adj_woba_combined"]
+bat["p_2b"] *= bat["adj_woba_combined"]
+bat["p_3b"] *= bat["adj_woba_combined"]
+bat["p_hr"] *= bat["adj_woba_combined"]
 
-# Validate probabilities and derive outs
-bat = clamp_outcomes(bat, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"])
+# Clamp and outs
+for c in ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]:
+    bat[c] = pd.to_numeric(bat[c], errors="coerce").fillna(0.0).clip(0.0, 1.0)
+s = bat[["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].sum(axis=1)
+over = s > 1.0
+if over.any():
+    bat.loc[over, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]] = bat.loc[over, ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].div(s[over], axis=0)
+    s = bat[["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].sum(axis=1)
+bat["p_out"] = (1.0 - s).clip(0.0, 1.0)
 
-# ----------------------------
-# Linear weights (no assumptions beyond established constants)
-# ----------------------------
-LW = {"BB": 0.33, "1B": 0.47, "2B": 0.77, "3B": 1.04, "HR": 1.40, "OUT": 0.00}
-
+# Linear weights
+LW = {"BB":0.33,"1B":0.47,"2B":0.77,"3B":1.04,"HR":1.40,"OUT":0.0}
 bat["runs_per_pa"] = (
-    bat["p_bb"] * LW["BB"] +
-    bat["p_1b"] * LW["1B"] +
-    bat["p_2b"] * LW["2B"] +
-    bat["p_3b"] * LW["3B"] +
-    bat["p_hr"] * LW["HR"] +
-    bat["p_out"] * LW["OUT"]
+    bat["p_bb"]*LW["BB"] + bat["p_1b"]*LW["1B"] + bat["p_2b"]*LW["2B"] +
+    bat["p_3b"]*LW["3B"] + bat["p_hr"]*LW["HR"] + bat["p_out"]*LW["OUT"]
 )
 
-# Strict: proj_pa_used must be numeric and non-null (validated earlier)
+# Expected runs per batter
 bat["expected_runs_batter"] = bat["runs_per_pa"] * bat["proj_pa_used"]
 
-# ----------------------------
 # Aggregate to team/game
-# ----------------------------
-team_results = (
+team = (
     bat.groupby(["game_id","team_id","team"], dropna=True)["expected_runs_batter"]
-    .sum()
-    .reset_index()
+    .sum().reset_index()
     .rename(columns={"expected_runs_batter":"expected_runs"})
-    .sort_values(["game_id","team_id"])
-    .reset_index(drop=True)
+    .sort_values(["game_id","team_id"]).reset_index(drop=True)
 )
 
-# Write output
-team_results.to_csv(OUT_FILE, index=False)
-print(f"OK {len(team_results)} rows -> {OUT_FILE}")
+# Write
+team.to_csv(OUT_FILE, index=False)
+print(f"OK {len(team)} rows -> {OUT_FILE}")
