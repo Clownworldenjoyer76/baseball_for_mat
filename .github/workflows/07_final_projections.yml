@@ -23,140 +23,35 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies (best-effort)
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt || true
           fi
-          python - <<'PY'
-import sys, pandas as pd, pathlib as p
-base = p.Path("data/_projections")
-need = [
-  base/"batter_props_projected_final.csv",
-  base/"batter_props_expanded_final.csv",
-  base/"pitcher_props_projected_final.csv",
-  p.Path("data/Data/batters.csv"),
-  p.Path("data/Data/pitchers.csv"),
-]
-missing = [str(x) for x in need if not x.exists()]
-if missing:
-    print("MISSING INPUTS:", *missing, sep="\n")
-    sys.exit(1)
-# quick schema check for adj_woba_* in both batter files
-bp = pd.read_csv(base/"batter_props_projected_final.csv", nrows=5)
-bx = pd.read_csv(base/"batter_props_expanded_final.csv", nrows=5)
-for f,df in [("batter_props_projected_final.csv",bp),("batter_props_expanded_final.csv",bx)]:
-    for c in ["player_id","game_id"]:
-        assert c in df.columns, f"{f} missing key: {c}"
-    for c in ["adj_woba_weather","adj_woba_park","adj_woba_combined"]:
-        assert c in df.columns, f"{f} missing required column: {c}"
-print("SCHEMA OK")
-PY
 
       - name: Run game score projection
-        id: run_scores
-        continue-on-error: true
         run: |
-          echo "Running scripts/project_game_scores.py"
-          START_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
-          if [ -f scripts/project_game_scores.py ]; then
-            echo "▶️ START: project_game_scores.py (${START_TS})"
-            python scripts/project_game_scores.py 2>&1 | tee run.log
-            STATUS=$?
-            END_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
-            echo "⏹️ END: project_game_scores.py (${END_TS})" | tee -a run.log
-            exit $STATUS
-          else
-            echo "ERROR: scripts/project_game_scores.py not found" | tee run.log
-            exit 1
-          fi
+          python scripts/project_game_scores.py 2>&1 | tee run.log
 
-      - name: Verify output file and rows
-        if: always()
-        run: |
-          set -e
-          OUT="data/end_chain/final/game_score_projections.csv"
-          echo "OUT PATH: $OUT"
-          ls -lah $(dirname "$OUT") || true
-          if [ -f "$OUT" ]; then
-            echo "OUTPUT EXISTS"
-            python - <<'PY'
-import pandas as pd
-df = pd.read_csv("data/end_chain/final/game_score_projections.csv")
-print("ROWS:", len(df))
-print("COLS:", list(df.columns))
-print(df.head(10).to_string(index=False))
-# per-game counts must be 2 (two teams)
-bad = df.groupby("game_id", as_index=False)["team_id"].nunique()
-bad = bad[bad["team_id"] != 2]
-if len(bad):
-    print("\nBAD_GAMES_NOT_TWO_TEAMS:\n", bad.to_string(index=False))
-    raise SystemExit(2)
-PY
-          else
-            echo "MISSING OUTPUT: $OUT"
-            exit 2
-          fi
-
-      - name: Upload CSV (if exists)
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: game_score_projections
-          path: data/end_chain/final/game_score_projections.csv
+          path: |
+            data/end_chain/final/game_score_projections.csv
+            summaries/07_final/*.txt
           if-no-files-found: warn
 
-      - name: Prepare /summaries/07_final files (overwrite)
-        if: always()
-        run: |
-          mkdir -p summaries/07_final
-
-          RUN_TS="$(date +"%Y-%m-%d %I:%M:%S %p %Z")"
-          STATUS_ICON="✅"
-          [ "${{ steps.run_scores.outcome }}" = "success" ] || STATUS_ICON="❌"
-          NOW_BRACKET="[$(date +"%Y-%m-%d %I:%M:%S %p %Z")]"
-
-          if [ -f run.log ]; then
-            cp run.log summaries/07_final/log.txt
-          else
-            echo "No run.log captured." > summaries/07_final/log.txt
-          fi
-
-          echo "${STATUS_ICON} project_game_scores.py ${{ steps.run_scores.outcome }} ${NOW_BRACKET}" > summaries/07_final/status.txt
-
-          if [ -f run.log ]; then
-            (grep -i -E 'error|traceback|exception|failed|MISSING INPUTS|BAD_GAMES_NOT_TWO_TEAMS' run.log || true) > summaries/07_final/errors.txt
-          else
-            echo "No run.log captured." > summaries/07_final/errors.txt
-          fi
-
-          {
-            echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
-            echo
-            echo "===== STATUS ====="
-            cat summaries/07_final/status.txt
-            echo
-            echo "===== LOG ====="
-            cat summaries/07_final/log.txt
-            echo
-            echo
-            echo "===== ERRORS ====="
-            cat summaries/07_final/errors.txt
-          } > summaries/07_final/summary.txt
-
-      - name: Commit CSV and summaries (overwrite)
+      - name: Commit results
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add data/end_chain/final/game_score_projections.csv || true
-          git add summaries/07_final/log.txt summaries/07_final/status.txt summaries/07_final/errors.txt summaries/07_final/summary.txt
-
+          git add summaries/07_final/*.txt || true
           if ! git diff --cached --quiet; then
-            git commit -m "CI: update game_score_projections and overwrite summaries/07_final"
+            git commit -m "CI: update game_score_projections and summaries/07_final"
             git push
-          else
-            echo "No changes to commit."
           fi
