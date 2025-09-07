@@ -176,6 +176,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
+          fi   # <-- FIX ADDED HERE
 
       - name: Fail if errors
         if: always()
