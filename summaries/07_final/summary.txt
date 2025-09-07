@@ -1,7 +1,7 @@
-===== RUN TIMESTAMP: 2025-09-06 11:02:57 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-06 11:30:27 PM EDT =====
 
 ===== STATUS =====
-✅ project_game_scores.py success [2025-09-06 11:02:57 PM EDT]
+✅ project_game_scores.py success [2025-09-06 11:30:27 PM EDT]
 
 ===== LOG =====
 Traceback (most recent call last):
@@ -17,16 +17,16 @@ KeyError: 'adj_woba_weather'
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 128, in <module>
-    bat["adj_woba_weather"]  = pd.to_numeric(bat["adj_woba_weather"], errors="coerce").fillna(1.0)
-                                             ~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 151, in <module>
+    if bat[c].isna().any():
+       ~~~^^^
   File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/frame.py", line 4107, in __getitem__
     indexer = self.columns.get_loc(key)
               ^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
     raise KeyError(key) from err
 KeyError: 'adj_woba_weather'
-⏹️ END: project_game_scores.py (2025-09-06 11:02:56 PM EDT)
+⏹️ END: project_game_scores.py (2025-09-06 11:30:26 PM EDT)
 
 
 ===== ERRORS =====
@@ -34,6 +34,5 @@ Traceback (most recent call last):
 KeyError: 'adj_woba_weather'
 The above exception was the direct cause of the following exception:
 Traceback (most recent call last):
-    bat["adj_woba_weather"]  = pd.to_numeric(bat["adj_woba_weather"], errors="coerce").fillna(1.0)
     raise KeyError(key) from err
 KeyError: 'adj_woba_weather'
