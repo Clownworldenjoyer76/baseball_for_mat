@@ -103,6 +103,7 @@ jobs:
           run_step inject_game_ids_from_schedule.py python scripts/inject_game_ids_from_schedule.py
           run_step inject_batter_woba_adjustments.py python scripts/inject_batter_woba_adjustments.py
           run_step clean_pitcher_files.py           python scripts/clean_pitcher_files.py
+          run_step impute_missing_batter_adj_woba.py python scripts/impute_missing_batter_adj_woba.py
 
       - name: Always write & push summary
         if: always()
@@ -205,6 +206,6 @@ jobs:
           git add data/_projections/*.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup)"
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
