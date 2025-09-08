@@ -31,7 +31,7 @@ def clean_headers(df: pd.DataFrame) -> pd.DataFrame:
 pp   = clean_headers(read_csv(PITCHER_PROPS_IN))      # pitcher projections (may be incomplete)
 pm   = clean_headers(read_csv(PITCHER_MEGA_IN))
 bp   = clean_headers(read_csv(BATTER_PROJ_IN))        # batter projected (may NOT have game_id)
-be   = clean_headers(read_csv(BATTER_EXP_IN))         # batter expanded (does have game_id)
+be   = clean_headers(read_csv(BATTER_EXP_IN))         # batter expanded (may NOT have game_id)
 tg   = clean_headers(read_csv(TODAYS_GAMES_IN))
 stad = clean_headers(read_csv(STADIUM_MASTER_IN))
 
@@ -132,19 +132,19 @@ bp_out.to_csv(BATTER_PROJ_OUT, index=False)
 # ---------- Batter expanded: copy then sync *_pa_used from projected ----------
 if not be.empty:
     be = be.copy()
-    for key in ["player_id","game_id"]:
-        if key not in be.columns:
-            raise ValueError(f"batter_props_expanded.csv missing '{key}'")
+    if "player_id" not in be.columns:
+        raise ValueError("batter_props_expanded.csv missing 'player_id'")
     be["player_id"] = to_int64(be["player_id"])
-    be["game_id"]   = to_int64(be["game_id"])
+    if "game_id" in be.columns:
+        be["game_id"] = to_int64(be["game_id"])
     be_out = be
 
     pa_used_cols = [c for c in bp_out.columns if c.endswith("_pa_used")]
     to_add = [c for c in pa_used_cols if c not in be_out.columns]
 
     if to_add:
-        # choose join keys: (player_id, game_id) if bp has game_id; else player_id only
-        if "game_id" in bp_out.columns:
+        # Decide join keys based on availability
+        if ("game_id" in bp_out.columns) and ("game_id" in be_out.columns):
             add_df = bp_out[["player_id","game_id"] + to_add].copy()
             add_df["player_id"] = to_int64(add_df["player_id"])
             add_df["game_id"]   = to_int64(add_df["game_id"])
@@ -156,7 +156,6 @@ if not be.empty:
             be_out = be_out.merge(add_df, on=["player_id"], how="left")
             join_mode = "player_id_only"
 
-        # Write a tiny note of what we synced/how
         with open("summaries/projections/batter_pa_used_sync.txt", "w", encoding="utf-8") as fh:
             fh.write(f"added_from_projected: {to_add}\n")
             fh.write(f"join_mode: {join_mode}\n")
