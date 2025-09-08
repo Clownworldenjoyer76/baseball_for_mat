@@ -1,3 +1,4 @@
+import pathlib
 #!/usr/bin/env python3
 import pandas as pd
 from pathlib import Path
@@ -9,9 +10,8 @@ RAW_DIR = DATA_DIR / "raw"
 def project_prep():
     # Input paths
     todays_games = DATA_DIR / "_projections" / "todaysgames_normalized_fixed.csv"
-    pitchers_file = DATA_DIR / "pitchers.csv"
-    stadiums_file = DATA_DIR / "stadiums.csv"
-
+    pitchers_file = pathlib.Path("data") / "Data" / "pitchers.csv"
+    stadiums_file = pathlib.Path("data") / "manual" / "stadium_master.csv"
     if not todays_games.exists():
         raise FileNotFoundError(f"Missing input: {todays_games}")
     if not pitchers_file.exists():
