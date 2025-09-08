@@ -54,28 +54,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # --- PRE-FIX: create fixed variants when daily files lack keys/ids ---
-      - name: fix_outputs_generate_fixed_files.py
-        id: gen_fixed
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/fix_outputs_generate_fixed_files.py
-
-      - name: apply_fixed_todaysgames
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -f data/_projections/todaysgames_normalized_fixed.csv ]; then
-            cp -f data/_projections/todaysgames_normalized_fixed.csv data/raw/todaysgames_normalized.csv
-          fi
-          # Replace projections with fixed versions if they exist
-          for f in batter_props_projected batter_props_expanded pitcher_props_projected pitcher_mega_z; do
-            if [ -f "data/_projections/${f}_fixed.csv" ]; then
-              cp -f "data/_projections/${f}_fixed.csv" "data/_projections/${f}.csv"
-            fi
-          done
-
       - name: Run stage with unified logs
         id: run_stage
         shell: bash
@@ -111,24 +89,31 @@ jobs:
             echo >>"$LOG"
           }
 
+          # --- Optional pre-fix to align outputs when sources drift ---
+          run_step fix_outputs_generate_fixed_files.py    python scripts/fix_outputs_generate_fixed_files.py || true
+          run_step apply_fixed_todaysgames                bash -lc 'test -f data/_projections/todaysgames_normalized_fixed.csv || true'
+
           # --- Projections & Builder pipeline ---
-          run_step fix_outputs_generate_fixed_files.py     python scripts/fix_outputs_generate_fixed_files.py
-          run_step apply_fixed_todaysgames                  bash -lc 'true'
-          run_step project_prep.py                          python scripts/project_prep.py
-          run_step fix_missing_batter_stats.py              python scripts/fix_missing_batter_stats.py
-          run_step normalize_batters_for_builder.py         python scripts/normalize_batters_for_builder.py
-          run_step project_batter_props.py                  python scripts/project_batter_props.py
-          run_step project_pitcher_props.py                 python scripts/project_pitcher_props.py
-          run_step build_expanded_batter_props.py           python scripts/build_expanded_batter_props.py
-          run_step pitcher_mega_z.py                        python scripts/pitcher_mega_z.py
-          run_step post_normalize_pitchers.py               python scripts/post_normalize_pitchers.py
-          run_step finalize_projections.py                  python scripts/finalize_projections.py
-          run_step clean_inject_team_ids.py                 python scripts/clean_inject_team_ids.py
-          run_step inject_game_ids_from_schedule.py         python scripts/inject_game_ids_from_schedule.py
-          run_step inject_batter_woba_adjustments.py        python scripts/inject_batter_woba_adjustments.py
-          run_step clean_pitcher_files.py                   python scripts/clean_pitcher_files.py
-          run_step impute_missing_batter_adj_woba.py        python scripts/impute_missing_batter_adj_woba.py
-          run_step fix_missing_pa_in_pitcher_daily.py       python scripts/fix_missing_pa_in_pitcher_daily.py
+          run_step project_prep.py                        python scripts/project_prep.py
+          run_step fix_missing_batter_stats.py            python scripts/fix_missing_batter_stats.py
+          run_step normalize_batters_for_builder.py       python scripts/normalize_batters_for_builder.py
+          run_step project_batter_props.py                python scripts/project_batter_props.py
+          run_step project_pitcher_props.py               python scripts/project_pitcher_props.py
+          run_step build_expanded_batter_props.py         python scripts/build_expanded_batter_props.py
+          run_step pitcher_mega_z.py                      python scripts/pitcher_mega_z.py
+
+          # ---- NEW: starters-only coverage guard (fails fast if any starter missing) ----
+          run_step starter_coverage_guard.py              python scripts/starter_coverage_guard.py
+
+          run_step post_normalize_pitchers.py             python scripts/post_normalize_pitchers.py
+          run_step finalize_projections.py                python scripts/finalize_projections.py
+          run_step clean_inject_team_ids.py               python scripts/clean_inject_team_ids.py
+          run_step inject_game_ids_from_schedule.py       python scripts/inject_game_ids_from_schedule.py
+          run_step inject_batter_woba_adjustments.py      python scripts/inject_batter_woba_adjustments.py
+          run_step clean_pitcher_files.py                 python scripts/clean_pitcher_files.py
+          run_step impute_missing_batter_adj_woba.py      python scripts/impute_missing_batter_adj_woba.py
+          # ensure pitcher daily has PA before downstream usage; logged & commit-able
+          run_step fix_missing_pa_in_pitcher_daily.py     python scripts/fix_missing_pa_in_pitcher_daily.py
 
       - name: Always write & push summary
         if: always()
@@ -157,6 +142,9 @@ jobs:
             summaries/projections/status.txt
             summaries/projections/log.txt
             summaries/projections/errors.txt
+            summaries/projections/mega_z_starter_coverage.csv
+            summaries/projections/mega_z_starter_missing.csv
+            summaries/projections/mega_z_starter_coverage_error.txt
           if-no-files-found: ignore
           retention-days: 7
 
@@ -186,7 +174,7 @@ jobs:
               echo
               echo "#### Error excerpt"
               awk -v name="$LAST_FAIL_NAME" 'BEGIN{p=0}
-                $0 ~ ("\\[FAIL\\] " name " ERROR") {p=1}
+                $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
                 p{print}
                 /^---$/ && p{exit}' "$ERR" | sed 's/^/> /' | head -n 80
               echo
@@ -199,7 +187,6 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Fail if errors
         if: always()
@@ -213,7 +200,7 @@ jobs:
             echo
             echo "---- Error excerpt ----"
             awk -v name="$FAILED_STEP" 'BEGIN{p=0}
-              $0 ~ ("\\[FAIL\\] " name " ERROR") {p=1}
+              $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
               p{print}
               /^---$/ && p{exit}' summaries/projections/errors.txt | head -n 80
             echo "-----------------------"
@@ -226,6 +213,6 @@ jobs:
           git add data/_projections/*.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation, PA fix)"
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (starter coverage guard, diagnostics)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
