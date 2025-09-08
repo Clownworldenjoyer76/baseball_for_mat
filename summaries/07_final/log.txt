@@ -1,8 +1,12 @@
-START 2025-09-07 12:47:57 EDT
+START 2025-09-08 09:58:25 EDT
 LOAD: daily and season inputs
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 231, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 87, in main
-    raise RuntimeError(
-RuntimeError: One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; see summaries/07_final/missing_opponent_starter_games.csv
+KEY CHECK: (player_id, game_id) coverage for adjustments
+MERGE: drop preexisting adj columns from projected, then merge expanded
+RATES: season priors and opponent starter (starters-only)
+JOIN: add batter season rates and opponent starter
+LEAGUE: compute averages from season totals
+LOG5 + ENV: blend and apply park/weather
+CLAMP: probabilities and outs
+LW: linear weights to runs per PA and expected runs
+AGG: to game/team
+WROTE: 23 rows -> data/end_chain/final/game_score_projections.csv
