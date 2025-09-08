@@ -3,20 +3,15 @@ name: 06 Projection and Builder
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 12 * * *" # runs daily at 12:00 UTC (8 AM EDT)
-
-permissions:
-  contents: write
+    - cron: "0 12 * * *"   # runs daily at 12:00 UTC
 
 jobs:
-  projection-and-builder:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,64 +23,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run fix_outputs_generate_fixed_files.py
-        run: python scripts/fix_outputs_generate_fixed_files.py
+      - name: Run pipeline
+        run: |
+          echo "===== RUN TIMESTAMP: $(date) =====" > summaries/run_log.txt
+          echo "" >> summaries/run_log.txt
 
-      - name: Run apply_fixed_todaysgames
-        run: python scripts/apply_fixed_todaysgames.py
+          python scripts/fix_outputs_generate_fixed_files.py        >> summaries/run_log.txt 2>&1 || true
+          python scripts/apply_fixed_todaysgames.py                 >> summaries/run_log.txt 2>&1 || true
+          python scripts/project_prep.py                            >> summaries/run_log.txt 2>&1 || true
+          python scripts/fix_missing_batter_stats.py                >> summaries/run_log.txt 2>&1 || true
+          python scripts/normalize_batters_for_builder.py           >> summaries/run_log.txt 2>&1 || true
+          python scripts/project_batter_props.py                    >> summaries/run_log.txt 2>&1 || true
+          python scripts/project_pitcher_props.py                   >> summaries/run_log.txt 2>&1 || true
+          python scripts/build_expanded_batter_props.py             >> summaries/run_log.txt 2>&1 || true
+          python scripts/pitcher_mega_z.py                          >> summaries/run_log.txt 2>&1 || true
+          python scripts/starter_coverage_guard.py                  >> summaries/run_log.txt 2>&1 || true
+          python scripts/post_normalize_pitchers.py                 >> summaries/run_log.txt 2>&1 || true
+          python scripts/finalize_projections.py                    >> summaries/run_log.txt 2>&1 || true
+          python scripts/clean_inject_team_ids.py                   >> summaries/run_log.txt 2>&1 || true
+          python scripts/inject_game_ids_from_schedule.py           >> summaries/run_log.txt 2>&1 || true
+          python scripts/inject_batter_woba_adjustments.py          >> summaries/run_log.txt 2>&1 || true
+          python scripts/clean_pitcher_files.py                     >> summaries/run_log.txt 2>&1 || true
+          python scripts/impute_missing_batter_adj_woba.py          >> summaries/run_log.txt 2>&1 || true
+          python scripts/fix_missing_pa_in_pitcher_daily.py         >> summaries/run_log.txt 2>&1 || true
 
-      - name: Run project_prep.py
-        run: python scripts/project_prep.py
-
-      - name: Run fix_missing_batter_stats.py
-        run: python scripts/fix_missing_batter_stats.py
-
-      - name: Run normalize_batters_for_builder.py
-        run: python scripts/normalize_batters_for_builder.py
-
-      - name: Run project_batter_props.py
-        run: python scripts/project_batter_props.py
-
-      - name: Run project_pitcher_props.py
-        run: python scripts/project_pitcher_props.py
-
-      - name: Run build_expanded_batter_props.py
-        run: python scripts/build_expanded_batter_props.py
-
-      - name: Run pitcher_mega_z.py
-        run: python scripts/pitcher_mega_z.py
-
-      - name: Run starter_coverage_guard.py
-        run: python scripts/starter_coverage_guard.py
-
-      - name: Run post_normalize_pitchers.py
-        run: python scripts/post_normalize_pitchers.py
-
-      - name: Run finalize_projections.py
-        run: python scripts/finalize_projections.py
-
-      - name: Run clean_inject_team_ids.py
-        run: python scripts/clean_inject_team_ids.py
-
-      - name: Run inject_game_ids_from_schedule.py
-        run: python scripts/inject_game_ids_from_schedule.py
-
-      - name: Run inject_batter_woba_adjustments.py
-        run: python scripts/inject_batter_woba_adjustments.py
-
-      - name: Run clean_pitcher_files.py
-        run: python scripts/clean_pitcher_files.py
-
-      - name: Run impute_missing_batter_adj_woba.py
-        run: python scripts/impute_missing_batter_adj_woba.py
-
-      - name: Run fix_missing_pa_in_pitcher_daily.py
-        run: python scripts/fix_missing_pa_in_pitcher_daily.py
-
-      - name: Commit and push results
+      - name: Commit and push updates
         run: |
           git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add data/ summaries/ || true
-          git commit -m "Auto-update projections and summaries [skip ci]" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }}
+          git config --global user.email "actions@github.com"
+          git add data/_projections/*.csv data/end_chain/final/*.csv summaries/*.txt summaries/**/*.csv || true
+          git commit -m "Auto-update projections and cleaned pitcher files [skip ci]" || echo "No changes to commit"
+          git push
