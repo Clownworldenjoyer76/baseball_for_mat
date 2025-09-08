@@ -1,140 +1,147 @@
 #!/usr/bin/env python3
-# scripts/clean_pitcher_files.py
-#
-# Cleans pitcher outputs.
-# - data/_projections/pitcher_props_projected_final.csv:
-#     * delete *_ctx columns
-#     * set opponent_team_id by deriving from data/raw/todaysgames_normalized.csv
-#       (team_id vs home_team_id/away_team_id → opponent = the other team_id)
-#       If multiple distinct opponents for a team_id on the schedule, leave blank.
-#     * coerce opponent_team_id to nullable integer (Int64)
-# - data/_projections/pitcher_mega_z_final.csv:
-#     * set role = "pitcher" for all rows
-#     * inject/overwrite team_id from data/raw/lineups.csv by matching player_id
-#       (keep first team_id per player_id in lineups)
-#
-# All writes are in-place.
+"""
+clean_pitcher_files.py
+- Do NOT drop rows for NaNs.
+- Normalize player_id (string, no trailing .0) and game_id types.
+- Preserve all current starters from todaysgames_normalized_fixed.csv and startingpitchers.csv.
+- Deduplicate only if necessary, prioritizing starters, then non-null stats.
+- Write files in-place and emit a small summary.
+"""
 
 from pathlib import Path
 import pandas as pd
-import sys
+import numpy as np
 
-# ---- Paths ----
-PROPS_FILE = Path("data/_projections/pitcher_props_projected_final.csv")
-MEGA_FILE  = Path("data/_projections/pitcher_mega_z_final.csv")
-SCHEDULE_FILE = Path("data/raw/todaysgames_normalized.csv")
-LINEUPS_FILE  = Path("data/raw/lineups.csv")
-
-# Columns to remove from PROPS_FILE
-CTX_COLS = [
-    "game_id_ctx", "team_id_ctx", "park_factor_ctx", "role_ctx",
-    "city_ctx", "state_ctx", "timezone_ctx", "is_dome_ctx",
+# Inputs we clean in-place
+TARGETS = [
+    Path("data/_projections/pitcher_props_projected_final.csv"),
+    Path("data/_projections/pitcher_mega_z_final.csv"),
 ]
 
-def die(msg: str) -> None:
-    sys.stderr.write(f"ERROR: {msg}\n")
-    sys.exit(1)
+# Starter sources
+TODAY = Path("data/_projections/todaysgames_normalized_fixed.csv")
+STARTERS = Path("data/end_chain/final/startingpitchers.csv")
 
-def clean_props():
-    if not PROPS_FILE.exists():
-        die(f"Missing file: {PROPS_FILE}")
-    if not SCHEDULE_FILE.exists():
-        die(f"Missing file: {SCHEDULE_FILE}")
+SUM_DIR = Path("summaries/projections")
+SUM_DIR.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(PROPS_FILE)
+def as_str_id(x):
+    """Coerce IDs to clean strings: '605540.0' -> '605540', keep empty as ''."""
+    if pd.isna(x):
+        return ""
+    s = str(x).strip()
+    if s.endswith(".0"):
+        s = s[:-2]
+    return s
 
-    # Drop *_ctx columns if present
-    drop_cols = [c for c in CTX_COLS if c in df.columns]
-    if drop_cols:
-        df = df.drop(columns=drop_cols)
+def load_starter_ids() -> set:
+    ids = set()
 
-    # Build opponent map from schedule
-    sched = pd.read_csv(SCHEDULE_FILE)
-    req = {"home_team_id", "away_team_id"}
-    missing = req - set(sched.columns)
-    if missing:
-        die(f"{SCHEDULE_FILE} missing required columns: {sorted(missing)}")
+    # From todaysgames_normalized_fixed.csv
+    if TODAY.exists():
+        tg = pd.read_csv(TODAY)
+        for col in ["pitcher_home_id", "pitcher_away_id"]:
+            if col in tg.columns:
+                ids |= {as_str_id(v) for v in tg[col].tolist() if as_str_id(v)}
 
-    # Coerce IDs
-    for c in ["home_team_id", "away_team_id"]:
-        sched[c] = pd.to_numeric(sched[c], errors="coerce").astype("Int64")
+    # From startingpitchers.csv
+    if STARTERS.exists():
+        sp = pd.read_csv(STARTERS)
+        # Accept common column names
+        cand_cols = [c for c in sp.columns if c.lower() in {"player_id","pitcher_id","id"}]
+        if cand_cols:
+            col = cand_cols[0]
+            ids |= {as_str_id(v) for v in sp[col].tolist() if as_str_id(v)}
 
-    home = sched[["home_team_id", "away_team_id"]].rename(
-        columns={"home_team_id": "team_id", "away_team_id": "opponent_team_id"}
-    )
-    away = sched[["away_team_id", "home_team_id"]].rename(
-        columns={"away_team_id": "team_id", "home_team_id": "opponent_team_id"}
-    )
-    long = pd.concat([home, away], ignore_index=True).dropna(subset=["team_id"])
-    # Group to unique opponents per team_id
-    grp = (
-        long.groupby("team_id", dropna=True)["opponent_team_id"]
-        .apply(lambda s: set(x for x in s.dropna().tolist()))
-    )
+    return ids
 
-    # Build mapping: only use if exactly one unique opponent; else NaN
-    opp_map = {}
-    for tid, opps in grp.items():
-        if len(opps) == 1:
-            opp_map[int(tid)] = int(next(iter(opps)))
-        else:
-            # ambiguous → leave unmapped
-            continue
+def reorder_columns(df: pd.DataFrame, original_cols: list) -> pd.DataFrame:
+    """Keep original column order if possible; append any new columns at the end."""
+    keep = [c for c in original_cols if c in df.columns]
+    tail = [c for c in df.columns if c not in keep]
+    return df[keep + tail]
 
-    # Coerce team_id in props and map opponent
-    if "team_id" not in df.columns:
-        die(f"{PROPS_FILE} missing required column: 'team_id'")
-    df["team_id"] = pd.to_numeric(df["team_id"], errors="coerce").astype("Int64")
+def safe_numeric(series, dtype="Int64"):
+    """Best-effort numeric cast that preserves NaNs."""
+    out = pd.to_numeric(series, errors="coerce")
+    if dtype == "Int64":
+        return out.astype("Int64")
+    return out
 
-    new_opp = df["team_id"].map(lambda x: opp_map.get(int(x)) if pd.notna(x) and int(x) in opp_map else pd.NA)
-    df["opponent_team_id"] = pd.Series(new_opp, dtype="Int64")
+def clean_file(path: Path, starter_ids: set):
+    if not path.exists():
+        print(f"⚠️  Missing file: {path}")
+        return
 
-    df.to_csv(PROPS_FILE, index=False)
-    print(f"updated {PROPS_FILE}")
+    df = pd.read_csv(path)
+    original_cols = list(df.columns)
 
-def clean_mega():
-    if not MEGA_FILE.exists():
-        die(f"Missing file: {MEGA_FILE}")
-    if not LINEUPS_FILE.exists():
-        die(f"Missing file: {LINEUPS_FILE}")
+    # Normalize IDs
+    if "player_id" in df.columns:
+        df["player_id"] = df["player_id"].apply(as_str_id)
+    if "game_id" in df.columns:
+        # keep as integer-like but allow NaN
+        df["game_id"] = safe_numeric(df["game_id"], dtype="Int64")
 
-    df = pd.read_csv(MEGA_FILE)
+    # Mark starters
+    df["__is_starter__"] = df.get("player_id", "").isin(starter_ids)
 
-    # role = "pitcher" for all
-    df["role"] = "pitcher"
+    # Avoid destructive drops. Only dedupe if true duplicates exist.
+    # Define a key for dedupe preference:
+    #   1) keep starters first
+    #   2) keep rows with more non-null stats
+    #   3) stable order otherwise
+    non_stat_cols = {"player_id","game_id","team_id","opponent_team_id","role","name","team",
+                     "city","state","timezone","is_dome","park_factor"}
+    stat_cols = [c for c in df.columns if c not in non_stat_cols and not c.startswith("__")]
 
-    # Map team_id from lineups by player_id, keep first occurrence
-    lu = pd.read_csv(LINEUPS_FILE)
-    if "player_id" not in lu.columns or "team_id" not in lu.columns:
-        die(f"{LINEUPS_FILE} must contain 'player_id' and 'team_id'")
+    df["__nnz__"] = df[stat_cols].notna().sum(axis=1)
 
-    map_df = (
-        lu[["player_id", "team_id"]]
-        .dropna(subset=["player_id", "team_id"])
-        .drop_duplicates(subset=["player_id"], keep="first")
-        .copy()
-    )
+    if "player_id" in df.columns and "game_id" in df.columns:
+        # Deduplicate on (player_id, game_id)
+        df = (df
+              .sort_values(["__is_starter__", "__nnz__"], ascending=[False, False])
+              .drop_duplicates(subset=["player_id","game_id"], keep="first")
+              .sort_index())
+    elif "player_id" in df.columns:
+        # Fallback: dedupe on player_id only (still prioritize starters)
+        df = (df
+              .sort_values(["__is_starter__", "__nnz__"], ascending=[False, False])
+              .drop_duplicates(subset=["player_id"], keep="first")
+              .sort_index())
 
-    # Ensure numeric for mapping stability
-    map_df["player_id"] = pd.to_numeric(map_df["player_id"], errors="coerce")
-    map_df["team_id"]   = pd.to_numeric(map_df["team_id"], errors="coerce").astype("Int64")
+    # Remove helper cols
+    df = df.drop(columns=[c for c in ["__is_starter__","__nnz__"] if c in df.columns])
 
-    # Coerce target player_id to numeric for mapping
-    df["player_id"] = pd.to_numeric(df["player_id"], errors="coerce")
+    # Restore column order as best as possible
+    df = reorder_columns(df, original_cols)
 
-    # Overwrite team_id where mapping available; keep existing otherwise
-    new_team = df["player_id"].map(pd.Series(map_df["team_id"].values, index=map_df["player_id"]).to_dict())
-    # new_team is Float/Int; cast to pandas NA-friendly Int64, then combine_first with existing coerced Int64
-    new_team = pd.Series(new_team, index=df.index).astype("Int64")
-    existing = pd.to_numeric(df.get("team_id"), errors="coerce").astype("Int64") if "team_id" in df.columns else pd.Series(pd.NA, index=df.index, dtype="Int64")
-    df["team_id"] = new_team.combine_first(existing).astype("Int64")
+    # Write back
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
 
-    df.to_csv(MEGA_FILE, index=False)
-    print(f"updated {MEGA_FILE}")
+    # Starter coverage summary (just to be explicit)
+    starters_df = pd.DataFrame({"player_id": sorted(list(starter_ids))})
+    starters_df["in_file"] = starters_df["player_id"].isin(set(df.get("player_id","")))
+    miss = starters_df[~starters_df["in_file"]]
+
+    sum_file = SUM_DIR / f"{path.stem}_starter_coverage.csv"
+    starters_df.to_csv(sum_file, index=False)
+
+    miss_file = SUM_DIR / f"{path.stem}_starter_missing.csv"
+    miss.to_csv(miss_file, index=False)
+
+    print(f"✅ cleaned {path} | rows={len(df)} | starters missing here={len(miss)}")
+    if len(miss):
+        # Also print the list inline for the Action logs
+        print("Missing starter ids in this file:", ", ".join(miss["player_id"].tolist()))
 
 def main():
-    clean_props()
-    clean_mega()
+    starter_ids = load_starter_ids()
+    print(f"Starters seen today: {len(starter_ids)}")
+
+    for p in TARGETS:
+        clean_file(p, starter_ids)
 
 if __name__ == "__main__":
     main()
