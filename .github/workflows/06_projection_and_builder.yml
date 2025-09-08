@@ -54,62 +54,30 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ---- PHASE A: prepare schedule/starters + early projections ----
-      - name: Run stage with unified logs (Phase A)
-        id: run_stage_a
+      # --- PRE-FIX: create fixed variants when daily files lack keys/ids ---
+      - name: fix_outputs_generate_fixed_files.py
+        id: gen_fixed
         shell: bash
         run: |
-          set +e
-          mkdir -p summaries/projections
-          STATUS="summaries/projections/status.txt"
-          LOG="summaries/projections/log.txt"
-          ERR="summaries/projections/errors.txt"
-          : >"$STATUS"; : >"$LOG"; : >"$ERR"
-
-          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){
-            local NAME="$1"; shift
-            echo ">> START: ${NAME} ($(ts))" >>"$LOG"
-            "$@" >>"$LOG" 2>step.err
-            rc=$?
-            if [ $rc -eq 0 ]; then
-              echo "[OK] ${NAME} succeeded [$(ts)]" >>"$STATUS"
-            else
-              echo "[FAIL] ${NAME} failed [$(ts)]" >>"$STATUS"
-              {
-                echo "[FAIL] ${NAME} ERROR [$(ts)]:"
-                cat step.err
-                echo; echo '---'; echo
-              } >>"$ERR"
-            fi
-            rm -f step.err
-            echo "[END] ${NAME} ($(ts))" >>"$LOG"
-            echo >>"$LOG"
-          }
-
-          # --- Phase A: ensure schedule pitcher IDs and seed fixed files ---
-          run_step fix_outputs_generate_fixed_files.py python scripts/fix_outputs_generate_fixed_files.py
-          run_step apply_fixed_todaysgames              bash -lc 'cp -f data/_projections/todaysgames_normalized_fixed.csv data/raw/todaysgames_normalized.csv || true'
-          run_step project_prep.py                      python scripts/project_prep.py
-          run_step fix_missing_batter_stats.py          python scripts/fix_missing_batter_stats.py
-          run_step normalize_batters_for_builder.py     python scripts/normalize_batters_for_builder.py
-          run_step project_batter_props.py              python scripts/project_batter_props.py
-          run_step project_pitcher_props.py             python scripts/project_pitcher_props.py
-          run_step build_expanded_batter_props.py       python scripts/build_expanded_batter_props.py
-          run_step pitcher_mega_z.py                    python scripts/pitcher_mega_z.py
-          run_step post_normalize_pitchers.py           python scripts/post_normalize_pitchers.py
-
-      # ---- PHASE B: refresh fixed files AFTER builder, then finalize ----
-      - name: Refresh fixed outputs after builder (Phase B)
-        shell: bash
-        run: |
-          set -e
-          echo ">> Re-running fixer to refresh *_fixed from latest builder outputs"
+          set -euo pipefail
           python scripts/fix_outputs_generate_fixed_files.py
-          echo ">> Fixer re-run complete"
 
-      - name: Run finalize + downstream
-        id: run_stage_b
+      - name: apply_fixed_todaysgames
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f data/_projections/todaysgames_normalized_fixed.csv ]; then
+            cp -f data/_projections/todaysgames_normalized_fixed.csv data/raw/todaysgames_normalized.csv
+          fi
+          # Replace projections with fixed versions if they exist
+          for f in batter_props_projected batter_props_expanded pitcher_props_projected pitcher_mega_z; do
+            if [ -f "data/_projections/${f}_fixed.csv" ]; then
+              cp -f "data/_projections/${f}_fixed.csv" "data/_projections/${f}.csv"
+            fi
+          done
+
+      - name: Run stage with unified logs
+        id: run_stage
         shell: bash
         run: |
           set +e
@@ -117,6 +85,8 @@ jobs:
           STATUS="summaries/projections/status.txt"
           LOG="summaries/projections/log.txt"
           ERR="summaries/projections/errors.txt"
+          SUM="summaries/projections/summary.txt"
+          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
           run_step(){
@@ -131,7 +101,9 @@ jobs:
               {
                 echo "[FAIL] ${NAME} ERROR [$(ts)]:"
                 cat step.err
-                echo; echo '---'; echo
+                echo
+                echo '---'
+                echo
               } >>"$ERR"
             fi
             rm -f step.err
@@ -139,14 +111,24 @@ jobs:
             echo >>"$LOG"
           }
 
-          # Finalize with refreshed fixed files; then all post steps
-          run_step finalize_projections.py                 python scripts/finalize_projections.py
-          run_step clean_inject_team_ids.py               python scripts/clean_inject_team_ids.py
-          run_step inject_game_ids_from_schedule.py       python scripts/inject_game_ids_from_schedule.py
-          run_step inject_batter_woba_adjustments.py      python scripts/inject_batter_woba_adjustments.py
-          run_step clean_pitcher_files.py                 python scripts/clean_pitcher_files.py
-          run_step impute_missing_batter_adj_woba.py      python scripts/impute_missing_batter_adj_woba.py
-          run_step fix_missing_pa_in_pitcher_daily.py     python scripts/fix_missing_pa_in_pitcher_daily.py
+          # --- Projections & Builder pipeline ---
+          run_step fix_outputs_generate_fixed_files.py     python scripts/fix_outputs_generate_fixed_files.py
+          run_step apply_fixed_todaysgames                  bash -lc 'true'
+          run_step project_prep.py                          python scripts/project_prep.py
+          run_step fix_missing_batter_stats.py              python scripts/fix_missing_batter_stats.py
+          run_step normalize_batters_for_builder.py         python scripts/normalize_batters_for_builder.py
+          run_step project_batter_props.py                  python scripts/project_batter_props.py
+          run_step project_pitcher_props.py                 python scripts/project_pitcher_props.py
+          run_step build_expanded_batter_props.py           python scripts/build_expanded_batter_props.py
+          run_step pitcher_mega_z.py                        python scripts/pitcher_mega_z.py
+          run_step post_normalize_pitchers.py               python scripts/post_normalize_pitchers.py
+          run_step finalize_projections.py                  python scripts/finalize_projections.py
+          run_step clean_inject_team_ids.py                 python scripts/clean_inject_team_ids.py
+          run_step inject_game_ids_from_schedule.py         python scripts/inject_game_ids_from_schedule.py
+          run_step inject_batter_woba_adjustments.py        python scripts/inject_batter_woba_adjustments.py
+          run_step clean_pitcher_files.py                   python scripts/clean_pitcher_files.py
+          run_step impute_missing_batter_adj_woba.py        python scripts/impute_missing_batter_adj_woba.py
+          run_step fix_missing_pa_in_pitcher_daily.py       python scripts/fix_missing_pa_in_pitcher_daily.py
 
       - name: Always write & push summary
         if: always()
@@ -204,7 +186,7 @@ jobs:
               echo
               echo "#### Error excerpt"
               awk -v name="$LAST_FAIL_NAME" 'BEGIN{p=0}
-                $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
+                $0 ~ ("\\[FAIL\\] " name " ERROR") {p=1}
                 p{print}
                 /^---$/ && p{exit}' "$ERR" | sed 's/^/> /' | head -n 80
               echo
@@ -217,6 +199,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Fail if errors
         if: always()
@@ -230,7 +213,7 @@ jobs:
             echo
             echo "---- Error excerpt ----"
             awk -v name="$FAILED_STEP" 'BEGIN{p=0}
-              $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
+              $0 ~ ("\\[FAIL\\] " name " ERROR") {p=1}
               p{print}
               /^---$/ && p{exit}' summaries/projections/errors.txt | head -n 80
             echo "-----------------------"
@@ -243,6 +226,6 @@ jobs:
           git add data/_projections/*.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs (refreshed fixed files pre-finalize)"
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (team_ids, game_ids, wOBA adjustments, pitcher cleanup, adj_woba imputation, PA fix)"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
