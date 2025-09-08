@@ -3,54 +3,124 @@ name: 06 Projection and Builder
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 12 * * *"   # runs daily at 12:00 UTC
+    - cron: "15 15 * * *"  # adjust as you like
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  build-projections:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [[ -f requirements.txt ]]; then pip install -r requirements.txt; fi
+
+      - name: Prepare summary dir and log
+        run: |
+          set -euo pipefail
+          mkdir -p summaries/07_final
+          # rotate previous run.log to keep history (optional)
+          if [[ -f summaries/07_final/run.log ]]; then
+            ts="$(date -u +'%Y%m%dT%H%M%SZ')"
+            cp summaries/07_final/run.log "summaries/07_final/run_$ts.log" || true
+          fi
+          : > summaries/07_final/run.log
+          echo "===== RUN TIMESTAMP: $(date -u +'%Y-%m-%d %H:%M:%S %Z') =====" | tee -a summaries/07_final/run.log
 
       - name: Run pipeline
+        id: run_pipeline
         run: |
-          echo "===== RUN TIMESTAMP: $(date) =====" > summaries/run_log.txt
-          echo "" >> summaries/run_log.txt
+          set -euo pipefail
 
-          python scripts/fix_outputs_generate_fixed_files.py        >> summaries/run_log.txt 2>&1 || true
-          python scripts/apply_fixed_todaysgames.py                 >> summaries/run_log.txt 2>&1 || true
-          python scripts/project_prep.py                            >> summaries/run_log.txt 2>&1 || true
-          python scripts/fix_missing_batter_stats.py                >> summaries/run_log.txt 2>&1 || true
-          python scripts/normalize_batters_for_builder.py           >> summaries/run_log.txt 2>&1 || true
-          python scripts/project_batter_props.py                    >> summaries/run_log.txt 2>&1 || true
-          python scripts/project_pitcher_props.py                   >> summaries/run_log.txt 2>&1 || true
-          python scripts/build_expanded_batter_props.py             >> summaries/run_log.txt 2>&1 || true
-          python scripts/pitcher_mega_z.py                          >> summaries/run_log.txt 2>&1 || true
-          python scripts/starter_coverage_guard.py                  >> summaries/run_log.txt 2>&1 || true
-          python scripts/post_normalize_pitchers.py                 >> summaries/run_log.txt 2>&1 || true
-          python scripts/finalize_projections.py                    >> summaries/run_log.txt 2>&1 || true
-          python scripts/clean_inject_team_ids.py                   >> summaries/run_log.txt 2>&1 || true
-          python scripts/inject_game_ids_from_schedule.py           >> summaries/run_log.txt 2>&1 || true
-          python scripts/inject_batter_woba_adjustments.py          >> summaries/run_log.txt 2>&1 || true
-          python scripts/clean_pitcher_files.py                     >> summaries/run_log.txt 2>&1 || true
-          python scripts/impute_missing_batter_adj_woba.py          >> summaries/run_log.txt 2>&1 || true
-          python scripts/fix_missing_pa_in_pitcher_daily.py         >> summaries/run_log.txt 2>&1 || true
+          log="summaries/07_final/run.log"
+          run() {
+            local label="$1"; shift
+            echo "" | tee -a "$log"
+            echo ">> START: $label ($(date -u +'%Y-%m-%d %H:%M:%S %Z'))" | tee -a "$log"
+            # Run the script, pipe output to tee, but preserve original exit code
+            python "$@" 2>&1 | tee -a "$log"
+            ec=${PIPESTATUS[0]}
+            if [[ $ec -ne 0 ]]; then
+              echo "[FAIL] $label ($(date -u +'%Y-%m-%d %H:%M:%S %Z'))" | tee -a "$log"
+              exit $ec
+            else
+              echo "[END] $label ($(date -u +'%Y-%m-%d %H:%M:%S %Z'))" | tee -a "$log"
+            fi
+          }
 
-      - name: Commit and push updates
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add data/_projections/*.csv data/end_chain/final/*.csv summaries/*.txt summaries/**/*.csv || true
-          git commit -m "Auto-update projections and cleaned pitcher files [skip ci]" || echo "No changes to commit"
-          git push
+          echo "===== STATUS =====" | tee -a "$log"
+
+          # 1) Fix/normalize outputs first (writes *_fixed.csv and ensures expected cols)
+          run fix_outputs_generate_fixed.py scripts/fix_outputs_generate_fixed_files.py
+
+          # 2) Apply fixed todaysgames into canonical location
+          run apply_fixed_todaysgames scripts/apply_fixed_todaysgames.py
+
+          # 3) Prep starters/context (writes startingpitchers.csv + startingpitchers_with_opp_context.csv)
+          run project_prep.py scripts/project_prep.py
+
+          # 4) Batter pipeline
+          run fix_missing_batter_stats.py scripts/fix_missing_batter_stats.py
+          run normalize_batters_for_builder.py scripts/normalize_batters_for_builder.py
+          run project_batter_props.py scripts/project_batter_props.py
+          run build_expanded_batter_props.py scripts/build_expanded_batter_props.py
+
+          # 5) Pitcher projections + mega_z + guard + cleanup
+          run project_pitcher_props.py scripts/project_pitcher_props.py
+          run pitcher_mega_z.py scripts/pitcher_mega_z.py
+          # Guard that every starter exists in mega_z; writes CSVs to summaries/07_final/
+          run starter_coverage_guard.py scripts/starter_coverage_guard.py
+
+          # 6) Sanity post-normalization on pitcher files
+          run post_normalize_pitchers.py scripts/post_normalize_pitchers.py
+
+          # 7) Finalize projections (writes *_final.csv to data/_projections and data/end_chain/final)
+          run finalize_projections.py scripts/finalize_projections.py
+
+          # 8) IDs and schedule injectors (mutate *_final.csv in-place)
+          run clean_inject_team_ids.py scripts/clean_inject_team_ids.py
+          run inject_game_ids_from_schedule.py scripts/inject_game_ids_from_schedule.py
+
+          # 9) Batter wOBA adjustments (park/weather) + imputations
+          run inject_batter_woba_adjustments.py scripts/inject_batter_woba_adjustments.py
+          run clean_pitcher_files.py scripts/clean_pitcher_files.py
+          run impute_missing_batter_adj_woba.py scripts/impute_missing_batter_adj_woba.py
+
+          # 10) Final touch-ups
+          run fix_missing_pa_in_pitcher_daily.py scripts/fix_missing_pa_in_pitcher_daily.py
+
+          echo "" | tee -a "$log"
+          echo "===== DONE: $(date -u +'%Y-%m-%d %H:%M:%S %Z') =====" | tee -a "$log"
+
+      - name: Upload 07_final summaries (CSVs + log)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: summaries_07_final
+          path: |
+            summaries/07_final/**
+          if-no-files-found: warn
+
+      - name: Upload projections bundle (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: projections_bundle
+          path: |
+            data/_projections/**
+            data/end_chain/final/**
+          if-no-files-found: warn
