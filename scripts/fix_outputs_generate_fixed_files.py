@@ -27,8 +27,13 @@ def clean_headers(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty: return df
     return df.rename(columns=lambda c: str(c).strip())
 
+def num(df, cols):
+    for c in cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
 # ---------- Load inputs ----------
-pp   = clean_headers(read_csv(PITCHER_PROPS_IN))      # pitcher projections (may be incomplete)
+pp   = clean_headers(read_csv(PITCHER_PROPS_IN))      # pitcher projections (may include context)
 pm   = clean_headers(read_csv(PITCHER_MEGA_IN))
 bp   = clean_headers(read_csv(BATTER_PROJ_IN))        # batter projected (may NOT have game_id)
 be   = clean_headers(read_csv(BATTER_EXP_IN))         # batter expanded (may NOT have game_id)
@@ -63,45 +68,60 @@ for c in ["player_id","team_id","opponent_team_id","game_id"]:
     starters[c] = to_int64(starters[c])
 starters["park_factor"] = pd.to_numeric(starters["park_factor"], errors="coerce")
 
-# Optional park context
+# Optional park context (if provided)
 ctx_cols = ["team_id","city","state","timezone","is_dome"]
 if not stad.empty and all(c in stad.columns for c in ctx_cols):
     stad_ctx = stad[ctx_cols].copy()
     stad_ctx["team_id"] = to_int64(stad_ctx["team_id"])
     starters = starters.merge(stad_ctx, on="team_id", how="left")
 else:
-    starters["city"] = pd.NA
-    starters["state"] = pd.NA
+    starters["city"]     = pd.NA
+    starters["state"]    = pd.NA
     starters["timezone"] = pd.NA
-    starters["is_dome"] = pd.NA
+    starters["is_dome"]  = pd.NA
 
 # ---------- Normalize pitcher projections (pp) ----------
+# Keep only stat fields from pp (NO context), as requested.
+# Whitelist what we’re willing to merge from pp:
+pp_stat_whitelist = [
+    "player_id",
+    "adj_woba_weather", "adj_woba_park", "adj_woba_combined",
+    "proj_hits", "proj_hr", "proj_avg", "proj_slg",
+    "k_percent_eff", "bb_percent_eff",
+    "innings_pitched", "pa", "ab"
+]
 if not pp.empty:
     if "player_id" not in pp.columns:
         raise ValueError("pitcher_props_projected.csv is missing 'player_id'")
+    # Cast types
     pp["player_id"] = to_int64(pp["player_id"])
-    for c in [
-        "adj_woba_weather","adj_woba_park","adj_woba_combined",
-        "proj_hits","proj_hr","proj_avg","proj_slg",
-        "k_percent_eff","bb_percent_eff","pa","ab","innings_pitched"
-    ]:
-        if c in pp.columns:
-            pp[c] = pd.to_numeric(pp[c], errors="coerce")
+    num(pp, ["adj_woba_weather","adj_woba_park","adj_woba_combined",
+             "proj_hits","proj_hr","proj_avg","proj_slg",
+             "k_percent_eff","bb_percent_eff","innings_pitched","pa","ab"])
+    # Select intersection of whitelist and actual columns
+    keep_cols = [c for c in pp_stat_whitelist if c in pp.columns]
+    pp_stats = pp[keep_cols].copy()
 else:
-    pp = pd.DataFrame(columns=[
-        "player_id","proj_hits","proj_hr","proj_avg","proj_slg","k_percent_eff","bb_percent_eff",
-        "adj_woba_weather","adj_woba_park","adj_woba_combined","pa","ab","innings_pitched"
-    ])
+    pp_stats = pd.DataFrame(columns=pp_stat_whitelist)
 
-# ---------- Left-join projections onto starters (keep ALL starters) ----------
-pp_ctx = starters.merge(pp, on="player_id", how="left", suffixes=("", "_pp"))
+# --- CRITICAL COLLISION GUARD ---
+# If this script re-runs in the same workspace, ensure no leftover *_pp cols remain.
+starters = starters.drop(columns=starters.filter(regex=r'_pp$').columns, errors='ignore')
+
+# ---------- Left-join stats from pp onto starters (keep ALL starters) ----------
+pp_ctx = starters.merge(pp_stats, on="player_id", how="left", suffixes=("", "_pp"))
+
+# Order common fields (others, if any, stay at the end)
 ordered = [
-    "player_id","proj_hits","proj_hr","proj_avg","proj_slg","k_percent_eff","bb_percent_eff",
+    "player_id",
+    "proj_hits","proj_hr","proj_avg","proj_slg","k_percent_eff","bb_percent_eff",
     "adj_woba_weather","adj_woba_park","adj_woba_combined",
     "role","team_id","opponent_team_id","park_factor","city","state","timezone","is_dome",
     "game_id","pa","ab","innings_pitched"
 ]
-pp_ctx = pp_ctx[[c for c in ordered if c in pp_ctx.columns] + [c for c in pp_ctx.columns if c not in ordered]]
+pp_ctx = pp_ctx[[c for c in ordered if c in pp_ctx.columns] +
+                [c for c in pp_ctx.columns if c not in ordered]]
+
 pp_ctx.to_csv(PITCHER_PROPS_OUT, index=False)
 
 # ---------- Map starters onto mega-z for convenience ----------
@@ -110,7 +130,8 @@ if not pm.empty:
         raise ValueError("pitcher_mega_z.csv is missing 'player_id'")
     pm = pm.copy()
     pm["player_id"] = to_int64(pm["player_id"])
-    attach = starters[["player_id","game_id","role","team_id","opponent_team_id","park_factor","city","state","timezone","is_dome"]].drop_duplicates("player_id")
+    attach = starters[["player_id","game_id","role","team_id","opponent_team_id",
+                       "park_factor","city","state","timezone","is_dome"]].drop_duplicates("player_id")
     pm_ctx = pm.merge(attach, on="player_id", how="left")
 else:
     pm_ctx = pm
@@ -143,7 +164,7 @@ if not be.empty:
     to_add = [c for c in pa_used_cols if c not in be_out.columns]
 
     if to_add:
-        # Decide join keys based on availability
+        # Join by (player_id, game_id) only if BOTH files have game_id; else fall back to player_id.
         if ("game_id" in bp_out.columns) and ("game_id" in be_out.columns):
             add_df = bp_out[["player_id","game_id"] + to_add].copy()
             add_df["player_id"] = to_int64(add_df["player_id"])
