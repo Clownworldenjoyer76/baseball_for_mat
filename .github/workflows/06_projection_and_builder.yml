@@ -1,193 +1,223 @@
-name: projections_builder
+name: 06 Projections & Builder
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'scripts/**'
-      - 'data/**'
-      - '.github/workflows/06_projection_and_builder.yml'
-  schedule:
-    - cron: '15 10 * * *'  # optional: daily @ 10:15 UTC; adjust or remove
 
-env:
-  PYTHONUNBUFFERED: '1'
-  PIP_DISABLE_PIP_VERSION_CHECK: '1'
-  FORCE_COLOR: '1'
+permissions:
+  contents: write
+
+concurrency:
+  group: 06-projections-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  projections_builder:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    env:
+      TZ: America/New_York
 
     steps:
+      - name: Banner
+        run: |
+          echo "06 START $(TZ=America/New_York date)"
+          echo "event_name=${{ github.event_name }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
+
       - name: Checkout main
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
+          persist-credentials: true
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-${{ runner.os }}-3.10-${{ hashFiles('requirements*.txt') }}
-          restore-keys: |
-            pip-${{ runner.os }}-3.10-
+          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-py-
 
-      - name: Install dependencies
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install deps
         run: |
-          set -euo pipefail
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Run projection pipeline
-        id: run_pipeline
+      - name: Run stage with unified logs
+        id: run_stage
+        shell: bash
         run: |
-          set -euo pipefail
+          set +e
+          mkdir -p summaries/projections
+          STATUS="summaries/projections/status.txt"
+          LOG="summaries/projections/log.txt"
+          ERR="summaries/projections/errors.txt"
+          SUM="summaries/projections/summary.txt"
+          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
-          # --- paths
-          SUMMARY_DIR="summaries/projections"
-          SUMMARY_TXT="${SUMMARY_DIR}/status.txt"
-          SUMMARY_LOG="${SUMMARY_DIR}/summary.txt"
-          mkdir -p "${SUMMARY_DIR}"
-
-          # fresh status/log each run
-          : > "${SUMMARY_TXT}"
-          : > "${SUMMARY_LOG}"
-
-          # nice timestamp header
-          TS="$(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-          echo "===== RUN TIMESTAMP: ${TS} ====="         | tee -a "${SUMMARY_LOG}"
-          echo ""                                      | tee -a "${SUMMARY_LOG}"
-          echo "===== STATUS ====="                    | tee -a "${SUMMARY_LOG}"
-
-          run_step () {
-            local title="$1"
-            shift
-            local cmd="$*"
-
-            local start_local="$(date '+%Y-%m-%d %I:%M:%S %p %Z')"
-            echo ""                                   | tee -a "${SUMMARY_LOG}"
-            echo ">> START: ${title} (${start_local})" | tee -a "${SUMMARY_LOG}"
-
-            if eval ${cmd}; then
-              echo "[OK] ${title} succeeded [${start_local}]"  | tee -a "${SUMMARY_LOG}"
-              echo "[OK] ${title}" >> "${SUMMARY_TXT}"
+          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
+          run_step(){
+            local NAME="$1"; shift
+            echo ">> START: ${NAME} ($(ts))" >>"$LOG"
+            "$@" >>"$LOG" 2>step.err
+            rc=$?
+            if [ $rc -eq 0 ]; then
+              echo "[OK] ${NAME} succeeded [$(ts)]" >>"$STATUS"
             else
-              echo "[FAIL] ${title} failed [${start_local}]"   | tee -a "${SUMMARY_LOG}"
-              echo "[FAIL] ${title}" >> "${SUMMARY_TXT}"
-              return 1
+              echo "[FAIL] ${NAME} failed [$(ts)]" >>"$STATUS"
+              {
+                echo "[FAIL] ${NAME} ERROR [$(ts)]:"
+                cat step.err
+                echo
+                echo '---'
+                echo
+              } >>"$ERR"
             fi
+            rm -f step.err
+            echo "[END] ${NAME} ($(ts))" >>"$LOG"
+            echo >>"$LOG"
           }
 
-          # -------- execution order (each step exits early but status persists)
-          FAILED=0
+          # Optional pre-fix / normalization (kept if you’re using them)
+          run_step fix_outputs_generate_fixed_files.py   python scripts/fix_outputs_generate_fixed_files.py
+          run_step apply_fixed_todaysgames               python - <<'PY'
+          import shutil, pathlib
+          src = pathlib.Path("data/_projections/todaysgames_normalized_fixed.csv")
+          dst = pathlib.Path("data/_projections/todaysgames_normalized.csv")
+          if src.exists():
+              shutil.copyfile(src, dst)
+          PY
 
-          # 1) generate "fixed" versions used by finalizer
-          run_step "fix_outputs_generate_fixed_files.py" \
-            "python scripts/fix_outputs_generate_fixed_files.py" || FAILED=1
+          # --- Core pipeline ---
+          run_step project_prep.py                        python scripts/project_prep.py
+          run_step fix_missing_batter_stats.py            python scripts/fix_missing_batter_stats.py
+          run_step normalize_batters_for_builder.py       python scripts/normalize_batters_for_builder.py
+          run_step project_batter_props.py                python scripts/project_batter_props.py
+          run_step project_pitcher_props.py               python scripts/project_pitcher_props.py
+          run_step build_expanded_batter_props.py         python scripts/build_expanded_batter_props.py
+          run_step pitcher_mega_z.py                      python scripts/pitcher_mega_z.py
 
-          # 2) apply fixed todaysgames (no-op if not needed)
-          run_step "apply_fixed_todaysgames" \
-            "bash scripts/apply_fixed_todaysgames" || FAILED=1
+          # Guard: every expected starter must exist in mega_z (match by player_id)
+          run_step starter_coverage_guard.py              python scripts/starter_coverage_guard.py
 
-          # 3) prep starters with opp context
-          run_step "project_prep.py" \
-            "python scripts/project_prep.py" || FAILED=1
+          run_step post_normalize_pitchers.py             python scripts/post_normalize_pitchers.py
+          run_step finalize_projections.py                python scripts/finalize_projections.py
+          run_step clean_inject_team_ids.py               python scripts/clean_inject_team_ids.py
+          run_step inject_game_ids_from_schedule.py       python scripts/inject_game_ids_from_schedule.py
+          run_step inject_batter_woba_adjustments.py      python scripts/inject_batter_woba_adjustments.py
+          run_step clean_pitcher_files.py                 python scripts/clean_pitcher_files.py
+          run_step impute_missing_batter_adj_woba.py      python scripts/impute_missing_batter_adj_woba.py
+          run_step fix_missing_pa_in_pitcher_daily.py     python scripts/fix_missing_pa_in_pitcher_daily.py
 
-          # 4) batter fixes/normalize/project
-          run_step "fix_missing_batter_stats.py" \
-            "python scripts/fix_missing_batter_stats.py" || FAILED=1
+      - name: Always write & push summary
+        if: always()
+        run: |
+          mkdir -p summaries/06_projection
+          {
+            echo "===== RUN TIMESTAMP: $(TZ=America/New_York date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
+            echo
+            echo "===== STATUS =====";  cat summaries/projections/status.txt || true
+            echo; echo "===== LOG =====";   cat summaries/projections/log.txt || true
+            echo; echo "===== ERRORS =====";cat summaries/projections/errors.txt || true
+          } > summaries/06_projection/summary.txt
 
-          run_step "normalize_batters_for_builder.py" \
-            "python scripts/normalize_batters_for_builder.py" || FAILED=1
-
-          run_step "project_batter_props.py" \
-            "python scripts/project_batter_props.py" || FAILED=1
-
-          # 5) pitcher props + mega-z
-          run_step "project_pitcher_props.py" \
-            "python scripts/project_pitcher_props.py" || FAILED=1
-
-          run_step "build_expanded_batter_props.py" \
-            "python scripts/build_expanded_batter_props.py" || FAILED=1
-
-          run_step "pitcher_mega_z.py" \
-            "python scripts/pitcher_mega_z.py" || FAILED=1
-
-          # 5.1) strict player_id coverage guard for starters vs mega_z
-          run_step "starter_coverage_guard.py" \
-            "python scripts/starter_coverage_guard.py" || FAILED=1
-
-          # 6) cleanup/normalize post
-          run_step "post_normalize_pitchers.py" \
-            "python scripts/post_normalize_pitchers.py" || FAILED=1
-
-          # 7) finalize final CSVs (batter & pitcher + mega_z finals)
-          run_step "finalize_projections.py" \
-            "python scripts/finalize_projections.py" || FAILED=1
-
-          # 8) inject/adjust
-          run_step "clean_inject_team_ids.py" \
-            "python scripts/clean_inject_team_ids.py" || FAILED=1
-
-          run_step "inject_game_ids_from_schedule.py" \
-            "python scripts/inject_game_ids_from_schedule.py" || FAILED=1
-
-          run_step "inject_batter_woba_adjustments.py" \
-            "python scripts/inject_batter_woba_adjustments.py" || FAILED=1
-
-          run_step "clean_pitcher_files.py" \
-            "python scripts/clean_pitcher_files.py" || FAILED=1
-
-          run_step "impute_missing_batter_adj_woba.py" \
-            "python scripts/impute_missing_batter_adj_woba.py" || FAILED=1
-
-          run_step "fix_missing_pa_in_pitcher_daily.py" \
-            "python scripts/fix_missing_pa_in_pitcher_daily.py" || FAILED=1
-
-          echo ""                                   | tee -a "${SUMMARY_LOG}"
-          echo "===== ERRORS ====="                 | tee -a "${SUMMARY_LOG}"
-          if grep -qE '^\[FAIL\]' "${SUMMARY_TXT}"; then
-            echo "One or more steps failed. See above." | tee -a "${SUMMARY_LOG}"
-            echo "failed=true" >> $GITHUB_OUTPUT
-          else
-            echo "None" | tee -a "${SUMMARY_LOG}"
-            echo "failed=false" >> $GITHUB_OUTPUT
-          fi
+          git add summaries/06_projection/summary.txt || true
+          git diff --cached --quiet || git commit -m "06 projection summary"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
 
       - name: Upload summaries as artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: projections_summaries
+          name: 06-projection-summaries
           path: |
-            summaries/**
-            data/end_chain/final/**
-            data/_projections/**
-          if-no-files-found: warn
+            summaries/06_projection/summary.txt
+            summaries/projections/status.txt
+            summaries/projections/log.txt
+            summaries/projections/errors.txt
+            summaries/projections/mega_z_starter_coverage.csv
+            summaries/projections/mega_z_starter_missing.csv
+            summaries/projections/mega_z_build_log.txt
+          if-no-files-found: ignore
           retention-days: 7
 
-      - name: Fail if errors
-        if: steps.run_pipeline.outputs.failed == 'true'
+      - name: Parse failures and annotate
+        if: always()
+        shell: bash
         run: |
-          cat summaries/projections/summary.txt || true
-          echo "Error: One or more steps failed." >&2
-          exit 1
+          set +e
+          STATUS="summaries/projections/status.txt"
+          ERR="summaries/projections/errors.txt"
+          LOG="summaries/projections/log.txt"
+          OK_COUNT=$(grep -cE '^\[OK\]' "$STATUS" 2>/dev/null || echo 0)
+          FAIL_COUNT=$(grep -cE '^\[FAIL\]' "$STATUS" 2>/dev/null || echo 0)
+          {
+            echo "## 06 Projections & Builder — Run Summary"
+            echo
+            echo "| OK | FAIL |"
+            echo "|---:|----:|"
+            echo "| $OK_COUNT | $FAIL_COUNT |"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$FAIL_COUNT" -gt 0 ]; then
+            LAST_FAIL_NAME=$(grep -E '^\[FAIL\]' "$STATUS" | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
+            {
+              echo "### Last failing step"
+              echo "\`$LAST_FAIL_NAME\`"
+              echo
+              echo "#### Error excerpt"
+              awk -v name="$LAST_FAIL_NAME" 'BEGIN{p=0}
+                $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
+                p{print}
+                /^---$/ && p{exit}' "$ERR" | sed 's/^/> /' | head -n 80
+              echo
+              echo "#### Tail of unified log"
+              echo '```text'
+              tail -n 120 "$LOG" || true
+              echo '```'
+              echo
+              echo "**Files:** \`summaries/06_projection/summary.txt\` • \`summaries/projections/{status,log,errors}.txt\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if errors
+        if: always()
+        shell: bash
+        run: |
+          if grep -qE '^\[FAIL\]' summaries/projections/status.txt 2>/dev/null; then
+            FAILED_STEP=$(grep -E '^\[FAIL\]' summaries/projections/status.txt | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
+            echo "❌ One or more steps failed."
+            echo "Last failing step: $FAILED_STEP"
+            echo "See: summaries/06_projection/summary.txt"
+            echo
+            echo "---- Error excerpt ----"
+            awk -v name="$FAILED_STEP" 'BEGIN{p=0}
+              $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
+              p{print}
+              /^---$/ && p{exit}' summaries/projections/errors.txt | head -n 80
+            echo "-----------------------"
+            exit 1
+          fi
 
       - name: Commit stage outputs
         if: always()
         run: |
-          set -euo pipefail
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "CI: stage outputs ($(date -u '+%Y-%m-%d %H:%M:%S UTC'))"
-            git push
-          fi
+          git add data/_projections/*.csv || true
+          git add data/raw/todaysgames_normalized.csv || true
+          git add summaries/projections/* || true
+          git diff --cached --quiet || git commit -m "06 projections & builder outputs (starter coverage guard, artifacts)"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
