@@ -1,145 +1,151 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+pitcher_mega_z.py
+
+Goal:
+- Build pitcher_mega_z strictly keyed on player_id.
+- Guarantee all starters from todaysgames_normalized_fixed.csv appear (by player_id) in the output.
+- Do NOT backfill stats. If a starter isn't present upstream, append a skeletal row with only player_id.
+- Emit diagnostics so coverage issues are visible but non-fatal.
+
+Inputs:
+- data/cleaned/pitchers_normalized_cleaned.csv   (primary mega source; must have player_id)
+- data/_projections/todaysgames_normalized_fixed.csv (for today's starter player_ids)
+
+Output:
+- data/_projections/pitcher_mega_z.csv
+- summaries/projections/mega_z_starter_coverage.csv
+- summaries/projections/mega_z_starter_missing.csv  (may be empty if all covered)
+- summaries/projections/mega_z_build_log.txt
+"""
+
+from pathlib import Path
 import pandas as pd
 import numpy as np
-from pathlib import Path
-from scipy.stats import zscore
-import math
 
-# Prefer cleaned; fall back to final; last resort to old tagged file
-CANDIDATES = [
-    Path("data/cleaned/pitchers_normalized_cleaned.csv"),
-    Path("data/end_chain/final/startingpitchers_final.csv"),
-    Path("data/tagged/pitchers_normalized.csv"),
-]
-OUTPUT_FILE = Path("data/_projections/pitcher_mega_z.csv")
+# Paths
+ROOT = Path(".")
+IN_MEGA = ROOT / "data" / "cleaned" / "pitchers_normalized_cleaned.csv"
+IN_TODAY = ROOT / "data" / "_projections" / "todaysgames_normalized_fixed.csv"
+OUT_MEGA = ROOT / "data" / "_projections" / "pitcher_mega_z.csv"
 
-def ip_to_float(v):
-    try:
-        s = str(v).strip()
-        if s == "" or s.lower() == "nan": return np.nan
-        if "." not in s: return float(s)
-        whole, frac = s.split(".", 1)
-        whole = int(whole); frac_i = int(frac) if frac.isdigit() else None
-        if frac_i == 1: add = 1/3
-        elif frac_i == 2: add = 2/3
-        elif frac_i == 0: add = 0.0
-        else: return float(v)
-        return whole + add
-    except Exception:
-        try: return float(v)
-        except Exception: return np.nan
+SUM_DIR = ROOT / "summaries" / "projections"
+SUM_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = SUM_DIR / "mega_z_build_log.txt"
+COVER_FILE = SUM_DIR / "mega_z_starter_coverage.csv"
+MISS_FILE = SUM_DIR / "mega_z_starter_missing.csv"
 
-def poisson_p_ge(k, lam):
-    lam = float(lam) if lam is not None else 0.0
-    if lam <= 0: return 0.0 if k > 0 else 1.0
-    if k == 1: return 1.0 - math.exp(-lam)
-    if k == 2: return 1.0 - math.exp(-lam) * (1.0 + lam)
-    term = math.exp(-lam); cdf = term; n = 0
-    while n < (k - 1) and term > 1e-12 and n < 200:
-        n += 1; term *= lam / n; cdf += term
-    return max(0.0, 1.0 - cdf)
+# Helper IO
+def wlog(msg: str):
+    print(msg, flush=True)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(msg + "\n")
 
-def clamp(x, lo, hi):
-    try: return max(lo, min(hi, float(x)))
-    except Exception: return lo
+def require_cols(df: pd.DataFrame, cols, name: str):
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"{name} missing columns: {missing}")
 
-# ----- load first existing -----
-src = None
-for p in CANDIDATES:
-    if p.exists():
-        src = p
-        break
-if src is None:
-    raise SystemExit("❌ No pitcher source found in expected locations.")
+def to_num(series: pd.Series):
+    return pd.to_numeric(series, errors="coerce")
 
-df = pd.read_csv(src)
-df.columns = [c.strip() for c in df.columns]
+def main():
+    # fresh log
+    LOG_FILE.write_text("", encoding="utf-8")
+    wlog("=== pitcher_mega_z.py START ===")
 
-# Identify id/name/team
-pid_col = "player_id" if "player_id" in df.columns else None
-if pid_col is None:
-    raise SystemExit(f"❌ Missing player_id in {src}")
+    # ---------- Load inputs ----------
+    if not IN_MEGA.exists():
+        raise FileNotFoundError(f"Missing mega source: {IN_MEGA}")
+    if not IN_TODAY.exists():
+        raise FileNotFoundError(f"Missing todaysgames file: {IN_TODAY}")
 
-name_col = "last_name, first_name" if "last_name, first_name" in df.columns else ("name" if "name" in df.columns else None)
-if name_col is None:
-    name_col = pid_col  # fallback to id as name
+    mega = pd.read_csv(IN_MEGA)
+    require_cols(mega, ["player_id"], str(IN_MEGA))
 
-team_col = "team" if "team" in df.columns else None
+    today = pd.read_csv(IN_TODAY)
+    # today must provide starter ids
+    require_cols(
+        today,
+        ["pitcher_home_id", "pitcher_away_id", "game_id"],
+        str(IN_TODAY),
+    )
 
-# Find innings & counting stats with aliases
-ip_col = next((c for c in ["p_formatted_ip","innings_pitched","ip"] if c in df.columns), None)
-k_col  = next((c for c in ["strikeout","strikeouts","k","K"] if c in df.columns), None)
-bb_col = next((c for c in ["walk","walks","bb","BB"] if c in df.columns), None)
-apps_col = next((c for c in ["p_game","games","g","appearances"] if c in df.columns), None)
+    # ---------- Normalize dtypes (strictly numeric player_id) ----------
+    mega["player_id"] = to_num(mega["player_id"]).astype("Int64")
+    # Drop rows without player_id
+    before = len(mega)
+    mega = mega.dropna(subset=["player_id"]).copy()
+    after = len(mega)
+    if after < before:
+        wlog(f"Pruned {before - after} rows in mega with null player_id.")
 
-required = [pid_col, ip_col, k_col, bb_col, apps_col]
-miss = [c for c in required if c is None]
-if miss:
-    raise SystemExit(f"❌ Missing required columns in {src}: {miss}")
+    # Deduplicate on player_id (keep first occurrence)
+    mega = mega.sort_index().drop_duplicates(subset=["player_id"], keep="first").copy()
 
-# Core conversions
-df["player_id"] = df[pid_col].astype(str).str.strip()
-if team_col: df["team"] = df[team_col].astype(str).str.strip()
-df["name"] = df[name_col].astype(str)
+    # Collect today starters
+    pid_cols = ["pitcher_home_id", "pitcher_away_id"]
+    for c in pid_cols:
+        today[c] = to_num(today[c]).astype("Int64")
 
-# innings: accept baseball-style and decimal
-if ip_col == "p_formatted_ip":
-    ip = df[ip_col].apply(ip_to_float)
-else:
-    ip = pd.to_numeric(df[ip_col], errors="coerce")
+    starters = pd.unique(
+        pd.concat([today["pitcher_home_id"], today["pitcher_away_id"]], ignore_index=True)
+    )
+    starters = pd.Series(starters, name="player_id").dropna().astype("Int64")
+    starters = starters[starters.notna()]  # safety
+    starters = starters.unique()
 
-apps = pd.to_numeric(df[apps_col], errors="coerce")
-K_season = pd.to_numeric(df[k_col], errors="coerce")
-BB_season = pd.to_numeric(df[bb_col], errors="coerce")
+    wlog(f"Loaded mega rows: {len(mega)}")
+    wlog(f"Unique starter ids today: {len(starters)}")
 
-df["ip_season"] = ip
-df["apps"] = apps
-df["ip_per_app"] = (df["ip_season"] / df["apps"]).replace([np.inf, -np.inf], np.nan).clip(0.2, 7.2)
-df["ip_proj"] = df["ip_per_app"].fillna(5.5).clip(0.2, 7.2)
+    # ---------- Coverage check (by player_id only) ----------
+    mega_ids = set(mega["player_id"].dropna().astype(int).tolist())
+    missing_ids = [int(x) for x in starters if int(x) not in mega_ids]
 
-df["K_per_ip"]  = (K_season / df["ip_season"]).replace([np.inf, -np.inf], np.nan)
-df["BB_per_ip"] = (BB_season / df["ip_season"]).replace([np.inf, -np.inf], np.nan)
-df["K_per_ip"]  = df["K_per_ip"].fillna(df["K_per_ip"].median()).fillna(1.0)
-df["BB_per_ip"] = df["BB_per_ip"].fillna(df["BB_per_ip"].median()).fillna(0.35)
+    # Write coverage summary
+    cov = pd.DataFrame({
+        "metric": ["mega_rows", "starters_today", "starters_in_mega", "starters_missing"],
+        "value": [len(mega), len(starters), len(starters) - len(missing_ids), len(missing_ids)],
+    })
+    cov.to_csv(COVER_FILE, index=False)
 
-df["K_proj"]  = (df["ip_proj"] * df["K_per_ip"]).clip(0.0, 15.0)
-df["BB_proj"] = (df["ip_proj"] * df["BB_per_ip"]).clip(0.0, 8.0)
+    if missing_ids:
+        pd.DataFrame({"player_id": missing_ids}).to_csv(MISS_FILE, index=False)
+        wlog(f"Starter coverage: {len(missing_ids)} missing from mega source. See {MISS_FILE.name}")
+    else:
+        # ensure an empty file exists for parity
+        pd.DataFrame(columns=["player_id"]).to_csv(MISS_FILE, index=False)
+        wlog("Starter coverage: all starters present in mega source.")
 
-df["strikeouts_z"] = zscore(df["K_per_ip"].fillna(df["K_per_ip"].median()), nan_policy="omit")
-df["walks_z"]      = -zscore(df["BB_per_ip"].fillna(df["BB_per_ip"].median()), nan_policy="omit")
-df["mega_z"]       = df[["strikeouts_z","walks_z"]].mean(axis=1)
+    # ---------- Enforce coverage without backfilling stats ----------
+    # If a starter is missing, append a skeletal row with only player_id (other cols NaN).
+    if missing_ids:
+        # Determine all columns mega currently has
+        cols = list(mega.columns)
+        # Build empty rows for each missing starter
+        add = pd.DataFrame({c: [pd.NA] * len(missing_ids) for c in cols})
+        add["player_id"] = pd.Series(missing_ids, dtype="Int64")
+        wlog(f"Appending {len(add)} skeletal starter row(s) (player_id only). No stats imputed.")
 
-rows = []
-for _, r in df.iterrows():
-    pid = r["player_id"]; nm = str(r["name"]); tm = str(r["team"]) if team_col else ""
-    k_lambda  = float(r["K_proj"]) if pd.notna(r["K_proj"]) else 0.0
-    bb_lambda = float(r["BB_proj"]) if pd.notna(r["BB_proj"]) else 0.0
+        mega = pd.concat([mega, add], ignore_index=True)
+        # Re-deduplicate just in case
+        mega = mega.drop_duplicates(subset=["player_id"], keep="first").reset_index(drop=True)
 
-    for line in [4.5, 5.5, 6.5]:
-        k = int(math.ceil(line))
-        over_p = poisson_p_ge(k, k_lambda)
-        rows.append({
-            "player_id": pid, "name": nm, "team": tm,
-            "prop_type": "strikeouts", "line": line,
-            "value": round(k_lambda, 3),
-            "z_score": round(float(r["strikeouts_z"]) if pd.notna(r["strikeouts_z"]) else 0.0, 4),
-            "mega_z": round(float(r["mega_z"]) if pd.notna(r["mega_z"]) else 0.0, 4),
-            "over_probability": round(clamp(over_p, 0.02, 0.98), 4),
-        })
+    # ---------- Final sanity: still no null player_id ----------
+    if mega["player_id"].isna().any():
+        bad = mega.loc[mega["player_id"].isna()]
+        tmp = SUM_DIR / "mega_z_null_player_id_rows.csv"
+        bad.to_csv(tmp, index=False)
+        raise RuntimeError(f"Null player_id detected in output; see {tmp}")
 
-    for line in [1.5, 2.5]:
-        k = int(math.ceil(line))
-        over_p = poisson_p_ge(k, bb_lambda)
-        rows.append({
-            "player_id": pid, "name": nm, "team": tm,
-            "prop_type": "walks", "line": line,
-            "value": round(bb_lambda, 3),
-            "z_score": round(float(r["walks_z"]) if pd.notna(r["walks_z"]) else 0.0, 4),
-            "mega_z": round(float(r["mega_z"]) if pd.notna(r["mega_z"]) else 0.0, 4),
-            "over_probability": round(clamp(over_p, 0.02, 0.98), 4),
-        })
+    # ---------- Write output ----------
+    OUT_MEGA.parent.mkdir(parents=True, exist_ok=True)
+    mega.to_csv(OUT_MEGA, index=False)
+    wlog(f"Wrote mega_z: {len(mega)} rows -> {OUT_MEGA}")
 
-out_df = pd.DataFrame(rows)
-OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-out_df.to_csv(OUTPUT_FILE, index=False)
-print(f"✅ Wrote: {OUTPUT_FILE}  (rows={len(out_df)})  source={src}")
+    wlog("=== pitcher_mega_z.py DONE ===")
+
+if __name__ == "__main__":
+    main()
