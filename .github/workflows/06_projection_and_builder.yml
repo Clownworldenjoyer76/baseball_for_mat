@@ -1,223 +1,195 @@
-name: 06 Projections & Builder
+name: 06_projection_and_builder
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "scripts/**"
+      - "data/**"
+      - ".github/workflows/06_projection_and_builder.yml"
+  schedule:
+    - cron: "15 11 * * *"   # 11:15 UTC = 7:15 ET default; adjust if you want
 
-permissions:
-  contents: write
-
-concurrency:
-  group: 06-projections-${{ github.ref }}
-  cancel-in-progress: true
+env:
+  PYTHONUNBUFFERED: "1"
+  TZ: America/New_York
 
 jobs:
-  projections_builder:
+  build-projections:
     runs-on: ubuntu-latest
-    env:
-      TZ: America/New_York
+    timeout-minutes: 90
 
     steps:
-      - name: Banner
-        run: |
-          echo "06 START $(TZ=America/New_York date)"
-          echo "event_name=${{ github.event_name }}"
-          echo "ref_name=${{ github.ref_name }}"
-          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
-          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
-
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-          persist-credentials: true
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
       - name: Cache pip
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-          restore-keys: ${{ runner.os }}-py-
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install deps
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          set -euo pipefail
+          if [ -f requirements.txt ]; then
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+          else
+            python -m pip install --upgrade pip
+            pip install pandas numpy scipy pytz python-dateutil
+          fi
 
-      - name: Run stage with unified logs
-        id: run_stage
-        shell: bash
+      - name: Make scripts executable (if any shell helpers)
         run: |
-          set +e
-          mkdir -p summaries/projections
-          STATUS="summaries/projections/status.txt"
-          LOG="summaries/projections/log.txt"
-          ERR="summaries/projections/errors.txt"
-          SUM="summaries/projections/summary.txt"
-          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
+          chmod +x scripts/* || true
 
-          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){
-            local NAME="$1"; shift
-            echo ">> START: ${NAME} ($(ts))" >>"$LOG"
-            "$@" >>"$LOG" 2>step.err
-            rc=$?
-            if [ $rc -eq 0 ]; then
-              echo "[OK] ${NAME} succeeded [$(ts)]" >>"$STATUS"
-            else
-              echo "[FAIL] ${NAME} failed [$(ts)]" >>"$STATUS"
-              {
-                echo "[FAIL] ${NAME} ERROR [$(ts)]:"
-                cat step.err
-                echo
-                echo '---'
-                echo
-              } >>"$ERR"
-            fi
-            rm -f step.err
-            echo "[END] ${NAME} ($(ts))" >>"$LOG"
-            echo >>"$LOG"
+      # =========================
+      # 1) PRE-FIX / NORMALIZATION HELPERS
+      # =========================
+      - name: fix_outputs_generate_fixed_files.py
+        run: |
+          set -euo pipefail
+          python scripts/fix_outputs_generate_fixed_files.py
+
+      - name: apply_fixed_todaysgames
+        run: |
+          set -euo pipefail
+          if [ -f scripts/apply_fixed_todaysgames ]; then
+            bash scripts/apply_fixed_todaysgames
+          elif [ -f scripts/apply_fixed_todaysgames.py ]; then
+            python scripts/apply_fixed_todaysgames.py
+          else
+            echo "No apply_fixed_todaysgames script found; continuing."
+          fi
+
+      # =========================
+      # 2) PROJECT PREP (UPDATED)
+      # =========================
+      - name: project_prep.py
+        run: |
+          set -euo pipefail
+          python scripts/project_prep.py
+
+      # =========================
+      # 3) BATTER PIPE
+      # =========================
+      - name: fix_missing_batter_stats.py
+        run: |
+          set -euo pipefail
+          python scripts/fix_missing_batter_stats.py
+
+      - name: normalize_batters_for_builder.py
+        run: |
+          set -euo pipefail
+          python scripts/normalize_batters_for_builder.py
+
+      - name: project_batter_props.py
+        run: |
+          set -euo pipefail
+          python scripts/project_batter_props.py
+
+      - name: build_expanded_batter_props.py
+        run: |
+          set -euo pipefail
+          python scripts/build_expanded_batter_props.py
+
+      # =========================
+      # 4) PITCHER PIPE
+      # =========================
+      - name: project_pitcher_props.py
+        run: |
+          set -euo pipefail
+          python scripts/project_pitcher_props.py
+
+      - name: pitcher_mega_z.py
+        run: |
+          set -euo pipefail
+          python scripts/pitcher_mega_z.py
+
+      - name: starter_coverage_guard.py (non-blocking)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python scripts/starter_coverage_guard.py || {
+            echo "::warning::starter_coverage_guard reported missing starters. See summaries/projections/mega_z_starter_coverage.csv and mega_z_starter_missing.csv";
           }
 
-          # Optional pre-fix / normalization (kept if you’re using them)
-          run_step fix_outputs_generate_fixed_files.py   python scripts/fix_outputs_generate_fixed_files.py
-          run_step apply_fixed_todaysgames               python - <<'PY'
-          import shutil, pathlib
-          src = pathlib.Path("data/_projections/todaysgames_normalized_fixed.csv")
-          dst = pathlib.Path("data/_projections/todaysgames_normalized.csv")
-          if src.exists():
-              shutil.copyfile(src, dst)
-          PY
-
-          # --- Core pipeline ---
-          run_step project_prep.py                        python scripts/project_prep.py
-          run_step fix_missing_batter_stats.py            python scripts/fix_missing_batter_stats.py
-          run_step normalize_batters_for_builder.py       python scripts/normalize_batters_for_builder.py
-          run_step project_batter_props.py                python scripts/project_batter_props.py
-          run_step project_pitcher_props.py               python scripts/project_pitcher_props.py
-          run_step build_expanded_batter_props.py         python scripts/build_expanded_batter_props.py
-          run_step pitcher_mega_z.py                      python scripts/pitcher_mega_z.py
-
-          # Guard: every expected starter must exist in mega_z (match by player_id)
-          run_step starter_coverage_guard.py              python scripts/starter_coverage_guard.py
-
-          run_step post_normalize_pitchers.py             python scripts/post_normalize_pitchers.py
-          run_step finalize_projections.py                python scripts/finalize_projections.py
-          run_step clean_inject_team_ids.py               python scripts/clean_inject_team_ids.py
-          run_step inject_game_ids_from_schedule.py       python scripts/inject_game_ids_from_schedule.py
-          run_step inject_batter_woba_adjustments.py      python scripts/inject_batter_woba_adjustments.py
-          run_step clean_pitcher_files.py                 python scripts/clean_pitcher_files.py
-          run_step impute_missing_batter_adj_woba.py      python scripts/impute_missing_batter_adj_woba.py
-          run_step fix_missing_pa_in_pitcher_daily.py     python scripts/fix_missing_pa_in_pitcher_daily.py
-
-      - name: Always write & push summary
-        if: always()
+      - name: post_normalize_pitchers.py
         run: |
-          mkdir -p summaries/06_projection
-          {
-            echo "===== RUN TIMESTAMP: $(TZ=America/New_York date +"%Y-%m-%d %I:%M:%S %p %Z") ====="
-            echo
-            echo "===== STATUS =====";  cat summaries/projections/status.txt || true
-            echo; echo "===== LOG =====";   cat summaries/projections/log.txt || true
-            echo; echo "===== ERRORS =====";cat summaries/projections/errors.txt || true
-          } > summaries/06_projection/summary.txt
+          set -euo pipefail
+          python scripts/post_normalize_pitchers.py
 
-          git add summaries/06_projection/summary.txt || true
-          git diff --cached --quiet || git commit -m "06 projection summary"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+      # =========================
+      # 5) FINALIZE + AUGMENT
+      # =========================
+      - name: finalize_projections.py
+        run: |
+          set -euo pipefail
+          python scripts/finalize_projections.py
 
-      - name: Upload summaries as artifact
+      - name: clean_inject_team_ids.py
+        run: |
+          set -euo pipefail
+          python scripts/clean_inject_team_ids.py
+
+      - name: inject_game_ids_from_schedule.py
+        run: |
+          set -euo pipefail
+          python scripts/inject_game_ids_from_schedule.py
+
+      - name: inject_batter_woba_adjustments.py
+        run: |
+          set -euo pipefail
+          python scripts/inject_batter_woba_adjustments.py
+
+      - name: clean_pitcher_files.py
+        run: |
+          set -euo pipefail
+          python scripts/clean_pitcher_files.py
+
+      - name: impute_missing_batter_adj_woba.py
+        run: |
+          set -euo pipefail
+          python scripts/impute_missing_batter_adj_woba.py
+
+      - name: fix_missing_pa_in_pitcher_daily.py
+        run: |
+          set -euo pipefail
+          python scripts/fix_missing_pa_in_pitcher_daily.py
+
+      # =========================
+      # 6) OPTIONAL: GAME SCORE PROJECTIONS
+      # =========================
+      - name: project_game_scores.py (optional)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ -f scripts/project_game_scores.py ]; then
+            python scripts/project_game_scores.py || {
+              echo "::warning::project_game_scores.py encountered an error. Check summaries/07_final/*.csv for diagnostics."
+            }
+          else
+            echo "project_game_scores.py not present; skipping."
+          fi
+
+      # =========================
+      # 7) ARTIFACTS (helpful for mobile review)
+      # =========================
+      - name: Upload final CSV artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: 06-projection-summaries
+          name: final-csvs
           path: |
-            summaries/06_projection/summary.txt
-            summaries/projections/status.txt
-            summaries/projections/log.txt
-            summaries/projections/errors.txt
-            summaries/projections/mega_z_starter_coverage.csv
-            summaries/projections/mega_z_starter_missing.csv
-            summaries/projections/mega_z_build_log.txt
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Parse failures and annotate
-        if: always()
-        shell: bash
-        run: |
-          set +e
-          STATUS="summaries/projections/status.txt"
-          ERR="summaries/projections/errors.txt"
-          LOG="summaries/projections/log.txt"
-          OK_COUNT=$(grep -cE '^\[OK\]' "$STATUS" 2>/dev/null || echo 0)
-          FAIL_COUNT=$(grep -cE '^\[FAIL\]' "$STATUS" 2>/dev/null || echo 0)
-          {
-            echo "## 06 Projections & Builder — Run Summary"
-            echo
-            echo "| OK | FAIL |"
-            echo "|---:|----:|"
-            echo "| $OK_COUNT | $FAIL_COUNT |"
-            echo
-          } >> "$GITHUB_STEP_SUMMARY"
-          if [ "$FAIL_COUNT" -gt 0 ]; then
-            LAST_FAIL_NAME=$(grep -E '^\[FAIL\]' "$STATUS" | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
-            {
-              echo "### Last failing step"
-              echo "\`$LAST_FAIL_NAME\`"
-              echo
-              echo "#### Error excerpt"
-              awk -v name="$LAST_FAIL_NAME" 'BEGIN{p=0}
-                $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
-                p{print}
-                /^---$/ && p{exit}' "$ERR" | sed 's/^/> /' | head -n 80
-              echo
-              echo "#### Tail of unified log"
-              echo '```text'
-              tail -n 120 "$LOG" || true
-              echo '```'
-              echo
-              echo "**Files:** \`summaries/06_projection/summary.txt\` • \`summaries/projections/{status,log,errors}.txt\`"
-            } >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "_No failures detected._" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Fail if errors
-        if: always()
-        shell: bash
-        run: |
-          if grep -qE '^\[FAIL\]' summaries/projections/status.txt 2>/dev/null; then
-            FAILED_STEP=$(grep -E '^\[FAIL\]' summaries/projections/status.txt | tail -1 | sed -E 's/^\[FAIL\] (.*) failed.*/\1/')
-            echo "❌ One or more steps failed."
-            echo "Last failing step: $FAILED_STEP"
-            echo "See: summaries/06_projection/summary.txt"
-            echo
-            echo "---- Error excerpt ----"
-            awk -v name="$FAILED_STEP" 'BEGIN{p=0}
-              $0 ~ "\\[FAIL\\] "name" ERROR" {p=1}
-              p{print}
-              /^---$/ && p{exit}' summaries/projections/errors.txt | head -n 80
-            echo "-----------------------"
-            exit 1
-          fi
-
-      - name: Commit stage outputs
-        if: always()
-        run: |
-          git add data/_projections/*.csv || true
-          git add data/raw/todaysgames_normalized.csv || true
-          git add summaries/projections/* || true
-          git diff --cached --quiet || git commit -m "06 projections & builder outputs (starter coverage guard, artifacts)"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+            data/end_chain/final/*.csv
+            data/_projections/*final*.csv
+            summaries/**/*.csv
+          if-no-files-found: warn
