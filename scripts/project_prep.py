@@ -22,6 +22,26 @@ def _to_str(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
             df[c] = df[c].astype(str)
     return df
 
+def _print_dtype_samples(df: pd.DataFrame, cols: list[str], label: str):
+    print(f"[DTypeCheck] {label}")
+    out = []
+    for c in cols:
+        if c in df.columns:
+            s = df[c]
+            sample = s.dropna().astype(str).head(5).tolist()
+            out.append(f"  - {c}: dtype={s.dtype}; samples={sample}")
+        else:
+            out.append(f"  - {c}: (missing)")
+    print("\n".join(out))
+
+def _assert_object_dtype(df: pd.DataFrame, cols: list[str], label: str):
+    bad = []
+    for c in cols:
+        if c in df.columns and df[c].dtype != "object":
+            bad.append(f"{c}={df[c].dtype}")
+    if bad:
+        raise TypeError(f"{label} expected object (string) dtypes but found: {', '.join(bad)}")
+
 def project_prep():
     todays_games  = DATA_DIR / "_projections" / "todaysgames_normalized_fixed.csv"
     pitchers_file = DATA_DIR / "Data" / "pitchers.csv"
@@ -31,7 +51,7 @@ def project_prep():
     if not pitchers_file.exists(): raise FileNotFoundError(f"Missing input: {pitchers_file}")
     if not stadiums_file.exists(): raise FileNotFoundError(f"Missing input: {stadiums_file}")
 
-    # Read as strings; prevent NA tokenization so we don't get "nan" on output
+    # Read as strings; keep_default_na=False avoids "nan" text and floaty coercions later
     games    = pd.read_csv(todays_games,  dtype=str, low_memory=False, keep_default_na=False)
     pitchers = pd.read_csv(pitchers_file, dtype=str, low_memory=False, keep_default_na=False)
     stadiums = pd.read_csv(stadiums_file, dtype=str, low_memory=False, keep_default_na=False)
@@ -45,7 +65,7 @@ def project_prep():
     _require(pitchers, ["player_id"], "pitchers")
     _require(stadiums, ["team_id"],   "stadiums")
 
-    # Belt-and-suspenders: force known IDs to str
+    # Enforce string on known IDs (belt-and-suspenders)
     games    = _to_str(games, ID_FORCE)
     pitchers = _to_str(pitchers, ID_FORCE)
     stadiums = _to_str(stadiums, ID_FORCE)
@@ -63,28 +83,34 @@ def project_prep():
         how="left",
     )
 
-    # ------- Stadium join (hardened) -------
+    # ----- Stadium join (with explicit checks) -----
     venue_cols_pref = ["team_id","team_name","venue","city","state","timezone","is_dome","latitude","longitude","home_team"]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
 
-    # Prepare a stable subset and lock dtypes
     stadium_sub = stadiums[venue_cols].copy()
+
+    # Force keys to str immediately before merge
+    merged["home_team_id"] = merged["home_team_id"].astype(str)
     stadium_sub["team_id"] = stadium_sub["team_id"].astype(str)
 
-    # Rename team_id -> home_team_id so we can merge with on="home_team_id"
+    # Diagnostics before merge
+    _print_dtype_samples(merged, ["home_team_id"], label="LEFT (merged) before venue merge")
+    _print_dtype_samples(stadium_sub, ["team_id"], label="RIGHT (stadium_sub) before venue merge")
+    _assert_object_dtype(merged, ["home_team_id"], "LEFT key")
+    _assert_object_dtype(stadium_sub, ["team_id"], "RIGHT key")
+
+    # Optional: dedupe after dtype cast
+    stadium_sub = stadium_sub.drop_duplicates("team_id")
+
+    # Rename to a same-named key and merge on it
     stadium_sub = stadium_sub.rename(columns={"team_id": "home_team_id"})
-
-    # Lock the left key as string immediately before merge
-    merged["home_team_id"] = merged["home_team_id"].astype(str)
-
-    # Merge using identical key name on both sides to avoid coercion logic
     merged = merged.merge(
         stadium_sub,
         on="home_team_id",
         how="left",
         suffixes=("", "_stadium"),
     )
-    # ---------------------------------------
+    # ----------------------------------------------
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -103,4 +129,5 @@ def project_prep():
     print(f"project_prep: wrote {out1} and {out2} (rows={len(merged)})")
 
 if __name__ == "__main__":
+    print(f"[Running] {__file__}")
     project_prep()
