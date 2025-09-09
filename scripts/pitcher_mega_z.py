@@ -5,14 +5,13 @@ Build pitcher Mega-Z projection lines.
 
 Robust source preference:
 1) data/end_chain/final/startingpitchers_final.csv  (if exists and non-empty)
-2) Derived fallback: starters from data/_projections/todaysgames_normalized_fixed.csv
-   joined to data/Data/pitchers.csv by player_id (ensures current-day starters exist)
+2) Derived fallback from today's schedule + raw pitchers:
+   data/_projections/todaysgames_normalized_fixed.csv + data/Data/pitchers.csv
 3) data/cleaned/pitchers_normalized_cleaned.csv
 4) data/tagged/pitchers_normalized.csv
 
 Output:
 - data/_projections/pitcher_mega_z.csv
-- Logs source used.
 """
 
 from pathlib import Path
@@ -75,12 +74,12 @@ def _load_nonempty_csv(p: Path):
     df.columns = [c.strip() for c in df.columns]
     return df
 
-def _make_today_raw_fallback() -> tuple[pd.DataFrame, str] | None:
-    """Build minimal current-day pitcher rows by joining today's starters to raw pitchers."""
+def _make_today_raw_fallback():
     if not (P_TODAY.exists() and P_RAW.exists()):
         return None
     tg = pd.read_csv(P_TODAY, dtype=str)
-    if not {"pitcher_home_id","pitcher_away_id"}.issubset(tg.columns):
+    req = {"pitcher_home_id","pitcher_away_id"}
+    if not req.issubset(tg.columns):
         return None
     ids = pd.unique(pd.concat([tg["pitcher_home_id"], tg["pitcher_away_id"]]).astype(str))
     raw = pd.read_csv(P_RAW)
@@ -94,35 +93,31 @@ def _make_today_raw_fallback() -> tuple[pd.DataFrame, str] | None:
     df.columns = [c.strip() for c in df.columns]
     return df, "constructed_from_todaysgames+raw"
 
-def load_source() -> tuple[pd.DataFrame, str]:
-    # 1) Current-day starting pitchers (if produced)
+def load_source():
     df = _load_nonempty_csv(P_STARTINGP)
     if df is not None:
         return df, str(P_STARTINGP)
 
-    # 2) Construct from today's schedule + raw pitchers (ensures starters exist)
     built = _make_today_raw_fallback()
     if built is not None:
         return built
 
-    # 3) Cleaned normalized
     df = _load_nonempty_csv(P_CLEANED)
     if df is not None:
         return df, str(P_CLEANED)
 
-    # 4) Tagged normalized
     df = _load_nonempty_csv(P_TAGGED)
     if df is not None:
         return df, str(P_TAGGED)
 
-    raise SystemExit("❌ No suitable pitcher source found.")
+    raise SystemExit("No suitable pitcher source found.")
 
 def main():
     df, src = load_source()
 
     pid_col = "player_id" if "player_id" in df.columns else None
     if pid_col is None:
-        raise SystemExit(f"❌ Missing player_id in source {src}")
+        raise SystemExit(f"Missing player_id in source {src}")
 
     name_col = "last_name, first_name" if "last_name, first_name" in df.columns else ("name" if "name" in df.columns else pid_col)
     team_col = "team" if "team" in df.columns else None
@@ -196,7 +191,7 @@ def main():
     out_df = pd.DataFrame(rows)
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     out_df.to_csv(OUTPUT_FILE, index=False)
-    print(f"✅ Wrote: {OUTPUT_FILE}  (rows={len(out_df)})  source={src}")
+    print(f"Wrote: {OUTPUT_FILE}  (rows={len(out_df)})  source={src}")
 
 if __name__ == "__main__":
     main()
