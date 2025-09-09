@@ -1,155 +1,89 @@
 #!/usr/bin/env python3
-"""
-starter_coverage_guard.py
-
-Purpose
--------
-Verify that all expected starters for today exist in pitcher_mega_z,
-and ALWAYS dump two artifacts (even on failure):
-
-  - summaries/projections/mega_z_starter_coverage.csv
-  - summaries/projections/mega_z_starter_missing.csv
-
-Exit code 1 if any starters are missing; 0 otherwise.
-
-How it finds starters (first existing source wins)
---------------------------------------------------
-1) data/raw/startingpitchers_with_opp_context.csv      -> column: player_id
-2) data/_projections/pitcher_props_projected.csv       -> column: player_id
-3) data/_projections/pitcher_props_projected_final.csv -> column: player_id
-4) data/_projections/todaysgames_normalized_fixed.csv  -> columns: pitcher_home_id, pitcher_away_id
-
-Where it looks for mega_z
--------------------------
-1) data/_projections/pitcher_mega_z.csv
-2) data/_projections/pitcher_mega_z_final.csv
-
-All IDs are coerced to stripped strings for comparison.
-"""
-
-from __future__ import annotations
-import sys
-from pathlib import Path
 import pandas as pd
+from pathlib import Path
+import sys
 
-DATA_DIR = Path("data")
-SUM_DIR  = Path("summaries") / "projections"
-SUM_DIR.mkdir(parents=True, exist_ok=True)
+DATA = Path("data")
+PROJ = DATA / "_projections"
+SUMM = Path("summaries") / "projections"
+SUMM.mkdir(parents=True, exist_ok=True)
 
-def _to_str_series(s: pd.Series) -> pd.Series:
-    # robust string normalize: None/NaN -> "", strip spaces
-    return s.astype(str).str.strip()
+TODAY_GAMES = PROJ / "todaysgames_normalized_fixed.csv"
+MEGA_Z      = PROJ / "pitcher_mega_z.csv"          # pre-clean
+MEGA_Z_FIX  = PROJ / "pitcher_mega_z_fixed.csv"    # post-fix fallback
+COVERAGE_CSV = SUMM / "mega_z_starter_coverage.csv"
+MISSING_CSV  = SUMM / "mega_z_starter_missing.csv"
 
-def _load_first_existing(candidates: list[tuple[Path, list[str]]]) -> tuple[pd.DataFrame, Path, list[str]]:
-    """Return (df, path, cols) for the first existing candidate file."""
-    for p, cols in candidates:
-        if p.exists():
-            df = pd.read_csv(p)
-            return df, p, cols
-    raise FileNotFoundError(
-        "None of the starter sources exist. Checked: "
-        + ", ".join(str(p) for p, _ in candidates)
-    )
+ID_FIELDS = [
+    "pitcher_home_id","pitcher_away_id","player_id","team_id","home_team_id","away_team_id","game_id"
+]
 
-def _pick_megaz_path() -> Path:
-    cands = [
-        DATA_DIR / "_projections" / "pitcher_mega_z.csv",
-        DATA_DIR / "_projections" / "pitcher_mega_z_final.csv",
-    ]
-    for p in cands:
-        if p.exists():
-            return p
-    raise FileNotFoundError(
-        "Could not find pitcher_mega_z file. Checked: "
-        + ", ".join(str(p) for p in cands)
-    )
+def to_str(df: pd.DataFrame) -> pd.DataFrame:
+    for c in ID_FIELDS:
+        if c in df.columns:
+            df[c] = df[c].astype(str)
+    return df
 
-def _collect_starter_ids(df: pd.DataFrame, cols: list[str]) -> pd.Series:
-    """Return a Series of unique starter player_ids (as strings) from df using cols."""
-    # For todaysgames we may get pitcher_home_id/pitcher_away_id
-    if len(cols) == 1:
-        col = cols[0]
-        if col not in df.columns:
-            raise KeyError(f"Starter source missing required column: {col}")
-        ids = _to_str_series(df[col])
-    else:
-        missing = [c for c in cols if c not in df.columns]
+def read_games() -> pd.DataFrame:
+    df = pd.read_csv(TODAY_GAMES, dtype=str, low_memory=False)
+    df = to_str(df)
+    # Only the starter IDs & teams are necessary
+    keep = [c for c in ["game_id","home_team_id","away_team_id","pitcher_home_id","pitcher_away_id"] if c in df.columns]
+    return df[keep].copy()
+
+def read_mega() -> pd.DataFrame:
+    path = MEGA_Z if MEGA_Z.exists() else MEGA_Z_FIX
+    if not path.exists():
+        raise FileNotFoundError(f"Missing mega_z file at {MEGA_Z} or {MEGA_Z_FIX}")
+    df = pd.read_csv(path, dtype=str, low_memory=False)
+    df = to_str(df)
+    # Expect a player_id column
+    if "player_id" not in df.columns:
+        raise KeyError("pitcher_mega_z missing 'player_id' column")
+    return df[["player_id"]].dropna().drop_duplicates().copy()
+
+def main():
+    try:
+        games = read_games()
+        mega  = read_mega()
+
+        starters = pd.Series(pd.unique(pd.concat([games["pitcher_home_id"], games["pitcher_away_id"]], ignore_index=True))).dropna()
+        starters = starters.astype(str)
+
+        have = set(mega["player_id"].astype(str).tolist())
+        want = set(starters.tolist())
+        missing = sorted(want - have)
+        covered = sorted(want & have)
+
+        # Always write coverage + missing artifacts
+        pd.DataFrame({"starter_player_id": sorted(list(want))}).to_csv(COVERAGE_CSV, index=False)
+        pd.DataFrame({"missing_player_id": missing}).to_csv(MISSING_CSV, index=False)
+
         if missing:
-            raise KeyError(f"Starter source missing required columns: {missing}")
-        parts = [_to_str_series(df[c]) for c in cols]
-        ids = pd.concat(parts, ignore_index=True)
+            msg = f"Starter coverage failure: {len(missing)} starter(s) absent in pitcher_mega_z."
+            print(msg)
+            print(f"Wrote {COVERAGE_CSV} and {MISSING_CSV} with details.")
+            # Hard fail to stop the pipeline, but after writing files
+            raise RuntimeError(msg)
+        else:
+            print("Starter coverage OK: all starters present in pitcher_mega_z.")
+            print(f"Wrote {COVERAGE_CSV} (no missing).")
 
-    # Drop empties and duplicates
-    ids = ids[ids != ""].dropna().drop_duplicates().reset_index(drop=True)
-    return ids
-
-def main() -> None:
-    # 1) Determine the starters source (first existing)
-    starter_sources = [
-        (DATA_DIR / "raw" / "startingpitchers_with_opp_context.csv", ["player_id"]),
-        (DATA_DIR / "_projections" / "pitcher_props_projected.csv", ["player_id"]),
-        (DATA_DIR / "_projections" / "pitcher_props_projected_final.csv", ["player_id"]),
-        (DATA_DIR / "_projections" / "todaysgames_normalized_fixed.csv", ["pitcher_home_id", "pitcher_away_id"]),
-    ]
-    starters_df, starters_path, starter_cols = _load_first_existing(starter_sources)
-    starter_ids = _collect_starter_ids(starters_df, starter_cols)
-
-    # 2) Load mega_z
-    megaz_path = _pick_megaz_path()
-    megaz_df = pd.read_csv(megaz_path)
-
-    # Try to identify which column in mega_z is the player id
-    # Common names: 'player_id', 'mlb_id', 'id'
-    cand_cols = [c for c in ["player_id", "mlb_id", "id"] if c in megaz_df.columns]
-    if not cand_cols:
-        # Fallback: if there's exactly one integer-like ID column, try that
-        # but always coerce to string for comparison.
-        raise KeyError(
-            f"{megaz_path} does not contain a recognizable player id column "
-            "(expected one of: player_id, mlb_id, id)."
-        )
-    megaz_id_col = cand_cols[0]
-    megaz_ids = _to_str_series(megaz_df[megaz_id_col]).dropna().drop_duplicates()
-
-    # 3) Compare
-    starters_set = set(starter_ids.tolist())
-    megaz_set    = set(megaz_ids.tolist())
-    missing_ids  = sorted(starters_set - megaz_set)
-
-    # 4) Write artifacts (ALWAYS)
-    coverage = pd.DataFrame({
-        "player_id": sorted(starters_set),
-        "present_in_mega_z": [pid in megaz_set for pid in sorted(starters_set)],
-        "starters_source": str(starters_path),
-        "mega_z_file": str(megaz_path),
-    })
-    coverage_out = SUM_DIR / "mega_z_starter_coverage.csv"
-    coverage.to_csv(coverage_out, index=False)
-
-    missing_df = pd.DataFrame({"player_id": missing_ids})
-    missing_out = SUM_DIR / "mega_z_starter_missing.csv"
-    missing_df.to_csv(missing_out, index=False)
-
-    # 5) Console summary
-    print("=== starter_coverage_guard summary ===")
-    print(f"Starters source : {starters_path}")
-    print(f"Mega Z file     : {megaz_path}")
-    print(f"Total starters  : {len(starters_set)}")
-    print(f"Found in mega_z : {len(starters_set) - len(missing_ids)}")
-    print(f"Missing         : {len(missing_ids)}")
-    if missing_ids:
-        print("Missing player_id(s):")
-        for pid in missing_ids:
-            print(f"  - {pid}")
-        print(f"\nWrote coverage -> {coverage_out}")
-        print(f"Wrote missing  -> {missing_out}")
-        # Exit non-zero to fail the job (by design)
-        raise SystemExit(1)
-    else:
-        print("All starters present in pitcher_mega_z.")
-        print(f"Wrote coverage -> {coverage_out}")
-        print(f"Wrote missing  -> {missing_out}")
-        raise SystemExit(0)
+    except Exception as e:
+        # Best-effort: if anything blew up before writing, try to salvage what we can
+        if not MISSING_CSV.exists():
+            try:
+                # Attempt to emit at least empty placeholders to avoid guessing later
+                pd.DataFrame({"missing_player_id": []}).to_csv(MISSING_CSV, index=False)
+            except Exception:
+                pass
+        if not COVERAGE_CSV.exists():
+            try:
+                pd.DataFrame({"starter_player_id": []}).to_csv(COVERAGE_CSV, index=False)
+            except Exception:
+                pass
+        # Re-raise to keep the failure visible
+        raise
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
