@@ -31,11 +31,12 @@ def project_prep():
     if not pitchers_file.exists(): raise FileNotFoundError(f"Missing input: {pitchers_file}")
     if not stadiums_file.exists(): raise FileNotFoundError(f"Missing input: {stadiums_file}")
 
-    # Read with dtype=str so pandas never guesses ints; then force selected columns again.
-    games    = pd.read_csv(todays_games,  dtype=str, low_memory=False)
-    pitchers = pd.read_csv(pitchers_file, dtype=str, low_memory=False)
-    stadiums = pd.read_csv(stadiums_file, dtype=str, low_memory=False)
+    # Read with strings so pandas never infers numeric for IDs
+    games    = pd.read_csv(todays_games,  dtype=str, low_memory=False, keep_default_na=False)
+    pitchers = pd.read_csv(pitchers_file, dtype=str, low_memory=False, keep_default_na=False)
+    stadiums = pd.read_csv(stadiums_file, dtype=str, low_memory=False, keep_default_na=False)
 
+    # Trim header whitespace
     games.columns    = [c.strip() for c in games.columns]
     pitchers.columns = [c.strip() for c in pitchers.columns]
     stadiums.columns = [c.strip() for c in stadiums.columns]
@@ -44,7 +45,7 @@ def project_prep():
     _require(pitchers, ["player_id"], "pitchers")
     _require(stadiums, ["team_id"],   "stadiums")
 
-    # Enforce string again on all known ID columns
+    # Enforce string on known ID columns (belt-and-suspenders)
     games    = _to_str(games, ID_FORCE)
     pitchers = _to_str(pitchers, ID_FORCE)
     stadiums = _to_str(stadiums, ID_FORCE)
@@ -66,10 +67,14 @@ def project_prep():
     # Stadium attributes by team_id
     venue_cols_pref = ["team_id","team_name","venue","city","state","timezone","is_dome","latitude","longitude","home_team"]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
+
+    # HARDEN: reassert str on both join keys immediately before merge
+    merged["home_team_id"] = merged["home_team_id"].astype(str)
+
     stadium_sub = (
         stadiums[venue_cols]
+        .astype({"team_id": str})        # ensure team_id remains string
         .drop_duplicates("team_id")
-        .astype({"team_id": str})   # ensure team_id stays string
     )
 
     merged = merged.merge(
