@@ -25,6 +25,10 @@ jobs:
       - name: Run fix_outputs_generate_fixed_files.py
         run: python scripts/fix_outputs_generate_fixed_files.py
 
+      # NEW: normalize all ID-like columns in inputs to strings
+      - name: Run normalize_ids_for_projection.py
+        run: python scripts/normalize_ids_for_projection.py
+
       - name: Run project_prep.py
         run: python scripts/project_prep.py
 
