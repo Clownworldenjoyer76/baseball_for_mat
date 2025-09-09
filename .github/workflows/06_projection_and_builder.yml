@@ -1,9 +1,7 @@
 name: 06 Projection and Builder
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 12 * * *"  # daily at 12:00 UTC
+  workflow_dispatch:   # manual only
 
 jobs:
   build:
@@ -25,15 +23,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 0) Generate “fixed” projections
       - name: Run fix_outputs_generate_fixed_files.py
         run: python scripts/fix_outputs_generate_fixed_files.py
 
-      # 1) Normalize all 06 inputs (force IDs to strings)
       - name: Run normalize_inputs_for_06.py
         run: python scripts/normalize_inputs_for_06.py
 
-      # 1a) Verify required inputs exist (fail fast if missing)
       - name: Verify inputs for project_prep.py
         run: |
           set -e
@@ -41,15 +36,13 @@ jobs:
           test -f data/Data/pitchers.csv || { echo "Missing: data/Data/pitchers.csv"; exit 1; }
           test -f data/manual/stadium_master.csv || { echo "Missing: data/manual/stadium_master.csv"; exit 1; }
 
-      # 1b) Fingerprint project_prep.py so logs prove which version ran
       - name: Fingerprint project_prep.py
         run: |
           echo "[project_prep] PATH=scripts/project_prep.py"
-          md5sum scripts/project_prep.py || shasum scripts/project_prep.py
+          (md5sum scripts/project_prep.py || shasum scripts/project_prep.py) 2>/dev/null || true
           echo "[project_prep] HEAD (first 25 lines):"
           head -n 25 scripts/project_prep.py
 
-      # 2) Proceed with the rest of the pipeline
       - name: Run project_prep.py
         run: python scripts/project_prep.py
 
@@ -95,16 +88,28 @@ jobs:
       - name: Run impute_missing_batter_adj_woba.py
         run: python scripts/impute_missing_batter_adj_woba.py
 
-      - name: Always write & push summary
+      - name: Always write & push summary (overwrite)
         if: always()
         run: |
-          mkdir -p summaries/06_projection
-          echo "===== RUN TIMESTAMP: $(date) =====" >> summaries/06_projection/summary.txt
-          echo "" >> summaries/06_projection/summary.txt
-          echo "===== STATUS =====" >> summaries/06_projection/summary.txt
-          cat summaries/projections/status.txt >> summaries/06_projection/summary.txt || true
+          set -e
+          mkdir -p summaries/06_projection summaries/projections
+
+          SUMMARY_FILE="summaries/06_projection/summary.txt"
+          {
+            echo "===== RUN TIMESTAMP: $(date) ====="
+            echo
+            echo "===== STATUS ====="
+            if [ -s summaries/projections/status.txt ]; then
+              cat summaries/projections/status.txt
+            else
+              echo "(no status file found at summaries/projections/status.txt)"
+            fi
+            echo
+            echo "===== LOG ====="
+          } > "$SUMMARY_FILE"
+
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-          git add summaries/06_projection/summary.txt
-          git commit -m "Update summary log [skip ci]" || echo "No changes to commit"
+          git add "$SUMMARY_FILE"
+          git commit -m "06 Projection summary (overwrite latest) [skip ci]" || echo "No changes to commit"
           git push
