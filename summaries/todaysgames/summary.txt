@@ -1,20 +1,20 @@
-===== RUN TIMESTAMP: 2025-09-06 08:05:05 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-09 11:49:01 AM EDT =====
 
 ===== STATUS =====
-✅ scripts/todayslineups.py succeeded [2025-09-06 08:04:58 AM EDT]
-✅ scripts/lineups_fix.py succeeded [2025-09-06 08:04:59 AM EDT]
-✅ scripts/todaysgames.py succeeded [2025-09-06 08:05:00 AM EDT]
-✅ scripts/enrich_pitchers_with_opp.py succeeded [2025-09-06 08:05:04 AM EDT]
+✅ scripts/todayslineups.py succeeded [2025-09-09 11:48:53 AM EDT]
+✅ scripts/lineups_fix.py succeeded [2025-09-09 11:48:54 AM EDT]
+✅ scripts/todaysgames.py succeeded [2025-09-09 11:48:55 AM EDT]
+✅ scripts/enrich_pitchers_with_opp.py succeeded [2025-09-09 11:49:00 AM EDT]
 
 ===== LOG =====
-▶️ START: scripts/todayslineups.py (2025-09-06 08:04:54 AM EDT)
-✅ todayslineups: wrote 838 rows to data/raw/lineups.csv
-⏹️ END: scripts/todayslineups.py (2025-09-06 08:04:58 AM EDT)
+▶️ START: scripts/todayslineups.py (2025-09-09 11:48:48 AM EDT)
+✅ todayslineups: wrote 839 rows to data/raw/lineups.csv
+⏹️ END: scripts/todayslineups.py (2025-09-09 11:48:53 AM EDT)
 
-▶️ START: scripts/lineups_fix.py (2025-09-06 08:04:58 AM EDT)
-✅ lineups_fix.py: wrote 838 rows to data/raw/lineups.csv
+▶️ START: scripts/lineups_fix.py (2025-09-09 11:48:53 AM EDT)
+✅ lineups_fix.py: wrote 839 rows to data/raw/lineups.csv
 📝 unmatched report: summaries/todaysgames/lineups_fix_unmatched.txt
-⏹️ END: scripts/lineups_fix.py (2025-09-06 08:04:59 AM EDT)
+⏹️ END: scripts/lineups_fix.py (2025-09-09 11:48:54 AM EDT)
 
 CSV preview (lineups):
 team_code,"last_name, first_name",type,player_id,team_id
@@ -22,32 +22,32 @@ ATH,"Alvarado, Elvis",pitcher,665660,133
 ATH,"Barnett, Mason",pitcher,686930,133
 ATH,"Basso, Brady",pitcher,669620,133
 ATH,"Bido, Osvaldo",pitcher,674370,133
-32721 data/raw/lineups.csv
-Committed lineups.csv at 9b509ae07555c7935a44c23c873635e17d1ebbb8
-▶️ START: scripts/todaysgames.py (2025-09-06 08:05:00 AM EDT)
-⏹️ END: scripts/todaysgames.py (2025-09-06 08:05:00 AM EDT)
+32743 data/raw/lineups.csv
+Committed lineups.csv at d6ddecf4a25ef8a4cec25e2d7d034368bd018177
+▶️ START: scripts/todaysgames.py (2025-09-09 11:48:55 AM EDT)
+⏹️ END: scripts/todaysgames.py (2025-09-09 11:48:55 AM EDT)
 
 CSV preview (todaysgames):
 "game_id","home_team","away_team","game_time","pitcher_home","pitcher_away"
-"776436","NYY","TOR","1:05 PM","Gil, Luis","Bassitt, Chris"
-"776440","CHC","WSH","2:20 PM","Boyd, Matthew","Lord, Brad"
-"776433","MIA","PHI","4:10 PM","Alcantara, Sandy","Luzardo, Jesús"
-"776435","DET","CWS","6:10 PM","Skubal, Tarik","Pérez, Martín"
-1048 data/raw/todaysgames.csv
-[main 8ce97843] Update data/raw/todaysgames.csv [run 17514234930]
- 1 file changed, 15 insertions(+), 6 deletions(-)
-▶️ START: scripts/enrich_pitchers_with_opp.py (2025-09-06 08:05:01 AM EDT)
+"776401","BAL","PIT","6:35 PM","Bradish, Kyle","Burrows, Mike"
+"776403","CLE","KC","6:40 PM","Cantillo, Joey","Cameron, Noah"
+"776397","MIA","WSH","6:40 PM","Mazur, Adam","Parker, Mitchell"
+"776404","PHI","NYM","6:45 PM","Suárez, Ranger","Manaea, Sean"
+1041 data/raw/todaysgames.csv
+[main d5c30a1a] Update data/raw/todaysgames.csv [run 17588196566]
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+▶️ START: scripts/enrich_pitchers_with_opp.py (2025-09-09 11:48:56 AM EDT)
 Wrote: data/raw/startingpitchers_with_opp_context.csv  (rows=15)
-⏹️ END: scripts/enrich_pitchers_with_opp.py (2025-09-06 08:05:04 AM EDT)
+⏹️ END: scripts/enrich_pitchers_with_opp.py (2025-09-09 11:49:00 AM EDT)
 
 CSV preview (startingpitchers_with_opp_context):
 "last_name, first_name",team,adj_woba_weather,adj_woba_park,adj_woba_combined,team_context,last_name_first_name,player_id,year,player_age,p_game,pa,ab,hit,single,double,triple,home_run,k_percent,bb_percent,batting_avg,slg_percent,on_base_percent,on_base_plus_slg,p_run,p_win,p_loss,xba,xslg,woba,xwoba,xobp,xiso,wobacon,xwobacon,bacon,xbacon,xbadiff,xslgdiff,wobadiff,avg_swing_speed,fast_swing_rate,blasts_contact,blasts_swing,squared_up_contact,squared_up_swing,avg_swing_length,swords,attack_angle,attack_direction,ideal_angle_rate,vertical_swing_path,exit_velocity_avg,launch_angle_avg,sweet_spot_percent,barrel_batted_rate,hard_hit_percent,avg_best_speed,avg_hyper_speed,z_swing_percent,z_swing_miss_percent,oz_swing_percent,whiff_percent,swing_percent,groundballs_percent,flyballs_percent,n_ff_formatted,ff_avg_speed,ff_avg_spin,n_sl_formatted,sl_avg_speed,sl_avg_spin,n_ch_formatted,ch_avg_speed,ch_avg_spin,n_cu_formatted,cu_avg_speed,cu_avg_spin,n_si_formatted,si_avg_speed,si_avg_spin,n_fc_formatted,fc_avg_speed,fc_avg_spin,n_fs_formatted,fs_avg_speed,fs_avg_spin,n_kn_formatted,kn_avg_speed,kn_avg_spin,n_st_formatted,st_avg_speed,st_avg_spin,n_sv_formatted,sv_avg_speed,sv_avg_spin,n_fo_formatted,fo_avg_speed,fo_avg_spin,n_sc_formatted,sc_avg_speed,sc_avg_spin,n_fastball_formatted,fastball_avg_speed,fastball_avg_spin,n_breaking_formatted,breaking_avg_speed,breaking_avg_spin,n_offspeed_formatted,offspeed_avg_speed,offspeed_avg_spin,team_xtra,debug_timestamp,innings_pitched,strikeouts,walks,earned_runs,opponent_pitcher_id,opponent_team_id,opp_K%,opp_BB%
-"Gausman, Kevin",Blue Jays,0.277,0.3053925,0.29119625,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,661563,147,0.22879177377892032,0.10135879544619905
-"Williams, Gavin",Guardians,0.302,0.2783231999999999,0.2901615999999999,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,669358,139,0.2279802581624905,0.07687927107061504
-"Peterson, David",Mets,0.29,0.2672639999999999,0.2786319999999999,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,663903,113,0.23059575267806803,0.08644991542943056
-"Irvin, Jake",Nationals,0.349,0.349,0.349,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,571510,112,0.20264235206550055,0.08913286192780052
-5203 data/raw/startingpitchers_with_opp_context.csv
-[main 116eb380] Update data/raw/startingpitchers_with_opp_context.csv [run 17514234930]
- 1 file changed, 14 insertions(+), 14 deletions(-)
+"Gausman, Kevin",Blue Jays,0.277,0.3053925,0.29119625,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,677651,117,0.2115845784910533,0.07858328721638075
+"Williams, Gavin",Guardians,0.302,0.2783231999999999,0.2901615999999999,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,702070,118,0.1831888428194497,0.07237090086694309
+"Peterson, David",Mets,0.29,0.2672639999999999,0.2786319999999999,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,624133,143,0.21214885078438525,0.08628237869390733
+"Irvin, Jake",Nationals,0.349,0.349,0.349,home,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2025-09-03 16:01:15.240480,,,,,800049,146,0.2071179600073381,0.07980187121629059
+5193 data/raw/startingpitchers_with_opp_context.csv
+[main 6efa6f1f] Update data/raw/startingpitchers_with_opp_context.csv [run 17588196566]
+ 1 file changed, 16 insertions(+), 27 deletions(-)
 
 ===== ERRORS =====
