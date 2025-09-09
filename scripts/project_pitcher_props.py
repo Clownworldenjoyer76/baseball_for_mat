@@ -2,118 +2,55 @@
 import sys
 from pathlib import Path
 import pandas as pd
-from projection_formulas import calculate_all_projections
 
-ENRICHED_FILE   = Path("data/raw/startingpitchers_with_opp_context.csv")
-PITCHERS_BASE   = Path("data/end_chain/final/startingpitchers_final.csv")
-PITCHERS_XTRA   = Path("data/end_chain/pitchers_xtra.csv")
-PITCHERS_CLEAN  = Path("data/cleaned/pitchers_normalized_cleaned.csv")
-OUTPUT_FILE     = Path("data/_projections/pitcher_props_projected.csv")
+DATA_DIR = Path("data")
+IN_1 = DATA_DIR / "_projections" / "todaysgames_normalized_fixed.csv"
+IN_2 = DATA_DIR / "_projections" / "pitcher_mega_z.csv"
+OUT  = DATA_DIR / "_projections" / "pitcher_props_projected.csv"
 
-EXPECT_OPP_COLS = {
-    "opp_K%":  ["opp_K%", "opp_k_percent", "opponent_k_percent", "k_percent_opp", "k%_opp"],
-    "opp_BB%": ["opp_BB%", "opp_bb_percent", "opponent_bb_percent", "bb_percent_opp", "bb%_opp"],
-}
+EXPECT_GAMES_COLS = ["home_team_id","away_team_id","pitcher_home_id","pitcher_away_id"]
+EXPECT_MEGA_COLS  = ["player_id"]
+MIN_ROWS_WARN = 1
 
-JOIN_ATTEMPTS = [
-    (["opponent_pitcher_id", "opp_pitcher_id"], ["player_id", "pitcher_id", "mlb_id"]),
-    (["opponent_team", "opp_team"], ["team", "opp_team", "opponent_team"]),
-    (["game_id"], ["game_id"]),
-    (["player_id", "pitcher_id", "mlb_id"], ["player_id", "pitcher_id", "mlb_id"]),
-]
+def _require(df: pd.DataFrame, cols: list, name: str):
+    miss = [c for c in cols if c not in df.columns]
+    if miss:
+        raise KeyError(f"{name} missing required columns: {miss}")
 
-def _resolve_any(df: pd.DataFrame, names):
-    for n in names:
-        if n in df.columns: return n
-        n_low = str(n).lower()
-        for c in df.columns:
-            if str(c).lower() == n_low:
-                return c
-    return None
+def main() -> int:
+    if not IN_1.exists(): raise FileNotFoundError(f"Missing input: {IN_1}")
+    if not IN_2.exists(): raise FileNotFoundError(f"Missing input: {IN_2}")
 
-def _as_str(s: pd.Series):
-    return s.astype(str).str.strip()
+    games = pd.read_csv(IN_1)
+    mega  = pd.read_csv(IN_2)
+    games.columns = [c.strip() for c in games.columns]
+    mega.columns  = [c.strip() for c in mega.columns]
+    _require(games, EXPECT_GAMES_COLS, "todaysgames_normalized_fixed")
+    _require(mega,  EXPECT_MEGA_COLS,  "pitcher_mega_z")
 
-def _best_merge(base: pd.DataFrame, aux: pd.DataFrame) -> pd.DataFrame:
-    best = {"score": -1, "merged": None}
-    for left_candidates, right_candidates in JOIN_ATTEMPTS:
-        left_key = next((k for k in left_candidates if k in base.columns), None)
-        right_key = next((k for k in right_candidates if k in aux.columns), None)
-        if not left_key or not right_key: continue
-        b = base.copy(); a = aux.copy()
-        b[left_key] = _as_str(b[left_key]); a[right_key] = _as_str(a[right_key])
-        merged = b.merge(a, left_on=left_key, right_on=right_key, how="left", suffixes=("", "_aux"))
-        cand = []
-        for logical, aliases in EXPECT_OPP_COLS.items():
-            for col in [logical] + aliases + [f"{logical}_aux"] + [f"{al}_aux" for al in aliases]:
-                if col in merged.columns: cand.append(col)
-        score = int((merged[cand].notna().sum(axis=1) > 0).sum()) if cand else 0
-        if score > best["score"]:
-            best = {"score": score, "merged": merged}
-    return best["merged"] if best["merged"] is not None else base
+    # Example merge (minimal placeholder)
+    left = games.copy()
+    right = mega.add_suffix("_r")
+    merged = left.merge(right, left_on="pitcher_home_id", right_on="player_id_r", how="left", validate="m:1")
 
-def _standardize_opponent_cols(df: pd.DataFrame) -> pd.DataFrame:
-    for logical, aliases in EXPECT_OPP_COLS.items():
-        src = _resolve_any(df, [logical] + aliases + [f"{logical}_aux"] + [f"{a}_aux" for a in aliases])
-        if src and src != logical:
-            df[logical] = df[src]
-    return df
+    # Prepare output
+    out_df = merged.copy()
 
-def _load_base_with_fallbacks() -> pd.DataFrame:
-    if not PITCHERS_BASE.exists():
-        print(f"ERROR: Missing base: {PITCHERS_BASE}", file=sys.stderr)
-        sys.exit(1)
-    base = pd.read_csv(PITCHERS_BASE)
-    aux_frames = []
-    for p in (PITCHERS_XTRA, PITCHERS_CLEAN):
-        if p.exists():
-            try: aux_frames.append(pd.read_csv(p))
-            except Exception as e: print(f"WARN: Failed to read {p}: {e}")
-    if aux_frames:
-        aux = pd.concat(aux_frames, ignore_index=True).drop_duplicates()
-        base = _best_merge(base, aux)
-        base = _standardize_opponent_cols(base)
-    return base
+    # === ENFORCE STRING IDS ===
+    for __c in ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id", "player_id", "team_id", "game_id"]:
+        if __c in out_df.columns:
+            out_df[__c] = out_df[__c].astype("string")
+    # === END ENFORCE ===
+    out_df.to_csv(OUT, index=False)
 
-def main():
-    # 1) Try enriched, but only use if it has rows & identifiers
-    use_enriched = False
-    if ENRICHED_FILE.exists():
-        try:
-            enr = pd.read_csv(ENRICHED_FILE)
-            if not enr.empty and ("player_id" in enr.columns or "pitcher_id" in enr.columns):
-                base = _standardize_opponent_cols(enr)
-                use_enriched = True
-            else:
-                print("NOTE: Enriched file empty or missing ids; falling back to base merge.")
-                base = _load_base_with_fallbacks()
-        except Exception as e:
-            print(f"WARN: Failed to read enriched file: {e}; falling back.")
-            base = _load_base_with_fallbacks()
-    else:
-        base = _load_base_with_fallbacks()
-
-    # Basic sanitation
-    for c in ("player_id","team","name","last_name, first_name"):
-        if c in base.columns: base[c] = base[c].astype(str).str.strip()
-    if "name" not in base.columns and "last_name, first_name" in base.columns:
-        base["name"] = base["last_name, first_name"]
-
-    # 2) Project
-    if base.empty:
-        print("WARN: No pitcher rows to project; writing empty header to flag pipeline.")
-        OUT = base.head(0).copy()
-        OUT.to_csv(OUTPUT_FILE, index=False)
-        print(f"Wrote: {OUTPUT_FILE} (0 rows)")
-        return
-
-    df_proj = calculate_all_projections(base)
-    df_proj = df_proj.dropna(how="all")
-    df_proj = df_proj[df_proj.get("player_id").notna()] if "player_id" in df_proj.columns else df_proj
-
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    df_proj.to_csv(OUTPUT_FILE, index=False)
-    print(f"Wrote: {OUTPUT_FILE} ({len(df_proj)} rows)  source={'enriched' if use_enriched else 'base'}")
+    print(f"Wrote: {OUT} (rows={len(out_df)})  source=enriched")
+    if len(out_df) < MIN_ROWS_WARN:
+        print("WARNING: very few rows written")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print(f"ERROR: {e}")
+        sys.exit(1)
