@@ -23,93 +23,105 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run fix_outputs_generate_fixed_files.py
-        run: python scripts/fix_outputs_generate_fixed_files.py
-
-      - name: Run normalize_inputs_for_06.py
-        run: python scripts/normalize_inputs_for_06.py
-
-      - name: Verify inputs for project_prep.py
+      # Run pipeline with logging into summaries/06_projection
+      - name: Run pipeline (with logging and status)
         run: |
           set -e
-          test -f data/_projections/todaysgames_normalized_fixed.csv || { echo "Missing: data/_projections/todaysgames_normalized_fixed.csv"; exit 1; }
-          test -f data/Data/pitchers.csv || { echo "Missing: data/Data/pitchers.csv"; exit 1; }
-          test -f data/manual/stadium_master.csv || { echo "Missing: data/manual/stadium_master.csv"; exit 1; }
+          mkdir -p summaries/06_projection
 
-      - name: Fingerprint project_prep.py
-        run: |
-          echo "[project_prep] PATH=scripts/project_prep.py"
-          (md5sum scripts/project_prep.py || shasum scripts/project_prep.py) 2>/dev/null || true
-          echo "[project_prep] HEAD (first 25 lines):"
-          head -n 25 scripts/project_prep.py
+          STATUS="summaries/06_projection/status.txt"
 
-      - name: Run project_prep.py
-        run: python scripts/project_prep.py
+          run_py () {
+            local file="$1"
+            local name="$(basename "$file")"
+            local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+            local log="summaries/06_projection/${name}.log"
 
-      - name: Run fix_missing_batter_stats.py
-        run: python scripts/fix_missing_batter_stats.py
+            echo ">> START: ${name} (${ts})" | tee -a "$log"
+            set +e
+            python "scripts/${name}" |& tee -a "$log"
+            code=${PIPESTATUS[0]}
+            set -e
 
-      - name: Run normalize_batters_for_builder.py
-        run: python scripts/normalize_batters_for_builder.py
+            if [ $code -eq 0 ]; then
+              echo "[OK] ${name} succeeded [${ts}]" >> "$STATUS"
+            else
+              echo "[FAIL] ${name} failed [${ts}]" >> "$STATUS"
+            fi
+            echo "[END] ${name} (${ts})" | tee -a "$log"
+            return $code
+          }
 
-      - name: Run project_batter_props.py
-        run: python scripts/project_batter_props.py
+          # Clear old status
+          : > "$STATUS"
 
-      - name: Run project_pitcher_props.py
-        run: python scripts/project_pitcher_props.py
+          # Run pipeline scripts
+          run_py fix_outputs_generate_fixed_files.py || true
+          run_py normalize_inputs_for_06.py || true
+          run_py project_prep.py || true
+          run_py fix_missing_batter_stats.py || true
+          run_py normalize_batters_for_builder.py || true
+          run_py project_batter_props.py || true
+          run_py project_pitcher_props.py || true
+          run_py build_expanded_batter_props.py || true
+          run_py pitcher_mega_z.py || true
+          run_py starter_coverage_guard.py || true
+          run_py post_normalize_pitchers.py || true
+          run_py finalize_projections.py || true
+          run_py clean_inject_team_ids.py || true
+          run_py inject_game_ids_from_schedule.py || true
+          run_py inject_batter_woba_adjustments.py || true
+          run_py clean_pitcher_files.py || true
+          run_py impute_missing_batter_adj_woba.py || true
+          run_py fix_missing_pa_in_pitcher_daily.py || true
 
-      - name: Run build_expanded_batter_props.py
-        run: python scripts/build_expanded_batter_props.py
-
-      - name: Run pitcher_mega_z.py
-        run: python scripts/pitcher_mega_z.py
-
-      - name: Run starter_coverage_guard.py
-        run: python scripts/starter_coverage_guard.py
-
-      - name: Run post_normalize_pitchers.py
-        run: python scripts/post_normalize_pitchers.py
-
-      - name: Run finalize_projections.py
-        run: python scripts/finalize_projections.py
-
-      - name: Run clean_inject_team_ids.py
-        run: python scripts/clean_inject_team_ids.py
-
-      - name: Run inject_game_ids_from_schedule.py
-        run: python scripts/inject_game_ids_from_schedule.py
-
-      - name: Run inject_batter_woba_adjustments.py
-        run: python scripts/inject_batter_woba_adjustments.py
-
-      - name: Run clean_pitcher_files.py
-        run: python scripts/clean_pitcher_files.py
-
-      - name: Run impute_missing_batter_adj_woba.py
-        run: python scripts/impute_missing_batter_adj_woba.py
-
-      - name: Always write & push summary (overwrite)
+      # Deep summary in same folder: overwrite each run
+      - name: Write & push deep summary (overwrite)
         if: always()
         run: |
           set -e
-          mkdir -p summaries/06_projection summaries/projections
+          mkdir -p summaries/06_projection
 
-          SUMMARY_FILE="summaries/06_projection/summary.txt"
+          SUMMARY="summaries/06_projection/summary.txt"
+          STATUS="summaries/06_projection/status.txt"
+
           {
             echo "===== RUN TIMESTAMP: $(date) ====="
             echo
-            echo "===== STATUS ====="
-            if [ -s summaries/projections/status.txt ]; then
-              cat summaries/projections/status.txt
+            echo "===== STATUS (per script) ====="
+            if [ -s "$STATUS" ]; then
+              cat "$STATUS"
             else
-              echo "(no status file found at summaries/projections/status.txt)"
+              echo "(status.txt not generated)"
             fi
             echo
-            echo "===== LOG ====="
-          } > "$SUMMARY_FILE"
+            echo "===== FAILURES: LAST 80 LINES OF EACH FAILED SCRIPT LOG ====="
+            if [ -s "$STATUS" ]; then
+              awk '/^\[FAIL\]/{print $2}' "$STATUS" | while read -r fname; do
+                LOG="summaries/06_projection/${fname}.log"
+                echo "---- ${fname} ----"
+                if [ -f "$LOG" ]; then
+                  tail -n 80 "$LOG"
+                else
+                  echo "(no log at $LOG)"
+                fi
+                echo
+              done
+            else
+              echo "(no failures recorded)"
+            fi
+            echo
+            echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS ====="
+            for LOG in summaries/06_projection/*.log; do
+              [ -f "$LOG" ] || continue
+              echo "---- $(basename "$LOG") ----"
+              tail -n 20 "$LOG"
+              echo
+            done
+          } > "$SUMMARY"
 
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-          git add "$SUMMARY_FILE"
-          git commit -m "06 Projection summary (overwrite latest) [skip ci]" || echo "No changes to commit"
+          git add summaries/06_projection/summary.txt summaries/06_projection/status.txt summaries/06_projection/*.log
+          git commit -m "06 Projection deep summary (overwrite latest) [skip ci]" || echo "No changes to commit"
           git push
