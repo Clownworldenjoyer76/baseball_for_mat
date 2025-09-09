@@ -22,13 +22,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # NEW: normalize all IDs to strings before anything else
-      - name: Normalize all 06 inputs to strings
-        run: python scripts/normalize_inputs_for_06.py
-
+      # 0) Generate “fixed” projections as you already do
       - name: Run fix_outputs_generate_fixed_files.py
         run: python scripts/fix_outputs_generate_fixed_files.py
 
+      # 1) NEW: Normalize all 06 inputs to ensure all *_id are strings before anything else runs
+      - name: Run normalize_inputs_for_06.py
+        run: python scripts/normalize_inputs_for_06.py
+
+      # 2) Proceed with the rest of the pipeline
       - name: Run project_prep.py
         run: python scripts/project_prep.py
 
