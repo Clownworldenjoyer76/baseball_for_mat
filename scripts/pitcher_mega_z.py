@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Build pitcher Mega-Z projection lines.
+
+Robust source preference:
+1) data/end_chain/final/startingpitchers_final.csv  (if exists and non-empty)
+2) Derived fallback: starters from data/_projections/todaysgames_normalized_fixed.csv
+   joined to data/Data/pitchers.csv by player_id (ensures current-day starters exist)
+3) data/cleaned/pitchers_normalized_cleaned.csv
+4) data/tagged/pitchers_normalized.csv
+
+Output:
+- data/_projections/pitcher_mega_z.csv
+- Logs source used.
+"""
 
 from pathlib import Path
 import math
@@ -7,11 +21,12 @@ import numpy as np
 import pandas as pd
 from scipy.stats import zscore
 
-# Source preference (current-day first)
-SRC_PRIMARY   = Path("data/end_chain/final/startingpitchers_final.csv")
-SRC_SECONDARY = Path("data/cleaned/pitchers_normalized_cleaned.csv")
-SRC_TERTIARY  = Path("data/tagged/pitchers_normalized.csv")
-
+# Paths
+P_STARTINGP = Path("data/end_chain/final/startingpitchers_final.csv")
+P_TODAY     = Path("data/_projections/todaysgames_normalized_fixed.csv")
+P_RAW       = Path("data/Data/pitchers.csv")
+P_CLEANED   = Path("data/cleaned/pitchers_normalized_cleaned.csv")
+P_TAGGED    = Path("data/tagged/pitchers_normalized.csv")
 OUTPUT_FILE = Path("data/_projections/pitcher_mega_z.csv")
 
 def ip_to_float(v):
@@ -51,37 +66,71 @@ def pick_first(df, options):
             return c
     return None
 
-def load_source():
-    # Prefer primary if it exists AND has rows; else fallback chain.
-    def _load(p: Path):
-        if not p.exists():
-            return None
-        df = pd.read_csv(p)
-        if df.shape[0] == 0:
-            return None
-        df.columns = [c.strip() for c in df.columns]
-        return df
+def _load_nonempty_csv(p: Path):
+    if not p.exists():
+        return None
+    df = pd.read_csv(p)
+    if df.shape[0] == 0:
+        return None
+    df.columns = [c.strip() for c in df.columns]
+    return df
 
-    for src in (SRC_PRIMARY, SRC_SECONDARY, SRC_TERTIARY):
-        df = _load(src)
-        if df is not None:
-            return df, src
-    raise SystemExit("❌ No pitcher source found (checked current-day, cleaned, tagged).")
+def _make_today_raw_fallback() -> tuple[pd.DataFrame, str] | None:
+    """Build minimal current-day pitcher rows by joining today's starters to raw pitchers."""
+    if not (P_TODAY.exists() and P_RAW.exists()):
+        return None
+    tg = pd.read_csv(P_TODAY, dtype=str)
+    if not {"pitcher_home_id","pitcher_away_id"}.issubset(tg.columns):
+        return None
+    ids = pd.unique(pd.concat([tg["pitcher_home_id"], tg["pitcher_away_id"]]).astype(str))
+    raw = pd.read_csv(P_RAW)
+    raw.columns = [c.strip() for c in raw.columns]
+    if "player_id" not in raw.columns:
+        return None
+    raw["player_id"] = raw["player_id"].astype(str)
+    df = raw[raw["player_id"].isin(ids)].copy()
+    if df.empty:
+        return None
+    df.columns = [c.strip() for c in df.columns]
+    return df, "constructed_from_todaysgames+raw"
+
+def load_source() -> tuple[pd.DataFrame, str]:
+    # 1) Current-day starting pitchers (if produced)
+    df = _load_nonempty_csv(P_STARTINGP)
+    if df is not None:
+        return df, str(P_STARTINGP)
+
+    # 2) Construct from today's schedule + raw pitchers (ensures starters exist)
+    built = _make_today_raw_fallback()
+    if built is not None:
+        return built
+
+    # 3) Cleaned normalized
+    df = _load_nonempty_csv(P_CLEANED)
+    if df is not None:
+        return df, str(P_CLEANED)
+
+    # 4) Tagged normalized
+    df = _load_nonempty_csv(P_TAGGED)
+    if df is not None:
+        return df, str(P_TAGGED)
+
+    raise SystemExit("❌ No suitable pitcher source found.")
 
 def main():
     df, src = load_source()
 
     pid_col = "player_id" if "player_id" in df.columns else None
     if pid_col is None:
-        raise SystemExit(f"❌ Missing player_id in {src}")
+        raise SystemExit(f"❌ Missing player_id in source {src}")
 
     name_col = "last_name, first_name" if "last_name, first_name" in df.columns else ("name" if "name" in df.columns else pid_col)
     team_col = "team" if "team" in df.columns else None
 
-    ip_col  = pick_first(df, ["p_formatted_ip", "innings_pitched", "ip", "ip_season"])
-    k_col   = pick_first(df, ["strikeout", "strikeouts", "k", "K"])
-    bb_col  = pick_first(df, ["walk", "walks", "bb", "BB"])
-    apps_col= pick_first(df, ["apps", "appearances", "games_started", "gs", "games"])
+    ip_col   = pick_first(df, ["p_formatted_ip","innings_pitched","ip","ip_season"])
+    k_col    = pick_first(df, ["strikeout","strikeouts","k","K"])
+    bb_col   = pick_first(df, ["walk","walks","bb","BB"])
+    apps_col = pick_first(df, ["apps","appearances","games_started","gs","games"])
 
     df[pid_col] = df[pid_col].astype(str)
     df[name_col] = df[name_col].astype(str)
@@ -90,8 +139,8 @@ def main():
 
     df["ip_season"] = df[ip_col].apply(ip_to_float) if ip_col else np.nan
     df["strikeouts"] = pd.to_numeric(df[k_col], errors="coerce") if k_col else np.nan
-    df["walks"] = pd.to_numeric(df[bb_col], errors="coerce") if bb_col else np.nan
-    df["apps"] = pd.to_numeric(df[apps_col], errors="coerce") if apps_col else np.nan
+    df["walks"]      = pd.to_numeric(df[bb_col], errors="coerce") if bb_col else np.nan
+    df["apps"]       = pd.to_numeric(df[apps_col], errors="coerce") if apps_col else np.nan
 
     df["ip_per_app"] = np.where(
         (df["ip_season"].notna()) & (df["apps"].notna()) & (df["apps"] > 0),
@@ -104,6 +153,7 @@ def main():
     with np.errstate(divide="ignore", invalid="ignore"):
         df["K_per_ip"]  = (df["strikeouts"] / df["ip_season"]).astype(float)
         df["BB_per_ip"] = (df["walks"] / df["ip_season"]).astype(float)
+
     df["K_per_ip"]  = df["K_per_ip"].replace([np.inf, -np.inf], np.nan).fillna(df["K_per_ip"].median()).fillna(1.0)
     df["BB_per_ip"] = df["BB_per_ip"].replace([np.inf, -np.inf], np.nan).fillna(df["BB_per_ip"].median()).fillna(0.35)
 
@@ -113,12 +163,15 @@ def main():
 
     df["strikeouts_z"] = zscore(df["K_per_ip"].fillna(df["K_per_ip"].median()), nan_policy="omit")
     df["walks_z"]      = -zscore(df["BB_per_ip"].fillna(df["BB_per_ip"].median()), nan_policy="omit")
-    df["mega_z"]       = df[["strikeouts_z", "walks_z"]].mean(axis=1)
+    df["mega_z"]       = df[["strikeouts_z","walks_z"]].mean(axis=1)
 
     rows = []
     for _, r in df.iterrows():
-        pid = str(r[pid_col]); nm = str(r[name_col]); tm = str(r[team_col]) if team_col else ""
-        k_lambda  = float(r["K_proj"]) if pd.notna(r["K_proj"]) else 0.0
+        pid = str(r[pid_col])
+        nm  = str(r[name_col])
+        tm  = str(r[team_col]) if team_col else ""
+
+        k_lambda  = float(r["K_proj"])  if pd.notna(r["K_proj"])  else 0.0
         bb_lambda = float(r["BB_proj"]) if pd.notna(r["BB_proj"]) else 0.0
 
         for line in [4.5, 5.5, 6.5]:
@@ -128,7 +181,7 @@ def main():
                 "value": round(k_lambda, 3),
                 "z_score": round(float(r["strikeouts_z"]) if pd.notna(r["strikeouts_z"]) else 0.0, 4),
                 "mega_z":  round(float(r["mega_z"]) if pd.notna(r["mega_z"]) else 0.0, 4),
-                "over_probability": round(max(0.02, min(0.98, poisson_p_ge(int(math.ceil(line)), k_lambda))), 4),
+                "over_probability": float(max(0.02, min(0.98, poisson_p_ge(k, k_lambda)))),
             })
         for line in [1.5, 2.5]:
             k = int(math.ceil(line))
@@ -137,7 +190,7 @@ def main():
                 "value": round(bb_lambda, 3),
                 "z_score": round(float(r["walks_z"]) if pd.notna(r["walks_z"]) else 0.0, 4),
                 "mega_z":  round(float(r["mega_z"]) if pd.notna(r["mega_z"]) else 0.0, 4),
-                "over_probability": round(max(0.02, min(0.98, poisson_p_ge(int(math.ceil(line)), bb_lambda))), 4),
+                "over_probability": float(max(0.02, min(0.98, poisson_p_ge(k, bb_lambda)))),
             })
 
     out_df = pd.DataFrame(rows)
