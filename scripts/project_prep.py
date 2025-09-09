@@ -12,8 +12,12 @@ def _require_columns(df: pd.DataFrame, cols: list, df_name: str) -> None:
     if missing:
         raise KeyError(f"{df_name} missing required columns: {missing}")
 
+def _to_str(s: pd.Series) -> pd.Series:
+    # Robust coercion to string for join keys
+    return s.astype(str)
+
 def project_prep():
-    # Inputs (confirmed paths)
+    # Inputs (confirmed)
     todays_games = DATA_DIR / "_projections" / "todaysgames_normalized_fixed.csv"
     pitchers_file = DATA_DIR / "Data" / "pitchers.csv"
     stadiums_file = DATA_DIR / "manual" / "stadium_master.csv"
@@ -31,12 +35,12 @@ def project_prep():
     pitchers = pd.read_csv(pitchers_file)
     stadiums = pd.read_csv(stadiums_file)
 
-    # Normalize column names (strip whitespace, keep original casing otherwise)
+    # Normalize column names
     games.columns = [c.strip() for c in games.columns]
     pitchers.columns = [c.strip() for c in pitchers.columns]
     stadiums.columns = [c.strip() for c in stadiums.columns]
 
-    # Required columns (confirmed from your uploads)
+    # Required columns (confirmed from uploaded files)
     _require_columns(
         games,
         ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"],
@@ -45,11 +49,13 @@ def project_prep():
     _require_columns(pitchers, ["player_id"], "pitchers")
     _require_columns(stadiums, ["team_id"], "stadiums")
 
-    # Types
-    for c in ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"]:
-        games[c] = games[c].astype(str)
-    pitchers["player_id"] = pitchers["player_id"].astype(str)
-    stadiums["team_id"] = stadiums["team_id"].astype(str)
+    # Coerce join keys to the same dtype (string)
+    games["home_team_id"] = _to_str(games["home_team_id"])
+    games["away_team_id"] = _to_str(games["away_team_id"])
+    games["pitcher_home_id"] = _to_str(games["pitcher_home_id"])
+    games["pitcher_away_id"] = _to_str(games["pitcher_away_id"])
+    pitchers["player_id"] = _to_str(pitchers["player_id"])
+    stadiums["team_id"] = _to_str(stadiums["team_id"])
 
     # Merge pitchers by pitcher_id ONLY (no team_id dependency)
     merged = games.merge(
@@ -66,13 +72,13 @@ def project_prep():
     )
 
     # Stadium info (join on confirmed ids)
-    # Keep a safe subset if present
     venue_cols_pref = [
-        "team_id", "team_name", "venue", "city", "state", "timezone", "is_dome",
-        "latitude", "longitude", "home_team",
+        "team_id", "team_name", "venue", "city", "state", "timezone",
+        "is_dome", "latitude", "longitude", "home_team",
     ]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
     stadium_sub = stadiums[venue_cols].drop_duplicates("team_id")
+
     merged = merged.merge(
         stadium_sub,
         left_on="home_team_id",
