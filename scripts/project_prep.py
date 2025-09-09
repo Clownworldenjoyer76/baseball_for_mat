@@ -43,7 +43,7 @@ def project_prep():
     pitchers["player_id"]    = _to_str(pitchers["player_id"])
     stadiums["team_id"]      = _to_str(stadiums["team_id"])
 
-    # Merge pitcher identities by player_id only (team_id not required)
+    # Merge pitcher identities by player_id
     merged = games.merge(
         pitchers.add_suffix("_home"),
         left_on="pitcher_home_id",
@@ -61,6 +61,7 @@ def project_prep():
     venue_cols_pref = ["team_id","team_name","venue","city","state","timezone","is_dome","latitude","longitude","home_team"]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
     stadium_sub = stadiums[venue_cols].drop_duplicates("team_id")
+
     merged = merged.merge(
         stadium_sub,
         left_on="home_team_id",
