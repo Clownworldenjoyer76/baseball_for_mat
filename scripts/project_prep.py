@@ -66,7 +66,11 @@ def project_prep():
     # Stadium attributes by team_id
     venue_cols_pref = ["team_id","team_name","venue","city","state","timezone","is_dome","latitude","longitude","home_team"]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
-    stadium_sub = stadiums[venue_cols].drop_duplicates("team_id")
+    stadium_sub = (
+        stadiums[venue_cols]
+        .drop_duplicates("team_id")
+        .astype({"team_id": str})   # ensure team_id stays string
+    )
 
     merged = merged.merge(
         stadium_sub,
