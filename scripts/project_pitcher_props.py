@@ -1,56 +1,95 @@
 #!/usr/bin/env python3
+# scripts/project_pitcher_props.py
+
 import sys
 from pathlib import Path
 import pandas as pd
 
-DATA_DIR = Path("data")
-IN_1 = DATA_DIR / "_projections" / "todaysgames_normalized_fixed.csv"
-IN_2 = DATA_DIR / "_projections" / "pitcher_mega_z.csv"
-OUT  = DATA_DIR / "_projections" / "pitcher_props_projected.csv"
+DATA_DIR   = Path("data")
+PROJ_DIR   = DATA_DIR / "_projections"
+RAW_DIR    = DATA_DIR / "raw"
+SUMM_DIR   = Path("summaries") / "projections"
+OUT_FILE   = PROJ_DIR / "pitcher_props_projected.csv"
 
-EXPECT_GAMES_COLS = ["home_team_id","away_team_id","pitcher_home_id","pitcher_away_id"]
-EXPECT_MEGA_COLS  = ["player_id"]
-MIN_ROWS_WARN = 1
+TODAY_GAMES_FILE = PROJ_DIR / "todaysgames_normalized_fixed.csv"
+ENRICHED_FILE    = RAW_DIR / "startingpitchers_with_opp_context.csv"
 
 def _require(df: pd.DataFrame, cols: list, name: str):
-    miss = [c for c in cols if c not in df.columns]
-    if miss:
-        raise KeyError(f"{name} missing required columns: {miss}")
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise KeyError(f"{name} missing required columns: {missing}")
 
-def main() -> int:
-    if not IN_1.exists(): raise FileNotFoundError(f"Missing input: {IN_1}")
-    if not IN_2.exists(): raise FileNotFoundError(f"Missing input: {IN_2}")
+def _to_str(df: pd.DataFrame, cols: list):
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].astype(str)
+    return df
 
-    games = pd.read_csv(IN_1)
-    mega  = pd.read_csv(IN_2)
-    games.columns = [c.strip() for c in games.columns]
-    mega.columns  = [c.strip() for c in mega.columns]
-    _require(games, EXPECT_GAMES_COLS, "todaysgames_normalized_fixed")
-    _require(mega,  EXPECT_MEGA_COLS,  "pitcher_mega_z")
+def load_todays_starters() -> pd.DataFrame:
+    if not TODAY_GAMES_FILE.exists():
+        raise FileNotFoundError(f"Missing input: {TODAY_GAMES_FILE}")
+    g = pd.read_csv(TODAY_GAMES_FILE)
+    g.columns = [c.strip() for c in g.columns]
+    _require(g, ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"], "todaysgames")
+    g = _to_str(g, ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"])
 
-    # Example merge (minimal placeholder)
-    left = games.copy()
-    right = mega.add_suffix("_r")
-    merged = left.merge(right, left_on="pitcher_home_id", right_on="player_id_r", how="left", validate="m:1")
+    # Flatten to one row per starter
+    home = g.rename(columns={
+        "pitcher_home_id": "player_id",
+        "home_team_id": "team_id",
+        "away_team_id": "opponent_team_id",
+    })[["player_id", "team_id", "opponent_team_id"]].copy()
+    home["home_away"] = "home"
 
-    # Prepare output
-    out_df = merged.copy()
+    away = g.rename(columns={
+        "pitcher_away_id": "player_id",
+        "away_team_id": "team_id",
+        "home_team_id": "opponent_team_id",
+    })[["player_id", "team_id", "opponent_team_id"]].copy()
+    away["home_away"] = "away"
 
-    # === ENFORCE STRING IDS ===
-    for __c in ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id", "player_id", "team_id", "game_id"]:
-        if __c in out_df.columns:
-            out_df[__c] = out_df[__c].astype("string")
-    # === END ENFORCE ===
-    out_df.to_csv(OUT, index=False)
+    starters = pd.concat([home, away], ignore_index=True)
+    # Some slates list the same pitcher twice; keep first
+    starters = starters.drop_duplicates(subset=["player_id"], keep="first")
+    return starters
 
-    print(f"Wrote: {OUT} (rows={len(out_df)})  source=enriched")
-    if len(out_df) < MIN_ROWS_WARN:
-        print("WARNING: very few rows written")
-    return 0
+def load_enriched() -> pd.DataFrame:
+    if not ENRICHED_FILE.exists():
+        raise FileNotFoundError(f"Missing input: {ENRICHED_FILE}")
+    e = pd.read_csv(ENRICHED_FILE)
+    e.columns = [c.strip() for c in e.columns]
+    # Accept either 'player_id' or legacy 'playerid'
+    if "player_id" not in e.columns and "playerid" in e.columns:
+        e = e.rename(columns={"playerid": "player_id"})
+    _require(e, ["player_id"], "startingpitchers_with_opp_context")
+    e = _to_str(e, ["player_id", "team_id", "opponent_team_id"])
+    return e
+
+def main():
+    PROJ_DIR.mkdir(parents=True, exist_ok=True)
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    SUMM_DIR.mkdir(parents=True, exist_ok=True)
+
+    starters = load_todays_starters()
+    enriched = load_enriched()
+
+    # --- Guard: make right side one-row-per player_id (fixes your error) ---
+    dup_mask = enriched.duplicated(subset=["player_id"], keep="first")
+    if dup_mask.any():
+        # log what we are dropping for transparency
+        enriched.loc[dup_mask].to_csv(SUMM_DIR / "pitcher_props_right_dupes.csv", index=False)
+        enriched = enriched.drop_duplicates(subset=["player_id"], keep="first")
+
+    # Merge many-to-one: left starters -> right enriched context
+    merged = starters.merge(enriched, on="player_id", how="left", validate="one_to_one")
+
+    # Keep all columns (downstream cleaners/post-normalizers will prune)
+    merged.to_csv(OUT_FILE, index=False)
+    print(f"Wrote: {OUT_FILE} (rows={len(merged)})  source=enriched")
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        main()
     except Exception as e:
-        print(f"ERROR: {e}")
+        print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
