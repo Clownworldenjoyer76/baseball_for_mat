@@ -35,13 +35,15 @@ def project_prep():
     _require(pitchers, ["player_id"], "pitchers")
     _require(stadiums, ["team_id"],   "stadiums")
 
-    games["home_team_id"]   = _to_str(games["home_team_id"])
-    games["away_team_id"]   = _to_str(games["away_team_id"])
-    games["pitcher_home_id"]= _to_str(games["pitcher_home_id"])
-    games["pitcher_away_id"]= _to_str(games["pitcher_away_id"])
-    pitchers["player_id"]   = _to_str(pitchers["player_id"])
-    stadiums["team_id"]     = _to_str(stadiums["team_id"])
+    # Normalize dtypes for join keys
+    games["home_team_id"]    = _to_str(games["home_team_id"])
+    games["away_team_id"]    = _to_str(games["away_team_id"])
+    games["pitcher_home_id"] = _to_str(games["pitcher_home_id"])
+    games["pitcher_away_id"] = _to_str(games["pitcher_away_id"])
+    pitchers["player_id"]    = _to_str(pitchers["player_id"])
+    stadiums["team_id"]      = _to_str(stadiums["team_id"])
 
+    # Merge pitcher identities by player_id only (team_id not required)
     merged = games.merge(
         pitchers.add_suffix("_home"),
         left_on="pitcher_home_id",
@@ -55,10 +57,10 @@ def project_prep():
         how="left",
     )
 
+    # Stadium attributes by team_id
     venue_cols_pref = ["team_id","team_name","venue","city","state","timezone","is_dome","latitude","longitude","home_team"]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
     stadium_sub = stadiums[venue_cols].drop_duplicates("team_id")
-
     merged = merged.merge(
         stadium_sub,
         left_on="home_team_id",
@@ -69,8 +71,10 @@ def project_prep():
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     RAW_DIR.mkdir(parents=True, exist_ok=True)
+
     out1 = OUTPUT_DIR / "startingpitchers.csv"
     out2 = RAW_DIR / "startingpitchers_with_opp_context.csv"
+
     merged.to_csv(out1, index=False)
     merged.to_csv(out2, index=False)
     print(f"project_prep: wrote {out1} and {out2} (rows={len(merged)})")
