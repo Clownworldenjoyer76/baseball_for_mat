@@ -76,7 +76,17 @@ def project_prep():
     out1 = OUTPUT_DIR / "startingpitchers.csv"
     out2 = RAW_DIR / "startingpitchers_with_opp_context.csv"
 
+    # === ENFORCE STRING IDS ===
+    for __c in ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id", "player_id", "team_id", "game_id"]:
+        if __c in merged.columns:
+            merged[__c] = merged[__c].astype("string")
+    # === END ENFORCE ===
     merged.to_csv(out1, index=False)
+    # === ENFORCE STRING IDS ===
+    for __c in ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id", "player_id", "team_id", "game_id"]:
+        if __c in merged.columns:
+            merged[__c] = merged[__c].astype("string")
+    # === END ENFORCE ===
     merged.to_csv(out2, index=False)
     print(f"project_prep: wrote {out1} and {out2} (rows={len(merged)})")
 
