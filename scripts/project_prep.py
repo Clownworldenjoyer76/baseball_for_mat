@@ -31,12 +31,12 @@ def project_prep():
     if not pitchers_file.exists(): raise FileNotFoundError(f"Missing input: {pitchers_file}")
     if not stadiums_file.exists(): raise FileNotFoundError(f"Missing input: {stadiums_file}")
 
-    # Read with strings so pandas never infers numeric for IDs
+    # Read as strings; prevent NA tokenization so we don't get "nan" on output
     games    = pd.read_csv(todays_games,  dtype=str, low_memory=False, keep_default_na=False)
     pitchers = pd.read_csv(pitchers_file, dtype=str, low_memory=False, keep_default_na=False)
     stadiums = pd.read_csv(stadiums_file, dtype=str, low_memory=False, keep_default_na=False)
 
-    # Trim header whitespace
+    # Normalize headers
     games.columns    = [c.strip() for c in games.columns]
     pitchers.columns = [c.strip() for c in pitchers.columns]
     stadiums.columns = [c.strip() for c in stadiums.columns]
@@ -45,7 +45,7 @@ def project_prep():
     _require(pitchers, ["player_id"], "pitchers")
     _require(stadiums, ["team_id"],   "stadiums")
 
-    # Enforce string on known ID columns (belt-and-suspenders)
+    # Belt-and-suspenders: force known IDs to str
     games    = _to_str(games, ID_FORCE)
     pitchers = _to_str(pitchers, ID_FORCE)
     stadiums = _to_str(stadiums, ID_FORCE)
@@ -56,34 +56,35 @@ def project_prep():
         left_on="pitcher_home_id",
         right_on="player_id_home",
         how="left",
-    )
-    merged = merged.merge(
+    ).merge(
         pitchers.add_suffix("_away"),
         left_on="pitcher_away_id",
         right_on="player_id_away",
         how="left",
     )
 
-    # Stadium attributes by team_id
+    # ------- Stadium join (hardened) -------
     venue_cols_pref = ["team_id","team_name","venue","city","state","timezone","is_dome","latitude","longitude","home_team"]
     venue_cols = [c for c in venue_cols_pref if c in stadiums.columns]
 
-    # HARDEN: reassert str on both join keys immediately before merge
+    # Prepare a stable subset and lock dtypes
+    stadium_sub = stadiums[venue_cols].copy()
+    stadium_sub["team_id"] = stadium_sub["team_id"].astype(str)
+
+    # Rename team_id -> home_team_id so we can merge with on="home_team_id"
+    stadium_sub = stadium_sub.rename(columns={"team_id": "home_team_id"})
+
+    # Lock the left key as string immediately before merge
     merged["home_team_id"] = merged["home_team_id"].astype(str)
 
-    stadium_sub = (
-        stadiums[venue_cols]
-        .astype({"team_id": str})        # ensure team_id remains string
-        .drop_duplicates("team_id")
-    )
-
+    # Merge using identical key name on both sides to avoid coercion logic
     merged = merged.merge(
         stadium_sub,
-        left_on="home_team_id",
-        right_on="team_id",
+        on="home_team_id",
         how="left",
         suffixes=("", "_stadium"),
     )
+    # ---------------------------------------
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -91,9 +92,9 @@ def project_prep():
     out1 = OUTPUT_DIR / "startingpitchers.csv"
     out2 = RAW_DIR / "startingpitchers_with_opp_context.csv"
 
-    # Always emit string for IDs on output
+    # Ensure ID columns are strings on output
     merged = _to_str(merged, [
-        "player_id_home","player_id_away","home_team_id","away_team_id","team_id","game_id",
+        "player_id_home","player_id_away","home_team_id","away_team_id","game_id",
         "pitcher_home_id","pitcher_away_id"
     ])
 
