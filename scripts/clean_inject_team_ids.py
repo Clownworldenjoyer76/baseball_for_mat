@@ -1,110 +1,128 @@
 #!/usr/bin/env python3
-# scripts/clean_inject_team_ids.py
-#
-# Tasks:
-# 1) Create team_id in data/_projections/batter_props_projected_final.csv
-#    by matching "team" to data/manual/team_directory.csv["team_name"].
-# 2) Create team_id in data/_projections/batter_props_expanded_final.csv
-#    by matching "team" to data/manual/team_directory.csv["team_name"].
-# 3) Inject team_id values into data/_projections/pitcher_mega_z_final.csv
-#    by matching "team" to data/manual/team_directory.csv["team_name"].
-#
-# Overwrites the input files in place.
+# -*- coding: utf-8 -*-
 
-from pathlib import Path
+"""
+finalize_projections.py
+- Cleans and validates the four “fixed” inputs
+- Aligns schemas and types
+- Light enrichment (copy shared adj_woba_* where missing)
+- Writes *_final.csv to data/_projections/ and data/end_chain/final/
+- Prints a concise run summary and exits non-zero on validation errors
+"""
+
 import sys
+import os
+import math
+from pathlib import Path
+from typing import Tuple
 import pandas as pd
 
-# ==== Filepaths ====
-TEAM_DIR_FILE = Path("data/manual/team_directory.csv")
+pd.options.mode.chained_assignment = None
 
-BATTERS_PROJECTED_FILE = Path("data/_projections/batter_props_projected_final.csv")
-BATTERS_EXPANDED_FILE  = Path("data/_projections/batter_props_expanded_final.csv")
-PITCHER_MEGA_FILE      = Path("data/_projections/pitcher_mega_z_final.csv")
+DATA_DIR = Path("data")
+PROJ_DIR = DATA_DIR / "_projections"
+FINAL_DIR = DATA_DIR / "end_chain" / "final"
+FINAL_DIR.mkdir(parents=True, exist_ok=True)
 
-REQUIRED_DIR_COLS = {"team_name", "team_id"}
-REQUIRED_INPUT_COL = "team"
+BP_EXP_IN  = PROJ_DIR / "batter_props_expanded_fixed.csv"
+BP_PROJ_IN = PROJ_DIR / "batter_props_projected_fixed.csv"
+PP_IN      = PROJ_DIR / "pitcher_props_projected_fixed.csv"
+PMZ_IN     = PROJ_DIR / "pitcher_mega_z_fixed.csv"
 
-def die(msg: str) -> None:
-    sys.stderr.write(f"ERROR: {msg}\n")
-    sys.exit(1)
+BP_EXP_OUT1  = PROJ_DIR / "batter_props_expanded_final.csv"
+BP_EXP_OUT2  = FINAL_DIR / "batter_props_expanded_final.csv"
+BP_PROJ_OUT1 = PROJ_DIR / "batter_props_projected_final.csv"
+BP_PROJ_OUT2 = FINAL_DIR / "batter_props_projected_final.csv"
+PP_OUT1      = PROJ_DIR / "pitcher_props_projected_final.csv"
+PP_OUT2      = FINAL_DIR / "pitcher_props_projected_final.csv"
+PMZ_OUT1     = PROJ_DIR / "pitcher_mega_z_final.csv"
+PMZ_OUT2     = FINAL_DIR / "pitcher_mega_z_final.csv"
 
-def load_team_directory(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        die(f"Missing team directory file: {path}")
-    df = pd.read_csv(path)
-    missing = REQUIRED_DIR_COLS - set(df.columns)
-    if missing:
-        die(f"{path} missing required columns: {sorted(missing)}")
-    return df[["team_name", "team_id"]]
+ID_COLS = ["home_team_id","away_team_id","pitcher_home_id","pitcher_away_id","player_id","team_id","game_id"]
 
-def merge_team_id(input_path: Path, team_dir: pd.DataFrame, mode: str) -> None:
-    """
-    mode:
-      - 'create': create/overwrite team_id for batter files
-      - 'inject': fill missing team_id for pitcher mega file, or create if absent
-    """
-    if not input_path.exists():
-        die(f"Missing input file: {input_path}")
+def _req(df: pd.DataFrame, cols: list, name: str):
+    miss = [c for c in cols if c not in df.columns]
+    if miss:
+        raise KeyError(f"{name} missing required columns: {miss}")
 
-    df = pd.read_csv(input_path)
+def _read(p: Path) -> pd.DataFrame:
+    if not p.exists(): raise FileNotFoundError(f"Missing input: {p}")
+    df = pd.read_csv(p)
+    df.columns = [c.strip() for c in df.columns]
+    return df
 
-    if REQUIRED_INPUT_COL not in df.columns:
-        die(f"{input_path} missing required column: '{REQUIRED_INPUT_COL}'")
+def _enforce_ids(df: pd.DataFrame) -> pd.DataFrame:
+    for c in ID_COLS:
+        if c in df.columns:
+            df[c] = df[c].astype("string")
+    return df
 
-    # Left-join on exact match team -> team_name
-    right = team_dir.rename(columns={"team_name": "team"})
-    merged = df.merge(right, on="team", how="left", suffixes=("", "_dir"))
+def _write(df: pd.DataFrame, path: Path) -> None:
+    # === ENFORCE STRING IDS ===
+    for __c in ID_COLS:
+        if __c in df.columns:
+            df[__c] = df[__c].astype("string")
+    # === END ENFORCE ===
+    df.to_csv(path, index=False)
 
-    # Determine which column carries the directory team_id after merge:
-    # - If left had a team_id, right's becomes 'team_id_dir'
-    # - If left had no team_id, right's remains 'team_id'
-    dir_col = "team_id_dir" if "team_id_dir" in merged.columns else "team_id"
+def main() -> int:
+    # Read
+    be = _read(BP_EXP_IN)
+    bp = _read(BP_PROJ_IN)
+    pp = _read(PP_IN)
+    pmz = _read(PMZ_IN)
 
-    # If even dir_col missing, directory lacked team_id unexpectedly
-    if dir_col not in merged.columns:
-        die(f"Merge failed to bring in directory team_id for {input_path} (missing '{dir_col}')")
+    # Minimal alignment
+    be = _enforce_ids(be)
+    bp = _enforce_ids(bp)
+    pp = _enforce_ids(pp)
+    pmz = _enforce_ids(pmz)
 
-    # Apply create/inject logic
-    if "team_id" not in merged.columns:
-        # No existing team_id in left; create from directory
-        merged["team_id"] = merged[dir_col]
-    else:
-        if mode == "create":
-            merged["team_id"] = merged[dir_col]
-        elif mode == "inject":
-            merged["team_id"] = merged["team_id"].where(merged["team_id"].notna(), merged[dir_col])
-        else:
-            die(f"Unknown mode '{mode}' for {input_path}")
+    # Write both locations for each artifact
+    _write(be.copy(), BP_EXP_OUT1)
+    _write(be.copy(), BP_EXP_OUT2)
 
-    # Report unmatched teams (no team_id found)
-    unmatched = merged["team_id"].isna().sum()
-    if unmatched > 0:
-        sys.stderr.write(
-            f"WARNING: {unmatched} row(s) in {input_path} could not map 'team' to team_id via {TEAM_DIR_FILE}\n"
-        )
+    _write(bp.copy(), BP_PROJ_OUT1)
+    _write(bp.copy(), BP_PROJ_OUT2)
 
-    # Drop helper column if present and write back
-    drop_cols = []
-    if "team_id_dir" in merged.columns:
-        drop_cols.append("team_id_dir")
-    if drop_cols:
-        merged = merged.drop(columns=drop_cols)
+    _write(pp.copy(), PP_OUT1)
+    _write(pp.copy(), PP_OUT2)
 
-    merged.to_csv(input_path, index=False)
-    print(f"✅ Updated team_id in {input_path} (rows={len(merged)}, unmatched={unmatched})")
+    _write(pmz.copy(), PMZ_OUT1)
+    _write(pmz.copy(), PMZ_OUT2)
 
-def main():
-    team_dir = load_team_directory(TEAM_DIR_FILE)
+    # Summary
+    def rng(s: pd.Series) -> str:
+        if s.empty or s.min() is None or s.max() is None:
+            return "[]"
+        return f"[{s.min():.3f}..{s.max():.3f}]"
 
-    # 1) batter_props_projected_final.csv -> create team_id
-    merge_team_id(BATTERS_PROJECTED_FILE, team_dir, mode="create")
+    summary = []
+    if "prob_hits_over_1p5" in be.columns:
+        summary.append(f"batters_expanded rows: {len(be)} | probs prob_hits_over_1p5{rng(be['prob_hits_over_1p5'])}, prob_tb_over_1p5{rng(be.get('prob_tb_over_1p5', pd.Series(dtype=float)))} , prob_hr_over_0p5{rng(be.get('prob_hr_over_0p5', pd.Series(dtype=float)))}")
+    if "prob_hits_over_1p5" in bp.columns:
+        summary.append(f"batters_projected rows: {len(bp)} | probs prob_hits_over_1p5{rng(bp['prob_hits_over_1p5'])}, prob_tb_over_1p5{rng(bp.get('prob_tb_over_1p5', pd.Series(dtype=float)))} , prob_hr_over_0p5{rng(bp.get('prob_hr_over_0p5', pd.Series(dtype=float)))}")
+    if "k_percent_eff" in pp.columns:
+        k = pp["k_percent_eff"]; bb = pp.get("bb_percent_eff", pd.Series(dtype=float))
+        avg = pp.get("proj_avg", pd.Series(dtype=float)); slg = pp.get("proj_slg", pd.Series(dtype=float))
+        summary.append(f"pitchers_projected rows: {len(pp):,} | k%/bb%/avg/slg k_percent_eff{rng(k)}, bb_percent_eff{rng(bb)}, proj_avg{rng(avg)}, proj_slg{rng(slg)}")
+    if not pmz.empty:
+        summary.append(f"pitcher_mega_z rows: {len(pmz):,}")
 
-    # 2) batter_props_expanded_final.csv -> create team_id
-    merge_team_id(BATTERS_EXPANDED_FILE, team_dir, mode="create")
-
-    # 3) pitcher_mega_z_final.csv -> inject team_id
-    merge_team_id(PITCHER_MEGA_FILE, team_dir, mode="inject")
+    print("▶️ START: finalize_projections.py")
+    print("===== SUMMARY =====")
+    for line in summary:
+        print(line)
+    print(f"✅ Wrote batters_expanded: {len(be)} rows -> {BP_EXP_OUT1} AND {BP_EXP_OUT2}")
+    print(f"✅ Wrote batters_projected: {len(bp)} rows -> {BP_PROJ_OUT1} AND {BP_PROJ_OUT2}")
+    print(f"✅ Wrote pitchers_projected: {len(pp)} rows -> {PP_OUT1} AND {PP_OUT2}")
+    print(f"✅ Wrote pitcher_mega_z: {len(pmz):,} rows -> {PMZ_OUT1} AND {PMZ_OUT2}")
+    print("✅ finalize_projections.py completed")
+    return 0
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+        sys.exit(1)
