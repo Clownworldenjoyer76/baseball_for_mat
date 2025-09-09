@@ -16,3 +16,23 @@ project_prep: wrote data/end_chain/final/startingpitchers.csv and data/raw/start
   - team_id: dtype=object; samples=['147', '111', '141', '110', '139']
 project_prep: wrote data/end_chain/final/startingpitchers.csv and data/raw/startingpitchers_with_opp_context.csv (rows=15)
 [END] project_prep.py (2025-09-09 20:35:38 UTC)
+>> START: project_prep.py (2025-09-09 20:59:12 UTC)
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 94, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 91, in main
+    project_prep()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 15, in project_prep
+    sched = pd.read_csv(schedule_file, dtype=str)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
+    self.handles = get_handle(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: 'data/cleaned/mlb_sched.csv'
+[END] project_prep.py (2025-09-09 20:59:12 UTC)
