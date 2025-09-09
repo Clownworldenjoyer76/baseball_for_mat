@@ -3,14 +3,17 @@ name: 06 Projection and Builder
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "0 12 * * *"  # daily at 12:00 UTC
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout repo (full history, pinned branch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -22,13 +25,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # 0) Generate “fixed” projections as you already do
+      # 0) Generate “fixed” projections
       - name: Run fix_outputs_generate_fixed_files.py
         run: python scripts/fix_outputs_generate_fixed_files.py
 
-      # 1) NEW: Normalize all 06 inputs to ensure all *_id are strings before anything else runs
+      # 1) Normalize all 06 inputs (force IDs to strings)
       - name: Run normalize_inputs_for_06.py
         run: python scripts/normalize_inputs_for_06.py
+
+      # 1a) Verify required inputs exist (fail fast if missing)
+      - name: Verify inputs for project_prep.py
+        run: |
+          set -e
+          test -f data/_projections/todaysgames_normalized_fixed.csv || { echo "Missing: data/_projections/todaysgames_normalized_fixed.csv"; exit 1; }
+          test -f data/Data/pitchers.csv || { echo "Missing: data/Data/pitchers.csv"; exit 1; }
+          test -f data/manual/stadium_master.csv || { echo "Missing: data/manual/stadium_master.csv"; exit 1; }
+
+      # 1b) Fingerprint project_prep.py so logs prove which version ran
+      - name: Fingerprint project_prep.py
+        run: |
+          echo "[project_prep] PATH=scripts/project_prep.py"
+          md5sum scripts/project_prep.py || shasum scripts/project_prep.py
+          echo "[project_prep] HEAD (first 25 lines):"
+          head -n 25 scripts/project_prep.py
 
       # 2) Proceed with the rest of the pipeline
       - name: Run project_prep.py
@@ -75,9 +94,6 @@ jobs:
 
       - name: Run impute_missing_batter_adj_woba.py
         run: python scripts/impute_missing_batter_adj_woba.py
-
-      - name: Run fix_missing_pa_in_pitcher_daily.py
-        run: python scripts/fix_missing_pa_in_pitcher_daily.py
 
       - name: Always write & push summary
         if: always()
