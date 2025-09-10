@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   audit:
@@ -17,149 +17,104 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate summaries (always)
+      - name: Find /scripts files not referenced by workflows
         run: |
           set -euo pipefail
           mkdir -p summaries/archive
 
           python - <<'PY'
-          import csv, os, pathlib, subprocess, re
+          import pathlib, re, os, csv
 
           ROOT = pathlib.Path(".")
+          SCRIPTS_DIR = ROOT / "scripts"
+          WF_DIR = ROOT / ".github" / "workflows"
           OUT_DIR = ROOT / "summaries" / "archive"
           OUT_DIR.mkdir(parents=True, exist_ok=True)
-          OUT_CSV = OUT_DIR / "audit_unused_report.csv"
-          OUT_TXT = OUT_DIR / "candidates.txt"
+          OUT_TXT = OUT_DIR / "unused_scripts_in_workflows.txt"
+          OUT_CSV = OUT_DIR / "unused_scripts_in_workflows.csv"
 
-          def git_last_date(path):
-              try:
-                  return subprocess.check_output(
-                      ["git","log","-1","--format=%cs","--", str(path)],
-                      text=True
-                  ).strip() or "NO_HISTORY"
-              except Exception:
-                  return "NO_HISTORY"
-
-          SEARCH_GLOBS = ["*.py","*.md","*.yml","*.yaml","*.toml","*.json","*.sh","*.txt",
-                          "*.ipynb","*.html","Makefile",".github/workflows/*.yml","Dockerfile",
-                          "setup.cfg","setup.py","pyproject.toml"]
-          searchable = []
-          for g in SEARCH_GLOBS:
-              searchable += [p for p in ROOT.rglob(g) if ".git" not in p.parts and "venv" not in p.parts]
-
-          def referenced_any(path):
-              name = os.path.basename(path)
-              name_l = name.lower().encode()
-              for f in searchable:
+          # Collect all workflow file contents (yml/yaml)
+          workflow_texts = []
+          if WF_DIR.exists():
+              for wf in list(WF_DIR.glob("*.yml")) + list(WF_DIR.glob("*.yaml")):
                   try:
-                      b = f.read_bytes().lower()
+                      workflow_texts.append(wf.read_text(errors="ignore"))
                   except Exception:
-                      continue
-                  if name_l in b:
-                      return True
-              return False
+                      pass
+          joined = "\n".join(workflow_texts)
 
-          py_files = [p for p in ROOT.rglob("*.py") if ".git" not in p.parts and "venv" not in p.parts]
-          imported_mods = set()
-          imp_re = re.compile(r'^\s*(?:from|import)\s+([a-zA-Z0-9_\.]+)')
-          for p in py_files:
-              try:
-                  for line in p.read_text(errors="ignore").splitlines():
-                      m = imp_re.match(line)
-                      if m:
-                          imported_mods.add(m.group(1).split('.')[0])
-              except Exception:
-                  pass
+          # Extract python -m module usages to map to script paths
+          # e.g., "python -m scripts.foo.bar" -> scripts/foo/bar.py
+          mod_paths = set()
+          for m in re.finditer(r"(?:^|\s)-m\s+([A-Za-z0-9_\.]+)", joined):
+              mod = m.group(1).strip()
+              # only consider modules that start with "scripts."
+              if mod == "scripts" or mod.startswith("scripts."):
+                  mod_paths.add(pathlib.Path(mod.replace(".", "/") + ".py").as_posix())
 
-          def module_name(p: pathlib.Path):
-              return p.stem
+          # Also check for direct path references like "scripts/foo.py" or "bash scripts/foo.sh"
+          # We'll search via substring on posix paths relative to repo root.
+          direct_refs_text = joined
 
-          rows = [("path","type","git_last_modified","referenced_anywhere","imported_by_others","archive_candidate","reason")]
-          candidates = []
+          # Gather candidate scripts in /scripts (recursive), typical script types
+          exts = {".py", ".sh", ".bash", ".zsh", ".ps1"}
+          scripts = []
+          if SCRIPTS_DIR.exists():
+              for p in SCRIPTS_DIR.rglob("*"):
+                  if p.is_file() and (p.suffix in exts or p.stat().st_mode & 0o111):
+                      scripts.append(p)
 
-          for p in ROOT.rglob("*"):
-              if p.is_dir(): continue
-              if ".git" in p.parts or "venv" in p.parts: continue
-              if p.suffix not in {".py",".csv"}: continue
+          unused = []
+          rows = [("path","referenced_in_workflows")]
+          for p in sorted(scripts):
+              rel = p.as_posix()
+              rel_from_root = str(p.relative_to(ROOT).as_posix())
 
-              typ = p.suffix.lstrip(".")
-              refd = referenced_any(p)
-              impd = "N/A"
-              if typ == "py":
-                  impd = module_name(p) in imported_mods
+              # check direct path mention
+              direct_hit = (rel_from_root in direct_refs_text)
 
-              shebang = False
-              try:
-                  shebang = p.read_bytes().startswith(b"#!")
-              except Exception:
-                  pass
+              # check module mapping (for .py only)
+              mod_hit = False
+              if p.suffix == ".py":
+                  if rel_from_root in mod_paths:
+                      mod_hit = True
 
-              archive = False
-              reason = ""
-              if typ == "csv":
-                  archive = (not refd)
-                  if archive: reason = "CSV not referenced anywhere"
-              elif typ == "py":
-                  archive = (not refd) and (impd is False) and (not shebang)
-                  if archive:
-                      reason = "PY not referenced, not imported, no shebang"
+              used = direct_hit or mod_hit
+              rows.append((rel_from_root, "YES" if used else "NO"))
+              if not used:
+                  unused.append(rel_from_root)
 
-              rows.append((
-                  str(p),
-                  typ,
-                  git_last_date(p),
-                  "YES" if refd else "NO",
-                  "YES" if impd is True else ("NO" if impd is False else "N/A"),
-                  "YES" if archive else "NO",
-                  reason
-              ))
-              if archive:
-                  candidates.append(str(p))
+          with OUT_TXT.open("w") as f:
+              for u in unused:
+                  f.write(u + "\n")
 
           with OUT_CSV.open("w", newline="") as f:
               csv.writer(f).writerows(rows)
-          with OUT_TXT.open("w") as f:
-              for c in candidates:
-                  f.write(c + "\n")
           PY
 
-      - name: Upload artifacts
+      - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: audit-unused-summaries
+          name: unused-scripts-report
           path: |
-            summaries/archive/audit_unused_report.csv
-            summaries/archive/candidates.txt
+            summaries/archive/unused_scripts_in_workflows.txt
+            summaries/archive/unused_scripts_in_workflows.csv
 
-      - name: Commit summaries to main (always)
+      - name: Job Summary
         if: always()
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout main
-          git pull --ff-only origin main
-          # Ensure the directory is tracked even if empty
-          touch summaries/archive/.gitkeep
-          git add summaries/archive/audit_unused_report.csv summaries/archive/candidates.txt summaries/archive/.gitkeep
-          git commit -m "chore: update audit summaries (no file moves)" || echo "No changes to commit."
-          git push origin main || echo "::warning::Push to main failed (branch protections?). Files still attached as artifacts."
-
-      - name: Job Summary (always)
-        if: always()
-        run: |
-          echo "## Potential archive candidates" >> $GITHUB_STEP_SUMMARY
+          echo "## Scripts in /scripts not referenced by any workflow" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -s summaries/archive/candidates.txt ]; then
-            COUNT=$(wc -l < summaries/archive/candidates.txt | tr -d ' ')
+          if [ -s summaries/archive/unused_scripts_in_workflows.txt ]; then
+            COUNT=$(wc -l < summaries/archive/unused_scripts_in_workflows.txt | tr -d ' ')
             echo "**Count:** $COUNT" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             while read -r line; do
-              echo "- $line" >> $GITHUB_STEP_SUMMARY
-            done < summaries/archive/candidates.txt
+              echo "- \`$line\`" >> $GITHUB_STEP_SUMMARY
+            done < summaries/archive/unused_scripts_in_workflows.txt
           else
-            echo "No candidates found." >> $GITHUB_STEP_SUMMARY
+            echo "No unused scripts found." >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**CSV path:** \`summaries/archive/audit_unused_report.csv\`" >> $GITHUB_STEP_SUMMARY
+          echo "**CSV:** \`summaries/archive/unused_scripts_in_workflows.csv\`" >> $GITHUB_STEP_SUMMARY
