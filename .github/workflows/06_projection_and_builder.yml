@@ -17,7 +17,7 @@ jobs:
           ref: main
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -26,11 +26,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Run pipeline with logging into summaries/06_projection
+      # Start clean: remove any previous run's summaries and recreate folder
+      - name: Reset summaries directory
+        run: |
+          rm -rf summaries/06_projection
+          mkdir -p summaries/06_projection
+
+      # Run pipeline with fresh logs & status
       - name: Run pipeline (with logging and status)
         run: |
-          set -e
-          mkdir -p summaries/06_projection
+          set -euo pipefail
           STATUS="summaries/06_projection/status.txt"
           : > "$STATUS"
 
@@ -40,7 +45,8 @@ jobs:
             local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
             local log="summaries/06_projection/${name}.log"
 
-            echo ">> START: ${name} (${ts})" | tee -a "$log"
+            # new file per run; no cross-run append because directory was reset
+            echo ">> START: ${name} (${ts})" | tee "$log"
             set +e
             python "scripts/${name}" |& tee -a "$log"
             code=${PIPESTATUS[0]}
@@ -75,7 +81,7 @@ jobs:
           run_py impute_missing_batter_adj_woba.py || true
           run_py fix_missing_pa_in_pitcher_daily.py || true
 
-      # Commit pipeline artifacts (CSV outputs + logs + status)
+      # Commit pipeline artifacts (CSV outputs + logs + status) — only fresh summaries from this run
       - name: Commit & push outputs
         if: always()
         run: |
@@ -83,11 +89,9 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-          # Show what changed (helpful debug)
           echo "=== git status (before add) ==="
           git status --porcelain || true
 
-          # Add typical outputs; adjust globs as needed for your repo
           git add \
             data/_projections/*.csv \
             data/end_chain/final/*.csv \
@@ -101,13 +105,11 @@ jobs:
           git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
           git push || echo "No changes to push"
 
-      # Deep summary in same folder: overwrite each run
-      - name: Write & push deep summary (overwrite)
+      # Write a clean summary file (overwrites each run)
+      - name: Write deep summary (overwrite)
         if: always()
         run: |
-          set -e
-          mkdir -p summaries/06_projection
-
+          set -euo pipefail
           SUMMARY="summaries/06_projection/summary.txt"
           STATUS="summaries/06_projection/status.txt"
 
@@ -123,7 +125,7 @@ jobs:
             echo
             echo "===== FAILURES: LAST 80 LINES OF EACH FAILED SCRIPT LOG ====="
             if [ -s "$STATUS" ]; then
-              awk '/^\[FAIL\]/{print $2}' "$STATUS" | while read -r fname; do
+              awk '/^\[FAIL\]/{print $2}' "$STATUS" | sort -u | while read -r fname; do
                 LOG="summaries/06_projection/${fname}.log"
                 echo "---- ${fname} ----"
                 if [ -f "$LOG" ]; then
@@ -151,3 +153,25 @@ jobs:
           git add "$SUMMARY"
           git commit -m "06 Projection: overwrite summary.txt [skip ci]" || echo "No changes to commit"
           git push || echo "No changes to push"
+
+      # Also publish a succinct run summary to the Actions job summary UI
+      - name: Publish job summary
+        if: always()
+        run: |
+          STATUS="summaries/06_projection/status.txt"
+          echo "## 06 Projection and Builder — Run Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Timestamp:** \`$(date)\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "$STATUS" ]; then
+            echo "### Script Status" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            # Render status lines as a code block for readability
+            {
+              echo '```'
+              cat "$STATUS"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "_No status produced._" >> "$GITHUB_STEP_SUMMARY"
+          fi
