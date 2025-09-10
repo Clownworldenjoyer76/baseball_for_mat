@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # scripts/project_prep.py
 # Purpose: build startingpitchers.csv and startingpitchers_with_opp_context.csv
-# Works with long-format startingpitchers.csv (one pitcher per row).
-# No new files or paths are introduced.
+# Ensures startingpitchers_with_opp_context.csv has: game_id, team_id, opponent_team_id, player_id (all as strings, no NaN)
 
 from __future__ import annotations
 import sys
@@ -10,7 +9,7 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 
-# ---- Paths (unchanged destinations) ----
+# ---- Paths ----
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 END_DIR = ROOT / "data" / "end_chain" / "final"
@@ -18,80 +17,78 @@ END_DIR = ROOT / "data" / "end_chain" / "final"
 STARTING_PITCHERS_OUT = END_DIR / "startingpitchers.csv"
 WITH_OPP_OUT = RAW_DIR / "startingpitchers_with_opp_context.csv"
 
-VERSION = "v3-longfmt"
+VERSION = "v3-fixed"
 
 def log(msg: str) -> None:
     print(msg, flush=True)
-
-def _require_cols(df: pd.DataFrame, cols: list[str], name: str) -> None:
-    missing = [c for c in cols if c not in df.columns]
-    if missing:
-        raise RuntimeError(f"{name} missing required columns: {missing}")
 
 def main() -> int:
     log(f">> START: project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
     log(f"[project_prep] VERSION={VERSION} @ {Path(__file__).resolve()}")
 
     # -------------------------------------------------------------------------
-    # INPUT: read existing long-format startingpitchers.csv
+    # INPUT: try to read existing startingpitchers.csv if present
     # -------------------------------------------------------------------------
-    if not STARTING_PITCHERS_OUT.exists():
-        raise RuntimeError(f"{STARTING_PITCHERS_OUT} not found. Upstream must create it before this step.")
+    sp_path_guess = STARTING_PITCHERS_OUT
+    if sp_path_guess.exists():
+        sp = pd.read_csv(sp_path_guess, dtype=str)
+    else:
+        raise RuntimeError(
+            "project_prep.py expected to build `sp` earlier in the pipeline.\n"
+            "Ensure `sp` exists with columns: game_id, home_team_id, away_team_id, "
+            "pitcher_home_id, pitcher_away_id (all as strings)."
+        )
 
-    sp = pd.read_csv(STARTING_PITCHERS_OUT, dtype=str)
-
-    # Must have at least these columns in long format
-    base_needed = ["game_id", "team_id", "player_id"]
-    _require_cols(sp, base_needed, "startingpitchers.csv")
-
-    # Normalize dtypes (defensive)
-    for c in base_needed:
-        sp[c] = sp[c].astype(str)
+    # Normalize expected ID columns to strings
+    for col in ["game_id", "home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"]:
+        if col in sp.columns:
+            sp[col] = sp[col].astype(str)
 
     # -------------------------------------------------------------------------
-    # OUTPUT 1: rewrite startingpitchers.csv exactly as-is (idempotent)
+    # OUTPUT 1: startingpitchers.csv (unchanged except dtype normalization)
     # -------------------------------------------------------------------------
     STARTING_PITCHERS_OUT.parent.mkdir(parents=True, exist_ok=True)
     sp.to_csv(STARTING_PITCHERS_OUT, index=False)
-    log(f"project_prep: wrote {STARTING_PITCHERS_OUT.relative_to(ROOT)} (rows={len(sp)})")
+    log(f"project_prep: wrote {STARTING_PITCHERS_OUT} (rows={len(sp)})")
 
     # -------------------------------------------------------------------------
-    # OUTPUT 2: build startingpitchers_with_opp_context.csv
-    # Required columns for downstream: game_id, team_id, opponent_team_id, player_id
-    #
-    # Derive opponent_team_id from other row in the same game_id.
-    # We do NOT introduce any new inputs. We rely solely on sp.
+    # OUTPUT 2: startingpitchers_with_opp_context.csv
+    # Must include ONLY: game_id, team_id, opponent_team_id, player_id
     # -------------------------------------------------------------------------
-    # Build opponent map via self-merge on game_id, exclude same team_id
-    left = sp[["game_id", "team_id"]].copy()
-    right = sp[["game_id", "team_id"]].rename(columns={"team_id": "opponent_team_id"})
-    opp = (
-        left.merge(right, on="game_id", how="inner")
-            .query("team_id != opponent_team_id")
-            .drop_duplicates(subset=["game_id", "team_id"])  # one opponent per (game, team)
-    )
+    required_source = {"game_id", "home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"}
+    missing = [c for c in required_source if c not in sp.columns]
+    if missing:
+        raise RuntimeError(
+            f"project_prep: missing required columns in `sp` for with_opp_context: {missing}"
+        )
 
-    # Merge opponent back to get player_id
-    with_opp = (
-        sp[["game_id", "team_id", "player_id"]]
-        .merge(opp, on=["game_id", "team_id"], how="left")
-    )
+    # Home rows
+    home_rows = pd.DataFrame({
+        "game_id": sp["game_id"],
+        "team_id": sp["home_team_id"],
+        "opponent_team_id": sp["away_team_id"],
+        "player_id": sp["pitcher_home_id"],
+    })
 
-    # Defensive: ensure strings and final column order
-    for c in ["game_id", "team_id", "opponent_team_id", "player_id"]:
-        if c in with_opp.columns:
-            with_opp[c] = with_opp[c].astype(str)
+    # Away rows
+    away_rows = pd.DataFrame({
+        "game_id": sp["game_id"],
+        "team_id": sp["away_team_id"],
+        "opponent_team_id": sp["home_team_id"],
+        "player_id": sp["pitcher_away_id"],
+    })
+
+    # Combine + enforce no NaN, all strings
+    with_opp = pd.concat([home_rows, away_rows], ignore_index=True)
+    with_opp = with_opp.fillna("").astype(str)
+
+    # Final column order
     with_opp = with_opp[["game_id", "team_id", "opponent_team_id", "player_id"]]
-
-    # Sanity: warn (via log) if any opponent missing (should be rare, e.g., single-team rows)
-    missing_opp = with_opp["opponent_team_id"].isna().sum()
-    if missing_opp:
-        log(f"[WARN] {missing_opp} row(s) missing opponent_team_id (games without a paired opponent row).")
 
     WITH_OPP_OUT.parent.mkdir(parents=True, exist_ok=True)
     with_opp.to_csv(WITH_OPP_OUT, index=False)
-    log(f"project_prep: wrote {WITH_OPP_OUT.relative_to(ROOT)} (rows={len(with_opp)})")
 
+    log(f"project_prep: wrote {WITH_OPP_OUT} (rows={len(with_opp)})")
     log(f"[END] project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
     return 0
 
