@@ -17,6 +17,10 @@ END_DIR = ROOT / "data" / "end_chain" / "final"
 STARTING_PITCHERS_OUT = END_DIR / "startingpitchers.csv"
 WITH_OPP_OUT = RAW_DIR / "startingpitchers_with_opp_context.csv"
 
+# ---- FIX: correct schedule path (keep both Path and str for legacy code) ----
+SCHEDULE_FILE = ROOT / "data" / "bets" / "mlb_sched.csv"
+schedule_file = str(SCHEDULE_FILE)  # legacy code may reference this name
+
 # If your script reads from existing normalized inputs, keep those reads as-is.
 # I’m not inventing any inputs here. This script expects that the upstream step(s)
 # already produced the dataframe `sp` below. If you currently read from files,
