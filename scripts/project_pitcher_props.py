@@ -1,95 +1,78 @@
 #!/usr/bin/env python3
-# Purpose: produce data/_projections/pitcher_props_projected.csv
-# Ensures the output includes player_id + game_id + team_id + opponent_team_id
-# by enriching with startingpitchers_with_opp_context.csv (long form).
-# No new paths.
+# Purpose: Produce pitcher_props_projected.csv with game/team context
+# Inputs:
+#   - data/_projections/pitcher_props_projected.csv  (from enriched source)
+#   - data/raw/startingpitchers_with_opp_context.csv (from project_prep.py long format)
+# Output:
+#   - data/_projections/pitcher_props_projected.csv  (overwrites with context columns added)
 
 from __future__ import annotations
 import sys
 import pandas as pd
 from pathlib import Path
-
-VERSION = "v3-enriched"
+from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[1]
-PROJ_DIR = ROOT / "data" / "_projections"
-RAW_DIR = ROOT / "data" / "raw"
+PROJ_IN  = ROOT / "data" / "_projections" / "pitcher_props_projected.csv"
+SP_LONG  = ROOT / "data" / "raw" / "startingpitchers_with_opp_context.csv"
+PROJ_OUT = PROJ_IN  # overwrite in place
 
-IN_PROPS_CORE = PROJ_DIR / "pitcher_props_projected_core.csv"      # if your pipeline produces a core file; else adjust below
-OUT_PROPS = PROJ_DIR / "pitcher_props_projected.csv"
-SP_WITH_OPP = RAW_DIR / "startingpitchers_with_opp_context.csv"
+VERSION = "v4-context-from-sp_long"
 
-REQ_FROM_SP = ["player_id", "game_id", "team_id", "opponent_team_id"]
+REQ_PROJ_COLS = ["player_id"]           # minimal needed to merge
+REQ_SP_COLS   = ["game_id","team_id","opponent_team_id","player_id"]
+CTX_COLS      = ["game_id","team_id","opponent_team_id"]
 
 def log(msg: str) -> None:
     print(msg, flush=True)
 
-def _as_str(df: pd.DataFrame, cols: list[str]) -> None:
-    for c in cols:
-        if c in df.columns:
-            df[c] = df[c].astype(str)
+def must_have(df: pd.DataFrame, cols: list[str], name: str):
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"{name} missing required column(s): {missing}")
 
 def main() -> int:
+    log(f">> START: project_pitcher_props.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
     log(f"[project_pitcher_props] VERSION={VERSION} @ {Path(__file__).resolve()}")
 
-    # Your pipeline previously wrote directly to pitcher_props_projected.csv (source=enriched).
-    # If you already have that build in memory earlier in this script, use it.
-    # Otherwise, read the existing enriched file if present, or a core file you build upstream.
-    df_proj = None
-    if OUT_PROPS.exists():
-        df_proj = pd.read_csv(OUT_PROPS, dtype=str)
-    elif IN_PROPS_CORE.exists():
-        df_proj = pd.read_csv(IN_PROPS_CORE, dtype=str)
-    else:
-        raise RuntimeError("Missing input for pitcher projections. Expected existing enriched "
-                           f"{OUT_PROPS} or core {IN_PROPS_CORE}.")
+    if not PROJ_IN.exists():
+        raise FileNotFoundError(f"Missing input: {PROJ_IN}")
+    if not SP_LONG.exists():
+        raise FileNotFoundError(f"Missing input: {SP_LONG}")
 
-    # Ensure player_id exists; everything else we can enrich.
-    if "player_id" not in df_proj.columns:
-        raise RuntimeError("Missing required column in projections: 'player_id'")
+    # Load inputs as strings and force-fill
+    proj = pd.read_csv(PROJ_IN, dtype=str).fillna("UNKNOWN")
+    sp   = pd.read_csv(SP_LONG, dtype=str).fillna("UNKNOWN")
 
-    # Enrich with game/team context from startingpitchers_with_opp_context (long 4-col file)
-    if not SP_WITH_OPP.exists():
-        raise RuntimeError(f"Missing {SP_WITH_OPP} to attach game/team context.")
+    must_have(proj, REQ_PROJ_COLS, str(PROJ_IN))
+    must_have(sp,   REQ_SP_COLS,   str(SP_LONG))
 
-    sp = pd.read_csv(SP_WITH_OPP, dtype=str)
-    missing_sp = [c for c in REQ_FROM_SP if c not in sp.columns]
-    if missing_sp:
-        raise RuntimeError(f"{SP_WITH_OPP} missing required columns: {missing_sp}")
+    # Keep only needed context columns from sp_long
+    sp_ctx = sp[REQ_SP_COLS].drop_duplicates()
 
-    # Merge on player_id; keep multiplicity if the player appears twice (DH/unknown)—downstream cleans.
-    # If df_proj already has these columns, don't lose them—only fill missing.
-    enrich = sp[REQ_FROM_SP].drop_duplicates()
+    # Merge: add game_id/team_id/opponent_team_id onto projected rows
+    merged = proj.merge(sp_ctx, on="player_id", how="left", suffixes=("", "_sp"))
 
-    # Left merge by player_id
-    merged = df_proj.merge(enrich, on="player_id", how="left", suffixes=("", "_sp"))
-    # If any of the ids exist on df_proj, prefer them; otherwise take the _sp value.
-    for c in ["game_id", "team_id", "opponent_team_id"]:
+    # If any context columns are missing after merge, fill with "UNKNOWN"
+    for c in CTX_COLS:
         if c not in merged.columns:
-            merged[c] = merged[f"{c}_sp"]
-        else:
-            merged[c] = merged[c].fillna(merged[f"{c}_sp"])
-        if f"{c}_sp" in merged.columns:
-            merged.drop(columns=[f"{c}_sp"], inplace=True)
+            merged[c] = "UNKNOWN"
+        merged[c] = merged[c].fillna("UNKNOWN").astype(str)
 
-    # Final checks
-    need = ["player_id", "game_id", "team_id", "opponent_team_id"]
-    missing = [c for c in need if c not in merged.columns]
-    if missing:
-        raise RuntimeError(f"Missing required column(s): {missing}")
+    # Final: ensure ALL columns are strings, no NaN
+    for c in merged.columns:
+        merged[c] = merged[c].astype(str).fillna("UNKNOWN")
 
-    # Normalize as strings; fill UNKNOWN where still missing
-    for c in need:
-        merged[c] = merged[c].astype(str).fillna("UNKNOWN").replace({"nan": "UNKNOWN"})
+    # Write back to same output path (downstream expects this file)
+    PROJ_OUT.parent.mkdir(parents=True, exist_ok=True)
+    merged.to_csv(PROJ_OUT, index=False)
 
-    PROJ_DIR.mkdir(parents=True, exist_ok=True)
-    merged.to_csv(OUT_PROPS, index=False)
-    log(f"Wrote: {OUT_PROPS} (rows={len(merged)})  source=enriched")
+    log(f"Wrote: {PROJ_OUT} (rows={len(merged)})  source=props+sp_long_context")
     return 0
 
 if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:
-        print(str(e))
+        print(e)
         sys.exit(1)
