@@ -1,95 +1,86 @@
 #!/usr/bin/env python3
 # scripts/project_pitcher_props.py
+# Purpose: build pitcher_props_projected.csv with team_id/opponent_team_id merged from today's starters
 
+from __future__ import annotations
 import sys
-from pathlib import Path
 import pandas as pd
+from pathlib import Path
+from datetime import datetime
 
-DATA_DIR   = Path("data")
-PROJ_DIR   = DATA_DIR / "_projections"
-RAW_DIR    = DATA_DIR / "raw"
-SUMM_DIR   = Path("summaries") / "projections"
-OUT_FILE   = PROJ_DIR / "pitcher_props_projected.csv"
+ROOT = Path(__file__).resolve().parents[1]
+CLEAN_DIR = ROOT / "data" / "cleaned"
+RAW_DIR = ROOT / "data" / "raw"
+PROJ_DIR = ROOT / "data" / "_projections"
 
-TODAY_GAMES_FILE = PROJ_DIR / "todaysgames_normalized_fixed.csv"
-ENRICHED_FILE    = RAW_DIR / "startingpitchers_with_opp_context.csv"
+PITCHERS_IN = CLEAN_DIR / "pitchers_normalized_cleaned.csv"
+STARTERS_WITH_OPP_IN = RAW_DIR / "startingpitchers_with_opp_context.csv"
+PITCHERS_OUT = PROJ_DIR / "pitcher_props_projected.csv"
 
-def _require(df: pd.DataFrame, cols: list, name: str):
+VERSION = "v3-enriched"
+
+def log(msg: str) -> None:
+    print(msg, flush=True)
+
+def read_csv(path: Path, **kwargs) -> pd.DataFrame:
+    return pd.read_csv(path, dtype=str, **kwargs)
+
+def ensure_columns(df: pd.DataFrame, cols: list[str]) -> None:
     missing = [c for c in cols if c not in df.columns]
     if missing:
-        raise KeyError(f"{name} missing required columns: {missing}")
+        raise RuntimeError(f"Missing required column(s): {missing}")
 
-def _to_str(df: pd.DataFrame, cols: list):
-    for c in cols:
+def main() -> int:
+    log(f">> START: project_pitcher_props.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
+    log(f"[project_pitcher_props] VERSION={VERSION} @ {Path(__file__).resolve()}")
+
+    # ---- Inputs
+    if not PITCHERS_IN.exists():
+        raise RuntimeError(f"Input not found: {PITCHERS_IN}")
+    if not STARTERS_WITH_OPP_IN.exists():
+        raise RuntimeError(f"Input not found: {STARTERS_WITH_OPP_IN}")
+
+    pitchers = read_csv(PITCHERS_IN)
+    starters = read_csv(STARTERS_WITH_OPP_IN)
+
+    # Required ids
+    ensure_columns(pitchers, ["player_id"])
+    ensure_columns(starters, ["game_id", "team_id", "opponent_team_id", "player_id"])
+
+    # Filter to today's starters by player_id intersection (keeps schema as-is)
+    starter_ids = starters["player_id"].dropna().unique().tolist()
+    df = pitchers[pitchers["player_id"].isin(starter_ids)].copy()
+
+    # If pitchers file already has partial ids, keep them as strings
+    for c in ["player_id"]:
         if c in df.columns:
             df[c] = df[c].astype(str)
-    return df
 
-def load_todays_starters() -> pd.DataFrame:
-    if not TODAY_GAMES_FILE.exists():
-        raise FileNotFoundError(f"Missing input: {TODAY_GAMES_FILE}")
-    g = pd.read_csv(TODAY_GAMES_FILE)
-    g.columns = [c.strip() for c in g.columns]
-    _require(g, ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"], "todaysgames")
-    g = _to_str(g, ["home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"])
+    # Merge game/team/opponent from starters context
+    df = df.merge(
+        starters[["game_id", "player_id", "team_id", "opponent_team_id"]],
+        on="player_id",
+        how="left",
+        validate="m:1"
+    )
 
-    # Flatten to one row per starter
-    home = g.rename(columns={
-        "pitcher_home_id": "player_id",
-        "home_team_id": "team_id",
-        "away_team_id": "opponent_team_id",
-    })[["player_id", "team_id", "opponent_team_id"]].copy()
-    home["home_away"] = "home"
+    # Final required columns
+    ensure_columns(df, ["player_id", "game_id", "team_id", "opponent_team_id"])
 
-    away = g.rename(columns={
-        "pitcher_away_id": "player_id",
-        "away_team_id": "team_id",
-        "home_team_id": "opponent_team_id",
-    })[["player_id", "team_id", "opponent_team_id"]].copy()
-    away["home_away"] = "away"
+    # Normalize dtypes + no NaN strings in id columns
+    for c in ["player_id", "game_id", "team_id", "opponent_team_id"]:
+        df[c] = df[c].astype(str).fillna("")
 
-    starters = pd.concat([home, away], ignore_index=True)
-    # Some slates list the same pitcher twice; keep first
-    starters = starters.drop_duplicates(subset=["player_id"], keep="first")
-    return starters
-
-def load_enriched() -> pd.DataFrame:
-    if not ENRICHED_FILE.exists():
-        raise FileNotFoundError(f"Missing input: {ENRICHED_FILE}")
-    e = pd.read_csv(ENRICHED_FILE)
-    e.columns = [c.strip() for c in e.columns]
-    # Accept either 'player_id' or legacy 'playerid'
-    if "player_id" not in e.columns and "playerid" in e.columns:
-        e = e.rename(columns={"playerid": "player_id"})
-    _require(e, ["player_id"], "startingpitchers_with_opp_context")
-    e = _to_str(e, ["player_id", "team_id", "opponent_team_id"])
-    return e
-
-def main():
-    PROJ_DIR.mkdir(parents=True, exist_ok=True)
-    RAW_DIR.mkdir(parents=True, exist_ok=True)
-    SUMM_DIR.mkdir(parents=True, exist_ok=True)
-
-    starters = load_todays_starters()
-    enriched = load_enriched()
-
-    # --- Guard: make right side one-row-per player_id (fixes your error) ---
-    dup_mask = enriched.duplicated(subset=["player_id"], keep="first")
-    if dup_mask.any():
-        # log what we are dropping for transparency
-        enriched.loc[dup_mask].to_csv(SUMM_DIR / "pitcher_props_right_dupes.csv", index=False)
-        enriched = enriched.drop_duplicates(subset=["player_id"], keep="first")
-
-    # Merge many-to-one: left starters -> right enriched context
-    merged = starters.merge(enriched, on="player_id", how="left", validate="one_to_one")
-
-    # Keep all columns (downstream cleaners/post-normalizers will prune)
-    merged.to_csv(OUT_FILE, index=False)
-    print(f"Wrote: {OUT_FILE} (rows={len(merged)})  source=enriched")
+    # Output
+    PITCHERS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(PITCHERS_OUT, index=False)
+    log(f"Wrote: {PITCHERS_OUT.as_posix()} (rows={len(df)})  source=enriched")
+    log(f"[END] project_pitcher_props.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
+    return 0
 
 if __name__ == "__main__":
     try:
-        main()
+        sys.exit(main())
     except Exception as e:
-        print(f"ERROR: {e}", file=sys.stderr)
+        print(str(e))
         sys.exit(1)
