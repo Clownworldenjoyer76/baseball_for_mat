@@ -26,7 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run pipeline (with logging and status)
+      - name: Run pipeline (with clean logs and status)
         run: |
           set -e
           mkdir -p summaries/06_projection
@@ -38,10 +38,22 @@ jobs:
             local name="$(basename "$file")"
             local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
             local log="summaries/06_projection/${name}.log"
+            local script_path="scripts/${name}"
 
-            echo ">> START: ${name} (${ts})" | tee -a "$log"
+            # If script doesn't exist, mark as SKIP (not a failure) and move on
+            if [ ! -f "$script_path" ]; then
+              echo ">> START: ${name} (${ts})" > "$log"
+              echo "SKIP: ${script_path} not found" | tee -a "$log"
+              echo "[OK] ${name} skipped (missing) [${ts}]" >> "$STATUS"
+              echo "[END] ${name} (${ts})" | tee -a "$log"
+              return 0
+            fi
+
+            # Start fresh log (overwrite)
+            echo ">> START: ${name} (${ts})" > "$log"
+
             set +e
-            python "scripts/${name}" |& tee -a "$log"
+            python "$script_path" |& tee -a "$log"
             code=${PIPESTATUS[0]}
             set -e
 
@@ -54,7 +66,7 @@ jobs:
             return $code
           }
 
-          # Pipeline
+          # Pipeline (logs overwritten each run; missing scripts are skipped without failing)
           run_py fix_outputs_generate_fixed_files.py || true
           run_py normalize_inputs_for_06.py || true
           run_py project_prep.py || true
@@ -62,6 +74,11 @@ jobs:
           run_py normalize_batters_for_builder.py || true
           run_py project_batter_props.py || true
           run_py project_pitcher_props.py || true
+
+          # Inject pitcher context (robust first; fallback to TGN-only if present)
+          run_py inject_pitcher_context.py || true
+          run_py inject_pitcher_context_from_tgn.py || true
+
           run_py build_expanded_batter_props.py || true
           run_py pitcher_mega_z.py || true
           run_py starter_coverage_guard.py || true
@@ -71,10 +88,6 @@ jobs:
           run_py inject_game_ids_from_schedule.py || true
           run_py inject_batter_woba_adjustments.py || true
           run_py clean_pitcher_files.py || true
-
-          # NEW: inject missing context into pitcher projections from todaysgames_normalized
-          run_py inject_pitcher_context_from_tgn.py || true
-
           run_py impute_missing_batter_adj_woba.py || true
           run_py fix_missing_pa_in_pitcher_daily.py || true
 
