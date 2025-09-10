@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-# Purpose: build startingpitchers_with_opp_context.csv in the long shape
-#          and (as before) write startingpitchers.csv to end_chain/final.
-# No new inputs/outputs/paths.
+# scripts/project_prep.py
+# Purpose: build startingpitchers.csv (wide) and startingpitchers_with_opp_context.csv (long)
+# Source: data/raw/todaysgames_normalized.csv
+# All IDs forced to strings, NaN replaced with "UNKNOWN"
 
 from __future__ import annotations
 import sys
@@ -9,90 +10,69 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 
+# ---- Paths ----
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw"
 END_DIR = ROOT / "data" / "end_chain" / "final"
 
+TODAY_GAMES = RAW_DIR / "todaysgames_normalized.csv"
 STARTING_PITCHERS_OUT = END_DIR / "startingpitchers.csv"
 WITH_OPP_OUT = RAW_DIR / "startingpitchers_with_opp_context.csv"
 
-VERSION = "v3-forcedfill"
-
-REQ_LONG = ["game_id", "team_id", "opponent_team_id", "player_id"]
-REQ_WIDE = ["game_id", "home_team_id", "away_team_id", "pitcher_home_id", "pitcher_away_id"]
+VERSION = "v5-tgn-clean"
 
 def log(msg: str) -> None:
     print(msg, flush=True)
-
-def _as_str(df: pd.DataFrame, cols: list[str]) -> None:
-    for c in cols:
-        if c in df.columns:
-            df[c] = df[c].astype(str)
-
-def _fill_unknown(df: pd.DataFrame, cols: list[str]) -> None:
-    for c in cols:
-        if c in df.columns:
-            df[c] = df[c].fillna("UNKNOWN").replace({"nan": "UNKNOWN", "NaN": "UNKNOWN", "None": "UNKNOWN"})
 
 def main() -> int:
     log(f">> START: project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
     log(f"[project_prep] VERSION={VERSION} @ {Path(__file__).resolve()}")
 
-    # Expect upstream to have produced (or this script earlier produced) startingpitchers.csv
-    if not STARTING_PITCHERS_OUT.exists():
-        raise RuntimeError(f"Missing required input file: {STARTING_PITCHERS_OUT}")
+    if not TODAY_GAMES.exists():
+        raise FileNotFoundError(f"Missing required input: {TODAY_GAMES}")
 
-    sp = pd.read_csv(STARTING_PITCHERS_OUT, dtype=str)
+    # Load todaysgames_normalized
+    tg = pd.read_csv(TODAY_GAMES, dtype=str).fillna("UNKNOWN")
 
-    # Always persist startingpitchers.csv exactly as-is (idempotent)
+    # --- Wide format (one row per game) ---
+    sp_wide = tg[[
+        "game_id",
+        "home_team_id",
+        "away_team_id",
+        "pitcher_home_id",
+        "pitcher_away_id"
+    ]].copy()
+
+    for c in sp_wide.columns:
+        sp_wide[c] = sp_wide[c].astype(str).fillna("UNKNOWN")
+
     STARTING_PITCHERS_OUT.parent.mkdir(parents=True, exist_ok=True)
-    sp.to_csv(STARTING_PITCHERS_OUT, index=False)
-    log(f"project_prep: wrote {STARTING_PITCHERS_OUT} (rows={len(sp)})")
+    sp_wide.to_csv(STARTING_PITCHERS_OUT, index=False)
+    log(f"project_prep: wrote {STARTING_PITCHERS_OUT} (rows={len(sp_wide)})")
 
-    cols = [c.strip() for c in sp.columns]
-    has_long = all(c in cols for c in REQ_LONG)
-    has_wide = all(c in cols for c in REQ_WIDE)
+    # --- Long format (two rows per game: home + away pitcher) ---
+    home_rows = pd.DataFrame({
+        "game_id": tg["game_id"],
+        "team_id": tg["home_team_id"],
+        "opponent_team_id": tg["away_team_id"],
+        "player_id": tg["pitcher_home_id"]
+    })
 
-    if has_long:
-        # Normalize and write directly
-        _as_str(sp, REQ_LONG)
-        _fill_unknown(sp, REQ_LONG)
-        out = sp[REQ_LONG].copy()
-    elif has_wide:
-        # Convert wide -> long
-        _as_str(sp, REQ_WIDE)
-        _fill_unknown(sp, REQ_WIDE)
+    away_rows = pd.DataFrame({
+        "game_id": tg["game_id"],
+        "team_id": tg["away_team_id"],
+        "opponent_team_id": tg["home_team_id"],
+        "player_id": tg["pitcher_away_id"]
+    })
 
-        home_rows = pd.DataFrame({
-            "game_id": sp["game_id"],
-            "team_id": sp["home_team_id"],
-            "opponent_team_id": sp["away_team_id"],
-            "player_id": sp["pitcher_home_id"],
-        })
-        away_rows = pd.DataFrame({
-            "game_id": sp["game_id"],
-            "team_id": sp["away_team_id"],
-            "opponent_team_id": sp["home_team_id"],
-            "player_id": sp["pitcher_away_id"],
-        })
-        out = pd.concat([home_rows, away_rows], ignore_index=True)
-        _as_str(out, REQ_LONG)
-        _fill_unknown(out, REQ_LONG)
-        out = out[REQ_LONG]
-    else:
-        # Tell exactly what's missing to stop the churn.
-        missing_long = [c for c in REQ_LONG if c not in cols]
-        missing_wide = [c for c in REQ_WIDE if c not in cols]
-        raise RuntimeError(
-            "project_prep: input schema not recognized.\n"
-            f"Columns present: {cols}\n"
-            f"To proceed, `startingpitchers.csv` must be either LONG {REQ_LONG} (preferred) "
-            f"or WIDE {REQ_WIDE}."
-        )
+    with_opp = pd.concat([home_rows, away_rows], ignore_index=True).fillna("UNKNOWN")
+    for c in with_opp.columns:
+        with_opp[c] = with_opp[c].astype(str)
 
     WITH_OPP_OUT.parent.mkdir(parents=True, exist_ok=True)
-    out.to_csv(WITH_OPP_OUT, index=False)
-    log(f"project_prep: wrote {WITH_OPP_OUT} (rows={len(out)})")
+    with_opp.to_csv(WITH_OPP_OUT, index=False)
+    log(f"project_prep: wrote {WITH_OPP_OUT} (rows={len(with_opp)})")
+
     log(f"[END] project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
     return 0
 
