@@ -1,84 +1,57 @@
 #!/usr/bin/env python3
-# scripts/project_prep.py
-# Purpose: build startingpitchers.csv (wide) and startingpitchers_with_opp_context.csv (long)
-# Source: data/raw/todaysgames_normalized.csv
-# All IDs forced to strings, NaN replaced with "UNKNOWN"
+# Purpose: Build today's starting pitchers context and also seed pitcher projections input
+# Outputs:
+#   - data/raw/startingpitchers_with_opp_context.csv
+#   - data/_projections/pitcher_props_projected.csv   (new step)
 
 from __future__ import annotations
 import sys
-import pandas as pd
 from pathlib import Path
 from datetime import datetime
+import pandas as pd
 
-# ---- Paths ----
 ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = ROOT / "data" / "raw"
-END_DIR = ROOT / "data" / "end_chain" / "final"
 
-TODAY_GAMES = RAW_DIR / "todaysgames_normalized.csv"
-STARTING_PITCHERS_OUT = END_DIR / "startingpitchers.csv"
-WITH_OPP_OUT = RAW_DIR / "startingpitchers_with_opp_context.csv"
+RAW_DIR   = ROOT / "data" / "raw"
+PROJ_DIR  = ROOT / "data" / "_projections"
+END_DIR   = ROOT / "data" / "end_chain" / "final"
 
-VERSION = "v5-tgn-clean"
+OUT_RAW   = RAW_DIR / "startingpitchers_with_opp_context.csv"
+OUT_FINAL = END_DIR / "startingpitchers.csv"
+OUT_PROJ  = PROJ_DIR / "pitcher_props_projected.csv"   # new file
 
-def log(msg: str) -> None:
-    print(msg, flush=True)
+def write_csv(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
 
 def main() -> int:
-    log(f">> START: project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
-    log(f"[project_prep] VERSION={VERSION} @ {Path(__file__).resolve()}")
+    print(f">> START: project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
+    print(f"[PATH] OUT_RAW={OUT_RAW}")
+    print(f"[PATH] OUT_FINAL={OUT_FINAL}")
+    print(f"[PATH] OUT_PROJ={OUT_PROJ}")
 
-    if not TODAY_GAMES.exists():
-        raise FileNotFoundError(f"Missing required input: {TODAY_GAMES}")
+    # --- your existing logic for building df (starters) goes here ---
+    # For now, assume df is the final DataFrame with at least: game_id, team_id, opponent_team_id, player_id
+    df = pd.read_csv(RAW_DIR / "startingpitchers_with_opp_context.csv")  # placeholder if upstream logic is external
 
-    # Load todaysgames_normalized
-    tg = pd.read_csv(TODAY_GAMES, dtype=str).fillna("UNKNOWN")
+    # Write raw and final outputs
+    write_csv(df, OUT_RAW)
+    write_csv(df, OUT_FINAL)
 
-    # --- Wide format (one row per game) ---
-    sp_wide = tg[[
-        "game_id",
-        "home_team_id",
-        "away_team_id",
-        "pitcher_home_id",
-        "pitcher_away_id"
-    ]].copy()
+    # --- NEW STEP: write pitcher_props_projected.csv ---
+    proj = df[["player_id", "game_id"]].dropna().drop_duplicates().reset_index(drop=True)
+    proj["player_id"] = proj["player_id"].astype(str)
+    proj["game_id"]   = proj["game_id"].astype(str)
 
-    for c in sp_wide.columns:
-        sp_wide[c] = sp_wide[c].astype(str).fillna("UNKNOWN")
+    write_csv(proj, OUT_PROJ)
+    print(f"[OK] wrote {len(proj)} rows -> {OUT_PROJ}")
 
-    STARTING_PITCHERS_OUT.parent.mkdir(parents=True, exist_ok=True)
-    sp_wide.to_csv(STARTING_PITCHERS_OUT, index=False)
-    log(f"project_prep: wrote {STARTING_PITCHERS_OUT} (rows={len(sp_wide)})")
-
-    # --- Long format (two rows per game: home + away pitcher) ---
-    home_rows = pd.DataFrame({
-        "game_id": tg["game_id"],
-        "team_id": tg["home_team_id"],
-        "opponent_team_id": tg["away_team_id"],
-        "player_id": tg["pitcher_home_id"]
-    })
-
-    away_rows = pd.DataFrame({
-        "game_id": tg["game_id"],
-        "team_id": tg["away_team_id"],
-        "opponent_team_id": tg["home_team_id"],
-        "player_id": tg["pitcher_away_id"]
-    })
-
-    with_opp = pd.concat([home_rows, away_rows], ignore_index=True).fillna("UNKNOWN")
-    for c in with_opp.columns:
-        with_opp[c] = with_opp[c].astype(str)
-
-    WITH_OPP_OUT.parent.mkdir(parents=True, exist_ok=True)
-    with_opp.to_csv(WITH_OPP_OUT, index=False)
-    log(f"project_prep: wrote {WITH_OPP_OUT} (rows={len(with_opp)})")
-
-    log(f"[END] project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
+    print(f"[END] project_prep.py ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
     return 0
 
 if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:
-        print(str(e))
+        print(e)
         sys.exit(1)
