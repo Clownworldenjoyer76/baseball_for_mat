@@ -40,6 +40,7 @@ jobs:
             local log="summaries/06_projection/${name}.log"
             local script_path="scripts/${name}"
 
+            # If script doesn't exist, mark as SKIP (not a failure) and move on
             if [ ! -f "$script_path" ]; then
               echo ">> START: ${name} (${ts})" > "$log"
               echo "SKIP: ${script_path} not found" | tee -a "$log"
@@ -48,6 +49,7 @@ jobs:
               return 0
             fi
 
+            # Start fresh log (overwrite)
             echo ">> START: ${name} (${ts})" > "$log"
 
             set +e
@@ -64,18 +66,16 @@ jobs:
             return $code
           }
 
-          # Pipeline
+          # Pipeline (reverted; no crosswalk step)
           run_py fix_outputs_generate_fixed_files.py || true
           run_py normalize_inputs_for_06.py || true
           run_py project_prep.py || true
           run_py fix_missing_batter_stats.py || true
           run_py normalize_batters_for_builder.py || true
           run_py project_batter_props.py || true
+          run_py project_pitcher_props.py || true
 
-          # REPLACEMENT: use ID-crosswalk-based merge (do not run project_pitcher_props.py)
-          run_py map_and_merge_pitcher_context.py || true
-
-          # Context injection fallbacks (harmless if already resolved)
+          # Inject pitcher context (robust first; fallback to TGN-only if present)
           run_py inject_pitcher_context.py || true
           run_py inject_pitcher_context_from_tgn.py || true
 
@@ -106,8 +106,7 @@ jobs:
             data/end_chain/final/*.csv \
             data/raw/*.csv \
             summaries/06_projection/*.log \
-            summaries/06_projection/status.txt \
-            summaries/06_pitcher_props/* 2>/dev/null || true
+            summaries/06_projection/status.txt 2>/dev/null || true
 
           echo "=== git status (after add) ==="
           git status --porcelain || true
@@ -130,7 +129,7 @@ jobs:
             echo "===== STATUS (per script) ====="
             if [ -s "$STATUS" ]; then
               cat "$STATUS"
-            else
+            else:
               echo "(status.txt not generated)"
             fi
             echo
