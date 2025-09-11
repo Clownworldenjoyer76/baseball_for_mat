@@ -30,6 +30,15 @@ jobs:
             pip install -r requirements.txt || true
           fi
 
+      - name: Prepare inputs (scripts/final_csvs_prep.py)
+        id: prep_inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p summaries/07_final
+          echo "START PREP $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/prep_log.txt
+          python scripts/final_csvs_prep.py 2>&1 | tee -a summaries/07_final/prep_log.txt
+
       - name: Run projections (capture log, never swallow failures)
         id: run_scores
         shell: bash
@@ -60,7 +69,7 @@ jobs:
 
           if [ -f summaries/07_final/log.txt ]; then
             (grep -i -E 'error|traceback|exception' summaries/07_final/log.txt || true) > summaries/07_final/errors.txt
-          else
+          else:
             echo "no log" > summaries/07_final/errors.txt
           fi
 
@@ -69,6 +78,9 @@ jobs:
             echo
             echo "===== STATUS ====="
             cat summaries/07_final/status.txt
+            echo
+            echo "===== PREP LOG (tail) ====="
+            tail -n 200 summaries/07_final/prep_log.txt || true
             echo
             echo "===== LOG (tail) ====="
             tail -n 200 summaries/07_final/log.txt || true
@@ -87,6 +99,7 @@ jobs:
           name: game_score_projections
           path: |
             data/end_chain/final/game_score_projections.csv
+            summaries/07_final/prep_log.txt
             summaries/07_final/log.txt
             summaries/07_final/status.txt
             summaries/07_final/errors.txt
