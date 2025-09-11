@@ -1,114 +1,172 @@
-import pandas as pd
+#!/usr/bin/env python3
 import os
+from pathlib import Path
+import pandas as pd
 
-def create_column_if_not_exists(df, column_name):
-    """
-    Checks if a column exists in a DataFrame and creates it if not.
-    """
-    if column_name not in df.columns:
-        print(f"Creating '{column_name}' column...")
-        df[column_name] = None
-    else:
-        print(f"'{column_name}' column already exists. Skipping creation.")
-    return df
+# ----- Config (repo-relative paths) -----
+BPP_PATH = Path("data/_projections/batter_props_projected_final.csv")
+BPX_PATH = Path("data/_projections/batter_props_expanded_final.csv")
+PPP_PATH = Path("data/_projections/pitcher_props_projected_final.csv")
+BATTERS_TODAY_PATH = Path("data/cleaned/batters_today.csv")
+MLB_SCHED_PATH = Path("data/bets/mlb_sched.csv")
 
-def process_file(filepath, column_name):
-    """
-    Helper function to load a CSV, ensure a column exists, and save it.
-    """
-    if not os.path.exists(filepath):
-        print(f"File not found: {filepath}. Skipping.")
+# ----- IO helpers -----
+def read_csv_safe(path: Path) -> pd.DataFrame | None:
+    if not path.exists():
+        print(f"[MISS] {path}")
         return None
-    
-    df = pd.read_csv(filepath)
-    df = create_column_if_not_exists(df, column_name)
-    df.to_csv(filepath, index=False)
-    print(f"Updated '{filepath}' with '{column_name}' column check.")
+    try:
+        df = pd.read_csv(path)
+        print(f"[LOAD] {path} rows={len(df)}")
+        return df
+    except Exception as e:
+        print(f"[ERR ] reading {path}: {e!r}")
+        return None
+
+def write_csv_safe(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
+    print(f"[SAVE] {path} rows={len(df)}")
+
+# ----- Column utilities -----
+def ensure_columns(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    for c in cols:
+        if c not in df.columns:
+            print(f"[ADD ] Creating empty column '{c}'")
+            df[c] = None
+        else:
+            print(f"[KEEP] Column '{c}' exists")
     return df
 
-def inject_data_to_csv(target_df, source_df, on_col, inject_col, target_filepath):
-    """
-    Merges data from a source DataFrame into a target DataFrame and saves the result.
-    """
-    print(f"Injecting '{inject_col}' into '{target_filepath}'...")
-    
-    # Perform a left merge to add the new column
-    merged_df = pd.merge(target_df, source_df[[on_col, inject_col]].drop_duplicates(), on=on_col, how='left')
-    
-    # If the column to be injected already existed from a previous step, drop the old one
-    if f'{inject_col}_x' in merged_df.columns and f'{inject_col}_y' in merged_df.columns:
-        merged_df[inject_col] = merged_df[f'{inject_col}_y']
-        merged_df = merged_df.drop(columns=[f'{inject_col}_x', f'{inject_col}_y'])
-    
-    merged_df.to_csv(target_filepath, index=False)
-    print(f"Successfully injected and saved to '{target_filepath}'.")
-    return merged_df
+def to_str(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    for c in cols:
+        if c in df.columns:
+            df[c] = df[c].astype("string")
+    return df
 
+def drop_if_exists(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    existing = [c for c in cols if c in df.columns]
+    if existing:
+        df = df.drop(columns=existing)
+        print(f"[CLEAN] Dropped columns: {existing}")
+    return df
+
+# ----- Injection helper -----
+def inject_column_by_key(
+    target_df: pd.DataFrame,
+    source_df: pd.DataFrame,
+    on_col: str,
+    inject_col: str,
+) -> pd.DataFrame:
+    """
+    Left-merge source_df[[on_col, inject_col]] into target_df on on_col.
+    Aligns dtypes to string for join stability. Resolves *_x/_y into a single inject_col.
+    """
+    if on_col not in target_df.columns:
+        raise KeyError(f"target missing join key: {on_col}")
+    if on_col not in source_df.columns or inject_col not in source_df.columns:
+        raise KeyError(f"source missing required columns: {on_col}, {inject_col}")
+
+    # Align dtypes
+    target_df = to_str(target_df, [on_col])
+    source_df = to_str(source_df, [on_col, inject_col])
+
+    print(f"[JOIN] Inject '{inject_col}' into target via '{on_col}'")
+    merged = pd.merge(
+        target_df,
+        source_df[[on_col, inject_col]].drop_duplicates(),
+        on=on_col,
+        how="left",
+        suffixes=("", "_src"),
+    )
+
+    # If inject_col already existed in target, prefer the source column
+    if f"{inject_col}_src" in merged.columns:
+        merged[inject_col] = merged[f"{inject_col}_src"]
+        merged = merged.drop(columns=[f"{inject_col}_src"])
+    return merged
+
+# ----- Main workflow -----
 def main():
-    """
-    Main function to run the data preparation workflow.
-    """
-    # Define file paths
-    batter_props_projected_path = 'data/_projections/batter_props_projected_final.csv'
-    batter_props_expanded_path = 'data/_projections/batter_props_expanded_final.csv'
-    pitcher_props_projected_path = 'data/_projections/pitcher_props_projected_final.csv'
-    batters_today_path = 'data/cleaned/batters_today.csv'
-    mlb_sched_path = 'data/bets/mlb_sched.csv'
-    
     print("--- Starting final_csvs_prep.py ---")
 
-    # 1. & 2. Create 'team_id' and 'game_id' columns if they don't exist
-    batter_props_projected_df = process_file(batter_props_projected_path, 'team_id')
-    if batter_props_projected_df is not None:
-        batter_props_projected_df = create_column_if_not_exists(batter_props_projected_df, 'game_id')
-        batter_props_projected_df.to_csv(batter_props_projected_path, index=False)
+    # Load primary targets
+    bpp = read_csv_safe(BPP_PATH)  # projected batters (needs team_id, game_id)
+    bpx = read_csv_safe(BPX_PATH)  # expanded batters (needs team_id, game_id for later script)
+    ppp = read_csv_safe(PPP_PATH)  # projected pitchers (has team_id/opponent_team_id; may have messy dup cols)
 
-    process_file(batter_props_expanded_path, 'game_id')
-    process_file(pitcher_props_projected_path, 'game_id')
-    
-    # Load required data for injection
-    if os.path.exists(batters_today_path) and batter_props_projected_df is not None:
-        batters_today_df = pd.read_csv(batters_today_path)
-        
-        # 3. Inject team_id into batter_props_projected_final.csv
-        inject_data_to_csv(batter_props_projected_df, batters_today_df, 'player_id', 'team_id', batter_props_projected_path)
+    # Ensure minimal columns exist to avoid KeyErrors later
+    if bpp is not None:
+        bpp = ensure_columns(bpp, ["team_id", "game_id"])
+        write_csv_safe(bpp, BPP_PATH)
+    if bpx is not None:
+        bpx = ensure_columns(bpx, ["team_id", "game_id"])  # FIX: add team_id here
+        write_csv_safe(bpx, BPX_PATH)
+    if ppp is not None:
+        ppp = ensure_columns(ppp, ["game_id"])  # team_id already present in most cases
+        write_csv_safe(ppp, PPP_PATH)
+
+    # 1) Inject team_id into BOTH batter files using batters_today on player_id
+    btoday = read_csv_safe(BATTERS_TODAY_PATH)
+    if btoday is not None:
+        # minimal schema check
+        need = {"player_id", "team_id"}
+        if need.issubset(btoday.columns):
+            if bpp is not None:
+                bpp = read_csv_safe(BPP_PATH)  # refresh after last write
+                bpp = inject_column_by_key(bpp, btoday, on_col="player_id", inject_col="team_id")
+                write_csv_safe(bpp, BPP_PATH)
+            if bpx is not None:
+                bpx = read_csv_safe(BPX_PATH)
+                bpx = inject_column_by_key(bpx, btoday, on_col="player_id", inject_col="team_id")
+                write_csv_safe(bpx, BPX_PATH)
+        else:
+            print(f"[WARN] {BATTERS_TODAY_PATH} missing columns {sorted(need)}. Skipping team_id injection for batters.")
     else:
-        print(f"Skipping team_id injection. File not found: {batters_today_path} or {batter_props_projected_path}")
+        print(f"[WARN] Missing {BATTERS_TODAY_PATH}. Skipping team_id injection for batters.")
 
-    # Load schedule for game_id injection
-    if os.path.exists(mlb_sched_path):
-        mlb_sched_df = pd.read_csv(mlb_sched_path)
-        
-        # Create a simplified schedule with a single team_id column
-        home_games = mlb_sched_df[['game_id', 'home_team_id']].rename(columns={'home_team_id': 'team_id'})
-        away_games = mlb_sched_df[['game_id', 'away_team_id']].rename(columns={'away_team_id': 'team_id'})
-        simplified_sched_df = pd.concat([home_games, away_games]).drop_duplicates().reset_index(drop=True)
-        
-        # 4. Inject game_id into the specified CSVs
-        if os.path.exists(batter_props_projected_path):
-            batter_props_projected_df = pd.read_csv(batter_props_projected_path)
-            inject_data_to_csv(batter_props_projected_df, simplified_sched_df, 'team_id', 'game_id', batter_props_projected_path)
+    # 2) Build simplified schedule (game_id, team_id) from mlb_sched
+    sched = read_csv_safe(MLB_SCHED_PATH)
+    simplified = None
+    if sched is not None:
+        if {"game_id", "home_team_id", "away_team_id"}.issubset(sched.columns):
+            home = sched[["game_id", "home_team_id"]].rename(columns={"home_team_id": "team_id"})
+            away = sched[["game_id", "away_team_id"]].rename(columns={"away_team_id": "team_id"})
+            simplified = pd.concat([home, away], ignore_index=True).drop_duplicates().reset_index(drop=True)
+            simplified = to_str(simplified, ["game_id", "team_id"])
+            print(f"[MAKE] simplified schedule rows={len(simplified)}")
         else:
-            print(f"Skipping game_id injection for {batter_props_projected_path}. File not found.")
-
-        if os.path.exists(batter_props_expanded_path):
-            batter_props_expanded_df = pd.read_csv(batter_props_expanded_path)
-            # Assuming 'batter_props_expanded_final.csv' has a 'team_id' column
-            inject_data_to_csv(batter_props_expanded_df, simplified_sched_df, 'team_id', 'game_id', batter_props_expanded_path)
-        else:
-            print(f"Skipping game_id injection for {batter_props_expanded_path}. File not found.")
-            
-        if os.path.exists(pitcher_props_projected_path):
-            pitcher_props_projected_df = pd.read_csv(pitcher_props_projected_path)
-            # Assuming 'pitcher_props_projected_final.csv' has a 'team_id' column
-            inject_data_to_csv(pitcher_props_projected_df, simplified_sched_df, 'team_id', 'game_id', pitcher_props_projected_path)
-        else:
-            print(f"Skipping game_id injection for {pitcher_props_projected_path}. File not found.")
+            print(f"[WARN] {MLB_SCHED_PATH} missing required columns for schedule join. Skipping game_id injection.")
     else:
-        print(f"Skipping game_id injection. File not found: {mlb_sched_path}")
+        print(f"[WARN] Missing {MLB_SCHED_PATH}. Skipping game_id injection.")
+
+    # 3) Inject game_id into BOTH batter files and pitchers file using (team_id -> game_id)
+    if simplified is not None:
+        if bpp is not None:
+            bpp = read_csv_safe(BPP_PATH)
+            # Ensure team_id string for join
+            bpp = to_str(bpp, ["team_id"])
+            bpp = inject_column_by_key(bpp, simplified, on_col="team_id", inject_col="game_id")
+            write_csv_safe(bpp, BPP_PATH)
+
+        if bpx is not None:
+            bpx = read_csv_safe(BPX_PATH)
+            bpx = to_str(bpx, ["team_id"])
+            bpx = inject_column_by_key(bpx, simplified, on_col="team_id", inject_col="game_id")
+            write_csv_safe(bpx, BPX_PATH)
+
+        if ppp is not None:
+            ppp = read_csv_safe(PPP_PATH)
+            ppp = to_str(ppp, ["team_id"])
+            ppp = inject_column_by_key(ppp, simplified, on_col="team_id", inject_col="game_id")
+            # Optional cleanup: drop known duplicate artifact columns if present
+            ppp = drop_if_exists(ppp, [
+                "team_id_x", "team_id_y", "team_id_sp",
+                "game_id_sp", "game_id_sp.1"
+            ])
+            write_csv_safe(ppp, PPP_PATH)
 
     print("--- Script finished. ---")
 
 if __name__ == "__main__":
     main()
-
