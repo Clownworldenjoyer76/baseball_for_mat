@@ -1,2 +1,16 @@
->> START: fix_missing_pa_in_pitcher_daily.py (2025-09-11 21:57:12 UTC)
-[END] fix_missing_pa_in_pitcher_daily.py (2025-09-11 21:57:12 UTC)
+>> START: fix_missing_pa_in_pitcher_daily.py (2025-09-11 22:54:08 UTC)
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/fix_missing_pa_in_pitcher_daily.py", line 46, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/fix_missing_pa_in_pitcher_daily.py", line 37, in main
+    pit_d = pit_d.merge(pit_s, on="player_id", how="left", suffixes=("", "_season"))
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 10839, in merge
+    return merge(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 170, in merge
+    op = _MergeOperation(
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 807, in __init__
+    self._maybe_coerce_merge_keys()
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/reshape/merge.py", line 1509, in _maybe_coerce_merge_keys
+    raise ValueError(msg)
+ValueError: You are trying to merge on object and int64 columns for key 'player_id'. If you wish to proceed you should use pd.concat
+[END] fix_missing_pa_in_pitcher_daily.py (2025-09-11 22:54:08 UTC)
