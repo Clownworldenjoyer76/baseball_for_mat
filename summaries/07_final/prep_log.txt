@@ -1,0 +1,34 @@
+START PREP 2025-09-10 23:04:48 EDT
+--- Starting final_csvs_prep.py ---
+Creating 'team_id' column...
+Updated 'data/_projections/batter_props_projected_final.csv' with 'team_id' column check.
+Creating 'game_id' column...
+Creating 'game_id' column...
+Updated 'data/_projections/batter_props_expanded_final.csv' with 'game_id' column check.
+'game_id' column already exists. Skipping creation.
+Updated 'data/_projections/pitcher_props_projected_final.csv' with 'game_id' column check.
+Injecting 'team_id' into 'data/_projections/batter_props_projected_final.csv'...
+Successfully injected and saved to 'data/_projections/batter_props_projected_final.csv'.
+Injecting 'game_id' into 'data/_projections/batter_props_projected_final.csv'...
+Successfully injected and saved to 'data/_projections/batter_props_projected_final.csv'.
+Injecting 'game_id' into 'data/_projections/batter_props_expanded_final.csv'...
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/final_csvs_prep.py", line 113, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/final_csvs_prep.py", line 97, in main
+    inject_data_to_csv(batter_props_expanded_df, simplified_sched_df, 'team_id', 'game_id', batter_props_expanded_path)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/final_csvs_prep.py", line 36, in inject_data_to_csv
+    merged_df = pd.merge(target_df, source_df[[on_col, inject_col]].drop_duplicates(), on=on_col, how='left')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 170, in merge
+    op = _MergeOperation(
+         ^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 794, in __init__
+    ) = self._get_merge_keys()
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/reshape/merge.py", line 1311, in _get_merge_keys
+    left_keys.append(left._get_label_or_level_values(lk))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/generic.py", line 1911, in _get_label_or_level_values
+    raise KeyError(key)
+KeyError: 'team_id'
