@@ -1,27 +1,15 @@
 #!/usr/bin/env python3
-# Purpose: Produce data/end_chain/final/pitcher_props_projected_final.csv WITH VALID CONTEXT.
-# Strategy:
-#   1) Inject game_id into pitcher projections using starters context (by player_id).
-#   2) Merge full context using (player_id, game_id).
-#   3) Fail fast on duplicates/ambiguity/missing context.
-#
-# Inputs (REQUIRED SCHEMA):
-#   - data/_projections/pitcher_props_projected.csv
-#       required: player_id
-#       optional (ignored for context): any *_x/_y/_sp, team_id_x/opponent_team_id_x/home_away
-#   - data/raw/startingpitchers_with_opp_context.csv
-#       required: player_id, game_id, team_id, opponent_team_id
-#
+# Produce data/end_chain/final/pitcher_props_projected_final.csv with valid context.
+# Inputs:
+#   data/_projections/pitcher_props_projected.csv      (needs player_id; game_id optional)
+#   data/raw/startingpitchers_with_opp_context.csv     (player_id, game_id, team_id, opponent_team_id)
 # Output:
-#   - data/end_chain/final/pitcher_props_projected_final.csv
-# Diagnostics:
-#   - summaries/07_final/pitcher_proj_missing_player_id.csv
-#   - summaries/07_final/pitcher_proj_gameid_injected_preview.csv
-#   - summaries/07_final/pitcher_proj_duplicate_gameids.csv
-#   - summaries/07_final/pitcher_context_duplicates.csv
-#   - summaries/07_final/missing_pitcher_context_after_merge.csv
-#   - summaries/07_final/status_project_pitchers.txt
-#   - summaries/07_final/errors_project_pitchers.txt
+#   data/end_chain/final/pitcher_props_projected_final.csv
+# Behavior:
+#   - Inject game_id by player_id (only if missing), requiring a UNIQUE mapping per player_id
+#   - Merge full context on (player_id, game_id)
+#   - Fail fast with precise diagnostics
+#   - No *_x/*_y/*_sp artifacts in output
 
 from __future__ import annotations
 import sys
@@ -30,27 +18,23 @@ from datetime import datetime
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-
 PROJ_IN  = ROOT / "data" / "_projections" / "pitcher_props_projected.csv"
 SP_LONG  = ROOT / "data" / "raw" / "startingpitchers_with_opp_context.csv"
 OUT_DIR  = ROOT / "data" / "end_chain" / "final"
 OUT_FILE = OUT_DIR / "pitcher_props_projected_final.csv"
 SUM_DIR  = ROOT / "summaries" / "07_final"
 
-VERSION = "v7-inject_gameid_then_merge"
+VERSION = "v8-fix-duplicate-check-inject-then-merge"
 
 REQ_PROJ_COLS = ["player_id"]
-REQ_SP_COLS   = ["player_id", "game_id", "team_id", "opponent_team_id"]
-JOIN_KEYS     = ["player_id", "game_id"]
-CTX_COLS      = ["team_id", "opponent_team_id"]
-
-def log(msg: str) -> None:
-    print(msg, flush=True)
+REQ_SP_COLS   = ["player_id","game_id","team_id","opponent_team_id"]
+JOIN_KEYS     = ["player_id","game_id"]
+CTX_COLS      = ["team_id","opponent_team_id"]
 
 def must_have(df: pd.DataFrame, cols: list[str], name: str) -> None:
-    miss = [c for c in cols if c not in df.columns]
-    if miss:
-        raise RuntimeError(f"{name} missing required column(s): {miss}")
+    missing = [c for c in cols if c not in df.columns]
+    if missing:
+        raise RuntimeError(f"{name} missing required column(s): {missing}")
 
 def to_str(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     for c in cols:
@@ -67,15 +51,12 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 def main() -> int:
-    log(f">> START: project_pitcher_props.py {VERSION} ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
-    log(f"[PATH] PROJ_IN={PROJ_IN}")
-    log(f"[PATH] SP_LONG={SP_LONG}")
-    log(f"[PATH] OUT_FILE={OUT_FILE}")
+    print(f">> START: project_pitcher_props.py {VERSION} ({datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')})")
 
     if not PROJ_IN.exists():
-        raise FileNotFoundError(f"Missing input: {PROJ_IN}")
+        raise FileNotFoundError(str(PROJ_IN))
     if not SP_LONG.exists():
-        raise FileNotFoundError(f"Missing input: {SP_LONG}")
+        raise FileNotFoundError(str(SP_LONG))
 
     proj = pd.read_csv(PROJ_IN, low_memory=False)
     sp   = pd.read_csv(SP_LONG, low_memory=False)
@@ -83,79 +64,74 @@ def main() -> int:
     must_have(proj, REQ_PROJ_COLS, str(PROJ_IN))
     must_have(sp,   REQ_SP_COLS,   str(SP_LONG))
 
-    # Normalize types
-    proj = to_str(proj, ["player_id"])
-    sp   = to_str(sp,   ["player_id", "game_id", "team_id", "opponent_team_id"])
+    proj = to_str(proj, ["player_id","game_id"])
+    sp   = to_str(sp,   ["player_id","game_id","team_id","opponent_team_id"])
 
-    # Fail if any projections missing player_id
-    miss_pid = proj[proj["player_id"].isna() | (proj["player_id"] == "")]
+    # Validate: no missing player_id in projections
+    miss_pid = proj[proj["player_id"].isna() | (proj["player_id"].str.len() == 0)]
     if not miss_pid.empty:
         write_csv(miss_pid, SUM_DIR / "pitcher_proj_missing_player_id.csv")
         raise RuntimeError("Projection rows missing player_id; see summaries/07_final/pitcher_proj_missing_player_id.csv")
 
-    # STEP 1: Inject game_id by player_id (each starter must map to exactly ONE game_id)
-    # De-dup starters on (player_id, game_id); then enforce uniqueness of player_id -> single game_id
-    sp_keys = sp[["player_id", "game_id"]].drop_duplicates()
+    # Build unique mapping player_id -> game_id from starters; exclude UNKNOWN/null game_id for mapping
+    sp_keys = sp.loc[sp["game_id"].notna() & (sp["game_id"] != "UNKNOWN"), ["player_id","game_id"]].drop_duplicates()
 
-    dup_gameids = (
-        sp_keys.value_counts(subset=["player_id"])
-        .reset_index(name="rows")
-        .query("rows > 1")
-        .merge(sp_keys, on="player_id", how="left")
-        .sort_values(["player_id", "game_id"])
+    # Correct duplicate check: per player_id, count UNIQUE game_id
+    dup = (
+        sp_keys.groupby("player_id", as_index=False)["game_id"].nunique()
+        .query("game_id > 1")
+        .rename(columns={"game_id":"unique_game_id_count"})
     )
-    if not dup_gameids.empty:
-        write_csv(dup_gameids, SUM_DIR / "pitcher_proj_duplicate_gameids.csv")
-        raise RuntimeError("A player_id maps to multiple game_id in starters context; see summaries/07_final/pitcher_proj_duplicate_gameids.csv")
+    if not dup.empty:
+        write_csv(
+            sp.merge(dup[["player_id"]], on="player_id", how="inner")
+              .sort_values(["player_id","game_id"]),
+            SUM_DIR / "pitcher_proj_duplicate_gameids.csv"
+        )
+        raise RuntimeError("A player_id maps to multiple unique game_id; see summaries/07_final/pitcher_proj_duplicate_gameids.csv")
 
-    # Inject game_id -> projection
-    proj_with_gid = proj.merge(sp_keys, on="player_id", how="left", suffixes=("", "_sp"))
-    write_csv(proj_with_gid.head(30), SUM_DIR / "pitcher_proj_gameid_injected_preview.csv")
+    # Inject game_id into proj if missing/empty
+    needs_gid = proj["game_id"].isna() | (proj["game_id"] == "") | (proj["game_id"] == "UNKNOWN")
+    if needs_gid.any():
+        proj = proj.merge(sp_keys, on="player_id", how="left", suffixes=("", "_from_sp"))
+        # Prefer injected game_id when original is missing/unknown
+        proj.loc[needs_gid, "game_id"] = proj.loc[needs_gid, "game_id_from_sp"]
+        proj = proj.drop(columns=[c for c in ["game_id_from_sp"] if c in proj.columns])
 
-    if proj_with_gid["game_id"].isna().any():
-        bad = proj_with_gid[proj_with_gid["game_id"].isna()].copy()
-        write_csv(bad, SUM_DIR / "missing_gameid_injected_for_proj.csv")
+    # Validate that all projections now have a game_id
+    miss_gid = proj[proj["game_id"].isna() | (proj["game_id"] == "") | (proj["game_id"] == "UNKNOWN")]
+    if not miss_gid.empty:
+        write_csv(miss_gid[["player_id","game_id"]], SUM_DIR / "missing_gameid_injected_for_proj.csv")
         raise RuntimeError("Failed to inject game_id for some projections; see summaries/07_final/missing_gameid_injected_for_proj.csv")
 
-    proj_with_gid = to_str(proj_with_gid, ["game_id"])
+    proj = to_str(proj, ["game_id"])
 
-    # STEP 2: Merge full context using (player_id, game_id)
-    # Enforce uniqueness in full context
-    dup_ctx = (
-        sp.value_counts(subset=JOIN_KEYS)
-        .reset_index(name="rows")
-        .query("rows > 1")
-    )
-    if not dup_ctx.empty:
-        write_csv(dup_ctx, SUM_DIR / "pitcher_context_duplicates.csv")
-        raise RuntimeError("Duplicate (player_id, game_id) rows in starters context; see summaries/07_final/pitcher_context_duplicates.csv")
-
+    # Ensure starters context has unique (player_id, game_id)
     sp_ctx = sp[JOIN_KEYS + CTX_COLS].drop_duplicates()
-
-    merged = proj_with_gid.merge(
-        sp_ctx,
-        on=JOIN_KEYS,
-        how="left",
-        suffixes=("", "_ctx")
+    dctx = (
+        sp_ctx.groupby(JOIN_KEYS, as_index=False).size().query("size > 1")
     )
+    if not dctx.empty:
+        write_csv(dctx, SUM_DIR / "pitcher_context_duplicates.csv")
+        raise RuntimeError("Duplicate (player_id, game_id) in starters context; see summaries/07_final/pitcher_context_duplicates.csv")
 
-    # Validate complete context
-    needs = ["game_id"] + CTX_COLS
-    missing_any = merged[needs].isna().any(axis=1)
-    if missing_any.any():
-        bad = merged.loc[missing_any, ["player_id"] + needs].drop_duplicates()
+    # Merge full context
+    merged = proj.merge(sp_ctx, on=JOIN_KEYS, how="left", suffixes=("", "_sp"))
+
+    # Validate context present
+    missing_ctx = merged[CTX_COLS].isna().any(axis=1)
+    if missing_ctx.any():
+        bad = merged.loc[missing_ctx, ["player_id","game_id"] + CTX_COLS].drop_duplicates()
         write_csv(bad, SUM_DIR / "missing_pitcher_context_after_merge.csv")
-        raise RuntimeError("Missing game_id/team_id/opponent_team_id after merge; see summaries/07_final/missing_pitcher_context_after_merge.csv")
+        raise RuntimeError("Missing team_id/opponent_team_id after merge; see summaries/07_final/missing_pitcher_context_after_merge.csv")
 
-    # STEP 3: Clean duplicate artifacts
-    drop_cols = [c for c in merged.columns if c.endswith(("_x", "_y", "_sp", "_ctx"))]
-    if drop_cols:
-        merged = merged.drop(columns=drop_cols)
+    # Drop any merge artifacts
+    merged = merged.drop(columns=[c for c in merged.columns if c.endswith(("_x","_y","_sp"))])
 
-    # Write final
+    # Write final artifact
     write_csv(merged, OUT_FILE)
     write_text(SUM_DIR / "status_project_pitchers.txt", f"OK project_pitcher_props.py rows={len(merged)}")
-    log(f"[OK] WROTE {OUT_FILE} rows={len(merged)}")
+    print(f"[OK] WROTE {OUT_FILE} rows={len(merged)}")
     return 0
 
 if __name__ == "__main__":
