@@ -1,123 +1,142 @@
-name: 07_final_projections
+#!/usr/bin/env python3
+"""
+Prepare daily inputs for 07_final_projections:
+- Inject team_id into batter *_final.csv files using data/raw/lineups.csv
+- Inject game_id by matching team_id to home/away in data/raw/todaysgames_normalized.csv
+- Write the updated CSVs back in-place
+- Emit diagnostics but DO NOT fail the job
+"""
 
-on:
-  workflow_dispatch:
+from pathlib import Path
+import pandas as pd
+import numpy as np
 
-permissions:
-  contents: write
+# Paths
+ROOT = Path(".")
+SUM_DIR = ROOT / "summaries" / "07_final"
+SUM_DIR.mkdir(parents=True, exist_ok=True)
 
-jobs:
-  run-final-projections:
-    runs-on: ubuntu-latest
-    env:
-      TZ: America/New_York
+BATTERS_PROJ  = ROOT / "data" / "_projections" / "batter_props_projected_final.csv"
+BATTERS_EXP   = ROOT / "data" / "_projections" / "batter_props_expanded_final.csv"
+LINEUPS_CSV   = ROOT / "data" / "raw" / "lineups.csv"
+TGN_CSV       = ROOT / "data" / "raw" / "todaysgames_normalized.csv"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+def _to_int_str(s):
+    """Normalize ids to string integers where possible (preserves 'UNKNOWN')."""
+    s = s.astype(str).str.strip()
+    s = s.replace({"nan": np.nan})
+    # Keep 'UNKNOWN' as-is
+    s = s.where(s.eq("UNKNOWN") | s.isna(), s.str.replace(r"\.0$", "", regex=True))
+    return s
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+def load_csv(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing required input: {path}")
+    return pd.read_csv(path)
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt || true
-          fi
+def inject_team_and_game(df: pd.DataFrame, who: str) -> pd.DataFrame:
+    out = df.copy()
 
-      - name: Prepare daily inputs (inject team_id + game_id)
-        run: |
-          set -e
-          mkdir -p summaries/07_final
-          echo "START PREP $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/prep_daily_log.txt
-          python scripts/prepare_daily_projection_inputs.py 2>&1 | tee -a summaries/07_final/prep_daily_log.txt
+    # --- team_id via lineups ---
+    lu = load_csv(LINEUPS_CSV)
+    need_lu = {"player_id", "team_id"}
+    miss_lu = sorted(list(need_lu - set(lu.columns)))
+    if miss_lu:
+        raise RuntimeError(f"{LINEUPS_CSV} missing columns: {miss_lu}")
 
-      - name: Run projections (capture log, never swallow failures)
-        id: run_scores
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p summaries/07_final
-          echo "START $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee run.log
-          python scripts/project_batter_event_probabilities.py 2>&1 | tee -a run.log
-          python scripts/project_pitcher_event_probabilities.py 2>&1 | tee -a run.log
-          python scripts/project_game_scores.py 2>&1 | tee -a run.log
+    # normalize ids as strings
+    out["player_id"] = _to_int_str(out["player_id"])
+    lu["player_id"]  = _to_int_str(lu["player_id"])
+    lu["team_id"]    = _to_int_str(lu["team_id"])
 
-      - name: Summarize run log
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p summaries/07_final
-          RUN_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+    if "team_id" not in out.columns:
+        out = out.merge(lu[["player_id","team_id"]], on="player_id", how="left")
+    else:
+        # backfill only where null
+        out = out.merge(lu[["player_id","team_id"]].rename(columns={"team_id":"team_id_from_lu"}),
+                        on="player_id", how="left")
+        out["team_id"] = out["team_id"].astype(str)
+        out["team_id"] = out["team_id"].where(out["team_id"].notna() & out["team_id"].ne("nan"),
+                                              out["team_id_from_lu"])
+        out.drop(columns=["team_id_from_lu"], inplace=True)
 
-          if [ -f run.log ]; then
-            cp run.log summaries/07_final/log.txt
-          else
-            echo "no run.log" > summaries/07_final/log.txt
-          fi
+    # --- game_id via todaysgames_normalized ---
+    tgn = load_csv(TGN_CSV)
+    need_tgn = {"game_id","home_team_id","away_team_id"}
+    miss_tgn = sorted(list(need_tgn - set(tgn.columns)))
+    if miss_tgn:
+        raise RuntimeError(f"{TGN_CSV} missing columns: {miss_tgn}")
 
-          STATUS_ICON="OK"
-          if [ "${{ steps.run_scores.outcome }}" != "success" ]; then
-            STATUS_ICON="FAIL"
-          fi
-          echo "${STATUS_ICON} projections [${RUN_TS}]" > summaries/07_final/status.txt
+    # normalize
+    for col in ["home_team_id","away_team_id","game_id"]:
+        tgn[col] = _to_int_str(tgn[col])
+    out["team_id"] = _to_int_str(out["team_id"])
 
-          if [ -f summaries/07_final/log.txt ]; then
-            (grep -i -E 'error|traceback|exception' summaries/07_final/log.txt || true) > summaries/07_final/errors.txt
-          else
-            echo "no log" > summaries/07_final/errors.txt
-          fi
+    # match team_id to home
+    home = tgn.rename(columns={"home_team_id":"team_id", "game_id":"game_id_home"})
+    away = tgn.rename(columns={"away_team_id":"team_id", "game_id":"game_id_away"})
+    out = out.merge(home[["team_id","game_id_home"]], on="team_id", how="left")
+    out = out.merge(away[["team_id","game_id_away"]], on="team_id", how="left")
 
-          {
-            echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
-            echo
-            echo "===== STATUS ====="
-            cat summaries/07_final/status.txt
-            echo
-            echo "===== PREP LOG (tail) ====="
-            tail -n 200 summaries/07_final/prep_daily_log.txt || true
-            echo
-            echo "===== LOG (tail) ====="
-            tail -n 200 summaries/07_final/log.txt || true
-            echo
-            echo "===== ERRORS ====="
-            cat summaries/07_final/errors.txt
-            echo
-            echo "===== DIAGNOSTIC CSVs (if any) ====="
-            ls -1 summaries/07_final/*.csv 2>/dev/null || echo "none"
-          } > summaries/07_final/summary.txt
+    # final game_id: prefer the one that matched
+    if "game_id" in out.columns:
+        # keep existing where valid, else coalesce
+        base = _to_int_str(out["game_id"])
+    else:
+        base = pd.Series([np.nan]*len(out))
 
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: game_score_projections
-          path: |
-            data/end_chain/final/game_score_projections.csv
-            summaries/07_final/prep_daily_log.txt
-            summaries/07_final/log.txt
-            summaries/07_final/status.txt
-            summaries/07_final/errors.txt
-            summaries/07_final/summary.txt
-            summaries/07_final/*.csv
-          if-no-files-found: warn
-          retention-days: 7
+    out["game_id"] = base.where(base.notna() & base.ne("nan"),
+                                _to_int_str(out["game_id_home"]).where(
+                                    _to_int_str(out["game_id_home"]).notna()
+                                ).fillna(_to_int_str(out["game_id_away"])))
 
-      - name: Commit outputs and summaries
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/end_chain/final/game_score_projections.csv || true
-          git add summaries/07_final/* || true
-          if ! git diff --cached --quiet; then
-            git commit -m "CI: update final projections and summaries/07_final (including diagnostics)"
-            git push
-          else
-            echo "No changes to commit."
-          fi
+    out.drop(columns=[c for c in ["game_id_home","game_id_away"] if c in out.columns], inplace=True)
+
+    # diagnostics
+    missing_team = out["team_id"].isna() | out["team_id"].eq("nan")
+    missing_game = out["game_id"].isna() | out["game_id"].eq("nan")
+
+    if missing_team.any():
+        out.loc[missing_team, ["player_id"]].to_csv(
+            SUM_DIR / f"missing_team_id_in_{who}.csv", index=False
+        )
+        print(f"[WARN] {who}: {missing_team.sum()} rows missing team_id "
+              f"(summaries/07_final/missing_team_id_in_{who}.csv)")
+
+    if missing_game.any():
+        out.loc[missing_game, ["player_id","team_id"]].to_csv(
+            SUM_DIR / f"missing_game_id_in_{who}.csv", index=False
+        )
+        print(f"[WARN] {who}: {missing_game.sum()} rows missing game_id "
+              f"(summaries/07_final/missing_game_id_in_{who}.csv)")
+
+    return out
+
+def main():
+    print("PREP: injecting team_id and game_id into batter *_final.csv")
+
+    bat_proj = load_csv(BATTERS_PROJ)
+    bat_exp  = load_csv(BATTERS_EXP)
+
+    # ensure player_id exists
+    for name, df in [("batter_props_projected_final", bat_proj),
+                     ("batter_props_expanded_final", bat_exp)]:
+        if "player_id" not in df.columns:
+            raise RuntimeError(f"{name} missing column 'player_id'")
+
+    bat_proj2 = inject_team_and_game(bat_proj, "batter_props_projected_final")
+    bat_exp2  = inject_team_and_game(bat_exp,  "batter_props_expanded_final")
+
+    # write back in-place (preserve column order where possible)
+    bat_proj2.to_csv(BATTERS_PROJ, index=False)
+    bat_exp2.to_csv(BATTERS_EXP, index=False)
+
+    print(f"OK: wrote {BATTERS_PROJ} and {BATTERS_EXP}")
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        # still fail loudly here so the step shows what to fix
+        # (Your workflow summarizes logs and artifacts.)
+        raise
