@@ -18,3 +18,14 @@ Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_event_probabilities.py", line 44, in require
     raise RuntimeError(f"{name} missing columns: {miss}")
 RuntimeError: data/_projections/batter_props_projected_final.csv missing columns: ['team_id', 'game_id']
+START project_batter_event_probabilities.py 2025-09-12 08:00:13 EDT
+LOAD: daily & season & schedule inputs
+BACKFILL: adding game_id to batter daily from expanded file
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_event_probabilities.py", line 334, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_event_probabilities.py", line 174, in main
+    require(bat_x, ["player_id", "game_id"] + ADJ_COLS, str(BATTERS_EXP))
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_batter_event_probabilities.py", line 51, in require
+    raise RuntimeError(f"{name} missing columns: {miss}")
+RuntimeError: data/_projections/batter_props_expanded_final.csv missing columns: ['game_id']
