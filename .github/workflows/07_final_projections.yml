@@ -30,29 +30,67 @@ jobs:
             pip install -r requirements.txt || true
           fi
 
-      # NEW: make sure batter files have team_id/game_id before modeling
-      - name: Prepare daily inputs (stamp team_id/game_id)
+      - name: Prepare daily inputs (inject team_id & game_id)
+        id: prep_daily
+        shell: bash
         run: |
-          python scripts/prepare_daily_projection_inputs.py
+          set -euo pipefail
+          mkdir -p summaries/07_final
+          echo "START PREP DAILY $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/prep_daily_log.txt
+          python scripts/prepare_daily_projection_inputs.py 2>&1 | tee -a summaries/07_final/prep_daily_log.txt
 
-      - name: Build daily batter event projections
+      - name: Run projections (capture log, never swallow failures)
+        id: run_scores
+        shell: bash
         run: |
-          python scripts/project_batter_event_probabilities.py
-
-      - name: Build daily pitcher event projections
-        run: |
-          python scripts/project_pitcher_event_probabilities.py
-
-      - name: Build game score projections
-        run: |
-          python scripts/project_game_scores.py
+          set -euo pipefail
+          mkdir -p summaries/07_final
+          echo "START $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee run.log
+          python scripts/project_game_scores.py 2>&1 | tee -a run.log
 
       - name: Summarize run log
         if: always()
+        shell: bash
         run: |
           mkdir -p summaries/07_final
-          if [ -f summaries/07_final/prep_status.txt ]; then cat summaries/07_final/prep_status.txt; fi
-          echo "OK 07_final_projections" > summaries/07_final/status.txt
+          RUN_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+
+          if [ -f run.log ]; then
+            cp run.log summaries/07_final/log.txt
+          else
+            echo "no run.log" > summaries/07_final/log.txt
+          fi
+
+          STATUS_ICON="OK"
+          if [ "${{ steps.run_scores.outcome }}" != "success" ]; then
+            STATUS_ICON="FAIL"
+          fi
+          echo "${STATUS_ICON} project_game_scores.py [${RUN_TS}]" > summaries/07_final/status.txt
+
+          if [ -f summaries/07_final/log.txt ]; then
+            (grep -i -E 'error|traceback|exception' summaries/07_final/log.txt || true) > summaries/07_final/errors.txt
+          else:
+            echo "no log" > summaries/07_final/errors.txt
+          fi
+
+          {
+            echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
+            echo
+            echo "===== STATUS ====="
+            cat summaries/07_final/status.txt
+            echo
+            echo "===== PREP DAILY LOG (tail) ====="
+            tail -n 200 summaries/07_final/prep_daily_log.txt || true
+            echo
+            echo "===== RUN LOG (tail) ====="
+            tail -n 200 summaries/07_final/log.txt || true
+            echo
+            echo "===== ERRORS ====="
+            cat summaries/07_final/errors.txt
+            echo
+            echo "===== DIAGNOSTIC CSVs (if any) ====="
+            ls -1 summaries/07_final/*.csv 2>/dev/null || echo "none"
+          } > summaries/07_final/summary.txt
 
       - name: Upload artifacts
         if: always()
@@ -61,7 +99,12 @@ jobs:
           name: game_score_projections
           path: |
             data/end_chain/final/game_score_projections.csv
-            summaries/07_final/*
+            summaries/07_final/prep_daily_log.txt
+            summaries/07_final/log.txt
+            summaries/07_final/status.txt
+            summaries/07_final/errors.txt
+            summaries/07_final/summary.txt
+            summaries/07_final/*.csv
           if-no-files-found: warn
           retention-days: 7
 
@@ -72,5 +115,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/end_chain/final/game_score_projections.csv || true
           git add summaries/07_final/* || true
-          git commit -m "CI: update 07_final_projections outputs + summaries" || echo "No changes to commit"
-          git push || true
+          if ! git diff --cached --quiet; then
+            git commit -m "CI: update final projections and summaries/07_final (including diagnostics)"
+            git push
+          else
+            echo "No changes to commit."
+          fi
