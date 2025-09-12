@@ -1,19 +1,21 @@
-name: 07_final_projections
+name: Audit Workflow Python References
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/*.yml"
+      - ".github/workflows/*.yaml"
+      - "scripts/audit_workflow_py_refs.py"
 
 permissions:
   contents: write
 
 jobs:
-  run-final-projections:
+  audit:
     runs-on: ubuntu-latest
-    env:
-      TZ: America/New_York
-
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -21,56 +23,23 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.x"
 
       - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Run audit script
+        run: python scripts/audit_workflow_py_refs.py
+
+      - name: Commit audit results
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt || true
+          set -e
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audit/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: update workflow audit reports"
+            git push
           fi
-
-      # NEW: make sure batter files have team_id/game_id before modeling
-      - name: Prepare daily inputs (stamp team_id/game_id)
-        run: |
-          python scripts/prepare_daily_projection_inputs.py
-
-      - name: Build daily batter event projections
-        run: |
-          python scripts/project_batter_event_probabilities.py
-
-      - name: Build daily pitcher event projections
-        run: |
-          python scripts/project_pitcher_event_probabilities.py
-
-      - name: Build game score projections
-        run: |
-          python scripts/project_game_scores.py
-
-      - name: Summarize run log
-        if: always()
-        run: |
-          mkdir -p summaries/07_final
-          if [ -f summaries/07_final/prep_status.txt ]; then cat summaries/07_final/prep_status.txt; fi
-          echo "OK 07_final_projections" > summaries/07_final/status.txt
-
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: game_score_projections
-          path: |
-            data/end_chain/final/game_score_projections.csv
-            summaries/07_final/*
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Commit outputs and summaries
-        if: always()
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/end_chain/final/game_score_projections.csv || true
-          git add summaries/07_final/* || true
-          git commit -m "CI: update 07_final_projections outputs + summaries" || echo "No changes to commit"
-          git push || true
