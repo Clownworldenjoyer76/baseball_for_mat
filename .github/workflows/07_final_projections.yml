@@ -32,6 +32,15 @@ jobs:
           fi
           mkdir -p summaries/07_final
 
+      # Clean stale error/status files so grep doesn't pick up old failures
+      - name: Clean stale 07 logs
+        run: |
+          set -euo pipefail
+          mkdir -p summaries/07_final
+          find summaries/07_final -maxdepth 1 -type f -name "*errors*.txt" -delete || true
+          find summaries/07_final -maxdepth 1 -type f -name "batter_event_probs_errors.txt" -delete || true
+          find summaries/07_final -maxdepth 1 -type f -name "status.txt" -delete || true
+
       # 1) Prepare inputs (adds team_id and game_id to batter files)
       - name: Prepare daily inputs (inject team_id + game_id)
         run: |
@@ -80,8 +89,8 @@ jobs:
             echo "--- GAME SCORES (tail) ---"
             tail -n 200 summaries/07_final/game_scores_log.txt 2>/dev/null || echo "(missing)"
             echo
-            echo "===== ERROR GREP (from all logs) ====="
-            grep -i -E 'error|traceback|exception' summaries/07_final/*.txt 2>/dev/null || echo "(no errors found by grep)"
+            echo "===== ERROR GREP (from current logs) ====="
+            grep -i -E 'error|traceback|exception' summaries/07_final/*log.txt 2>/dev/null || echo "(no errors found by grep)"
           } > summaries/07_final/summary.txt
 
       - name: Upload artifacts
