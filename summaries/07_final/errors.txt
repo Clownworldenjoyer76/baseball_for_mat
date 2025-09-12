@@ -1,3 +1,3 @@
 Traceback (most recent call last):
-    raise RuntimeError(
-RuntimeError: One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; see summaries/07_final/missing_opponent_starter_games.csv
+    raise RuntimeError(f"{name} missing columns: {miss}")
+RuntimeError: data/_projections/batter_props_projected_final.csv missing columns: ['team_id', 'game_id']

@@ -1,8 +1,10 @@
-START 2025-09-11 08:51:38 EDT
+START 2025-09-11 22:54:04 EDT
 LOAD: daily and season inputs
 Traceback (most recent call last):
   File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 231, in <module>
     main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 87, in main
-    raise RuntimeError(
-RuntimeError: One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; see summaries/07_final/missing_opponent_starter_games.csv
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 66, in main
+    require(bat_d, ["player_id","team_id","team","game_id","proj_pa_used"], str(BATTERS_DAILY))
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_game_scores.py", line 27, in require
+    raise RuntimeError(f"{name} missing columns: {miss}")
+RuntimeError: data/_projections/batter_props_projected_final.csv missing columns: ['team_id', 'game_id']
