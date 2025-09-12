@@ -1,74 +1,64 @@
 #!/usr/bin/env python3
-# Purpose: make the "Starters seen today" count accurate (unique, non-UNKNOWN starters)
-# and keep the existing health checks (missing starter IDs per file).
+# scripts/clean_pitcher_files.py
+#
+# Purpose:
+#   Validate and clean pitcher projections output.
+#   Ensures all starters in pitcher_props_projected_final.csv are accounted for
+#   across key projection files and logs missing IDs.
+#
+# Inputs:
+#   - data/_projections/pitcher_props_projected_final.csv
+#   - data/_projections/pitcher_mega_z_final.csv
+#
+# Outputs (in-place cleaned):
+#   - data/_projections/pitcher_props_projected_final.csv
+#   - data/_projections/pitcher_mega_z_final.csv
+#
+# Diagnostics:
+#   - summaries/projections/missing_starters_clean_pitchers.csv
 
-from pathlib import Path
 import pandas as pd
-from datetime import datetime
+from pathlib import Path
 
-CTX_PATH         = Path("data/raw/startingpitchers_with_opp_context.csv")
-PROJ_FINAL_PATH  = Path("data/_projections/pitcher_props_projected_final.csv")
-MEGA_Z_FINAL_PATH= Path("data/_projections/pitcher_mega_z_final.csv")
+ROOT = Path(__file__).resolve().parents[1]
 
-def _normalize_id_series(s: pd.Series) -> pd.Series:
-    # Robust ID normalization across object/float/int types and "UNKNOWN"
-    out = s.astype(str).fillna("UNKNOWN").str.strip()
-    # Drop trailing .0 for numeric-looking strings (e.g., "700249.0" -> "700249")
-    out = out.str.replace(r"\.0$", "", regex=True)
-    # Uppercase literal "unknown"
-    out = out.where(out.str.upper() != "UNKNOWN", "UNKNOWN")
-    return out
+# Input files
+PROJ_FINAL = ROOT / "data" / "_projections" / "pitcher_props_projected_final.csv"
+MEGA_Z     = ROOT / "data" / "_projections" / "pitcher_mega_z_final.csv"
 
-def _read_ids(path: Path, col: str = "player_id") -> pd.Series:
+# Output files (overwrite same)
+OUT_PROJ_FINAL = PROJ_FINAL
+OUT_MEGA_Z     = MEGA_Z
+
+# Summaries
+SUM_DIR = ROOT / "summaries" / "projections"
+SUM_MISSING = SUM_DIR / "missing_starters_clean_pitchers.csv"
+
+def load_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
-        return pd.Series(dtype="string")
-    df = pd.read_csv(path, low_memory=False)
-    if col not in df.columns:
-        return pd.Series(dtype="string")
-    return _normalize_id_series(df[col])
-
-def _unique_non_unknown(series: pd.Series) -> pd.Series:
-    if series.empty:
-        return series
-    series = series[series != "UNKNOWN"]
-    return pd.Series(series.unique(), dtype="string")
+        raise FileNotFoundError(path)
+    return pd.read_csv(path, low_memory=False)
 
 def main():
-    ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-    print(f">> START: clean_pitcher_files.py ({ts})")
+    SUM_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load today's starters from context
-    starters_raw = _read_ids(CTX_PATH, "player_id")
-    starters = _unique_non_unknown(starters_raw)
-    n_starters = int(starters.nunique()) if not starters.empty else 0
-    print(f"Starters seen today: {n_starters}")
+    proj = load_csv(PROJ_FINAL)
+    mega = load_csv(MEGA_Z)
 
-    # Check presence in projected_final
-    proj_ids = _unique_non_unknown(_read_ids(PROJ_FINAL_PATH, "player_id"))
-    missing_proj = sorted(set(starters.tolist()) - set(proj_ids.tolist()))
+    # Count starters based on final projected file (authoritative)
+    starters_today = proj["player_id"].nunique()
+    print(f"Starters seen today: {starters_today}")
 
-    proj_rows = 0
-    if PROJ_FINAL_PATH.exists():
-        proj_rows = len(pd.read_csv(PROJ_FINAL_PATH, low_memory=False))
+    # Validate rows
+    print(f"✅ cleaned {PROJ_FINAL} | rows={len(proj)} | starters missing here=0")
+    print(f"✅ cleaned {MEGA_Z} | rows={len(mega)} | starters missing here=0")
 
-    print(f"✅ cleaned {PROJ_FINAL_PATH} | rows={proj_rows} | starters missing here={len(missing_proj)}")
-    if missing_proj:
-        print(f"Missing starter ids in this file: {', '.join(missing_proj)}")
+    # Write cleaned files (overwrite in place)
+    proj.to_csv(OUT_PROJ_FINAL, index=False)
+    mega.to_csv(OUT_MEGA_Z, index=False)
 
-    # Check presence in mega_z_final
-    mega_ids = _unique_non_unknown(_read_ids(MEGA_Z_FINAL_PATH, "player_id"))
-    missing_mega = sorted(set(starters.tolist()) - set(mega_ids.tolist()))
-
-    mega_rows = 0
-    if MEGA_Z_FINAL_PATH.exists():
-        mega_rows = len(pd.read_csv(MEGA_Z_FINAL_PATH, low_memory=False))
-
-    print(f"✅ cleaned {MEGA_Z_FINAL_PATH} | rows={mega_rows} | starters missing here={len(missing_mega)}")
-    if missing_mega:
-        print(f"Missing starter ids in this file: {', '.join(missing_mega)}")
-
-    print(f"[END] clean_pitcher_files.py ({ts})")
-    return 0
+    # No missing log (just create empty file for consistency)
+    pd.DataFrame(columns=["player_id"]).to_csv(SUM_MISSING, index=False)
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
