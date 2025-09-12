@@ -25,71 +25,63 @@ jobs:
 
       - name: Install dependencies
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then
-            pip install -r requirements.txt || true
+            pip install -r requirements.txt
           fi
+          mkdir -p summaries/07_final
 
-      - name: Prepare daily inputs (inject team_id & game_id)
-        id: prep_daily
-        shell: bash
+      # 1) Prepare inputs (adds team_id and game_id to batter files)
+      - name: Prepare daily inputs (inject team_id + game_id)
         run: |
           set -euo pipefail
-          mkdir -p summaries/07_final
-          echo "START PREP DAILY $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/prep_daily_log.txt
+          echo "START PREP $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/prep_daily_log.txt
           python scripts/prepare_daily_projection_inputs.py 2>&1 | tee -a summaries/07_final/prep_daily_log.txt
 
-      - name: Run projections (capture log, never swallow failures)
-        id: run_scores
-        shell: bash
+      # 2) Build daily projections (separate steps for clear failure surface)
+      - name: Build daily batter event projections
         run: |
           set -euo pipefail
-          mkdir -p summaries/07_final
-          echo "START $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee run.log
-          python scripts/project_game_scores.py 2>&1 | tee -a run.log
+          echo "START BATTERS $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/batter_log.txt
+          python scripts/project_batter_event_probabilities.py 2>&1 | tee -a summaries/07_final/batter_log.txt
 
+      - name: Build daily pitcher event projections
+        run: |
+          set -euo pipefail
+          echo "START PITCHERS $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/pitcher_log.txt
+          python scripts/project_pitcher_event_probabilities.py 2>&1 | tee -a summaries/07_final/pitcher_log.txt
+
+      - name: Build game score projections
+        run: |
+          set -euo pipefail
+          echo "START GAME SCORES $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee summaries/07_final/game_scores_log.txt
+          python scripts/project_game_scores.py 2>&1 | tee -a summaries/07_final/game_scores_log.txt
+
+      # 3) Summarize (no conditionals; tolerate missing files)
       - name: Summarize run log
         if: always()
-        shell: bash
         run: |
-          mkdir -p summaries/07_final
+          set -euo pipefail
           RUN_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-
-          if [ -f run.log ]; then
-            cp run.log summaries/07_final/log.txt
-          else
-            echo "no run.log" > summaries/07_final/log.txt
-          fi
-
-          STATUS_ICON="OK"
-          if [ "${{ steps.run_scores.outcome }}" != "success" ]; then
-            STATUS_ICON="FAIL"
-          fi
-          echo "${STATUS_ICON} project_game_scores.py [${RUN_TS}]" > summaries/07_final/status.txt
-
-          if [ -f summaries/07_final/log.txt ]; then
-            (grep -i -E 'error|traceback|exception' summaries/07_final/log.txt || true) > summaries/07_final/errors.txt
-          else:
-            echo "no log" > summaries/07_final/errors.txt
-          fi
-
           {
             echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
             echo
-            echo "===== STATUS ====="
-            cat summaries/07_final/status.txt
+            echo "===== LOG TAILS ====="
+            echo "--- PREP (tail) ---"
+            tail -n 200 summaries/07_final/prep_daily_log.txt 2>/dev/null || echo "(missing)"
             echo
-            echo "===== PREP DAILY LOG (tail) ====="
-            tail -n 200 summaries/07_final/prep_daily_log.txt || true
+            echo "--- BATTERS (tail) ---"
+            tail -n 200 summaries/07_final/batter_log.txt 2>/dev/null || echo "(missing)"
             echo
-            echo "===== RUN LOG (tail) ====="
-            tail -n 200 summaries/07_final/log.txt || true
+            echo "--- PITCHERS (tail) ---"
+            tail -n 200 summaries/07_final/pitcher_log.txt 2>/dev/null || echo "(missing)"
             echo
-            echo "===== ERRORS ====="
-            cat summaries/07_final/errors.txt
+            echo "--- GAME SCORES (tail) ---"
+            tail -n 200 summaries/07_final/game_scores_log.txt 2>/dev/null || echo "(missing)"
             echo
-            echo "===== DIAGNOSTIC CSVs (if any) ====="
-            ls -1 summaries/07_final/*.csv 2>/dev/null || echo "none"
+            echo "===== ERROR GREP (from all logs) ====="
+            grep -i -E 'error|traceback|exception' summaries/07_final/*.txt 2>/dev/null || echo "(no errors found by grep)"
           } > summaries/07_final/summary.txt
 
       - name: Upload artifacts
@@ -99,11 +91,9 @@ jobs:
           name: game_score_projections
           path: |
             data/end_chain/final/game_score_projections.csv
-            summaries/07_final/prep_daily_log.txt
-            summaries/07_final/log.txt
-            summaries/07_final/status.txt
-            summaries/07_final/errors.txt
-            summaries/07_final/summary.txt
+            data/end_chain/final/batter_event_probabilities.csv
+            data/end_chain/final/pitcher_event_probabilities.csv
+            summaries/07_final/*.txt
             summaries/07_final/*.csv
           if-no-files-found: warn
           retention-days: 7
@@ -111,12 +101,15 @@ jobs:
       - name: Commit outputs and summaries
         if: always()
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/end_chain/final/game_score_projections.csv || true
-          git add summaries/07_final/* || true
+          git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
+          git add data/end_chain/final/batter_event_probabilities.csv 2>/dev/null || true
+          git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
+          git add summaries/07_final/* 2>/dev/null || true
           if ! git diff --cached --quiet; then
-            git commit -m "CI: update final projections and summaries/07_final (including diagnostics)"
+            git commit -m "CI: update final projections and summaries/07_final"
             git push
           else
             echo "No changes to commit."
