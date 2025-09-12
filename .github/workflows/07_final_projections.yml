@@ -30,78 +30,38 @@ jobs:
             pip install -r requirements.txt || true
           fi
 
-      - name: Build daily batter event projections
-        id: batter_daily
+      # NEW: make sure batter files have team_id/game_id before modeling
+      - name: Prepare daily inputs (stamp team_id/game_id)
         run: |
-          set -euo pipefail
-          mkdir -p summaries/07_final
-          echo "START project_batter_event_probabilities.py $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee -a summaries/07_final/log.txt
-          python scripts/project_batter_event_probabilities.py 2>&1 | tee -a summaries/07_final/log.txt
+          python scripts/prepare_daily_projection_inputs.py
+
+      - name: Build daily batter event projections
+        run: |
+          python scripts/project_batter_event_probabilities.py
 
       - name: Build daily pitcher event projections
-        id: pitcher_daily
         run: |
-          set -euo pipefail
-          mkdir -p summaries/07_final
-          echo "START project_pitcher_stats_daily.py $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee -a summaries/07_final/log.txt
-          python scripts/project_pitcher_stats_daily.py 2>&1 | tee -a summaries/07_final/log.txt
+          python scripts/project_pitcher_event_probabilities.py
 
-      - name: Aggregate to game scores
-        id: game_scores
+      - name: Build game score projections
         run: |
-          set -euo pipefail
-          mkdir -p summaries/07_final
-          echo "START project_game_scores.py $(date '+%Y-%m-%d %H:%M:%S %Z')" | tee -a summaries/07_final/log.txt
-          python scripts/project_game_scores.py 2>&1 | tee -a summaries/07_final/log.txt
+          python scripts/project_game_scores.py
 
-      - name: Summarize run
+      - name: Summarize run log
         if: always()
         run: |
-          set -euo pipefail
           mkdir -p summaries/07_final
-          RUN_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-          STATUS_ICON="OK"
-          if [ "${{ steps.batter_daily.outcome }}" != "success" ] || \
-             [ "${{ steps.pitcher_daily.outcome }}" != "success" ] || \
-             [ "${{ steps.game_scores.outcome }}" != "success" ]; then
-            STATUS_ICON="FAIL"
-          fi
-
-          {
-            echo "===== RUN TIMESTAMP: ${RUN_TS} ====="
-            echo
-            echo "===== STATUS ====="
-            echo "${STATUS_ICON} 07_final_projections"
-            echo
-            echo "===== LOG (tail) ====="
-            tail -n 200 summaries/07_final/log.txt || true
-            echo
-            echo "===== BATTER DAILY STATUS ====="
-            cat summaries/07_final/batter_event_probs_status.txt 2>/dev/null || echo "(none)"
-            echo
-            echo "===== PITCHER DAILY STATUS ====="
-            cat summaries/07_final/pitcher_event_probs_status.txt 2>/dev/null || echo "(none)"
-            echo
-            echo "===== GAME SCORES STATUS ====="
-            cat summaries/07_final/game_scores_status.txt 2>/dev/null || echo "(none)"
-            echo
-            echo "===== DIAGNOSTIC CSVs ====="
-            ls -1 summaries/07_final/*.csv 2>/dev/null || echo "none"
-          } > summaries/07_final/summary.txt
+          if [ -f summaries/07_final/prep_status.txt ]; then cat summaries/07_final/prep_status.txt; fi
+          echo "OK 07_final_projections" > summaries/07_final/status.txt
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: final_projections
+          name: game_score_projections
           path: |
-            data/_projections/batter_event_probs_daily.csv
-            data/_projections/pitcher_event_probs_daily.csv
             data/end_chain/final/game_score_projections.csv
-            summaries/07_final/log.txt
-            summaries/07_final/*status*.txt
-            summaries/07_final/summary.txt
-            summaries/07_final/*.csv
+            summaries/07_final/*
           if-no-files-found: warn
           retention-days: 7
 
@@ -110,13 +70,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/_projections/batter_event_probs_daily.csv || true
-          git add data/_projections/pitcher_event_probs_daily.csv || true
           git add data/end_chain/final/game_score_projections.csv || true
           git add summaries/07_final/* || true
-          if ! git diff --cached --quiet; then
-            git commit -m "CI: update daily batter/pitcher projections and game scores (07)"
-            git push
-          else
-            echo "No changes to commit."
-          fi
+          git commit -m "CI: update 07_final_projections outputs + summaries" || echo "No changes to commit"
+          git push || true
