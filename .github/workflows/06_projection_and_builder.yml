@@ -40,6 +40,7 @@ jobs:
             local log="summaries/06_projection/${name}.log"
             local script_path="scripts/${name}"
 
+            # If script doesn't exist, mark as SKIP (not a failure) and move on
             if [ ! -f "$script_path" ]; then
               echo ">> START: ${name} (${ts})" > "$log"
               echo "SKIP: ${script_path} not found" | tee -a "$log"
@@ -48,6 +49,7 @@ jobs:
               return 0
             fi
 
+            # Start fresh log (overwrite)
             echo ">> START: ${name} (${ts})" > "$log"
 
             set +e
@@ -97,7 +99,6 @@ jobs:
           git config --global user.name "GitHub Actions"
 
           git add \
-            data/_projections/pitcher_props_projected.csv \
             data/_projections/*.csv \
             data/end_chain/final/*.csv \
             data/raw/*.csv \
@@ -115,6 +116,7 @@ jobs:
 
           SUMMARY="summaries/06_projection/summary.txt"
           STATUS="summaries/06_projection/status.txt"
+          CLEAN_LOG="summaries/06_projection/clean_pitcher_files.py.log"
 
           {
             echo "===== RUN TIMESTAMP: $(date) ====="
@@ -124,6 +126,19 @@ jobs:
               cat "$STATUS"
             else
               echo "(status.txt not generated)"
+            fi
+            echo
+            echo "===== KEY COUNTS ====="
+            if [ -f "$CLEAN_LOG" ]; then
+              starters_line=$(grep -E 'Starters seen today:' "$CLEAN_LOG" | tail -n 1 || true)
+              if [ -n "$starters_line" ]; then
+                starters=$(echo "$starters_line" | awk -F': ' '{print $2}')
+                echo "starters_today: ${starters}"
+              else
+                echo "starters_today: (not found)"
+              fi
+            else
+              echo "starters_today: (clean_pitcher_files.py.log not found)"
             fi
             echo
             echo "===== FAILURES: LAST 80 LINES OF EACH FAILED SCRIPT LOG ====="
