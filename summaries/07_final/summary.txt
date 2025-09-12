@@ -1,30 +1,32 @@
-===== RUN TIMESTAMP: 2025-09-12 16:01:32 EDT =====
+===== RUN TIMESTAMP: 2025-09-12 16:30:03 EDT =====
 
 ===== LOG TAILS =====
 --- PREP (tail) ---
-START PREP 2025-09-12 16:01:30 EDT
+START PREP 2025-09-12 16:30:02 EDT
 PREP: injecting team_id and game_id into batter *_final.csv
 [WARN] batter_props_projected_final: 4 rows missing team_id (summaries/07_final/missing_team_id_in_batter_props_projected_final.csv)
 [WARN] batter_props_projected_final: 36 rows missing game_id (summaries/07_final/missing_game_id_in_batter_props_projected_final.csv)
+[INFO] batter_props_projected_final: missing team_id=4, missing game_id=36
 [WARN] batter_props_expanded_final: 4 rows missing team_id (summaries/07_final/missing_team_id_in_batter_props_expanded_final.csv)
 [WARN] batter_props_expanded_final: 36 rows missing game_id (summaries/07_final/missing_game_id_in_batter_props_expanded_final.csv)
+[INFO] batter_props_expanded_final: missing team_id=4, missing game_id=36
 OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 
 --- BATTERS (tail) ---
-START BATTERS 2025-09-12 16:01:30 EDT
+START BATTERS 2025-09-12 16:30:02 EDT
 LOAD: daily & season inputs
 [WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=127
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=126
 
 --- PITCHERS (tail) ---
-START PITCHERS 2025-09-12 16:01:31 EDT
+START PITCHERS 2025-09-12 16:30:03 EDT
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
 
 --- GAME SCORES (tail) ---
-START GAME SCORES 2025-09-12 16:01:31 EDT
+START GAME SCORES 2025-09-12 16:30:03 EDT
 LOAD: batter & pitcher event files
 AGG: sum expected runs by (game_id, team_id, team)
-WROTE: 15 rows -> data/end_chain/final/game_score_projections.csv (pitcher_rows=18)
+WROTE: 14 rows -> data/end_chain/final/game_score_projections.csv (pitcher_rows=18)
 
 ===== ERROR GREP (from current logs) =====
 summaries/07_final/prep_injection_log.txt:[FAIL] TypeError("cannot convert the series to <class 'int'>")
