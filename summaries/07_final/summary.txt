@@ -1,8 +1,8 @@
-===== RUN TIMESTAMP: 2025-09-12 15:45:38 EDT =====
+===== RUN TIMESTAMP: 2025-09-12 16:01:32 EDT =====
 
 ===== LOG TAILS =====
 --- PREP (tail) ---
-START PREP 2025-09-12 15:45:37 EDT
+START PREP 2025-09-12 16:01:30 EDT
 PREP: injecting team_id and game_id into batter *_final.csv
 [WARN] batter_props_projected_final: 4 rows missing team_id (summaries/07_final/missing_team_id_in_batter_props_projected_final.csv)
 [WARN] batter_props_projected_final: 36 rows missing game_id (summaries/07_final/missing_game_id_in_batter_props_projected_final.csv)
@@ -11,23 +11,20 @@ PREP: injecting team_id and game_id into batter *_final.csv
 OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 
 --- BATTERS (tail) ---
-START BATTERS 2025-09-12 15:45:37 EDT
+START BATTERS 2025-09-12 16:01:30 EDT
 LOAD: daily & season inputs
 [WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
 OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=127
 
 --- PITCHERS (tail) ---
-START PITCHERS 2025-09-12 15:45:38 EDT
+START PITCHERS 2025-09-12 16:01:31 EDT
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
 
 --- GAME SCORES (tail) ---
-START GAME SCORES 2025-09-12 15:45:38 EDT
+START GAME SCORES 2025-09-12 16:01:31 EDT
 LOAD: batter & pitcher event files
 AGG: sum expected runs by (game_id, team_id, team)
 WROTE: 15 rows -> data/end_chain/final/game_score_projections.csv (pitcher_rows=18)
 
-===== ERROR GREP (from all logs) =====
-summaries/07_final/batter_event_probs_errors.txt:RuntimeError("data/_projections/batter_props_projected_final.csv missing columns: ['team_id', 'game_id']")
-summaries/07_final/errors_batter_events.txt:RuntimeError('One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; see summaries/07_final/missing_opponent_starter_games.csv')
+===== ERROR GREP (from current logs) =====
 summaries/07_final/prep_injection_log.txt:[FAIL] TypeError("cannot convert the series to <class 'int'>")
-(no errors found by grep)
