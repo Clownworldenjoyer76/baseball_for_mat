@@ -7,6 +7,7 @@ from pathlib import Path
 # Paths
 DAILY_DIR = Path("data/_projections")
 SEASON_DIR = Path("data/Data")
+RAW_DIR = Path("data/raw")
 SUM_DIR = Path("summaries/07_final")
 OUT_DIR = Path("data/end_chain/final")
 SUM_DIR.mkdir(parents=True, exist_ok=True)
@@ -17,6 +18,7 @@ BATTERS_EXP     = DAILY_DIR / "batter_props_expanded_final.csv"
 PITCHERS_DAILY  = DAILY_DIR / "pitcher_props_projected_final.csv"
 BATTERS_SEASON  = SEASON_DIR / "batters.csv"
 PITCHERS_SEASON = SEASON_DIR / "pitchers.csv"
+TGN_FILE        = RAW_DIR / "todaysgames_normalized.csv"
 OUT_FILE        = OUT_DIR / "game_score_projections.csv"
 
 ADJ_COLS = ["adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
@@ -37,7 +39,6 @@ def safe_rate(n, d):
     return (n / d).fillna(0.0).clip(0.0)
 
 def weighted_mean(g, cols, wcol):
-    # weight-aware average; if total weight is 0, fall back to simple mean
     w = pd.to_numeric(g[wcol], errors="coerce").fillna(0.0)
     den = float(w.sum())
     out = {}
@@ -55,6 +56,70 @@ def log5(b, p, lg):
 def write_text(path: Path, text: str):
     path.write_text(text, encoding="utf-8")
 
+def _pick_first(colnames, candidates):
+    # return first present column from candidates (case-insensitive)
+    lower = {c.lower(): c for c in colnames}
+    for cand in candidates:
+        if cand in lower:
+            return lower[cand]
+    return None
+
+def _build_team_keys_from_tgn(tgn: pd.DataFrame) -> pd.DataFrame:
+    """
+    Return df with columns: team (string name), team_id (numeric), game_id (string/int)
+    Tries to support multiple normalized column name variants.
+    """
+    cols = list(tgn.columns)
+    # Accept a few variants for team name & id
+    home_team_col = _pick_first(cols, [
+        "home_team", "home", "home_team_name", "home_name", "home_display"
+    ])
+    away_team_col = _pick_first(cols, [
+        "away_team", "away", "away_team_name", "away_name", "away_display"
+    ])
+    home_id_col = _pick_first(cols, [
+        "home_team_id", "home_id", "home_teamid", "home_mlbid", "home_numeric_id"
+    ])
+    away_id_col = _pick_first(cols, [
+        "away_team_id", "away_id", "away_teamid", "away_mlbid", "away_numeric_id"
+    ])
+    game_id_col = _pick_first(cols, ["game_id", "gid", "gameid"])
+
+    needed = [home_team_col, away_team_col, home_id_col, away_id_col, game_id_col]
+    if any(x is None for x in needed):
+        raise RuntimeError(
+            "todaysgames_normalized.csv is missing required columns for team mapping; "
+            f"found columns={cols}"
+        )
+
+    home = tgn[[game_id_col, home_team_col, home_id_col]].rename(
+        columns={game_id_col: "game_id", home_team_col: "team", home_id_col: "team_id"}
+    )
+    away = tgn[[game_id_col, away_team_col, away_id_col]].rename(
+        columns={game_id_col: "game_id", away_team_col: "team", away_id_col: "team_id"}
+    )
+    keys = pd.concat([home, away], ignore_index=True)
+    # Normalize types
+    keys["team"] = keys["team"].astype("string").str.strip()
+    keys["team_id"] = pd.to_numeric(keys["team_id"], errors="coerce")
+    keys["game_id"] = keys["game_id"].astype("string")
+
+    # If a team appears in multiple games (rare/day-night DH), keep lowest game_id per team, log all
+    mult = keys.groupby("team", as_index=False)["game_id"].nunique()
+    dups = mult[mult["game_id"] > 1]["team"]
+    if not dups.empty:
+        keys[keys["team"].isin(dups)].sort_values(["team", "game_id"]).to_csv(
+            SUM_DIR / "tgn_team_multiple_games.csv", index=False
+        )
+    keys_resolved = (
+        keys.assign(_gid_num=pd.to_numeric(keys["game_id"], errors="coerce"))
+            .sort_values(["team", "_gid_num", "game_id"])
+            .drop(columns=["_gid_num"])
+            .drop_duplicates(subset=["team"], keep="first")
+            .reset_index(drop=True)
+    )
+    return keys_resolved  # team, team_id, game_id
+
 def main():
     print("LOAD: daily and season inputs")
     bat_d = pd.read_csv(BATTERS_DAILY)
@@ -63,24 +128,47 @@ def main():
     bat_s = pd.read_csv(BATTERS_SEASON)
     pit_s = pd.read_csv(PITCHERS_SEASON)
 
-    require(bat_d, ["player_id","team_id","team","game_id","proj_pa_used"], str(BATTERS_DAILY))
+    # Ensure minimum columns present in batters daily before we enrich with ids
+    require(bat_d, ["player_id", "team", "proj_pa_used"], str(BATTERS_DAILY))
     require(bat_x, ["player_id","game_id"] + ADJ_COLS, str(BATTERS_EXP))
     require(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"], str(PITCHERS_DAILY))
     require(bat_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(BATTERS_SEASON))
     require(pit_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(PITCHERS_SEASON))
 
+    # === NEW: derive team_id/game_id for batters from today's schedule if missing ===
+    if ("team_id" not in bat_d.columns) or ("game_id" not in bat_d.columns):
+        if not TGN_FILE.exists():
+            raise RuntimeError(
+                f"{BATTERS_DAILY} lacks team_id/game_id and {TGN_FILE} not found to derive them."
+            )
+        tgn = pd.read_csv(TGN_FILE, low_memory=False)
+        team_keys = _build_team_keys_from_tgn(tgn)  # team, team_id, game_id
+
+        # Merge on team name
+        bat_d["team"] = bat_d["team"].astype("string").str.strip()
+        bat_d = bat_d.merge(team_keys, on="team", how="left")
+
+        # Validate mapping
+        miss_map = bat_d[bat_d[["team_id","game_id"]].isna().any(axis=1)]
+        if not miss_map.empty:
+            miss_map.to_csv(SUM_DIR / "missing_team_map_for_batters.csv", index=False)
+            raise RuntimeError(
+                "Failed to map team_id/game_id for some batters; "
+                "see summaries/07_final/missing_team_map_for_batters.csv"
+            )
+
+    # After enrichment, enforce types
     to_num(bat_d, ["player_id","team_id","game_id","proj_pa_used"])
     to_num(bat_x, ["player_id","game_id"])
     to_num(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"])
     to_num(bat_s, ["pa","strikeout","walk","single","double","triple","home_run"])
     to_num(pit_s, ["pa","strikeout","walk","single","double","triple","home_run"])
 
-    # ========= NEW: hard gate on game coverage (starters-only invariant) =========
+    # ========= Hard gate on game coverage (starters-only invariant) =========
     bat_games = set(pd.unique(bat_d["game_id"]))
     pit_games = set(pd.unique(pit_d["game_id"]))
     missing_games = sorted(list(bat_games - pit_games))
     if missing_games:
-        # Emit explicit diagnostic and fail before we ever compute/join rates
         pd.DataFrame({"game_id": missing_games}).to_csv(
             SUM_DIR / "missing_opponent_starter_games.csv", index=False
         )
@@ -88,7 +176,8 @@ def main():
             "One or more batter games lack an opponent starter in pitcher_props_projected_final.csv; "
             "see summaries/07_final/missing_opponent_starter_games.csv"
         )
-    # ============================================================================
+    # =======================================================================
+
     print("KEY CHECK: (player_id, game_id) coverage for adjustments")
     keys_proj = set(zip(bat_d["player_id"], bat_d["game_id"]))
     keys_exp  = set(zip(bat_x["player_id"], bat_x["game_id"]))
@@ -114,7 +203,6 @@ def main():
             raise RuntimeError(f"{c} invalid after merge; see summaries/07_final/missing_{c}.csv")
 
     print("RATES: season priors and opponent starter (starters-only)")
-    # Batter priors from season totals
     bat_rates = pd.DataFrame({
         "player_id": bat_s["player_id"],
         "p_k_b":  safe_rate(bat_s["strikeout"], bat_s["pa"]),
@@ -125,7 +213,6 @@ def main():
         "p_hr_b": safe_rate(bat_s["home_run"],  bat_s["pa"]),
     })
 
-    # Opponent starter priors from season totals (map by pitcher_id)
     pit_rates = pd.DataFrame({
         "player_id": pit_s["player_id"],
         "p_k_p":  safe_rate(pit_s["strikeout"], pit_s["pa"]),
@@ -136,18 +223,15 @@ def main():
         "p_hr_p": safe_rate(pit_s["home_run"],  pit_s["pa"]),
     })
 
-    # Attach pitcher season rates to each daily starter row
     pit_d_enh = pit_d.merge(pit_rates, on="player_id", how="left")
 
-    # Build opponent map per (game_id, team_id_of_batters)
-    # Each batter row belongs to team_id = T. Its opponent starter row is the one in pit_d where opponent_team_id == T for the same game_id.
     rate_cols = ["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]
     opp_rates = (
         pit_d_enh
         .groupby(["game_id","opponent_team_id"], as_index=False)
         .apply(lambda g: weighted_mean(g, rate_cols, "pa"), include_groups=False)
         .rename(columns={
-            "opponent_team_id":"team_id",  # key for merging to batter's team
+            "opponent_team_id":"team_id",
             "p_k_p":"p_k_opp","p_bb_p":"p_bb_opp","p_1b_p":"p_1b_opp",
             "p_2b_p":"p_2b_opp","p_3b_p":"p_3b_opp","p_hr_p":"p_hr_opp"
         })
@@ -217,11 +301,9 @@ def main():
         .reset_index(drop=True)
     )
 
-    # Ensure an output file exists even if zero rows (no defaults used in calculations)
     team.to_csv(OUT_FILE, index=False)
     print(f"WROTE: {len(team)} rows -> {OUT_FILE}")
 
-    # Write minimal status summary
     write_text(SUM_DIR / "status.txt", f"OK project_game_scores.py rows={len(team)}")
     write_text(SUM_DIR / "errors.txt", "")
     write_text(SUM_DIR / "summary.txt", f"rows={len(team)} out={OUT_FILE}")
@@ -230,7 +312,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        # Always emit error files so CI captures artifacts even on failure
         SUM_DIR.mkdir(parents=True, exist_ok=True)
         OUT_DIR.mkdir(parents=True, exist_ok=True)
         write_text(SUM_DIR / "status.txt", "FAIL project_game_scores.py")
