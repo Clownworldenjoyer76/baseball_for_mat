@@ -14,9 +14,10 @@ PITCHERS_SEASON    = Path("data/Data/pitchers.csv")
 PITCHERS_DAILY_OUT = Path("data/_projections/pitcher_props_projected_final.csv")
 
 def main():
-    pit_d = pd.read_csv(PITCHERS_DAILY_IN)
-    pit_s = pd.read_csv(PITCHERS_SEASON)
+    pit_d = pd.read_csv(PITCHERS_DAILY_IN, low_memory=False)
+    pit_s = pd.read_csv(PITCHERS_SEASON, low_memory=False)
 
+    # Required columns present?
     need_daily = ["player_id","game_id","team_id","opponent_team_id"]
     miss_daily = [c for c in need_daily if c not in pit_d.columns]
     if miss_daily:
@@ -27,17 +28,26 @@ def main():
     if miss_season:
         raise RuntimeError(f"{PITCHERS_SEASON} missing columns: {miss_season}")
 
+    # Normalize join key dtype to STRING on both sides (prevents object/int mismatch)
+    for df in (pit_d, pit_s):
+        if "player_id" in df.columns:
+            df["player_id"] = df["player_id"].astype("string")
+
+    # Keep only what's needed from season and coerce pa to numeric
     pit_s = pit_s[["player_id","pa"]].copy()
     pit_s["pa"] = pd.to_numeric(pit_s["pa"], errors="coerce").fillna(0.0)
 
+    # Ensure daily has a pa column, numeric
     if "pa" not in pit_d.columns:
         pit_d["pa"] = pd.NA
     pit_d["pa"] = pd.to_numeric(pit_d["pa"], errors="coerce")
 
+    # Merge and fill missing pa from season
     pit_d = pit_d.merge(pit_s, on="player_id", how="left", suffixes=("", "_season"))
     pit_d["pa"] = pit_d["pa"].fillna(pit_d["pa_season"]).fillna(0.0)
     pit_d.drop(columns=[c for c in pit_d.columns if c.endswith("_season")], inplace=True)
 
+    # Final numeric cleanup
     pit_d["pa"] = pd.to_numeric(pit_d["pa"], errors="coerce").fillna(0.0).clip(lower=0)
 
     pit_d.to_csv(PITCHERS_DAILY_OUT, index=False)
