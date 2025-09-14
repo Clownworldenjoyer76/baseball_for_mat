@@ -1,9 +1,29 @@
-START PREP 2025-09-12 16:30:02 EDT
+START PREP 2025-09-14 12:19:17 EDT
 PREP: injecting team_id and game_id into batter *_final.csv
-[WARN] batter_props_projected_final: 4 rows missing team_id (summaries/07_final/missing_team_id_in_batter_props_projected_final.csv)
-[WARN] batter_props_projected_final: 36 rows missing game_id (summaries/07_final/missing_game_id_in_batter_props_projected_final.csv)
-[INFO] batter_props_projected_final: missing team_id=4, missing game_id=36
-[WARN] batter_props_expanded_final: 4 rows missing team_id (summaries/07_final/missing_team_id_in_batter_props_expanded_final.csv)
-[WARN] batter_props_expanded_final: 36 rows missing game_id (summaries/07_final/missing_game_id_in_batter_props_expanded_final.csv)
-[INFO] batter_props_expanded_final: missing team_id=4, missing game_id=36
-OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/indexes/base.py", line 3812, in get_loc
+    return self._engine.get_loc(casted_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "pandas/_libs/index.pyx", line 167, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/index.pyx", line 196, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'team_id_from_lineups'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/prepare_daily_projection_inputs.py", line 181, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/prepare_daily_projection_inputs.py", line 170, in main
+    bats_proj_out = inject_team_and_game(bats_proj, stem="batter_props_projected_final")
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/prepare_daily_projection_inputs.py", line 130, in inject_team_and_game
+    merged["team_id"] = merged["team_id"].where(merged["team_id"].ne(""), merged["team_id_from_lineups"])
+                                                                          ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/frame.py", line 4107, in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.11.13/x64/lib/python3.11/site-packages/pandas/core/indexes/base.py", line 3819, in get_loc
+    raise KeyError(key) from err
+KeyError: 'team_id_from_lineups'
