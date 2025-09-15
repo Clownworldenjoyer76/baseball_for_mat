@@ -1,185 +1,197 @@
 #!/usr/bin/env python3
-"""
-Inject team_id and game_id into:
-  - data/_projections/batter_props_projected_final.csv
-  - data/_projections/batter_props_expanded_final.csv
+# scripts/prepare_daily_projection_inputs.py
+#
+# Goal:
+#   Ensure batter *_final daily files have string 'team_id' and 'game_id' columns.
+#   - Pull team_id by player_id from data/raw/lineups.csv (if missing)
+#   - Pull game_id by team_id from data/raw/todaysgames_normalized.csv
+#   - Never crash on absent/suffixed columns; coalesce safely.
+#   - Emit warnings + CSVs listing rows still missing team_id / game_id.
+#
+# Inputs:
+#   data/_projections/batter_props_projected_final.csv
+#   data/_projections/batter_props_expanded_final.csv
+#   data/raw/lineups.csv  (must include: player_id, team_id)
+#   data/raw/todaysgames_normalized.csv (includes: game_id, home_team_id, away_team_id)
+#
+# Outputs (overwrite in place):
+#   data/_projections/batter_props_projected_final.csv
+#   data/_projections/batter_props_expanded_final.csv
+#
+# Diagnostics:
+#   summaries/07_final/missing_team_id_in_<file>.csv
+#   summaries/07_final/missing_game_id_in_<file>.csv
+#   summaries/07_final/prep_injection_log.txt
 
-Sources:
-  - Team for each batter: data/raw/lineups.csv (player_id, team_id)
-  - Game for each team:  data/raw/todaysgames_normalized.csv (game_id, home_team_id, away_team_id)
+from __future__ import annotations
 
-Notes:
-  - All key columns coerced to str to avoid dtype merge issues.
-  - Safe left merges; original rows/order preserved.
-  - Writes diagnostics for any remaining missing team_id / game_id.
-"""
-
-from pathlib import Path
+import sys
 import pandas as pd
+from pathlib import Path
 
-# ----- Paths -----
-DAILY_DIR   = Path("data/_projections")
-RAW_DIR     = Path("data/raw")
-SUM_DIR     = Path("summaries/07_final")
+# Paths
+PROJ_DIR = Path("data/_projections")
+RAW_DIR = Path("data/raw")
+SUM_DIR = Path("summaries/07_final")
 SUM_DIR.mkdir(parents=True, exist_ok=True)
 
-BATS_PROJ   = DAILY_DIR / "batter_props_projected_final.csv"
-BATS_EXP    = DAILY_DIR / "batter_props_expanded_final.csv"
-LINEUPS     = RAW_DIR   / "lineups.csv"
-TGN         = RAW_DIR   / "todaysgames_normalized.csv"
+BATTERS_PROJECTED = PROJ_DIR / "batter_props_projected_final.csv"
+BATTERS_EXPANDED  = PROJ_DIR / "batter_props_expanded_final.csv"
+LINEUPS_CSV       = RAW_DIR / "lineups.csv"
+TGN_CSV           = RAW_DIR / "todaysgames_normalized.csv"
 
-# ----- Helpers -----
-def _read_csv_force_str(path: Path) -> pd.DataFrame:
-    """
-    Read CSV with all columns as str where possible.
-    This prevents object/int mismatches on keys.
-    """
-    # Load without dtype to preserve content, then coerce to str
-    df = pd.read_csv(path)
+LOG_FILE = SUM_DIR / "prep_injection_log.txt"
+
+def log(msg: str) -> None:
+    print(msg, flush=True)
+    with LOG_FILE.open("a", encoding="utf-8") as f:
+        f.write(msg + "\n")
+
+def read_csv_force_str(path: Path) -> pd.DataFrame:
+    """Read a CSV with all columns as string (object) dtype."""
+    df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[])
+    # Normalize whitespace and None-like placeholders to empty string
     for c in df.columns:
-        # Convert everything to str uniformly to be safe for joins on ids/names
-        df[c] = df[c].astype(str)
-        # Normalize typical textual NaNs from previous runs
-        df[c] = df[c].replace({"nan": "", "None": "", "NaN": ""})
+        df[c] = df[c].astype(str).str.strip()
+        df[c] = df[c].replace({"None": "", "nan": "", "NaN": ""})
     return df
 
-def _ensure_cols(df: pd.DataFrame, cols: list[str]) -> None:
-    missing = [c for c in cols if c not in df.columns]
+def coalesce_series(a: pd.Series | None, b: pd.Series | None) -> pd.Series:
+    """Return first non-empty (not NA/empty-string) between a and b (both may be None)."""
+    if a is None and b is None:
+        # produce empty series
+        return pd.Series([], dtype="object")
+    if a is None:
+        a = pd.Series([""] * len(b), index=b.index, dtype="object")
+    if b is None:
+        b = pd.Series([""] * len(a), index=a.index, dtype="object")
+    a = a.astype(str)
+    b = b.astype(str)
+    out = a.where(a.str.len() > 0, b)
+    out = out.fillna("").astype(str)
+    return out
+
+def build_team_to_game_map(tgn: pd.DataFrame) -> pd.DataFrame:
+    """Explode todaysgames_normalized into (team_id, game_id) rows."""
+    need = {"game_id", "home_team_id", "away_team_id"}
+    missing = sorted(list(need - set(tgn.columns)))
     if missing:
-        raise RuntimeError(f"{missing} missing in dataframe")
+        raise RuntimeError(f"{TGN_CSV} missing columns: {missing}")
 
-def _write_missing(df: pd.DataFrame, cols: list[str], stem: str) -> tuple[int, int]:
-    """Log and dump CSVs for rows missing team_id / game_id."""
-    missing_team_mask = df["team_id"].eq("") | df["team_id"].isna()
-    missing_game_mask = df["game_id"].eq("") | df["game_id"].isna()
+    # Keep only the columns we need and force strings
+    tgn = tgn[["game_id", "home_team_id", "away_team_id"]].copy()
+    for c in tgn.columns:
+        tgn[c] = tgn[c].astype(str).str.strip()
 
-    miss_team = df.loc[missing_team_mask, ["player_id"] + [c for c in cols if c in df.columns]].copy()
-    miss_game = df.loc[missing_game_mask, ["player_id","team_id"] + [c for c in cols if c in df.columns]].copy()
+    home = tgn.rename(columns={"home_team_id": "team_id"})[["game_id", "team_id"]].copy()
+    away = tgn.rename(columns={"away_team_id": "team_id"})[["game_id", "team_id"]].copy()
+    team_game = pd.concat([home, away], ignore_index=True)
+    # Drop empties
+    team_game["team_id"] = team_game["team_id"].replace({"None": "", "nan": "", "NaN": ""})
+    team_game = team_game[team_game["team_id"].astype(str).str.len() > 0].drop_duplicates()
+    return team_game
 
-    mt = len(miss_team)
-    mg = len(miss_game)
+def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
+                         lineups: pd.DataFrame, team_game_map: pd.DataFrame) -> pd.DataFrame:
+    """
+    - Ensure 'player_id' exists.
+    - Coalesce/attach 'team_id' using any existing df team_id and the lineups merge.
+    - Attach 'game_id' via team_id using the team_game_map (home/away exploded).
+    - Emit missing lists.
+    """
+    if "player_id" not in df.columns:
+        raise RuntimeError(f"{name_for_logs} missing required column: player_id")
 
-    if mt > 0:
-        miss_team.to_csv(SUM_DIR / f"missing_team_id_in_{stem}.csv", index=False)
-        print(f"[WARN] {stem}: {mt} rows missing team_id (summaries/07_final/missing_team_id_in_{stem}.csv)")
-    if mg > 0:
-        miss_game.to_csv(SUM_DIR / f"missing_game_id_in_{stem}.csv", index=False)
-        print(f"[WARN] {stem}: {mg} rows missing game_id (summaries/07_final/missing_game_id_in_{stem}.csv)")
+    # Force all string dtypes early
+    for c in df.columns:
+        df[c] = df[c].astype(str).str.strip()
 
-    print(f"[INFO] {stem}: missing team_id={mt}, missing game_id={mg}")
-    return mt, mg
+    # Merge to bring in team_id from lineups (rename to avoid suffix guessing)
+    li = lineups.copy()
+    li = li.rename(columns={"team_id": "team_id_lineups"})
+    li = li[["player_id", "team_id_lineups"]].copy()
 
-def main():
-    print("PREP: injecting team_id and game_id into batter *_final.csv")
+    merged = df.merge(li, on="player_id", how="left")
 
-    # ---------- Load inputs with safe dtypes ----------
-    bats_proj = _read_csv_force_str(BATS_PROJ)
-    bats_exp  = _read_csv_force_str(BATS_EXP)
-    lineups   = _read_csv_force_str(LINEUPS)
-    tgn       = _read_csv_force_str(TGN)
+    # Coalesce team_id: prefer existing non-empty df['team_id'], else lineups
+    existing_team = merged["team_id"] if "team_id" in merged.columns else None
+    from_lineups  = merged["team_id_lineups"] if "team_id_lineups" in merged.columns else None
+    merged["team_id"] = coalesce_series(existing_team, from_lineups)
 
-    # Expected columns
-    _ensure_cols(bats_proj, ["player_id"])
-    _ensure_cols(bats_exp,  ["player_id"])
-    _ensure_cols(lineups,   ["player_id", "team_id"])
-    _ensure_cols(tgn,       ["game_id", "home_team_id", "away_team_id"])
+    # Normalize team_id
+    merged["team_id"] = merged["team_id"].fillna("").astype(str).str.strip()
 
-    # ---------- Build team_id -> game_id map from TGN ----------
-    # Melt home/away into long form keyed by team_id
-    tgn_home = tgn[["game_id", "home_team_id"]].rename(columns={"home_team_id": "team_id"}).copy()
-    tgn_away = tgn[["game_id", "away_team_id"]].rename(columns={"away_team_id": "team_id"}).copy()
-    tgn_map  = pd.concat([tgn_home, tgn_away], ignore_index=True)
-    # Ensure team_id and game_id are strings and clean blanks
-    for c in ["team_id", "game_id"]:
-        tgn_map[c] = tgn_map[c].astype(str).replace({"nan": "", "None": "", "NaN": ""})
+    # Attach game_id from exploded map if missing or empty
+    # Keep any pre-existing 'game_id' but fill missing via map
+    merged = merged.merge(team_game_map, on="team_id", how="left", suffixes=("", "_from_map"))
+    # Coalesce: prefer any existing non-empty game_id in df, else from map
+    existing_gid = merged["game_id"] if "game_id" in merged.columns else None
+    from_map     = merged["game_id_from_map"] if "game_id_from_map" in merged.columns else None
+    merged["game_id"] = coalesce_series(existing_gid, from_map)
+    if "game_id_from_map" in merged.columns:
+        merged.drop(columns=["game_id_from_map"], inplace=True)
 
-    # ---------- Inject team_id from lineups ----------
-    # Use left merge on player_id; keep original order/cols
-    def inject_team_and_game(df: pd.DataFrame, stem: str) -> pd.DataFrame:
-        df = df.copy()
+    # Warn and write diagnostics for any still-missing team_id / game_id
+    miss_team = merged.loc[merged["team_id"].astype(str).str.len() == 0, ["player_id"]].drop_duplicates()
+    miss_gid  = merged.loc[(merged["game_id"].astype(str).str.len() == 0),
+                           ["player_id", "team_id"]].drop_duplicates()
 
-        # Ensure required columns exist even if empty
-        if "team_id" not in df.columns:
-            df["team_id"] = ""
-        if "game_id" not in df.columns:
-            df["game_id"] = ""
+    if len(miss_team) > 0:
+        out = SUM_DIR / f"missing_team_id_in_{name_for_logs}.csv"
+        miss_team.to_csv(out, index=False)
+        log(f"[WARN] {name_for_logs}: {len(miss_team)} rows missing team_id ({out})")
 
-        # Coerce keys to string
-        for c in ["player_id", "team_id", "game_id"]:
-            if c in df.columns:
-                df[c] = df[c].astype(str).replace({"nan": "", "None": "", "NaN": ""})
+    if len(miss_gid) > 0:
+        out = SUM_DIR / f"missing_game_id_in_{name_for_logs}.csv"
+        miss_gid.to_csv(out, index=False)
+        log(f"[WARN] {name_for_logs}: {len(miss_gid)} rows missing game_id ({out})")
 
-        # Inject team_id from lineups for rows missing team_id
-        need_team_mask = df["team_id"].eq("") | df["team_id"].isna()
-        if need_team_mask.any():
-            df_team = df.loc[:, ["player_id", "team_id", "game_id"]].copy()
-            df_left = df.loc[:, [c for c in df.columns if c not in ["team_id", "game_id"]]].copy()
+    log(f"[INFO] {name_for_logs}: missing team_id={len(miss_team)}, missing game_id={len(miss_gid)}")
 
-            # Merge to get team_id from lineups
-            merged = df_left.merge(
-                lineups[["player_id", "team_id"]],
-                on="player_id",
-                how="left",
-                suffixes=("", "_from_lineups")
-            )
+    return merged
 
-            # If team_id column existed originally, prefer original when present; fill missing from _from_lineups
-            if "team_id" in df.columns:
-                # Attach previous values and fill
-                merged["team_id"] = df_team["team_id"].values
-                merged["team_id"] = merged["team_id"].where(merged["team_id"].ne(""), merged["team_id_from_lineups"])
-            else:
-                merged.rename(columns={"team_id_from_lineups": "team_id"}, inplace=True)
+def main() -> None:
+    # Fresh log
+    LOG_FILE.write_text("", encoding="utf-8")
+    log("PREP: injecting team_id and game_id into batter *_final.csv")
 
-            merged.drop(columns=[c for c in merged.columns if c.endswith("_from_lineups")], inplace=True)
-            # Re-join other columns that were temporarily parked
-            # (They’re already in merged via df_left; add back any we parked)
-            for c in df.columns:
-                if c not in merged.columns:
-                    merged[c] = df[c]
+    # Load inputs
+    bat_proj = read_csv_force_str(BATTERS_PROJECTED)
+    bat_exp  = read_csv_force_str(BATTERS_EXPANDED)
+    lineups  = read_csv_force_str(LINEUPS_CSV)
+    tgn      = read_csv_force_str(TGN_CSV)
 
-            df = merged
+    # Build team_id -> game_id mapping (home/away exploded)
+    team_game_map = build_team_to_game_map(tgn)
 
-        # ---------- Inject game_id from team_id via tgn_map ----------
-        need_game_mask = df["game_id"].eq("") | df["game_id"].isna()
-        if need_game_mask.any():
-            df_left = df.copy()
-            df_left = df_left.merge(
-                tgn_map.drop_duplicates(subset=["team_id"]),
-                on="team_id",
-                how="left",
-                suffixes=("", "_from_tgn")
-            )
-            # Prefer existing game_id when present; otherwise fill from _from_tgn
-            if "game_id_from_tgn" in df_left.columns:
-                df_left["game_id"] = df_left["game_id"].where(df_left["game_id"].ne(""), df_left["game_id_from_tgn"])
-                df_left.drop(columns=["game_id_from_tgn"], inplace=True)
+    # Process both batter files
+    bat_proj_out = inject_team_and_game(bat_proj, "batter_props_projected_final.csv", lineups, team_game_map)
+    bat_exp_out  = inject_team_and_game(bat_exp,  "batter_props_expanded_final.csv",  lineups, team_game_map)
 
-            df = df_left
+    # Persist back to the same paths (keep column order stable: put team_id, game_id at the end if they were new)
+    def write_back(df_before: pd.DataFrame, df_after: pd.DataFrame, path: Path) -> None:
+        # Preserve original column order + ensure team_id/game_id present at end if not originally present
+        cols = list(df_before.columns)
+        for add_col in ["team_id", "game_id"]:
+            if add_col not in cols:
+                cols.append(add_col)
+        # Some rows may have extra merge helper columns removed already; guard with intersection
+        cols_final = [c for c in cols if c in df_after.columns]
+        df_after[cols_final].to_csv(path, index=False)
 
-        # Keep columns order stable: put keys up front if present
-        key_order = [c for c in ["player_id", "team_id", "game_id"] if c in df.columns]
-        other = [c for c in df.columns if c not in key_order]
-        df = df[key_order + other]
+    write_back(bat_proj, bat_proj_out, BATTERS_PROJECTED)
+    write_back(bat_exp,  bat_exp_out,  BATTERS_EXPANDED)
 
-        # Diagnostics
-        _write_missing(df, cols=[], stem=stem)
-
-        return df
-
-    bats_proj_out = inject_team_and_game(bats_proj, stem="batter_props_projected_final")
-    bats_exp_out  = inject_team_and_game(bats_exp,  stem="batter_props_expanded_final")
-
-    # ---------- Write outputs ----------
-    bats_proj_out.to_csv(BATS_PROJ, index=False)
-    bats_exp_out.to_csv(BATS_EXP, index=False)
-    print(f"OK: wrote {BATS_PROJ} and {BATS_EXP}")
+    log(f"OK: wrote {BATTERS_PROJECTED} and {BATTERS_EXPANDED}")
 
 if __name__ == "__main__":
-    # We avoid printing any literal "[FAIL]" to keep CI grep clean.
     try:
         main()
     except Exception as e:
-        # Write a minimal log with the exception string (no '[FAIL]' marker)
-        (SUM_DIR / "prep_injection_log.txt").write_text(repr(e), encoding="utf-8")
+        # Keep the log tidy but explicit
+        msg = f"[ERROR] prepare_daily_projection_inputs failed: {repr(e)}"
+        print(msg)
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+        # Propagate non-zero exit for CI
         raise
