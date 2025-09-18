@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
 # Aggregates daily batter/pitcher projections into game-level expected runs.
-# Assumes upstream scripts produced:
-#   - data/end_chain/final/batter_event_probabilities.csv
-#   - data/end_chain/final/pitcher_event_probabilities.csv  (not strictly required for aggregation)
-#
-# Output:
-#   - data/end_chain/final/game_score_projections.csv
-#
-# Minimal, defensive, no recomputation of opponent context here.
 
 import pandas as pd
 from pathlib import Path
@@ -18,7 +10,7 @@ SUM_DIR.mkdir(parents=True, exist_ok=True)
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 BATTER_EVENTS = OUT_DIR / "batter_event_probabilities.csv"
-PITCHER_EVENTS = OUT_DIR / "pitcher_event_probabilities.csv"  # optional for aggregate
+PITCHER_EVENTS = OUT_DIR / "pitcher_event_probabilities.csv"  # optional
 OUT_FILE = OUT_DIR / "game_score_projections.csv"
 
 def write_text(p: Path, txt: str) -> None:
@@ -35,19 +27,11 @@ def to_num(df: pd.DataFrame, cols: list[str]) -> None:
             df[c] = pd.to_numeric(df[c], errors="coerce")
 
 def ensure_expected_runs_batter(bat: pd.DataFrame) -> pd.DataFrame:
-    """
-    Ensure column 'expected_runs_batter' exists.
-    Preference order:
-      1) Use existing 'expected_runs_batter'
-      2) Compute runs_per_pa * proj_pa_used if both present
-      3) Compute runs_per_pa from event probabilities * linear weights, then multiply by proj_pa_used
-    """
     if "expected_runs_batter" in bat.columns and bat["expected_runs_batter"].notna().any():
         to_num(bat, ["expected_runs_batter"])
         bat["expected_runs_batter"] = bat["expected_runs_batter"].fillna(0.0).clip(lower=0)
         return bat
 
-    # Option 2: runs_per_pa * proj_pa_used
     if {"runs_per_pa", "proj_pa_used"}.issubset(bat.columns):
         to_num(bat, ["runs_per_pa", "proj_pa_used"])
         bat["expected_runs_batter"] = (
@@ -56,7 +40,6 @@ def ensure_expected_runs_batter(bat: pd.DataFrame) -> pd.DataFrame:
         )
         return bat
 
-    # Option 3: derive runs_per_pa from p_* columns
     lw = {"BB":0.33, "1B":0.47, "2B":0.77, "3B":1.04, "HR":1.40, "OUT":0.0}
     need_p = ["p_bb", "p_1b", "p_2b", "p_3b", "p_hr", "p_out", "proj_pa_used"]
     missing_p = [c for c in need_p if c not in bat.columns]
@@ -88,29 +71,46 @@ def main():
         raise RuntimeError(f"Missing {BATTER_EVENTS}; upstream batter projection step must run first.")
 
     bat = pd.read_csv(BATTER_EVENTS)
-    # Pitcher file not required for aggregation, but we load if present to surface shape in logs.
     pit_rows = 0
     if PITCHER_EVENTS.exists():
         pit = pd.read_csv(PITCHER_EVENTS)
         pit_rows = len(pit)
 
     require(bat, ["game_id", "team_id", "proj_pa_used"], str(BATTER_EVENTS))
-    # Team name is nice-to-have for readability; if absent we synthesize an empty string.
     if "team" not in bat.columns:
         bat["team"] = ""
 
     to_num(bat, ["game_id", "team_id", "proj_pa_used"])
+    if bat["game_id"].isna().any() or bat["team_id"].isna().any():
+        bad = bat.loc[bat["game_id"].isna() | bat["team_id"].isna(), ["player_id","team_id","game_id"]]
+        bad.to_csv(SUM_DIR / "gamescores_null_keys.csv", index=False)
+        raise RuntimeError(f"Null game_id/team_id in batter events; see {SUM_DIR/'gamescores_null_keys.csv'}")
+
     bat = ensure_expected_runs_batter(bat)
 
     print("AGG: sum expected runs by (game_id, team_id, team)")
     team = (
-        bat.groupby(["game_id", "team_id", "team"], dropna=True)["expected_runs_batter"]
+        bat.groupby(["game_id", "team_id", "team"], dropna=False)["expected_runs_batter"]
            .sum()
            .reset_index()
            .rename(columns={"expected_runs_batter": "expected_runs"})
            .sort_values(["game_id", "team_id"])
            .reset_index(drop=True)
     )
+
+    # Defensive integrity checks
+    teams_per_game = team.groupby("game_id")["team_id"].nunique()
+    bad_games = teams_per_game[teams_per_game != 2]
+    if not bad_games.empty:
+        (SUM_DIR / "gamescores_bad_games.txt").write_text(
+            f"bad_games={bad_games.to_dict()}\n", encoding="utf-8"
+        )
+        raise RuntimeError(f"Incomplete/duplicated teams per game. See {SUM_DIR/'gamescores_bad_games.txt'}")
+
+    dup_pairs = team.duplicated(["game_id","team_id"])
+    if dup_pairs.any():
+        team.loc[dup_pairs].to_csv(SUM_DIR / "gamescores_dup_pairs.csv", index=False)
+        raise RuntimeError(f"Duplicate (game_id, team_id) rows. See {SUM_DIR/'gamescores_dup_pairs.csv'}")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     team.to_csv(OUT_FILE, index=False)
