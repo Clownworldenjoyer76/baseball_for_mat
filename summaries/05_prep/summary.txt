@@ -1,77 +1,77 @@
-===== RUN TIMESTAMP: 2025-09-11 11:25:51 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-18 10:42:08 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-11 11:25:47 AM EDT]
-✅ python succeeded [2025-09-11 11:25:47 AM EDT]
-✅ python succeeded [2025-09-11 11:25:48 AM EDT]
-✅ python succeeded [2025-09-11 11:25:48 AM EDT]
-✅ python succeeded [2025-09-11 11:25:49 AM EDT]
-✅ python succeeded [2025-09-11 11:25:49 AM EDT]
-✅ python succeeded [2025-09-11 11:25:50 AM EDT]
-✅ python succeeded [2025-09-11 11:25:51 AM EDT]
+✅ python succeeded [2025-09-18 10:42:04 AM EDT]
+✅ python succeeded [2025-09-18 10:42:04 AM EDT]
+✅ python succeeded [2025-09-18 10:42:05 AM EDT]
+✅ python succeeded [2025-09-18 10:42:05 AM EDT]
+✅ python succeeded [2025-09-18 10:42:05 AM EDT]
+✅ python succeeded [2025-09-18 10:42:06 AM EDT]
+✅ python succeeded [2025-09-18 10:42:07 AM EDT]
+✅ python succeeded [2025-09-18 10:42:08 AM EDT]
 
 ===== LOG =====
-▶️ START: prep_merge.py (2025-09-11 11:25:46 AM EDT)
-[main bc2bb2d6a] prep_merge: stage files (player_id/game_id-based)
- 5 files changed, 303 insertions(+), 514 deletions(-)
+▶️ START: prep_merge.py (2025-09-18 10:42:02 AM EDT)
+[main fa6bc6dfc] prep_merge: stage files (player_id/game_id-based)
+ 5 files changed, 352 insertions(+), 303 deletions(-)
 Saved pitchers home → data/end_chain/first/pit_hwp.csv
 Saved pitchers away → data/end_chain/first/pit_awp.csv
 Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
 Git commit/push complete.
-⏹️ END: python (2025-09-11 11:25:47 AM EDT)
+⏹️ END: python (2025-09-18 10:42:04 AM EDT)
 
-▶️ START: chain_load_data.py (2025-09-11 11:25:47 AM EDT)
+▶️ START: chain_load_data.py (2025-09-18 10:42:04 AM EDT)
 --- Starting Data Loading Process ---
 Loading games from data/end_chain/first/games_today.csv...
-✅ Loaded games. Shape: (9, 11)
+✅ Loaded games. Shape: (10, 11)
 Loading batters_home from data/end_chain/first/raw/bat_hwp_dirty.csv...
-✅ Loaded batters_home. Shape: (140, 5)
+✅ Loaded batters_home. Shape: (154, 5)
 Loading batters_away from data/end_chain/first/raw/bat_awp_dirty.csv...
-✅ Loaded batters_away. Shape: (140, 5)
+✅ Loaded batters_away. Shape: (170, 5)
 Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
-✅ Loaded pitchers_home. Shape: (7, 5)
+✅ Loaded pitchers_home. Shape: (10, 5)
 Loading pitchers_away from data/end_chain/first/pit_awp.csv...
-✅ Loaded pitchers_away. Shape: (7, 5)
+✅ Loaded pitchers_away. Shape: (8, 5)
 --- Data Loading Complete ---
-⏹️ END: python (2025-09-11 11:25:47 AM EDT)
+⏹️ END: python (2025-09-18 10:42:04 AM EDT)
 
-▶️ START: clean_and_preprocess_games.py (2025-09-11 11:25:47 AM EDT)
-✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=9)
-⏹️ END: python (2025-09-11 11:25:48 AM EDT)
+▶️ START: clean_and_preprocess_games.py (2025-09-18 10:42:04 AM EDT)
+✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=10)
+⏹️ END: python (2025-09-18 10:42:05 AM EDT)
 
-▶️ START: normalize_pitchers_xtra.py (2025-09-11 11:25:48 AM EDT)
-✅ Wrote 14 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
-⏹️ END: python (2025-09-11 11:25:48 AM EDT)
+▶️ START: normalize_pitchers_xtra.py (2025-09-18 10:42:05 AM EDT)
+✅ Wrote 18 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
+⏹️ END: python (2025-09-18 10:42:05 AM EDT)
 
-▶️ START: clean_merge_files.py (2025-09-11 11:25:48 AM EDT)
-Cleaned data/end_chain/first/pit_hwp.csv → removed_dupes: 0, rows_after: 7, dupes_remaining: 0
-Cleaned data/end_chain/first/pit_awp.csv → removed_dupes: 0, rows_after: 7, dupes_remaining: 0
-Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed_dupes: 0, rows_after: 140, dupes_remaining: 0
-Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed_dupes: 0, rows_after: 140, dupes_remaining: 0
+▶️ START: clean_merge_files.py (2025-09-18 10:42:05 AM EDT)
+Cleaned data/end_chain/first/pit_hwp.csv → removed_dupes: 0, rows_after: 10, dupes_remaining: 0
+Cleaned data/end_chain/first/pit_awp.csv → removed_dupes: 0, rows_after: 8, dupes_remaining: 0
+Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed_dupes: 0, rows_after: 170, dupes_remaining: 0
+Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed_dupes: 0, rows_after: 154, dupes_remaining: 0
 
 ✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
-⏹️ END: python (2025-09-11 11:25:49 AM EDT)
+⏹️ END: python (2025-09-18 10:42:05 AM EDT)
 
-▶️ START: finalbatawp.py (2025-09-11 11:25:49 AM EDT)
-[main 16d33829d] 📊 Build finalbatawp.csv; add default park_factor (100.0) + src=default fallback
- 1 file changed, 140 insertions(+), 210 deletions(-)
-📝 Wrote data/end_chain/final/finalbatawp.csv (rows=140)
+▶️ START: finalbatawp.py (2025-09-18 10:42:05 AM EDT)
+[main d3bc6c8b6] 📊 Build finalbatawp.csv; add default park_factor (100.0) + src=default fallback
+ 1 file changed, 170 insertions(+), 140 deletions(-)
+📝 Wrote data/end_chain/final/finalbatawp.csv (rows=170)
 ↗️ Pushed to repository.
-⏹️ END: python (2025-09-11 11:25:49 AM EDT)
+⏹️ END: python (2025-09-18 10:42:06 AM EDT)
 
-▶️ START: finalbathwp.py (2025-09-11 11:25:49 AM EDT)
-[main 7e65a802c] finalbathwp: add default park_factor (100.0) + src=default fallback
- 1 file changed, 140 insertions(+), 265 deletions(-)
-📝 Wrote data/end_chain/final/finalbathwp.csv (rows=140, cols=10)
+▶️ START: finalbathwp.py (2025-09-18 10:42:06 AM EDT)
+[main 4bab70745] finalbathwp: add default park_factor (100.0) + src=default fallback
+ 1 file changed, 154 insertions(+), 140 deletions(-)
+📝 Wrote data/end_chain/final/finalbathwp.csv (rows=154, cols=10)
 ✅ Committed and pushed finalbathwp.csv
-⏹️ END: python (2025-09-11 11:25:50 AM EDT)
+⏹️ END: python (2025-09-18 10:42:07 AM EDT)
 
-▶️ START: pit1.py (2025-09-11 11:25:50 AM EDT)
+▶️ START: pit1.py (2025-09-18 10:42:07 AM EDT)
 ✅ Merged pitcher data saved to: data/end_chain/final/startingpitchers.csv
-ℹ️ Rows: 14 | Matched to xtra by player_id (has any xtra data): 14
-⏹️ END: python (2025-09-11 11:25:51 AM EDT)
+ℹ️ Rows: 18 | Matched to xtra by player_id (has any xtra data): 18
+⏹️ END: python (2025-09-18 10:42:08 AM EDT)
 
 
 ===== ERRORS =====
