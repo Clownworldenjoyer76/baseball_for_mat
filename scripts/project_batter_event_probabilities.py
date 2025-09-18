@@ -7,6 +7,7 @@ from pathlib import Path
 # Paths
 DAILY_DIR = Path("data/_projections")
 SEASON_DIR = Path("data/Data")
+RAW_DIR = Path("data/raw")
 SUM_DIR = Path("summaries/07_final")
 OUT_DIR = Path("data/_projections")
 END_DIR = Path("data/end_chain/final")
@@ -19,6 +20,8 @@ BATTERS_EXP     = DAILY_DIR / "batter_props_expanded_final.csv"
 PITCHERS_DAILY  = DAILY_DIR / "pitcher_props_projected_final.csv"
 BATTERS_SEASON  = SEASON_DIR / "batters.csv"
 PITCHERS_SEASON = SEASON_DIR / "pitchers.csv"
+
+TGN_CSV         = RAW_DIR / "todaysgames_normalized.csv"
 
 OUT_FILE_PROJ   = OUT_DIR / "batter_event_probabilities.csv"
 OUT_FILE_FINAL  = END_DIR / "batter_event_probabilities.csv"
@@ -47,6 +50,24 @@ def log5(b, p, lg):
     p = pd.to_numeric(p, errors="coerce").fillna(0.0)
     return (b * p) / lg
 
+def build_team_to_game_map(tgn: pd.DataFrame) -> pd.DataFrame:
+    need = {"game_id", "home_team_id", "away_team_id"}
+    missing = sorted(list(need - set(tgn.columns)))
+    if missing:
+        raise RuntimeError(f"{TGN_CSV} missing columns: {missing}")
+    tgn = tgn[["game_id", "home_team_id", "away_team_id"]].copy()
+    for c in tgn.columns:
+        tgn[c] = tgn[c].astype(str).str.strip()
+    home = tgn.rename(columns={"home_team_id": "team_id"})[["game_id", "team_id"]]
+    away = tgn.rename(columns={"away_team_id": "team_id"})[["game_id", "team_id"]]
+    team_game = pd.concat([home, away], ignore_index=True).drop_duplicates()
+    # Validate two teams per game
+    pg = team_game.groupby("game_id")["team_id"].nunique()
+    bad = pg[pg != 2]
+    if not bad.empty:
+        raise RuntimeError(f"{TGN_CSV} invalid two-team constraint: {bad.to_dict()}")
+    return team_game
+
 def main():
     print("LOAD: daily & season inputs")
     bat_d = pd.read_csv(BATTERS_DAILY)
@@ -62,19 +83,34 @@ def main():
     require(bat_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(BATTERS_SEASON))
     require(pit_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(PITCHERS_SEASON))
 
+    # Enforce non-null team_id/game_id before merge
+    assert pd.Series(bat_d["team_id"]).notna().all(), "batter_props_projected_final.csv has missing team_id"
+    assert pd.Series(bat_d["game_id"]).notna().all(), "batter_props_projected_final.csv has missing game_id"
+
     to_num(bat_d, ["player_id","team_id","game_id","proj_pa_used"])
     to_num(bat_x, ["player_id","game_id"])
     to_num(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"])
     to_num(bat_s, ["pa","strikeout","walk","single","double","triple","home_run"])
     to_num(pit_s, ["pa","strikeout","walk","single","double","triple","home_run"])
 
-    # Adjustment columns default to neutral if missing
+    # Normalize adjustments
     for c in ADJ_COLS:
         if c not in bat_x.columns:
             bat_x[c] = 1.0
     bat_x[ADJ_COLS] = bat_x[ADJ_COLS].apply(pd.to_numeric, errors="coerce").fillna(1.0)
 
-    # Confirm adjustments are joinable
+    # Canonicalize game_id from TGN (coalesce to ensure no NaNs, and match slate)
+    tgn = pd.read_csv(TGN_CSV, dtype=str)
+    team_game = build_team_to_game_map(tgn)
+    # Reattach game_id canonically via team_id (preserves existing if already correct)
+    bat_d = bat_d.merge(team_game, on="team_id", how="left", suffixes=("", "_from_map"))
+    bat_d["game_id"] = bat_d["game_id"].where(bat_d["game_id"].notna(), bat_d["game_id_from_map"])
+    bat_d.drop(columns=[c for c in ["game_id_from_map"] if c in bat_d.columns], inplace=True)
+
+    # Guard after canonicalization
+    assert bat_d["game_id"].notna().all(), "Batter daily still has missing game_id after canonical mapping"
+
+    # Confirm adjustments are joinable (player_id, game_id)
     keys_proj = set(zip(bat_d["player_id"], bat_d["game_id"]))
     keys_exp  = set(zip(bat_x["player_id"], bat_x["game_id"]))
     missing = keys_proj - keys_exp
@@ -83,7 +119,6 @@ def main():
             SUM_DIR / "merge_mismatch_batters.csv", index=False
         )
         print("[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.")
-        # For missing keys, left-merge will drop them; instead, create neutral rows and append
         miss_df = pd.DataFrame(list(missing), columns=["player_id","game_id"])
         for c in ADJ_COLS:
             miss_df[c] = 1.0
@@ -117,7 +152,7 @@ def main():
 
     pit_d_enh = pit_d.merge(pit_rates, on="player_id", how="left")
 
-    # Opponent starter map; if no starter (UNKNOWN), use league average for opponent
+    # Opponent starter map (weighted by PA)
     rate_cols = ["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"]
     opp_rates = (
         pit_d_enh.groupby(["game_id","opponent_team_id"], as_index=False)
@@ -144,11 +179,10 @@ def main():
         "p_2b_p":lg["2b"], "p_3b_p":lg["3b"], "p_hr_p":lg["hr"]
     }])
 
-    # Attach batter priors and opponent starter priors
+    # Attach batter priors and opponent priors
     bat = bat.merge(bat_rates, on="player_id", how="left")
     bat = bat.merge(opp_rates, on=["game_id","team_id"], how="left", suffixes=("","_opp"))
 
-    # Fill missing opponent rates with league averages
     for src, dst in zip(["p_k_p","p_bb_p","p_1b_p","p_2b_p","p_3b_p","p_hr_p"],
                         ["p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]):
         if dst not in bat.columns:
@@ -168,7 +202,6 @@ def main():
     bat["p_3b"] *= bat["adj_woba_combined"]
     bat["p_hr"] *= bat["adj_woba_combined"]
 
-    # Clamp and derive outs
     for c in ["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]:
         bat[c] = pd.to_numeric(bat[c], errors="coerce").fillna(0.0).clip(0.0, 1.0)
     s = bat[["p_k","p_bb","p_1b","p_2b","p_3b","p_hr"]].sum(axis=1)
@@ -182,6 +215,10 @@ def main():
                  "p_k","p_bb","p_1b","p_2b","p_3b","p_hr","p_out",
                  "adj_woba_weather","adj_woba_park","adj_woba_combined"]
     result = bat[keep_cols].copy()
+
+    # Final guards
+    assert result["game_id"].notna().all(), "batter_event_probabilities has missing game_id"
+    assert result["team_id"].notna().all(), "batter_event_probabilities has missing team_id"
 
     result.to_csv(OUT_FILE_PROJ, index=False)
     result.to_csv(OUT_FILE_FINAL, index=False)
