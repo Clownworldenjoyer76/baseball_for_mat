@@ -2,13 +2,15 @@
 # scripts/prepare_daily_projection_inputs.py
 #
 # Strengthened:
-# - Fallback to map team ABBREV -> team_id using todaysgames_normalized.csv
-#   when lineups.csv is missing a player's team_id.
-# - Hard-fail if any team_id or game_id remain blank.
-# - Explicit diagnostics under summaries/07_final/.
+# - Handles team *names* and nicknames (e.g., "Cardinals", "Blue Jays") by normalizing to the
+#   abbreviations actually used in todaysgames_normalized.csv (e.g., STL, TOR, ATH, KC, SF).
+# - Uses fallback order to fill team_id/game_id for every batter row:
+#     existing team_id  ->  lineups.csv  ->  normalized team name -> abbrev -> team_id
+# - Produces explicit diagnostics and hard-fails if any keys remain blank.
 #
 from __future__ import annotations
 
+import re
 import pandas as pd
 from pathlib import Path
 
@@ -24,6 +26,72 @@ TGN_CSV           = RAW_DIR / "todaysgames_normalized.csv"
 
 LOG_FILE = SUM_DIR / "prep_injection_log.txt"
 
+# Normalize many ways a team might appear to the abbrevs actually present in TGN:
+# Examples seen in your TGN: TB, TOR, BOS, ATH, KC, SEA, COL, MIA, CIN, CHC, BAL, NYY, MIL, LAA, LAD, SF, DET, CLE, NYM, SD
+TEAM_ALIASES_TO_ABBREV = {
+    # Angels
+    "angels": "LAA", "laa": "LAA", "losangelesangels": "LAA", "laangels": "LAA",
+    # Athletics
+    "athletics": "ATH", "oakland": "ATH", "oak": "ATH", "oaktown": "ATH", "ath": "ATH",
+    # Blue Jays
+    "bluejays": "TOR", "jays": "TOR", "tor": "TOR", "toronto": "TOR",
+    # Orioles
+    "orioles": "BAL", "bal": "BAL", "baltimore": "BAL",
+    # Rays
+    "rays": "TB", "ray": "TB", "tb": "TB", "tampa": "TB", "tampabay": "TB",
+    # Red Sox
+    "redsox": "BOS", "bos": "BOS", "boston": "BOS",
+    # Yankees
+    "yankees": "NYY", "nyy": "NYY", "newyorkyankees": "NYY",
+    # Guardians (CLE)
+    "guardians": "CLE", "indians": "CLE", "cle": "CLE", "cleveland": "CLE",
+    # Tigers
+    "tigers": "DET", "det": "DET", "detroit": "DET",
+    # Twins
+    "twins": "MIN", "min": "MIN", "minnesota": "MIN",
+    # White Sox
+    "whitesox": "CWS", "chisoxt": "CWS", "cws": "CWS", "chicagowhitesox": "CWS",
+    # Royals
+    "royals": "KC", "kcr": "KC", "kc": "KC", "kansascity": "KC",
+    # Mariners
+    "mariners": "SEA", "sea": "SEA", "seattle": "SEA",
+    # Astros
+    "astros": "HOU", "hou": "HOU", "houston": "HOU",
+    # Angels handled above
+    # Rangers
+    "rangers": "TEX", "tex": "TEX", "texas": "TEX",
+    # Braves
+    "braves": "ATL", "atl": "ATL", "atlanta": "ATL",
+    # Marlins
+    "marlins": "MIA", "mia": "MIA", "miami": "MIA",
+    # Mets
+    "mets": "NYM", "nym": "NYM", "newyorkmets": "NYM",
+    # Phillies
+    "phillies": "PHI", "phi": "PHI", "philadelphia": "PHI",
+    # Nationals
+    "nationals": "WSH", "was": "WSH", "wsh": "WSH", "washington": "WSH",
+    # Cubs
+    "cubs": "CHC", "chc": "CHC", "chicagocubs": "CHC",
+    # Reds
+    "reds": "CIN", "cin": "CIN", "cincinnati": "CIN",
+    # Brewers
+    "brewers": "MIL", "mil": "MIL", "milwaukee": "MIL",
+    # Pirates
+    "pirates": "PIT", "pit": "PIT", "pittsburgh": "PIT",
+    # Cardinals
+    "cardinals": "STL", "stl": "STL", "stlouis": "STL", "saintlouis": "STL",
+    # D-backs
+    "diamondbacks": "ARI", "dbacks": "ARI", "d-backs": "ARI", "ari": "ARI", "arizona": "ARI",
+    # Rockies
+    "rockies": "COL", "col": "COL", "colorado": "COL",
+    # Dodgers
+    "dodgers": "LAD", "lad": "LAD", "losangelesdodgers": "LAD", "ladodgers": "LAD",
+    # Giants
+    "giants": "SF", "sfg": "SF", "sf": "SF", "sanfrancisco": "SF",
+    # Padres
+    "padres": "SD", "sd": "SD", "sandiego": "SD",
+}
+
 def log(msg: str) -> None:
     print(msg, flush=True)
     with LOG_FILE.open("a", encoding="utf-8") as f:
@@ -36,6 +104,29 @@ def read_csv_force_str(path: Path) -> pd.DataFrame:
         df[c] = df[c].astype(str).str.strip()
         df[c] = df[c].replace({"None": "", "nan": "", "NaN": ""})
     return df
+
+def _canon_team_token(s: str) -> str:
+    """Lowercase, remove non-letters, collapse spaces: 'St. Louis Cardinals' -> 'stlouiscardinals'."""
+    s = str(s or "").lower()
+    s = re.sub(r"[^a-z]", "", s)  # keep only letters
+    return s
+
+def normalize_to_abbrev(team_text: str) -> str:
+    """
+    Map any team text (name/nickname/abbrev) to the TGN-style abbrev
+    (e.g., 'Cardinals' -> 'STL', 'Blue Jays' -> 'TOR', 'Athletics' -> 'ATH').
+    """
+    t = _canon_team_token(team_text)
+    if not t:
+        return ""
+    # direct: if already something like 'nyy' or 'bos'
+    if t in TEAM_ALIASES_TO_ABBREV:
+        return TEAM_ALIASES_TO_ABBREV[t]
+    # raw abbrev passthrough (e.g., 'TOR', 'SF')
+    upper = team_text.strip().upper()
+    if upper in {v for v in TEAM_ALIASES_TO_ABBREV.values()}:
+        return upper
+    return ""
 
 def coalesce_series(a: pd.Series | None, b: pd.Series | None) -> pd.Series:
     """Return first non-empty (not NA/empty-string) between a and b (both may be None)."""
@@ -74,7 +165,7 @@ def build_team_maps_from_tgn(tgn: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFr
     team_game["team_id"] = team_game["team_id"].replace({"None": "", "nan": "", "NaN": ""})
     team_game = team_game[team_game["team_id"].str.len() > 0]
 
-    # ABBREV -> team_id
+    # ABBREV -> team_id from both home & away sides
     a_home = tgn.rename(columns={"home_team": "team", "home_team_id": "team_id"})[["team", "team_id"]]
     a_away = tgn.rename(columns={"away_team": "team", "away_team_id": "team_id"})[["team", "team_id"]]
     abbrev_to_id = pd.concat([a_home, a_away], ignore_index=True).dropna().drop_duplicates()
@@ -92,7 +183,7 @@ def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
                          team_game_map: pd.DataFrame,
                          abbrev_to_id: pd.DataFrame) -> pd.DataFrame:
     """
-    - Coalesce/attach 'team_id' using: existing -> lineups -> team abbrev map
+    - Coalesce/attach 'team_id' using: existing -> lineups -> normalized team name -> abbrev map
     - Attach 'game_id' via team_id using the team_game_map (home/away exploded)
     - Emit diagnostics for any still-missing team_id/game_id
     """
@@ -106,15 +197,18 @@ def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
     li = lineups.rename(columns={"team_id": "team_id_lineups"})[["player_id", "team_id_lineups"]].copy()
     merged = df.merge(li, on="player_id", how="left")
 
-    # Fallback: map abbrev in df['team'] -> team_id when lineups is missing
+    # Build normalized team token and abbrev when we have a readable 'team' column
     if "team" in merged.columns:
-        abbrev = merged["team"].astype(str).str.strip()
-        merged = merged.merge(abbrev_to_id, how="left", left_on="team", right_on="team")
-        merged.rename(columns={"team_id": "team_id_from_abbrev"}, inplace=True)
+        merged["team_abbrev_guess"] = merged["team"].apply(normalize_to_abbrev)
     else:
-        merged["team_id_from_abbrev"] = ""
+        merged["team_abbrev_guess"] = ""
 
-    # Coalesce team_id: existing -> lineups -> abbrev map
+    # Map abbrev -> team_id
+    merged = merged.merge(abbrev_to_id.rename(columns={"team": "abbrev"}),
+                          how="left", left_on="team_abbrev_guess", right_on="abbrev")
+    merged.rename(columns={"team_id": "team_id_from_abbrev"}, inplace=True)
+
+    # Coalesce team_id: existing -> lineups -> abbrev-derived
     existing_team = merged["team_id"] if "team_id" in merged.columns else None
     from_lineups  = merged["team_id_lineups"] if "team_id_lineups" in merged.columns else None
     from_abbrev   = merged["team_id_from_abbrev"]
@@ -127,7 +221,7 @@ def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
     merged["game_id"] = coalesce_series(existing_gid, from_map)
 
     # Drop helper columns if present
-    drop_cols = ["team_id_lineups", "team_id_from_abbrev", "game_id_from_map", "team_y"]
+    drop_cols = ["team_id_lineups", "team_abbrev_guess", "abbrev", "team_id_from_abbrev", "game_id_from_map", "team_y"]
     merged.drop(columns=[c for c in drop_cols if c in merged.columns], inplace=True)
 
     # Diagnostics
