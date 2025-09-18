@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # scripts/prepare_daily_projection_inputs.py
 #
-# Strengthened:
-# - Handles team *names* and nicknames (e.g., "Cardinals", "Blue Jays") by normalizing to the
-#   abbreviations actually used in todaysgames_normalized.csv (e.g., STL, TOR, ATH, KC, SF).
-# - Uses fallback order to fill team_id/game_id for every batter row:
-#     existing team_id  ->  lineups.csv  ->  normalized team name -> abbrev -> team_id
-# - Produces explicit diagnostics and hard-fails if any keys remain blank.
+# What this does (robust version):
+# - Ensures every batter row ends up with a valid team_id and (if on today's slate) a game_id.
+# - team_id resolution order:
+#       existing -> lineups.csv -> normalized team text -> STATIC_ABBREV_TO_TEAM_ID
+# - game_id comes ONLY from todaysgames_normalized.csv (authoritative slate).
+# - Rows that have a team_id but NO game_id (off-slate players/teams) are LOGGED and DROPPED.
+# - Writes diagnostics to summaries/07_final/ and fails fast on truly unmapped cases.
 #
 from __future__ import annotations
 
@@ -26,38 +27,53 @@ TGN_CSV           = RAW_DIR / "todaysgames_normalized.csv"
 
 LOG_FILE = SUM_DIR / "prep_injection_log.txt"
 
-# Normalize many ways a team might appear to the abbrevs actually present in TGN:
-# Examples seen in your TGN: TB, TOR, BOS, ATH, KC, SEA, COL, MIA, CIN, CHC, BAL, NYY, MIL, LAA, LAD, SF, DET, CLE, NYM, SD
+# Static MLB abbrev -> team_id map (covers off-slate teams)
+# (Filled with standard MLB IDs; add/adjust if your repo uses different IDs.)
+STATIC_ABBREV_TO_TEAM_ID = {
+    # AL East
+    "BAL": 110, "BOS": 111, "NYY": 147, "TB": 139, "TOR": 141,
+    # AL Central
+    "CWS": 145, "CLE": 114, "DET": 116, "KC": 118, "MIN": 142,
+    # AL West
+    "HOU": 117, "LAA": 108, "ATH": 133, "SEA": 136, "TEX": 140,
+    # NL East
+    "ATL": 144, "MIA": 146, "NYM": 121, "PHI": 143, "WSH": 120,
+    # NL Central
+    "CHC": 112, "CIN": 113, "MIL": 158, "PIT": 134, "STL": 138,
+    # NL West
+    "ARI": 109, "COL": 115, "LAD": 119, "SD": 135, "SF": 137,
+}
+
+# Normalize team names/nicknames to abbreviations used in TGN + static map
 TEAM_ALIASES_TO_ABBREV = {
     # Angels
     "angels": "LAA", "laa": "LAA", "losangelesangels": "LAA", "laangels": "LAA",
-    # Athletics
-    "athletics": "ATH", "oakland": "ATH", "oak": "ATH", "oaktown": "ATH", "ath": "ATH",
+    # Athletics (note: your TGN uses 'ATH' not 'OAK')
+    "athletics": "ATH", "ath": "ATH", "oakland": "ATH", "oak": "ATH",
     # Blue Jays
-    "bluejays": "TOR", "jays": "TOR", "tor": "TOR", "toronto": "TOR",
+    "bluejays": "TOR", "jays": "TOR", "toronto": "TOR", "tor": "TOR",
     # Orioles
     "orioles": "BAL", "bal": "BAL", "baltimore": "BAL",
     # Rays
-    "rays": "TB", "ray": "TB", "tb": "TB", "tampa": "TB", "tampabay": "TB",
+    "rays": "TB", "ray": "TB", "tampabay": "TB", "tampa": "TB", "tb": "TB",
     # Red Sox
     "redsox": "BOS", "bos": "BOS", "boston": "BOS",
     # Yankees
     "yankees": "NYY", "nyy": "NYY", "newyorkyankees": "NYY",
-    # Guardians (CLE)
+    # Guardians
     "guardians": "CLE", "indians": "CLE", "cle": "CLE", "cleveland": "CLE",
     # Tigers
     "tigers": "DET", "det": "DET", "detroit": "DET",
     # Twins
     "twins": "MIN", "min": "MIN", "minnesota": "MIN",
     # White Sox
-    "whitesox": "CWS", "chisoxt": "CWS", "cws": "CWS", "chicagowhitesox": "CWS",
+    "whitesox": "CWS", "cws": "CWS", "chicagowhitesox": "CWS",
     # Royals
     "royals": "KC", "kcr": "KC", "kc": "KC", "kansascity": "KC",
     # Mariners
     "mariners": "SEA", "sea": "SEA", "seattle": "SEA",
     # Astros
     "astros": "HOU", "hou": "HOU", "houston": "HOU",
-    # Angels handled above
     # Rangers
     "rangers": "TEX", "tex": "TEX", "texas": "TEX",
     # Braves
@@ -80,13 +96,13 @@ TEAM_ALIASES_TO_ABBREV = {
     "pirates": "PIT", "pit": "PIT", "pittsburgh": "PIT",
     # Cardinals
     "cardinals": "STL", "stl": "STL", "stlouis": "STL", "saintlouis": "STL",
-    # D-backs
+    # Diamondbacks
     "diamondbacks": "ARI", "dbacks": "ARI", "d-backs": "ARI", "ari": "ARI", "arizona": "ARI",
     # Rockies
     "rockies": "COL", "col": "COL", "colorado": "COL",
     # Dodgers
     "dodgers": "LAD", "lad": "LAD", "losangelesdodgers": "LAD", "ladodgers": "LAD",
-    # Giants
+    # Giants (your TGN uses 'SF')
     "giants": "SF", "sfg": "SF", "sf": "SF", "sanfrancisco": "SF",
     # Padres
     "padres": "SD", "sd": "SD", "sandiego": "SD",
@@ -98,137 +114,127 @@ def log(msg: str) -> None:
         f.write(msg + "\n")
 
 def read_csv_force_str(path: Path) -> pd.DataFrame:
-    """Read CSV with all columns coerced to string and whitespace trimmed."""
     df = pd.read_csv(path, dtype=str, keep_default_na=False, na_values=[])
     for c in df.columns:
         df[c] = df[c].astype(str).str.strip()
         df[c] = df[c].replace({"None": "", "nan": "", "NaN": ""})
     return df
 
-def _canon_team_token(s: str) -> str:
-    """Lowercase, remove non-letters, collapse spaces: 'St. Louis Cardinals' -> 'stlouiscardinals'."""
+def _canon(s: str) -> str:
     s = str(s or "").lower()
-    s = re.sub(r"[^a-z]", "", s)  # keep only letters
-    return s
+    return re.sub(r"[^a-z]", "", s)
 
 def normalize_to_abbrev(team_text: str) -> str:
-    """
-    Map any team text (name/nickname/abbrev) to the TGN-style abbrev
-    (e.g., 'Cardinals' -> 'STL', 'Blue Jays' -> 'TOR', 'Athletics' -> 'ATH').
-    """
-    t = _canon_team_token(team_text)
+    t = _canon(team_text)
     if not t:
         return ""
-    # direct: if already something like 'nyy' or 'bos'
     if t in TEAM_ALIASES_TO_ABBREV:
         return TEAM_ALIASES_TO_ABBREV[t]
-    # raw abbrev passthrough (e.g., 'TOR', 'SF')
-    upper = team_text.strip().upper()
-    if upper in {v for v in TEAM_ALIASES_TO_ABBREV.values()}:
-        return upper
+    # pass-through if already an abbrev seen in TGN/static map
+    up = str(team_text or "").strip().upper()
+    if up in STATIC_ABBREV_TO_TEAM_ID:
+        return up
     return ""
 
-def coalesce_series(a: pd.Series | None, b: pd.Series | None) -> pd.Series:
-    """Return first non-empty (not NA/empty-string) between a and b (both may be None)."""
-    if a is None and b is None:
-        return pd.Series([], dtype="object")
-    if a is None:
-        a = pd.Series([""] * len(b), index=b.index, dtype="object")
-    if b is None:
-        b = pd.Series([""] * len(a), index=a.index, dtype="object")
-    a = a.astype(str)
-    b = b.astype(str)
-    out = a.where(a.str.len() > 0, b)
-    return out.fillna("").astype(str)
-
 def build_team_maps_from_tgn(tgn: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Build:
-      - team_game: mapping (team_id -> game_id) exploded for home/away
-      - abbrev_to_id: mapping (team abbrev -> team_id) from home/away columns
-    Validates that each game_id has exactly two unique team_ids.
-    """
     need = {"game_id", "home_team_id", "away_team_id", "home_team", "away_team"}
     miss = sorted(list(need - set(tgn.columns)))
     if miss:
         raise RuntimeError(f"{TGN_CSV} missing columns: {miss}")
 
-    cols = ["game_id", "home_team_id", "away_team_id", "home_team", "away_team"]
-    tgn = tgn[cols].copy()
+    tgn = tgn[["game_id","home_team_id","away_team_id","home_team","away_team"]].copy()
     for c in tgn.columns:
         tgn[c] = tgn[c].astype(str).str.strip()
 
-    # team_id -> game_id (exploded)
-    home = tgn.rename(columns={"home_team_id": "team_id"})[["game_id", "team_id"]]
-    away = tgn.rename(columns={"away_team_id": "team_id"})[["game_id", "team_id"]]
+    # (team_id -> game_id) exploded
+    home = tgn.rename(columns={"home_team_id":"team_id"})[["game_id","team_id"]]
+    away = tgn.rename(columns={"away_team_id":"team_id"})[["game_id","team_id"]]
     team_game = pd.concat([home, away], ignore_index=True).drop_duplicates()
     team_game["team_id"] = team_game["team_id"].replace({"None": "", "nan": "", "NaN": ""})
     team_game = team_game[team_game["team_id"].str.len() > 0]
 
-    # ABBREV -> team_id from both home & away sides
-    a_home = tgn.rename(columns={"home_team": "team", "home_team_id": "team_id"})[["team", "team_id"]]
-    a_away = tgn.rename(columns={"away_team": "team", "away_team_id": "team_id"})[["team", "team_id"]]
-    abbrev_to_id = pd.concat([a_home, a_away], ignore_index=True).dropna().drop_duplicates()
-
-    # Validate: exactly two unique team_ids per game
+    # Validate: exactly two teams per game
     per_game = team_game.groupby("game_id")["team_id"].nunique()
     bad = per_game[per_game != 2]
     if not bad.empty:
         raise RuntimeError(f"{TGN_CSV} has games without exactly two teams: {bad.to_dict()}")
 
-    return team_game, abbrev_to_id
+    # Build abbrev -> team_id from both sides (today's slate only)
+    a_home = tgn.rename(columns={"home_team":"abbrev", "home_team_id":"team_id"})[["abbrev","team_id"]]
+    a_away = tgn.rename(columns={"away_team":"abbrev", "away_team_id":"team_id"})[["abbrev","team_id"]]
+    abbrev_to_id_today = pd.concat([a_home, a_away], ignore_index=True).dropna().drop_duplicates()
+
+    return team_game, abbrev_to_id_today
+
+def resolve_team_id(row, abbrev_to_id_today: pd.DataFrame) -> str:
+    """
+    Resolve a single row's team_id using:
+      existing -> lineups -> normalized team text -> today's abbrev map -> STATIC_ABBREV_TO_TEAM_ID
+    """
+    # 1) existing
+    if str(row.get("team_id") or "").strip():
+        return str(row["team_id"]).strip()
+
+    # 2) from lineups (already merged as 'team_id_lineups')
+    if str(row.get("team_id_lineups") or "").strip():
+        return str(row["team_id_lineups"]).strip()
+
+    # 3) normalized team text -> abbrev
+    team_txt = str(row.get("team") or "")
+    abbrev = normalize_to_abbrev(team_txt)
+
+    # 4) today's abbrev map
+    if abbrev:
+        m = abbrev_to_id_today.loc[abbrev_to_id_today["abbrev"] == abbrev, "team_id"]
+        if not m.empty:
+            return str(m.iloc[0]).strip()
+
+    # 5) static map (off-slate fallback)
+    if abbrev and abbrev in STATIC_ABBREV_TO_TEAM_ID:
+        return str(STATIC_ABBREV_TO_TEAM_ID[abbrev])
+
+    return ""  # unresolved
 
 def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
                          lineups: pd.DataFrame,
                          team_game_map: pd.DataFrame,
-                         abbrev_to_id: pd.DataFrame) -> pd.DataFrame:
-    """
-    - Coalesce/attach 'team_id' using: existing -> lineups -> normalized team name -> abbrev map
-    - Attach 'game_id' via team_id using the team_game_map (home/away exploded)
-    - Emit diagnostics for any still-missing team_id/game_id
-    """
+                         abbrev_to_id_today: pd.DataFrame) -> pd.DataFrame:
     if "player_id" not in df.columns:
         raise RuntimeError(f"{name_for_logs} missing required column: player_id")
 
+    # Normalize string dtypes
     for c in df.columns:
         df[c] = df[c].astype(str).str.strip()
 
-    # Bring team_id from lineups
-    li = lineups.rename(columns={"team_id": "team_id_lineups"})[["player_id", "team_id_lineups"]].copy()
+    # Attach team_id from lineups (as helper)
+    li = lineups.rename(columns={"team_id":"team_id_lineups"})[["player_id","team_id_lineups"]].copy()
     merged = df.merge(li, on="player_id", how="left")
 
-    # Build normalized team token and abbrev when we have a readable 'team' column
-    if "team" in merged.columns:
-        merged["team_abbrev_guess"] = merged["team"].apply(normalize_to_abbrev)
-    else:
-        merged["team_abbrev_guess"] = ""
+    # Resolve team_id per row with robust logic
+    merged["team_id"] = merged.apply(lambda r: resolve_team_id(r, abbrev_to_id_today), axis=1)
 
-    # Map abbrev -> team_id
-    merged = merged.merge(abbrev_to_id.rename(columns={"team": "abbrev"}),
-                          how="left", left_on="team_abbrev_guess", right_on="abbrev")
-    merged.rename(columns={"team_id": "team_id_from_abbrev"}, inplace=True)
-
-    # Coalesce team_id: existing -> lineups -> abbrev-derived
-    existing_team = merged["team_id"] if "team_id" in merged.columns else None
-    from_lineups  = merged["team_id_lineups"] if "team_id_lineups" in merged.columns else None
-    from_abbrev   = merged["team_id_from_abbrev"]
-    merged["team_id"] = coalesce_series(coalesce_series(existing_team, from_lineups), from_abbrev)
-
-    # Attach game_id via canonical mapping (coalesce with any pre-existing)
+    # Attach game_id via authoritative slate map (team_id -> game_id)
     merged = merged.merge(team_game_map, on="team_id", how="left", suffixes=("", "_from_map"))
-    existing_gid = merged["game_id"] if "game_id" in merged.columns else None
-    from_map     = merged["game_id_from_map"] if "game_id_from_map" in merged.columns else None
-    merged["game_id"] = coalesce_series(existing_gid, from_map)
+    # Prefer existing game_id if present; else from map
+    existing_gid = merged["game_id"] if "game_id" in merged.columns else pd.Series([""]*len(merged))
+    from_map     = merged["game_id_from_map"] if "game_id_from_map" in merged.columns else pd.Series([""]*len(merged))
+    merged["game_id"] = existing_gid.where(existing_gid.astype(str).str.len() > 0, from_map.astype(str).str.strip())
+    if "game_id_from_map" in merged.columns:
+        merged.drop(columns=["game_id_from_map"], inplace=True)
 
-    # Drop helper columns if present
-    drop_cols = ["team_id_lineups", "team_abbrev_guess", "abbrev", "team_id_from_abbrev", "game_id_from_map", "team_y"]
-    merged.drop(columns=[c for c in drop_cols if c in merged.columns], inplace=True)
+    # Split: off-slate rows (have team_id but NO game_id) — log & drop
+    off_slate = merged[(merged["team_id"].astype(str).str.len() > 0) & (merged["game_id"].astype(str).str.len() == 0)]
+    if len(off_slate) > 0:
+        out = SUM_DIR / f"off_slate_dropped_in_{name_for_logs}.csv"
+        off_slate[["player_id","team","team_id"]].drop_duplicates().to_csv(out, index=False)
+        log(f"[INFO] {name_for_logs}: dropped {len(off_slate)} off-slate rows (no game_id). See {out}")
+        merged = merged[~merged.index.isin(off_slate.index)].copy()
 
-    # Diagnostics
+    # Diagnostics for any remaining problems
     miss_team = merged.loc[merged["team_id"].astype(str).str.len() == 0,
                            ["player_id"] + (["team"] if "team" in merged.columns else [])].drop_duplicates()
     miss_gid  = merged.loc[merged["game_id"].astype(str).str.len() == 0,
-                           ["player_id", "team_id"]].drop_duplicates()
+                           ["player_id","team_id"]].drop_duplicates()
 
     if len(miss_team) > 0:
         out = SUM_DIR / f"missing_team_id_in_{name_for_logs}.csv"
@@ -240,11 +246,11 @@ def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
         miss_gid.to_csv(out, index=False)
         log(f"[WARN] {name_for_logs}: {len(miss_gid)} rows still missing game_id ({out})")
 
-    log(f"[INFO] {name_for_logs}: missing team_id={len(miss_team)}, missing game_id={len(miss_gid)}")
+    log(f"[INFO] {name_for_logs}: kept_rows={len(merged)} missing_team_id={len(miss_team)} missing_game_id={len(miss_gid)}")
     return merged
 
 def write_back(df_before: pd.DataFrame, df_after: pd.DataFrame, path: Path) -> None:
-    """Preserve original column order; append team_id/game_id at end if new."""
+    # Preserve original column order; append team_id/game_id at end if new.
     cols = list(df_before.columns)
     for add_col in ["team_id", "game_id"]:
         if add_col not in cols:
@@ -261,24 +267,25 @@ def main() -> None:
     lineups  = read_csv_force_str(LINEUPS_CSV)
     tgn      = read_csv_force_str(TGN_CSV)
 
-    team_game_map, abbrev_to_id = build_team_maps_from_tgn(tgn)
+    team_game_map, abbrev_to_id_today = build_team_maps_from_tgn(tgn)
 
-    bat_proj_out = inject_team_and_game(
-        bat_proj, "batter_props_projected_final.csv", lineups, team_game_map, abbrev_to_id
-    )
-    bat_exp_out  = inject_team_and_game(
-        bat_exp,  "batter_props_expanded_final.csv",  lineups, team_game_map, abbrev_to_id
-    )
+    bat_proj_out = inject_team_and_game(bat_proj, "batter_props_projected_final.csv",
+                                        lineups, team_game_map, abbrev_to_id_today)
+    bat_exp_out  = inject_team_and_game(bat_exp,  "batter_props_expanded_final.csv",
+                                        lineups, team_game_map, abbrev_to_id_today)
 
-    # Hard stop if any keys remain blank
+    # Hard fail only if *after dropping off-slate* we still have unresolved keys
+    err = []
     if (bat_proj_out["team_id"].astype(str).str.len() == 0).any():
-        raise RuntimeError("prepare_daily_projection_inputs: projected file has missing team_id after mapping.")
+        err.append("projected: team_id")
     if (bat_proj_out["game_id"].astype(str).str.len() == 0).any():
-        raise RuntimeError("prepare_daily_projection_inputs: projected file has missing game_id after mapping.")
+        err.append("projected: game_id")
     if (bat_exp_out["team_id"].astype(str).str.len() == 0).any():
-        raise RuntimeError("prepare_daily_projection_inputs: expanded file has missing team_id after mapping.")
+        err.append("expanded: team_id")
     if (bat_exp_out["game_id"].astype(str).str.len() == 0).any():
-        raise RuntimeError("prepare_daily_projection_inputs: expanded file has missing game_id after mapping.")
+        err.append("expanded: game_id")
+    if err:
+        raise RuntimeError("prepare_daily_projection_inputs: unresolved keys -> " + ", ".join(err))
 
     write_back(bat_proj, bat_proj_out, BATTERS_PROJECTED)
     write_back(bat_exp,  bat_exp_out,  BATTERS_EXPANDED)
