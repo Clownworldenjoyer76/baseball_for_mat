@@ -1,1 +1,60 @@
-error=RuntimeError('Incomplete/duplicated teams per game. See summaries/07_final/gamescores_bad_games.txt')
+===== RUN TIMESTAMP: 2025-09-19 16:14:41 EDT =====
+
+===== LOG TAILS =====
+--- prep_daily_log (tail) ---
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+PREP: injecting team_id and game_id into batter *_final.csv
+[INFO] batter_props_projected_final.csv: missing team_id=0, missing game_id=0
+[INFO] batter_props_expanded_final.csv: missing team_id=0, missing game_id=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+PREP: injecting team_id and game_id into batter *_final.csv
+[INFO] batter_props_projected_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+[INFO] batter_props_expanded_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+PREP: injecting team_id and game_id into batter *_final.csv
+[INFO] batter_props_projected_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+[INFO] batter_props_expanded_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+PREP: injecting team_id and game_id into batter *_final.csv
+[INFO] batter_props_projected_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+[INFO] batter_props_expanded_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+PREP: injecting team_id and game_id into batter *_final.csv
+[INFO] batter_props_projected_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+[INFO] batter_props_expanded_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+PREP: injecting team_id and game_id into batter *_final.csv
+[INFO] batter_props_projected_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+[INFO] batter_props_expanded_final.csv: kept_rows=91 missing_team_id=0 missing_game_id=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+
+--- batter_log (tail) ---
+LOAD: daily & season inputs
+LOAD: daily & season inputs
+LOAD: daily & season inputs
+LOAD: daily & season inputs
+LOAD: daily & season inputs
+[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
+LOAD: daily & season inputs
+[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
+LOAD: daily & season inputs
+[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
+LOAD: daily & season inputs
+[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
+
+--- pitcher_log (tail) ---
+OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
+OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
+
+--- game_scores_log (tail) ---
+LOAD: batter & pitcher event files
+AGG: sum expected runs by (game_id, team_id, team)
+LOAD: batter & pitcher event files
+AGG: sum expected runs by (game_id, team_id, team)
+WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
+
+===== ERROR GREP (from current logs) =====
+(errors found)
