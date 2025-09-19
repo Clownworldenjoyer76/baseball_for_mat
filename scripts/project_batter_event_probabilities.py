@@ -28,7 +28,7 @@ OUT_FILE_FINAL  = END_DIR / "batter_event_probabilities.csv"
 
 ADJ_COLS = ["adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
 
-# --- Static helpers (same logic as in prep) ----------------------------------
+# --- Static helpers (mirrors prep; includes off-slate fallback) ---------------
 
 STATIC_ABBREV_TO_TEAM_ID = {
     # AL East
@@ -134,75 +134,65 @@ def build_team_to_game_map(tgn: pd.DataFrame) -> pd.DataFrame:
         raise RuntimeError(f"{TGN_CSV} invalid two-team constraint: {bad.to_dict()}")
     return team_game
 
-# --- Self-heal for missing team_id/game_id -----------------------------------
+# --- Self-heal & drop unresolved ---------------------------------------------
 
-def patch_keys_if_needed(bat_d: pd.DataFrame) -> pd.DataFrame:
+def heal_and_filter_keys(bat_d: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     """
-    If any rows have missing team_id or game_id, try to fix using:
-      - team name -> abbrev -> team_id (today's slate or static fallback)
-      - team_id -> game_id via today's slate (TGN)
-    Writes diagnostics of what was filled. Returns patched DataFrame.
+    Resolve missing team_id/game_id using team names and TGN.
+    Rows still unresolved after healing are DROPPED (logged).
+    Returns (patched_df, dropped_count).
     """
-    changed = False
-    diag_rows = []
+    dropped = 0
+
+    # Ensure key columns exist and are strings
+    for c in ["team_id","game_id","team"]:
+        if c not in bat_d.columns:
+            bat_d[c] = ""
+        bat_d[c] = bat_d[c].astype(str)
 
     # Read TGN and build maps
     tgn = pd.read_csv(TGN_CSV, dtype=str)
     team_game = build_team_to_game_map(tgn)
-    # Build today's abbrev -> team_id (optional speed-up)
     a_home = tgn.rename(columns={"home_team":"abbrev", "home_team_id":"team_id"})[["abbrev","team_id"]]
     a_away = tgn.rename(columns={"away_team":"abbrev", "away_team_id":"team_id"})[["abbrev","team_id"]]
     abbrev_to_id_today = pd.concat([a_home, a_away], ignore_index=True).dropna().drop_duplicates()
 
-    # Ensure string dtype for operations
-    for c in ["team_id","game_id","team"]:
-        if c in bat_d.columns:
-            bat_d[c] = bat_d[c].astype(str)
+    # Fill team_id from team text where empty
+    mask_missing_tid = bat_d["team_id"].eq("") | bat_d["team_id"].isna()
+    if "team" in bat_d.columns and mask_missing_tid.any():
+        tmp = bat_d.loc[mask_missing_tid, ["player_id","team"]].copy()
+        tmp["abbrev"] = tmp["team"].apply(normalize_to_abbrev)
+        tmp = tmp.merge(abbrev_to_id_today, how="left", on="abbrev")
+        need_static = tmp["team_id"].isna() | tmp["team_id"].eq("")
+        tmp.loc[need_static, "team_id"] = tmp.loc[need_static, "abbrev"].map(STATIC_ABBREV_TO_TEAM_ID).astype(object)
+        tmp = tmp.dropna(subset=["team_id"])
+        if not tmp.empty:
+            bat_d = bat_d.merge(tmp[["player_id","team_id"]].drop_duplicates("player_id"),
+                                on="player_id", how="left", suffixes=("","_fill"))
+            use_fill = bat_d["team_id"].eq("") | bat_d["team_id"].isna()
+            bat_d.loc[use_fill, "team_id"] = bat_d.loc[use_fill, "team_id_fill"]
+            bat_d.drop(columns=[c for c in ["team_id_fill"] if c in bat_d.columns], inplace=True)
 
-    # 1) Fill missing team_id from team name/abbrev
-    mask_team_missing = bat_d["team_id"].isna() | (bat_d["team_id"].astype(str).str.len() == 0)
-    if "team" in bat_d.columns and mask_team_missing.any():
-        sub = bat_d.loc[mask_team_missing, ["player_id","team"]].copy()
-        sub["abbrev"] = sub["team"].apply(normalize_to_abbrev)
-
-        # Try today's abbrev->id first
-        sub = sub.merge(abbrev_to_id_today, how="left", on="abbrev")
-        # Fallback to static map where needed
-        need_static = sub["team_id"].isna() | (sub["team_id"].astype(str).str.len() == 0)
-        sub.loc[need_static, "team_id"] = sub.loc[need_static, "abbrev"].map(STATIC_ABBREV_TO_TEAM_ID).astype(object)
-
-        # Apply fills
-        filled = sub["team_id"].notna() & (sub["team_id"].astype(str).str.len() > 0)
-        if filled.any():
-            m = sub.loc[filled, ["player_id","team_id"]]
-            bat_d = bat_d.merge(m, on="player_id", how="left", suffixes=("","_filled"))
-            use_fill = bat_d["team_id"].isna() | (bat_d["team_id"].astype(str).str.len() == 0)
-            bat_d.loc[use_fill, "team_id"] = bat_d.loc[use_fill, "team_id_filled"]
-            bat_d.drop(columns=[c for c in ["team_id_filled"] if c in bat_d.columns], inplace=True)
-            changed = True
-            diag_rows.append(sub.loc[filled, ["player_id","abbrev","team_id"]])
-
-    # 2) Fill missing game_id from team_id via team_game
-    mask_gid_missing = bat_d["game_id"].isna() | (bat_d["game_id"].astype(str).str.len() == 0)
-    if mask_gid_missing.any():
+    # Fill game_id from team_id
+    need_gid = bat_d["game_id"].eq("") | bat_d["game_id"].isna()
+    if need_gid.any():
         bat_d = bat_d.merge(team_game, on="team_id", how="left", suffixes=("","_from_map"))
-        need = bat_d["game_id"].isna() | (bat_d["game_id"].astype(str).str.len() == 0)
+        need = bat_d["game_id"].eq("") | bat_d["game_id"].isna()
         bat_d.loc[need, "game_id"] = bat_d.loc[need, "game_id_from_map"]
         bat_d.drop(columns=[c for c in ["game_id_from_map"] if c in bat_d.columns], inplace=True)
-        if need.any():
-            changed = True
 
-    # Diagnostics
-    if diag_rows:
-        pd.concat(diag_rows, ignore_index=True).to_csv(SUM_DIR / "batter_daily_team_id_filled.csv", index=False)
+    # Drop any rows that are still unresolved (off-slate or unmapped)
+    unresolved = bat_d[(bat_d["team_id"].eq("") | bat_d["team_id"].isna()) |
+                       (bat_d["game_id"].eq("") | bat_d["game_id"].isna())]
+    if not unresolved.empty:
+        unresolved[["player_id","team","team_id","game_id"]].to_csv(
+            SUM_DIR / "batter_rows_dropped_unresolved_keys.csv", index=False
+        )
+        keep_mask = ~bat_d.index.isin(unresolved.index)
+        dropped = int((~keep_mask).sum())
+        bat_d = bat_d.loc[keep_mask].copy()
 
-    # Final check file for any still-missing team_id
-    still_bad = bat_d.loc[bat_d["team_id"].isna() | (bat_d["team_id"].astype(str).str.len() == 0),
-                          ["player_id","team","team_id","game_id"]]
-    if len(still_bad) > 0:
-        still_bad.to_csv(SUM_DIR / "batter_daily_missing_team_id.csv", index=False)
-
-    return bat_d
+    return bat_d, dropped
 
 # --- Main --------------------------------------------------------------------
 
@@ -214,32 +204,20 @@ def main():
     bat_s = pd.read_csv(BATTERS_SEASON)
     pit_s = pd.read_csv(PITCHERS_SEASON)
 
-    # Minimal presence
+    # Minimal presence (team/team_id/game_id may be empty; we heal below)
     require(bat_d, ["player_id","team","proj_pa_used"], str(BATTERS_DAILY))
     require(bat_x, ["player_id","game_id"] + [c for c in ADJ_COLS if c in bat_x.columns], str(BATTERS_EXP))
     require(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"], str(PITCHERS_DAILY))
     require(bat_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(BATTERS_SEASON))
     require(pit_s, ["player_id","pa","strikeout","walk","single","double","triple","home_run"], str(PITCHERS_SEASON))
 
-    # Self-heal any missing keys before hard assertions
-    for c in ["team_id","game_id"]:
-        if c not in bat_d.columns:
-            bat_d[c] = ""
-    bat_d = patch_keys_if_needed(bat_d)
+    # Heal & drop unresolved (instead of asserting)
+    bat_d, dropped_n = heal_and_filter_keys(bat_d)
+    if dropped_n > 0:
+        print(f"[INFO] Dropped {dropped_n} batter rows with unresolved team_id/game_id "
+              f"(see {SUM_DIR/'batter_rows_dropped_unresolved_keys.csv'})")
 
-    # Now enforce non-null keys
-    if bat_d["team_id"].isna().any() or (bat_d["team_id"].astype(str).str.len() == 0).any():
-        bad = bat_d.loc[bat_d["team_id"].isna() | (bat_d["team_id"].astype(str).str.len() == 0),
-                        ["player_id","team","team_id","game_id"]]
-        bad.to_csv(SUM_DIR / "batter_daily_missing_team_id.csv", index=False)
-        raise AssertionError("batter_props_projected_final.csv has missing team_id")
-    if bat_d["game_id"].isna().any() or (bat_d["game_id"].astype(str).str.len() == 0).any():
-        bad = bat_d.loc[bat_d["game_id"].isna() | (bat_d["game_id"].astype(str).str.len() == 0),
-                        ["player_id","team","team_id","game_id"]]
-        bad.to_csv(SUM_DIR / "batter_daily_missing_game_id.csv", index=False)
-        raise AssertionError("batter_props_projected_final.csv has missing game_id")
-
-    # Coerce numerics
+    # Coerce numerics now that keys exist
     to_num(bat_d, ["player_id","team_id","game_id","proj_pa_used"])
     to_num(bat_x, ["player_id","game_id"])
     to_num(pit_d, ["player_id","game_id","team_id","opponent_team_id","pa"])
@@ -299,8 +277,9 @@ def main():
     opp_rates = (
         pit_d_enh.groupby(["game_id","opponent_team_id"], as_index=False)
                  .apply(lambda g: pd.Series(
-                     {c: float(pd.to_numeric(g[c], errors="coerce").fillna(0).mul(pd.to_numeric(g["pa"], errors="coerce").fillna(0)).sum() /
-                               max(float(pd.to_numeric(g["pa"], errors="coerce").fillna(0).sum()), 1.0))
+                     {c: float(pd.to_numeric(g[c], errors="coerce").fillna(0)
+                               .mul(pd.to_numeric(g["pa"], errors="coerce").fillna(0)).sum()
+                               / max(float(pd.to_numeric(g["pa"], errors="coerce").fillna(0).sum()), 1.0))
                       for c in rate_cols}),
                         include_groups=False)
                  .rename(columns={"opponent_team_id":"team_id"})
@@ -360,15 +339,15 @@ def main():
                  "adj_woba_weather","adj_woba_park","adj_woba_combined"]
     result = bat[keep_cols].copy()
 
-    # Final guards
-    if result["team_id"].isna().any() or (result["team_id"].astype(str).str.len() == 0).any():
-        result.loc[result["team_id"].isna() | (result["team_id"].astype(str).str.len() == 0),
-                   ["player_id","team","game_id"]].to_csv(SUM_DIR / "bep_null_team_id.csv", index=False)
-        raise AssertionError("batter_event_probabilities has missing team_id")
-    if result["game_id"].isna().any() or (result["game_id"].astype(str).str.len() == 0).any():
-        result.loc[result["game_id"].isna() | (result["game_id"].astype(str).str.len() == 0),
-                   ["player_id","team","team_id"]].to_csv(SUM_DIR / "bep_null_game_id.csv", index=False)
-        raise AssertionError("batter_event_probabilities has missing game_id")
+    # Final sanity (no hard fail; just log anything odd)
+    bad_tid = result["team_id"].isna() | result["team_id"].astype(str).eq("")
+    bad_gid = result["game_id"].isna() | result["game_id"].astype(str).eq("")
+    if bad_tid.any() or bad_gid.any():
+        result.loc[bad_tid | bad_gid, ["player_id","team","team_id","game_id"]].to_csv(
+            SUM_DIR / "bep_still_missing_after_heal.csv", index=False
+        )
+        # Filter them out to protect downstream aggregation
+        result = result.loc[~(bad_tid | bad_gid)].copy()
 
     result.to_csv(OUT_FILE_PROJ, index=False)
     result.to_csv(OUT_FILE_FINAL, index=False)
