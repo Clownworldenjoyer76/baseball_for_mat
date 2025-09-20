@@ -84,7 +84,6 @@ jobs:
 
           echo "===== ERROR GREP (from current logs) =====" >> summaries/07_final/summary.txt
           # Treat 'bad_games' as a WARNING (do not fail the job for dropped/partial games)
-          # First, collect true errors (exclude 'bad_games')
           if grep -RniE "error|fail|assert|missing game_id|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
             echo "(errors found)" >> summaries/07_final/summary.txt
             exit 1
