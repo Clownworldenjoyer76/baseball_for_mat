@@ -1,70 +1,22 @@
-===== RUN TIMESTAMP: 2025-09-20 07:48:25 EDT =====
+===== RUN TIMESTAMP: 2025-09-20 09:03:30 EDT =====
 
 ===== LOG TAILS =====
 --- prep_daily_log (tail) ---
 PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
-PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
-[INFO] batter_props_projected_final.csv: start=93, kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_projected_final.csv: start=93, kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_expanded_final.csv: start=93, kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_expanded_final.csv: start=93, kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_projected_final.csv: kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_projected_final.csv: kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_expanded_final.csv: kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-[INFO] batter_props_expanded_final.csv: kept=97, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0
-OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+[INFO] batter_props_projected_final.csv: start=97, kept=71, dropped_off_slate=28, dropped_missing_team_id=6, dropped_missing_game_id=0
+[INFO] batter_props_expanded_final.csv: start=97, kept=71, dropped_off_slate=28, dropped_missing_team_id=6, dropped_missing_game_id=0
+[INFO] batter_props_projected_final.csv: kept=71, dropped_off_slate=28, dropped_missing_team_id=6, dropped_missing_game_id=0
+[INFO] batter_props_expanded_final.csv: kept=71, dropped_off_slate=28, dropped_missing_team_id=6, dropped_missing_game_id=0
 OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 
 --- batter_log (tail) ---
 LOAD: daily & season inputs
-LOAD: daily & season inputs
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
 OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=67
-LOAD: daily & season inputs
-[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=91
 
 --- pitcher_log (tail) ---
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
-OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
-OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
-OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
-OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
-OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
 
 --- game_scores_log (tail) ---
-LOAD: batter & pitcher event files
-AGG: sum expected runs by (game_id, team_id, team)
-LOAD: batter & pitcher event files
-AGG: sum expected runs by (game_id, team_id, team)
-WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
-LOAD: batter & pitcher event files
-AGG: sum expected runs by (game_id, team_id, team)
-WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
-LOAD: batter & pitcher event files
-AGG: sum expected runs by (game_id, team_id, team)
-WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
-LOAD: batter & pitcher event files
-AGG: sum expected runs by (game_id, team_id, team)
-WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
 LOAD: batter & pitcher event files
 AGG: sum expected runs by (game_id, team_id, team)
 WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
