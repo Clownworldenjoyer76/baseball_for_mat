@@ -1,4 +1,4 @@
-===== RUN TIMESTAMP: 2025-09-20 06:59:27 EDT =====
+===== RUN TIMESTAMP: 2025-09-20 07:22:15 EDT =====
 
 ===== LOG TAILS =====
 --- prep_daily_log (tail) ---
@@ -34,8 +34,12 @@ OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/fi
 LOAD: daily & season inputs
 [WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
 OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
+LOAD: daily & season inputs
+[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=64
 
 --- pitcher_log (tail) ---
+OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
@@ -49,6 +53,10 @@ WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6,
 LOAD: batter & pitcher event files
 AGG: sum expected runs by (game_id, team_id, team)
 WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
+LOAD: batter & pitcher event files
+AGG: sum expected runs by (game_id, team_id, team)
+WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
 
 ===== ERROR GREP (from current logs) =====
-(errors found)
+(no fatal errors found by grep)
+(warning: bad_games present; incomplete games were dropped)
