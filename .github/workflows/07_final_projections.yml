@@ -3,7 +3,7 @@ name: 07_final_projections
 on:
   workflow_dispatch:
   # schedule:
-  #   - cron: "15 11 * * *"  # 11:15 UTC (7:15 AM ET) – enable if you want daily runs
+  #   - cron: "15 11 * * *"  # 11:15 UTC (7:15 AM ET)
 
 permissions:
   contents: write
@@ -37,33 +37,37 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p summaries/07_final
-          find summaries/07_final -maxdepth 1 -type f -name "*errors*.txt" -delete || true
-          find summaries/07_final -maxdepth 1 -type f -name "*status*.txt" -delete || true
+          # remove previous run’s text logs; keep CSV diagnostics
+          find summaries/07_final -maxdepth 1 -type f -name "*.txt" -delete || true
           : > summaries/07_final/summary.txt
 
-      # ---------- Stage: PREP (inject team_id & game_id into batter *_final.csv) ----------
+      # ---------- Stage: PREP ----------
       - name: Prep daily projection inputs
         run: |
           set -euo pipefail
-          python scripts/prepare_daily_projection_inputs.py | tee -a summaries/07_final/prep_daily_log.txt
+          : > summaries/07_final/prep_daily_log.txt
+          python scripts/prepare_daily_projection_inputs.py | tee summaries/07_final/prep_daily_log.txt
 
       # ---------- Stage: BATTER EVENTS ----------
       - name: Batter event probabilities
         run: |
           set -euo pipefail
-          python scripts/project_batter_event_probabilities.py | tee -a summaries/07_final/batter_log.txt
+          : > summaries/07_final/batter_log.txt
+          python scripts/project_batter_event_probabilities.py | tee summaries/07_final/batter_log.txt
 
       # ---------- Stage: PITCHER EVENTS ----------
       - name: Pitcher event probabilities
         run: |
           set -euo pipefail
-          python scripts/project_pitcher_event_probabilities.py | tee -a summaries/07_final/pitcher_log.txt
+          : > summaries/07_final/pitcher_log.txt
+          python scripts/project_pitcher_event_probabilities.py | tee summaries/07_final/pitcher_log.txt
 
       # ---------- Stage: GAME SCORES ----------
       - name: Game score projections
         run: |
           set -euo pipefail
-          python scripts/project_game_scores.py | tee -a summaries/07_final/game_scores_log.txt
+          : > summaries/07_final/game_scores_log.txt
+          python scripts/project_game_scores.py | tee summaries/07_final/game_scores_log.txt
 
       # ---------- Sanity checks & summary ----------
       - name: Summarize run
@@ -90,8 +94,6 @@ jobs:
           else
             echo "(no fatal errors found by grep)" >> summaries/07_final/summary.txt
           fi
-
-          # If bad_games present, append a warning but do not fail
           if grep -Rni "bad_games" summaries/07_final | grep -v summary.txt >/dev/null 2>&1; then
             echo "(warning: bad_games present; incomplete games were dropped)" >> summaries/07_final/summary.txt
           fi
