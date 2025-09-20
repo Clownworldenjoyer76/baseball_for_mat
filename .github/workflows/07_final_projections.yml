@@ -83,11 +83,18 @@ jobs:
           done
 
           echo "===== ERROR GREP (from current logs) =====" >> summaries/07_final/summary.txt
-          if grep -RniE "error|fail|assert|missing game_id|Slate mismatch|bad_games|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
+          # Treat 'bad_games' as a WARNING (do not fail the job for dropped/partial games)
+          # First, collect true errors (exclude 'bad_games')
+          if grep -RniE "error|fail|assert|missing game_id|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
             echo "(errors found)" >> summaries/07_final/summary.txt
             exit 1
           else
-            echo "(no errors found by grep)" >> summaries/07_final/summary.txt
+            echo "(no fatal errors found by grep)" >> summaries/07_final/summary.txt
+          fi
+
+          # If bad_games present, append a warning but do not fail
+          if grep -Rni "bad_games" summaries/07_final | grep -v summary.txt >/dev/null 2>&1; then
+            echo "(warning: bad_games present; incomplete games were dropped)" >> summaries/07_final/summary.txt
           fi
 
       # ---------- Commit results ----------
@@ -103,8 +110,8 @@ jobs:
           git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
           git add data/_projections/batter_event_probabilities.csv 2>/dev/null || true
           git add data/_projections/pitcher_event_probabilities.csv 2>/dev/null || true
-          git add data/_projections/batter_props_projected_final.csv 2-/dev/null || true
-          git add data/_projections/batter_props_expanded_final.csv 2-/dev/null || true
+          git add data/_projections/batter_props_projected_final.csv 2>/dev/null || true
+          git add data/_projections/batter_props_expanded_final.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
 
           if ! git diff --cached --quiet; then
