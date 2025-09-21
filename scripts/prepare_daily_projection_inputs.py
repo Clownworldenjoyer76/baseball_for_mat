@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # scripts/prepare_daily_projection_inputs.py
 #
-# Robust prep with normalization:
+# Robust prep with normalization + upstream de-duplication:
 # - Resolves team_id from: existing -> lineups.csv -> normalized team text -> static MLB map.
 # - Resolves game_id ONLY from todaysgames_normalized.csv (authoritative slate).
 # - Logs and DROPS rows with unresolved team_id or with team_id but NO game_id (off-slate).
 # - Normalizes team_id and game_id to clean string (no NaN, no float .0, no "0").
-# - Writes concise prep log with counts.
-
+# - Enforces uniqueness on (player_id, game_id) for batter inputs; keeps highest proj_pa_used.
+# - Writes concise logs + grouped dup diagnostics (not one line per row).
+#
 from __future__ import annotations
 import re
 import pandas as pd
@@ -96,7 +97,8 @@ def normalize_id(val: str) -> str:
     return s
 
 def _canon(s: str) -> str:
-    return re.sub(r"[^a-z]", "", str(s or "").lower())
+    import re as _re
+    return _re.sub(r"[^a-z]", "", str(s or "").lower())
 
 def normalize_to_abbrev(team_text: str) -> str:
     t = _canon(team_text)
@@ -152,12 +154,52 @@ def resolve_team_id(row, abbrev_to_id_today: pd.DataFrame) -> str:
             return str(STATIC_ABBREV_TO_TEAM_ID[abbrev])
     return ""  # unresolved
 
+def dedupe_batter_inputs(df: pd.DataFrame, name_for_logs: str) -> tuple[pd.DataFrame, int]:
+    """
+    Enforce one row per (player_id, game_id):
+    - Keep the row with largest proj_pa_used (numeric); if tie, keep first.
+    - Write grouped counts to summaries/07_final/prep_dups_in_<name>.csv
+    Returns (deduped_df, dropped_count)
+    """
+    if not {"player_id", "game_id"}.issubset(df.columns):
+        return df, 0
+
+    # Ensure numeric proj_pa_used exists for ranking
+    if "proj_pa_used" not in df.columns:
+        df["proj_pa_used"] = 0.0
+    df["proj_pa_used_num"] = pd.to_numeric(df["proj_pa_used"], errors="coerce").fillna(0.0)
+
+    # Find dup groups BEFORE dropping
+    dup_mask = df.duplicated(subset=["player_id", "game_id"], keep=False)
+    dup_groups = (
+        df.loc[dup_mask, ["player_id", "game_id", "team_id", "proj_pa_used_num"]]
+          .groupby(["player_id", "game_id", "team_id"], dropna=False)
+          .agg(count=("proj_pa_used_num", "size"),
+               kept_proj_pa_used=("proj_pa_used_num", "max"))
+          .reset_index()
+          .sort_values(["count", "kept_proj_pa_used"], ascending=[False, False])
+    )
+    if not dup_groups.empty:
+        out = SUM_DIR / f"prep_dups_in_{name_for_logs}.csv"
+        dup_groups.to_csv(out, index=False)
+
+    before = len(df)
+    # Keep max proj_pa_used per (player_id, game_id)
+    df = (
+        df.sort_values(["player_id", "game_id", "proj_pa_used_num"], ascending=[True, True, False])
+          .drop_duplicates(subset=["player_id", "game_id"], keep="first")
+          .drop(columns=["proj_pa_used_num"])
+          .reset_index(drop=True)
+    )
+    dropped = before - len(df)
+    return df, dropped
+
 def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
                          lineups: pd.DataFrame,
                          team_game_map: pd.DataFrame,
-                         abbrev_to_id_today: pd.DataFrame) -> tuple[pd.DataFrame,int,int,int]:
+                         abbrev_to_id_today: pd.DataFrame) -> tuple[pd.DataFrame,int,int,int,int]:
     """
-    Returns (clean_df, dropped_off_slate, dropped_missing_team, dropped_missing_game_after_merge)
+    Returns (clean_df, dropped_off_slate, dropped_missing_team, dropped_missing_game_after_merge, dropped_dups)
     """
     start_rows = len(df)
     if "player_id" not in df.columns:
@@ -209,16 +251,19 @@ def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
             SUM_DIR / f"missing_game_id_in_{name_for_logs}.csv", index=False)
         merged = merged.drop(miss_gid.index)
 
-    kept = len(merged)
+    # Upstream de-dup on (player_id, game_id)
+    merged_deduped, dropped_dups = dedupe_batter_inputs(merged, name_for_logs)
+
+    kept = len(merged_deduped)
     log(f"[INFO] {name_for_logs}: start={start_rows}, kept={kept}, "
         f"dropped_off_slate={dropped_off}, dropped_missing_team_id={dropped_team}, "
-        f"dropped_missing_game_id={dropped_gid}")
+        f"dropped_missing_game_id={dropped_gid}, dropped_duplicate_keys={dropped_dups}")
 
     # drop helper columns
-    if "team_id_lineups" in merged.columns:
-        merged.drop(columns=["team_id_lineups"], inplace=True)
+    if "team_id_lineups" in merged_deduped.columns:
+        merged_deduped.drop(columns=["team_id_lineups"], inplace=True)
 
-    return merged, dropped_off, dropped_team, dropped_gid
+    return merged_deduped, dropped_off, dropped_team, dropped_gid, dropped_dups
 
 def write_back(df_before: pd.DataFrame, df_after: pd.DataFrame, path: Path) -> None:
     cols = list(df_before.columns)
@@ -229,6 +274,7 @@ def write_back(df_before: pd.DataFrame, df_after: pd.DataFrame, path: Path) -> N
     df_after[cols_final].to_csv(path, index=False)
 
 def main() -> None:
+    # fresh log
     LOG_FILE.write_text("", encoding="utf-8")
     log("PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)")
 
@@ -239,20 +285,23 @@ def main() -> None:
 
     team_game_map, abbrev_to_id_today = build_team_maps_from_tgn(tgn)
 
-    bp_out, bp_off, bp_mteam, bp_mgid = inject_team_and_game(
+    bp_out, bp_off, bp_mteam, bp_mgid, bp_dups = inject_team_and_game(
         bat_proj, "batter_props_projected_final.csv", lineups, team_game_map, abbrev_to_id_today
     )
-    bx_out, bx_off, bx_mteam, bx_mgid = inject_team_and_game(
+    bx_out, bx_off, bx_mteam, bx_mgid, bx_dups = inject_team_and_game(
         bat_exp,  "batter_props_expanded_final.csv",  lineups, team_game_map, abbrev_to_id_today
     )
 
     write_back(bat_proj, bp_out, BATTERS_PROJECTED)
     write_back(bat_exp,  bx_out,  BATTERS_EXPANDED)
 
+    # summary line(s) for CI step output
     log(f"[INFO] batter_props_projected_final.csv: kept={len(bp_out)}, "
-        f"dropped_off_slate={bp_off}, dropped_missing_team_id={bp_mteam}, dropped_missing_game_id={bp_mgid}")
+        f"dropped_off_slate={bp_off}, dropped_missing_team_id={bp_mteam}, "
+        f"dropped_missing_game_id={bp_mgid}, dropped_duplicate_keys={bp_dups}")
     log(f"[INFO] batter_props_expanded_final.csv: kept={len(bx_out)}, "
-        f"dropped_off_slate={bx_off}, dropped_missing_team_id={bx_mteam}, dropped_missing_game_id={bx_mgid}")
+        f"dropped_off_slate={bx_off}, dropped_missing_team_id={bx_mteam}, "
+        f"dropped_missing_game_id={bx_mgid}, dropped_duplicate_keys={bx_dups}")
     log("OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv")
 
 if __name__ == "__main__":
