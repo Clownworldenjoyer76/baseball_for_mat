@@ -83,7 +83,6 @@ def main():
             SUM_DIR / "merge_mismatch_batters.csv", index=False
         )
         print("[WARN] some (player_id, game_id) not present in expanded; defaulting adj_woba_* = 1.0 for those rows.")
-        # For missing keys, create neutral rows and append
         miss_df = pd.DataFrame(list(missing), columns=["player_id","game_id"])
         for c in ADJ_COLS:
             miss_df[c] = 1.0
@@ -149,7 +148,9 @@ def main():
                         ["p_k_opp","p_bb_opp","p_1b_opp","p_2b_opp","p_3b_opp","p_hr_opp"]):
         if dst not in bat.columns:
             bat[dst] = np.nan
-        bat[dst] = bat[dst].fillna(lg[src.split("_")[1]])
+        # src is e.g. "p_k_p" -> lg key "k"
+        lg_key = src.split("_")[1]
+        bat[dst] = bat[dst].fillna(lg[lg_key])
 
     # LOG5 + ENV
     bat["p_k"]  = log5(bat["p_k_b"],  bat["p_k_opp"],  lg["k"])
@@ -179,21 +180,28 @@ def main():
                  "adj_woba_weather","adj_woba_park","adj_woba_combined"]
     result = bat[keep_cols].copy()
 
-    # ===== NEW: De-duplicate (player_id, game_id) deterministically =====
-    # Prefer the row with the largest proj_pa_used; log what we removed.
+    # ===== De-duplicate (player_id, game_id) deterministically =====
+    # Prefer the row with the largest proj_pa_used; grouped diagnostic instead of row spam.
     if {"player_id","game_id"}.issubset(result.columns):
+        result["proj_pa_used_num"] = pd.to_numeric(result["proj_pa_used"], errors="coerce").fillna(0.0)
         dup_mask = result.duplicated(subset=["player_id","game_id"], keep=False)
         if dup_mask.any():
-            # Save a diagnostic of duplicates we are resolving
-            result.loc[dup_mask, ["player_id","game_id","team_id","team","proj_pa_used"]] \
-                  .sort_values(["player_id","game_id","proj_pa_used"], ascending=[True,True,False]) \
-                  .to_csv(SUM_DIR / "batter_dup_player_game.csv", index=False)
+            dup_groups = (
+                result.loc[dup_mask, ["player_id","game_id","team_id","proj_pa_used_num"]]
+                      .groupby(["player_id","game_id","team_id"], dropna=False)
+                      .agg(count=("proj_pa_used_num", "size"),
+                           kept_proj_pa_used=("proj_pa_used_num", "max"))
+                      .reset_index()
+                      .sort_values(["count","kept_proj_pa_used"], ascending=[False, False])
+            )
+            dup_groups.to_csv(SUM_DIR / "batter_dup_player_game_counts.csv", index=False)
 
-            # Keep the highest proj_pa_used for each (player_id, game_id)
-            result = (result
-                      .sort_values(["player_id","game_id","proj_pa_used"], ascending=[True,True,False])
-                      .drop_duplicates(subset=["player_id","game_id"], keep="first")
-                      .reset_index(drop=True))
+            result = (result.sort_values(["player_id","game_id","proj_pa_used_num"], ascending=[True,True,False])
+                            .drop_duplicates(subset=["player_id","game_id"], keep="first")
+                            .drop(columns=["proj_pa_used_num"])
+                            .reset_index(drop=True))
+        else:
+            result.drop(columns=["proj_pa_used_num"], inplace=True)
 
     # Write outputs
     result.to_csv(OUT_FILE_PROJ, index=False)
