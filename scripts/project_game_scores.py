@@ -2,20 +2,18 @@
 # Aggregates daily batter/pitcher projections into game-level expected runs.
 # Assumes upstream scripts produced:
 #   - data/end_chain/final/batter_event_probabilities.csv
-#   - data/end_chain/final/pitcher_event_probabilities.csv  (not strictly required for aggregation)
+#   - data/end_chain/final/pitcher_event_probabilities.csv  (optional)
 #
 # Output:
 #   - data/end_chain/final/game_score_projections.csv
 #
 # Behavior:
-#   - Computes expected runs per team by summing player-level expected runs.
-#   - Identifies "bad games" (games with != 2 team rows) and drops them from output.
+#   - Sums player expected runs to team level.
+#   - Canonicalizes team name per (game_id, team_id), and aggregates by (game_id, team_id) ONLY.
+#   - Identifies "bad games" (games with != 2 distinct team_ids) and drops them.
 #   - Writes summaries/07_final/gamescores_bad_games.txt only when bad games exist.
-#   - Removes that diagnostic file when there are no bad games (prevents stale warnings).
-#
-# Minimal, defensive, no recomputation of opponent context here.
+#   - Removes that diagnostic when there are no bad games.
 
-import os
 import pandas as pd
 from pathlib import Path
 
@@ -25,7 +23,7 @@ SUM_DIR.mkdir(parents=True, exist_ok=True)
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 BATTER_EVENTS = OUT_DIR / "batter_event_probabilities.csv"
-PITCHER_EVENTS = OUT_DIR / "pitcher_event_probabilities.csv"  # optional for aggregate
+PITCHER_EVENTS = OUT_DIR / "pitcher_event_probabilities.csv"  # optional
 OUT_FILE = OUT_DIR / "game_score_projections.csv"
 BAD_GAMES_FILE = SUM_DIR / "gamescores_bad_games.txt"
 
@@ -37,8 +35,7 @@ def remove_file_if_exists(p: Path) -> None:
         if p.exists():
             p.unlink()
     except Exception:
-        # Do not fail the run on cleanup
-        pass
+        pass  # non-fatal
 
 def require(df: pd.DataFrame, cols: list[str], name: str) -> None:
     missing = [c for c in cols if c not in df.columns]
@@ -52,18 +49,17 @@ def to_num(df: pd.DataFrame, cols: list[str]) -> None:
 
 def ensure_expected_runs_batter(bat: pd.DataFrame) -> pd.DataFrame:
     """
-    Ensure column 'expected_runs_batter' exists.
-    Preference order:
-      1) Use existing 'expected_runs_batter'
-      2) Compute runs_per_pa * proj_pa_used if both present
-      3) Compute runs_per_pa from event probabilities * linear weights, then multiply by proj_pa_used
+    Ensure 'expected_runs_batter' exists.
+    Priority:
+      (1) use 'expected_runs_batter' if present
+      (2) runs_per_pa * proj_pa_used
+      (3) derive runs_per_pa from event probabilities + linear weights
     """
     if "expected_runs_batter" in bat.columns and bat["expected_runs_batter"].notna().any():
         to_num(bat, ["expected_runs_batter"])
         bat["expected_runs_batter"] = bat["expected_runs_batter"].fillna(0.0).clip(lower=0)
         return bat
 
-    # Option 2: runs_per_pa * proj_pa_used
     if {"runs_per_pa", "proj_pa_used"}.issubset(bat.columns):
         to_num(bat, ["runs_per_pa", "proj_pa_used"])
         bat["expected_runs_batter"] = (
@@ -72,15 +68,14 @@ def ensure_expected_runs_batter(bat: pd.DataFrame) -> pd.DataFrame:
         )
         return bat
 
-    # Option 3: derive runs_per_pa from p_* columns
     lw = {"BB":0.33, "1B":0.47, "2B":0.77, "3B":1.04, "HR":1.40, "OUT":0.0}
     need_p = ["p_bb", "p_1b", "p_2b", "p_3b", "p_hr", "p_out", "proj_pa_used"]
-    missing_p = [c for c in need_p if c not in bat.columns]
-    if missing_p:
+    miss = [c for c in need_p if c not in bat.columns]
+    if miss:
         raise RuntimeError(
             "Cannot construct expected_runs_batter: need either "
             "'expected_runs_batter' or ('runs_per_pa' & 'proj_pa_used') or "
-            f"event probs {need_p}; missing={missing_p}"
+            f"event probs {need_p}; missing={miss}"
         )
 
     to_num(bat, need_p)
@@ -98,8 +93,27 @@ def ensure_expected_runs_batter(bat: pd.DataFrame) -> pd.DataFrame:
     )
     return bat
 
+def canonicalize_team_name(bat: pd.DataFrame) -> pd.DataFrame:
+    """
+    Produce a single canonical team name per (game_id, team_id):
+      - pick the first non-empty 'team' value if any, else empty string.
+    """
+    if "team" not in bat.columns:
+        # no team names supplied; return empty mapping
+        return bat[["game_id","team_id"]].drop_duplicates().assign(team="")
+    # Choose first non-empty team string within each group
+    def pick_name(s: pd.Series) -> str:
+        for val in s:
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+        return ""
+    names = (bat.groupby(["game_id","team_id"])["team"]
+                .apply(pick_name)
+                .reset_index())
+    return names
+
 def main():
-    # Always start with a clean bad-games diagnostic for this run
+    # Start with a clean diagnostic for this run
     remove_file_if_exists(BAD_GAMES_FILE)
 
     print("LOAD: batter & pitcher event files")
@@ -107,61 +121,53 @@ def main():
         raise RuntimeError(f"Missing {BATTER_EVENTS}; upstream batter projection step must run first.")
 
     bat = pd.read_csv(BATTER_EVENTS)
-    # Pitcher file not required for aggregation, but we load if present to surface shape in logs.
     pit_rows = 0
     if PITCHER_EVENTS.exists():
         pit = pd.read_csv(PITCHER_EVENTS)
         pit_rows = len(pit)
 
     require(bat, ["game_id", "team_id", "proj_pa_used"], str(BATTER_EVENTS))
-    # Team name is nice-to-have for readability; if absent we synthesize an empty string.
-    if "team" not in bat.columns:
-        bat["team"] = ""
-
     to_num(bat, ["game_id", "team_id", "proj_pa_used"])
+
+    # Ensure expected runs present
     bat = ensure_expected_runs_batter(bat)
 
-    # Aggregate by team (per game)
-    print("AGG: sum expected runs by (game_id, team_id, team)")
-    team = (
-        bat.groupby(["game_id", "team_id", "team"], dropna=True)["expected_runs_batter"]
+    # Build canonical team name per (game_id, team_id)
+    name_map = canonicalize_team_name(bat)
+
+    print("AGG: sum expected runs by (game_id, team_id)")
+    team_runs = (
+        bat.groupby(["game_id", "team_id"], dropna=True)["expected_runs_batter"]
            .sum()
            .reset_index()
            .rename(columns={"expected_runs_batter": "expected_runs"})
            .sort_values(["game_id", "team_id"])
            .reset_index(drop=True)
     )
+    # attach canonical team label (may be empty string)
+    team = team_runs.merge(name_map, on=["game_id","team_id"], how="left")
 
-    # Identify bad games = games with != 2 team rows
+    # Identify bad games = games with != 2 distinct team_ids
     counts = team.groupby("game_id", dropna=False)["team_id"].nunique().reset_index(name="teams_present")
     bad = counts[counts["teams_present"] != 2].copy()
 
-    games_kept = 0
-    games_dropped = 0
-
     if not bad.empty:
-        # Prepare a readable diagnostic with the partial sides we do have
-        partial = (
-            team.merge(bad[["game_id"]], on="game_id", how="inner")
-                .sort_values(["game_id", "team_id"])
-        )
-        # Write diagnostic
+        # Per-game unique team_ids present (no duplicates)
         lines = ["# games with != 2 teams present; these were dropped from output",
                  f"# total_bad_games={bad.shape[0]}",
                  ""]
-        # Include a compact per-game dump of sides present
-        for gid, gdf in partial.groupby("game_id"):
-            sides = ", ".join(str(int(tid)) if pd.notna(tid) else "NA" for tid in gdf["team_id"].tolist())
-            lines.append(f"{gid}: teams_present=[{sides}]")
+        merged = team.merge(bad[["game_id"]], on="game_id", how="inner")
+        for gid, gdf in merged.groupby("game_id"):
+            ids_unique = sorted({int(tid) for tid in gdf["team_id"].dropna().astype(int).tolist()})
+            lines.append(f"{gid}: teams_present={ids_unique}")
         write_text(BAD_GAMES_FILE, "\n".join(lines))
 
-        # Filter to good games only (exactly two teams)
+        # keep only good games
         good_ids = counts[counts["teams_present"] == 2]["game_id"]
         team = team[team["game_id"].isin(good_ids)].copy()
         games_kept = good_ids.nunique()
         games_dropped = bad["game_id"].nunique()
     else:
-        # Ensure no stale file remains if everything is good
         remove_file_if_exists(BAD_GAMES_FILE)
         games_kept = counts[counts["teams_present"] == 2]["game_id"].nunique()
         games_dropped = 0
