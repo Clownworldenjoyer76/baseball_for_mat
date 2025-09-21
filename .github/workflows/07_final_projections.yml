@@ -33,72 +33,83 @@ jobs:
           fi
           mkdir -p summaries/07_final data/_projections data/end_chain/final
 
-      - name: Clean stale 07 logs
+      # ---------- Hard reset all prior summaries/diagnostics (current run only) ----------
+      - name: Reset summaries directory (fresh run)
         run: |
           set -euo pipefail
           mkdir -p summaries/07_final
-          # remove previous run’s text logs; keep CSV diagnostics
-          find summaries/07_final -maxdepth 1 -type f -name "*.txt" -delete || true
+          # remove ALL prior summary/diagnostic files so nothing carries over
+          find summaries/07_final -type f -exec rm -f {} +
+          # recreate empty per-step logs that we will tail later
+          : > summaries/07_final/prep_daily_log.txt
+          : > summaries/07_final/batter_log.txt
+          : > summaries/07_final/pitcher_log.txt
+          : > summaries/07_final/game_scores_log.txt
           : > summaries/07_final/summary.txt
 
-      # ---------- Stage: PREP ----------
+      # ---------- Stage: PREP (inject team_id & game_id into batter *_final.csv) ----------
       - name: Prep daily projection inputs
         run: |
           set -euo pipefail
-          : > summaries/07_final/prep_daily_log.txt
-          python scripts/prepare_daily_projection_inputs.py | tee summaries/07_final/prep_daily_log.txt
+          python scripts/prepare_daily_projection_inputs.py | tee -a summaries/07_final/prep_daily_log.txt
 
       # ---------- Stage: BATTER EVENTS ----------
       - name: Batter event probabilities
         run: |
           set -euo pipefail
-          : > summaries/07_final/batter_log.txt
-          python scripts/project_batter_event_probabilities.py | tee summaries/07_final/batter_log.txt
+          python scripts/project_batter_event_probabilities.py | tee -a summaries/07_final/batter_log.txt
 
       # ---------- Stage: PITCHER EVENTS ----------
       - name: Pitcher event probabilities
         run: |
           set -euo pipefail
-          : > summaries/07_final/pitcher_log.txt
-          python scripts/project_pitcher_event_probabilities.py | tee summaries/07_final/pitcher_log.txt
+          python scripts/project_pitcher_event_probabilities.py | tee -a summaries/07_final/pitcher_log.txt
 
       # ---------- Stage: GAME SCORES ----------
       - name: Game score projections
         run: |
           set -euo pipefail
-          : > summaries/07_final/game_scores_log.txt
-          python scripts/project_game_scores.py | tee summaries/07_final/game_scores_log.txt
+          # clear any stale bad-games diagnostic before recomputing
+          rm -f summaries/07_final/gamescores_bad_games.txt || true
+          python scripts/project_game_scores.py | tee -a summaries/07_final/game_scores_log.txt
 
-      # ---------- Sanity checks & summary ----------
+      # ---------- Summarize run (fresh tails only + conditional bad_games note) ----------
       - name: Summarize run
         run: |
           set -euo pipefail
-          echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') =====" > summaries/07_final/summary.txt
-          echo "" >> summaries/07_final/summary.txt
-          echo "===== LOG TAILS =====" >> summaries/07_final/summary.txt
-          for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
-            echo "--- ${f%.*} (tail) ---" >> summaries/07_final/summary.txt
-            if [ -f "summaries/07_final/$f" ]; then
-              tail -n 25 "summaries/07_final/$f" >> summaries/07_final/summary.txt
+          {
+            echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
+            echo ""
+            echo "===== LOG TAILS ====="
+
+            for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
+              echo "--- ${f%.*} (tail) ---"
+              if [ -f "summaries/07_final/$f" ]; then
+                tail -n 25 "summaries/07_final/$f"
+              else
+                echo "(missing)"
+              fi
+              echo ""
+            done
+
+            echo "===== ERROR GREP (from current logs) ====="
+            if grep -RniE "error|fail|assert|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
+              echo "(errors found)"
+              exit_code=1
             else
-              echo "(missing)" >> summaries/07_final/summary.txt
+              echo "(no fatal errors found by grep)"
+              exit_code=0
             fi
-            echo "" >> summaries/07_final/summary.txt
-          done
 
-          echo "===== ERROR GREP (from current logs) =====" >> summaries/07_final/summary.txt
-          # Treat 'bad_games' as a WARNING (do not fail the job for dropped/partial games)
-          if grep -RniE "error|fail|assert|missing game_id|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
-            echo "(errors found)" >> summaries/07_final/summary.txt
-            exit 1
-          else
-            echo "(no fatal errors found by grep)" >> summaries/07_final/summary.txt
-          fi
-          if grep -Rni "bad_games" summaries/07_final | grep -v summary.txt >/dev/null 2>&1; then
-            echo "(warning: bad_games present; incomplete games were dropped)" >> summaries/07_final/summary.txt
-          fi
+            # Only warn about bad games if the diagnostic was produced and is non-empty this run
+            if [ -s "summaries/07_final/gamescores_bad_games.txt" ]; then
+              echo "(warning: bad_games present; incomplete games were dropped)"
+            fi
 
-      # ---------- Commit results ----------
+            exit $exit_code
+          } > summaries/07_final/summary.txt
+
+      # ---------- Commit CSVs + summaries ----------
       - name: Commit CSVs + summaries
         if: always()
         run: |
