@@ -1,3 +1,4 @@
+# .github/workflows/05_prep.yml
 name: "05 Prep"
 
 on:
@@ -16,8 +17,8 @@ concurrency:
 
 jobs:
   prep_block:
-    # allow manual runs OR run only when 04 succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # allow manual runs OR run after 04 completes (any conclusion)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != '' }}
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
