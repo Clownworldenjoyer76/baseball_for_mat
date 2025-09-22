@@ -1,7 +1,18 @@
->> START: project_prep.py (2025-09-22 08:21:11 EDT)
->> START: project_prep.py (2025-09-22 12:21:11 UTC)
+>> START: project_prep.py (2025-09-22 09:09:37 EDT)
+>> START: project_prep.py
 [PATH] OUT_RAW=/home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/startingpitchers_with_opp_context.csv
 [PATH] OUT_FINAL=/home/runner/work/baseball_for_mat/baseball_for_mat/data/end_chain/final/startingpitchers.csv
 [PATH] OUT_PROJ=/home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_props_projected.csv
-"['game_id'] not in index"
-[END] project_prep.py (2025-09-22 08:21:11 EDT)
+/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py:72: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  sp["pitcher_id"] = coalesce(sp, "pitcher_id", "player_id", "mlb_id", "id").astype(str)
+/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py:77: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  sp[col] = ""
+/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py:77: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  sp[col] = ""
+/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py:77: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  sp[col] = ""
+[COVERAGE] rows_in=15, matched_game_id=15, unmatched=0, with_team_and_opponent=15
+✅ Wrote enriched raw: data/raw/startingpitchers_with_opp_context.csv (rows=15)
+✅ Wrote minimal final: data/end_chain/final/startingpitchers.csv (rows=15)
+>> END: project_prep.py
+[END] project_prep.py (2025-09-22 09:09:37 EDT)
