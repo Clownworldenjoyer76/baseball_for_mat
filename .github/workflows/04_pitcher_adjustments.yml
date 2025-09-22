@@ -4,9 +4,8 @@ name: "04 Pitcher Adjustments"
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["03 Batter Adjustments"]   # must match 03's name exactly
+    workflows: ["03 Batter Adjustments"]
     types: [completed]
-    branches: [main]
 
 permissions:
   contents: write
@@ -17,8 +16,6 @@ concurrency:
 
 jobs:
   pitcher_adjustments:
-    # allow manual runs OR run after 03 completes (any conclusion)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != '' }}
     runs-on: ubuntu-latest
 
     steps:
