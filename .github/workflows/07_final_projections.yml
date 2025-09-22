@@ -48,7 +48,7 @@ jobs:
           : > summaries/07_final/summary.txt
 
       # ---------- Stage: PREP (inject team_id & game_id into batter *_final.csv) ----------
-      # Remove 'tee' here to avoid duplicate lines; script already writes to prep_daily_log.txt.
+      # No tee here; the script already writes its own log.
       - name: Prep daily projection inputs
         run: |
           set -euo pipefail
