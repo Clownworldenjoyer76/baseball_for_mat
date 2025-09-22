@@ -1,3 +1,4 @@
+# .github/workflows/06_projection_and_builder.yml
 name: "06 Projection and Builder"
 
 on:
@@ -17,8 +18,8 @@ concurrency:
 
 jobs:
   build:
-    # allow manual runs OR only run after 05 succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # allow manual runs OR run after 05 completes (any conclusion)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != '' }}
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
