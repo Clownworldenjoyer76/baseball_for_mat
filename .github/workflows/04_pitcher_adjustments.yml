@@ -1,3 +1,4 @@
+# .github/workflows/04_pitcher_adjustments.yml
 name: "04 Pitcher Adjustments"
 
 on:
@@ -16,8 +17,8 @@ concurrency:
 
 jobs:
   pitcher_adjustments:
-    # allow manual runs OR only run after 03 succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # allow manual runs OR run after 03 completes (any conclusion)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != '' }}
     runs-on: ubuntu-latest
 
     steps:
