@@ -1,171 +1,103 @@
 name: 06 Projection and Builder
-
-on:
-  workflow_dispatch:
-
+true:
+  workflow_dispatch: null
 permissions:
   contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
-      PYTHONUNBUFFERED: "1"
-
+      PYTHONUNBUFFERED: '1'
     steps:
-      - name: Checkout repo (full history, pinned branch)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main
+    - name: Checkout repo (full history, pinned branch)
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: main
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      run: 'set -euo pipefail
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+        python -m pip install --upgrade pip
 
-      - name: Install dependencies
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        pip install -r requirements.txt
 
-      - name: Clean logs (fresh run only)
-        run: |
-          set -euo pipefail
-          rm -f summaries/06_projection/*.log summaries/06_projection/status.txt summaries/06_projection/summary.txt || true
-          mkdir -p summaries/06_projection
+        '
+    - name: Clean logs (fresh run only)
+      run: 'set -euo pipefail
 
-      - name: Run pipeline (with clean logs and status)
-        run: |
-          set -e
-          mkdir -p summaries/06_projection
-          STATUS="summaries/06_projection/status.txt"
-          : > "$STATUS"
+        rm -f summaries/06_projection/*.log summaries/06_projection/status.txt summaries/06_projection/summary.txt
+        || true
 
-          run_py () {
-            local file="$1"
-            local name="$(basename "$file")"
-            local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-            local log="summaries/06_projection/${name}.log"
-            local script_path="scripts/${name}"
+        mkdir -p summaries/06_projection
 
-            # If script doesn't exist, mark as SKIP (not a failure) and move on
-            if [ ! -f "$script_path" ]; then
-              echo ">> START: ${name} (${ts})" > "$log"
-              echo "SKIP: ${script_path} not found" | tee -a "$log"
-              echo "[OK] ${name} skipped (missing) [${ts}]" >> "$STATUS"
-              echo "[END] ${name} (${ts})" | tee -a "$log"
-              return 0
-            fi
-
-            # Start fresh log (overwrite)
-            echo ">> START: ${name} (${ts})" > "$log"
-
-            set +e
-            python "$script_path" |& tee -a "$log"
-            code=${PIPESTATUS[0]}
-            set -e
-
-            if [ $code -eq 0 ]; then
-              echo "[OK] ${name} succeeded [${ts}]" >> "$STATUS"
-            else
-              echo "[FAIL] ${name} failed [${ts}]" >> "$STATUS"
-            fi
-            echo "[END] ${name} (${ts})" | tee -a "$log"
-            return $code
-          }
-
-          # ---- Pipeline order (kept as-is) ----
-          run_py fix_outputs_generate_fixed_files.py || true
-          run_py normalize_inputs_for_06.py || true
-          run_py project_prep.py || true
-          run_py fix_missing_batter_stats.py || true
-          run_py normalize_batters_for_builder.py || true
-
-          # Batter projections (this is where project_batter_props.py runs)
-          # Your updated script now ensures slate-complete *_final batter files when needed.
-          run_py project_batter_props.py || true
-          run_py project_pitcher_props.py || true
-
-          # Pitcher context & builder
-          run_py inject_pitcher_context.py || true
-          run_py inject_pitcher_context_from_tgn.py || true
-          run_py build_expanded_batter_props.py || true
-          run_py pitcher_mega_z.py || true
-          run_py starter_coverage_guard.py || true
-          run_py post_normalize_pitchers.py || true
-          run_py finalize_projections.py || true
-
-          # Clean/inject pass-through steps
-          run_py clean_inject_team_ids.py || true
-          run_py inject_game_ids_from_schedule.py || true
-          run_py inject_batter_woba_adjustments.py || true
-          run_py clean_pitcher_files.py || true
-          run_py impute_missing_batter_adj_woba.py || true
-
-      - name: Commit & push outputs
-        if: always()
-        run: |
-          set -euo pipefail
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-
-          git add \
-            data/_projections/*.csv \
-            data/end_chain/final/*.csv \
-            data/raw/*.csv \
-            summaries/06_projection/*.log \
-            summaries/06_projection/status.txt 2>/dev/null || true
-
-          git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
-          git push || echo "No changes to push"
-
-      - name: Write & push summary (overwrite, current run only)
-        if: always()
-        run: |
-          set -euo pipefail
-          mkdir -p summaries/06_projection
-
-          SUMMARY="summaries/06_projection/summary.txt"
-          STATUS="summaries/06_projection/status.txt"
-          CLEAN_LOG="summaries/06_projection/clean_pitcher_files.py.log"
-
-          {
-            echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
-            echo
-            echo "===== STATUS (per script) ====="
-            if [ -s "$STATUS" ]; then
-              cat "$STATUS"
-            else
-              echo "(status.txt not generated)"
-            fi
-            echo
-            echo "===== KEY COUNTS ====="
-            if [ -f "$CLEAN_LOG" ]; then
-              starters_line=$(grep -E 'Starters seen today:' "$CLEAN_LOG" | tail -n 1 || true)
-              if [ -n "$starters_line" ]; then
-                starters=$(echo "$starters_line" | awk -F': ' '{print $2}')
-                echo "starters_today: ${starters}"
-              else
-                echo "starters_today: (not found)"
-              fi
-            else
-              echo "starters_today: (clean_pitcher_files.py.log not found)"
-            fi
-            echo
-            echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS (current run) ====="
-            for LOG in summaries/06_projection/*.log; do
-              [ -f "$LOG" ] || continue
-              echo "---- $(basename "$LOG") ----"
-              tail -n 20 "$LOG"
-              echo
-            done
-          } > "$SUMMARY"
-
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add "$SUMMARY"
-          git commit -m "06 Projection: overwrite summary.txt [skip ci]" || echo "No changes to commit"
-          git push || echo "No changes to push"
+        '
+    - name: Run pipeline (with clean logs and status)
+      run: "set -e\nmkdir -p summaries/06_projection\nSTATUS=\"summaries/06_projection/status.txt\"\
+        \n: > \"$STATUS\"\n\nrun_py () {\n  local file=\"$1\"\n  local name=\"$(basename\
+        \ \"$file\")\"\n  local ts=\"$(date '+%Y-%m-%d %H:%M:%S %Z')\"\n  local log=\"\
+        summaries/06_projection/${name}.log\"\n  local script_path=\"scripts/${name}\"\
+        \n\n  # If script doesn't exist, mark as SKIP (not a failure) and move on\n\
+        \  if [ ! -f \"$script_path\" ]; then\n    echo \">> START: ${name} (${ts})\"\
+        \ > \"$log\"\n    echo \"SKIP: ${script_path} not found\" | tee -a \"$log\"\
+        \n    echo \"[OK] ${name} skipped (missing) [${ts}]\" >> \"$STATUS\"\n   \
+        \ echo \"[END] ${name} (${ts})\" | tee -a \"$log\"\n    return 0\n  fi\n\n\
+        \  # Start fresh log (overwrite)\n  echo \">> START: ${name} (${ts})\" > \"\
+        $log\"\n\n  set +e\n  python \"$script_path\" |& tee -a \"$log\"\n  code=${PIPESTATUS[0]}\n\
+        \  set -e\n\n  if [ $code -eq 0 ]; then\n    echo \"[OK] ${name} succeeded\
+        \ [${ts}]\" >> \"$STATUS\"\n  else\n    echo \"[FAIL] ${name} failed [${ts}]\"\
+        \ >> \"$STATUS\"\n  fi\n  echo \"[END] ${name} (${ts})\" | tee -a \"$log\"\
+        \n  return $code\n}\n\n# ---- Pipeline order (kept as-is) ----\nrun_py fix_outputs_generate_fixed_files.py\
+        \ || true\nrun_py normalize_inputs_for_06.py || true\nrun_py project_prep.py\
+        \ || true\nrun_py fix_missing_batter_stats.py || true\nrun_py normalize_batters_for_builder.py\
+        \ || true\n\n# Batter projections (this is where project_batter_props.py runs)\n\
+        # Your updated script now ensures slate-complete *_final batter files when\
+        \ needed.\nrun_py project_batter_props.py || true\nrun_py project_pitcher_props.py\
+        \ || true\n\n# Pitcher context & builder\nrun_py inject_pitcher_context.py\
+        \ || true\nrun_py inject_pitcher_context_from_tgn.py || true\nrun_py build_expanded_batter_props.py\
+        \ || true\nrun_py pitcher_mega_z.py || true\nrun_py starter_coverage_guard.py\
+        \ || true\nrun_py post_normalize_pitchers.py || true\nrun_py finalize_projections.py\
+        \ || true\n\n# Clean/inject pass-through steps\nrun_py clean_inject_team_ids.py\
+        \ || true\nrun_py inject_game_ids_from_schedule.py || true\nrun_py inject_batter_woba_adjustments.py\
+        \ || true\nrun_py clean_pitcher_files.py || true\nrun_py impute_missing_batter_adj_woba.py\
+        \ || true\n"
+    - name: Commit & push outputs
+      if: always()
+      run: "set -euo pipefail\ngit config --global user.email \"actions@github.com\"\
+        \ngit config --global user.name \"GitHub Actions\"\n\ngit add \\\n  data/_projections/*.csv\
+        \ \\\n  data/end_chain/final/*.csv \\\n  data/raw/*.csv \\\n  summaries/06_projection/*.log\
+        \ \\\n  summaries/06_projection/status.txt 2>/dev/null || true\n\ngit commit\
+        \ -m \"06 Projection: commit generated outputs and logs\" || echo \"No changes\
+        \ to commit\"\ngit push || echo \"No changes to push\"\n"
+    - name: Write & push summary (overwrite, current run only)
+      if: always()
+      run: "set -euo pipefail\nmkdir -p summaries/06_projection\n\nSUMMARY=\"summaries/06_projection/summary.txt\"\
+        \nSTATUS=\"summaries/06_projection/status.txt\"\nCLEAN_LOG=\"summaries/06_projection/clean_pitcher_files.py.log\"\
+        \n\n{\n  echo \"===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') =====\"\
+        \n  echo\n  echo \"===== STATUS (per script) =====\"\n  if [ -s \"$STATUS\"\
+        \ ]; then\n    cat \"$STATUS\"\n  else\n    echo \"(status.txt not generated)\"\
+        \n  fi\n  echo\n  echo \"===== KEY COUNTS =====\"\n  if [ -f \"$CLEAN_LOG\"\
+        \ ]; then\n    starters_line=$(grep -E 'Starters seen today:' \"$CLEAN_LOG\"\
+        \ | tail -n 1 || true)\n    if [ -n \"$starters_line\" ]; then\n      starters=$(echo\
+        \ \"$starters_line\" | awk -F': ' '{print $2}')\n      echo \"starters_today:\
+        \ ${starters}\"\n    else\n      echo \"starters_today: (not found)\"\n  \
+        \  fi\n  else\n    echo \"starters_today: (clean_pitcher_files.py.log not\
+        \ found)\"\n  fi\n  echo\n  echo \"===== LOGS: LAST 20 LINES OF ALL SCRIPT\
+        \ LOGS (current run) =====\"\n  for LOG in summaries/06_projection/*.log;\
+        \ do\n    [ -f \"$LOG\" ] || continue\n    echo \"---- $(basename \"$LOG\"\
+        ) ----\"\n    tail -n 20 \"$LOG\"\n    echo\n  done\n} > \"$SUMMARY\"\n\n\
+        git config --global user.email \"actions@github.com\"\ngit config --global\
+        \ user.name \"GitHub Actions\"\ngit add \"$SUMMARY\"\ngit commit -m \"06 Projection:\
+        \ overwrite summary.txt [skip ci]\" || echo \"No changes to commit\"\ngit\
+        \ push || echo \"No changes to push\"\n"
+'on':
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+    - 05 Prep
+    types:
+    - completed
