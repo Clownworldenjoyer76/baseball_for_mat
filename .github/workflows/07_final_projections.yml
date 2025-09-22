@@ -1,3 +1,4 @@
+# .github/workflows/07_final_projections.yml
 name: "07_final_projections"
 
 on:
@@ -17,8 +18,8 @@ concurrency:
 
 jobs:
   run-final-projections:
-    # allow manual runs OR only run after 06 succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # allow manual runs OR run after 06 completes (any conclusion)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != '' }}
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
