@@ -1,81 +1,106 @@
-Name: 02 Weather Pipeline
-true:
-  workflow_dispatch: null
+name: "02 Weather Pipeline"
+
+on:
+  workflow_dispatch:
   workflow_run:
-    workflows:
-    - 01 Split & Schedule
-    types:
-    - completed
-    branches:
-    - main
+    workflows: ["01 Split & Schedule"]  # must match 01's name exactly
+    types: [completed]
+    branches: [main]
+
 permissions:
   contents: write
+
+# optional but helpful so parallel runs don't collide
+concurrency:
+  group: weather-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   weather_pipeline:
+    # allow manual runs OR only run after 01 succeeded
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
-    - name: Configure Git
-      run: 'git config user.name "github-actions"
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-        git config user.email "github-actions@github.com"
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-        '
-    - uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-        restore-keys: ${{ runner.os }}-py-
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install deps
-      run: 'python -m pip install --upgrade pip
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-py-
 
-        pip install -r requirements.txt
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-        '
-    - name: Run stage with unified logs
-      shell: bash
-      run: "set +e\nmkdir -p summaries/weather\nSTATUS=\"summaries/weather/status.txt\"\
-        \nLOG=\"summaries/weather/log.txt\"\nERR=\"summaries/weather/errors.txt\"\n\
-        SUM=\"summaries/weather/summary.txt\"\n: >\"$STATUS\"; : >\"$LOG\"; : >\"\
-        $ERR\"; : >\"$SUM\"\n\nts(){ TZ=\"America/New_York\" date +\"%Y-%m-%d %I:%M:%S\
-        \ %p %Z\"; }\nrun_step(){ echo \"\u25B6\uFE0F START: $1 ($(ts))\" >>\"$LOG\"\
-        ; shift; \"$@\" >>\"$LOG\" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo\
-        \ \"\u2705 $1 succeeded [$(ts)]\" >>\"$STATUS\"; else echo \"\u274C $1 failed\
-        \ [$(ts)]\" >>\"$STATUS\"; { echo \"\u274C $1 ERROR [$(ts)]:\"; cat step.err;\
-        \ echo; echo '---'; echo; } >>\"$ERR\"; fi; rm -f step.err; echo \"\u23F9\uFE0F\
-        \ END: $1 ($(ts))\" >>\"$LOG\"; echo >>\"$LOG\"; }\n\nrun_step generate_weather_csv.py\
-        \  python scripts/generate_weather_csv.py\nrun_step get_weather_data.py  \
-        \    python scripts/get_weather_data.py\nrun_step weather_data_fix.py    \
-        \  python scripts/weather_data_fix.py\n\n{\n  echo \"===== RUN TIMESTAMP:\
-        \ $(ts) =====\"\n  echo; echo \"===== STATUS =====\";  cat \"$STATUS\"\n \
-        \ echo; echo \"===== LOG =====\";     cat \"$LOG\"\n  echo; echo \"===== ERRORS\
-        \ =====\";  cat \"$ERR\"\n} > \"$SUM\"\n"
-    - name: Finalize weather outputs
-      run: python scripts/finalize_weather_outputs.py
-    - name: Commit stage outputs
-      run: 'git add data/weather_input.csv || true
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-        git add data/weather_adjustments.csv || true
+      - name: Run stage with unified logs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p summaries/weather data
+          STATUS="summaries/weather/status.txt"
+          LOG="summaries/weather/log.txt"
+          ERR="summaries/weather/errors.txt"
+          SUM="summaries/weather/summary.txt"
+          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
-        git add summaries/weather/* || true
+          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
+          run_step(){
+            echo "▶️ START: $1 ($(ts))" >>"$LOG"
+            step_name="$1"
+            shift
+            "$@" >>"$LOG" 2>step.err
+            rc=$?
+            if [ $rc -eq 0 ]; then
+              echo "✅ $step_name succeeded [$(ts)]" >>"$STATUS"
+            else
+              echo "❌ $step_name failed [$(ts)]" >>"$STATUS"
+              {
+                echo "❌ $step_name ERROR [$(ts)]:"
+                cat step.err
+                echo
+                echo '---'
+                echo
+              } >>"$ERR"
+            fi
+            rm -f step.err
+            echo "⏹️ END: $step_name ($(ts))" >>"$LOG"
+            echo >>"$LOG"
+          }
 
-        git diff --cached --quiet || git commit -m "02 weather pipeline outputs"
+          run_step generate_weather_csv.py  python scripts/generate_weather_csv.py
+          run_step get_weather_data.py      python scripts/get_weather_data.py
+          run_step weather_data_fix.py      python scripts/weather_data_fix.py
 
-        git pull --rebase origin main || true
+          {
+            echo "===== RUN TIMESTAMP: $(ts) ====="
+            echo; echo "===== STATUS =====";  cat "$STATUS"
+            echo; echo "===== LOG =====";     cat "$LOG"
+            echo; echo "===== ERRORS =====";  cat "$ERR"
+          } > "$SUM"
 
-        git push origin HEAD:main || true
+      - name: Finalize weather outputs
+        run: python scripts/finalize_weather_outputs.py
 
-        '
-'on':
-  workflow_dispatch: {}
-  workflow_run:
-    workflows:
-    - 01 Split & Schedule
-    types:
-    - completed
+      - name: Commit stage outputs
+        run: |
+          git add data/weather_input.csv || true
+          git add data/weather_adjustments.csv || true
+          git add summaries/weather/* || true
+          git diff --cached --quiet || git commit -m "02 weather pipeline outputs"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
