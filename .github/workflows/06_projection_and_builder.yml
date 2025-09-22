@@ -9,6 +9,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: "1"
+
     steps:
       - name: Checkout repo (full history, pinned branch)
         uses: actions/checkout@v4
@@ -17,14 +21,21 @@ jobs:
           ref: main
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Clean logs (fresh run only)
+        run: |
+          set -euo pipefail
+          rm -f summaries/06_projection/*.log summaries/06_projection/status.txt summaries/06_projection/summary.txt || true
+          mkdir -p summaries/06_projection
 
       - name: Run pipeline (with clean logs and status)
         run: |
@@ -66,35 +77,38 @@ jobs:
             return $code
           }
 
-          # Pipeline
+          # ---- Pipeline order (kept as-is) ----
           run_py fix_outputs_generate_fixed_files.py || true
           run_py normalize_inputs_for_06.py || true
           run_py project_prep.py || true
           run_py fix_missing_batter_stats.py || true
           run_py normalize_batters_for_builder.py || true
+
+          # Batter projections (this is where project_batter_props.py runs)
+          # Your updated script now ensures slate-complete *_final batter files when needed.
           run_py project_batter_props.py || true
           run_py project_pitcher_props.py || true
 
-          # Inject pitcher context
+          # Pitcher context & builder
           run_py inject_pitcher_context.py || true
           run_py inject_pitcher_context_from_tgn.py || true
-
           run_py build_expanded_batter_props.py || true
           run_py pitcher_mega_z.py || true
           run_py starter_coverage_guard.py || true
           run_py post_normalize_pitchers.py || true
           run_py finalize_projections.py || true
+
+          # Clean/inject pass-through steps
           run_py clean_inject_team_ids.py || true
           run_py inject_game_ids_from_schedule.py || true
           run_py inject_batter_woba_adjustments.py || true
           run_py clean_pitcher_files.py || true
           run_py impute_missing_batter_adj_woba.py || true
-          run_py fix_missing_pa_in_pitcher_daily.py || true
 
       - name: Commit & push outputs
         if: always()
         run: |
-          set -e
+          set -euo pipefail
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
@@ -108,10 +122,10 @@ jobs:
           git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
           git push || echo "No changes to push"
 
-      - name: Write & push deep summary (overwrite)
+      - name: Write & push summary (overwrite, current run only)
         if: always()
         run: |
-          set -e
+          set -euo pipefail
           mkdir -p summaries/06_projection
 
           SUMMARY="summaries/06_projection/summary.txt"
@@ -119,7 +133,7 @@ jobs:
           CLEAN_LOG="summaries/06_projection/clean_pitcher_files.py.log"
 
           {
-            echo "===== RUN TIMESTAMP: $(date) ====="
+            echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
             echo
             echo "===== STATUS (per script) ====="
             if [ -s "$STATUS" ]; then
@@ -141,23 +155,7 @@ jobs:
               echo "starters_today: (clean_pitcher_files.py.log not found)"
             fi
             echo
-            echo "===== FAILURES: LAST 80 LINES OF EACH FAILED SCRIPT LOG ====="
-            if [ -s "$STATUS" ]; then
-              awk '/^\[FAIL\]/{print $2}' "$STATUS" | while read -r fname; do
-                LOG="summaries/06_projection/${fname}.log"
-                echo "---- ${fname} ----"
-                if [ -f "$LOG" ]; then
-                  tail -n 80 "$LOG"
-                else
-                  echo "(no log at $LOG)"
-                fi
-                echo
-              done
-            else
-              echo "(no failures recorded)"
-            fi
-            echo
-            echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS ====="
+            echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS (current run) ====="
             for LOG in summaries/06_projection/*.log; do
               [ -f "$LOG" ] || continue
               echo "---- $(basename "$LOG") ----"
