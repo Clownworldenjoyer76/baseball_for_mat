@@ -1,93 +1,120 @@
-Name: 01 Split & Schedule
-true:
-  workflow_dispatch: null
-  workflow_run:
-    workflows:
-    - 00 Fetch & Normalize
-    types:
-    - completed
-    branches:
-    - main
+name: "00 Fetch & Normalize"
+
+on:
+  workflow_dispatch:
+  # (optional) enable a schedule if you want this to run automatically:
+  # schedule:
+  #   - cron: "0 12 * * *"  # 12:00 UTC daily
+
 permissions:
   contents: write
+
 jobs:
-  split_sched:
+  fetch_normalize:
     runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
     steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
-    - name: Configure Git
-      run: 'git config user.name "github-actions"
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
-        git config user.email "github-actions@github.com"
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-        '
-    - uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-        restore-keys: ${{ runner.os }}-py-
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install deps
-      run: 'python -m pip install --upgrade pip
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-py-
 
-        pip install -r requirements.txt
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-        '
-    - name: Run stage with unified logs
-      shell: bash
-      run: "set +e\nmkdir -p summaries/split_sched data/temp_inputs\nSTATUS=\"summaries/split_sched/status.txt\"\
-        \nLOG=\"summaries/split_sched/log.txt\"\nERR=\"summaries/split_sched/errors.txt\"\
-        \nSUM=\"summaries/split_sched/summary.txt\"\n: >\"$STATUS\"; : >\"$LOG\";\
-        \ : >\"$ERR\"; : >\"$SUM\"\n\nts(){ TZ=\"America/New_York\" date +\"%Y-%m-%d\
-        \ %I:%M:%S %p %Z\"; }\nrun_step(){ echo \"\u25B6\uFE0F START: $1 ($(ts))\"\
-        \ >>\"$LOG\"; shift; \"$@\" >>\"$LOG\" 2>step.err; rc=$?; if [ $rc -eq 0 ];\
-        \ then echo \"\u2705 $1 succeeded [$(ts)]\" >>\"$STATUS\"; else echo \"\u274C\
-        \ $1 failed [$(ts)]\" >>\"$STATUS\"; { echo \"\u274C $1 ERROR [$(ts)]:\";\
-        \ cat step.err; echo; echo '---'; echo; } >>\"$ERR\"; fi; rm -f step.err;\
-        \ echo \"\u23F9\uFE0F END: $1 ($(ts))\" >>\"$LOG\"; echo >>\"$LOG\"; }\n\n\
-        cp -f data/cleaned/batters_today.csv               data/temp_inputs/batters_today_copy.csv\
-        \ || true\ncp -f data/raw/todaysgames_normalized.csv          data/temp_inputs/todaysgames_normalized_copy.csv\
-        \ || true\ncp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv\
-        \ || true\n\nrun_step splitaway.py                 python scripts/splitaway.py\
-        \ \"data/temp_inputs/batters_today_copy.csv\" \"data/temp_inputs/todaysgames_normalized_copy.csv\"\
-        \ \"data/adjusted/batters_away.csv\"\nrun_step splithome.py              \
-        \   python scripts/splithome.py \"data/temp_inputs/batters_today_copy.csv\"\
-        \ \"data/temp_inputs/todaysgames_normalized_copy.csv\" \"data/adjusted/batters_home.csv\"\
-        \nrun_step updatesplitcsvs.py           python scripts/updatesplitcsvs.py\n\
-        run_step commit_split_batters.py      python scripts/commit_split_batters.py\n\
-        run_step normalize_pitcher_home_away  python scripts/normalize_pitcher_home_away.py\
-        \ \"data/temp_inputs/pitchers_normalized_cleaned_copy.csv\" \"data/temp_inputs/todaysgames_normalized_copy.csv\"\
-        \ \"data/adjusted/pitchers_home.csv\" \"data/adjusted/pitchers_away.csv\"\n\
-        run_step pitcherfilecleanup.py        python scripts/pitcherfilecleanup.py\n\
-        run_step bet_prep_1.py                python scripts/bet_prep_1.py\n\n{\n\
-        \  echo \"===== RUN TIMESTAMP: $(ts) =====\"\n  echo; echo \"===== STATUS\
-        \ =====\";  cat \"$STATUS\"\n  echo; echo \"===== LOG =====\";     cat \"\
-        $LOG\"\n  echo; echo \"===== ERRORS =====\";  cat \"$ERR\"\n} > \"$SUM\"\n"
-    - name: Commit stage outputs
-      run: 'git add --force data/adjusted/batters_*.csv || true
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-        git add --force data/adjusted/pitchers_*.csv || true
+      - name: Run stage with unified logs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p summaries/foundation
+          STATUS="summaries/foundation/status.txt"
+          LOG="summaries/foundation/log.txt"
+          ERR="summaries/foundation/errors.txt"
+          SUM="summaries/foundation/summary.txt"
+          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
-        git add data/bets/mlb_sched.csv || true
+          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
+          run_step(){
+            echo "▶️ START: $1 ($(ts))" >>"$LOG"
+            shift
+            "$@" >>"$LOG" 2>step.err
+            rc=$?
+            if [ $rc -eq 0 ]; then
+              echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"
+            else
+              echo "❌ $1 failed [$(ts)]" >>"$STATUS"
+              {
+                echo "❌ $1 ERROR [$(ts)]:"
+                cat step.err
+                echo
+                echo '---'
+                echo
+              } >>"$ERR"
+            fi
+            rm -f step.err
+            echo "⏹️ END: $1 ($(ts))" >>"$LOG"
+            echo >>"$LOG"
+          }
 
-        git add summaries/split_sched/* || true
+          run_step normalize_names.py                  python scripts/normalize_names.py
+          run_step tag_master_files.py                 python scripts/tag_master_files.py
+          run_step validate_tagged_players.py          python scripts/validate_tagged_players.py
+          run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
+          run_step normalize_lineups.py                python scripts/normalize_lineups.py
+          run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
+          run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
+          run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
+          run_step fetch_mlb_ids.py                    python scripts/fetch_mlb_ids.py
+          run_step hotfix_team_codes.py                python scripts/hotfix_team_codes.py
+          run_step update_game_time.py                 python scripts/update_game_time.py
+          run_step finalize_todaysgames_types_and_pf.py  python scripts/finalize_todaysgames_types_and_pf.py
+          run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
+          run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
 
-        git diff --cached --quiet || git commit -m "01 split & schedule outputs"
+          # Build batters_today.csv from the normalized lineups (new)
+          run_step build_batters_today_from_lineups.py  python scripts/build_batters_today_from_lineups.py
 
-        git pull --rebase origin main || true
+          # Clean/dedupe after build (existing behavior)
+          run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --game-date "$(date -u +%Y%m%d)"
+          run_step fix_inputs_inject_stolen_base_pct.py  python scripts/fix_inputs_inject_stolen_base_pct.py
 
-        git push origin HEAD:main || true
+          {
+            echo "===== RUN TIMESTAMP: $(ts) ====="
+            echo
+            echo "===== STATUS =====";  cat "$STATUS"
+            echo; echo "===== LOG =====";   cat "$LOG"
+            echo; echo "===== ERRORS =====";cat "$ERR"
+          } > "$SUM"
 
-        '
-'on':
-  workflow_dispatch: {}
-  workflow_run:
-    workflows:
-    - 00 Fetch & Normalize
-    types:
-    - completed
+      - name: Commit stage outputs
+        run: |
+          # stage expected data outputs (existence may vary run-to-run)
+          git add data/raw/todaysgames_normalized.csv || true
+          git add data/raw/lineups_normalized.csv || true
+          git add data/cleaned/batters_today.csv || true
+          git add data/cleaned/pitchers_normalized_cleaned.csv || true
+          git add summaries/foundation/* || true
+          git diff --cached --quiet || git commit -m "00 foundation outputs"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
