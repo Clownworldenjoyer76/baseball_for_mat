@@ -1,102 +1,121 @@
-Name: 05 Prep
-true:
-  workflow_dispatch: null
+name: "05 Prep"
+
+on:
+  workflow_dispatch:
   workflow_run:
-    workflows:
-    - 04 Pitcher Adjustments
-    types:
-    - completed
+    workflows: ["04 Pitcher Adjustments"]  # must match 04's name exactly
+    types: [completed]
+    branches: [main]
+
 permissions:
   contents: write
+
 concurrency:
   group: 05-prep-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   prep_block:
+    # allow manual runs OR run only when 04 succeeded
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
+
     steps:
-    - name: Banner
-      run: 'echo "05 START $(TZ=America/New_York date)"
+      - name: Banner
+        run: |
+          echo "05 START $(TZ=America/New_York date)"
+          echo "event_name=${{ github.event_name }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
 
-        echo "event_name=${{ github.event_name }}"
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
 
-        echo "ref_name=${{ github.ref_name }}"
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-        echo "triggered_by=${{ github.event.workflow_run.name || ''manual'' }}"
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
+          restore-keys: ${{ runner.os }}-py-
 
-        echo "conclusion=${{ github.event.workflow_run.conclusion || ''manual'' }}"
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-        '
-    - name: Checkout main
-      uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
-        persist-credentials: true
-    - name: Configure Git
-      run: 'git config user.name "github-actions"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-        git config user.email "github-actions@github.com"
+      - name: Run 05 Prep with unified logs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p summaries/05_prep
+          STATUS="summaries/05_prep/status.txt"
+          LOG="summaries/05_prep/log.txt"
+          ERR="summaries/05_prep/errors.txt"
+          SUM="summaries/05_prep/summary.txt"
+          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
-        '
-    - name: Cache pip
-      uses: actions/cache@v4
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-        restore-keys: ${{ runner.os }}-py-
-    - name: Setup Python 3.10
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: Install deps
-      run: 'python -m pip install --upgrade pip
+          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
+          run_step(){
+            echo "▶️ START: $1 ($(ts))" >>"$LOG"
+            shift
+            "$@" >>"$LOG" 2>step.err
+            rc=$?
+            if [ $rc -eq 0 ]; then
+              echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"
+            else
+              echo "❌ $1 failed [$(ts)]" >>"$STATUS"
+              {
+                echo "❌ $1 ERROR [$(ts)]:"
+                cat step.err
+                echo
+                echo '---'
+                echo
+              } >>"$ERR"
+            fi
+            rm -f step.err
+            echo "⏹️ END: $1 ($(ts))" >>"$LOG"
+            echo >>"$LOG"
+          }
 
-        pip install -r requirements.txt
+          # === 05 Prep sequence ===
+          run_step prep_merge.py                   python scripts/prep_merge.py
+          run_step chain_load_data.py              python scripts/chain_load_data.py
+          run_step clean_and_preprocess_games.py   python scripts/clean_and_preprocess_games.py
+          run_step normalize_pitchers_xtra.py      python scripts/normalize_pitchers_xtra.py
+          run_step clean_merge_files.py            python scripts/clean_merge_files.py
+          run_step finalbatawp.py                  python scripts/finalbatawp.py
+          run_step finalbathwp.py                  python scripts/finalbathwp.py
+          run_step pit1.py                         python scripts/pit1.py
 
-        '
-    - name: Run 05 Prep with unified logs
-      shell: bash
-      run: "set +e\nmkdir -p summaries/05_prep\nSTATUS=\"summaries/05_prep/status.txt\"\
-        \nLOG=\"summaries/05_prep/log.txt\"\nERR=\"summaries/05_prep/errors.txt\"\n\
-        SUM=\"summaries/05_prep/summary.txt\"\n: >\"$STATUS\"; : >\"$LOG\"; : >\"\
-        $ERR\"; : >\"$SUM\"\n\nts(){ TZ=\"America/New_York\" date +\"%Y-%m-%d %I:%M:%S\
-        \ %p %Z\"; }\nrun_step(){\n  echo \"\u25B6\uFE0F START: $1 ($(ts))\" >>\"\
-        $LOG\"\n  shift\n  \"$@\" >>\"$LOG\" 2>step.err\n  rc=$?\n  if [ $rc -eq 0\
-        \ ]; then\n    echo \"\u2705 $1 succeeded [$(ts)]\" >>\"$STATUS\"\n  else\n\
-        \    echo \"\u274C $1 failed [$(ts)]\" >>\"$STATUS\"\n    {\n      echo \"\
-        \u274C $1 ERROR [$(ts)]:\"\n      cat step.err\n      echo\n      echo '---'\n\
-        \      echo\n    } >>\"$ERR\"\n  fi\n  rm -f step.err\n  echo \"\u23F9\uFE0F\
-        \ END: $1 ($(ts))\" >>\"$LOG\"\n  echo >>\"$LOG\"\n}\n\n# === 05 Prep sequence\
-        \ ===\nrun_step prep_merge.py                   python scripts/prep_merge.py\n\
-        run_step chain_load_data.py              python scripts/chain_load_data.py\n\
-        run_step clean_and_preprocess_games.py   python scripts/clean_and_preprocess_games.py\n\
-        run_step normalize_pitchers_xtra.py      python scripts/normalize_pitchers_xtra.py\n\
-        run_step clean_merge_files.py            python scripts/clean_merge_files.py\n\
-        run_step finalbatawp.py                  python scripts/finalbatawp.py\nrun_step\
-        \ finalbathwp.py                  python scripts/finalbathwp.py\nrun_step\
-        \ pit1.py                         python scripts/pit1.py\n\n{\n  echo \"=====\
-        \ RUN TIMESTAMP: $(ts) =====\"\n  echo\n  echo \"===== STATUS =====\";  cat\
-        \ \"$STATUS\"\n  echo; echo \"===== LOG =====\";   cat \"$LOG\"\n  echo; echo\
-        \ \"===== ERRORS =====\";cat \"$ERR\"\n} > \"$SUM\"\n"
-    - name: Commit 05 Prep outputs
-      run: 'git add data/**/* || true
+          {
+            echo "===== RUN TIMESTAMP: $(ts) ====="
+            echo
+            echo "===== STATUS =====";  cat "$STATUS"
+            echo; echo "===== LOG =====";   cat "$LOG"
+            echo; echo "===== ERRORS =====";cat "$ERR"
+          } > "$SUM"
 
-        git add summaries/05_prep/* || true
-
-        git diff --cached --quiet || git commit -m "05 Prep block outputs"
-
-        git pull --rebase origin main || true
-
-        git push origin HEAD:main || true
-
-        '
-'on':
-  workflow_dispatch: {}
-  workflow_run:
-    workflows:
-    - 04 Pitcher Adjustments
-    types:
-    - completed
+      - name: Commit 05 Prep outputs
+        run: |
+          git add data/**/* || true
+          git add summaries/05_prep/* || true
+          git diff --cached --quiet || git commit -m "05 Prep block outputs"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
