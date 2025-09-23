@@ -7,7 +7,7 @@ import subprocess
 WEATHER_FILE = "data/adjusted/pitchers_away_weather.csv"
 PARK_FILE = "data/adjusted/pitchers_away_park.csv"
 OUTPUT_FILE = "data/adjusted/pitchers_away_weather_park.csv"
-LOG_FILE = "log_pitchers_away_weather_park.txt"
+LOG_FILE = "summaries/pitchers_adjust/log_pitchers_away_weather_park.txt"
 
 REQUIRED_WEATHER_COLS = {"player_id", "adj_woba_weather"}
 REQUIRED_PARK_COLS = {"player_id", "adj_woba_park"}
