@@ -5,12 +5,12 @@ find_orphan_csvs.py
 Scan all CSVs under data/ and report only those not referenced in
 scripts or workflows. Output = summaries/audit/orphan_csv_report.csv
 with columns: path, referenced (always "no").
+
+Excludes any CSVs inside data/rosters/.
 """
 
 import csv
-import os
 import sys
-import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]  # repo/
@@ -27,7 +27,9 @@ SCAN_GLOBS = [
 def gather_csvs():
     if not DATA_ROOT.exists():
         return []
-    return sorted([p for p in DATA_ROOT.rglob("*.csv") if p.is_file()])
+    all_csvs = [p for p in DATA_ROOT.rglob("*.csv") if p.is_file()]
+    # exclude anything in data/rosters/
+    return [p for p in all_csvs if "data/rosters/" not in p.as_posix()]
 
 def build_reference_index():
     """Return a dict {csv_path: True/False} whether referenced."""
@@ -68,7 +70,7 @@ def main():
         w.writerows(rows)
 
     print(f"Wrote orphan report: {out_csv}")
-    print(f"Total orphan candidates: {len(rows)}")
+    print(f"Total orphan candidates (excluding data/rosters): {len(rows)}")
     return 0
 
 if __name__ == "__main__":
