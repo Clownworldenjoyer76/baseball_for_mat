@@ -1,0 +1,51 @@
+===== RUN TIMESTAMP: 2025-09-23 01:57:11 PM EDT =====
+
+===== STATUS =====
+OK   splitaway.py [2025-09-23 01:57:10 PM EDT]
+OK   splithome.py [2025-09-23 01:57:10 PM EDT]
+OK   updatesplitcsvs.py [2025-09-23 01:57:10 PM EDT]
+OK   commit_split_batters.py [2025-09-23 01:57:10 PM EDT]
+FAIL normalize_pitcher_home_away [2025-09-23 01:57:11 PM EDT]
+OK   pitcherfilecleanup.py [2025-09-23 01:57:11 PM EDT]
+OK   bet_prep_1.py [2025-09-23 01:57:11 PM EDT]
+
+===== LOG =====
+START: splitaway.py (2025-09-23 01:57:09 PM EDT)
+END  : splitaway.py (2025-09-23 01:57:10 PM EDT)
+
+START: splithome.py (2025-09-23 01:57:10 PM EDT)
+END  : splithome.py (2025-09-23 01:57:10 PM EDT)
+
+START: updatesplitcsvs.py (2025-09-23 01:57:10 PM EDT)
+✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.
+END  : updatesplitcsvs.py (2025-09-23 01:57:10 PM EDT)
+
+START: commit_split_batters.py (2025-09-23 01:57:10 PM EDT)
+END  : commit_split_batters.py (2025-09-23 01:57:10 PM EDT)
+
+START: normalize_pitcher_home_away (2025-09-23 01:57:10 PM EDT)
+END  : normalize_pitcher_home_away (2025-09-23 01:57:11 PM EDT)
+
+START: pitcherfilecleanup.py (2025-09-23 01:57:11 PM EDT)
+✅ Cleaned: data/adjusted/pitchers_away.csv
+✅ Cleaned: data/adjusted/pitchers_home.csv
+END  : pitcherfilecleanup.py (2025-09-23 01:57:11 PM EDT)
+
+START: bet_prep_1.py (2025-09-23 01:57:11 PM EDT)
+✅ Wrote 10 rows -> data/bets/mlb_sched.csv
+END  : bet_prep_1.py (2025-09-23 01:57:11 PM EDT)
+
+
+===== ERRORS =====
+ERROR normalize_pitcher_home_away [2025-09-23 01:57:11 PM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 158, in <module>
+    process(Path(games_in), Path(out_home), Path(out_away))
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 132, in process
+    ensure_games_columns(games_df)
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 66, in ensure_games_columns
+    raise RuntimeError(
+RuntimeError: INSUFFICIENT INFORMATION: data/raw/todaysgames_normalized.csv is missing required columns: pitcher_away_id, pitcher_home_id
+
+---
+
