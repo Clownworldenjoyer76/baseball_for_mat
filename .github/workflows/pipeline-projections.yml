@@ -42,13 +42,14 @@ jobs:
       - name: Run 06 pipeline
         run: |
           set -e
-          STATUS="summaries/06_projection/status.txt"; : > "$STATUS"
+          STAGE="summaries/06_projection"
+          STATUS="$STAGE/status.txt"; : > "$STATUS"
 
           run_py () {
             local file="$1"
             local name="$(basename "$file")"
             local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-            local log="summaries/06_projection/${name}.log"
+            local log="$STAGE/${name}.log"
             local script_path="scripts/${name}"
 
             if [ ! -f "$script_path" ]; then
@@ -81,7 +82,7 @@ jobs:
           run_py normalize_batters_for_builder.py || true
           run_py project_batter_props.py || true
           run_py project_pitcher_props.py || true
-          # (first enforce in case immediate consumers need it)
+          # enforce mid-pipeline
           run_py ensure_pitcher_props_schema.py || true
           run_py inject_pitcher_context.py || true
           run_py inject_pitcher_context_from_tgn.py || true
@@ -95,7 +96,7 @@ jobs:
           run_py inject_batter_woba_adjustments.py || true
           run_py clean_pitcher_files.py || true
           run_py impute_missing_batter_adj_woba.py || true
-          # ----- enforce schema AGAIN at the very end of 06 -----
+          # enforce again at the end
           run_py ensure_pitcher_props_schema.py || true
 
       - name: Commit & push 06 outputs
@@ -120,9 +121,10 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          SUMMARY="summaries/06_projection/summary.txt"
-          STATUS="summaries/06_projection/status.txt"
-          CLEAN_LOG="summaries/06_projection/clean_pitcher_files.py.log"
+          STAGE="summaries/06_projection"
+          SUMMARY="$STAGE/summary.txt"
+          STATUS="$STAGE/status.txt"
+          CLEAN_LOG="$STAGE/clean_pitcher_files.py.log"
 
           {
             echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
@@ -148,10 +150,10 @@ jobs:
             fi
             echo
             echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS (current run) ====="
-            for LOG in summaries/06_projection/*.log; do
-              [ -f "$LOG" ] || continue
-              echo "---- $(basename "$LOG") ----"
-              tail -n 20 "$LOG"
+            for LOGF in "$STAGE"/*.log; do
+              [ -f "$LOGF" ] || continue
+              echo "---- $(basename "$LOGF") ----"
+              tail -n 20 "$LOGF"
               echo
             done
           } > "$SUMMARY"
@@ -196,7 +198,6 @@ jobs:
           fi
           mkdir -p data/_projections data/end_chain/final
 
-      # ----- enforce schema a third time right before 07 consumes the file -----
       - name: Enforce pitcher props schema (pre-07)
         run: |
           set -euo pipefail
@@ -252,6 +253,14 @@ jobs:
             fi
             exit $exit_code
           } > summaries/07_final/summary.txt
+
+      - name: Sweep stray root logs into summaries/07_final
+        run: |
+          shopt -s nullglob
+          mkdir -p summaries/07_final
+          for f in log_*.txt *.log; do
+            [ -f "$f" ] && mv "$f" "summaries/07_final/" || true
+          done
 
       - name: Commit CSVs + summaries
         if: always()
