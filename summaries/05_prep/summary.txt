@@ -1,31 +1,31 @@
-===== RUN TIMESTAMP: 2025-09-23 01:59:56 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-23 02:55:52 PM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-23 01:59:54 PM EDT]
-✅ python succeeded [2025-09-23 01:59:54 PM EDT]
-✅ python succeeded [2025-09-23 01:59:55 PM EDT]
-❌ python failed [2025-09-23 01:59:55 PM EDT]
-✅ python succeeded [2025-09-23 01:59:55 PM EDT]
-✅ python succeeded [2025-09-23 01:59:56 PM EDT]
-✅ python succeeded [2025-09-23 01:59:56 PM EDT]
-✅ python succeeded [2025-09-23 01:59:56 PM EDT]
+✅ python succeeded [2025-09-23 02:55:49 PM EDT]
+✅ python succeeded [2025-09-23 02:55:50 PM EDT]
+✅ python succeeded [2025-09-23 02:55:50 PM EDT]
+✅ python succeeded [2025-09-23 02:55:50 PM EDT]
+✅ python succeeded [2025-09-23 02:55:51 PM EDT]
+✅ python succeeded [2025-09-23 02:55:51 PM EDT]
+✅ python succeeded [2025-09-23 02:55:51 PM EDT]
+✅ python succeeded [2025-09-23 02:55:52 PM EDT]
 
 ===== LOG =====
-▶️ START: prep_merge.py (2025-09-23 01:59:53 PM EDT)
-[main 2ec370bc9] prep_merge: stage files (player_id/game_id-based)
- 2 files changed, 19 insertions(+), 19 deletions(-)
+▶️ START: prep_merge.py (2025-09-23 02:55:48 PM EDT)
+[main e7a27cfa7] prep_merge: stage files (player_id/game_id-based)
+ 2 files changed, 13 insertions(+), 13 deletions(-)
 Saved pitchers home → data/end_chain/first/pit_hwp.csv
 Saved pitchers away → data/end_chain/first/pit_awp.csv
 Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
 Git commit/push complete.
-⏹️ END: python (2025-09-23 01:59:54 PM EDT)
+⏹️ END: python (2025-09-23 02:55:49 PM EDT)
 
-▶️ START: chain_load_data.py (2025-09-23 01:59:54 PM EDT)
+▶️ START: chain_load_data.py (2025-09-23 02:55:49 PM EDT)
 --- Starting Data Loading Process ---
 Loading games from data/end_chain/first/games_today.csv...
-✅ Loaded games. Shape: (10, 9)
+✅ Loaded games. Shape: (10, 11)
 Loading batters_home from data/end_chain/first/raw/bat_hwp_dirty.csv...
 ✅ Loaded batters_home. Shape: (154, 5)
 Loading batters_away from data/end_chain/first/raw/bat_awp_dirty.csv...
@@ -35,63 +35,71 @@ Loading pitchers_home from data/end_chain/first/pit_hwp.csv...
 Loading pitchers_away from data/end_chain/first/pit_awp.csv...
 ✅ Loaded pitchers_away. Shape: (8, 5)
 --- Data Loading Complete ---
-⏹️ END: python (2025-09-23 01:59:54 PM EDT)
+⏹️ END: python (2025-09-23 02:55:50 PM EDT)
 
-▶️ START: clean_and_preprocess_games.py (2025-09-23 01:59:54 PM EDT)
+▶️ START: clean_and_preprocess_games.py (2025-09-23 02:55:50 PM EDT)
 ✅ Saved cleaned games file → data/end_chain/cleaned/games_today_cleaned.csv (rows=10)
-⏹️ END: python (2025-09-23 01:59:55 PM EDT)
+⏹️ END: python (2025-09-23 02:55:50 PM EDT)
 
-▶️ START: normalize_pitchers_xtra.py (2025-09-23 01:59:55 PM EDT)
-⏹️ END: python (2025-09-23 01:59:55 PM EDT)
+▶️ START: normalize_pitchers_xtra.py (2025-09-23 02:55:50 PM EDT)
+✅ Wrote 18 rows → data/end_chain/cleaned/pitchers_xtra_normalized.csv
+⏹️ END: python (2025-09-23 02:55:50 PM EDT)
 
-▶️ START: clean_merge_files.py (2025-09-23 01:59:55 PM EDT)
+▶️ START: clean_merge_files.py (2025-09-23 02:55:50 PM EDT)
 Cleaned data/end_chain/first/pit_hwp.csv → removed_dupes: 0, rows_after: 10, dupes_remaining: 0
 Cleaned data/end_chain/first/pit_awp.csv → removed_dupes: 0, rows_after: 8, dupes_remaining: 0
 Cleaned data/end_chain/first/raw/bat_awp_dirty.csv → removed_dupes: 0, rows_after: 170, dupes_remaining: 0
 Cleaned data/end_chain/first/raw/bat_hwp_dirty.csv → removed_dupes: 0, rows_after: 154, dupes_remaining: 0
 
 ✅ Duplicate cleanup complete. Summary written to data/end_chain/duplicates.txt
-⏹️ END: python (2025-09-23 01:59:55 PM EDT)
+⏹️ END: python (2025-09-23 02:55:51 PM EDT)
 
-▶️ START: finalbatawp.py (2025-09-23 01:59:55 PM EDT)
+▶️ START: finalbatawp.py (2025-09-23 02:55:51 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/05_prep/errors.txt
+	modified:   summaries/05_prep/log.txt
+	modified:   summaries/05_prep/status.txt
+	modified:   summaries/05_prep/summary.txt
+
 Untracked files:
   (use "git add <file>..." to include in what will be committed)
-	data/end_chain/duplicates.txt
 	step.err
-	summaries/05_prep/
 
-nothing added to commit but untracked files present (use "git add" to track)
+no changes added to commit (use "git add" and/or "git commit -a")
 📝 Wrote data/end_chain/final/finalbatawp.csv (rows=170)
 ⚠️ Git operation failed: Command '['git', 'commit', '-m', '📊 Build finalbatawp.csv; add default park_factor (100.0) + src=default fallback']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-23 01:59:56 PM EDT)
+⏹️ END: python (2025-09-23 02:55:51 PM EDT)
 
-▶️ START: finalbathwp.py (2025-09-23 01:59:56 PM EDT)
+▶️ START: finalbathwp.py (2025-09-23 02:55:51 PM EDT)
 On branch main
 Your branch is up to date with 'origin/main'.
 
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/05_prep/errors.txt
+	modified:   summaries/05_prep/log.txt
+	modified:   summaries/05_prep/status.txt
+	modified:   summaries/05_prep/summary.txt
+
 Untracked files:
   (use "git add <file>..." to include in what will be committed)
-	data/end_chain/duplicates.txt
 	step.err
-	summaries/05_prep/
 
-nothing added to commit but untracked files present (use "git add" to track)
+no changes added to commit (use "git add" and/or "git commit -a")
 📝 Wrote data/end_chain/final/finalbathwp.csv (rows=154, cols=10)
 ⚠️ Git commit/push skipped or failed: Command '['git', 'commit', '-m', 'finalbathwp: add default park_factor (100.0) + src=default fallback']' returned non-zero exit status 1.
-⏹️ END: python (2025-09-23 01:59:56 PM EDT)
+⏹️ END: python (2025-09-23 02:55:51 PM EDT)
 
-▶️ START: pit1.py (2025-09-23 01:59:56 PM EDT)
+▶️ START: pit1.py (2025-09-23 02:55:51 PM EDT)
 ✅ Merged pitcher data saved to: data/end_chain/final/startingpitchers.csv
 ℹ️ Rows: 18 | Matched to xtra by player_id (has any xtra data): 18
-⏹️ END: python (2025-09-23 01:59:56 PM EDT)
+⏹️ END: python (2025-09-23 02:55:52 PM EDT)
 
 
 ===== ERRORS =====
-❌ python ERROR [2025-09-23 01:59:55 PM EDT]:
-❌ data/raw/todaysgames_normalized.csv missing columns: ['pitcher_away_id', 'pitcher_home_id']
-
----
-
