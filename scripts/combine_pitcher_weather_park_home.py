@@ -3,21 +3,22 @@
 import pandas as pd
 import subprocess
 from pathlib import Path
-Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
 
 WEATHER_FILE = "data/adjusted/pitchers_home_weather.csv"
 PARK_FILE    = "data/adjusted/pitchers_home_park.csv"
 OUTPUT_FILE  = "data/adjusted/pitchers_home_weather_park.csv"
-LOG_FILE = "summaries/pitchers_adjust/log_pitchers_home_weather_park.txt"
+LOG_FILE     = "summaries/pitchers_adjust/log_pitchers_home_weather_park.txt"
 
 REQUIRED_WEATHER_COLS = {"player_id", "game_id", "adj_woba_weather"}
 REQUIRED_PARK_COLS    = {"player_id", "game_id", "adj_woba_park"}
 OUTPUT_COLS           = ["player_id", "game_id", "adj_woba_weather", "adj_woba_park", "adj_woba_combined"]
 
+
 def write_log(lines):
     Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
     with open(LOG_FILE, "w") as f:
         f.write("\n".join(lines) + "\n")
+
 
 def safe_to_numeric(df, cols):
     for c in cols:
@@ -25,7 +26,11 @@ def safe_to_numeric(df, cols):
             df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
 
+
 def main():
+    # Ensure log dir exists up front
+    Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
+
     logs = []
     try:
         weather = pd.read_csv(WEATHER_FILE)
@@ -34,6 +39,8 @@ def main():
         logs.append(f"Loaded {PARK_FILE} ({len(park)} rows)")
     except Exception as e:
         write_log([f"❌ Failed to read inputs: {e}"])
+        # Write empty output with headers so downstream doesn't explode
+        pd.DataFrame(columns=OUTPUT_COLS).to_csv(OUTPUT_FILE, index=False)
         return
 
     missing_w = REQUIRED_WEATHER_COLS - set(weather.columns)
@@ -50,9 +57,9 @@ def main():
         write_log(lines)
         return
 
-    # Keep only required columns
-    weather = weather[list(REQUIRED_WEATHER_COLS)].copy()
-    park    = park[list(REQUIRED_PARK_COLS)].copy()
+    # Keep only required columns (in deterministic order)
+    weather = weather[["player_id", "game_id", "adj_woba_weather"]].copy()
+    park    = park[["player_id", "game_id", "adj_woba_park"]].copy()
 
     # Ensure numeric for combination
     weather = safe_to_numeric(weather, ["player_id", "game_id", "adj_woba_weather"])
@@ -88,7 +95,7 @@ def main():
 
     write_log(logs)
 
-    # Commit
+    # Commit (best-effort in CI)
     try:
         subprocess.run(["git", "add", OUTPUT_FILE, LOG_FILE], check=True)
         subprocess.run(["git", "commit", "-m", "Combine pitcher weather+park (home) on player_id+game_id"], check=True)
@@ -96,6 +103,7 @@ def main():
     except subprocess.CalledProcessError:
         # No-op if nothing to commit or push fails in CI
         pass
+
 
 if __name__ == "__main__":
     main()
