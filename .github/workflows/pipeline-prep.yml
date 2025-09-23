@@ -73,6 +73,8 @@ jobs:
           run_step validate_tagged_players.py          python scripts/validate_tagged_players.py
           run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
           run_step normalize_lineups.py                python scripts/normalize_lineups.py
+          # Generate raw games list before normalizing it
+          run_step todaysgames.py                      python scripts/todaysgames.py
           run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
           run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
           run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
@@ -104,6 +106,7 @@ jobs:
 
       - name: Commit outputs
         run: |
+          git add data/raw/todaysgames.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add data/raw/lineups_normalized.csv || true
           git add data/cleaned/batters_today.csv || true
