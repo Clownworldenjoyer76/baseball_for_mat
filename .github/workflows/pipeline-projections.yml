@@ -1,0 +1,206 @@
+# .github/workflows/pipeline-projections.yml
+name: "Pipeline Projections (06–07)"
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [after-prep]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pipeline-projections-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ========== 06 ==========
+  build:
+    name: "06 Projection and Builder"
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Checkout repo (full history, pinned branch)
+        uses: actions/checkout@v4
+        with: { fetch-depth: 0, ref: main }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: '3.10' }
+
+      - name: Reset summaries (fresh run)
+        run: |
+          rm -rf summaries/06_projection
+          mkdir -p summaries/06_projection
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run 06 pipeline (clean logs + status)
+        run: |
+          set -e
+          STATUS="summaries/06_projection/status.txt"
+          : > "$STATUS"
+          run_py () {
+            local file="$1"; local name="$(basename "$file")"; local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+            local log="summaries/06_projection/${name}.log"; local script_path="scripts/${name}"
+            if [ ! -f "$script_path" ]; then echo ">> START: ${name} (${ts})" > "$log"; echo "SKIP: ${script_path} not found" | tee -a "$log"; echo "[OK] ${name} skipped (missing) [${ts}]" >> "$STATUS"; echo "[END] ${name} (${ts})" | tee -a "$log"; return 0; fi
+            echo ">> START: ${name} (${ts})" > "$log"
+            set +e; python "$script_path" |& tee -a "$log"; code=${PIPESTATUS[0]}; set -e
+            if [ $code -eq 0 ]; then echo "[OK] ${name} succeeded [${ts}]" >> "$STATUS"; else echo "[FAIL] ${name} failed [${ts}]" >> "$STATUS"; fi
+            echo "[END] ${name} (${ts})" | tee -a "$log"; return $code
+          }
+          run_py fix_outputs_generate_fixed_files.py || true
+          run_py normalize_inputs_for_06.py || true
+          run_py project_prep.py || true
+          run_py fix_missing_batter_stats.py || true
+          run_py normalize_batters_for_builder.py || true
+          run_py project_batter_props.py || true
+          run_py project_pitcher_props.py || true
+          run_py inject_pitcher_context.py || true
+          run_py inject_pitcher_context_from_tgn.py || true
+          run_py build_expanded_batter_props.py || true
+          run_py pitcher_mega_z.py || true
+          run_py starter_coverage_guard.py || true
+          run_py post_normalize_pitchers.py || true
+          run_py finalize_projections.py || true
+          run_py clean_inject_team_ids.py || true
+          run_py inject_game_ids_from_schedule.py || true
+          run_py inject_batter_woba_adjustments.py || true
+          run_py clean_pitcher_files.py || true
+          run_py impute_missing_batter_adj_woba.py || true
+
+      - name: Commit & push 06 outputs
+        if: always()
+        run: |
+          set -euo pipefail
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add data/_projections/*.csv data/end_chain/final/*.csv data/raw/*.csv summaries/06_projection/*.log summaries/06_projection/status.txt 2>/dev/null || true
+          git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+      - name: Write & push 06 summary (overwrite)
+        if: always()
+        run: |
+          set -euo pipefail
+          SUMMARY="summaries/06_projection/summary.txt"
+          STATUS="summaries/06_projection/status.txt"
+          CLEAN_LOG="summaries/06_projection/clean_pitcher_files.py.log"
+          {
+            echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
+            echo
+            echo "===== STATUS (per script) ====="
+            if [ -s "$STATUS" ]; then cat "$STATUS"; else echo "(status.txt not generated)"; fi
+            echo
+            echo "===== KEY COUNTS ====="
+            if [ -f "$CLEAN_LOG" ]; then starters_line=$(grep -E 'Starters seen today:' "$CLEAN_LOG" | tail -n 1 || true); if [ -n "$starters_line" ]; then starters=$(echo "$starters_line" | awk -F': ' '{print $2}'); echo "starters_today: ${starters}"; else echo "starters_today: (not found)"; fi
+            else echo "starters_today: (clean_pitcher_files.py.log not found)"; fi
+            echo
+            echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS (current run) ====="
+            for LOG in summaries/06_projection/*.log; do [ -f "$LOG" ] || continue; echo "---- $(basename "$LOG") ----"; tail -n 20 "$LOG"; echo; done
+          } > "$SUMMARY"
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add "$SUMMARY"
+          git commit -m "06 Projection: overwrite summary.txt [skip ci]" || echo "No changes to commit"
+          git push || echo "No changes to push"
+
+  # ========== 07 ==========
+  final_projections:
+    name: "07 Final Projections"
+    needs: [build]
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+
+      - name: Reset summaries (fresh run)
+        run: |
+          rm -rf summaries/07_final
+          mkdir -p summaries/07_final
+          : > summaries/07_final/prep_daily_log.txt
+          : > summaries/07_final/batter_log.txt
+          : > summaries/07_final/pitcher_log.txt
+          : > summaries/07_final/game_scores_log.txt
+          : > summaries/07_final/summary.txt
+
+      - name: Install deps
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          mkdir -p data/_projections data/end_chain/final
+
+      - name: Prep daily projection inputs
+        run: |
+          set -euo pipefail
+          python scripts/prepare_daily_projection_inputs.py
+
+      - name: Batter event probabilities
+        run: |
+          set -euo pipefail
+          python scripts/project_batter_event_probabilities.py | tee -a summaries/07_final/batter_log.txt
+
+      - name: Pitcher event probabilities
+        run: |
+          set -euo pipefail
+          python scripts/project_pitcher_event_probabilities.py | tee -a summaries/07_final/pitcher_log.txt
+
+      - name: Game score projections
+        run: |
+          set -euo pipefail
+          rm -f summaries/07_final/gamescores_bad_games.txt || true
+          python scripts/project_game_scores.py | tee -a summaries/07_final/game_scores_log.txt
+
+      - name: Summarize run
+        run: |
+          set -euo pipefail
+          {
+            echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
+            echo ""
+            echo "===== LOG TAILS ====="
+            for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
+              echo "--- ${f%.*} (tail) ---"
+              if [ -f "summaries/07_final/$f" ]; then tail -n 25 "summaries/07_final/$f"; else echo "(missing)"; fi
+              echo ""
+            done
+            echo "===== ERROR GREP (from current logs) ====="
+            if grep -RniE "error|fail|assert|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
+              echo "(errors found)"; exit_code=1
+            else
+              echo "(no fatal errors found by grep)"; exit_code=0
+            fi
+            if [ -s "summaries/07_final/gamescores_bad_games.txt" ]; then
+              echo "(warning: bad_games present; incomplete games were dropped)"
+            fi
+            exit $exit_code
+          } > summaries/07_final/summary.txt
+
+      - name: Commit CSVs + summaries
+        if: always()
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
+          git add data/end_chain/final/batter_event_probabilities.csv 2>/dev/null || true
+          git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
+          git add data/_projections/batter_event_probabilities.csv 2>/dev/null || true
+          git add data/_projections/pitcher_event_probabilities.csv 2>/dev/null || true
+          git add data/_projections/batter_props_projected_final.csv 2>/dev/null || true
+          git add data/_projections/batter_props_expanded_final.csv 2>/dev/null || true
+          git add summaries/07_final/* 2>/dev/null || true
+          if ! git diff --cached --quiet; then git commit -m "CI: update final projections and summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"; git push; else echo "No changes to commit."; fi
