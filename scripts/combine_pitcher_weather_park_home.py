@@ -3,6 +3,7 @@
 import pandas as pd
 import subprocess
 from pathlib import Path
+Path(LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
 
 WEATHER_FILE = "data/adjusted/pitchers_home_weather.csv"
 PARK_FILE    = "data/adjusted/pitchers_home_park.csv"
