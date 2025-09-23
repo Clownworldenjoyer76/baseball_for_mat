@@ -81,7 +81,7 @@ jobs:
           run_py normalize_batters_for_builder.py || true
           run_py project_batter_props.py || true
           run_py project_pitcher_props.py || true
-          # NEW: enforce schema so 07 doesn't crash on missing columns (adds pa=0 if absent)
+          # (first enforce in case immediate consumers need it)
           run_py ensure_pitcher_props_schema.py || true
           run_py inject_pitcher_context.py || true
           run_py inject_pitcher_context_from_tgn.py || true
@@ -95,6 +95,8 @@ jobs:
           run_py inject_batter_woba_adjustments.py || true
           run_py clean_pitcher_files.py || true
           run_py impute_missing_batter_adj_woba.py || true
+          # ----- enforce schema AGAIN at the very end of 06 -----
+          run_py ensure_pitcher_props_schema.py || true
 
       - name: Commit & push 06 outputs
         if: always()
@@ -194,6 +196,14 @@ jobs:
           fi
           mkdir -p data/_projections data/end_chain/final
 
+      # ----- enforce schema a third time right before 07 consumes the file -----
+      - name: Enforce pitcher props schema (pre-07)
+        run: |
+          set -euo pipefail
+          python scripts/ensure_pitcher_props_schema.py
+          echo "HEADERS:"
+          (head -n1 data/_projections/pitcher_props_projected_final.csv || true)
+
       - name: Prep daily projection inputs
         run: |
           set -euo pipefail
@@ -233,11 +243,9 @@ jobs:
             done
             echo "===== ERROR GREP (from current logs) ====="
             if grep -RniE "error|fail|assert|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
-              echo "(errors found)"
-              exit_code=1
+              echo "(errors found)"; exit_code=1
             else
-              echo "(no fatal errors found by grep)"
-              exit_code=0
+              echo "(no fatal errors found by grep)"; exit_code=0
             fi
             if [ -s "summaries/07_final/gamescores_bad_games.txt" ]; then
               echo "(warning: bad_games present; incomplete games were dropped)"
