@@ -2,11 +2,15 @@
 """
 find_orphan_csvs.py
 
-Scan all CSVs under data/ and report only those not referenced in
+Scan all CSVs under data/ and report only those NOT referenced in
 scripts or workflows. Output = summaries/audit/orphan_csv_report.csv
-with columns: path, referenced (always "no").
 
-Excludes any CSVs inside data/rosters/.
+CSV columns: path, referenced
+Only rows written: referenced == "no"
+
+Excludes:
+  - data/rosters/**
+  - data/team_csvs/**
 """
 
 import csv
@@ -24,15 +28,32 @@ SCAN_GLOBS = [
     "docs/**/*.md",
 ]
 
+EXCLUDE_DIRS = [
+    DATA_ROOT / "rosters",
+    DATA_ROOT / "team_csvs",
+]
+
+def is_excluded(p: Path) -> bool:
+    """Return True if p is under any excluded directory."""
+    # Path.is_relative_to is available in Python 3.9+
+    for ex in EXCLUDE_DIRS:
+        try:
+            if p.is_relative_to(ex):
+                return True
+        except AttributeError:
+            # Fallback for older Python: string prefix check
+            if ex.as_posix() in p.as_posix():
+                return True
+    return False
+
 def gather_csvs():
     if not DATA_ROOT.exists():
         return []
     all_csvs = [p for p in DATA_ROOT.rglob("*.csv") if p.is_file()]
-    # exclude anything in data/rosters/
-    return [p for p in all_csvs if "data/rosters/" not in p.as_posix()]
+    return [p for p in all_csvs if not is_excluded(p)]
 
 def build_reference_index():
-    """Return a dict {csv_path: True/False} whether referenced."""
+    """Return a dict {csv_path: True/False} whether referenced somewhere."""
     source_files = []
     for pat in SCAN_GLOBS:
         source_files.extend(REPO_ROOT.glob(pat))
@@ -70,7 +91,7 @@ def main():
         w.writerows(rows)
 
     print(f"Wrote orphan report: {out_csv}")
-    print(f"Total orphan candidates (excluding data/rosters): {len(rows)}")
+    print(f"Total orphan candidates (excluding {', '.join(d.relative_to(REPO_ROOT).as_posix() for d in EXCLUDE_DIRS)}): {len(rows)}")
     return 0
 
 if __name__ == "__main__":
