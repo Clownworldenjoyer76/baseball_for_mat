@@ -29,8 +29,8 @@ OUTPUT_HOME = "data/adjusted/pitchers_home_weather.csv"
 OUTPUT_AWAY = "data/adjusted/pitchers_away_weather.csv"
 
 # Logs
-LOG_HOME    = "log_pitchers_home_weather.txt"
-LOG_AWAY    = "log_pitchers_away_weather.txt"
+LOG_HOME = "summaries/pitchers_adjust/log_pitchers_home_weather.txt"
+LOG_AWAY = "summaries/pitchers_adjust/log_pitchers_away_weather.txt"
 LOG_MISSING = "summaries/pitchers_adjust/missing_woba.txt"
 
 REQUIRED_PITCHER_KEYS  = {"player_id", "game_id"}
