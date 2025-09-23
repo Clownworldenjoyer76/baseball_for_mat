@@ -1,37 +1,47 @@
-===== RUN TIMESTAMP: 2025-09-18 10:41:20 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-23 07:00:16 AM EDT =====
 
 ===== STATUS =====
-✅ python succeeded [2025-09-18 10:41:17 AM EDT]
-✅ python succeeded [2025-09-18 10:41:18 AM EDT]
-✅ python succeeded [2025-09-18 10:41:19 AM EDT]
-✅ python succeeded [2025-09-18 10:41:19 AM EDT]
-✅ python succeeded [2025-09-18 10:41:20 AM EDT]
+✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-23 07:00:12 AM EDT]
+✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-23 07:00:13 AM EDT]
+✅ apply_pitcher_park_adjustment.py succeeded [2025-09-23 07:00:14 AM EDT]
+✅ combine_pitcher_weather_park_home.py succeeded [2025-09-23 07:00:15 AM EDT]
+✅ combine_pitcher_weather_park_away.py succeeded [2025-09-23 07:00:16 AM EDT]
 
 ===== LOG =====
-▶️ START: normalize_pitcher_weather_outputs.py (2025-09-18 10:41:16 AM EDT)
-[main 6ab6adb0d] Normalize pitchers before weather adjustment
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-23 07:00:11 AM EDT)
+[main 824f1cb78] Normalize pitchers before weather adjustment
 Committed normalization stage outputs.
-⏹️ END: python (2025-09-18 10:41:17 AM EDT)
+⏹️ END: normalize_pitcher_weather_outputs.py (2025-09-23 07:00:12 AM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment.py (2025-09-18 10:41:17 AM EDT)
-[main d67171196] Apply pitcher weather factor with woba injection + defaults
- 4 files changed, 29 insertions(+), 25 deletions(-)
-⏹️ END: python (2025-09-18 10:41:18 AM EDT)
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-23 07:00:12 AM EDT)
+[main 561a593cc] Apply pitcher weather factor with woba injection + defaults
+ 4 files changed, 25 insertions(+), 25 deletions(-)
+⏹️ END: apply_pitcher_weather_adjustment.py (2025-09-23 07:00:13 AM EDT)
 
-▶️ START: apply_pitcher_park_adjustment.py (2025-09-18 10:41:18 AM EDT)
-[main dd33c9cdb] Apply pitcher park factor with woba injection + defaults
- 4 files changed, 29 insertions(+), 25 deletions(-)
-⏹️ END: python (2025-09-18 10:41:19 AM EDT)
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-23 07:00:13 AM EDT)
+On branch main
+Your branch is up to date with 'origin/main'.
 
-▶️ START: combine_pitcher_weather_park_home.py (2025-09-18 10:41:19 AM EDT)
-[main 3d378d635] Combine pitcher weather+park (home) on player_id+game_id
- 2 files changed, 18 insertions(+), 15 deletions(-)
-⏹️ END: python (2025-09-18 10:41:19 AM EDT)
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   summaries/pitchers_adjust/log.txt
+	modified:   summaries/pitchers_adjust/status.txt
+	modified:   summaries/pitchers_adjust/summary.txt
 
-▶️ START: combine_pitcher_weather_park_away.py (2025-09-18 10:41:19 AM EDT)
-[main 652783b71] Combine pitcher weather+park (away) on player_id+game_id
- 2 files changed, 13 insertions(+), 12 deletions(-)
-⏹️ END: python (2025-09-18 10:41:20 AM EDT)
+no changes added to commit (use "git add" and/or "git commit -a")
+Git error: Command '['git', 'commit', '-m', 'Apply pitcher park factor with woba injection + defaults']' returned non-zero exit status 1.
+⏹️ END: apply_pitcher_park_adjustment.py (2025-09-23 07:00:14 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-23 07:00:14 AM EDT)
+[main 15b4babe5] Combine pitcher weather+park (home) on player_id+game_id
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+⏹️ END: combine_pitcher_weather_park_home.py (2025-09-23 07:00:15 AM EDT)
+
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-23 07:00:15 AM EDT)
+[main ee72f8619] Combine pitcher weather+park (away) on player_id+game_id
+ 2 files changed, 12 insertions(+), 12 deletions(-)
+⏹️ END: combine_pitcher_weather_park_away.py (2025-09-23 07:00:16 AM EDT)
 
 
 ===== ERRORS =====
