@@ -6,6 +6,8 @@ on:
   workflow_run:
     workflows: ["03 Batter Adjustments"]
     types: [completed]
+  repository_dispatch:
+    types: [after-03]
 
 permissions:
   contents: write
@@ -23,8 +25,8 @@ jobs:
         run: |
           echo "04 START $(TZ=America/New_York date)"
           echo "event_name=${{ github.event_name }}"
-          echo "triggered_by=${{ github.event.workflow_run.name || 'manual' }}"
-          echo "conclusion=${{ github.event.workflow_run.conclusion || 'manual' }}"
+          echo "triggered_by=${{ github.event.workflow_run.name || 'manual/dispatch' }}"
+          echo "conclusion=${{ github.event.workflow_run.conclusion || 'n/a' }}"
 
       - uses: actions/checkout@v4
         with:
