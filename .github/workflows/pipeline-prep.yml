@@ -513,3 +513,58 @@ jobs:
           git diff --cached --quiet || git commit -m "05 Prep block outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
+
+  workflow_summary:
+    name: "Write overall workflow summary (00–05)"
+    needs: [fetch_normalize, split_sched, weather_pipeline, batter_adjustments, pitcher_adjustments, prep_block]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 0 }
+
+      - name: Build pipeline-level summary file
+        run: |
+          set -euo pipefail
+          mkdir -p summaries
+          OUT="summaries/pipeline-prep_summary.txt"
+          {
+            echo "===== WORKFLOW: Pipeline Prep (00–05) ====="
+            echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+            echo
+
+            summarize_stage () {
+              local stage="$1"
+              local title="$2"
+              echo "== ${title} =="
+              if [ -f "summaries/${stage}/status.txt" ]; then
+                echo "-- status --"
+                tail -n +1 "summaries/${stage}/status.txt"
+              else
+                echo "(missing: summaries/${stage}/status.txt)"
+              fi
+              if [ -s "summaries/${stage}/errors.txt" ]; then
+                echo "-- errors (tail) --"
+                tail -n 50 "summaries/${stage}/errors.txt"
+              else
+                echo "-- errors -- (none or missing)"
+              fi
+              echo
+            }
+
+            summarize_stage "foundation"     "00 Fetch & Normalize"
+            summarize_stage "split_sched"    "01 Split & Schedule"
+            summarize_stage "weather"        "02 Weather Pipeline"
+            summarize_stage "batters_adjust" "03 Batter Adjustments"
+            summarize_stage "pitchers_adjust" "04 Pitcher Adjustments"
+            summarize_stage "05_prep"        "05 Prep"
+          } > "$OUT"
+
+      - name: Commit workflow-level summary
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add summaries/pipeline-prep_summary.txt
+          git commit -m "Prep: write pipeline-prep_summary.txt" || echo "No changes to commit"
+          git pull --rebase origin main || true
+          git push origin HEAD:main || true
