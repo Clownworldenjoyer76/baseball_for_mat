@@ -1,9 +1,10 @@
+# .github/workflows/03_batter_adjustments.yml
 name: "03 Batter Adjustments"
 
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["02 Weather Pipeline"]   # must match 02's name exactly
+    workflows: ["02 Weather Pipeline"]
     types: [completed]
     branches: [main]
 
@@ -11,15 +12,14 @@ permissions:
   contents: write
   actions: write
 
-# optional but helpful so parallel runs don't collide
 concurrency:
   group: batter-adjustments-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   batter_adjustments:
-    # allow manual runs OR only run after 02 succeeded
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # run on manual OR whenever 02 completes (any conclusion)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion != '' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -83,3 +83,16 @@ jobs:
           git diff --cached --quiet || git commit -m "03 batter adjustments outputs"
           git pull --rebase origin main || true
           git push origin HEAD:main || true
+
+      # Fallback trigger so 04 starts even if workflow_run is flaky
+      - name: Signal 04 via repository_dispatch (fallback)
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.request('POST /repos/{owner}/{repo}/dispatches', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'after-03',
+              client_payload: { from_run_id: context.runId, from_run_number: context.runNumber }
+            });
