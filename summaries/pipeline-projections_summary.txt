@@ -1,0 +1,62 @@
+===== WORKFLOW: Pipeline Projections (06–07) =====
+generated_at: 2025-09-23 18:57:44 UTC
+
+== 06 Projection Status ==
+[OK] fix_outputs_generate_fixed_files.py succeeded [2025-09-23 14:56:39 EDT]
+[OK] normalize_inputs_for_06.py succeeded [2025-09-23 14:56:40 EDT]
+[OK] project_prep.py succeeded [2025-09-23 14:56:40 EDT]
+[OK] fix_missing_batter_stats.py succeeded [2025-09-23 14:56:40 EDT]
+[OK] normalize_batters_for_builder.py succeeded [2025-09-23 14:56:41 EDT]
+[OK] project_batter_props.py succeeded [2025-09-23 14:56:41 EDT]
+[OK] project_pitcher_props.py succeeded [2025-09-23 14:56:42 EDT]
+[OK] ensure_pitcher_props_schema.py succeeded [2025-09-23 14:56:42 EDT]
+[OK] inject_pitcher_context.py succeeded [2025-09-23 14:56:42 EDT]
+[OK] inject_pitcher_context_from_tgn.py succeeded [2025-09-23 14:56:43 EDT]
+[OK] build_expanded_batter_props.py succeeded [2025-09-23 14:56:43 EDT]
+[OK] pitcher_mega_z.py succeeded [2025-09-23 14:56:43 EDT]
+[OK] starter_coverage_guard.py succeeded [2025-09-23 14:56:44 EDT]
+[OK] post_normalize_pitchers.py succeeded [2025-09-23 14:56:44 EDT]
+[OK] finalize_projections.py succeeded [2025-09-23 14:56:45 EDT]
+[OK] clean_inject_team_ids.py succeeded [2025-09-23 14:56:45 EDT]
+[OK] inject_game_ids_from_schedule.py succeeded [2025-09-23 14:56:45 EDT]
+[OK] inject_batter_woba_adjustments.py succeeded [2025-09-23 14:56:46 EDT]
+[OK] clean_pitcher_files.py succeeded [2025-09-23 14:56:46 EDT]
+[OK] impute_missing_batter_adj_woba.py succeeded [2025-09-23 14:56:46 EDT]
+[OK] ensure_pitcher_props_schema.py succeeded [2025-09-23 14:56:47 EDT]
+
+== 06 Notable Counts ==
+Starters seen today: 15
+
+== 06 Failures (if any) ==
+(none)
+
+== 07 Log Tails ==
+--- prep_daily_log tail ---
+PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
+[INFO] batter_props_projected_final.csv: start=90, kept=67, dropped_off_slate=24, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: start=90, kept=67, dropped_off_slate=24, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_projected_final.csv: kept=67, dropped_off_slate=24, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: kept=67, dropped_off_slate=24, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
+
+--- batter_log tail ---
+LOAD: daily & season inputs
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=67
+
+--- pitcher_log tail ---
+OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
+
+--- game_scores_log tail ---
+LOAD: batter & pitcher event files
+AGG: sum expected runs by (game_id, team_id)
+WROTE: 12 rows -> data/end_chain/final/game_score_projections.csv (games kept=6, dropped=4, pitcher_rows=18)
+
+== 07 Errors/BAD GAMES ==
+(bad_games present)
+# games with != 2 teams present; these were dropped from output
+# total_bad_games=4
+
+776271: teams_present=[137]
+776272: teams_present=[136]
+776274: teams_present=[108]
+776278: teams_present=[110]
