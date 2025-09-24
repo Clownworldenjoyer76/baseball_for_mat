@@ -8,9 +8,13 @@
 # - Normalizes team_id and game_id to clean string (no NaN, no float .0, no "0").
 # - Enforces uniqueness on (player_id, game_id) for batter inputs; keeps highest proj_pa_used.
 # - Writes concise logs + grouped dup diagnostics (not one line per row).
+# - NEW: Resolves missing batter player_id via data/Data/batters_2017-2025.csv; otherwise
+#        appends unresolved names to tools/missing_batter_id.csv (append-only).
 #
 from __future__ import annotations
 import re
+import unicodedata
+from typing import Dict, Iterable, Tuple, Set
 import pandas as pd
 from pathlib import Path
 
@@ -23,6 +27,11 @@ BATTERS_PROJECTED = PROJ_DIR / "batter_props_projected_final.csv"
 BATTERS_EXPANDED  = PROJ_DIR / "batter_props_expanded_final.csv"
 LINEUPS_CSV       = RAW_DIR / "lineups.csv"
 TGN_CSV           = RAW_DIR / "todaysgames_normalized.csv"
+
+# NEW: batter fallback + missing ledger
+BATTERS_STATIC            = Path("data/Data/batters_2017-2025.csv")
+MISSING_BATTER_LEDGER     = Path("tools/missing_batter_id.csv")
+MISSING_BATTER_LEDGER.parent.mkdir(parents=True, exist_ok=True)
 
 LOG_FILE = SUM_DIR / "prep_daily_log.txt"
 
@@ -154,6 +163,172 @@ def resolve_team_id(row, abbrev_to_id_today: pd.DataFrame) -> str:
             return str(STATIC_ABBREV_TO_TEAM_ID[abbrev])
     return ""  # unresolved
 
+# ----------------------------
+# NEW: Batter ID fallback
+# ----------------------------
+def _strip_accents(s: str) -> str:
+    s = str(s or "")
+    return "".join(ch for ch in unicodedata.normalize("NFKD", s) if not unicodedata.combining(ch))
+
+def _canon_name_key(name: str) -> str:
+    # lower, remove accents, collapse spaces; keep comma order semantic (Last, First vs First Last)
+    n = _strip_accents(name).lower().strip()
+    n = re.sub(r"\s+", " ", n)
+    return n
+
+def _compose_last_first(row: pd.Series) -> str:
+    ln = str(row.get("last_name", "") or "").strip()
+    fn = str(row.get("first_name", "") or "").strip()
+    if ln and fn:
+        return f"{ln}, {fn}"
+    return ""
+
+def build_batter_lookup(static_csv: Path) -> Dict[str, str]:
+    """
+    Build a dict: canonical_name_key -> player_id (as string).
+    Accepts multiple plausible column names in the static CSV.
+    """
+    lookup: Dict[str, str] = {}
+    if not static_csv.exists():
+        return lookup
+
+    df = read_csv_force_str(static_csv)
+
+    # Accept common player-id columns
+    pid_col = None
+    for c in ["player_id", "mlb_id", "id"]:
+        if c in df.columns:
+            pid_col = c
+            break
+    if pid_col is None:
+        return lookup
+
+    # Accept name columns
+    candidate_name_cols = [c for c in ["name", "player_name", "batter_name"] if c in df.columns]
+    has_first_last = all(c in df.columns for c in ["first_name", "last_name"])
+
+    for _, r in df.iterrows():
+        pid = normalize_id(r.get(pid_col, ""))
+        if not pid:
+            continue
+
+        # 1) direct "name" style columns
+        for nc in candidate_name_cols:
+            nm = str(r.get(nc, "") or "").strip()
+            if nm:
+                lookup.setdefault(_canon_name_key(nm), pid)
+
+        # 2) composed "Last, First"
+        if has_first_last:
+            lf = _compose_last_first(r)
+            if lf:
+                lookup.setdefault(_canon_name_key(lf), pid)
+
+        # 3) also try "First Last" if we can compose it
+        if has_first_last:
+            fn = str(r.get("first_name", "") or "").strip()
+            ln = str(r.get("last_name", "") or "").strip()
+            if fn and ln:
+                lookup.setdefault(_canon_name_key(f"{fn} {ln}"), pid)
+
+    return lookup
+
+def extract_best_name_for_row(row: pd.Series) -> Tuple[str, str]:
+    """
+    Returns (display_name_for_ledger, key_for_lookup)
+    Tries common fields in props/lineups; falls back to last/first composition.
+    """
+    name_fields_priority = ["name", "player_name", "batter_name", "player", "batter"]
+    for f in name_fields_priority:
+        if f in row and str(row[f]).strip():
+            nm = str(row[f]).strip()
+            return nm, _canon_name_key(nm)
+
+    # try composed Last, First (common in lineups)
+    lf = _compose_last_first(row)
+    if lf:
+        return lf, _canon_name_key(lf)
+
+    # try First Last
+    fn = str(row.get("first_name", "") or "").strip()
+    ln = str(row.get("last_name", "") or "").strip()
+    if fn and ln:
+        fl = f"{fn} {ln}"
+        return fl, _canon_name_key(fl)
+
+    # last resort: any non-empty 'player' column
+    if "player" in row and str(row["player"]).strip():
+        nm = str(row["player"]).strip()
+        return nm, _canon_name_key(nm)
+
+    return "", ""  # no usable name
+
+def append_missing_batters_to_ledger(names: Iterable[str]) -> None:
+    """
+    Append only truly new names to tools/missing_batter_id.csv.
+    Never truncates the file; creates with header if absent.
+    """
+    names_clean = [n for n in (str(x).strip() for x in names) if n]
+    if not names_clean:
+        return
+
+    existing: Set[str] = set()
+    if MISSING_BATTER_LEDGER.exists():
+        try:
+            existing_df = pd.read_csv(MISSING_BATTER_LEDGER, dtype=str, keep_default_na=False)
+            if "name" in existing_df.columns:
+                existing = set(existing_df["name"].astype(str).str.strip().tolist())
+        except Exception:
+            # If file is malformed, we still won't overwrite; just skip de-dup and append.
+            pass
+
+    to_add = [n for n in names_clean if n not in existing]
+    if not to_add:
+        return
+
+    header_needed = not MISSING_BATTER_LEDGER.exists()
+    with MISSING_BATTER_LEDGER.open("a", encoding="utf-8") as f:
+        if header_needed:
+            f.write("name\n")
+        for n in to_add:
+            f.write(f"{n}\n")
+
+    log(f"[INFO] Missing batter_ids appended to {MISSING_BATTER_LEDGER}: {len(to_add)} new")
+
+def resolve_missing_player_ids_inplace(df: pd.DataFrame, batter_lookup: Dict[str, str]) -> Tuple[int, int]:
+    """
+    For rows with blank player_id, try to fill from batter_lookup using best-available name.
+    Returns (resolved_count, still_missing_count), and appends missing names to ledger.
+    """
+    if "player_id" not in df.columns:
+        df["player_id"] = ""
+
+    blank_mask = df["player_id"].astype(str).str.strip().eq("")
+    if not blank_mask.any():
+        return (0, 0)
+
+    unresolved_names: Set[str] = set()
+    resolved = 0
+
+    for idx in df.index[blank_mask]:
+        row = df.loc[idx]
+        disp_name, key = extract_best_name_for_row(row)
+        if key and key in batter_lookup:
+            df.at[idx, "player_id"] = str(batter_lookup[key])
+            resolved += 1
+        else:
+            if disp_name:
+                unresolved_names.add(disp_name)
+
+    if unresolved_names:
+        append_missing_batters_to_ledger(sorted(unresolved_names))
+
+    return (resolved, len(unresolved_names))
+
+# ----------------------------
+# End NEW batter fallback
+# ----------------------------
+
 def dedupe_batter_inputs(df: pd.DataFrame, name_for_logs: str) -> tuple[pd.DataFrame, int]:
     """
     Enforce one row per (player_id, game_id):
@@ -197,17 +372,24 @@ def dedupe_batter_inputs(df: pd.DataFrame, name_for_logs: str) -> tuple[pd.DataF
 def inject_team_and_game(df: pd.DataFrame, name_for_logs: str,
                          lineups: pd.DataFrame,
                          team_game_map: pd.DataFrame,
-                         abbrev_to_id_today: pd.DataFrame) -> tuple[pd.DataFrame,int,int,int,int]:
+                         abbrev_to_id_today: pd.DataFrame,
+                         batter_lookup: Dict[str, str]) -> tuple[pd.DataFrame,int,int,int,int]:
     """
     Returns (clean_df, dropped_off_slate, dropped_missing_team, dropped_missing_game_after_merge, dropped_dups)
     """
     start_rows = len(df)
-    if "player_id" not in df.columns:
-        raise RuntimeError(f"{name_for_logs} missing required column: player_id")
 
     # normalize strings
     for c in df.columns:
         df[c] = df[c].astype(str).str.strip()
+
+    # --- NEW: resolve missing player_id before everything else ---
+    resolved_cnt, still_missing_cnt = resolve_missing_player_ids_inplace(df, batter_lookup)
+    if resolved_cnt or still_missing_cnt:
+        log(f"[INFO] {name_for_logs}: player_id fallback -> resolved={resolved_cnt}, still_missing={still_missing_cnt}")
+
+    if "player_id" not in df.columns:
+        raise RuntimeError(f"{name_for_logs} missing required column: player_id")
 
     # attach lineups helper
     li = lineups.rename(columns={"team_id":"team_id_lineups"})[["player_id","team_id_lineups"]].copy()
@@ -285,11 +467,14 @@ def main() -> None:
 
     team_game_map, abbrev_to_id_today = build_team_maps_from_tgn(tgn)
 
+    # NEW: build batter lookup (once)
+    batter_lookup = build_batter_lookup(BATTERS_STATIC)
+
     bp_out, bp_off, bp_mteam, bp_mgid, bp_dups = inject_team_and_game(
-        bat_proj, "batter_props_projected_final.csv", lineups, team_game_map, abbrev_to_id_today
+        bat_proj, "batter_props_projected_final.csv", lineups, team_game_map, abbrev_to_id_today, batter_lookup
     )
     bx_out, bx_off, bx_mteam, bx_mgid, bx_dups = inject_team_and_game(
-        bat_exp,  "batter_props_expanded_final.csv",  lineups, team_game_map, abbrev_to_id_today
+        bat_exp,  "batter_props_expanded_final.csv",  lineups, team_game_map, abbrev_to_id_today, batter_lookup
     )
 
     write_back(bat_proj, bp_out, BATTERS_PROJECTED)
