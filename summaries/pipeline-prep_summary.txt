@@ -1,102 +1,71 @@
 ===== WORKFLOW: Pipeline Prep (00–05) =====
-generated_at: 2025-09-24 09:06:41 UTC
+generated_at: 2025-09-24 10:16:28 UTC
 
 == 00 Fetch & Normalize ==
 -- status --
-✅ python succeeded [2025-09-24 05:02:48 AM EDT]
-✅ python succeeded [2025-09-24 05:02:48 AM EDT]
-✅ python succeeded [2025-09-24 05:02:49 AM EDT]
-✅ python succeeded [2025-09-24 05:02:50 AM EDT]
-✅ python succeeded [2025-09-24 05:02:51 AM EDT]
-✅ python succeeded [2025-09-24 05:02:51 AM EDT]
-✅ python succeeded [2025-09-24 05:02:52 AM EDT]
-❌ python failed [2025-09-24 05:02:52 AM EDT]
-✅ python succeeded [2025-09-24 05:02:52 AM EDT]
-✅ python succeeded [2025-09-24 05:02:53 AM EDT]
-✅ python succeeded [2025-09-24 05:02:53 AM EDT]
-✅ python succeeded [2025-09-24 05:02:53 AM EDT]
-✅ python succeeded [2025-09-24 05:02:54 AM EDT]
-✅ python succeeded [2025-09-24 05:02:54 AM EDT]
-✅ python succeeded [2025-09-24 05:02:54 AM EDT]
-✅ python succeeded [2025-09-24 05:02:55 AM EDT]
-✅ python succeeded [2025-09-24 05:02:55 AM EDT]
-✅ python succeeded [2025-09-24 05:02:55 AM EDT]
--- errors (tail) --
-❌ python ERROR [2025-09-24 05:02:52 AM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 308, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 259, in main
-    name_map, team_last_map = build_name_to_id()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 150, in build_name_to_id
-    df = read_csv_safe(MASTER_FILE) or pd.DataFrame()
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/generic.py", line 1577, in __nonzero__
-    raise ValueError(
-ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
-
----
-
+✅ python succeeded [2025-09-24 06:12:34 AM EDT]
+✅ python succeeded [2025-09-24 06:12:35 AM EDT]
+✅ python succeeded [2025-09-24 06:12:36 AM EDT]
+✅ python succeeded [2025-09-24 06:12:37 AM EDT]
+✅ python succeeded [2025-09-24 06:12:37 AM EDT]
+✅ python succeeded [2025-09-24 06:12:38 AM EDT]
+✅ python succeeded [2025-09-24 06:12:38 AM EDT]
+✅ python succeeded [2025-09-24 06:12:39 AM EDT]
+✅ python succeeded [2025-09-24 06:12:39 AM EDT]
+✅ python succeeded [2025-09-24 06:12:39 AM EDT]
+✅ python succeeded [2025-09-24 06:12:40 AM EDT]
+✅ python succeeded [2025-09-24 06:12:40 AM EDT]
+✅ python succeeded [2025-09-24 06:12:40 AM EDT]
+✅ python succeeded [2025-09-24 06:12:41 AM EDT]
+✅ python succeeded [2025-09-24 06:12:41 AM EDT]
+✅ python succeeded [2025-09-24 06:12:42 AM EDT]
+✅ python succeeded [2025-09-24 06:12:42 AM EDT]
+✅ python succeeded [2025-09-24 06:12:42 AM EDT]
+-- errors -- (none or missing)
 
 == 01 Split & Schedule ==
 -- status --
-OK   splitaway.py [2025-09-24 05:03:33 AM EDT]
-OK   splithome.py [2025-09-24 05:03:34 AM EDT]
-OK   updatesplitcsvs.py [2025-09-24 05:03:34 AM EDT]
-OK   commit_split_batters.py [2025-09-24 05:03:34 AM EDT]
-FAIL normalize_pitcher_home_away [2025-09-24 05:03:34 AM EDT]
-OK   pitcherfilecleanup.py [2025-09-24 05:03:35 AM EDT]
-OK   bet_prep_1.py [2025-09-24 05:03:35 AM EDT]
--- errors (tail) --
-ERROR normalize_pitcher_home_away [2025-09-24 05:03:34 AM EDT]:
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 158, in <module>
-    process(Path(games_in), Path(out_home), Path(out_away))
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 132, in process
-    ensure_games_columns(games_df)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/normalize_pitcher_home_away.py", line 66, in ensure_games_columns
-    raise RuntimeError(
-RuntimeError: INSUFFICIENT INFORMATION: data/raw/todaysgames_normalized.csv is missing required columns: pitcher_away_id, pitcher_home_id
-
----
-
+OK   splitaway.py [2025-09-24 06:13:21 AM EDT]
+OK   splithome.py [2025-09-24 06:13:22 AM EDT]
+OK   updatesplitcsvs.py [2025-09-24 06:13:22 AM EDT]
+OK   commit_split_batters.py [2025-09-24 06:13:22 AM EDT]
+OK   normalize_pitcher_home_away [2025-09-24 06:13:22 AM EDT]
+OK   pitcherfilecleanup.py [2025-09-24 06:13:23 AM EDT]
+OK   bet_prep_1.py [2025-09-24 06:13:23 AM EDT]
+-- errors -- (none or missing)
 
 == 02 Weather Pipeline ==
 -- status --
-✅ generate_weather_csv.py succeeded [2025-09-24 05:04:11 AM EDT]
-✅ get_weather_data.py succeeded [2025-09-24 05:04:15 AM EDT]
-✅ weather_data_fix.py succeeded [2025-09-24 05:04:15 AM EDT]
+✅ generate_weather_csv.py succeeded [2025-09-24 06:14:00 AM EDT]
+✅ get_weather_data.py succeeded [2025-09-24 06:14:03 AM EDT]
+✅ weather_data_fix.py succeeded [2025-09-24 06:14:04 AM EDT]
 -- errors -- (none or missing)
 
 == 03 Batter Adjustments ==
 -- status --
-✅ python succeeded [2025-09-24 05:04:56 AM EDT]
-✅ python succeeded [2025-09-24 05:04:56 AM EDT]
-✅ python succeeded [2025-09-24 05:04:57 AM EDT]
+✅ python succeeded [2025-09-24 06:14:46 AM EDT]
+✅ python succeeded [2025-09-24 06:14:46 AM EDT]
+✅ python succeeded [2025-09-24 06:14:47 AM EDT]
 -- errors -- (none or missing)
 
 == 04 Pitcher Adjustments ==
 -- status --
-✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-24 05:05:40 AM EDT]
-✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-24 05:05:41 AM EDT]
-✅ apply_pitcher_park_adjustment.py succeeded [2025-09-24 05:05:43 AM EDT]
-✅ combine_pitcher_weather_park_home.py succeeded [2025-09-24 05:05:44 AM EDT]
-✅ combine_pitcher_weather_park_away.py succeeded [2025-09-24 05:05:45 AM EDT]
+✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-24 06:15:23 AM EDT]
+✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-24 06:15:24 AM EDT]
+✅ apply_pitcher_park_adjustment.py succeeded [2025-09-24 06:15:25 AM EDT]
+✅ combine_pitcher_weather_park_home.py succeeded [2025-09-24 06:15:26 AM EDT]
+✅ combine_pitcher_weather_park_away.py succeeded [2025-09-24 06:15:27 AM EDT]
 -- errors -- (none or missing)
 
 == 05 Prep ==
 -- status --
-✅ python succeeded [2025-09-24 05:06:26 AM EDT]
-✅ python succeeded [2025-09-24 05:06:27 AM EDT]
-✅ python succeeded [2025-09-24 05:06:27 AM EDT]
-❌ python failed [2025-09-24 05:06:27 AM EDT]
-✅ python succeeded [2025-09-24 05:06:28 AM EDT]
-✅ python succeeded [2025-09-24 05:06:29 AM EDT]
-✅ python succeeded [2025-09-24 05:06:29 AM EDT]
-✅ python succeeded [2025-09-24 05:06:30 AM EDT]
--- errors (tail) --
-❌ python ERROR [2025-09-24 05:06:27 AM EDT]:
-❌ data/raw/todaysgames_normalized.csv missing columns: ['pitcher_away_id', 'pitcher_home_id']
-
----
-
+✅ python succeeded [2025-09-24 06:16:13 AM EDT]
+✅ python succeeded [2025-09-24 06:16:13 AM EDT]
+✅ python succeeded [2025-09-24 06:16:14 AM EDT]
+✅ python succeeded [2025-09-24 06:16:14 AM EDT]
+✅ python succeeded [2025-09-24 06:16:14 AM EDT]
+✅ python succeeded [2025-09-24 06:16:15 AM EDT]
+✅ python succeeded [2025-09-24 06:16:15 AM EDT]
+✅ python succeeded [2025-09-24 06:16:15 AM EDT]
+-- errors -- (none or missing)
 
