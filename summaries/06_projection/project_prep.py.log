@@ -1,10 +1,13 @@
->> START: project_prep.py (2025-09-24 07:21:13 EDT)
+>> START: project_prep.py (2025-09-24 08:20:48 EDT)
 >> START: project_prep.py
 [PATH] OUT_RAW=/home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/startingpitchers_with_opp_context.csv
 [PATH] OUT_FINAL=/home/runner/work/baseball_for_mat/baseball_for_mat/data/end_chain/final/startingpitchers.csv
 [PATH] OUT_PROJ=/home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_props_projected.csv
-[COVERAGE] rows_in=15, matched_game_id=15, unmatched=0, with_team_and_opponent=15
-✅ Wrote enriched raw: data/raw/startingpitchers_with_opp_context.csv (rows=15)
-✅ Wrote minimal final: data/end_chain/final/startingpitchers.csv (rows=15)
+/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py:174: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  sp[col] = ""
+[WARN] project_prep: starters file has no non-empty pitcher_id; using slate fallback.
+[INFO] project_prep: slate fallback produced 30 rows.
+✅ Wrote enriched raw: data/raw/startingpitchers_with_opp_context.csv (rows=30)
+✅ Wrote minimal final: data/end_chain/final/startingpitchers.csv (rows=30)
 >> END: project_prep.py
-[END] project_prep.py (2025-09-24 07:21:13 EDT)
+[END] project_prep.py (2025-09-24 08:20:48 EDT)
