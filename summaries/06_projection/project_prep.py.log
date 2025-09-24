@@ -1,13 +1,10 @@
->> START: project_prep.py (2025-09-24 05:07:32 EDT)
+>> START: project_prep.py (2025-09-24 06:17:03 EDT)
 >> START: project_prep.py
 [PATH] OUT_RAW=/home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/startingpitchers_with_opp_context.csv
 [PATH] OUT_FINAL=/home/runner/work/baseball_for_mat/baseball_for_mat/data/end_chain/final/startingpitchers.csv
 [PATH] OUT_PROJ=/home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_props_projected.csv
-RuntimeError("data/raw/todaysgames_normalized.csv missing required column(s): ['pitcher_home_id', 'pitcher_away_id']")
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 136, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 68, in main
-    raise RuntimeError(f"{TGN_CSV} missing required column(s): {missing_tgn}")
-RuntimeError: data/raw/todaysgames_normalized.csv missing required column(s): ['pitcher_home_id', 'pitcher_away_id']
-[END] project_prep.py (2025-09-24 05:07:32 EDT)
+[COVERAGE] rows_in=15, matched_game_id=15, unmatched=0, with_team_and_opponent=15
+✅ Wrote enriched raw: data/raw/startingpitchers_with_opp_context.csv (rows=15)
+✅ Wrote minimal final: data/end_chain/final/startingpitchers.csv (rows=15)
+>> END: project_prep.py
+[END] project_prep.py (2025-09-24 06:17:03 EDT)
