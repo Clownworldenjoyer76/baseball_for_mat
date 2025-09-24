@@ -1,28 +1,28 @@
 ===== WORKFLOW: Pipeline Projections (06–07) =====
-generated_at: 2025-09-24 10:18:02 UTC
+generated_at: 2025-09-24 11:22:10 UTC
 
 == 06 Projection Status ==
-[OK] fix_outputs_generate_fixed_files.py succeeded [2025-09-24 06:17:02 EDT]
-[OK] normalize_inputs_for_06.py succeeded [2025-09-24 06:17:03 EDT]
-[OK] project_prep.py succeeded [2025-09-24 06:17:03 EDT]
-[OK] fix_missing_batter_stats.py succeeded [2025-09-24 06:17:04 EDT]
-[OK] normalize_batters_for_builder.py succeeded [2025-09-24 06:17:04 EDT]
-[OK] project_batter_props.py succeeded [2025-09-24 06:17:04 EDT]
-[OK] project_pitcher_props.py succeeded [2025-09-24 06:17:05 EDT]
-[OK] ensure_pitcher_props_schema.py succeeded [2025-09-24 06:17:05 EDT]
-[OK] inject_pitcher_context.py succeeded [2025-09-24 06:17:05 EDT]
-[OK] inject_pitcher_context_from_tgn.py succeeded [2025-09-24 06:17:06 EDT]
-[OK] build_expanded_batter_props.py succeeded [2025-09-24 06:17:06 EDT]
-[OK] pitcher_mega_z.py succeeded [2025-09-24 06:17:06 EDT]
-[OK] starter_coverage_guard.py succeeded [2025-09-24 06:17:07 EDT]
-[OK] post_normalize_pitchers.py succeeded [2025-09-24 06:17:07 EDT]
-[OK] finalize_projections.py succeeded [2025-09-24 06:17:08 EDT]
-[OK] clean_inject_team_ids.py succeeded [2025-09-24 06:17:08 EDT]
-[OK] inject_game_ids_from_schedule.py succeeded [2025-09-24 06:17:09 EDT]
-[OK] inject_batter_woba_adjustments.py succeeded [2025-09-24 06:17:09 EDT]
-[OK] clean_pitcher_files.py succeeded [2025-09-24 06:17:09 EDT]
-[OK] impute_missing_batter_adj_woba.py succeeded [2025-09-24 06:17:10 EDT]
-[OK] ensure_pitcher_props_schema.py succeeded [2025-09-24 06:17:10 EDT]
+[OK] fix_outputs_generate_fixed_files.py succeeded [2025-09-24 07:21:12 EDT]
+[OK] normalize_inputs_for_06.py succeeded [2025-09-24 07:21:13 EDT]
+[OK] project_prep.py succeeded [2025-09-24 07:21:13 EDT]
+[OK] fix_missing_batter_stats.py succeeded [2025-09-24 07:21:14 EDT]
+[OK] normalize_batters_for_builder.py succeeded [2025-09-24 07:21:14 EDT]
+[OK] project_batter_props.py succeeded [2025-09-24 07:21:14 EDT]
+[OK] project_pitcher_props.py succeeded [2025-09-24 07:21:15 EDT]
+[OK] ensure_pitcher_props_schema.py succeeded [2025-09-24 07:21:15 EDT]
+[OK] inject_pitcher_context.py succeeded [2025-09-24 07:21:16 EDT]
+[OK] inject_pitcher_context_from_tgn.py succeeded [2025-09-24 07:21:16 EDT]
+[OK] build_expanded_batter_props.py succeeded [2025-09-24 07:21:16 EDT]
+[OK] pitcher_mega_z.py succeeded [2025-09-24 07:21:17 EDT]
+[OK] starter_coverage_guard.py succeeded [2025-09-24 07:21:17 EDT]
+[OK] post_normalize_pitchers.py succeeded [2025-09-24 07:21:17 EDT]
+[OK] finalize_projections.py succeeded [2025-09-24 07:21:18 EDT]
+[OK] clean_inject_team_ids.py succeeded [2025-09-24 07:21:18 EDT]
+[OK] inject_game_ids_from_schedule.py succeeded [2025-09-24 07:21:19 EDT]
+[OK] inject_batter_woba_adjustments.py succeeded [2025-09-24 07:21:19 EDT]
+[OK] clean_pitcher_files.py succeeded [2025-09-24 07:21:20 EDT]
+[OK] impute_missing_batter_adj_woba.py succeeded [2025-09-24 07:21:20 EDT]
+[OK] ensure_pitcher_props_schema.py succeeded [2025-09-24 07:21:21 EDT]
 
 == 06 Notable Counts ==
 Starters seen today: 15
@@ -33,10 +33,16 @@ Starters seen today: 15
 == 07 Log Tails ==
 --- prep_daily_log tail ---
 PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
+PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
+[INFO] batter_props_projected_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
 [INFO] batter_props_projected_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
 [INFO] batter_props_expanded_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_projected_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
 [INFO] batter_props_projected_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
 [INFO] batter_props_expanded_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 
 --- batter_log tail ---
