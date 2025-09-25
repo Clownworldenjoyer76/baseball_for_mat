@@ -1,31 +1,31 @@
 ===== WORKFLOW: Pipeline Projections (06–07) =====
-generated_at: 2025-09-25 10:26:55 UTC
+generated_at: 2025-09-25 10:43:42 UTC
 
 == 06 Projection Status ==
-===== RUN TIMESTAMP: 2025-09-25 06:26:05 EDT =====
+===== RUN TIMESTAMP: 2025-09-25 06:42:52 EDT =====
 
 ===== STATUS (per script) =====
-[OK] build_expanded_batter_props.py.log (2025-09-25 06:26:05 EDT)
-[OK] clean_inject_team_ids.py.log (2025-09-25 06:26:05 EDT)
-[OK] clean_pitcher_files.py.log (2025-09-25 06:26:05 EDT)
-[OK] ensure_pitcher_props_schema.py.log (2025-09-25 06:26:05 EDT)
-[OK] ensure_pitcher_props_schema_end.py.log (2025-09-25 06:26:05 EDT)
-[OK] finalize_projections.py.log (2025-09-25 06:26:05 EDT)
-[OK] fix_missing_batter_stats.py.log (2025-09-25 06:26:05 EDT)
-[OK] fix_outputs_generate_fixed_files.py.log (2025-09-25 06:26:05 EDT)
-[OK] impute_missing_batter_adj_woba.py.log (2025-09-25 06:26:05 EDT)
-[OK] inject_batter_woba_adjustments.py.log (2025-09-25 06:26:05 EDT)
-[OK] inject_game_ids_from_schedule.py.log (2025-09-25 06:26:05 EDT)
-[OK] inject_pitcher_context.py.log (2025-09-25 06:26:05 EDT)
-[OK] inject_pitcher_context_from_tgn.py.log (2025-09-25 06:26:05 EDT)
-[OK] normalize_batters_for_builder.py.log (2025-09-25 06:26:05 EDT)
-[OK] normalize_inputs_for_06.py.log (2025-09-25 06:26:05 EDT)
-[OK] pitcher_mega_z.py.log (2025-09-25 06:26:05 EDT)
-[OK] post_normalize_pitchers.py.log (2025-09-25 06:26:05 EDT)
-[OK] project_batter_props.py.log (2025-09-25 06:26:05 EDT)
-[OK] project_pitcher_props.py.log (2025-09-25 06:26:05 EDT)
-[OK] project_prep.py.log (2025-09-25 06:26:05 EDT)
-[OK] starter_coverage_guard.py.log (2025-09-25 06:26:05 EDT)
+[OK] build_expanded_batter_props.py.log (2025-09-25 06:42:52 EDT)
+[OK] clean_inject_team_ids.py.log (2025-09-25 06:42:52 EDT)
+[OK] clean_pitcher_files.py.log (2025-09-25 06:42:52 EDT)
+[OK] ensure_pitcher_props_schema.py.log (2025-09-25 06:42:52 EDT)
+[OK] ensure_pitcher_props_schema_end.py.log (2025-09-25 06:42:52 EDT)
+[OK] finalize_projections.py.log (2025-09-25 06:42:52 EDT)
+[OK] fix_missing_batter_stats.py.log (2025-09-25 06:42:52 EDT)
+[OK] fix_outputs_generate_fixed_files.py.log (2025-09-25 06:42:52 EDT)
+[OK] impute_missing_batter_adj_woba.py.log (2025-09-25 06:42:52 EDT)
+[OK] inject_batter_woba_adjustments.py.log (2025-09-25 06:42:52 EDT)
+[OK] inject_game_ids_from_schedule.py.log (2025-09-25 06:42:52 EDT)
+[OK] inject_pitcher_context.py.log (2025-09-25 06:42:52 EDT)
+[OK] inject_pitcher_context_from_tgn.py.log (2025-09-25 06:42:52 EDT)
+[OK] normalize_batters_for_builder.py.log (2025-09-25 06:42:52 EDT)
+[OK] normalize_inputs_for_06.py.log (2025-09-25 06:42:52 EDT)
+[OK] pitcher_mega_z.py.log (2025-09-25 06:42:52 EDT)
+[OK] post_normalize_pitchers.py.log (2025-09-25 06:42:52 EDT)
+[OK] project_batter_props.py.log (2025-09-25 06:42:52 EDT)
+[OK] project_pitcher_props.py.log (2025-09-25 06:42:52 EDT)
+[OK] project_prep.py.log (2025-09-25 06:42:52 EDT)
+[OK] starter_coverage_guard.py.log (2025-09-25 06:42:52 EDT)
 
 ===== KEY COUNTS =====
 starters_today: 15
@@ -88,10 +88,10 @@ pitcher_mega_z rows: 593
 
 ---- inject_batter_woba_adjustments.py.log ----
 === inject_batter_woba_adjustments: resolution summary (by column) ===
-player_ids considered: 462
-adj_woba_weather: only_away=197, only_home=199, both_equal=0, conflicts=0, all_na=66
-adj_woba_park: only_away=197, only_home=199, both_equal=0, conflicts=0, all_na=66
-adj_woba_combined: only_away=197, only_home=199, both_equal=0, conflicts=0, all_na=66
+player_ids considered: 366
+adj_woba_weather: only_away=159, only_home=160, both_equal=0, conflicts=0, all_na=47
+adj_woba_park: only_away=159, only_home=160, both_equal=0, conflicts=0, all_na=47
+adj_woba_combined: only_away=159, only_home=160, both_equal=0, conflicts=0, all_na=47
 ✅ Updated data/_projections/batter_props_expanded_final.csv with adj_woba_* (rows=90)
 ✅ Updated data/_projections/batter_props_projected_final.csv with adj_woba_* (rows=90)
 
@@ -102,9 +102,9 @@ SKIP data/_projections/pitcher_props_projected_final.csv: no team_id columns to 
 SKIP data/_projections/pitcher_mega_z_final.csv: no team_id columns to match
 
 ---- inject_pitcher_context.py.log ----
->> START: inject_pitcher_context.py (2025-09-25 10:25:59 UTC)
+>> START: inject_pitcher_context.py (2025-09-25 10:42:46 UTC)
 Injected context for 18/18 pitchers -> data/_projections/pitcher_props_projected_final.csv
-[END] inject_pitcher_context.py (2025-09-25 10:25:59 UTC)
+[END] inject_pitcher_context.py (2025-09-25 10:42:46 UTC)
 
 ---- inject_pitcher_context_from_tgn.py.log ----
 Injected context for 18/18 pitchers using /home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/todaysgames_normalized.csv
@@ -127,20 +127,20 @@ ERROR: "startingpitchers_with_opp_context.csv missing required columns: ['player
 --- prep_daily_log tail ---
 PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
 PREP: injecting team_id and game_id into batter *_final.csv (drop unresolved/off-slate)
-[INFO] batter_props_projected_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_projected_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_expanded_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_expanded_final.csv: start=90, kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_projected_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_expanded_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_projected_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
-[INFO] batter_props_expanded_final.csv: kept=91, dropped_off_slate=0, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_projected_final.csv: start=90, kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_projected_final.csv: start=90, kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: start=90, kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: start=90, kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_projected_final.csv: kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_projected_final.csv: kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
+[INFO] batter_props_expanded_final.csv: kept=74, dropped_off_slate=17, dropped_missing_team_id=0, dropped_missing_game_id=0, dropped_duplicate_keys=0
 OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 OK: wrote data/_projections/batter_props_projected_final.csv and data/_projections/batter_props_expanded_final.csv
 
 --- batter_log tail ---
 LOAD: daily & season inputs
-OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=91
+OK: wrote data/_projections/batter_event_probabilities.csv and data/end_chain/final/batter_event_probabilities.csv rows=74
 
 --- pitcher_log tail ---
 OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=18
@@ -148,14 +148,13 @@ OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/f
 --- game_scores_log tail ---
 LOAD: batter & pitcher event files
 AGG: sum expected runs by (game_id, team_id)
-WROTE: 18 rows -> data/end_chain/final/game_score_projections.csv (games kept=9, dropped=5, pitcher_rows=18)
+WROTE: 14 rows -> data/end_chain/final/game_score_projections.csv (games kept=7, dropped=4, pitcher_rows=18)
 
 == 07 Errors/BAD GAMES ==
 # games with != 2 teams present; these were dropped from output
-# total_bad_games=5
+# total_bad_games=4
 
-776197: teams_present=[108]
-776198: teams_present=[135]
-776199: teams_present=[145]
-776201: teams_present=[146]
-776202: teams_present=[113]
+776178: teams_present=[108]
+776184: teams_present=[145]
+776188: teams_present=[146]
+776190: teams_present=[113]
