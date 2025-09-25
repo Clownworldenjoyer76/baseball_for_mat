@@ -50,7 +50,7 @@ jobs:
           echo ">> HEADERS (startingpitchers_with_opp_context.csv)"; (head -n1 data/raw/startingpitchers_with_opp_context.csv || true)
           echo ">> HEADERS (pitchers_normalized_cleaned.csv)"; (head -n1 data/cleaned/pitchers_normalized_cleaned.csv || true)
 
-      # ---- 06 scripts, one per step (kept simple for YAML safety) ----
+      # ---- 06 scripts ----
       - name: 06-01 fix_outputs_generate_fixed_files.py
         run: |
           python scripts/fix_outputs_generate_fixed_files.py |& tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log || true
@@ -156,7 +156,6 @@ jobs:
           SUMMARY="$STAGE/summary.txt"
           STATUS="$STAGE/status.txt"
           : > "$STATUS"
-          # Build a simple status using presence/exit code markers in logs (OK if log exists)
           for L in "$STAGE"/*.log; do
             [ -f "$L" ] || continue
             B="$(basename "$L")"
@@ -229,6 +228,16 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           mkdir -p data/_projections data/end_chain/final
 
+      # NEW: regenerate *_final files if absent (guards against stale repo state)
+      - name: Ensure *_final projection CSVs exist
+        run: |
+          set -euo pipefail
+          need=0
+          [ -f data/_projections/pitcher_props_projected_final.csv ] || need=1
+          [ -f data/_projections/batter_props_projected_final.csv ] || need=1
+          [ "$need" -eq 0 ] || python scripts/finalize_projections.py
+          ls -l data/_projections | sed 's/^/  /'
+
       - name: Enforce pitcher props schema (pre-07)
         run: |
           python scripts/ensure_pitcher_props_schema.py
@@ -294,6 +303,8 @@ jobs:
           git add data/_projections/pitcher_event_probabilities.csv 2>/dev/null || true
           git add data/_projections/batter_props_projected_final.csv 2>/dev/null || true
           git add data/_projections/batter_props_expanded_final.csv 2>/dev/null || true
+          git add data/_projections/pitcher_props_projected_final.csv 2>/dev/null || true
+          git add data/end_chain/final/pitcher_props_projected_final.csv 2>/dev/null || true
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
