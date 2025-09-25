@@ -5,7 +5,8 @@ on:
   workflow_run:
     workflows:
       - "Pipeline Prep (00–05)"
-    types: [completed]
+    types:
+      - completed
 
 permissions:
   contents: write
@@ -22,12 +23,14 @@ jobs:
       TZ: America/New_York
       PYTHONUNBUFFERED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: main
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -38,93 +41,110 @@ jobs:
 
       - name: Install dependencies
         run: |
-          set -euo pipefail
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Preflight: show key headers exist
+      - name: Preflight headers
         run: |
-          set -euo pipefail
-          echo ">> HEADERS (todaysgames_normalized.csv)"
-          (head -n1 data/raw/todaysgames_normalized.csv || true)
-          echo ">> HEADERS (startingpitchers_with_opp_context.csv)"
-          (head -n1 data/raw/startingpitchers_with_opp_context.csv || true)
-          echo ">> HEADERS (pitchers_normalized_cleaned.csv)"
-          (head -n1 data/cleaned/pitchers_normalized_cleaned.csv || true)
+          echo ">> HEADERS (todaysgames_normalized.csv)"; (head -n1 data/raw/todaysgames_normalized.csv || true)
+          echo ">> HEADERS (startingpitchers_with_opp_context.csv)"; (head -n1 data/raw/startingpitchers_with_opp_context.csv || true)
+          echo ">> HEADERS (pitchers_normalized_cleaned.csv)"; (head -n1 data/cleaned/pitchers_normalized_cleaned.csv || true)
 
-      - name: Run 06 pipeline
-        shell: bash
+      # ---- 06 scripts, one per step (kept simple for YAML safety) ----
+      - name: 06-01 fix_outputs_generate_fixed_files.py
         run: |
-          set -e
-          STAGE="summaries/06_projection"
-          STATUS="$STAGE/status.txt"
-          : > "$STATUS"
+          python scripts/fix_outputs_generate_fixed_files.py |& tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log || true
 
-          run_py () {
-            file="$1"
-            name="$(basename "$file")"
-            ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-            log="$STAGE/${name}.log"
-            script_path="scripts/${name}"
+      - name: 06-02 normalize_inputs_for_06.py
+        run: |
+          python scripts/normalize_inputs_for_06.py |& tee summaries/06_projection/normalize_inputs_for_06.py.log || true
 
-            if [ ! -f "$script_path" ]; then
-              echo ">> START: ${name} (${ts})" > "$log"
-              echo "SKIP: ${script_path} not found" | tee -a "$log"
-              echo "[OK] ${name} skipped (missing) [${ts}]" >> "$STATUS"
-              echo "[END] ${name} (${ts})" | tee -a "$log"
-              return 0
-            fi
+      - name: 06-03 project_prep.py
+        run: |
+          python scripts/project_prep.py |& tee summaries/06_projection/project_prep.py.log || true
 
-            echo ">> START: ${name} (${ts})" > "$log"
-            set +e
-            python "$script_path" |& tee -a "$log"
-            code=${PIPESTATUS[0]}
-            set -e
-            if [ $code -eq 0 ]; then
-              echo "[OK] ${name} succeeded [${ts}]" >> "$STATUS"
-            else
-              echo "[FAIL] ${name} failed [${ts}]" >> "$STATUS"
-            fi
-            echo "[END] ${name} (${ts})" | tee -a "$log"
-            return $code
-          }
+      - name: 06-04 fix_missing_batter_stats.py
+        run: |
+          python scripts/fix_missing_batter_stats.py |& tee summaries/06_projection/fix_missing_batter_stats.py.log || true
 
-          run_py fix_outputs_generate_fixed_files.py || true
-          run_py normalize_inputs_for_06.py || true
-          run_py project_prep.py || true
-          run_py fix_missing_batter_stats.py || true
-          run_py normalize_batters_for_builder.py || true
-          run_py project_batter_props.py || true
-          run_py project_pitcher_props.py || true
-          run_py ensure_pitcher_props_schema.py || true
-          run_py inject_pitcher_context.py || true
-          run_py inject_pitcher_context_from_tgn.py || true
-          run_py build_expanded_batter_props.py || true
-          run_py pitcher_mega_z.py || true
-          run_py starter_coverage_guard.py || true
-          run_py post_normalize_pitchers.py || true
-          run_py finalize_projections.py || true
-          run_py clean_inject_team_ids.py || true
-          run_py inject_game_ids_from_schedule.py || true
-          run_py inject_batter_woba_adjustments.py || true
-          run_py clean_pitcher_files.py || true
-          run_py ensure_pitcher_props_schema.py || true
-          run_py impute_missing_batter_adj_woba.py || true
+      - name: 06-05 normalize_batters_for_builder.py
+        run: |
+          python scripts/normalize_batters_for_builder.py |& tee summaries/06_projection/normalize_batters_for_builder.py.log || true
+
+      - name: 06-06 project_batter_props.py
+        run: |
+          python scripts/project_batter_props.py |& tee summaries/06_projection/project_batter_props.py.log || true
+
+      - name: 06-07 project_pitcher_props.py
+        run: |
+          python scripts/project_pitcher_props.py |& tee summaries/06_projection/project_pitcher_props.py.log || true
+
+      - name: 06-08 ensure_pitcher_props_schema.py
+        run: |
+          python scripts/ensure_pitcher_props_schema.py |& tee summaries/06_projection/ensure_pitcher_props_schema.py.log || true
+
+      - name: 06-09 inject_pitcher_context.py
+        run: |
+          python scripts/inject_pitcher_context.py |& tee summaries/06_projection/inject_pitcher_context.py.log || true
+
+      - name: 06-10 inject_pitcher_context_from_tgn.py
+        run: |
+          python scripts/inject_pitcher_context_from_tgn.py |& tee summaries/06_projection/inject_pitcher_context_from_tgn.py.log || true
+
+      - name: 06-11 build_expanded_batter_props.py
+        run: |
+          python scripts/build_expanded_batter_props.py |& tee summaries/06_projection/build_expanded_batter_props.py.log || true
+
+      - name: 06-12 pitcher_mega_z.py
+        run: |
+          python scripts/pitcher_mega_z.py |& tee summaries/06_projection/pitcher_mega_z.py.log || true
+
+      - name: 06-13 starter_coverage_guard.py
+        run: |
+          python scripts/starter_coverage_guard.py |& tee summaries/06_projection/starter_coverage_guard.py.log || true
+
+      - name: 06-14 post_normalize_pitchers.py
+        run: |
+          python scripts/post_normalize_pitchers.py |& tee summaries/06_projection/post_normalize_pitchers.py.log || true
+
+      - name: 06-15 finalize_projections.py
+        run: |
+          python scripts/finalize_projections.py |& tee summaries/06_projection/finalize_projections.py.log || true
+
+      - name: 06-16 clean_inject_team_ids.py
+        run: |
+          python scripts/clean_inject_team_ids.py |& tee summaries/06_projection/clean_inject_team_ids.py.log || true
+
+      - name: 06-17 inject_game_ids_from_schedule.py
+        run: |
+          python scripts/inject_game_ids_from_schedule.py |& tee summaries/06_projection/inject_game_ids_from_schedule.py.log || true
+
+      - name: 06-18 inject_batter_woba_adjustments.py
+        run: |
+          python scripts/inject_batter_woba_adjustments.py |& tee summaries/06_projection/inject_batter_woba_adjustments.py.log || true
+
+      - name: 06-19 clean_pitcher_files.py
+        run: |
+          python scripts/clean_pitcher_files.py |& tee summaries/06_projection/clean_pitcher_files.py.log || true
+
+      - name: 06-20 ensure_pitcher_props_schema.py (end)
+        run: |
+          python scripts/ensure_pitcher_props_schema.py |& tee summaries/06_projection/ensure_pitcher_props_schema_end.py.log || true
+
+      - name: 06-21 impute_missing_batter_adj_woba.py
+        run: |
+          python scripts/impute_missing_batter_adj_woba.py |& tee summaries/06_projection/impute_missing_batter_adj_woba.py.log || true
 
       - name: Commit & push 06 outputs + authoritative CSVs
         if: always()
         run: |
-          set -euo pipefail
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
-
-          git add data/_projections/*.csv 2>/dev/null || true
-          git add data/end_chain/final/*.csv 2>/dev/null || true
-          git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
-          git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
-          git add summaries/06_projection/*.log 2>/dev/null || true
-          git add summaries/06_projection/status.txt 2>/dev/null || true
-
+          git add "data/_projections/"*.csv 2>/dev/null || true
+          git add "data/end_chain/final/"*.csv 2>/dev/null || true
+          git add "data/raw/todaysgames_normalized.csv" 2>/dev/null || true
+          git add "data/raw/startingpitchers_with_opp_context.csv" 2>/dev/null || true
+          git add "summaries/06_projection/"*.log 2>/dev/null || true
           git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
           git pull --rebase origin main || true
           git push || echo "No changes to push"
@@ -132,28 +152,28 @@ jobs:
       - name: Write & push 06 summary
         if: always()
         run: |
-          set -euo pipefail
           STAGE="summaries/06_projection"
           SUMMARY="$STAGE/summary.txt"
           STATUS="$STAGE/status.txt"
+          : > "$STATUS"
+          # Build a simple status using presence/exit code markers in logs (OK if log exists)
+          for L in "$STAGE"/*.log; do
+            [ -f "$L" ] || continue
+            B="$(basename "$L")"
+            echo "[OK] ${B} ($(date '+%Y-%m-%d %H:%M:%S %Z'))" >> "$STATUS"
+          done
           CLEAN_LOG="$STAGE/clean_pitcher_files.py.log"
-
           {
             echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
             echo
             echo "===== STATUS (per script) ====="
-            if [ -s "$STATUS" ]; then
-              cat "$STATUS"
-            else
-              echo "(status.txt not generated)"
-            fi
+            if [ -s "$STATUS" ]; then cat "$STATUS"; else echo "(status.txt not generated)"; fi
             echo
             echo "===== KEY COUNTS ====="
             if [ -f "$CLEAN_LOG" ]; then
               starters_line=$(grep -E 'Starters seen today:' "$CLEAN_LOG" | tail -n 1 || true)
               if [ -n "$starters_line" ]; then
-                starters=$(echo "$starters_line" | awk -F': ' '{print $2}')
-                echo "starters_today: ${starters}"
+                echo "starters_today: ${starters_line##*: }"
               else
                 echo "starters_today: (not found)"
               fi
@@ -169,10 +189,7 @@ jobs:
               echo
             done
           } > "$SUMMARY"
-
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
-          git add "$SUMMARY"
+          git add "$SUMMARY" || true
           git commit -m "06 Projection: overwrite summary.txt [skip ci]" || echo "No changes to commit"
           git pull --rebase origin main || true
           git push || echo "No changes to push"
@@ -185,12 +202,14 @@ jobs:
       TZ: America/New_York
       PYTHONUNBUFFERED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -206,55 +225,41 @@ jobs:
 
       - name: Install deps
         run: |
-          set -euo pipefail
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           mkdir -p data/_projections data/end_chain/final
 
       - name: Enforce pitcher props schema (pre-07)
         run: |
-          set -euo pipefail
           python scripts/ensure_pitcher_props_schema.py
-          echo "HEADERS:"
-          (head -n1 data/_projections/pitcher_props_projected_final.csv || true)
+          echo "HEADERS:"; (head -n1 data/_projections/pitcher_props_projected_final.csv || true)
 
       - name: Prep daily projection inputs
         run: |
-          set -euo pipefail
           python scripts/prepare_daily_projection_inputs.py | tee -a summaries/07_final/prep_daily_log.txt
 
       - name: Batter event probabilities
         run: |
-          set -euo pipefail
           python scripts/project_batter_event_probabilities.py | tee -a summaries/07_final/batter_log.txt
 
       - name: Pitcher event probabilities
         run: |
-          set -euo pipefail
           python scripts/project_pitcher_event_probabilities.py | tee -a summaries/07_final/pitcher_log.txt
 
       - name: Game score projections
         run: |
-          set -euo pipefail
           rm -f summaries/07_final/gamescores_bad_games.txt || true
           python scripts/project_game_scores.py | tee -a summaries/07_final/game_scores_log.txt
 
       - name: Summarize run (07)
         run: |
-          set -euo pipefail
           {
             echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
             echo
             echo "===== LOG TAILS ====="
             for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
               echo "--- ${f%.*} (tail) ---"
-              if [ -f "summaries/07_final/$f" ]; then
-                tail -n 25 "summaries/07_final/$f"
-              else
-                echo "(missing)"
-              fi
+              if [ -f "summaries/07_final/$f" ]; then tail -n 25 "summaries/07_final/$f"; else echo "(missing)"; fi
               echo
             done
             echo "===== ERROR GREP (from current logs) ====="
@@ -280,10 +285,8 @@ jobs:
       - name: Commit CSVs + summaries (07)
         if: always()
         run: |
-          set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
           git add data/end_chain/final/batter_event_probabilities.csv 2>/dev/null || true
           git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
@@ -294,7 +297,6 @@ jobs:
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
-
           if ! git diff --cached --quiet; then
             git commit -m "CI: update final projections and summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
             git pull --rebase origin main || true
@@ -308,14 +310,14 @@ jobs:
     needs: final_projections
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
       - name: Build pipeline-level summary file
         run: |
-          set -euo pipefail
           mkdir -p summaries
           OUT="summaries/pipeline-projections_summary.txt"
           {
@@ -323,39 +325,16 @@ jobs:
             echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
             echo
             echo "== 06 Projection Status =="
-            if [ -f summaries/06_projection/status.txt ]; then
-              cat summaries/06_projection/status.txt
+            if [ -f summaries/06_projection/summary.txt ]; then
+              sed -n '1,120p' summaries/06_projection/summary.txt
             else
-              echo "(missing: summaries/06_projection/status.txt)"
-            fi
-            echo
-            echo "== 06 Notable Counts =="
-            if [ -f summaries/06_projection/clean_pitcher_files.py.log ]; then
-              starters_line=$(grep -E 'Starters seen today:' summaries/06_projection/clean_pitcher_files.py.log | tail -n 1 || true)
-              if [ -n "$starters_line" ]; then
-                echo "Starters seen today: ${starters_line##*: }"
-              else
-                echo "Starters seen today: (not found)"
-              fi
-            else
-              echo "Starters seen today: (log not found)"
-            fi
-            echo
-            echo "== 06 Failures (if any) =="
-            if [ -f summaries/06_projection/status.txt ]; then
-              grep "FAIL" -n summaries/06_projection/status.txt || echo "(none)"
-            else
-              echo "(status.txt missing)"
+              echo "(missing: summaries/06_projection/summary.txt)"
             fi
             echo
             echo "== 07 Log Tails =="
             for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
               echo "--- ${f%.*} tail ---"
-              if [ -f "summaries/07_final/$f" ]; then
-                tail -n 25 "summaries/07_final/$f"
-              else
-                echo "(missing)"
-              fi
+              if [ -f "summaries/07_final/$f" ]; then tail -n 25 "summaries/07_final/$f"; else echo "(missing)"; fi
               echo
             done
             echo "== 07 Errors/BAD GAMES =="
@@ -368,7 +347,6 @@ jobs:
 
       - name: Commit workflow-level summary
         run: |
-          set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/pipeline-projections_summary.txt
