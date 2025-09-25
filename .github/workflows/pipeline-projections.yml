@@ -1,10 +1,10 @@
-# .github/workflows/pipeline-projections.yml
 name: "Pipeline Projections (06–07)"
 
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Pipeline Prep (00–05)"]
+    workflows:
+      - "Pipeline Prep (00–05)"
     types: [completed]
 
 permissions:
@@ -20,13 +20,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
-      PYTHONUNBUFFERED: '1'
+      PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0, ref: main }
+        with:
+          fetch-depth: 0
+          ref: main
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.10' }
+        with:
+          python-version: "3.10"
 
       - name: Reset summaries (06)
         run: |
@@ -40,14 +43,13 @@ jobs:
           pip install -r requirements.txt
 
       - name: Preflight: show key headers exist
-        shell: bash
         run: |
           set -euo pipefail
-          echo ">> HEADERS (todaysgames_normalized)"
+          echo ">> HEADERS (todaysgames_normalized.csv)"
           (head -n1 data/raw/todaysgames_normalized.csv || true)
-          echo ">> HEADERS (startingpitchers_with_opp_context)"
+          echo ">> HEADERS (startingpitchers_with_opp_context.csv)"
           (head -n1 data/raw/startingpitchers_with_opp_context.csv || true)
-          echo ">> HEADERS (pitchers_normalized_cleaned)"
+          echo ">> HEADERS (pitchers_normalized_cleaned.csv)"
           (head -n1 data/cleaned/pitchers_normalized_cleaned.csv || true)
 
       - name: Run 06 pipeline
@@ -55,14 +57,15 @@ jobs:
         run: |
           set -e
           STAGE="summaries/06_projection"
-          STATUS="$STAGE/status.txt"; : > "$STATUS"
+          STATUS="$STAGE/status.txt"
+          : > "$STATUS"
 
           run_py () {
-            local file="$1"
-            local name="$(basename "$file")"
-            local ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-            local log="$STAGE/${name}.log"
-            local script_path="scripts/${name}"
+            file="$1"
+            name="$(basename "$file")"
+            ts="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+            log="$STAGE/${name}.log"
+            script_path="scripts/${name}"
 
             if [ ! -f "$script_path" ]; then
               echo ">> START: ${name} (${ts})" > "$log"
@@ -86,7 +89,6 @@ jobs:
             return $code
           }
 
-          # ---- 06 order ----
           run_py fix_outputs_generate_fixed_files.py || true
           run_py normalize_inputs_for_06.py || true
           run_py project_prep.py || true
@@ -94,7 +96,6 @@ jobs:
           run_py normalize_batters_for_builder.py || true
           run_py project_batter_props.py || true
           run_py project_pitcher_props.py || true
-          # enforce mid-pipeline
           run_py ensure_pitcher_props_schema.py || true
           run_py inject_pitcher_context.py || true
           run_py inject_pitcher_context_from_tgn.py || true
@@ -107,7 +108,6 @@ jobs:
           run_py inject_game_ids_from_schedule.py || true
           run_py inject_batter_woba_adjustments.py || true
           run_py clean_pitcher_files.py || true
-          # enforce again at the end (after possible mutations)
           run_py ensure_pitcher_props_schema.py || true
           run_py impute_missing_batter_adj_woba.py || true
 
@@ -118,13 +118,12 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-          git add \
-            data/_projections/*.csv \
-            data/end_chain/final/*.csv \
-            data/raw/todaysgames_normalized.csv \
-            data/raw/startingpitchers_with_opp_context.csv \
-            summaries/06_projection/*.log \
-            summaries/06_projection/status.txt 2>/dev/null || true
+          git add data/_projections/*.csv 2>/dev/null || true
+          git add data/end_chain/final/*.csv 2>/dev/null || true
+          git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
+          git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
+          git add summaries/06_projection/*.log 2>/dev/null || true
+          git add summaries/06_projection/status.txt 2>/dev/null || true
 
           git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
           git pull --rebase origin main || true
@@ -180,17 +179,20 @@ jobs:
 
   final_projections:
     name: "07 Final Projections"
-    needs: [build]
+    needs: build
     runs-on: ubuntu-latest
     env:
       TZ: America/New_York
-      PYTHONUNBUFFERED: '1'
+      PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 0 }
+        with:
+          ref: main
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
+        with:
+          python-version: "3.11"
 
       - name: Reset summaries (07)
         run: |
@@ -244,7 +246,7 @@ jobs:
           set -euo pipefail
           {
             echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
-            echo ""
+            echo
             echo "===== LOG TAILS ====="
             for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
               echo "--- ${f%.*} (tail) ---"
@@ -253,7 +255,7 @@ jobs:
               else
                 echo "(missing)"
               fi
-              echo ""
+              echo
             done
             echo "===== ERROR GREP (from current logs) ====="
             if grep -RniE "error|fail|assert|Slate mismatch|Duplicate .*pairs" summaries/07_final | grep -v summary.txt; then
@@ -272,7 +274,7 @@ jobs:
           shopt -s nullglob
           mkdir -p summaries/07_final
           for f in log_*.txt *.log; do
-            [ -f "$f" ] && mv "$f" "summaries/07_final/" || true
+            if [ -f "$f" ]; then mv "$f" "summaries/07_final/"; fi
           done
 
       - name: Commit CSVs + summaries (07)
@@ -303,11 +305,13 @@ jobs:
 
   workflow_summary:
     name: "Write overall workflow summary (06–07)"
-    needs: [final_projections]
+    needs: final_projections
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 0 }
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Build pipeline-level summary file
         run: |
@@ -318,7 +322,6 @@ jobs:
             echo "===== WORKFLOW: Pipeline Projections (06–07) ====="
             echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
             echo
-
             echo "== 06 Projection Status =="
             if [ -f summaries/06_projection/status.txt ]; then
               cat summaries/06_projection/status.txt
@@ -326,7 +329,6 @@ jobs:
               echo "(missing: summaries/06_projection/status.txt)"
             fi
             echo
-
             echo "== 06 Notable Counts =="
             if [ -f summaries/06_projection/clean_pitcher_files.py.log ]; then
               starters_line=$(grep -E 'Starters seen today:' summaries/06_projection/clean_pitcher_files.py.log | tail -n 1 || true)
@@ -339,7 +341,6 @@ jobs:
               echo "Starters seen today: (log not found)"
             fi
             echo
-
             echo "== 06 Failures (if any) =="
             if [ -f summaries/06_projection/status.txt ]; then
               grep "FAIL" -n summaries/06_projection/status.txt || echo "(none)"
@@ -347,7 +348,6 @@ jobs:
               echo "(status.txt missing)"
             fi
             echo
-
             echo "== 07 Log Tails =="
             for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
               echo "--- ${f%.*} tail ---"
@@ -358,7 +358,6 @@ jobs:
               fi
               echo
             done
-
             echo "== 07 Errors/BAD GAMES =="
             if [ -f summaries/07_final/gamescores_bad_games.txt ]; then
               cat summaries/07_final/gamescores_bad_games.txt
