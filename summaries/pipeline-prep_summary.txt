@@ -1,71 +1,71 @@
 ===== WORKFLOW: Pipeline Prep (00–05) =====
-generated_at: 2025-09-25 12:18:12 UTC
+generated_at: 2025-09-25 20:46:16 UTC
 
 == 00 Fetch & Normalize ==
 -- status --
-✅ python succeeded [2025-09-25 08:14:13 AM EDT]
-✅ python succeeded [2025-09-25 08:14:13 AM EDT]
-✅ python succeeded [2025-09-25 08:14:14 AM EDT]
-✅ python succeeded [2025-09-25 08:14:15 AM EDT]
-✅ python succeeded [2025-09-25 08:14:16 AM EDT]
-✅ python succeeded [2025-09-25 08:14:16 AM EDT]
-✅ python succeeded [2025-09-25 08:14:16 AM EDT]
-✅ python succeeded [2025-09-25 08:14:17 AM EDT]
-✅ python succeeded [2025-09-25 08:14:17 AM EDT]
-✅ python succeeded [2025-09-25 08:14:18 AM EDT]
-✅ python succeeded [2025-09-25 08:14:18 AM EDT]
-✅ python succeeded [2025-09-25 08:14:18 AM EDT]
-✅ python succeeded [2025-09-25 08:14:19 AM EDT]
-✅ python succeeded [2025-09-25 08:14:19 AM EDT]
-✅ python succeeded [2025-09-25 08:14:19 AM EDT]
-✅ python succeeded [2025-09-25 08:14:20 AM EDT]
-✅ python succeeded [2025-09-25 08:14:20 AM EDT]
-✅ python succeeded [2025-09-25 08:14:21 AM EDT]
+✅ python succeeded [2025-09-25 04:42:39 PM EDT]
+✅ python succeeded [2025-09-25 04:42:40 PM EDT]
+✅ python succeeded [2025-09-25 04:42:41 PM EDT]
+✅ python succeeded [2025-09-25 04:42:42 PM EDT]
+✅ python succeeded [2025-09-25 04:42:42 PM EDT]
+✅ python succeeded [2025-09-25 04:42:43 PM EDT]
+✅ python succeeded [2025-09-25 04:42:43 PM EDT]
+✅ python succeeded [2025-09-25 04:42:43 PM EDT]
+✅ python succeeded [2025-09-25 04:42:44 PM EDT]
+✅ python succeeded [2025-09-25 04:42:44 PM EDT]
+✅ python succeeded [2025-09-25 04:42:44 PM EDT]
+✅ python succeeded [2025-09-25 04:42:45 PM EDT]
+✅ python succeeded [2025-09-25 04:42:45 PM EDT]
+✅ python succeeded [2025-09-25 04:42:45 PM EDT]
+✅ python succeeded [2025-09-25 04:42:46 PM EDT]
+✅ python succeeded [2025-09-25 04:42:46 PM EDT]
+✅ python succeeded [2025-09-25 04:42:47 PM EDT]
+✅ python succeeded [2025-09-25 04:42:47 PM EDT]
 -- errors -- (none or missing)
 
 == 01 Split & Schedule ==
 -- status --
-OK   splitaway.py [2025-09-25 08:15:00 AM EDT]
-OK   splithome.py [2025-09-25 08:15:01 AM EDT]
-OK   updatesplitcsvs.py [2025-09-25 08:15:01 AM EDT]
-OK   commit_split_batters.py [2025-09-25 08:15:01 AM EDT]
-OK   normalize_pitcher_home_away [2025-09-25 08:15:01 AM EDT]
-OK   pitcherfilecleanup.py [2025-09-25 08:15:02 AM EDT]
-OK   bet_prep_1.py [2025-09-25 08:15:02 AM EDT]
+OK   splitaway.py [2025-09-25 04:43:24 PM EDT]
+OK   splithome.py [2025-09-25 04:43:25 PM EDT]
+OK   updatesplitcsvs.py [2025-09-25 04:43:25 PM EDT]
+OK   commit_split_batters.py [2025-09-25 04:43:25 PM EDT]
+OK   normalize_pitcher_home_away [2025-09-25 04:43:26 PM EDT]
+OK   pitcherfilecleanup.py [2025-09-25 04:43:26 PM EDT]
+OK   bet_prep_1.py [2025-09-25 04:43:26 PM EDT]
 -- errors -- (none or missing)
 
 == 02 Weather Pipeline ==
 -- status --
-✅ generate_weather_csv.py succeeded [2025-09-25 08:15:44 AM EDT]
-✅ get_weather_data.py succeeded [2025-09-25 08:15:48 AM EDT]
-✅ weather_data_fix.py succeeded [2025-09-25 08:15:49 AM EDT]
+✅ generate_weather_csv.py succeeded [2025-09-25 04:44:01 PM EDT]
+✅ get_weather_data.py succeeded [2025-09-25 04:44:04 PM EDT]
+✅ weather_data_fix.py succeeded [2025-09-25 04:44:05 PM EDT]
 -- errors -- (none or missing)
 
 == 03 Batter Adjustments ==
 -- status --
-✅ python succeeded [2025-09-25 08:16:30 AM EDT]
-✅ python succeeded [2025-09-25 08:16:30 AM EDT]
-✅ python succeeded [2025-09-25 08:16:30 AM EDT]
+✅ python succeeded [2025-09-25 04:44:47 PM EDT]
+✅ python succeeded [2025-09-25 04:44:48 PM EDT]
+✅ python succeeded [2025-09-25 04:44:48 PM EDT]
 -- errors -- (none or missing)
 
 == 04 Pitcher Adjustments ==
 -- status --
-✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-25 08:17:15 AM EDT]
-✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-25 08:17:15 AM EDT]
-✅ apply_pitcher_park_adjustment.py succeeded [2025-09-25 08:17:16 AM EDT]
-✅ combine_pitcher_weather_park_home.py succeeded [2025-09-25 08:17:16 AM EDT]
-✅ combine_pitcher_weather_park_away.py succeeded [2025-09-25 08:17:16 AM EDT]
+✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-25 04:45:24 PM EDT]
+✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-25 04:45:24 PM EDT]
+✅ apply_pitcher_park_adjustment.py succeeded [2025-09-25 04:45:24 PM EDT]
+✅ combine_pitcher_weather_park_home.py succeeded [2025-09-25 04:45:25 PM EDT]
+✅ combine_pitcher_weather_park_away.py succeeded [2025-09-25 04:45:26 PM EDT]
 -- errors -- (none or missing)
 
 == 05 Prep ==
 -- status --
-✅ python succeeded [2025-09-25 08:17:58 AM EDT]
-✅ python succeeded [2025-09-25 08:17:58 AM EDT]
-✅ python succeeded [2025-09-25 08:17:59 AM EDT]
-✅ python succeeded [2025-09-25 08:17:59 AM EDT]
-✅ python succeeded [2025-09-25 08:17:59 AM EDT]
-✅ python succeeded [2025-09-25 08:18:00 AM EDT]
-✅ python succeeded [2025-09-25 08:18:00 AM EDT]
-✅ python succeeded [2025-09-25 08:18:00 AM EDT]
+✅ python succeeded [2025-09-25 04:46:01 PM EDT]
+✅ python succeeded [2025-09-25 04:46:02 PM EDT]
+✅ python succeeded [2025-09-25 04:46:02 PM EDT]
+✅ python succeeded [2025-09-25 04:46:02 PM EDT]
+✅ python succeeded [2025-09-25 04:46:03 PM EDT]
+✅ python succeeded [2025-09-25 04:46:03 PM EDT]
+✅ python succeeded [2025-09-25 04:46:04 PM EDT]
+✅ python succeeded [2025-09-25 04:46:04 PM EDT]
 -- errors -- (none or missing)
 
