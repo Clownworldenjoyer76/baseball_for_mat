@@ -1,27 +1,27 @@
-===== RUN TIMESTAMP: 2025-09-25 08:18:56 EDT =====
+===== RUN TIMESTAMP: 2025-09-25 16:47:05 EDT =====
 
 ===== STATUS (per script) =====
-[OK] build_expanded_batter_props.py.log (2025-09-25 08:18:56 EDT)
-[OK] clean_inject_team_ids.py.log (2025-09-25 08:18:56 EDT)
-[OK] clean_pitcher_files.py.log (2025-09-25 08:18:56 EDT)
-[OK] ensure_pitcher_props_schema.py.log (2025-09-25 08:18:56 EDT)
-[OK] ensure_pitcher_props_schema_end.py.log (2025-09-25 08:18:56 EDT)
-[OK] finalize_projections.py.log (2025-09-25 08:18:56 EDT)
-[OK] fix_missing_batter_stats.py.log (2025-09-25 08:18:56 EDT)
-[OK] fix_outputs_generate_fixed_files.py.log (2025-09-25 08:18:56 EDT)
-[OK] impute_missing_batter_adj_woba.py.log (2025-09-25 08:18:56 EDT)
-[OK] inject_batter_woba_adjustments.py.log (2025-09-25 08:18:56 EDT)
-[OK] inject_game_ids_from_schedule.py.log (2025-09-25 08:18:56 EDT)
-[OK] inject_pitcher_context.py.log (2025-09-25 08:18:56 EDT)
-[OK] inject_pitcher_context_from_tgn.py.log (2025-09-25 08:18:56 EDT)
-[OK] normalize_batters_for_builder.py.log (2025-09-25 08:18:56 EDT)
-[OK] normalize_inputs_for_06.py.log (2025-09-25 08:18:56 EDT)
-[OK] pitcher_mega_z.py.log (2025-09-25 08:18:56 EDT)
-[OK] post_normalize_pitchers.py.log (2025-09-25 08:18:56 EDT)
-[OK] project_batter_props.py.log (2025-09-25 08:18:56 EDT)
-[OK] project_pitcher_props.py.log (2025-09-25 08:18:56 EDT)
-[OK] project_prep.py.log (2025-09-25 08:18:56 EDT)
-[OK] starter_coverage_guard.py.log (2025-09-25 08:18:56 EDT)
+[OK] build_expanded_batter_props.py.log (2025-09-25 16:47:05 EDT)
+[OK] clean_inject_team_ids.py.log (2025-09-25 16:47:05 EDT)
+[OK] clean_pitcher_files.py.log (2025-09-25 16:47:05 EDT)
+[OK] ensure_pitcher_props_schema.py.log (2025-09-25 16:47:05 EDT)
+[OK] ensure_pitcher_props_schema_end.py.log (2025-09-25 16:47:05 EDT)
+[OK] finalize_projections.py.log (2025-09-25 16:47:05 EDT)
+[OK] fix_missing_batter_stats.py.log (2025-09-25 16:47:05 EDT)
+[OK] fix_outputs_generate_fixed_files.py.log (2025-09-25 16:47:05 EDT)
+[OK] impute_missing_batter_adj_woba.py.log (2025-09-25 16:47:05 EDT)
+[OK] inject_batter_woba_adjustments.py.log (2025-09-25 16:47:05 EDT)
+[OK] inject_game_ids_from_schedule.py.log (2025-09-25 16:47:05 EDT)
+[OK] inject_pitcher_context.py.log (2025-09-25 16:47:05 EDT)
+[OK] inject_pitcher_context_from_tgn.py.log (2025-09-25 16:47:05 EDT)
+[OK] normalize_batters_for_builder.py.log (2025-09-25 16:47:05 EDT)
+[OK] normalize_inputs_for_06.py.log (2025-09-25 16:47:05 EDT)
+[OK] pitcher_mega_z.py.log (2025-09-25 16:47:05 EDT)
+[OK] post_normalize_pitchers.py.log (2025-09-25 16:47:05 EDT)
+[OK] project_batter_props.py.log (2025-09-25 16:47:05 EDT)
+[OK] project_pitcher_props.py.log (2025-09-25 16:47:05 EDT)
+[OK] project_prep.py.log (2025-09-25 16:47:05 EDT)
+[OK] starter_coverage_guard.py.log (2025-09-25 16:47:05 EDT)
 
 ===== KEY COUNTS =====
 starters_today: (not found)
@@ -98,7 +98,7 @@ adj_woba_combined: only_away=166, only_home=165, both_equal=0, conflicts=0, all_
 ERROR: Missing input: data/_projections/todaysgames_normalized_fixed.csv
 
 ---- inject_pitcher_context.py.log ----
->> START: inject_pitcher_context.py (2025-09-25 12:18:51 UTC)
+>> START: inject_pitcher_context.py (2025-09-25 20:47:00 UTC)
 (skip) data/_projections/pitcher_props_projected_final.csv not found
 
 ---- inject_pitcher_context_from_tgn.py.log ----
@@ -128,7 +128,7 @@ ERROR: "startingpitchers_with_opp_context.csv missing required columns: ['player
 ❌ Could not find batter_props_z_expanded.csv in expected locations.
 
 ---- project_pitcher_props.py.log ----
->> START: project_pitcher_props.py v13-normalize_player_id-inject-gid-merge-clean (2025-09-25 12:18:50 UTC)
+>> START: project_pitcher_props.py v13-normalize_player_id-inject-gid-merge-clean (2025-09-25 20:46:59 UTC)
 [PATH] PROJ_SRC_IN=/home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_props_projected.csv
 [PATH] SP_LONG=/home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/startingpitchers_with_opp_context.csv
 [PATH] OUT_FILE_FINAL=/home/runner/work/baseball_for_mat/baseball_for_mat/data/end_chain/final/pitcher_props_projected_final.csv
