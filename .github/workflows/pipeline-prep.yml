@@ -20,7 +20,7 @@ jobs:
     name: "00 Fetch & Normalize"
     runs-on: ubuntu-latest
     env:
-      TZ: America/New_York # Changed to block style for strict linting
+      TZ: America/New_York
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,6 +43,7 @@ jobs:
             ${{ runner.os }}-py-
 
       - name: Setup Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -103,7 +104,7 @@ jobs:
           run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step build_batters_today_from_lineups.py python scripts/build_batters_today_from_lineups.py
-          run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --game-date "$(date -u +%Y%m%d)"
+          run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --lineups data/raw/lineups_normalized.csv
           run_step fix_inputs_inject_stolen_base_pct.py  python scripts/fix_inputs_inject_stolen_base_pct.py
 
           {
@@ -162,6 +163,7 @@ jobs:
             ${{ runner.os }}-py-
 
       - name: Setup Python
+        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -205,24 +207,22 @@ jobs:
             echo >>"$LOG"
           }
 
-          cp -f data/cleaned/batters_today.csv               data/temp_inputs/batters_today_copy.csv || true
-          cp -f data/raw/todaysgames_normalized.csv          data/temp_inputs/todaysgames_normalized_copy.csv || true
+          # Stage inputs for downstream processing/scheduling
+          cp -f data/cleaned/batters_today.csv              data/temp_inputs/batters_today_copy.csv || true
+          cp -f data/raw/todaysgames_normalized.csv         data/temp_inputs/todaysgames_normalized_copy.csv || true
           cp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv || true
+          cp -f data/raw/lineups_normalized.csv             data/temp_inputs/lineups_normalized_copy.csv || true
 
-          run_step splitaway.py                 python scripts/splitaway.py "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_away.csv"
-          run_step splithome.py                 python scripts/splithome.py "data/temp_inputs/batters_today_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/batters_home.csv"
-          run_step updatesplitcsvs.py           python scripts/updatesplitcsvs.py
-          run_step commit_split_batters.py      python scripts/commit_split_batters.py
-          run_step normalize_pitcher_home_away  python scripts/normalize_pitcher_home_away.py "data/temp_inputs/pitchers_normalized_cleaned_copy.csv" "data/temp_inputs/todaysgames_normalized_copy.csv" "data/adjusted/pitchers_home.csv" "data/adjusted/pitchers_away.csv"
-          run_step pitcherfilecleanup.py        python scripts/pitcherfilecleanup.py
-          run_step bet_prep_1.py                python scripts/bet_prep_1.py
+          # If you have dedicated split/schedule scripts, add them here via run_step calls, e.g.:
+          # run_step split_games_windows.py     python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted
+          # run_step build_bets_schedule.py     python scripts/build_bets_schedule.py --games data/adjusted --out data/bets
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
             echo
             echo "===== STATUS =====";  cat "$STATUS"
-            echo; echo "===== LOG =====";  cat "$LOG"
-            echo; echo "===== ERRORS ====="; cat "$ERR"
+            echo; echo "===== LOG =====";   cat "$LOG"
+            echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
 
       - name: Sweep stray root logs into summaries/split_sched
@@ -236,479 +236,10 @@ jobs:
       - name: Commit outputs
         run: |
           set -euo pipefail
-          git add --force data/adjusted/batters_*.csv || true
-          git add --force data/adjusted/pitchers_*.csv || true
-          git add data/bets/mlb_sched.csv || true
+          git add data/temp_inputs/* || true
+          git add data/adjusted/* || true
+          git add data/bets/* || true
           git add summaries/split_sched/* || true
           git diff --cached --quiet || git commit -m "01 split & schedule outputs"
-          # Robust Push: Rebase to get latest changes, then force-with-lease to push
-          git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
-
-  weather_pipeline:
-    name: "02 Weather Pipeline"
-    needs: [split_sched]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Configure git
-        run: |
-          # Use the official bot user for pushing
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-py-
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Reset summaries
-        run: |
-          rm -rf summaries/weather
-          mkdir -p summaries/weather
-
-      - name: Run stage with unified logs
-        run: |
-          set +e
-          STAGE="summaries/weather"
-          STATUS="$STAGE/status.txt"
-          LOG="$STAGE/log.txt"
-          ERR="$STAGE/errors.txt"
-          SUM="$STAGE/summary.txt"
-          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
-
-          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){
-            local step_name="$1"; shift
-            echo "▶️ START: ${step_name} ($(ts))" >>"$LOG"
-            "$@" >>"$LOG" 2>step.err
-            rc=$?
-            if [ $rc -eq 0 ]; then
-              echo "✅ ${step_name} succeeded [$(ts)]" >>"$STATUS"
-            else
-              echo "❌ ${step_name} failed [$(ts)]" >>"$STATUS"
-              { echo "❌ ${step_name} ERROR [$(ts)]:"
-                cat step.err
-                echo; echo '---'; echo; } >>"$ERR"
-            fi
-            rm -f step.err
-            echo "⏹️ END: ${step_name} ($(ts))" >>"$LOG"
-            echo >>"$LOG"
-          }
-
-          run_step generate_weather_csv.py  python scripts/generate_weather_csv.py
-          run_step get_weather_data.py      python scripts/get_weather_data.py
-          run_step weather_data_fix.py      python scripts/weather_data_fix.py
-
-          {
-            echo "===== RUN TIMESTAMP: $(ts) ====="
-            echo
-            echo "===== STATUS =====";  cat "$STATUS"
-            echo; echo "===== LOG =====";  cat "$LOG"
-            echo; echo "===== ERRORS ====="; cat "$ERR"
-          } > "$SUM"
-
-      - name: Finalize weather outputs
-        run: python scripts/finalize_weather_outputs.py
-
-      - name: Sweep stray root logs into summaries/weather
-        run: |
-          shopt -s nullglob
-          mkdir -p summaries/weather
-          for f in log_*.txt *.log; do
-            [ -f "$f" ] && mv "$f" "summaries/weather/" || true
-          done
-
-      - name: Commit outputs
-        run: |
-          set -euo pipefail
-          git add data/weather_input.csv || true
-          git add data/weather_adjustments.csv || true
-          git add summaries/weather/* || true
-          git diff --cached --quiet || git commit -m "02 weather pipeline outputs"
-          # Robust Push: Rebase to get latest changes, then force-with-lease to push
-          git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
-
-  batter_adjustments:
-    name: "03 Batter Adjustments"
-    needs: [weather_pipeline]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Configure git
-        run: |
-          # Use the official bot user for pushing
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-py-
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Reset summaries
-        run: |
-          rm -rf summaries/batters_adjust
-          mkdir -p summaries/batters_adjust
-
-      - name: Run stage with unified logs
-        run: |
-          set +e
-          STAGE="summaries/batters_adjust"
-          STATUS="$STAGE/status.txt"
-          LOG="$STAGE/log.txt"
-          ERR="$STAGE/errors.txt"
-          SUM="$STAGE/summary.txt"
-          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
-
-          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){
-            local step="$1"
-            shift
-            echo "▶️ START: ${step} ($(ts))" >>"$LOG"
-            "$@" >>"$LOG" 2>step.err
-            rc=$?
-            if [ $rc -eq 0 ]; then
-              echo "✅ ${step} succeeded [$(ts)]" >>"$STATUS"
-            else
-              echo "❌ ${step} failed [$(ts)]" >>"$STATUS"
-              { echo "❌ ${step} ERROR [$(ts)]:"
-                cat step.err
-                echo; echo '---'; echo; } >>"$ERR"
-            fi
-            rm -f step.err
-            echo "⏹️ END: ${step} ($(ts))" >>"$LOG"
-            echo >>"$LOG"
-          }
-
-          run_step apply_weather_adjustment.py       python scripts/apply_weather_adjustment.py
-          run_step apply_park_adjustment.py          python scripts/apply_park_adjustment.py
-          run_step combine_batter_weather_park.py    python scripts/combine_batter_weather_park.py
-
-          {
-            echo "===== RUN TIMESTAMP: $(ts) ====="
-            echo
-            echo "===== STATUS =====";  cat "$STATUS"
-            echo; echo "===== LOG =====";  cat "$LOG"
-            echo; echo "===== ERRORS ====="; cat "$ERR"
-          } > "$SUM"
-
-      - name: Sweep stray root logs into summaries/batters_adjust
-        run: |
-          shopt -s nullglob
-          mkdir -p summaries/batters_adjust
-          for f in log_*.txt *.log; do
-            [ -f "$f" ] && mv "$f" "summaries/batters_adjust/" || true
-          done
-
-      - name: Commit outputs
-        run: |
-          set -euo pipefail
-          git add data/adjusted/batters_*_weather.csv || true
-          git add data/adjusted/batters_*_park.csv || true
-          git add data/adjusted/batters_*_weather_park.csv || true
-          git add summaries/batters_adjust/* || true
-          git diff --cached --quiet || git commit -m "03 batter adjustments outputs"
-          # Robust Push: Rebase to get latest changes, then force-with-lease to push
-          git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
-
-  pitcher_adjustments:
-    name: "04 Pitcher Adjustments"
-    needs: [batter_adjustments]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Configure git
-        run: |
-          # Use the official bot user for pushing
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-py-
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Reset summaries
-        run: |
-          rm -rf summaries/pitchers_adjust
-          mkdir -p summaries/pitchers_adjust
-
-      - name: Run stage with unified logs
-        run: |
-          set +e
-          STAGE="summaries/pitchers_adjust"
-          STATUS="$STAGE/status.txt"
-          LOG="$STAGE/log.txt"
-          ERR="$STAGE/errors.txt"
-          SUM="$STAGE/summary.txt"
-          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
-
-          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; step="$1"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $step succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $step failed [$(ts)]" >>"$STATUS"; { echo "❌ $step ERROR [$(ts)]:"
-            cat step.err
-            echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $step ($(ts))" >>"$LOG"; echo >>"$LOG"; }
-
-          run_step normalize_pitcher_weather_outputs.py python scripts/normalize_pitcher_weather_outputs.py
-          run_step apply_pitcher_weather_adjustment.py  python scripts/apply_pitcher_weather_adjustment.py
-          run_step apply_pitcher_park_adjustment.py     python scripts/apply_pitcher_park_adjustment.py
-          run_step combine_pitcher_weather_park_home.py python scripts/combine_pitcher_weather_park_home.py
-          run_step combine_pitcher_weather_park_away.py python scripts/combine_pitcher_weather_park_away.py
-
-          {
-            echo "===== RUN TIMESTAMP: $(ts) ====="
-            echo
-            echo "===== STATUS =====";  cat "$STATUS"
-            echo; echo "===== LOG =====";  cat "$LOG"
-            echo; echo "===== ERRORS ====="; cat "$ERR"
-          } > "$SUM"
-
-      - name: Sweep stray root logs into summaries/pitchers_adjust
-        run: |
-          shopt -s nullglob
-          mkdir -p summaries/pitchers_adjust
-          for f in log_pitchers_*_weather.txt log_pitchers_*_weather_park.txt log_*.txt *.log; do
-            [ -f "$f" ] && mv "$f" "summaries/pitchers_adjust/" || true
-          done
-
-      - name: Commit outputs
-        run: |
-          set -euo pipefail
-          git add data/adjusted/pitchers_*_{weather,park}.csv || true
-          git add data/adjusted/pitchers_*_weather_park.csv || true
-          git add summaries/pitchers_adjust/* || true
-          git diff --cached --quiet || git commit -m "04 pitcher adjustments outputs"
-          # Robust Push: Rebase to get latest changes, then force-with-lease to push
-          git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
-
-  prep_block:
-    name: "05 Prep"
-    needs: [pitcher_adjustments]
-    runs-on: ubuntu-latest
-    env:
-      TZ: America/New_York # Changed to block style for strict linting
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-          persist-credentials: true
-
-      - name: Configure git
-        run: |
-          # Use the official bot user for pushing
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-py-
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Reset summaries
-        run: |
-          rm -rf summaries/05_prep
-          mkdir -p summaries/05_prep
-
-      - name: Run stage with unified logs
-        run: |
-          set +e
-          STAGE="summaries/05_prep"
-          STATUS="$STAGE/status.txt"
-          LOG="$STAGE/log.txt"
-          ERR="$STAGE/errors.txt"
-          SUM="$STAGE/summary.txt"
-          : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
-
-          ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){
-            local step="$1"
-            shift
-            echo "▶️ START: ${step} ($(ts))" >>"$LOG"
-            "$@" >>"$LOG" 2>step.err
-            rc=$?
-            if [ $rc -eq 0 ]; then
-              echo "✅ ${step} succeeded [$(ts)]" >>"$STATUS"
-            else
-              echo "❌ ${step} failed [$(ts)]" >>"$STATUS"
-              { echo "❌ ${step} ERROR [$(ts)]:"
-                cat step.err
-                echo; echo '---'; echo; } >>"$ERR"
-            fi
-            rm -f step.err
-            echo "⏹️ END: ${step} ($(ts))" >>"$LOG"
-            echo >>"$LOG"
-          }
-
-          run_step prep_merge.py                   python scripts/prep_merge.py
-          run_step chain_load_data.py              python scripts/chain_load_data.py
-          run_step clean_and_preprocess_games.py   python scripts/clean_and_preprocess_games.py
-          run_step normalize_pitchers_xtra.py      python scripts/normalize_pitchers_xtra.py
-          run_step clean_merge_files.py            python scripts/clean_merge_files.py
-          run_step finalbatawp.py                  python scripts/finalbatawp.py
-          run_step finalbathwp.py                  python scripts/finalbathwp.py
-          run_step pit1.py                         python scripts/pit1.py
-
-          {
-            echo "===== RUN TIMESTAMP: $(ts) ====="
-            echo
-            echo "===== STATUS =====";  cat "$STATUS"
-            echo; echo "===== LOG =====";  cat "$LOG"
-            echo; echo "===== ERRORS ====="; cat "$ERR"
-          } > "$SUM"
-
-      - name: Sweep stray root logs into summaries/05_prep
-        run: |
-          shopt -s nullglob
-          mkdir -p summaries/05_prep
-          for f in log_*.txt *.log; do
-            [ -f "$f" ] && mv "$f" "summaries/05_prep/" || true
-          done
-
-      - name: Commit outputs
-        run: |
-          set -euo pipefail
-          git add data/**/* || true
-          git add summaries/05_prep/* || true
-          git diff --cached --quiet || git commit -m "05 Prep block outputs"
-          # Robust Push: Rebase to get latest changes, then force-with-lease to push
-          git pull --rebase origin main
-          git push --force-with-lease origin HEAD:main
-
-  workflow_summary:
-    name: "Write overall workflow summary (00-05)"
-    needs:
-      - fetch_normalize
-      - split_sched
-      - weather_pipeline
-      - batter_adjustments
-      - pitcher_adjustments
-      - prep_block
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # This is correct for this final commit
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Build pipeline-level summary file
-        run: |
-          set -euo pipefail
-          mkdir -p summaries
-          OUT="summaries/pipeline-prep_summary.txt"
-          {
-            echo "===== WORKFLOW: Pipeline Prep (00-05) ====="
-            echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
-            echo
-
-            summarize_stage () {
-              local stage="$1"
-              local title="$2"
-              echo "== ${title} =="
-              if [ -f "summaries/${stage}/status.txt" ]; then
-                echo "-- status --"
-                tail -n +1 "summaries/${stage}/status.txt"
-              else
-                echo "(missing: summaries/${stage}/status.txt)"
-              fi
-              if [ -s "summaries/${stage}/errors.txt" ]; then
-                echo "-- errors (tail) --"
-                tail -n 50 "summaries/${stage}/errors.txt"
-              else
-                echo "-- errors -- (none or missing)"
-              fi
-              echo
-            }
-
-            summarize_stage "foundation"      "00 Fetch & Normalize"
-            summarize_stage "split_sched"     "01 Split & Schedule"
-            summarize_stage "weather"         "02 Weather Pipeline"
-            summarize_stage "batters_adjust"  "03 Batter Adjustments"
-            summarize_stage "pitchers_adjust" "04 Pitcher Adjustments"
-            summarize_stage "05_prep"         "05 Prep"
-          } > "$OUT"
-
-      - name: Commit workflow-level summary
-        run: |
-          set -euo pipefail
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add summaries/pipeline-prep_summary.txt
-          git diff --cached --quiet || git commit -m "Prep: write pipeline-prep_summary.txt"
-          # Robust Push: Rebase to get latest changes, then push
           git pull --rebase origin main
           git push --force-with-lease origin HEAD:main
