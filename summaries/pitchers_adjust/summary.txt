@@ -1,35 +1,35 @@
-===== RUN TIMESTAMP: 2025-09-25 04:45:26 PM EDT =====
+===== RUN TIMESTAMP: 2025-09-25 08:05:52 PM EDT =====
 
 ===== STATUS =====
-✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-25 04:45:24 PM EDT]
-✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-25 04:45:24 PM EDT]
-✅ apply_pitcher_park_adjustment.py succeeded [2025-09-25 04:45:24 PM EDT]
-✅ combine_pitcher_weather_park_home.py succeeded [2025-09-25 04:45:25 PM EDT]
-✅ combine_pitcher_weather_park_away.py succeeded [2025-09-25 04:45:26 PM EDT]
+✅ normalize_pitcher_weather_outputs.py succeeded [2025-09-25 08:05:50 PM EDT]
+✅ apply_pitcher_weather_adjustment.py succeeded [2025-09-25 08:05:50 PM EDT]
+✅ apply_pitcher_park_adjustment.py succeeded [2025-09-25 08:05:51 PM EDT]
+✅ combine_pitcher_weather_park_home.py succeeded [2025-09-25 08:05:51 PM EDT]
+✅ combine_pitcher_weather_park_away.py succeeded [2025-09-25 08:05:52 PM EDT]
 
 ===== LOG =====
-▶️ START: normalize_pitcher_weather_outputs.py (2025-09-25 04:45:23 PM EDT)
-[main 43cf6f38f] Normalize pitchers before weather adjustment
+▶️ START: normalize_pitcher_weather_outputs.py (2025-09-25 08:05:49 PM EDT)
+[main e1780cb4a] Normalize pitchers before weather adjustment
 Committed normalization stage outputs.
-⏹️ END: normalize_pitcher_weather_outputs.py (2025-09-25 04:45:24 PM EDT)
+⏹️ END: normalize_pitcher_weather_outputs.py (2025-09-25 08:05:50 PM EDT)
 
-▶️ START: apply_pitcher_weather_adjustment.py (2025-09-25 04:45:24 PM EDT)
+▶️ START: apply_pitcher_weather_adjustment.py (2025-09-25 08:05:50 PM EDT)
 Git error: Command '['git', 'add', 'data/adjusted/pitchers_home_weather.csv', 'data/adjusted/pitchers_away_weather.csv', 'summaries/pitchers_adjust/log_pitchers_home_weather.txt', 'summaries/pitchers_adjust/log_pitchers_away_weather.txt', 'summaries/pitchers_adjust/missing_woba.txt']' returned non-zero exit status 128.
-⏹️ END: apply_pitcher_weather_adjustment.py (2025-09-25 04:45:24 PM EDT)
+⏹️ END: apply_pitcher_weather_adjustment.py (2025-09-25 08:05:50 PM EDT)
 
-▶️ START: apply_pitcher_park_adjustment.py (2025-09-25 04:45:24 PM EDT)
+▶️ START: apply_pitcher_park_adjustment.py (2025-09-25 08:05:50 PM EDT)
 Git error: Command '['git', 'add', 'data/adjusted/pitchers_home_park.csv', 'data/adjusted/pitchers_away_park.csv', 'summaries/pitchers_adjust/log_pitchers_home_park.txt', 'summaries/pitchers_adjust/log_pitchers_away_park.txt', 'summaries/pitchers_adjust/missing_woba.txt']' returned non-zero exit status 128.
-⏹️ END: apply_pitcher_park_adjustment.py (2025-09-25 04:45:24 PM EDT)
+⏹️ END: apply_pitcher_park_adjustment.py (2025-09-25 08:05:51 PM EDT)
 
-▶️ START: combine_pitcher_weather_park_home.py (2025-09-25 04:45:24 PM EDT)
-[main 8c96ab95b] Combine pitcher weather+park (home) on player_id+game_id
- 2 files changed, 15 insertions(+), 15 deletions(-)
-⏹️ END: combine_pitcher_weather_park_home.py (2025-09-25 04:45:25 PM EDT)
+▶️ START: combine_pitcher_weather_park_home.py (2025-09-25 08:05:51 PM EDT)
+[main 786d8711b] Combine pitcher weather+park (home) on player_id+game_id
+ 2 files changed, 16 insertions(+), 16 deletions(-)
+⏹️ END: combine_pitcher_weather_park_home.py (2025-09-25 08:05:51 PM EDT)
 
-▶️ START: combine_pitcher_weather_park_away.py (2025-09-25 04:45:25 PM EDT)
-[main 0c1dd5cb9] Combine pitcher weather+park (away) on player_id+game_id
- 2 files changed, 14 insertions(+), 13 deletions(-)
-⏹️ END: combine_pitcher_weather_park_away.py (2025-09-25 04:45:26 PM EDT)
+▶️ START: combine_pitcher_weather_park_away.py (2025-09-25 08:05:51 PM EDT)
+[main 376df38ed] Combine pitcher weather+park (away) on player_id+game_id
+ 2 files changed, 17 insertions(+), 17 deletions(-)
+⏹️ END: combine_pitcher_weather_park_away.py (2025-09-25 08:05:52 PM EDT)
 
 
 ===== ERRORS =====
