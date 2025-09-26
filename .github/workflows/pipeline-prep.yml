@@ -116,7 +116,7 @@ jobs:
             [ -f "$f" ] && mv "$f" "summaries/foundation/" || true
           done
       - name: Commit outputs
-        run: >
+        run: |
           set -euo pipefail
           TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
 
@@ -166,7 +166,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Reset summaries
-        run: >
+        run: |
           rm -rf summaries/split_sched
           mkdir -p summaries/split_sched data/temp_inputs data/adjusted data/bets
       - name: Run stage with unified logs
@@ -225,7 +225,7 @@ jobs:
             [ -f "$f" ] && mv "$f" "summaries/split_sched/" || true
           done
       - name: Commit outputs
-        run: >
+        run: |
           set -euo pipefail
           TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
 
