@@ -24,7 +24,6 @@ jobs:
           fetch-depth: 0
       - name: Configure git
         run: |
-          # Use the official bot user for pushing
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Cache pip
@@ -63,7 +62,6 @@ jobs:
 
           : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
-
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
 
           run_step(){
@@ -84,45 +82,24 @@ jobs:
             echo >>"$LOG"
           }
 
-
           run_step normalize_names.py                  python scripts/normalize_names.py
-
           run_step tag_master_files.py                 python scripts/tag_master_files.py
-
           run_step validate_tagged_players.py          python scripts/validate_tagged_players.py
-
           run_step deduplicate_normalized.py           python scripts/deduplicate_normalized.py
-
           run_step normalize_lineups.py                python scripts/normalize_lineups.py
-
-          # Generate raw games list before normalizing it
-
           run_step todaysgames.py                      python scripts/todaysgames.py
-
           run_step normalize_todays_games.py           python scripts/normalize_todays_games.py
-
           run_step inject_pitcher_ids_into_games.py    python scripts/inject_pitcher_ids_into_games.py
-
           run_step apply_team_name_mapping.py          python scripts/apply_team_name_mapping.py
-
           run_step fetch_mlb_ids.py                    python scripts/fetch_mlb_ids.py
-
           run_step hotfix_team_codes.py                python scripts/hotfix_team_codes.py
-
           run_step update_game_time.py                 python scripts/update_game_time.py
-
           run_step finalize_todaysgames_types_and_pf.py  python scripts/finalize_todaysgames_types_and_pf.py
-
           run_step filter_stadium_metadata.py          python scripts/filter_stadium_metadata.py
-
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
-
           run_step build_batters_today_from_lineups.py python scripts/build_batters_today_from_lineups.py
-
           run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --lineups data/raw/lineups_normalized.csv
-
           run_step fix_inputs_inject_stolen_base_pct.py  python scripts/fix_inputs_inject_stolen_base_pct.py
-
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -141,26 +118,22 @@ jobs:
       - name: Commit outputs
         run: >
           set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
 
           git add data/raw/todaysgames.csv || true
-
           git add data/raw/todaysgames_normalized.csv || true
-
           git add data/raw/lineups_normalized.csv || true
-
           git add data/cleaned/batters_today.csv || true
-
           git add data/cleaned/pitchers_normalized_cleaned.csv || true
-
           git add summaries/foundation/* || true
 
-          git diff --cached --quiet || git commit -m "00 foundation outputs"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
 
-          # Robust Push: Rebase to get latest changes, then force-with-lease to push
-
-          git pull --rebase origin main
-
-          git push --force-with-lease origin HEAD:main
+          git commit -m "00 foundation outputs"
+          git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
   split_sched:
     name: 01 Split & Schedule
     needs:
@@ -174,7 +147,6 @@ jobs:
           fetch-depth: 0
       - name: Configure git
         run: |
-          # Use the official bot user for pushing
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
       - name: Cache pip
@@ -196,7 +168,6 @@ jobs:
       - name: Reset summaries
         run: >
           rm -rf summaries/split_sched
-
           mkdir -p summaries/split_sched data/temp_inputs data/adjusted data/bets
       - name: Run stage with unified logs
         run: >
@@ -213,7 +184,6 @@ jobs:
           SUM="$STAGE/summary.txt"
 
           : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
-
 
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
 
@@ -235,24 +205,10 @@ jobs:
             echo >>"$LOG"
           }
 
-
-          # Stage inputs for downstream processing/scheduling
-
           cp -f data/cleaned/batters_today.csv              data/temp_inputs/batters_today_copy.csv || true
-
           cp -f data/raw/todaysgames_normalized.csv         data/temp_inputs/todaysgames_normalized_copy.csv || true
-
           cp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv || true
-
           cp -f data/raw/lineups_normalized.csv             data/temp_inputs/lineups_normalized_copy.csv || true
-
-
-          # If you have dedicated split/schedule scripts, add them here via run_step calls, e.g.:
-
-          # run_step split_games_windows.py     python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted
-
-          # run_step build_bets_schedule.py     python scripts/build_bets_schedule.py --games data/adjusted --out data/bets
-
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -271,17 +227,17 @@ jobs:
       - name: Commit outputs
         run: >
           set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
 
           git add data/temp_inputs/* || true
-
           git add data/adjusted/* || true
-
           git add data/bets/* || true
-
           git add summaries/split_sched/* || true
 
-          git diff --cached --quiet || git commit -m "01 split & schedule outputs"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
 
-          git pull --rebase origin main
-
-          git push --force-with-lease origin HEAD:main
+          git commit -m "01 split & schedule outputs"
+          git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
