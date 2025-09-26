@@ -135,6 +135,19 @@ jobs:
         run: |
           python scripts/impute_missing_batter_adj_woba.py |& tee summaries/06_projection/impute_missing_batter_adj_woba.py.log || true
 
+      - name: Upload 06 outputs as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: projections-06-outputs
+          retention-days: 1
+          path: |
+            data/_projections/*.csv
+            data/end_chain/final/*.csv
+            data/raw/todaysgames_normalized.csv
+            data/raw/startingpitchers_with_opp_context.csv
+            summaries/06_projection/*.log
+
       - name: Commit & push 06 outputs + authoritative CSVs
         if: always()
         run: |
@@ -207,6 +220,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Download 06 outputs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: projections-06-outputs
+          path: .
+
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
@@ -228,15 +247,32 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           mkdir -p data/_projections data/end_chain/final
 
-      # NEW: regenerate *_final files if absent (guards against stale repo state)
-      - name: Ensure *_final projection CSVs exist
+      - name: Preflight: confirm required projection files
         run: |
           set -euo pipefail
-          need=0
-          [ -f data/_projections/pitcher_props_projected_final.csv ] || need=1
-          [ -f data/_projections/batter_props_projected_final.csv ] || need=1
-          [ "$need" -eq 0 ] || python scripts/finalize_projections.py
-          ls -l data/_projections | sed 's/^/  /'
+          echo "Listing key directories:"
+          ls -l data/_projections || true
+          ls -l data/end_chain/final || true
+          echo
+          missing=0
+          for p in \
+            data/_projections/pitcher_props_projected.csv \
+            data/_projections/pitcher_props_projected_final.csv \
+            data/end_chain/final/pitcher_props_projected_final.csv \
+            data/_projections/batter_props_projected_final.csv \
+            data/_projections/batter_props_expanded_final.csv
+          do
+            if [ -f "$p" ]; then
+              echo "[OK] $p ($(wc -l < "$p") lines)"
+            else
+              echo "[MISS] $p"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Attempting to regenerate missing *_final via finalize_projections.py..."
+            python scripts/finalize_projections.py || true
+          fi
 
       - name: Enforce pitcher props schema (pre-07)
         run: |
