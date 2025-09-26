@@ -400,8 +400,24 @@ jobs:
           : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $1 failed [$(ts)]" >>"$STATUS"; { echo "❌ $1 ERROR [$(ts)]:";
-            cat step.err; echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $1 ($(ts))" >>"$LOG"; echo >>"$LOG"; }
+          run_step(){
+            local step="$1"
+            shift
+            echo "▶️ START: ${step} ($(ts))" >>"$LOG"
+            "$@" >>"$LOG" 2>step.err
+            rc=$?
+            if [ $rc -eq 0 ]; then
+              echo "✅ ${step} succeeded [$(ts)]" >>"$STATUS"
+            else
+              echo "❌ ${step} failed [$(ts)]" >>"$STATUS"
+              { echo "❌ ${step} ERROR [$(ts)]:"
+                cat step.err
+                echo; echo '---'; echo; } >>"$ERR"
+            fi
+            rm -f step.err
+            echo "⏹️ END: ${step} ($(ts))" >>"$LOG"
+            echo >>"$LOG"
+          }
 
           run_step apply_weather_adjustment.py       python scripts/apply_weather_adjustment.py
           run_step apply_park_adjustment.py          python scripts/apply_park_adjustment.py
@@ -575,7 +591,24 @@ jobs:
           : >"$STATUS"; : >"$LOG"; : >"$ERR"; : >"$SUM"
 
           ts(){ TZ="America/New_York" date +"%Y-%m-%d %I:%M:%S %p %Z"; }
-          run_step(){ echo "▶️ START: $1 ($(ts))" >>"$LOG"; shift; "$@" >>"$LOG" 2>step.err; rc=$?; if [ $rc -eq 0 ]; then echo "✅ $1 succeeded [$(ts)]" >>"$STATUS"; else echo "❌ $1 failed [$(ts)]" >>"$STATUS"; { echo "❌ $1 ERROR [$(ts)]:"; cat step.err; echo; echo '---'; echo; } >>"$ERR"; fi; rm -f step.err; echo "⏹️ END: $1 ($(ts))" >>"$LOG"; echo >>"$LOG"; }
+          run_step(){
+            local step="$1"
+            shift
+            echo "▶️ START: ${step} ($(ts))" >>"$LOG"
+            "$@" >>"$LOG" 2>step.err
+            rc=$?
+            if [ $rc -eq 0 ]; then
+              echo "✅ ${step} succeeded [$(ts)]" >>"$STATUS"
+            else
+              echo "❌ ${step} failed [$(ts)]" >>"$STATUS"
+              { echo "❌ ${step} ERROR [$(ts)]:"
+                cat step.err
+                echo; echo '---'; echo; } >>"$ERR"
+            fi
+            rm -f step.err
+            echo "⏹️ END: ${step} ($(ts))" >>"$LOG"
+            echo >>"$LOG"
+          }
 
           run_step prep_merge.py                   python scripts/prep_merge.py
           run_step chain_load_data.py              python scripts/chain_load_data.py
