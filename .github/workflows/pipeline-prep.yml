@@ -20,7 +20,7 @@ jobs:
     name: "00 Fetch & Normalize"
     runs-on: ubuntu-latest
     env:
-      TZ: America/New_York
+      TZ: America/New_York # Changed to block style for strict linting
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,8 +30,9 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # Use the official bot user for pushing
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -123,6 +124,7 @@ jobs:
 
       - name: Commit outputs
         run: |
+          set -euo pipefail
           git add data/raw/todaysgames.csv || true
           git add data/raw/todaysgames_normalized.csv || true
           git add data/raw/lineups_normalized.csv || true
@@ -130,8 +132,9 @@ jobs:
           git add data/cleaned/pitchers_normalized_cleaned.csv || true
           git add summaries/foundation/* || true
           git diff --cached --quiet || git commit -m "00 foundation outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          # Robust Push: Rebase to get latest changes, then force-with-lease to push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
 
   split_sched:
     name: "01 Split & Schedule"
@@ -146,8 +149,9 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # Use the official bot user for pushing
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -231,13 +235,15 @@ jobs:
 
       - name: Commit outputs
         run: |
+          set -euo pipefail
           git add --force data/adjusted/batters_*.csv || true
           git add --force data/adjusted/pitchers_*.csv || true
           git add data/bets/mlb_sched.csv || true
           git add summaries/split_sched/* || true
           git diff --cached --quiet || git commit -m "01 split & schedule outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          # Robust Push: Rebase to get latest changes, then force-with-lease to push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
 
   weather_pipeline:
     name: "02 Weather Pipeline"
@@ -252,8 +258,9 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # Use the official bot user for pushing
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -332,12 +339,14 @@ jobs:
 
       - name: Commit outputs
         run: |
+          set -euo pipefail
           git add data/weather_input.csv || true
           git add data/weather_adjustments.csv || true
           git add summaries/weather/* || true
           git diff --cached --quiet || git commit -m "02 weather pipeline outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          # Robust Push: Rebase to get latest changes, then force-with-lease to push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
 
   batter_adjustments:
     name: "03 Batter Adjustments"
@@ -352,8 +361,9 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # Use the official bot user for pushing
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -414,13 +424,15 @@ jobs:
 
       - name: Commit outputs
         run: |
+          set -euo pipefail
           git add data/adjusted/batters_*_weather.csv || true
           git add data/adjusted/batters_*_park.csv || true
           git add data/adjusted/batters_*_weather_park.csv || true
           git add summaries/batters_adjust/* || true
           git diff --cached --quiet || git commit -m "03 batter adjustments outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          # Robust Push: Rebase to get latest changes, then force-with-lease to push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
 
   pitcher_adjustments:
     name: "04 Pitcher Adjustments"
@@ -435,8 +447,9 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # Use the official bot user for pushing
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -498,19 +511,21 @@ jobs:
 
       - name: Commit outputs
         run: |
+          set -euo pipefail
           git add data/adjusted/pitchers_*_{weather,park}.csv || true
           git add data/adjusted/pitchers_*_weather_park.csv || true
           git add summaries/pitchers_adjust/* || true
           git diff --cached --quiet || git commit -m "04 pitcher adjustments outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          # Robust Push: Rebase to get latest changes, then force-with-lease to push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
 
   prep_block:
     name: "05 Prep"
     needs: [pitcher_adjustments]
     runs-on: ubuntu-latest
     env:
-      TZ: America/New_York
+      TZ: America/New_York # Changed to block style for strict linting
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -521,8 +536,9 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          # Use the official bot user for pushing
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -587,11 +603,13 @@ jobs:
 
       - name: Commit outputs
         run: |
+          set -euo pipefail
           git add data/**/* || true
           git add summaries/05_prep/* || true
           git diff --cached --quiet || git commit -m "05 Prep block outputs"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          # Robust Push: Rebase to get latest changes, then force-with-lease to push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
 
   workflow_summary:
     name: "Write overall workflow summary (00–05)"
@@ -604,7 +622,7 @@ jobs:
       - prep_block
     runs-on: ubuntu-latest
     permissions:
-      contents: write # <-- FIX APPLIED HERE
+      contents: write # This is correct for this final commit
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -655,6 +673,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/pipeline-prep_summary.txt
-          git commit -m "Prep: write pipeline-prep_summary.txt" || echo "No changes to commit"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          git diff --cached --quiet || git commit -m "Prep: write pipeline-prep_summary.txt"
+          # Robust Push: Rebase to get latest changes, then push
+          git pull --rebase origin main
+          git push --force-with-lease origin HEAD:main
