@@ -1,9 +1,8 @@
-
 # .github/workflows/pipeline-prep.yml
 name: "Pipeline Prep (00-05)"
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 permissions:
   contents: write
@@ -613,7 +612,7 @@ jobs:
           git push --force-with-lease origin HEAD:main
 
   workflow_summary:
-    name: "Write overall workflow summary (00–05)"
+    name: "Write overall workflow summary (00-05)"
     needs:
       - fetch_normalize
       - split_sched
@@ -637,7 +636,7 @@ jobs:
           mkdir -p summaries
           OUT="summaries/pipeline-prep_summary.txt"
           {
-            echo "===== WORKFLOW: Pipeline Prep (00–05) ====="
+            echo "===== WORKFLOW: Pipeline Prep (00-05) ====="
             echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
             echo
 
