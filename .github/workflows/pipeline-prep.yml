@@ -603,6 +603,8 @@ jobs:
       - pitcher_adjustments
       - prep_block
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # <-- FIX APPLIED HERE
     steps:
       - name: Checkout
         uses: actions/checkout@v4
