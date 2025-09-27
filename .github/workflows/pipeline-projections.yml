@@ -151,20 +151,29 @@ jobs:
       - name: Commit & push 06 outputs + authoritative CSVs
         if: always()
         run: |
-          git config --global user.email "actions@github.com"
-          git config --global user.name "GitHub Actions"
+          set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
           git add "data/_projections/"*.csv 2>/dev/null || true
           git add "data/end_chain/final/"*.csv 2>/dev/null || true
           git add "data/raw/todaysgames_normalized.csv" 2>/dev/null || true
           git add "data/raw/startingpitchers_with_opp_context.csv" 2>/dev/null || true
           git add "summaries/06_projection/"*.log 2>/dev/null || true
-          git commit -m "06 Projection: commit generated outputs and logs" || echo "No changes to commit"
-          git pull --rebase origin main || true
-          git push || echo "No changes to push"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "06 Projection: commit generated outputs and logs"
+            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+          fi
 
       - name: Write & push 06 summary
         if: always()
         run: |
+          set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name  "github-actions[bot]"
           STAGE="summaries/06_projection"
           SUMMARY="$STAGE/summary.txt"
           STATUS="$STAGE/status.txt"
@@ -202,9 +211,12 @@ jobs:
             done
           } > "$SUMMARY"
           git add "$SUMMARY" || true
-          git commit -m "06 Projection: overwrite summary.txt [skip ci]" || echo "No changes to commit"
-          git pull --rebase origin main || true
-          git push || echo "No changes to push"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "06 Projection: overwrite summary.txt [skip ci]"
+            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+          fi
 
   final_projections:
     name: "07 Final Projections"
@@ -324,12 +336,14 @@ jobs:
           shopt -s nullglob
           mkdir -p summaries/07_final
           for f in log_*.txt *.log; do
-            if [ -f "$f" ]; then mv "$f" "summaries/07_final/"; fi
+            if [ -f "$f" ]: then mv "$f" "summaries/07_final/"; fi
           done
 
       - name: Commit CSVs + summaries (07)
         if: always()
         run: |
+          set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
@@ -344,12 +358,11 @@ jobs:
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
-          if ! git diff --cached --quiet; then
-            git commit -m "CI: update final projections and summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
-            git pull --rebase origin main || true
-            git push origin HEAD:main || true
-          else
+          if git diff --cached --quiet; then
             echo "No changes to commit."
+          else
+            git commit -m "CI: update final projections and summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
+            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
           fi
 
   workflow_summary:
@@ -394,9 +407,14 @@ jobs:
 
       - name: Commit workflow-level summary
         run: |
+          set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/pipeline-projections_summary.txt
-          git commit -m "Projections: write pipeline-projections_summary.txt" || echo "No changes to commit"
-          git pull --rebase origin main || true
-          git push origin HEAD:main || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Projections: write pipeline-projections_summary.txt"
+            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+          fi
