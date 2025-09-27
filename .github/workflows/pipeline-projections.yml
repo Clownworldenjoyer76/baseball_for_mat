@@ -336,7 +336,7 @@ jobs:
           shopt -s nullglob
           mkdir -p summaries/07_final
           for f in log_*.txt *.log; do
-            if [ -f "$f" ]: then mv "$f" "summaries/07_final/"; fi
+            if [ -f "$f" ]; then mv "$f" "summaries/07_final/"; fi
           done
 
       - name: Commit CSVs + summaries (07)
