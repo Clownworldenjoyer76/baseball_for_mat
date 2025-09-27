@@ -1,3 +1,4 @@
+# .github/workflows/pipeline-projections.yml
 name: "Pipeline Projections (06–07)"
 
 on:
@@ -79,7 +80,7 @@ jobs:
         run: |
           python scripts/project_pitcher_props.py |& tee summaries/06_projection/project_pitcher_props.py.log || true
 
-      - name: 06-08 ensure_pitcher_props_schema.py
+      - name: 06-08 ensure_pitcher_props schema.py
         run: |
           python scripts/ensure_pitcher_props_schema.py |& tee summaries/06_projection/ensure_pitcher_props_schema.py.log || true
 
@@ -152,26 +153,39 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
+          echo "TARGET_BRANCH=${TARGET_BRANCH}"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
+
+          echo "--- DIR LISTS ---"
+          ls -l data/_projections || true
+          ls -l data/end_chain/final || true
+          ls -l data/raw || true
+          ls -l summaries/06_projection || true
+
           git add "data/_projections/"*.csv 2>/dev/null || true
           git add "data/end_chain/final/"*.csv 2>/dev/null || true
           git add "data/raw/todaysgames_normalized.csv" 2>/dev/null || true
           git add "data/raw/startingpitchers_with_opp_context.csv" 2>/dev/null || true
           git add "summaries/06_projection/"*.log 2>/dev/null || true
+
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
+
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "06 Projection: commit generated outputs and logs"
-            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
           fi
 
       - name: Write & push 06 summary
         if: always()
         run: |
           set -euo pipefail
-          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
           STAGE="summaries/06_projection"
@@ -210,12 +224,16 @@ jobs:
               echo
             done
           } > "$SUMMARY"
+
           git add "$SUMMARY" || true
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "06 Projection: overwrite summary.txt [skip ci]"
-            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
           fi
 
   final_projections:
@@ -343,9 +361,17 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
+          echo "TARGET_BRANCH=${TARGET_BRANCH}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          echo "--- DIR LISTS ---"
+          ls -l data/end_chain/final || true
+          ls -l data/_projections || true
+          ls -l data/raw || true
+          ls -l summaries/07_final || true
+
           git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
           git add data/end_chain/final/batter_event_probabilities.csv 2>/dev/null || true
           git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
@@ -358,11 +384,16 @@ jobs:
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
+
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
+
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "CI: update final projections and summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
-            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
           fi
 
   workflow_summary:
@@ -408,13 +439,16 @@ jobs:
       - name: Commit workflow-level summary
         run: |
           set -euo pipefail
-          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/pipeline-projections_summary.txt
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Projections: write pipeline-projections_summary.txt"
-            git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
           fi
