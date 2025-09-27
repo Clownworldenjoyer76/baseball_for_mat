@@ -1,3 +1,4 @@
+# .github/workflows/pipeline-prep.yml
 ---
 name: Pipeline Prep (00-05)
 on:
@@ -22,10 +23,12 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -33,19 +36,23 @@ jobs:
           key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-py-
+
       - name: Setup Python
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Reset summaries
         run: |
           rm -rf summaries/foundation
           mkdir -p summaries/foundation
+
       - name: Run stage with unified logs
         run: >
           set +e
@@ -108,6 +115,7 @@ jobs:
             echo; echo "===== LOG =====";   cat "$LOG"
             echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
+
       - name: Sweep stray root logs into summaries/foundation
         run: |
           shopt -s nullglob
@@ -115,17 +123,28 @@ jobs:
           for f in log_*.txt *.log; do
             [ -f "$f" ] && mv "$f" "summaries/foundation/" || true
           done
+
       - name: Commit outputs
         run: |
           set -euo pipefail
-          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
 
-          git add data/raw/todaysgames.csv || true
-          git add data/raw/todaysgames_normalized.csv || true
-          git add data/raw/lineups_normalized.csv || true
-          git add data/cleaned/batters_today.csv || true
-          git add data/cleaned/pitchers_normalized_cleaned.csv || true
-          git add summaries/foundation/* || true
+          echo "TARGET_BRANCH=${TARGET_BRANCH}"
+
+          echo "--- DIR LISTS ---"
+          ls -l data/raw || true
+          ls -l data/cleaned || true
+          ls -l summaries/foundation || true
+
+          git add data/raw/todaysgames.csv 2>/dev/null || true
+          git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
+          git add data/raw/lineups_normalized.csv 2>/dev/null || true
+          git add data/cleaned/batters_today.csv 2>/dev/null || true
+          git add data/cleaned/pitchers_normalized_cleaned.csv 2>/dev/null || true
+          git add summaries/foundation/* 2>/dev/null || true
+
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
@@ -133,7 +152,9 @@ jobs:
           fi
 
           git commit -m "00 foundation outputs"
-          git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+          echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+          git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
+
   split_sched:
     name: 01 Split & Schedule
     needs:
@@ -145,10 +166,12 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
@@ -156,19 +179,23 @@ jobs:
           key: ${{ runner.os }}-py-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-py-
+
       - name: Setup Python
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
       - name: Reset summaries
         run: |
           rm -rf summaries/split_sched
           mkdir -p summaries/split_sched data/temp_inputs data/adjusted data/bets
+
       - name: Run stage with unified logs
         run: >
           set +e
@@ -205,10 +232,11 @@ jobs:
             echo >>"$LOG"
           }
 
-          cp -f data/cleaned/batters_today.csv              data/temp_inputs/batters_today_copy.csv || true
-          cp -f data/raw/todaysgames_normalized.csv         data/temp_inputs/todaysgames_normalized_copy.csv || true
+          # Stage inputs for downstream processing/scheduling
+          cp -f data/cleaned/batters_today.csv               data/temp_inputs/batters_today_copy.csv || true
+          cp -f data/raw/todaysgames_normalized.csv          data/temp_inputs/todaysgames_normalized_copy.csv || true
           cp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv || true
-          cp -f data/raw/lineups_normalized.csv             data/temp_inputs/lineups_normalized_copy.csv || true
+          cp -f data/raw/lineups_normalized.csv              data/temp_inputs/lineups_normalized_copy.csv || true
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -217,6 +245,7 @@ jobs:
             echo; echo "===== LOG =====";   cat "$LOG"
             echo; echo "===== ERRORS =====";cat "$ERR"
           } > "$SUM"
+
       - name: Sweep stray root logs into summaries/split_sched
         run: |
           shopt -s nullglob
@@ -224,15 +253,27 @@ jobs:
           for f in log_*.txt *.log; do
             [ -f "$f" ] && mv "$f" "summaries/split_sched/" || true
           done
+
       - name: Commit outputs
         run: |
           set -euo pipefail
-          TARGET_BRANCH="${GITHUB_REF#refs/heads/}"
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
 
-          git add data/temp_inputs/* || true
-          git add data/adjusted/* || true
-          git add data/bets/* || true
-          git add summaries/split_sched/* || true
+          echo "TARGET_BRANCH=${TARGET_BRANCH}"
+
+          echo "--- DIR LISTS ---"
+          ls -l data/temp_inputs || true
+          ls -l data/adjusted || true
+          ls -l data/bets || true
+          ls -l summaries/split_sched || true
+
+          git add data/temp_inputs/* 2>/dev/null || true
+          git add data/adjusted/* 2>/dev/null || true
+          git add data/bets/* 2>/dev/null || true
+          git add summaries/split_sched/* 2>/dev/null || true
+
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
@@ -240,4 +281,57 @@ jobs:
           fi
 
           git commit -m "01 split & schedule outputs"
-          git push --force-with-lease origin HEAD:"$TARGET_BRANCH"
+          echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+          git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
+
+  workflow_summary:
+    name: 05 Write pipeline-prep summary
+    needs:
+      - split_sched
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Build pipeline-prep_summary.txt
+        run: |
+          mkdir -p summaries
+          OUT="summaries/pipeline-prep_summary.txt"
+          {
+            echo "===== WORKFLOW: Pipeline Prep (00-05) ====="
+            echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+            echo
+            echo "== foundation =="
+            if [ -f summaries/foundation/summary.txt ]; then
+              sed -n '1,120p' summaries/foundation/summary.txt
+            else
+              echo "(missing: summaries/foundation/summary.txt)"
+            fi
+            echo
+            echo "== split_sched =="
+            if [ -f summaries/split_sched/summary.txt ]; then
+              sed -n '1,120p' summaries/split_sched/summary.txt
+            else
+              echo "(missing: summaries/split_sched/summary.txt)"
+            fi
+          } > "$OUT"
+
+      - name: Commit pipeline-prep_summary.txt
+        run: |
+          set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add summaries/pipeline-prep_summary.txt
+          echo "--- GIT STATUS AFTER ADD ---"
+          git status -s
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Prep: write pipeline-prep_summary.txt"
+            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
+          fi
