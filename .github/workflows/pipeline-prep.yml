@@ -1,4 +1,3 @@
-# .github/workflows/pipeline-prep.yml
 ---
 name: Pipeline Prep (00-05)
 on:
@@ -104,7 +103,15 @@ jobs:
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step build_batters_today_from_lineups.py python scripts/build_batters_today_from_lineups.py
 
-          run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py --games data/raw/todaysgames_normalized.csv --batters data/cleaned/batters_today.csv --pitchers data/cleaned/pitchers_normalized_cleaned.csv --lineups data/raw/lineups_normalized.csv
+          # NEW: provide required --game-date to post_normalize_fixups.py
+          GAME_DATE="$(TZ='America/New_York' date +%Y-%m-%d)"
+          echo "Using GAME_DATE=${GAME_DATE}" >>"$LOG"
+          run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py \
+                                                       --games data/raw/todaysgames_normalized.csv \
+                                                       --batters data/cleaned/batters_today.csv \
+                                                       --pitchers data/cleaned/pitchers_normalized_cleaned.csv \
+                                                       --game-date "${GAME_DATE}"
+
           run_step fix_inputs_inject_stolen_base_pct.py  python scripts/fix_inputs_inject_stolen_base_pct.py
 
           {
@@ -232,9 +239,7 @@ jobs:
           cp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv || true
           cp -f data/raw/lineups_normalized.csv              data/temp_inputs/lineups_normalized_copy.csv || true
 
-          # (Optional) Add split/schedule scripts here with run_step calls
-          # run_step split_games_windows.py     python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted
-          # run_step build_bets_schedule.py     python scripts/build_bets_schedule.py --games data/adjusted --out data/bets
+          # (Optional) add split/schedule scripts with run_step if you have them
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
