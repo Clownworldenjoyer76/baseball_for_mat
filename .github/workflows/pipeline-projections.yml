@@ -63,7 +63,7 @@ jobs:
         run: |
           python scripts/project_prep.py |& tee summaries/06_projection/project_prep.py.log || true
 
-      # NOTE: moved fix_missing_batter_stats.py LATER (after batter_home/away CSVs exist)
+      # (fix_missing_batter_stats.py runs later after home/away files exist)
 
       - name: 06-05 normalize_batters_for_builder.py
         run: |
@@ -97,7 +97,7 @@ jobs:
         run: |
           python scripts/pitcher_mega_z.py |& tee summaries/06_projection/pitcher_mega_z.py.log || true
 
-      # NEW: synthesize pitcher_mega_z_final.csv for downstream cleaners
+      # Ensure pitcher_mega_z_final.csv exists for downstream cleaners
       - name: 06-12a ensure_pitcher_mega_z_final.csv
         run: |
           set -e
@@ -127,47 +127,50 @@ jobs:
         run: |
           python scripts/finalize_projections.py |& tee summaries/06_projection/finalize_projections.py.log || true
 
-      # NEW: build batter_home_final.csv / batter_away_final.csv before fixing stats
-      - name: 06-15a synthesize_batter_home_away_final
+      # Write helper script to accurately split batter home/away finals
+      - name: 06-15a write helper synthesize_batter_home_away.py
         run: |
-          set -e
-          mkdir -p data/end_chain/final
-          src="data/_projections/batter_props_projected_final.csv"
-          if [ ! -f "$src" ]; then
-            # fallback to non-final if needed
-            src="data/_projections/batter_props_projected.csv"
-          fi
-          if [ ! -f "$src" ]; then
-            echo "ERROR: cannot find batter projections to synthesize home/away finals." >&2
-            exit 1
-          fi
-          # If home/away column exists, split; otherwise copy to both
-          if python - <<'PY'
-import pandas as pd
-df = pd.read_csv("$src")
-cols = {c.lower(): c for c in df.columns}
-ha_col = cols.get("home_away") or cols.get("homeaway") or cols.get("is_home")
-if ha_col:
-    # Normalize values and split
-    s = df.copy()
-    if ha_col.lower()=="is_home":
-        s["__ha__"] = df[ha_col].astype(int).map({1:"home",0:"away"}).fillna("away")
-    else:
-        s["__ha__"] = df[ha_col].astype(str).str.lower().str.strip()
-    s[s["__ha__"]=="home"].drop(columns="__ha__", errors="ignore").to_csv("data/end_chain/final/batter_home_final.csv", index=False)
-    s[s["__ha__"]=="away"].drop(columns="__ha__", errors="ignore").to_csv("data/end_chain/final/batter_away_final.csv", index=False)
-else:
-    df.to_csv("data/end_chain/final/batter_home_final.csv", index=False)
-    df.to_csv("data/end_chain/final/batter_away_final.csv", index=False)
-PY
-          then
-            echo "Synthesized batter_home_final.csv and batter_away_final.csv"
-          else
-            echo "ERROR during synthesis of batter home/away finals" >&2
-            exit 1
-          fi
+          mkdir -p scripts
+          cat > scripts/synthesize_batter_home_away.py << 'PY'
+          #!/usr/bin/env python3
+          import sys, pandas as pd, os
+          src = sys.argv[1] if len(sys.argv) > 1 else "data/_projections/batter_props_projected_final.csv"
+          home_out = "data/end_chain/final/batter_home_final.csv"
+          away_out = "data/end_chain/final/batter_away_final.csv"
+          os.makedirs(os.path.dirname(home_out), exist_ok=True)
+          if not os.path.exists(src):
+              alt = "data/_projections/batter_props_projected.csv"
+              if os.path.exists(alt):
+                  src = alt
+              else:
+                  print(f"ERROR: no batter projections at {src} or {alt}", file=sys.stderr)
+                  sys.exit(1)
+          df = pd.read_csv(src)
+          lower_map = {c.lower(): c for c in df.columns}
+          ha_col = lower_map.get("home_away") or lower_map.get("homeaway") or lower_map.get("is_home")
+          if ha_col:
+              col = ha_col
+              if col.lower() == "is_home":
+                  tmp = df.copy()
+                  tmp["__ha__"] = (tmp[col].astype(float).fillna(0).astype(int)).map({1:"home",0:"away"})
+              else:
+                  tmp = df.copy()
+                  tmp["__ha__"] = tmp[col].astype(str).str.lower().str.strip()
+              tmp[tmp["__ha__"]=="home"].drop(columns=["__ha__"], errors="ignore").to_csv(home_out, index=False)
+              tmp[tmp["__ha__"]=="away"].drop(columns=["__ha__"], errors="ignore").to_csv(away_out, index=False)
+          else:
+              # No home/away indicator; write the same to both for downstream compatibility
+              df.to_csv(home_out, index=False)
+              df.to_csv(away_out, index=False)
+          print(f"WROTE {home_out} and {away_out}")
+          PY
+          chmod +x scripts/synthesize_batter_home_away.py
 
-      # MOVED HERE: ensure hr/slg/obp columns exist in home/away finals
+      - name: 06-15b synthesize_batter_home_away_final
+        run: |
+          python scripts/synthesize_batter_home_away.py |& tee summaries/06_projection/synthesize_batter_home_away.py.log
+
+      # Ensure hr/slg/obp columns exist in home/away finals (uses your script)
       - name: 06-16 fix_missing_batter_stats.py
         run: |
           python scripts/fix_missing_batter_stats.py |& tee summaries/06_projection/fix_missing_batter_stats.py.log || true
