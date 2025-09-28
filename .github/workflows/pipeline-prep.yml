@@ -103,7 +103,7 @@ jobs:
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step build_batters_today_from_lineups.py python scripts/build_batters_today_from_lineups.py
 
-          # NEW: provide required --game-date to post_normalize_fixups.py
+          # Provide required --game-date to post_normalize_fixups.py
           GAME_DATE="$(TZ='America/New_York' date +%Y-%m-%d)"
           echo "Using GAME_DATE=${GAME_DATE}" >>"$LOG"
           run_step post_normalize_fixups.py            python scripts/post_normalize_fixups.py \
@@ -200,7 +200,7 @@ jobs:
       - name: Reset summaries
         run: |
           rm -rf summaries/split_sched
-          mkdir -p summaries/split_sched data/temp_inputs data/adjusted data/bets
+          mkdir -p summaries/split_sched data/temp_inputs data/adjusted data/bets data/_projections
 
       - name: Run stage with unified logs
         run: |
@@ -234,12 +234,17 @@ jobs:
           }
 
           # Stage inputs for downstream processing/scheduling
-          cp -f data/cleaned/batters_today.csv               data/temp_inputs/batters_today_copy.csv || true
-          cp -f data/raw/todaysgames_normalized.csv          data/temp_inputs/todaysgames_normalized_copy.csv || true
-          cp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv || true
-          cp -f data/raw/lineups_normalized.csv              data/temp_inputs/lineups_normalized_copy.csv || true
+          run_step copy_inputs_batters.py               cp -f data/cleaned/batters_today.csv               data/temp_inputs/batters_today_copy.csv
+          run_step copy_inputs_tgn.py                   cp -f data/raw/todaysgames_normalized.csv          data/temp_inputs/todaysgames_normalized_copy.csv
+          run_step copy_inputs_pitchers.py              cp -f data/cleaned/pitchers_normalized_cleaned.csv data/temp_inputs/pitchers_normalized_cleaned_copy.csv
+          run_step copy_inputs_lineups.py               cp -f data/raw/lineups_normalized.csv              data/temp_inputs/lineups_normalized_copy.csv
 
-          # (Optional) add split/schedule scripts with run_step if you have them
+          # Emit file 06 expects: todaysgames_normalized_fixed.csv
+          run_step emit_tgn_fixed.sh                    bash -lc 'cp -f data/temp_inputs/todaysgames_normalized_copy.csv data/_projections/todaysgames_normalized_fixed.csv && echo "WROTE data/_projections/todaysgames_normalized_fixed.csv"'
+
+          # Optionally run your split/schedule scripts if present
+          run_step maybe_split_games_windows.py         bash -lc '[ -f scripts/split_games_windows.py ] && python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted || echo "SKIP: scripts/split_games_windows.py not found"'
+          run_step maybe_build_bets_schedule.py         bash -lc '[ -f scripts/build_bets_schedule.py ] && python scripts/build_bets_schedule.py --games data/adjusted --out data/bets || echo "SKIP: scripts/build_bets_schedule.py not found"'
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
@@ -268,11 +273,13 @@ jobs:
           ls -l data/temp_inputs || true
           ls -l data/adjusted || true
           ls -l data/bets || true
+          ls -l data/_projections || true
           ls -l summaries/split_sched || true
 
           git add data/temp_inputs/* 2>/dev/null || true
           git add data/adjusted/* 2>/dev/null || true
           git add data/bets/* 2>/dev/null || true
+          git add data/_projections/todaysgames_normalized_fixed.csv 2>/dev/null || true
           git add summaries/split_sched/* 2>/dev/null || true
 
           echo "--- GIT STATUS AFTER ADD ---"
