@@ -1,4 +1,3 @@
-# .github/workflows/pipeline-projections.yml
 name: "Pipeline Projections (06–07)"
 
 on:
@@ -64,9 +63,7 @@ jobs:
         run: |
           python scripts/project_prep.py |& tee summaries/06_projection/project_prep.py.log || true
 
-      - name: 06-04 fix_missing_batter_stats.py
-        run: |
-          python scripts/fix_missing_batter_stats.py |& tee summaries/06_projection/fix_missing_batter_stats.py.log || true
+      # NOTE: moved fix_missing_batter_stats.py LATER (after batter_home/away CSVs exist)
 
       - name: 06-05 normalize_batters_for_builder.py
         run: |
@@ -80,7 +77,7 @@ jobs:
         run: |
           python scripts/project_pitcher_props.py |& tee summaries/06_projection/project_pitcher_props.py.log || true
 
-      - name: 06-08 ensure_pitcher_props schema.py
+      - name: 06-08 ensure_pitcher_props_schema.py
         run: |
           python scripts/ensure_pitcher_props_schema.py |& tee summaries/06_projection/ensure_pitcher_props_schema.py.log || true
 
@@ -100,6 +97,24 @@ jobs:
         run: |
           python scripts/pitcher_mega_z.py |& tee summaries/06_projection/pitcher_mega_z.py.log || true
 
+      # NEW: synthesize pitcher_mega_z_final.csv for downstream cleaners
+      - name: 06-12a ensure_pitcher_mega_z_final.csv
+        run: |
+          set -e
+          mkdir -p data/_projections
+          if [ -f data/_projections/pitcher_mega_z_final.csv ]; then
+            echo "pitcher_mega_z_final.csv already exists"
+          elif [ -f data/_projections/pitcher_mega_z_fixed.csv ]; then
+            cp -f data/_projections/pitcher_mega_z_fixed.csv data/_projections/pitcher_mega_z_final.csv
+            echo "Created pitcher_mega_z_final.csv from *_fixed.csv"
+          elif [ -f data/_projections/pitcher_mega_z.csv ]; then
+            cp -f data/_projections/pitcher_mega_z.csv data/_projections/pitcher_mega_z_final.csv
+            echo "Created pitcher_mega_z_final.csv from pitcher_mega_z.csv"
+          else
+            echo "ERROR: no source for pitcher_mega_z_final.csv" >&2
+            exit 1
+          fi
+
       - name: 06-13 starter_coverage_guard.py
         run: |
           python scripts/starter_coverage_guard.py |& tee summaries/06_projection/starter_coverage_guard.py.log || true
@@ -112,9 +127,50 @@ jobs:
         run: |
           python scripts/finalize_projections.py |& tee summaries/06_projection/finalize_projections.py.log || true
 
-      - name: 06-16 clean_inject_team_ids.py
+      # NEW: build batter_home_final.csv / batter_away_final.csv before fixing stats
+      - name: 06-15a synthesize_batter_home_away_final
         run: |
-          python scripts/clean_inject_team_ids.py |& tee summaries/06_projection/clean_inject_team_ids.py.log || true
+          set -e
+          mkdir -p data/end_chain/final
+          src="data/_projections/batter_props_projected_final.csv"
+          if [ ! -f "$src" ]; then
+            # fallback to non-final if needed
+            src="data/_projections/batter_props_projected.csv"
+          fi
+          if [ ! -f "$src" ]; then
+            echo "ERROR: cannot find batter projections to synthesize home/away finals." >&2
+            exit 1
+          fi
+          # If home/away column exists, split; otherwise copy to both
+          if python - <<'PY'
+import pandas as pd
+df = pd.read_csv("$src")
+cols = {c.lower(): c for c in df.columns}
+ha_col = cols.get("home_away") or cols.get("homeaway") or cols.get("is_home")
+if ha_col:
+    # Normalize values and split
+    s = df.copy()
+    if ha_col.lower()=="is_home":
+        s["__ha__"] = df[ha_col].astype(int).map({1:"home",0:"away"}).fillna("away")
+    else:
+        s["__ha__"] = df[ha_col].astype(str).str.lower().str.strip()
+    s[s["__ha__"]=="home"].drop(columns="__ha__", errors="ignore").to_csv("data/end_chain/final/batter_home_final.csv", index=False)
+    s[s["__ha__"]=="away"].drop(columns="__ha__", errors="ignore").to_csv("data/end_chain/final/batter_away_final.csv", index=False)
+else:
+    df.to_csv("data/end_chain/final/batter_home_final.csv", index=False)
+    df.to_csv("data/end_chain/final/batter_away_final.csv", index=False)
+PY
+          then
+            echo "Synthesized batter_home_final.csv and batter_away_final.csv"
+          else
+            echo "ERROR during synthesis of batter home/away finals" >&2
+            exit 1
+          fi
+
+      # MOVED HERE: ensure hr/slg/obp columns exist in home/away finals
+      - name: 06-16 fix_missing_batter_stats.py
+        run: |
+          python scripts/fix_missing_batter_stats.py |& tee summaries/06_projection/fix_missing_batter_stats.py.log || true
 
       - name: 06-17 inject_game_ids_from_schedule.py
         run: |
@@ -381,6 +437,8 @@ jobs:
           git add data/_projections/batter_props_expanded_final.csv 2>/dev/null || true
           git add data/_projections/pitcher_props_projected_final.csv 2>/dev/null || true
           git add data/end_chain/final/pitcher_props_projected_final.csv 2>/dev/null || true
+          git add data/end_chain/final/batter_home_final.csv 2>/dev/null || true
+          git add data/end_chain/final/batter_away_final.csv 2>/dev/null || true
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
