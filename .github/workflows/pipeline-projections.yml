@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   workflow_run:
     workflows:
-      - "Pipeline Prep (00–05)"
+      - "Pipeline Prep (00-05)"
     types:
       - completed
 
@@ -26,8 +26,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: main
+          fetch-depth: 0
 
       - name: Setup Python 3.10
         uses: actions/setup-python@v5
@@ -62,8 +62,6 @@ jobs:
       - name: 06-03 project_prep.py
         run: |
           python scripts/project_prep.py |& tee summaries/06_projection/project_prep.py.log || true
-
-      # (fix_missing_batter_stats.py runs later after home/away files exist)
 
       - name: 06-05 normalize_batters_for_builder.py
         run: |
@@ -159,7 +157,6 @@ jobs:
               tmp[tmp["__ha__"]=="home"].drop(columns=["__ha__"], errors="ignore").to_csv(home_out, index=False)
               tmp[tmp["__ha__"]=="away"].drop(columns=["__ha__"], errors="ignore").to_csv(away_out, index=False)
           else:
-              # No home/away indicator; write the same to both for downstream compatibility
               df.to_csv(home_out, index=False)
               df.to_csv(away_out, index=False)
           print(f"WROTE {home_out} and {away_out}")
@@ -170,7 +167,6 @@ jobs:
         run: |
           python scripts/synthesize_batter_home_away.py |& tee summaries/06_projection/synthesize_batter_home_away.py.log
 
-      # Ensure hr/slg/obp columns exist in home/away finals (uses your script)
       - name: 06-16 fix_missing_batter_stats.py
         run: |
           python scripts/fix_missing_batter_stats.py |& tee summaries/06_projection/fix_missing_batter_stats.py.log || true
@@ -201,6 +197,7 @@ jobs:
         with:
           name: projections-06-outputs
           retention-days: 1
+          # IMPORTANT: artifacts go to their own directory later when downloading
           path: |
             data/_projections/*.csv
             data/end_chain/final/*.csv
@@ -216,22 +213,18 @@ jobs:
           echo "TARGET_BRANCH=${TARGET_BRANCH}"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
-
           echo "--- DIR LISTS ---"
           ls -l data/_projections || true
           ls -l data/end_chain/final || true
           ls -l data/raw || true
           ls -l summaries/06_projection || true
-
           git add "data/_projections/"*.csv 2>/dev/null || true
           git add "data/end_chain/final/"*.csv 2>/dev/null || true
           git add "data/raw/todaysgames_normalized.csv" 2>/dev/null || true
           git add "data/raw/startingpitchers_with_opp_context.csv" 2>/dev/null || true
           git add "summaries/06_projection/"*.log 2>/dev/null || true
-
           echo "--- GIT STATUS AFTER ADD ---"
           git status -s
-
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
@@ -283,7 +276,6 @@ jobs:
               echo
             done
           } > "$SUMMARY"
-
           git add "$SUMMARY" || true
           echo "--- GIT STATUS AFTER ADD ---"
           git status -s
@@ -309,11 +301,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      # IMPORTANT: download 06 artifact to a separate folder to avoid overwriting the workspace
       - name: Download 06 outputs artifact
         uses: actions/download-artifact@v4
         with:
           name: projections-06-outputs
-          path: .
+          path: .artifacts/06
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -368,6 +361,20 @@ jobs:
           python scripts/ensure_pitcher_props_schema.py
           echo "HEADERS:"; (head -n1 data/_projections/pitcher_props_projected_final.csv || true)
 
+      - name: Hash BEFORE generating finals (for 3 files)
+        run: |
+          for f in \
+            data/end_chain/final/game_score_projections.csv \
+            data/end_chain/final/batter_event_probabilities.csv \
+            data/end_chain/final/pitcher_event_probabilities.csv
+          do
+            if [ -f "$f" ]; then
+              echo "PRE $f | size=$(wc -c < "$f") | mtime=$(date -r "$f" '+%Y-%m-%d %H:%M:%S %Z') | sha256=$(sha256sum "$f" | awk '{print $1}')"
+            else
+              echo "PRE $f | (missing)"
+            fi
+          done
+
       - name: Prep daily projection inputs
         run: |
           python scripts/prepare_daily_projection_inputs.py | tee -a summaries/07_final/prep_daily_log.txt
@@ -384,6 +391,20 @@ jobs:
         run: |
           rm -f summaries/07_final/gamescores_bad_games.txt || true
           python scripts/project_game_scores.py | tee -a summaries/07_final/game_scores_log.txt
+
+      - name: Hash AFTER generating finals (for 3 files)
+        run: |
+          for f in \
+            data/end_chain/final/game_score_projections.csv \
+            data/end_chain/final/batter_event_probabilities.csv \
+            data/end_chain/final/pitcher_event_probabilities.csv
+          do
+            if [ -f "$f" ]; then
+              echo "POST $f | size=$(wc -c < "$f") | mtime=$(date -r "$f" '+%Y-%m-%d %H:%M:%S %Z') | sha256=$(sha256sum "$f" | awk '{print $1}')"
+            else
+              echo "POST $f | (missing)"
+            fi
+          done
 
       - name: Summarize run (07)
         run: |
@@ -424,16 +445,16 @@ jobs:
           echo "TARGET_BRANCH=${TARGET_BRANCH}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
           echo "--- DIR LISTS ---"
           ls -l data/end_chain/final || true
           ls -l data/_projections || true
           ls -l data/raw || true
           ls -l summaries/07_final || true
-
+          # Stage the three finals explicitly
           git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
           git add data/end_chain/final/batter_event_probabilities.csv 2>/dev/null || true
           git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
+          # Also stage other outputs
           git add data/_projections/batter_event_probabilities.csv 2>/dev/null || true
           git add data/_projections/pitcher_event_probabilities.csv 2>/dev/null || true
           git add data/_projections/batter_props_projected_final.csv 2>/dev/null || true
@@ -445,10 +466,8 @@ jobs:
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add summaries/07_final/* 2>/dev/null || true
-
           echo "--- GIT STATUS AFTER ADD ---"
           git status -s
-
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
