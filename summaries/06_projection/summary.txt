@@ -1,47 +1,39 @@
-===== RUN TIMESTAMP: 2025-09-28 11:00:23 EDT =====
+===== RUN TIMESTAMP: 2025-09-28 11:56:27 EDT =====
 
 ===== STATUS (per script) =====
-[OK] build_expanded_batter_props.py.log (2025-09-28 11:00:23 EDT)
-[OK] clean_inject_team_ids.py.log (2025-09-28 11:00:23 EDT)
-[OK] clean_pitcher_files.py.log (2025-09-28 11:00:23 EDT)
-[OK] ensure_pitcher_props_schema.py.log (2025-09-28 11:00:23 EDT)
-[OK] ensure_pitcher_props_schema_end.py.log (2025-09-28 11:00:23 EDT)
-[OK] finalize_projections.py.log (2025-09-28 11:00:23 EDT)
-[OK] fix_missing_batter_stats.py.log (2025-09-28 11:00:23 EDT)
-[OK] fix_outputs_generate_fixed_files.py.log (2025-09-28 11:00:23 EDT)
-[OK] impute_missing_batter_adj_woba.py.log (2025-09-28 11:00:23 EDT)
-[OK] inject_batter_woba_adjustments.py.log (2025-09-28 11:00:23 EDT)
-[OK] inject_game_ids_from_schedule.py.log (2025-09-28 11:00:23 EDT)
-[OK] inject_pitcher_context.py.log (2025-09-28 11:00:23 EDT)
-[OK] inject_pitcher_context_from_tgn.py.log (2025-09-28 11:00:23 EDT)
-[OK] normalize_batters_for_builder.py.log (2025-09-28 11:00:23 EDT)
-[OK] normalize_inputs_for_06.py.log (2025-09-28 11:00:23 EDT)
-[OK] pitcher_mega_z.py.log (2025-09-28 11:00:23 EDT)
-[OK] post_normalize_pitchers.py.log (2025-09-28 11:00:23 EDT)
-[OK] project_batter_props.py.log (2025-09-28 11:00:23 EDT)
-[OK] project_pitcher_props.py.log (2025-09-28 11:00:23 EDT)
-[OK] project_prep.py.log (2025-09-28 11:00:23 EDT)
-[OK] starter_coverage_guard.py.log (2025-09-28 11:00:23 EDT)
+[OK] build_expanded_batter_props.py.log (2025-09-28 11:56:27 EDT)
+[OK] clean_pitcher_files.py.log (2025-09-28 11:56:27 EDT)
+[OK] ensure_pitcher_props_schema.py.log (2025-09-28 11:56:27 EDT)
+[OK] ensure_pitcher_props_schema_end.py.log (2025-09-28 11:56:27 EDT)
+[OK] finalize_projections.py.log (2025-09-28 11:56:27 EDT)
+[OK] fix_missing_batter_stats.py.log (2025-09-28 11:56:27 EDT)
+[OK] fix_outputs_generate_fixed_files.py.log (2025-09-28 11:56:27 EDT)
+[OK] impute_missing_batter_adj_woba.py.log (2025-09-28 11:56:27 EDT)
+[OK] inject_batter_woba_adjustments.py.log (2025-09-28 11:56:27 EDT)
+[OK] inject_game_ids_from_schedule.py.log (2025-09-28 11:56:27 EDT)
+[OK] inject_pitcher_context.py.log (2025-09-28 11:56:27 EDT)
+[OK] inject_pitcher_context_from_tgn.py.log (2025-09-28 11:56:27 EDT)
+[OK] normalize_batters_for_builder.py.log (2025-09-28 11:56:27 EDT)
+[OK] normalize_inputs_for_06.py.log (2025-09-28 11:56:27 EDT)
+[OK] pitcher_mega_z.py.log (2025-09-28 11:56:27 EDT)
+[OK] post_normalize_pitchers.py.log (2025-09-28 11:56:27 EDT)
+[OK] project_batter_props.py.log (2025-09-28 11:56:27 EDT)
+[OK] project_pitcher_props.py.log (2025-09-28 11:56:27 EDT)
+[OK] project_prep.py.log (2025-09-28 11:56:27 EDT)
+[OK] starter_coverage_guard.py.log (2025-09-28 11:56:27 EDT)
+[OK] synthesize_batter_home_away.py.log (2025-09-28 11:56:27 EDT)
 
 ===== KEY COUNTS =====
-starters_today: (not found)
+starters_today: 28
 
 ===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS (current run) =====
 ---- build_expanded_batter_props.py.log ----
 ❌ Missing input: data/_projections/batter_props_projected.csv
 
----- clean_inject_team_ids.py.log ----
-❌ ERROR: Missing input: data/_projections/batter_props_expanded_fixed.csv
-
 ---- clean_pitcher_files.py.log ----
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/clean_pitcher_files.py", line 64, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/clean_pitcher_files.py", line 46, in main
-    mega = load_csv(MEGA_Z)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/clean_pitcher_files.py", line 39, in load_csv
-    raise FileNotFoundError(path)
-FileNotFoundError: /home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_mega_z_final.csv
+Starters seen today: 28
+✅ cleaned /home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_props_projected_final.csv | rows=28 | starters missing here=0
+✅ cleaned /home/runner/work/baseball_for_mat/baseball_for_mat/data/_projections/pitcher_mega_z_final.csv | rows=640 | starters missing here=0
 
 ---- ensure_pitcher_props_schema.py.log ----
 [ensure_pitcher_props_schema] enforced columns on data/_projections/pitcher_props_projected_final.csv -> ['player_id', 'game_id', 'team_id', 'opponent_team_id', 'pa']; rows=28
@@ -55,25 +47,16 @@ FileNotFoundError: /home/runner/work/baseball_for_mat/baseball_for_mat/data/_pro
  -> data/end_chain/final/pitcher_props_projected_final.csv
 [OK] Mirrored batter_props_projected_final.csv: data/_projections/batter_props_projected_final.csv -> data/end_chain/final/batter_props_projected_final.csv
 [OK] Mirrored batter_props_expanded_final.csv: data/_projections/batter_props_expanded_final.csv -> data/end_chain/final/batter_props_expanded_final.csv
+[OK] Mirrored pitcher_mega_z_final.csv: data/_projections/pitcher_mega_z_final.csv -> data/end_chain/final/pitcher_mega_z_final.csv
 ✅ finalize_projections.py completed
 
 ---- fix_missing_batter_stats.py.log ----
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/fix_missing_batter_stats.py", line 18, in <module>
-    ensure_stats(
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/fix_missing_batter_stats.py", line 6, in ensure_stats
-    df = pd.read_csv(file_path)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1026, in read_csv
-    return _read(filepath_or_buffer, kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 620, in _read
-    parser = TextFileReader(filepath_or_buffer, **kwds)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1620, in __init__
-    self._engine = self._make_engine(f, self.engine)
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1880, in _make_engine
-    self.handles = get_handle(
-  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/io/common.py", line 873, in get_handle
-    handle = open(
-FileNotFoundError: [Errno 2] No such file or directory: 'data/end_chain/final/batter_home_final.csv'
+⚠️ Adding missing column: hr
+⚠️ Adding missing column: slg
+⚠️ Adding missing column: obp
+⚠️ Adding missing column: hr
+⚠️ Adding missing column: slg
+⚠️ Adding missing column: obp
 
 ---- fix_outputs_generate_fixed_files.py.log ----
 ✔ Wrote: data/_projections/pitcher_props_projected_fixed.csv rows=28
@@ -100,12 +83,12 @@ adj_woba_combined: only_away=166, only_home=165, both_equal=0, conflicts=0, all_
 SKIP data/_projections/batter_props_projected_final.csv: no team_id columns to match
 SKIP data/_projections/batter_props_expanded_final.csv: no team_id columns to match
 SKIP data/_projections/pitcher_props_projected_final.csv: no team_id columns to match
-ERROR: Missing input: data/_projections/pitcher_mega_z_final.csv
+SKIP data/_projections/pitcher_mega_z_final.csv: no team_id columns to match
 
 ---- inject_pitcher_context.py.log ----
->> START: inject_pitcher_context.py (2025-09-28 15:00:16 UTC)
+>> START: inject_pitcher_context.py (2025-09-28 15:56:19 UTC)
 Injected context for 28/28 pitchers -> data/_projections/pitcher_props_projected_final.csv
-[END] inject_pitcher_context.py (2025-09-28 15:00:16 UTC)
+[END] inject_pitcher_context.py (2025-09-28 15:56:19 UTC)
 
 ---- inject_pitcher_context_from_tgn.py.log ----
 Injected context for 28/28 pitchers using /home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/todaysgames_normalized.csv
@@ -153,4 +136,7 @@ normalize_inputs_for_06.py: enforced string dtypes for ALL columns in 06 inputs.
 
 ---- starter_coverage_guard.py.log ----
 Starter coverage OK: all starters present in at least one source.
+
+---- synthesize_batter_home_away.py.log ----
+WROTE data/end_chain/final/batter_home_final.csv and data/end_chain/final/batter_away_final.csv
 
