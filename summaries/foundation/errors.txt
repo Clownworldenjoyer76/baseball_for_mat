@@ -1,0 +1,14 @@
+❌ inject_pitcher_ids_into_games.py ERROR [2025-09-29 09:39:53 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 248, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 233, in main
+    games["pitcher_home_id"] = games.apply(lambda r: _inject(r, "home"), axis=1)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4306, in __setitem__
+    self._set_item_frame_value(key, value)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4434, in _set_item_frame_value
+    raise ValueError("Columns must be same length as key")
+ValueError: Columns must be same length as key
+
+---
+
