@@ -3,10 +3,8 @@ name: "Pipeline Projections (06–07)"
 on:
   workflow_dispatch:
   workflow_run:
-    workflows:
-      - "Pipeline Prep (00-05)"
-    types:
-      - completed
+    workflows: ["Pipeline Prep (00-05)"]
+    types: [completed]
 
 permissions:
   contents: write
@@ -95,7 +93,6 @@ jobs:
         run: |
           python scripts/pitcher_mega_z.py |& tee summaries/06_projection/pitcher_mega_z.py.log || true
 
-      # Ensure pitcher_mega_z_final.csv exists for downstream cleaners
       - name: 06-12a ensure_pitcher_mega_z_final.csv
         run: |
           set -e
@@ -125,7 +122,7 @@ jobs:
         run: |
           python scripts/finalize_projections.py |& tee summaries/06_projection/finalize_projections.py.log || true
 
-      # Write helper script to accurately split batter home/away finals
+      # Helper to accurately split batter home/away
       - name: 06-15a write helper synthesize_batter_home_away.py
         run: |
           mkdir -p scripts
@@ -197,7 +194,6 @@ jobs:
         with:
           name: projections-06-outputs
           retention-days: 1
-          # IMPORTANT: artifacts go to their own directory later when downloading
           path: |
             data/_projections/*.csv
             data/end_chain/final/*.csv
@@ -205,31 +201,18 @@ jobs:
             data/raw/startingpitchers_with_opp_context.csv
             summaries/06_projection/*.log
 
-      - name: Commit & push 06 outputs + authoritative CSVs
+      - name: Commit & push 06 outputs + logs
         if: always()
         run: |
           set -euo pipefail
           TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
-          echo "TARGET_BRANCH=${TARGET_BRANCH}"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
-          echo "--- DIR LISTS ---"
-          ls -l data/_projections || true
-          ls -l data/end_chain/final || true
-          ls -l data/raw || true
-          ls -l summaries/06_projection || true
-          git add "data/_projections/"*.csv 2>/dev/null || true
-          git add "data/end_chain/final/"*.csv 2>/dev/null || true
-          git add "data/raw/todaysgames_normalized.csv" 2>/dev/null || true
-          git add "data/raw/startingpitchers_with_opp_context.csv" 2>/dev/null || true
-          git add "summaries/06_projection/"*.log 2>/dev/null || true
-          echo "--- GIT STATUS AFTER ADD ---"
-          git status -s
+          git add data/_projections/*.csv data/end_chain/final/*.csv summaries/06_projection/*.log || true
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes to commit (06)."
           else
-            git commit -m "06 Projection: commit generated outputs and logs"
-            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
+            git commit -m "06 Projection: outputs + logs"
             git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
           fi
 
@@ -238,54 +221,16 @@ jobs:
         run: |
           set -euo pipefail
           TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name  "github-actions[bot]"
           STAGE="summaries/06_projection"
-          SUMMARY="$STAGE/summary.txt"
-          STATUS="$STAGE/status.txt"
+          SUMMARY="$STAGE/summary.txt"; STATUS="$STAGE/status.txt"
           : > "$STATUS"
-          for L in "$STAGE"/*.log; do
-            [ -f "$L" ] || continue
-            B="$(basename "$L")"
-            echo "[OK] ${B} ($(date '+%Y-%m-%d %H:%M:%S %Z'))" >> "$STATUS"
-          done
-          CLEAN_LOG="$STAGE/clean_pitcher_files.py.log"
+          for L in "$STAGE"/*.log; do [ -f "$L" ] && echo "[OK] $(basename "$L") ($(date '+%Y-%m-%d %H:%M:%S %Z'))" >> "$STATUS"; done
           {
             echo "===== RUN TIMESTAMP: $(date '+%Y-%m-%d %H:%M:%S %Z') ====="
-            echo
-            echo "===== STATUS (per script) ====="
-            if [ -s "$STATUS" ]; then cat "$STATUS"; else echo "(status.txt not generated)"; fi
-            echo
-            echo "===== KEY COUNTS ====="
-            if [ -f "$CLEAN_LOG" ]; then
-              starters_line=$(grep -E 'Starters seen today:' "$CLEAN_LOG" | tail -n 1 || true)
-              if [ -n "$starters_line" ]; then
-                echo "starters_today: ${starters_line##*: }"
-              else
-                echo "starters_today: (not found)"
-              fi
-            else
-              echo "starters_today: (clean_pitcher_files.py.log not found)"
-            fi
-            echo
-            echo "===== LOGS: LAST 20 LINES OF ALL SCRIPT LOGS (current run) ====="
-            for LOGF in "$STAGE"/*.log; do
-              [ -f "$LOGF" ] || continue
-              echo "---- $(basename "$LOGF") ----"
-              tail -n 20 "$LOGF"
-              echo
-            done
+            echo; echo "===== STATUS (per script) ====="; cat "$STATUS" || true
           } > "$SUMMARY"
           git add "$SUMMARY" || true
-          echo "--- GIT STATUS AFTER ADD ---"
-          git status -s
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "06 Projection: overwrite summary.txt [skip ci]"
-            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
-            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
-          fi
+          if git diff --cached --quiet; then echo "No summary changes (06)."; else git commit -m "06 Projection: overwrite summary.txt [skip ci]"; git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"; fi
 
   final_projections:
     name: "07 Final Projections"
@@ -301,7 +246,6 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      # IMPORTANT: download 06 artifact to a separate folder to avoid overwriting the workspace
       - name: Download 06 outputs artifact
         uses: actions/download-artifact@v4
         with:
@@ -327,46 +271,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          mkdir -p data/_projections data/end_chain/final
+          mkdir -p data/_projections data/end_chain/final summaries/07_final
 
       - name: "Preflight: confirm required projection files"
         run: |
           set -euo pipefail
-          echo "Listing key directories:"
           ls -l data/_projections || true
           ls -l data/end_chain/final || true
-          echo
-          missing=0
-          for p in \
-            data/_projections/pitcher_props_projected.csv \
-            data/_projections/pitcher_props_projected_final.csv \
-            data/end_chain/final/pitcher_props_projected_final.csv \
-            data/_projections/batter_props_projected_final.csv \
-            data/_projections/batter_props_expanded_final.csv
-          do
-            if [ -f "$p" ]; then
-              echo "[OK] $p ($(wc -l < "$p") lines)"
-            else
-              echo "[MISS] $p"
-              missing=1
-            fi
-          done
-          if [ "$missing" -ne 0 ]; then
-            echo "Attempting to regenerate missing *_final via finalize_projections.py..."
-            python scripts/finalize_projections.py || true
-          fi
 
       - name: Enforce pitcher props schema (pre-07)
         run: |
-          python scripts/ensure_pitcher_props_schema.py
-          echo "HEADERS:"; (head -n1 data/_projections/pitcher_props_projected_final.csv || true)
+          python scripts/ensure_pitcher_props_schema.py || true
 
-      - name: Hash BEFORE generating finals (for 3 files)
+      - name: Hash BEFORE (3 finals)
         run: |
-          for f in \
-            data/end_chain/final/game_score_projections.csv \
-            data/end_chain/final/batter_event_probabilities.csv \
-            data/end_chain/final/pitcher_event_probabilities.csv
+          for f in data/end_chain/final/game_score_projections.csv data/end_chain/final/batter_event_probabilities.csv data/end_chain/final/pitcher_event_probabilities.csv
           do
             if [ -f "$f" ]; then
               echo "PRE $f | size=$(wc -c < "$f") | mtime=$(date -r "$f" '+%Y-%m-%d %H:%M:%S %Z') | sha256=$(sha256sum "$f" | awk '{print $1}')"
@@ -392,15 +311,22 @@ jobs:
           rm -f summaries/07_final/gamescores_bad_games.txt || true
           python scripts/project_game_scores.py | tee -a summaries/07_final/game_scores_log.txt
 
-      - name: Hash AFTER generating finals (for 3 files)
+      - name: Hash AFTER + write stamps (3 finals)
         run: |
-          for f in \
-            data/end_chain/final/game_score_projections.csv \
-            data/end_chain/final/batter_event_probabilities.csv \
-            data/end_chain/final/pitcher_event_probabilities.csv
+          mkdir -p summaries/07_final/stamps
+          RUN_TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          for f in data/end_chain/final/game_score_projections.csv data/end_chain/final/batter_event_probabilities.csv data/end_chain/final/pitcher_event_probabilities.csv
           do
             if [ -f "$f" ]; then
-              echo "POST $f | size=$(wc -c < "$f") | mtime=$(date -r "$f" '+%Y-%m-%d %H:%M:%S %Z') | sha256=$(sha256sum "$f" | awk '{print $1}')"
+              sz=$(wc -c < "$f"); mt=$(date -r "$f" '+%Y-%m-%d %H:%M:%S %Z'); sh=$(sha256sum "$f" | awk '{print $1}')
+              echo "POST $f | size=$sz | mtime=$mt | sha256=$sh"
+              base="$(basename "$f")"
+              {
+                echo "file=$f"
+                echo "sha256=$sh"
+                echo "size=$sz"
+                echo "generated_at_utc=$RUN_TS"
+              } > "summaries/07_final/stamps/${base}.sha256.txt"
             else
               echo "POST $f | (missing)"
             fi
@@ -433,48 +359,39 @@ jobs:
         run: |
           shopt -s nullglob
           mkdir -p summaries/07_final
-          for f in log_*.txt *.log; do
-            if [ -f "$f" ]; then mv "$f" "summaries/07_final/"; fi
-          done
+          for f in log_*.txt *.log; do [ -f "$f" ] && mv "$f" "summaries/07_final/"; done
 
       - name: Commit CSVs + summaries (07)
         if: always()
         run: |
           set -euo pipefail
           TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
-          echo "TARGET_BRANCH=${TARGET_BRANCH}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           echo "--- DIR LISTS ---"
           ls -l data/end_chain/final || true
           ls -l data/_projections || true
           ls -l data/raw || true
           ls -l summaries/07_final || true
-          # Stage the three finals explicitly
-          git add data/end_chain/final/game_score_projections.csv 2>/dev/null || true
-          git add data/end_chain/final/batter_event_probabilities.csv 2>/dev/null || true
-          git add data/end_chain/final/pitcher_event_probabilities.csv 2>/dev/null || true
-          # Also stage other outputs
-          git add data/_projections/batter_event_probabilities.csv 2>/dev/null || true
-          git add data/_projections/pitcher_event_probabilities.csv 2>/dev/null || true
-          git add data/_projections/batter_props_projected_final.csv 2>/dev/null || true
-          git add data/_projections/batter_props_expanded_final.csv 2>/dev/null || true
-          git add data/_projections/pitcher_props_projected_final.csv 2>/dev/null || true
-          git add data/end_chain/final/pitcher_props_projected_final.csv 2>/dev/null || true
-          git add data/end_chain/final/batter_home_final.csv 2>/dev/null || true
-          git add data/end_chain/final/batter_away_final.csv 2>/dev/null || true
-          git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
-          git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
-          git add summaries/07_final/* 2>/dev/null || true
+
+          # Stage finals + sidecar stamps + logs
+          git add data/end_chain/final/game_score_projections.csv \
+                  data/end_chain/final/batter_event_probabilities.csv \
+                  data/end_chain/final/pitcher_event_probabilities.csv \
+                  summaries/07_final/stamps/*.sha256.txt \
+                  summaries/07_final/* || true
+
           echo "--- GIT STATUS AFTER ADD ---"
           git status -s
+
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            # ensure a daily commit exists anyway
+            git commit --allow-empty -m "07: no data diffs; update stamps/summary only [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
           else
-            git commit -m "CI: update final projections and summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
-            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
-            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
+            git commit -m "CI: update final projections + stamps + summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
           fi
+          git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
 
   workflow_summary:
     name: "Write overall workflow summary (06–07)"
@@ -496,11 +413,7 @@ jobs:
             echo "generated_at: $(date '+%Y-%m-%d %H:%M:%S %Z')"
             echo
             echo "== 06 Projection Status =="
-            if [ -f summaries/06_projection/summary.txt ]; then
-              sed -n '1,120p' summaries/06_projection/summary.txt
-            else
-              echo "(missing: summaries/06_projection/summary.txt)"
-            fi
+            if [ -f summaries/06_projection/summary.txt ]; then sed -n '1,120p' summaries/06_projection/summary.txt; else echo "(missing: summaries/06_projection/summary.txt)"; fi
             echo
             echo "== 07 Log Tails =="
             for f in prep_daily_log.txt batter_log.txt pitcher_log.txt game_scores_log.txt; do
@@ -509,11 +422,7 @@ jobs:
               echo
             done
             echo "== 07 Errors/BAD GAMES =="
-            if [ -f summaries/07_final/gamescores_bad_games.txt ]; then
-              cat summaries/07_final/gamescores_bad_games.txt
-            else
-              echo "(no bad_games log found)"
-            fi
+            if [ -f summaries/07_final/gamescores_bad_games.txt ]; then cat summaries/07_final/gamescores_bad_games.txt; else echo "(no bad_games log found)"; fi
           } > "$OUT"
 
       - name: Commit workflow-level summary
@@ -523,12 +432,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add summaries/pipeline-projections_summary.txt
-          echo "--- GIT STATUS AFTER ADD ---"
-          git status -s
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes to commit (pipeline summary)."
           else
             git commit -m "Projections: write pipeline-projections_summary.txt"
-            echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
             git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
           fi
