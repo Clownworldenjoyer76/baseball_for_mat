@@ -1,135 +1,149 @@
 ===== WORKFLOW: Pipeline Prep (00-05) =====
-generated_at: 2025-09-28 14:12:42 UTC
+generated_at: 2025-09-29 13:40:55 UTC
 
 == foundation ==
-===== RUN TIMESTAMP: 2025-09-28 10:11:57 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-29 09:39:56 AM EDT =====
 
 ===== STATUS =====
-✅ normalize_names.py succeeded [2025-09-28 10:11:50 AM EDT]
-✅ tag_master_files.py succeeded [2025-09-28 10:11:50 AM EDT]
-✅ validate_tagged_players.py succeeded [2025-09-28 10:11:51 AM EDT]
-✅ deduplicate_normalized.py succeeded [2025-09-28 10:11:52 AM EDT]
-✅ normalize_lineups.py succeeded [2025-09-28 10:11:53 AM EDT]
-✅ todaysgames.py succeeded [2025-09-28 10:11:53 AM EDT]
-✅ normalize_todays_games.py succeeded [2025-09-28 10:11:53 AM EDT]
-✅ inject_pitcher_ids_into_games.py succeeded [2025-09-28 10:11:54 AM EDT]
-✅ apply_team_name_mapping.py succeeded [2025-09-28 10:11:54 AM EDT]
-✅ fetch_mlb_ids.py succeeded [2025-09-28 10:11:55 AM EDT]
-✅ hotfix_team_codes.py succeeded [2025-09-28 10:11:55 AM EDT]
-✅ update_game_time.py succeeded [2025-09-28 10:11:55 AM EDT]
-✅ finalize_todaysgames_types_and_pf.py succeeded [2025-09-28 10:11:56 AM EDT]
-✅ filter_stadium_metadata.py succeeded [2025-09-28 10:11:56 AM EDT]
-✅ normalize_batter_team_names.py succeeded [2025-09-28 10:11:56 AM EDT]
-✅ build_batters_today_from_lineups.py succeeded [2025-09-28 10:11:57 AM EDT]
-✅ post_normalize_fixups.py succeeded [2025-09-28 10:11:57 AM EDT]
-✅ fix_inputs_inject_stolen_base_pct.py succeeded [2025-09-28 10:11:57 AM EDT]
+✅ normalize_names.py succeeded [2025-09-29 09:39:49 AM EDT]
+✅ tag_master_files.py succeeded [2025-09-29 09:39:49 AM EDT]
+✅ validate_tagged_players.py succeeded [2025-09-29 09:39:50 AM EDT]
+✅ deduplicate_normalized.py succeeded [2025-09-29 09:39:51 AM EDT]
+✅ normalize_lineups.py succeeded [2025-09-29 09:39:51 AM EDT]
+✅ todaysgames.py succeeded [2025-09-29 09:39:52 AM EDT]
+✅ normalize_todays_games.py succeeded [2025-09-29 09:39:52 AM EDT]
+❌ inject_pitcher_ids_into_games.py failed [2025-09-29 09:39:53 AM EDT]
+✅ apply_team_name_mapping.py succeeded [2025-09-29 09:39:53 AM EDT]
+✅ fetch_mlb_ids.py succeeded [2025-09-29 09:39:53 AM EDT]
+✅ hotfix_team_codes.py succeeded [2025-09-29 09:39:54 AM EDT]
+✅ update_game_time.py succeeded [2025-09-29 09:39:54 AM EDT]
+✅ finalize_todaysgames_types_and_pf.py succeeded [2025-09-29 09:39:54 AM EDT]
+✅ filter_stadium_metadata.py succeeded [2025-09-29 09:39:55 AM EDT]
+✅ normalize_batter_team_names.py succeeded [2025-09-29 09:39:55 AM EDT]
+✅ build_batters_today_from_lineups.py succeeded [2025-09-29 09:39:55 AM EDT]
+✅ post_normalize_fixups.py succeeded [2025-09-29 09:39:56 AM EDT]
+✅ fix_inputs_inject_stolen_base_pct.py succeeded [2025-09-29 09:39:56 AM EDT]
 
 ===== LOG =====
-▶️ START: normalize_names.py (2025-09-28 10:11:49 AM EDT)
+▶️ START: normalize_names.py (2025-09-29 09:39:48 AM EDT)
 ✅ Batters normalized: 631 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 781 → data/normalized/pitchers_normalized.csv
-⏹️ END: normalize_names.py (2025-09-28 10:11:50 AM EDT)
+⏹️ END: normalize_names.py (2025-09-29 09:39:49 AM EDT)
 
-▶️ START: tag_master_files.py (2025-09-28 10:11:50 AM EDT)
-⏹️ END: tag_master_files.py (2025-09-28 10:11:50 AM EDT)
+▶️ START: tag_master_files.py (2025-09-29 09:39:49 AM EDT)
+⏹️ END: tag_master_files.py (2025-09-29 09:39:49 AM EDT)
 
-▶️ START: validate_tagged_players.py (2025-09-28 10:11:50 AM EDT)
-⏹️ END: validate_tagged_players.py (2025-09-28 10:11:51 AM EDT)
+▶️ START: validate_tagged_players.py (2025-09-29 09:39:49 AM EDT)
+⏹️ END: validate_tagged_players.py (2025-09-29 09:39:50 AM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-09-28 10:11:51 AM EDT)
-⏹️ END: deduplicate_normalized.py (2025-09-28 10:11:52 AM EDT)
+▶️ START: deduplicate_normalized.py (2025-09-29 09:39:50 AM EDT)
+⏹️ END: deduplicate_normalized.py (2025-09-29 09:39:51 AM EDT)
 
-▶️ START: normalize_lineups.py (2025-09-28 10:11:52 AM EDT)
+▶️ START: normalize_lineups.py (2025-09-29 09:39:51 AM EDT)
 ✅ normalize_lineups.py completed: 840 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups.py (2025-09-28 10:11:53 AM EDT)
+⏹️ END: normalize_lineups.py (2025-09-29 09:39:51 AM EDT)
 
-▶️ START: todaysgames.py (2025-09-28 10:11:53 AM EDT)
-⏹️ END: todaysgames.py (2025-09-28 10:11:53 AM EDT)
+▶️ START: todaysgames.py (2025-09-29 09:39:51 AM EDT)
+⏹️ END: todaysgames.py (2025-09-29 09:39:52 AM EDT)
 
-▶️ START: normalize_todays_games.py (2025-09-28 10:11:53 AM EDT)
-✅ normalize_todays_games wrote 15 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games.py (2025-09-28 10:11:53 AM EDT)
+▶️ START: normalize_todays_games.py (2025-09-29 09:39:52 AM EDT)
+✅ normalize_todays_games wrote 0 rows -> data/raw/todaysgames_normalized.csv
+⏹️ END: normalize_todays_games.py (2025-09-29 09:39:52 AM EDT)
 
-▶️ START: inject_pitcher_ids_into_games.py (2025-09-28 10:11:53 AM EDT)
-⏹️ END: inject_pitcher_ids_into_games.py (2025-09-28 10:11:54 AM EDT)
+▶️ START: inject_pitcher_ids_into_games.py (2025-09-29 09:39:52 AM EDT)
+⏹️ END: inject_pitcher_ids_into_games.py (2025-09-29 09:39:53 AM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-09-28 10:11:54 AM EDT)
+▶️ START: apply_team_name_mapping.py (2025-09-29 09:39:53 AM EDT)
 Updated: data/raw/todaysgames_normalized.csv (if present)
-⏹️ END: apply_team_name_mapping.py (2025-09-28 10:11:54 AM EDT)
+⏹️ END: apply_team_name_mapping.py (2025-09-29 09:39:53 AM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-09-28 10:11:54 AM EDT)
+▶️ START: fetch_mlb_ids.py (2025-09-29 09:39:53 AM EDT)
 ✅ fetch_mlb_ids: team_directory.csv schema validated.
-⏹️ END: fetch_mlb_ids.py (2025-09-28 10:11:55 AM EDT)
+⏹️ END: fetch_mlb_ids.py (2025-09-29 09:39:53 AM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-09-28 10:11:55 AM EDT)
+▶️ START: hotfix_team_codes.py (2025-09-29 09:39:53 AM EDT)
 ✅ hotfix_team_codes applied fixes -> data/raw/todaysgames_normalized.csv
-⏹️ END: hotfix_team_codes.py (2025-09-28 10:11:55 AM EDT)
+⏹️ END: hotfix_team_codes.py (2025-09-29 09:39:54 AM EDT)
 
-▶️ START: update_game_time.py (2025-09-28 10:11:55 AM EDT)
-✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 15/15)
-⏹️ END: update_game_time.py (2025-09-28 10:11:55 AM EDT)
+▶️ START: update_game_time.py (2025-09-29 09:39:54 AM EDT)
+✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 0/0)
+⏹️ END: update_game_time.py (2025-09-29 09:39:54 AM EDT)
 
-▶️ START: finalize_todaysgames_types_and_pf.py (2025-09-28 10:11:55 AM EDT)
-✅ Wrote data/raw/todaysgames_normalized.csv | rows=15 | dtype(park_factor)=Int64
-⏹️ END: finalize_todaysgames_types_and_pf.py (2025-09-28 10:11:56 AM EDT)
+▶️ START: finalize_todaysgames_types_and_pf.py (2025-09-29 09:39:54 AM EDT)
+✅ Wrote data/raw/todaysgames_normalized.csv | rows=0 | dtype(park_factor)=Int64
+⏹️ END: finalize_todaysgames_types_and_pf.py (2025-09-29 09:39:54 AM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-09-28 10:11:56 AM EDT)
-⏹️ END: filter_stadium_metadata.py (2025-09-28 10:11:56 AM EDT)
+▶️ START: filter_stadium_metadata.py (2025-09-29 09:39:54 AM EDT)
+⏹️ END: filter_stadium_metadata.py (2025-09-29 09:39:55 AM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-09-28 10:11:56 AM EDT)
-⏹️ END: normalize_batter_team_names.py (2025-09-28 10:11:56 AM EDT)
+▶️ START: normalize_batter_team_names.py (2025-09-29 09:39:55 AM EDT)
+⏹️ END: normalize_batter_team_names.py (2025-09-29 09:39:55 AM EDT)
 
-▶️ START: build_batters_today_from_lineups.py (2025-09-28 10:11:56 AM EDT)
+▶️ START: build_batters_today_from_lineups.py (2025-09-29 09:39:55 AM EDT)
 ✅ build_batters_today_from_lineups: wrote 837 rows -> data/cleaned/batters_today.csv
-⏹️ END: build_batters_today_from_lineups.py (2025-09-28 10:11:57 AM EDT)
+⏹️ END: build_batters_today_from_lineups.py (2025-09-29 09:39:55 AM EDT)
 
-Using GAME_DATE=2025-09-28
-▶️ START: post_normalize_fixups.py (2025-09-28 10:11:57 AM EDT)
+Using GAME_DATE=2025-09-29
+▶️ START: post_normalize_fixups.py (2025-09-29 09:39:55 AM EDT)
 ✅ post_normalize_fixups complete (no game_id injected)
-⏹️ END: post_normalize_fixups.py (2025-09-28 10:11:57 AM EDT)
+⏹️ END: post_normalize_fixups.py (2025-09-29 09:39:56 AM EDT)
 
-▶️ START: fix_inputs_inject_stolen_base_pct.py (2025-09-28 10:11:57 AM EDT)
-⏹️ END: fix_inputs_inject_stolen_base_pct.py (2025-09-28 10:11:57 AM EDT)
+▶️ START: fix_inputs_inject_stolen_base_pct.py (2025-09-29 09:39:56 AM EDT)
+⏹️ END: fix_inputs_inject_stolen_base_pct.py (2025-09-29 09:39:56 AM EDT)
 
 
 ===== ERRORS =====
+❌ inject_pitcher_ids_into_games.py ERROR [2025-09-29 09:39:53 AM EDT]:
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 248, in <module>
+    main()
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/inject_pitcher_ids_into_games.py", line 233, in main
+    games["pitcher_home_id"] = games.apply(lambda r: _inject(r, "home"), axis=1)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4306, in __setitem__
+    self._set_item_frame_value(key, value)
+  File "/opt/hostedtoolcache/Python/3.10.18/x64/lib/python3.10/site-packages/pandas/core/frame.py", line 4434, in _set_item_frame_value
+    raise ValueError("Columns must be same length as key")
+ValueError: Columns must be same length as key
+
+---
+
 
 == split_sched ==
-===== RUN TIMESTAMP: 2025-09-28 10:12:33 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-29 09:40:43 AM EDT =====
 
 ===== STATUS =====
-OK   copy_inputs_batters.py [2025-09-28 10:12:32 AM EDT]
-OK   copy_inputs_tgn.py [2025-09-28 10:12:32 AM EDT]
-OK   copy_inputs_pitchers.py [2025-09-28 10:12:32 AM EDT]
-OK   copy_inputs_lineups.py [2025-09-28 10:12:32 AM EDT]
-OK   emit_tgn_fixed.sh [2025-09-28 10:12:32 AM EDT]
-OK   maybe_split_games_windows.py [2025-09-28 10:12:32 AM EDT]
-OK   maybe_build_bets_schedule.py [2025-09-28 10:12:32 AM EDT]
+OK   copy_inputs_batters.py [2025-09-29 09:40:43 AM EDT]
+OK   copy_inputs_tgn.py [2025-09-29 09:40:43 AM EDT]
+OK   copy_inputs_pitchers.py [2025-09-29 09:40:43 AM EDT]
+OK   copy_inputs_lineups.py [2025-09-29 09:40:43 AM EDT]
+OK   emit_tgn_fixed.sh [2025-09-29 09:40:43 AM EDT]
+OK   maybe_split_games_windows.py [2025-09-29 09:40:43 AM EDT]
+OK   maybe_build_bets_schedule.py [2025-09-29 09:40:43 AM EDT]
 
 ===== LOG =====
-START: copy_inputs_batters.py (2025-09-28 10:12:32 AM EDT)
-END  : copy_inputs_batters.py (2025-09-28 10:12:32 AM EDT)
+START: copy_inputs_batters.py (2025-09-29 09:40:43 AM EDT)
+END  : copy_inputs_batters.py (2025-09-29 09:40:43 AM EDT)
 
-START: copy_inputs_tgn.py (2025-09-28 10:12:32 AM EDT)
-END  : copy_inputs_tgn.py (2025-09-28 10:12:32 AM EDT)
+START: copy_inputs_tgn.py (2025-09-29 09:40:43 AM EDT)
+END  : copy_inputs_tgn.py (2025-09-29 09:40:43 AM EDT)
 
-START: copy_inputs_pitchers.py (2025-09-28 10:12:32 AM EDT)
-END  : copy_inputs_pitchers.py (2025-09-28 10:12:32 AM EDT)
+START: copy_inputs_pitchers.py (2025-09-29 09:40:43 AM EDT)
+END  : copy_inputs_pitchers.py (2025-09-29 09:40:43 AM EDT)
 
-START: copy_inputs_lineups.py (2025-09-28 10:12:32 AM EDT)
-END  : copy_inputs_lineups.py (2025-09-28 10:12:32 AM EDT)
+START: copy_inputs_lineups.py (2025-09-29 09:40:43 AM EDT)
+END  : copy_inputs_lineups.py (2025-09-29 09:40:43 AM EDT)
 
-START: emit_tgn_fixed.sh (2025-09-28 10:12:32 AM EDT)
+START: emit_tgn_fixed.sh (2025-09-29 09:40:43 AM EDT)
 WROTE data/_projections/todaysgames_normalized_fixed.csv
-END  : emit_tgn_fixed.sh (2025-09-28 10:12:32 AM EDT)
+END  : emit_tgn_fixed.sh (2025-09-29 09:40:43 AM EDT)
 
-START: maybe_split_games_windows.py (2025-09-28 10:12:32 AM EDT)
+START: maybe_split_games_windows.py (2025-09-29 09:40:43 AM EDT)
 SKIP: scripts/split_games_windows.py not found
-END  : maybe_split_games_windows.py (2025-09-28 10:12:32 AM EDT)
+END  : maybe_split_games_windows.py (2025-09-29 09:40:43 AM EDT)
 
-START: maybe_build_bets_schedule.py (2025-09-28 10:12:32 AM EDT)
+START: maybe_build_bets_schedule.py (2025-09-29 09:40:43 AM EDT)
 SKIP: scripts/build_bets_schedule.py not found
-END  : maybe_build_bets_schedule.py (2025-09-28 10:12:33 AM EDT)
+END  : maybe_build_bets_schedule.py (2025-09-29 09:40:43 AM EDT)
 
 
 ===== ERRORS =====
