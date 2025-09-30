@@ -1,12 +1,8 @@
 >> START: project_prep.py
 [PATH] OUT_RAW=/home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/startingpitchers_with_opp_context.csv
 [PATH] OUT_FINAL=/home/runner/work/baseball_for_mat/baseball_for_mat/data/end_chain/final/startingpitchers.csv
-RuntimeError("data/raw/todaysgames_normalized.csv missing required column(s): ['pitcher_home_id', 'pitcher_away_id']")
-Traceback (most recent call last):
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 203, in <module>
-    main()
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 148, in main
-    map_df = build_tgn_map(tgn)
-  File "/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/project_prep.py", line 88, in build_tgn_map
-    raise RuntimeError(f"{TGN_CSV} missing required column(s): {miss}")
-RuntimeError: data/raw/todaysgames_normalized.csv missing required column(s): ['pitcher_home_id', 'pitcher_away_id']
+[OK] All pitchers matched to a game_id.
+✅ Wrote enriched raw: data/raw/startingpitchers_with_opp_context.csv (rows=60)
+✅ Wrote minimal final: data/end_chain/final/startingpitchers.csv (rows=60)
+[COVERAGE] rows_in=60, matched_game_id=60, unmatched=0, with_team_and_opponent=60
+>> END: project_prep.py
