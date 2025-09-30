@@ -1,46 +1,46 @@
-===== RUN TIMESTAMP: 2025-09-30 10:07:24 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-30 02:52:02 PM EDT =====
 
 ===== STATUS =====
-OK   copy_inputs_batters.py [2025-09-30 10:07:23 AM EDT]
-OK   copy_inputs_tgn.py [2025-09-30 10:07:23 AM EDT]
-OK   copy_inputs_pitchers.py [2025-09-30 10:07:24 AM EDT]
-OK   copy_inputs_lineups.py [2025-09-30 10:07:24 AM EDT]
-OK   emit_tgn_fixed.sh [2025-09-30 10:07:24 AM EDT]
-FAIL split_games_windows.py [2025-09-30 10:07:24 AM EDT]
-FAIL build_bets_schedule.py [2025-09-30 10:07:24 AM EDT]
+OK   copy_inputs_batters.py [2025-09-30 02:52:01 PM EDT]
+OK   copy_inputs_tgn.py [2025-09-30 02:52:01 PM EDT]
+OK   copy_inputs_pitchers.py [2025-09-30 02:52:01 PM EDT]
+OK   copy_inputs_lineups.py [2025-09-30 02:52:01 PM EDT]
+OK   emit_tgn_fixed.sh [2025-09-30 02:52:01 PM EDT]
+OK   splithome.py [2025-09-30 02:52:01 PM EDT]
+OK   splitaway.py [2025-09-30 02:52:02 PM EDT]
+OK   updatesplitcsvs.py [2025-09-30 02:52:02 PM EDT]
+OK   bet_prep_1.py [2025-09-30 02:52:02 PM EDT]
 
 ===== LOG =====
-START: copy_inputs_batters.py (2025-09-30 10:07:23 AM EDT)
-END  : copy_inputs_batters.py (2025-09-30 10:07:23 AM EDT)
+START: copy_inputs_batters.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_batters.py (2025-09-30 02:52:01 PM EDT)
 
-START: copy_inputs_tgn.py (2025-09-30 10:07:23 AM EDT)
-END  : copy_inputs_tgn.py (2025-09-30 10:07:24 AM EDT)
+START: copy_inputs_tgn.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_tgn.py (2025-09-30 02:52:01 PM EDT)
 
-START: copy_inputs_pitchers.py (2025-09-30 10:07:24 AM EDT)
-END  : copy_inputs_pitchers.py (2025-09-30 10:07:24 AM EDT)
+START: copy_inputs_pitchers.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_pitchers.py (2025-09-30 02:52:01 PM EDT)
 
-START: copy_inputs_lineups.py (2025-09-30 10:07:24 AM EDT)
-END  : copy_inputs_lineups.py (2025-09-30 10:07:24 AM EDT)
+START: copy_inputs_lineups.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_lineups.py (2025-09-30 02:52:01 PM EDT)
 
-START: emit_tgn_fixed.sh (2025-09-30 10:07:24 AM EDT)
+START: emit_tgn_fixed.sh (2025-09-30 02:52:01 PM EDT)
 WROTE data/_projections/todaysgames_normalized_fixed.csv
-END  : emit_tgn_fixed.sh (2025-09-30 10:07:24 AM EDT)
+END  : emit_tgn_fixed.sh (2025-09-30 02:52:01 PM EDT)
 
-START: split_games_windows.py (2025-09-30 10:07:24 AM EDT)
-END  : split_games_windows.py (2025-09-30 10:07:24 AM EDT)
+START: splithome.py (2025-09-30 02:52:01 PM EDT)
+END  : splithome.py (2025-09-30 02:52:01 PM EDT)
 
-START: build_bets_schedule.py (2025-09-30 10:07:24 AM EDT)
-END  : build_bets_schedule.py (2025-09-30 10:07:24 AM EDT)
+START: splitaway.py (2025-09-30 02:52:01 PM EDT)
+END  : splitaway.py (2025-09-30 02:52:02 PM EDT)
+
+START: updatesplitcsvs.py (2025-09-30 02:52:02 PM EDT)
+✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.
+END  : updatesplitcsvs.py (2025-09-30 02:52:02 PM EDT)
+
+START: bet_prep_1.py (2025-09-30 02:52:02 PM EDT)
+✅ Wrote 4 rows -> data/bets/mlb_sched.csv
+END  : bet_prep_1.py (2025-09-30 02:52:02 PM EDT)
 
 
 ===== ERRORS =====
-ERROR split_games_windows.py [2025-09-30 10:07:24 AM EDT]:
-python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/split_games_windows.py': [Errno 2] No such file or directory
-
----
-
-ERROR build_bets_schedule.py [2025-09-30 10:07:24 AM EDT]:
-python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/build_bets_schedule.py': [Errno 2] No such file or directory
-
----
-
