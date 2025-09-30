@@ -103,8 +103,8 @@ jobs:
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step build_batters_today_from_lineups.py python scripts/build_batters_today_from_lineups.py
 
-          # Build starting pitchers with opponent context
-          run_step build_startingpitchers_with_opp_context.py  python scripts/build_startingpitchers_with_opp_context.py
+          # Build starting pitchers with opponent context (switch to existing script)
+          run_step rebuild_startingpitchers.py         python scripts/rebuild_startingpitchers.py
 
           # Provide required --game-date to post_normalize_fixups.py
           GAME_DATE="$(TZ='America/New_York' date +%Y-%m-%d)"
@@ -246,9 +246,11 @@ jobs:
           # Emit file 06 expects: todaysgames_normalized_fixed.csv
           run_step emit_tgn_fixed.sh                    bash -lc 'cp -f data/temp_inputs/todaysgames_normalized_copy.csv data/_projections/todaysgames_normalized_fixed.csv && echo "WROTE data/_projections/todaysgames_normalized_fixed.csv"'
 
-          # Run split/schedule scripts (were skipped before)
-          run_step split_games_windows.py               python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted
-          run_step build_bets_schedule.py               python scripts/build_bets_schedule.py --games data/adjusted --out data/bets
+          # Run split/schedule chain with your existing scripts
+          run_step splithome.py                         python scripts/splithome.py
+          run_step splitaway.py                         python scripts/splitaway.py
+          run_step updatesplitcsvs.py                   python scripts/updatesplitcsvs.py
+          run_step bet_prep_1.py                        python scripts/bet_prep_1.py
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
