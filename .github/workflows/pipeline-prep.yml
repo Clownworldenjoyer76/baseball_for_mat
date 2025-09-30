@@ -103,6 +103,9 @@ jobs:
           run_step normalize_batter_team_names.py      python scripts/normalize_batter_team_names.py
           run_step build_batters_today_from_lineups.py python scripts/build_batters_today_from_lineups.py
 
+          # Build starting pitchers with opponent context
+          run_step build_startingpitchers_with_opp_context.py  python scripts/build_startingpitchers_with_opp_context.py
+
           # Provide required --game-date to post_normalize_fixups.py
           GAME_DATE="$(TZ='America/New_York' date +%Y-%m-%d)"
           echo "Using GAME_DATE=${GAME_DATE}" >>"$LOG"
@@ -145,6 +148,7 @@ jobs:
           git add data/raw/todaysgames.csv 2>/dev/null || true
           git add data/raw/todaysgames_normalized.csv 2>/dev/null || true
           git add data/raw/lineups_normalized.csv 2>/dev/null || true
+          git add data/raw/startingpitchers_with_opp_context.csv 2>/dev/null || true
           git add data/cleaned/batters_today.csv 2>/dev/null || true
           git add data/cleaned/pitchers_normalized_cleaned.csv 2>/dev/null || true
           git add summaries/foundation/* 2>/dev/null || true
@@ -242,9 +246,9 @@ jobs:
           # Emit file 06 expects: todaysgames_normalized_fixed.csv
           run_step emit_tgn_fixed.sh                    bash -lc 'cp -f data/temp_inputs/todaysgames_normalized_copy.csv data/_projections/todaysgames_normalized_fixed.csv && echo "WROTE data/_projections/todaysgames_normalized_fixed.csv"'
 
-          # Optionally run your split/schedule scripts if present
-          run_step maybe_split_games_windows.py         bash -lc '[ -f scripts/split_games_windows.py ] && python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted || echo "SKIP: scripts/split_games_windows.py not found"'
-          run_step maybe_build_bets_schedule.py         bash -lc '[ -f scripts/build_bets_schedule.py ] && python scripts/build_bets_schedule.py --games data/adjusted --out data/bets || echo "SKIP: scripts/build_bets_schedule.py not found"'
+          # Run split/schedule scripts (were skipped before)
+          run_step split_games_windows.py               python scripts/split_games_windows.py --in data/temp_inputs/todaysgames_normalized_copy.csv --out data/adjusted
+          run_step build_bets_schedule.py               python scripts/build_bets_schedule.py --games data/adjusted --out data/bets
 
           {
             echo "===== RUN TIMESTAMP: $(ts) ====="
