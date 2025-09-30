@@ -1,152 +1,148 @@
 ===== WORKFLOW: Pipeline Prep (00-05) =====
-generated_at: 2025-09-30 14:07:36 UTC
+generated_at: 2025-09-30 18:52:20 UTC
 
 == foundation ==
-===== RUN TIMESTAMP: 2025-09-30 10:06:40 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-30 02:51:21 PM EDT =====
 
 ===== STATUS =====
-✅ normalize_names.py succeeded [2025-09-30 10:06:32 AM EDT]
-✅ tag_master_files.py succeeded [2025-09-30 10:06:33 AM EDT]
-✅ validate_tagged_players.py succeeded [2025-09-30 10:06:34 AM EDT]
-✅ deduplicate_normalized.py succeeded [2025-09-30 10:06:35 AM EDT]
-✅ normalize_lineups.py succeeded [2025-09-30 10:06:35 AM EDT]
-✅ todaysgames.py succeeded [2025-09-30 10:06:36 AM EDT]
-✅ normalize_todays_games.py succeeded [2025-09-30 10:06:36 AM EDT]
-✅ inject_pitcher_ids_into_games.py succeeded [2025-09-30 10:06:36 AM EDT]
-✅ apply_team_name_mapping.py succeeded [2025-09-30 10:06:37 AM EDT]
-✅ fetch_mlb_ids.py succeeded [2025-09-30 10:06:37 AM EDT]
-✅ hotfix_team_codes.py succeeded [2025-09-30 10:06:37 AM EDT]
-✅ update_game_time.py succeeded [2025-09-30 10:06:38 AM EDT]
-✅ finalize_todaysgames_types_and_pf.py succeeded [2025-09-30 10:06:38 AM EDT]
-✅ filter_stadium_metadata.py succeeded [2025-09-30 10:06:38 AM EDT]
-✅ normalize_batter_team_names.py succeeded [2025-09-30 10:06:39 AM EDT]
-✅ build_batters_today_from_lineups.py succeeded [2025-09-30 10:06:39 AM EDT]
-❌ build_startingpitchers_with_opp_context.py failed [2025-09-30 10:06:39 AM EDT]
-✅ post_normalize_fixups.py succeeded [2025-09-30 10:06:39 AM EDT]
-✅ fix_inputs_inject_stolen_base_pct.py succeeded [2025-09-30 10:06:40 AM EDT]
+✅ normalize_names.py succeeded [2025-09-30 02:51:13 PM EDT]
+✅ tag_master_files.py succeeded [2025-09-30 02:51:14 PM EDT]
+✅ validate_tagged_players.py succeeded [2025-09-30 02:51:15 PM EDT]
+✅ deduplicate_normalized.py succeeded [2025-09-30 02:51:16 PM EDT]
+✅ normalize_lineups.py succeeded [2025-09-30 02:51:16 PM EDT]
+✅ todaysgames.py succeeded [2025-09-30 02:51:17 PM EDT]
+✅ normalize_todays_games.py succeeded [2025-09-30 02:51:17 PM EDT]
+✅ inject_pitcher_ids_into_games.py succeeded [2025-09-30 02:51:18 PM EDT]
+✅ apply_team_name_mapping.py succeeded [2025-09-30 02:51:18 PM EDT]
+✅ fetch_mlb_ids.py succeeded [2025-09-30 02:51:18 PM EDT]
+✅ hotfix_team_codes.py succeeded [2025-09-30 02:51:19 PM EDT]
+✅ update_game_time.py succeeded [2025-09-30 02:51:19 PM EDT]
+✅ finalize_todaysgames_types_and_pf.py succeeded [2025-09-30 02:51:19 PM EDT]
+✅ filter_stadium_metadata.py succeeded [2025-09-30 02:51:19 PM EDT]
+✅ normalize_batter_team_names.py succeeded [2025-09-30 02:51:20 PM EDT]
+✅ build_batters_today_from_lineups.py succeeded [2025-09-30 02:51:20 PM EDT]
+✅ rebuild_startingpitchers.py succeeded [2025-09-30 02:51:21 PM EDT]
+✅ post_normalize_fixups.py succeeded [2025-09-30 02:51:21 PM EDT]
+✅ fix_inputs_inject_stolen_base_pct.py succeeded [2025-09-30 02:51:21 PM EDT]
 
 ===== LOG =====
-▶️ START: normalize_names.py (2025-09-30 10:06:32 AM EDT)
+▶️ START: normalize_names.py (2025-09-30 02:51:13 PM EDT)
 ✅ Batters normalized: 631 → data/normalized/batters_normalized.csv
 ✅ Pitchers normalized: 781 → data/normalized/pitchers_normalized.csv
-⏹️ END: normalize_names.py (2025-09-30 10:06:32 AM EDT)
+⏹️ END: normalize_names.py (2025-09-30 02:51:13 PM EDT)
 
-▶️ START: tag_master_files.py (2025-09-30 10:06:32 AM EDT)
-⏹️ END: tag_master_files.py (2025-09-30 10:06:33 AM EDT)
+▶️ START: tag_master_files.py (2025-09-30 02:51:14 PM EDT)
+⏹️ END: tag_master_files.py (2025-09-30 02:51:14 PM EDT)
 
-▶️ START: validate_tagged_players.py (2025-09-30 10:06:33 AM EDT)
-⏹️ END: validate_tagged_players.py (2025-09-30 10:06:34 AM EDT)
+▶️ START: validate_tagged_players.py (2025-09-30 02:51:14 PM EDT)
+⏹️ END: validate_tagged_players.py (2025-09-30 02:51:15 PM EDT)
 
-▶️ START: deduplicate_normalized.py (2025-09-30 10:06:34 AM EDT)
-⏹️ END: deduplicate_normalized.py (2025-09-30 10:06:35 AM EDT)
+▶️ START: deduplicate_normalized.py (2025-09-30 02:51:15 PM EDT)
+⏹️ END: deduplicate_normalized.py (2025-09-30 02:51:16 PM EDT)
 
-▶️ START: normalize_lineups.py (2025-09-30 10:06:35 AM EDT)
+▶️ START: normalize_lineups.py (2025-09-30 02:51:16 PM EDT)
 ✅ normalize_lineups.py completed: 840 rows written to data/raw/lineups_normalized.csv
-⏹️ END: normalize_lineups.py (2025-09-30 10:06:35 AM EDT)
+⏹️ END: normalize_lineups.py (2025-09-30 02:51:16 PM EDT)
 
-▶️ START: todaysgames.py (2025-09-30 10:06:35 AM EDT)
-⏹️ END: todaysgames.py (2025-09-30 10:06:36 AM EDT)
+▶️ START: todaysgames.py (2025-09-30 02:51:16 PM EDT)
+⏹️ END: todaysgames.py (2025-09-30 02:51:17 PM EDT)
 
-▶️ START: normalize_todays_games.py (2025-09-30 10:06:36 AM EDT)
+▶️ START: normalize_todays_games.py (2025-09-30 02:51:17 PM EDT)
 ✅ normalize_todays_games wrote 4 rows -> data/raw/todaysgames_normalized.csv
-⏹️ END: normalize_todays_games.py (2025-09-30 10:06:36 AM EDT)
+⏹️ END: normalize_todays_games.py (2025-09-30 02:51:17 PM EDT)
 
-▶️ START: inject_pitcher_ids_into_games.py (2025-09-30 10:06:36 AM EDT)
-⏹️ END: inject_pitcher_ids_into_games.py (2025-09-30 10:06:36 AM EDT)
+▶️ START: inject_pitcher_ids_into_games.py (2025-09-30 02:51:17 PM EDT)
+⏹️ END: inject_pitcher_ids_into_games.py (2025-09-30 02:51:18 PM EDT)
 
-▶️ START: apply_team_name_mapping.py (2025-09-30 10:06:36 AM EDT)
+▶️ START: apply_team_name_mapping.py (2025-09-30 02:51:18 PM EDT)
 Updated: data/raw/todaysgames_normalized.csv (if present)
-⏹️ END: apply_team_name_mapping.py (2025-09-30 10:06:37 AM EDT)
+⏹️ END: apply_team_name_mapping.py (2025-09-30 02:51:18 PM EDT)
 
-▶️ START: fetch_mlb_ids.py (2025-09-30 10:06:37 AM EDT)
+▶️ START: fetch_mlb_ids.py (2025-09-30 02:51:18 PM EDT)
 ✅ fetch_mlb_ids: team_directory.csv schema validated.
-⏹️ END: fetch_mlb_ids.py (2025-09-30 10:06:37 AM EDT)
+⏹️ END: fetch_mlb_ids.py (2025-09-30 02:51:18 PM EDT)
 
-▶️ START: hotfix_team_codes.py (2025-09-30 10:06:37 AM EDT)
+▶️ START: hotfix_team_codes.py (2025-09-30 02:51:18 PM EDT)
 ✅ hotfix_team_codes applied fixes -> data/raw/todaysgames_normalized.csv
-⏹️ END: hotfix_team_codes.py (2025-09-30 10:06:37 AM EDT)
+⏹️ END: hotfix_team_codes.py (2025-09-30 02:51:19 PM EDT)
 
-▶️ START: update_game_time.py (2025-09-30 10:06:37 AM EDT)
+▶️ START: update_game_time.py (2025-09-30 02:51:19 PM EDT)
 ✅ Updated data/raw/todaysgames_normalized.csv (park_factor filled 4/4)
-⏹️ END: update_game_time.py (2025-09-30 10:06:38 AM EDT)
+⏹️ END: update_game_time.py (2025-09-30 02:51:19 PM EDT)
 
-▶️ START: finalize_todaysgames_types_and_pf.py (2025-09-30 10:06:38 AM EDT)
+▶️ START: finalize_todaysgames_types_and_pf.py (2025-09-30 02:51:19 PM EDT)
 ✅ Wrote data/raw/todaysgames_normalized.csv | rows=4 | dtype(park_factor)=Int64
-⏹️ END: finalize_todaysgames_types_and_pf.py (2025-09-30 10:06:38 AM EDT)
+⏹️ END: finalize_todaysgames_types_and_pf.py (2025-09-30 02:51:19 PM EDT)
 
-▶️ START: filter_stadium_metadata.py (2025-09-30 10:06:38 AM EDT)
-⏹️ END: filter_stadium_metadata.py (2025-09-30 10:06:38 AM EDT)
+▶️ START: filter_stadium_metadata.py (2025-09-30 02:51:19 PM EDT)
+⏹️ END: filter_stadium_metadata.py (2025-09-30 02:51:19 PM EDT)
 
-▶️ START: normalize_batter_team_names.py (2025-09-30 10:06:38 AM EDT)
-⏹️ END: normalize_batter_team_names.py (2025-09-30 10:06:39 AM EDT)
+▶️ START: normalize_batter_team_names.py (2025-09-30 02:51:19 PM EDT)
+⏹️ END: normalize_batter_team_names.py (2025-09-30 02:51:20 PM EDT)
 
-▶️ START: build_batters_today_from_lineups.py (2025-09-30 10:06:39 AM EDT)
+▶️ START: build_batters_today_from_lineups.py (2025-09-30 02:51:20 PM EDT)
 ✅ build_batters_today_from_lineups: wrote 837 rows -> data/cleaned/batters_today.csv
-⏹️ END: build_batters_today_from_lineups.py (2025-09-30 10:06:39 AM EDT)
+⏹️ END: build_batters_today_from_lineups.py (2025-09-30 02:51:20 PM EDT)
 
-▶️ START: build_startingpitchers_with_opp_context.py (2025-09-30 10:06:39 AM EDT)
-⏹️ END: build_startingpitchers_with_opp_context.py (2025-09-30 10:06:39 AM EDT)
+▶️ START: rebuild_startingpitchers.py (2025-09-30 02:51:20 PM EDT)
+✅ Wrote 8 rows -> data/raw/startingpitchers_with_opp_context.csv
+⏹️ END: rebuild_startingpitchers.py (2025-09-30 02:51:21 PM EDT)
 
 Using GAME_DATE=2025-09-30
-▶️ START: post_normalize_fixups.py (2025-09-30 10:06:39 AM EDT)
+▶️ START: post_normalize_fixups.py (2025-09-30 02:51:21 PM EDT)
 ✅ post_normalize_fixups complete (no game_id injected)
-⏹️ END: post_normalize_fixups.py (2025-09-30 10:06:39 AM EDT)
+⏹️ END: post_normalize_fixups.py (2025-09-30 02:51:21 PM EDT)
 
-▶️ START: fix_inputs_inject_stolen_base_pct.py (2025-09-30 10:06:39 AM EDT)
-⏹️ END: fix_inputs_inject_stolen_base_pct.py (2025-09-30 10:06:40 AM EDT)
+▶️ START: fix_inputs_inject_stolen_base_pct.py (2025-09-30 02:51:21 PM EDT)
+⏹️ END: fix_inputs_inject_stolen_base_pct.py (2025-09-30 02:51:21 PM EDT)
 
 
 ===== ERRORS =====
-❌ build_startingpitchers_with_opp_context.py ERROR [2025-09-30 10:06:39 AM EDT]:
-python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/build_startingpitchers_with_opp_context.py': [Errno 2] No such file or directory
-
----
-
 
 == split_sched ==
-===== RUN TIMESTAMP: 2025-09-30 10:07:24 AM EDT =====
+===== RUN TIMESTAMP: 2025-09-30 02:52:02 PM EDT =====
 
 ===== STATUS =====
-OK   copy_inputs_batters.py [2025-09-30 10:07:23 AM EDT]
-OK   copy_inputs_tgn.py [2025-09-30 10:07:23 AM EDT]
-OK   copy_inputs_pitchers.py [2025-09-30 10:07:24 AM EDT]
-OK   copy_inputs_lineups.py [2025-09-30 10:07:24 AM EDT]
-OK   emit_tgn_fixed.sh [2025-09-30 10:07:24 AM EDT]
-FAIL split_games_windows.py [2025-09-30 10:07:24 AM EDT]
-FAIL build_bets_schedule.py [2025-09-30 10:07:24 AM EDT]
+OK   copy_inputs_batters.py [2025-09-30 02:52:01 PM EDT]
+OK   copy_inputs_tgn.py [2025-09-30 02:52:01 PM EDT]
+OK   copy_inputs_pitchers.py [2025-09-30 02:52:01 PM EDT]
+OK   copy_inputs_lineups.py [2025-09-30 02:52:01 PM EDT]
+OK   emit_tgn_fixed.sh [2025-09-30 02:52:01 PM EDT]
+OK   splithome.py [2025-09-30 02:52:01 PM EDT]
+OK   splitaway.py [2025-09-30 02:52:02 PM EDT]
+OK   updatesplitcsvs.py [2025-09-30 02:52:02 PM EDT]
+OK   bet_prep_1.py [2025-09-30 02:52:02 PM EDT]
 
 ===== LOG =====
-START: copy_inputs_batters.py (2025-09-30 10:07:23 AM EDT)
-END  : copy_inputs_batters.py (2025-09-30 10:07:23 AM EDT)
+START: copy_inputs_batters.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_batters.py (2025-09-30 02:52:01 PM EDT)
 
-START: copy_inputs_tgn.py (2025-09-30 10:07:23 AM EDT)
-END  : copy_inputs_tgn.py (2025-09-30 10:07:24 AM EDT)
+START: copy_inputs_tgn.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_tgn.py (2025-09-30 02:52:01 PM EDT)
 
-START: copy_inputs_pitchers.py (2025-09-30 10:07:24 AM EDT)
-END  : copy_inputs_pitchers.py (2025-09-30 10:07:24 AM EDT)
+START: copy_inputs_pitchers.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_pitchers.py (2025-09-30 02:52:01 PM EDT)
 
-START: copy_inputs_lineups.py (2025-09-30 10:07:24 AM EDT)
-END  : copy_inputs_lineups.py (2025-09-30 10:07:24 AM EDT)
+START: copy_inputs_lineups.py (2025-09-30 02:52:01 PM EDT)
+END  : copy_inputs_lineups.py (2025-09-30 02:52:01 PM EDT)
 
-START: emit_tgn_fixed.sh (2025-09-30 10:07:24 AM EDT)
+START: emit_tgn_fixed.sh (2025-09-30 02:52:01 PM EDT)
 WROTE data/_projections/todaysgames_normalized_fixed.csv
-END  : emit_tgn_fixed.sh (2025-09-30 10:07:24 AM EDT)
+END  : emit_tgn_fixed.sh (2025-09-30 02:52:01 PM EDT)
 
-START: split_games_windows.py (2025-09-30 10:07:24 AM EDT)
-END  : split_games_windows.py (2025-09-30 10:07:24 AM EDT)
+START: splithome.py (2025-09-30 02:52:01 PM EDT)
+END  : splithome.py (2025-09-30 02:52:01 PM EDT)
 
-START: build_bets_schedule.py (2025-09-30 10:07:24 AM EDT)
-END  : build_bets_schedule.py (2025-09-30 10:07:24 AM EDT)
+START: splitaway.py (2025-09-30 02:52:01 PM EDT)
+END  : splitaway.py (2025-09-30 02:52:02 PM EDT)
+
+START: updatesplitcsvs.py (2025-09-30 02:52:02 PM EDT)
+✅ Updated batters_home.csv and batters_away.csv using robust ID-based merge and game_id fill.
+END  : updatesplitcsvs.py (2025-09-30 02:52:02 PM EDT)
+
+START: bet_prep_1.py (2025-09-30 02:52:02 PM EDT)
+✅ Wrote 4 rows -> data/bets/mlb_sched.csv
+END  : bet_prep_1.py (2025-09-30 02:52:02 PM EDT)
 
 
 ===== ERRORS =====
-ERROR split_games_windows.py [2025-09-30 10:07:24 AM EDT]:
-python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/split_games_windows.py': [Errno 2] No such file or directory
-
----
-
-ERROR build_bets_schedule.py [2025-09-30 10:07:24 AM EDT]:
-python: can't open file '/home/runner/work/baseball_for_mat/baseball_for_mat/scripts/build_bets_schedule.py': [Errno 2] No such file or directory
-
----
-
