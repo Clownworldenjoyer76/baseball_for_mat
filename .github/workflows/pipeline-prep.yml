@@ -98,7 +98,11 @@ jobs:
       - name: 03_weather_inputs (MANDATORY)
         run: |
           set -euo pipefail
-          python scripts/weather_inputs.py 2>&1 | tee logs/09_weather_inputs.log
+          python scripts/get_weather_data.py                    2>&1 | tee logs/09a_get_weather_data.log
+          python scripts/generate_weather_csv.py                2>&1 | tee logs/09b_generate_weather_csv.log
+          python scripts/weather_data_fix.py                    2>&1 | tee logs/09c_weather_data_fix.log
+          python scripts/finalize_weather_outputs.py            2>&1 | tee logs/09d_finalize_weather_outputs.log
+          python scripts/normalize_pitcher_weather_outputs.py   2>&1 | tee logs/09e_normalize_pitcher_weather_outputs.log
 
       ####################################################################
       # 04 – Weather Adjustments (MANDATORY)
@@ -106,12 +110,19 @@ jobs:
       - name: 04_weather_adjustments_batters (MANDATORY)
         run: |
           set -euo pipefail
-          python scripts/weatheradjustments_batters.py 2>&1 | tee logs/10_weather_batters.log
+          python scripts/apply_weather_adjustment.py            2>&1 | tee logs/10_apply_weather_adjustment_batters.log
 
       - name: 04_weather_adjustments_pitchers (MANDATORY)
         run: |
           set -euo pipefail
-          python scripts/weatheradjustments_pitchers.py 2>&1 | tee logs/11_weather_pitchers.log
+          python scripts/apply_pitcher_weather_adjustment.py    2>&1 | tee logs/11_apply_weather_adjustment_pitchers.log
+
+      - name: 04_weather_combine_outputs (MANDATORY)
+        run: |
+          set -euo pipefail
+          python scripts/combine_batter_weather_park.py         2>&1 | tee logs/12_combine_batter_weather_park.log
+          python scripts/combine_pitcher_weather_park_home.py   2>&1 | tee logs/13_combine_pitcher_weather_park_home.log
+          python scripts/combine_pitcher_weather_park_away.py   2>&1 | tee logs/14_combine_pitcher_weather_park_away.log
 
       ####################################################################
       # 05 – Prep Summary & Commit
@@ -128,7 +139,7 @@ jobs:
             echo "[01] Split & Stage: OK"
             echo "[02] Context & Fixes: OK (see logs for conditional steps)"
             echo "[03] Weather Inputs: OK"
-            echo "[04] Weather Adjustments (Batters/Pitchers): OK"
+            echo "[04] Weather Adjustments + Combines: OK"
             echo
             echo "--- Key files present ---"
             ls -lah data/_projections || true
@@ -147,6 +158,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Prep: 00-05 (inject pitcher IDs before rebuild) + mandatory weather"
+            git commit -m "Prep: 00-05 (inject before rebuild) + mandatory weather pipeline"
             git push --force-with-lease origin HEAD:${TARGET_BRANCH}
           fi
