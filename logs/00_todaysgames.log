@@ -1,0 +1,66 @@
+DEBUG: Python: 3.10.18 (main, Jun  4 2025, 04:04:42) [GCC 13.3.0]
+DEBUG: CWD: /home/runner/work/baseball_for_mat/baseball_for_mat
+DEBUG: Output target: /home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/todaysgames.csv (exists_pre=True)
+DEBUG: ENV TZ: America/New_York / arg tz=America/New_York
+DEBUG: Target date: 2025-10-01
+DEBUG: HTTP GET https://statsapi.mlb.com/api/v1/schedule
+DEBUG: Params: {
+  "sportId": 1,
+  "date": "2025-10-01",
+  "hydrate": "probablePitcher(note,fullName),team",
+  "language": "en"
+}
+DEBUG: Response status: 200
+DEBUG: Final URL: https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=2025-10-01&hydrate=probablePitcher%28note%2CfullName%29%2Cteam&language=en
+DEBUG: Response preview (500): '{"copyright":"Copyright 2025 MLB Advanced Media, L.P.  Use of any content on this page acknowledges agreement to the terms posted here http://gdx.mlb.com/components/copyright.txt","totalItems":4,"totalEvents":0,"totalGames":4,"totalGamesInProgress":1,"dates":[{"date":"2025-10-01","totalItems":4,"totalEvents":0,"totalGames":4,"totalGamesInProgress":1,"games":[{"gamePk":813071,"gameGuid":"fca403df-ecba-4340-b893-370ece3b6f7d","link":"/api/v1.1/game/813071/feed/live","gameType":"F","season":"2025",'
+DEBUG: Games found: 4
+DEBUG: Team map -> name='Cleveland Guardians' abbr_api='CLE' chosen='CLE'
+DEBUG: Team map -> name='Detroit Tigers' abbr_api='DET' chosen='DET'
+DEBUG: [1] game_id=813071 DET@CLE time='1:08 PM' pitchers: home='Bibee, Tanner', away='Mize, Casey'
+DEBUG: Team map -> name='Chicago Cubs' abbr_api='CHC' chosen='CHC'
+DEBUG: Team map -> name='San Diego Padres' abbr_api='SD' chosen='SD'
+DEBUG: [2] game_id=813064 SD@CHC time='3:08 PM' pitchers: home='Kittredge, Andrew', away='Cease, Dylan'
+DEBUG: Team map -> name='New York Yankees' abbr_api='NYY' chosen='NYY'
+DEBUG: Team map -> name='Boston Red Sox' abbr_api='BOS' chosen='BOS'
+DEBUG: [3] game_id=813070 BOS@NYY time='6:08 PM' pitchers: home='Rodón, Carlos', away='Bello, Brayan'
+DEBUG: Team map -> name='Los Angeles Dodgers' abbr_api='LAD' chosen='LAD'
+DEBUG: Team map -> name='Cincinnati Reds' abbr_api='CIN' chosen='CIN'
+DEBUG: [4] game_id=813068 CIN@LAD time='9:08 PM' pitchers: home='Yamamoto, Yoshinobu', away='Littell, Zack'
+DEBUG: Ensured parent dir: data/raw
+DEBUG: Writing CSV -> /home/runner/work/baseball_for_mat/baseball_for_mat/data/raw/todaysgames.csv
+DEBUG: Row count: 4
+DEBUG: Row preview: [
+  {
+    "game_id": 813071,
+    "home_team": "CLE",
+    "away_team": "DET",
+    "game_time": "1:08 PM",
+    "pitcher_home": "Bibee, Tanner",
+    "pitcher_away": "Mize, Casey"
+  },
+  {
+    "game_id": 813064,
+    "home_team": "CHC",
+    "away_team": "SD",
+    "game_time": "3:08 PM",
+    "pitcher_home": "Kittredge, Andrew",
+    "pitcher_away": "Cease, Dylan"
+  },
+  {
+    "game_id": 813070,
+    "home_team": "NYY",
+    "away_team": "BOS",
+    "game_time": "6:08 PM",
+    "pitcher_home": "Rod\u00f3n, Carlos",
+    "pitcher_away": "Bello, Brayan"
+  }
+]
+DEBUG: Wrote CSV bytes: 340
+DEBUG: CSV head:
+"game_id","home_team","away_team","game_time","pitcher_home","pitcher_away"
+"813071","CLE","DET","1:08 PM","Bibee, Tanner","Mize, Casey"
+"813064","CHC","SD","3:08 PM","Kittredge, Andrew","Cease, Dylan"
+"813070","NYY","BOS","6:08 PM","Rodón, Carlos","Bello, Brayan"
+"813068","LAD","CIN","9:08 PM","Yamamoto, Yoshinobu","Littell, Zack"
+
+DEBUG: File exists (post): True size=340
