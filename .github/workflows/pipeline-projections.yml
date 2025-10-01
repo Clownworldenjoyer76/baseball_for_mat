@@ -209,6 +209,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name  "github-actions[bot]"
           git add data/_projections/*.csv data/end_chain/final/*.csv summaries/06_projection/*.log || true
+          git add data/tagged/* || true
           if git diff --cached --quiet; then
             echo "No changes to commit (06)."
           else
@@ -250,7 +251,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: projections-06-outputs
-          path: .artifacts/06
+        path: .artifacts/06
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -375,10 +376,12 @@ jobs:
           ls -l data/raw || true
           ls -l summaries/07_final || true
 
-          # Stage finals + sidecar stamps + logs
+          # Stage finals + sidecar stamps + logs + _projections event prob files
           git add data/end_chain/final/game_score_projections.csv \
                   data/end_chain/final/batter_event_probabilities.csv \
                   data/end_chain/final/pitcher_event_probabilities.csv \
+                  data/_projections/batter_event_probabilities.csv \
+                  data/_projections/pitcher_event_probabilities.csv \
                   summaries/07_final/stamps/*.sha256.txt \
                   summaries/07_final/* || true
 
@@ -386,7 +389,6 @@ jobs:
           git status -s
 
           if git diff --cached --quiet; then
-            # ensure a daily commit exists anyway
             git commit --allow-empty -m "07: no data diffs; update stamps/summary only [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
           else
             git commit -m "CI: update final projections + stamps + summaries/07_final [$(date -u +'%Y-%m-%dT%H:%M:%SZ')]"
