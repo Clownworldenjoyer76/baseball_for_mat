@@ -1,4 +1,3 @@
----
 name: Pipeline Prep (00-05)
 on:
   workflow_dispatch: {}
@@ -300,10 +299,89 @@ jobs:
           echo "git push --force-with-lease origin HEAD:${TARGET_BRANCH}"
           git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
 
+  weather_and_adjustments:
+    name: 03–04 Weather & Adjustments (+ legacy staging)
+    needs:
+      - split_sched
+    runs-on: ubuntu-latest
+    env:
+      TZ: America/New_York
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Build weather inputs (if scripts exist)
+        run: |
+          set -e
+          mkdir -p data
+          if [ -f scripts/build_weather_input.py ]; then
+            python scripts/build_weather_input.py || true
+          else
+            echo "SKIP: scripts/build_weather_input.py not found"
+          fi
+          if [ -f scripts/compute_weather_adjustments.py ]; then
+            python scripts/compute_weather_adjustments.py || true
+          else
+            echo "SKIP: scripts/compute_weather_adjustments.py not found"
+          fi
+
+      - name: Batter adjustments (03) — run any present scripts
+        run: |
+          set -e
+          shopt -s nullglob
+          for s in scripts/*batter*weather*.py scripts/*batter*park*.py scripts/*combine_batter*.py; do
+            echo "RUN $s"; python "$s" || true
+          done
+
+      - name: Pitcher adjustments (04) — run any present scripts
+        run: |
+          set -e
+          shopt -s nullglob
+          for s in scripts/*pitcher*weather*.py scripts/*pitcher*park*.py scripts/*combine_pitcher*.py; do
+            echo "RUN $s"; python "$s" || true
+          done
+
+      - name: Commit weather, adjusted, and legacy staging
+        run: |
+          set -euo pipefail
+          TARGET_BRANCH="${GITHUB_REF_NAME:-${GITHUB_HEAD_REF:-main}}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          echo "--- DIR LISTS ---"
+          ls -l data/adjusted || true
+          ls -l data/end_chain/first || true
+          ls -l data/end_chain/cleaned || true
+
+          git add data/weather_input.csv data/weather_adjustments.csv 2>/dev/null || true
+          git add data/adjusted/* 2>/dev/null || true
+          git add data/end_chain/first/**/* 2>/dev/null || true
+          git add data/end_chain/cleaned/* 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit (03–04 + legacy)."
+          else
+            git commit -m "03–04 adjustments + weather + legacy staging"
+            git push --force-with-lease origin HEAD:"${TARGET_BRANCH}"
+          fi
+
   workflow_summary:
     name: 05 Write pipeline-prep summary
     needs:
-      - split_sched
+      - weather_and_adjustments
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
