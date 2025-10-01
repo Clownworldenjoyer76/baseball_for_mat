@@ -84,13 +84,26 @@ jobs:
           python scripts/bet_prep_1.py            2>&1 | tee logs/06_bet_prep_1.log
 
       ####################################################################
-      # 02 – Context / Fixups (optional extras that don't affect SP IDs)
+      # 02 – Context / Fixups + Normalize/Tag
       ####################################################################
       - name: 02_context_and_fixes
         run: |
           set -euo pipefail
           if [ -f scripts/fix_team_names.py ]; then python scripts/fix_team_names.py | tee logs/07_fix_team_names.log; fi
           if [ -f scripts/park_factors.py ]; then python scripts/park_factors.py | tee logs/08_park_factors.log; fi
+          python scripts/normalize_names.py                  2>&1 | tee logs/09_normalize_names.log
+          python scripts/tag_master_files.py                 2>&1 | tee logs/10_tag_master_files.log
+          python scripts/normalize_lineups.py                2>&1 | tee logs/11_normalize_lineups.log
+          python scripts/build_batters_today_from_lineups.py 2>&1 | tee logs/12_build_batters_today_from_lineups.log
+          python scripts/normalize_batters_for_builder.py    2>&1 | tee logs/13_normalize_batters_for_builder.log
+          python scripts/deduplicate_normalized.py           2>&1 | tee logs/14_deduplicate_normalized.log
+          python scripts/validate_tagged_players.py          2>&1 | tee logs/15_validate_tagged_players.log
+          python scripts/apply_park_adjustment.py            2>&1 | tee logs/16_apply_park_adjustment.log
+          python scripts/apply_pitcher_park_adjustment.py    2>&1 | tee logs/17_apply_pitcher_park_adjustment.log
+          python scripts/clean_and_preprocess_games.py       2>&1 | tee logs/18_clean_and_preprocess_games.log
+          python scripts/pit1.py                             2>&1 | tee logs/19_pit1.log
+          python scripts/chain_load_data.py                  2>&1 | tee logs/20_chain_load_data.log
+          python scripts/prep_merge.py                       2>&1 | tee logs/21_prep_merge.log
 
       ####################################################################
       # 03 – Weather Inputs (MANDATORY)
@@ -98,11 +111,11 @@ jobs:
       - name: 03_weather_inputs (MANDATORY)
         run: |
           set -euo pipefail
-          python scripts/get_weather_data.py                    2>&1 | tee logs/09a_get_weather_data.log
-          python scripts/generate_weather_csv.py                2>&1 | tee logs/09b_generate_weather_csv.log
-          python scripts/weather_data_fix.py                    2>&1 | tee logs/09c_weather_data_fix.log
-          python scripts/finalize_weather_outputs.py            2>&1 | tee logs/09d_finalize_weather_outputs.log
-          python scripts/normalize_pitcher_weather_outputs.py   2>&1 | tee logs/09e_normalize_pitcher_weather_outputs.log
+          python scripts/get_weather_data.py                    2>&1 | tee logs/22a_get_weather_data.log
+          python scripts/generate_weather_csv.py                2>&1 | tee logs/22b_generate_weather_csv.log
+          python scripts/weather_data_fix.py                    2>&1 | tee logs/22c_weather_data_fix.log
+          python scripts/finalize_weather_outputs.py            2>&1 | tee logs/22d_finalize_weather_outputs.log
+          python scripts/normalize_pitcher_weather_outputs.py   2>&1 | tee logs/22e_normalize_pitcher_weather_outputs.log
 
       ####################################################################
       # 04 – Weather Adjustments (MANDATORY)
@@ -110,21 +123,21 @@ jobs:
       - name: 04_weather_adjustments_batters (MANDATORY)
         run: |
           set -euo pipefail
-          python scripts/apply_weather_adjustment.py            2>&1 | tee logs/10_apply_weather_adjustment_batters.log
+          python scripts/apply_weather_adjustment.py            2>&1 | tee logs/23_apply_weather_adjustment_batters.log
 
       - name: 04_weather_adjustments_pitchers (MANDATORY)
         run: |
           set -euo pipefail
           mkdir -p summaries/pitchers_adjust
           : > summaries/pitchers_adjust/missing_woba.txt
-          python scripts/apply_pitcher_weather_adjustment.py    2>&1 | tee logs/11_apply_weather_adjustment_pitchers.log
+          python scripts/apply_pitcher_weather_adjustment.py    2>&1 | tee logs/24_apply_weather_adjustment_pitchers.log
 
       - name: 04_weather_combine_outputs (MANDATORY)
         run: |
           set -euo pipefail
-          python scripts/combine_batter_weather_park.py         2>&1 | tee logs/12_combine_batter_weather_park.log
-          python scripts/combine_pitcher_weather_park_home.py   2>&1 | tee logs/13_combine_pitcher_weather_park_home.log
-          python scripts/combine_pitcher_weather_park_away.py   2>&1 | tee logs/14_combine_pitcher_weather_park_away.log
+          python scripts/combine_batter_weather_park.py         2>&1 | tee logs/25_combine_batter_weather_park.log
+          python scripts/combine_pitcher_weather_park_home.py   2>&1 | tee logs/26_combine_pitcher_weather_park_home.log
+          python scripts/combine_pitcher_weather_park_away.py   2>&1 | tee logs/27_combine_pitcher_weather_park_away.log
 
       ####################################################################
       # 05 – Prep Summary & Commit
@@ -141,7 +154,7 @@ jobs:
             echo
             echo "[00] Foundation/Normalize/Inject/Rebuild: OK"
             echo "[01] Split & Stage: OK"
-            echo "[02] Context & Fixes: OK (see logs for conditional steps)"
+            echo "[02] Context + Normalize/Tag: OK"
             echo "[03] Weather Inputs: OK"
             echo "[04] Weather Adjustments + Combines: OK"
             echo
@@ -166,6 +179,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Prep: 00-05 (inject before rebuild) + mandatory weather pipeline + audit"
+            git commit -m "Prep: 00-05 with normalize/tag/adjust scripts + weather"
             git push --force-with-lease origin HEAD:${TARGET_BRANCH}
           fi
