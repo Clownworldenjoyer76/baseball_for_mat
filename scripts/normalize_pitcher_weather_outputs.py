@@ -1,66 +1,84 @@
-import pandas as pd
-from pathlib import Path
-import subprocess
-import sys
+#!/usr/bin/env python3
+# scripts/normalize_pitcher_weather_outputs.py
+#
+# Purpose:
+# - Ensure pitcher split files exist with required IDs
+# - NOOP on values, but guarantee downstream merges won’t break
+# - (New) assert uniqueness of game_id in data/weather_adjustments.csv before pitchers run
+#
+# Reads:
+#   data/adjusted/pitchers_home.csv
+#   data/adjusted/pitchers_away.csv
+#   data/weather_adjustments.csv  (sanity check)
+#
+# Writes (pass-through for pitchers):
+#   data/adjusted/pitchers_home.csv
+#   data/adjusted/pitchers_away.csv
 
-# Inputs/outputs
-STADIUM_MASTER = Path("data/manual/stadium_master.csv")
-PITCHERS_HOME_IN = Path("data/adjusted/pitchers_home.csv")
-PITCHERS_AWAY_IN = Path("data/adjusted/pitchers_away.csv")
+from __future__ import annotations
+import sys
+from pathlib import Path
+import pandas as pd
+
+PITCHERS_HOME_IN  = Path("data/adjusted/pitchers_home.csv")
+PITCHERS_AWAY_IN  = Path("data/adjusted/pitchers_away.csv")
 PITCHERS_HOME_OUT = Path("data/adjusted/pitchers_home.csv")
 PITCHERS_AWAY_OUT = Path("data/adjusted/pitchers_away.csv")
 
-# Required schemas
-REQUIRED_STADIUM_COLS = {
-    "team_id", "team_name", "venue", "city", "state", "timezone",
-    "is_dome", "latitude", "longitude", "home_team"
-}
-REQUIRED_PITCHER_ID_COLS = {"player_id", "game_id"}
+WEATHER_ADJ       = Path("data/weather_adjustments.csv")
 
-def fail(msg: str) -> None:
-    print(f"INSUFFICIENT INFORMATION: {msg}", file=sys.stderr)
-    sys.exit(1)
+REQ_PITCHER_COLS  = {"player_id", "game_id"}
+REQ_WEATHER_COLS  = {"game_id", "weather_factor"}
 
-def validate_stadium_master(path: Path) -> None:
-    if not path.exists():
-        fail(f"Missing file: {path}")
-    df = pd.read_csv(path)
-    missing = REQUIRED_STADIUM_COLS.difference(df.columns)
-    if missing:
-        fail(f"{path} missing columns: {sorted(missing)}")
+def fail(msg: str, code: int = 1):
+    print(msg)
+    sys.exit(code)
 
-def validate_pitcher_file_has_ids(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        fail(f"Missing file: {path}")
-    df = pd.read_csv(path)
-    missing = REQUIRED_PITCHER_ID_COLS.difference(df.columns)
-    if missing:
-        fail(f"{path} missing required ID columns: {sorted(missing)}")
-    return df
+def load_csv(p: Path, dtype=None) -> pd.DataFrame:
+    if not p.exists():
+        fail(f"Missing file: {p}")
+    try:
+        return pd.read_csv(p, dtype=dtype)
+    except Exception as e:
+        fail(f"Unable to read {p}: {e}", 2)
 
-def commit_outputs() -> None:
-    # Preserve workflow’s existing behavior
-    subprocess.run(["git", "config", "--global", "user.name", "github-actions"], check=True)
-    subprocess.run(["git", "config", "--global", "user.email", "github-actions@github.com"], check=True)
-    subprocess.run(["git", "add", str(PITCHERS_HOME_OUT), str(PITCHERS_AWAY_OUT)], check=True)
-    subprocess.run(["git", "commit", "--allow-empty", "-m", "Normalize pitchers before weather adjustment"], check=True)
-    subprocess.run(["git", "push"], check=True)
-    print("Committed normalization stage outputs.")
+def ensure_cols(df: pd.DataFrame, needed: set[str], ctx: str):
+    miss = [c for c in needed if c not in df.columns]
+    if miss:
+        fail(f"{ctx}: missing columns {miss}")
 
-def main() -> None:
-    # 1) Schema check only; no name/team normalization or matching
-    validate_stadium_master(STADIUM_MASTER)
+def main():
+    # 1) Validate pitcher files have required IDs
+    ph = load_csv(PITCHERS_HOME_IN)
+    pa = load_csv(PITCHERS_AWAY_IN)
+    ensure_cols(ph, REQ_PITCHER_COLS, str(PITCHERS_HOME_IN))
+    ensure_cols(pa, REQ_PITCHER_COLS, str(PITCHERS_AWAY_IN))
 
-    # 2) Ensure we will march by IDs only
-    home_df = validate_pitcher_file_has_ids(PITCHERS_HOME_IN)
-    away_df = validate_pitcher_file_has_ids(PITCHERS_AWAY_IN)
+    # 2) Sanity check the weather adjustments file that the pitcher step will use
+    wx = load_csv(WEATHER_ADJ)
+    ensure_cols(wx, REQ_WEATHER_COLS, str(WEATHER_ADJ))
 
-    # 3) Write back unchanged (pass-through)
-    home_df.to_csv(PITCHERS_HOME_OUT, index=False)
-    away_df.to_csv(PITCHERS_AWAY_OUT, index=False)
+    # Enforce uniqueness on game_id right here (belt-and-suspenders)
+    if wx["game_id"].duplicated().any():
+        # Collapse with mean to be consistent with finalize_weather_outputs
+        wx_clean = (
+            wx.groupby("game_id", as_index=False)["weather_factor"]
+              .mean(numeric_only=True)
+        )
+        WEATHER_ADJ.parent.mkdir(parents=True, exist_ok=True)
+        wx_clean.to_csv(WEATHER_ADJ, index=False)
+        print(f"DEDUPED weather_adjustments.csv to one row per game_id (rows={len(wx_clean)})")
+    else:
+        print("weather_adjustments.csv already unique by game_id.")
 
-    # 4) Commit (kept to match workflow expectations)
-    commit_outputs()
+    # 3) Pass-through writes (kept for pipeline consistency)
+    PITCHERS_HOME_OUT.parent.mkdir(parents=True, exist_ok=True)
+    ph.to_csv(PITCHERS_HOME_OUT, index=False)
+
+    PITCHERS_AWAY_OUT.parent.mkdir(parents=True, exist_ok=True)
+    pa.to_csv(PITCHERS_AWAY_OUT, index=False)
+
+    print("normalize_pitcher_weather_outputs: OK")
 
 if __name__ == "__main__":
     main()
