@@ -63,6 +63,8 @@ jobs:
       - run: python scripts/inject_batter_woba_adjustments.py        | tee summaries/06_projection/inject_batter_woba_adjustments.py.log || true
       - run: python scripts/clean_pitcher_files.py                   | tee summaries/06_projection/clean_pitcher_files.py.log || true
       - run: python scripts/impute_missing_batter_adj_woba.py        | tee summaries/06_projection/impute_missing_batter_adj_woba.py.log || true
+      - run: python scripts/finalbatawp.py                           | tee summaries/06_projection/finalbatawp.py.log || true
+      - run: python scripts/finalbathwp.py                           | tee summaries/06_projection/finalbathwp.py.log || true
 
       - name: Commit & push 06 outputs + logs
         if: always()
