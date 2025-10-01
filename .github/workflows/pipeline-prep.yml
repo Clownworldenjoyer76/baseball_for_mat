@@ -115,6 +115,8 @@ jobs:
       - name: 04_weather_adjustments_pitchers (MANDATORY)
         run: |
           set -euo pipefail
+          mkdir -p summaries/pitchers_adjust
+          : > summaries/pitchers_adjust/missing_woba.txt
           python scripts/apply_pitcher_weather_adjustment.py    2>&1 | tee logs/11_apply_weather_adjustment_pitchers.log
 
       - name: 04_weather_combine_outputs (MANDATORY)
@@ -131,6 +133,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p summaries
+          games_count=$(python -c "import pandas as pd; print(pd.read_csv('data/raw/todaysgames_normalized.csv')['game_id'].nunique())" || echo "ERR")
+          weather_count=$(python -c "import pandas as pd; print(pd.read_csv('data/weather_adjustments.csv')['game_id'].nunique())" || echo "ERR")
           {
             echo "=== Pipeline Prep Summary (00-05) ==="
             echo "Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -140,6 +144,10 @@ jobs:
             echo "[02] Context & Fixes: OK (see logs for conditional steps)"
             echo "[03] Weather Inputs: OK"
             echo "[04] Weather Adjustments + Combines: OK"
+            echo
+            echo "--- Weather Audit ---"
+            echo "Games today (unique game_id): $games_count"
+            echo "Weather rows (unique game_id): $weather_count"
             echo
             echo "--- Key files present ---"
             ls -lah data/_projections || true
@@ -158,6 +166,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Prep: 00-05 (inject before rebuild) + mandatory weather pipeline"
+            git commit -m "Prep: 00-05 (inject before rebuild) + mandatory weather pipeline + audit"
             git push --force-with-lease origin HEAD:${TARGET_BRANCH}
           fi
