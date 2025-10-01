@@ -39,7 +39,6 @@ jobs:
             ${{ runner.os }}-py-
 
       - name: Setup Python
-        id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -63,15 +62,16 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       ####################################################################
-      # 00 – Foundation / Normalize
+      # 00 – Foundation / Normalize / Inject Pitcher IDs / Rebuild SP ctx
       ####################################################################
       - name: 00_foundation_normalize
         run: |
           set -euo pipefail
           mkdir -p summaries/00_foundation logs data/_projections data/end_chain/final data/temp_inputs
-          python scripts/todaysgames.py            2>&1 | tee logs/00_todaysgames.log
-          python scripts/normalize_todays_games.py 2>&1 | tee logs/01_normalize_todays_games.log
-          python scripts/rebuild_startingpitchers.py 2>&1 | tee logs/02_rebuild_startingpitchers.log
+          python scripts/todaysgames.py                                2>&1 | tee logs/00_todaysgames.log
+          python scripts/normalize_todays_games.py                     2>&1 | tee logs/01_normalize_todays_games.log
+          python scripts/inject_pitcher_ids_into_games.py              2>&1 | tee logs/02_inject_pitcher_ids.log
+          python scripts/rebuild_startingpitchers.py                   2>&1 | tee logs/03_rebuild_startingpitchers.log
 
       ####################################################################
       # 01 – Split Home/Away & Stage
@@ -79,18 +79,17 @@ jobs:
       - name: 01_split_and_stage
         run: |
           set -euo pipefail
-          python scripts/splithome.py             2>&1 | tee logs/03_splithome.log
-          python scripts/splitaway.py             2>&1 | tee logs/04_splitaway.log
-          python scripts/bet_prep_1.py            2>&1 | tee logs/05_bet_prep_1.log
+          python scripts/splithome.py             2>&1 | tee logs/04_splithome.log
+          python scripts/splitaway.py             2>&1 | tee logs/05_splitaway.log
+          python scripts/bet_prep_1.py            2>&1 | tee logs/06_bet_prep_1.log
 
       ####################################################################
-      # 02 – Context / Fixups (if your repo has these)
+      # 02 – Context / Fixups (optional extras that don't affect SP IDs)
       ####################################################################
       - name: 02_context_and_fixes
         run: |
           set -euo pipefail
-          if [ -f scripts/fix_team_names.py ]; then python scripts/fix_team_names.py | tee logs/06_fix_team_names.log; fi
-          if [ -f scripts/inject_pitcher_ids.py ]; then python scripts/inject_pitcher_ids.py | tee logs/07_inject_pitcher_ids.log; fi
+          if [ -f scripts/fix_team_names.py ]; then python scripts/fix_team_names.py | tee logs/07_fix_team_names.log; fi
           if [ -f scripts/park_factors.py ]; then python scripts/park_factors.py | tee logs/08_park_factors.log; fi
 
       ####################################################################
@@ -125,7 +124,7 @@ jobs:
             echo "=== Pipeline Prep Summary (00-05) ==="
             echo "Date: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
             echo
-            echo "[00] Foundation & Normalize: OK"
+            echo "[00] Foundation/Normalize/Inject/Rebuild: OK"
             echo "[01] Split & Stage: OK"
             echo "[02] Context & Fixes: OK (see logs for conditional steps)"
             echo "[03] Weather Inputs: OK"
@@ -145,12 +144,9 @@ jobs:
         run: |
           set -euo pipefail
           git add -A
-          echo "--- GIT STATUS AFTER ADD ---"
-          git status -s
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Prep: 00-05 with mandatory weather steps"
-            # Force-with-lease to avoid overwriting others’ work unintentionally
+            git commit -m "Prep: 00-05 (inject pitcher IDs before rebuild) + mandatory weather"
             git push --force-with-lease origin HEAD:${TARGET_BRANCH}
           fi
