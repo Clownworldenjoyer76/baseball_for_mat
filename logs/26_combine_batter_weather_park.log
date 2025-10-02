@@ -1,63 +1,7 @@
-💾 [HOME] wrote: data/adjusted/batters_home_weather_park.csv (42 rows)
-💾 [AWAY] wrote: data/adjusted/batters_away_weather_park.csv (42 rows)
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/adjusted/batters_away.csv
-	modified:   data/adjusted/batters_away_park.csv
-	modified:   data/adjusted/batters_away_weather.csv
-	modified:   data/adjusted/batters_home.csv
-	modified:   data/adjusted/batters_home_park.csv
-	modified:   data/adjusted/batters_home_weather.csv
-	modified:   data/adjusted/log_weather_home.txt
-	modified:   data/bets/mlb_sched.csv
-	modified:   data/cleaned/batters_today.csv
-	modified:   data/end_chain/cleaned/games_today_cleaned.csv
-	modified:   data/end_chain/final/startingpitchers.csv
-	modified:   data/normalized/batters_normalized.csv
-	modified:   data/normalized/pitchers_normalized.csv
-	modified:   data/raw/startingpitchers_with_opp_context.csv
-	modified:   data/raw/todaysgames.csv
-	modified:   data/raw/todaysgames_normalized.csv
-	modified:   data/tagged/batters_normalized.csv
-	modified:   data/tagged/pitchers_normalized.csv
-	modified:   data/weather_adjustments.csv
-	modified:   data/weather_input.csv
-	modified:   logs/00_todaysgames.log
-	modified:   logs/01_normalize_todays_games.log
-	modified:   logs/03_rebuild_startingpitchers.log
-	modified:   logs/06_bet_prep_1.log
-
-Untracked files:
-  (use "git add <file>..." to include in what will be committed)
-	data/output/
-	logs/08_normalize_names.log
-	logs/09_tag_master_files.log
-	logs/10_normalize_lineups.log
-	logs/11_build_batters_today_from_lineups.log
-	logs/12_normalize_batters_for_builder.log
-	logs/13_deduplicate_normalized.log
-	logs/14_validate_tagged_players.log
-	logs/15_update_game_time.log
-	logs/16_finalize_todaysgames_types_and_pf.log
-	logs/17_apply_park_adjustment.log
-	logs/18_apply_pitcher_park_adjustment.log
-	logs/19_clean_and_preprocess_games.log
-	logs/20_pit1.log
-	logs/21_chain_load_data.log
-	logs/22_prep_merge.log
-	logs/23a_get_weather_data.log
-	logs/23b_generate_weather_csv.log
-	logs/23c_weather_data_fix.log
-	logs/23d_finalize_weather_outputs.log
-	logs/23e_normalize_pitcher_weather_outputs.log
-	logs/24_apply_weather_adjustment_batters.log
-	logs/25_apply_weather_adjustment_pitchers.log
-	logs/26_combine_batter_weather_park.log
-	summaries/summary.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
-⚠️ git commit/push failed: Command '['git', 'commit', '-m', 'combine_batter_weather_park: id-based merge']' returned non-zero exit status 1.
+💾 [HOME] wrote: data/adjusted/batters_home_weather_park.csv (84 rows)
+💾 [AWAY] wrote: data/adjusted/batters_away_weather_park.csv (84 rows)
+[main 161c9cd38] combine_batter_weather_park: id-based merge
+ 2 files changed, 168 insertions(+), 84 deletions(-)
+To https://github.com/Clownworldenjoyer76/baseball_for_mat
+   02ca261b1..161c9cd38  main -> main
+✅ committed and pushed.
