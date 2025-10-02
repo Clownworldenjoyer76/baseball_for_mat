@@ -61,6 +61,14 @@ def run_git_command(command_parts, success_message, error_prefix, log_output=Fal
         logger.error(f"❌ 'git' command not found. Is Git installed and in PATH?")
         return False
 
+# --- Helper to locate usable columns in stadium_master.csv ---
+def pick_column(df: pd.DataFrame, candidates):
+    lower_map = {c.lower(): c for c in df.columns}
+    for c in candidates:
+        if c.lower() in lower_map:
+            return lower_map[c.lower()]
+    return None
+
 # --- Main Deduplication Logic ---
 files = {
     "batters": "data/tagged/batters_normalized.csv",
@@ -68,6 +76,9 @@ files = {
 }
 output_dir = "data/cleaned"
 os.makedirs(output_dir, exist_ok=True)
+
+# Use the correct source file for team mapping
+STADIUM_MASTER_PATH = "data/manual/stadium_master.csv"
 
 for label, path in files.items():
     if not os.path.exists(path):
@@ -83,19 +94,43 @@ for label, path in files.items():
     after = len(df)
     logger.info(f"🧼 {label.capitalize()} deduplicated: {before} → {after}")
 
-    # Team name reverse mapping
+    # Team name reverse mapping using stadium_master.csv
     try:
-        team_map = pd.read_csv("data/Data/team_name_master.csv")[["team_name", "clean_team_name"]].dropna()
-        reverse_map = dict(zip(team_map["clean_team_name"].str.strip(), team_map["team_name"].str.strip()))
-        df["team"] = df["team"].astype(str).str.strip().replace(reverse_map)
+        if os.path.exists(STADIUM_MASTER_PATH):
+            sm = pd.read_csv(STADIUM_MASTER_PATH)
 
-        unmapped = df["team"].isna().sum()
-        if unmapped > 0:
-            logger.warning(f"⚠️ {unmapped} unmapped team(s) after applying reverse map.")
+            # Attempt to find appropriate columns to map back display team names
+            # Prefer an explicit clean->display mapping if present
+            display_col = pick_column(sm, ["team_name", "display_team_name", "team"])
+            clean_col   = pick_column(sm, ["clean_team_name", "canonical_team_name", "team_clean", "clean_name"])
+            abbr_col    = pick_column(sm, ["team_abbr", "abbr", "code"])
+
+            reverse_map = None
+
+            if clean_col and display_col:
+                # Map from clean -> display
+                tmp = sm[[clean_col, display_col]].dropna()
+                reverse_map = dict(zip(tmp[clean_col].astype(str).str.strip(),
+                                       tmp[display_col].astype(str).str.strip()))
+            elif abbr_col and display_col:
+                # Fallback: map from abbreviation -> display name
+                tmp = sm[[abbr_col, display_col]].dropna()
+                reverse_map = dict(zip(tmp[abbr_col].astype(str).str.strip(),
+                                       tmp[display_col].astype(str).str.strip()))
+
+            if reverse_map:
+                df["team"] = df["team"].astype(str).str.strip().replace(reverse_map)
+                unmapped = df["team"].isna().sum()
+                if unmapped > 0:
+                    logger.warning(f"⚠️ {unmapped} unmapped team(s) after applying reverse map from stadium_master.csv.")
+                else:
+                    logger.info(f"🔗 {label.capitalize()} team names mapped using stadium_master.csv.")
+            else:
+                logger.warning("⚠️ Could not determine suitable columns in stadium_master.csv for team mapping; leaving 'team' values as-is.")
         else:
-            logger.info(f"🔗 {label.capitalize()} team names mapped successfully.")
+            logger.warning(f"⚠️ Mapping source not found: {STADIUM_MASTER_PATH}; leaving 'team' values as-is.")
     except Exception as e:
-        logger.warning(f"⚠️ Failed to map team names for {label}: {e}")
+        logger.warning(f"⚠️ Failed to map team names for {label} using stadium_master.csv: {e}")
 
     output_path = f"{output_dir}/{label}_normalized_cleaned.csv"
     df.to_csv(output_path, index=False)
