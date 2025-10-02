@@ -11,7 +11,8 @@
 #
 # Behavior:
 #   - Computes hour-of-day from game_time (AM/PM accepted)
-#   - Determines roof-closed/dome from stadium_master roof column
+#   - Determines roof-closed/dome from stadium_master roof column (accepts: roof, roof_status,
+#     roof_closed, dome, is_dome)
 #   - Chooses park factor: roof_closed → roof table; else day/night tables (6pm threshold)
 #   - Writes park_factor back to todaysgames_normalized.csv
 #
@@ -97,6 +98,13 @@ def _hour24(et):
         return pd.NA
 
 def _roof_closed_flag(roof_val: object) -> bool:
+    """
+    Normalize a variety of roof flags to a boolean "closed/dome" indicator.
+    Accepts True/False, strings like 'closed', 'dome', 'indoor', 'roof closed', 'yes', 'y', '1'.
+    """
+    # Handle direct booleans
+    if isinstance(roof_val, bool):
+        return roof_val
     v = str(roof_val).strip().lower()
     if v in {"1", "true", "yes", "y"}:
         return True
@@ -113,10 +121,10 @@ def _load_stadium_master() -> pd.DataFrame:
     if not team_col:
         _die(f"{STADIUM_CSV} must include 'team_id'")
 
-    # Accept any of these as the roof indicator
-    roof_col = _pick_column(sm, ["roof", "roof_status", "roof_closed", "dome"])
+    # Accept any of these as the roof indicator (now includes 'is_dome')
+    roof_col = _pick_column(sm, ["roof", "roof_status", "roof_closed", "dome", "is_dome"])
     if not roof_col:
-        _die(f"{STADIUM_CSV} must include a roof indicator column: one of roof, roof_status, roof_closed, dome")
+        _die(f"{STADIUM_CSV} must include a roof indicator column: one of roof, roof_status, roof_closed, dome, is_dome")
 
     out = sm[[team_col, roof_col]].copy()
     out.columns = ["team_id", "roof_flag_raw"]
