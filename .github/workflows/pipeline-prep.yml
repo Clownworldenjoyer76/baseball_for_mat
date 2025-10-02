@@ -142,9 +142,17 @@ jobs:
           python scripts/combine_pitcher_weather_park_away.py   2>&1 | tee logs/28_combine_pitcher_weather_park_away.log
 
       ####################################################################
-      # 05 – Prep Summary & Commit
+      # 05 – Event Probabilities
       ####################################################################
-      - name: 05_prep_summary
+      - name: 05_pitcher_event_probabilities
+        run: |
+          set -euo pipefail
+          python scripts/project_pitcher_event_probabilities.py 2>&1 | tee logs/29_project_pitcher_event_probabilities.log
+
+      ####################################################################
+      # 06 – Prep Summary & Commit
+      ####################################################################
+      - name: 06_prep_summary
         run: |
           set -euo pipefail
           mkdir -p summaries
@@ -159,6 +167,7 @@ jobs:
             echo "[02] Context + Normalize/Tag + PF: OK"
             echo "[03] Weather Inputs: OK"
             echo "[04] Weather Adjustments + Combines: OK"
+            echo "[05] Pitcher Event Probabilities: OK"
             echo
             echo "--- Weather Audit ---"
             echo "Games today (unique game_id): $games_count"
