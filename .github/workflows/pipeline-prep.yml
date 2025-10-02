@@ -177,9 +177,5 @@ jobs:
         run: |
           set -euo pipefail
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else:
-            git commit -m "Prep: 00-05 with normalize/tag/adjust + park_factor generation + weather"
-            git push --force-with-lease origin HEAD:${TARGET_BRANCH}
-          fi
+          git commit -m "Prep: 00-05 overwrite outputs + logs" || true
+          git push --force-with-lease origin HEAD:${TARGET_BRANCH}
