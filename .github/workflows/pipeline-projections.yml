@@ -66,7 +66,7 @@ jobs:
       - run: python scripts/finalbatawp.py                            | tee summaries/06_projection/finalbatawp.py.log
       - run: python scripts/finalbathwp.py                            | tee summaries/06_projection/finalbathwp.py.log
 
-      # NEW: generate pitcher event probabilities
+      # Generate pitcher event probabilities (ensures data/_projections/pitcher_event_probabilities.csv)
       - run: python scripts/pitcher_event_probabilities.py            | tee summaries/06_projection/pitcher_event_probabilities.py.log
 
       - name: Commit & push 06 outputs + logs
@@ -75,12 +75,7 @@ jobs:
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/_projections/*.csv \
-                 data/tagged/* \
-                 data/end_chain/final/*.csv \
-                 data/adjusted/* \
-                 data/end_chain/cleaned/* \
-                 summaries/06_projection/*.log || true
+          git add -A
           git commit -m "06 Projection: overwrite outputs + logs" || true
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
 
@@ -100,6 +95,6 @@ jobs:
             echo "===== STATUS (per script) ====="
             cat "$STATUS"
           } > "$SUMMARY"
-          git add "$SUMMARY" || true
+          git add -A
           git commit -m "06 Projection: overwrite summary.txt" || true
           git push --force-with-lease origin HEAD:${{ github.ref_name }}
