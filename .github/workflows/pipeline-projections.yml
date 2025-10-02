@@ -44,27 +44,27 @@ jobs:
           pip install -r requirements.txt
 
       # ---- 06 scripts ----
-      - run: python scripts/fix_outputs_generate_fixed_files.py      | tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log || true
-      - run: python scripts/normalize_inputs_for_06.py               | tee summaries/06_projection/normalize_inputs_for_06.py.log || true
-      - run: python scripts/project_prep.py                          | tee summaries/06_projection/project_prep.py.log || true
-      - run: python scripts/normalize_batters_for_builder.py         | tee summaries/06_projection/normalize_batters_for_builder.py.log || true
-      - run: python scripts/project_batter_props.py                  | tee summaries/06_projection/project_batter_props.py.log || true
-      - run: python scripts/project_pitcher_props.py                 | tee summaries/06_projection/project_pitcher_props.py.log || true
-      - run: python scripts/ensure_pitcher_props_schema.py           | tee summaries/06_projection/ensure_pitcher_props_schema.py.log || true
-      - run: python scripts/inject_pitcher_context.py                | tee summaries/06_projection/inject_pitcher_context.py.log || true
-      - run: python scripts/inject_pitcher_context_from_tgn.py       | tee summaries/06_projection/inject_pitcher_context_from_tgn.py.log || true
-      - run: python scripts/build_expanded_batter_props.py           | tee summaries/06_projection/build_expanded_batter_props.py.log || true
-      - run: python scripts/pitcher_mega_z.py                        | tee summaries/06_projection/pitcher_mega_z.py.log || true
-      - run: python scripts/starter_coverage_guard.py                | tee summaries/06_projection/starter_coverage_guard.py.log || true
-      - run: python scripts/post_normalize_pitchers.py               | tee summaries/06_projection/post_normalize_pitchers.py.log || true
-      - run: python scripts/finalize_projections.py                  | tee summaries/06_projection/finalize_projections.py.log || true
-      - run: python scripts/fix_missing_batter_stats.py              | tee summaries/06_projection/fix_missing_batter_stats.py.log || true
-      - run: python scripts/inject_game_ids_from_schedule.py         | tee summaries/06_projection/inject_game_ids_from_schedule.py.log || true
-      - run: python scripts/inject_batter_woba_adjustments.py        | tee summaries/06_projection/inject_batter_woba_adjustments.py.log || true
-      - run: python scripts/clean_pitcher_files.py                   | tee summaries/06_projection/clean_pitcher_files.py.log || true
-      - run: python scripts/impute_missing_batter_adj_woba.py        | tee summaries/06_projection/impute_missing_batter_adj_woba.py.log || true
-      - run: python scripts/finalbatawp.py                           | tee summaries/06_projection/finalbatawp.py.log || true
-      - run: python scripts/finalbathwp.py                           | tee summaries/06_projection/finalbathwp.py.log || true
+      - run: python scripts/fix_outputs_generate_fixed_files.py      | tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log
+      - run: python scripts/normalize_inputs_for_06.py               | tee summaries/06_projection/normalize_inputs_for_06.py.log
+      - run: python scripts/project_prep.py                          | tee summaries/06_projection/project_prep.py.log
+      - run: python scripts/normalize_batters_for_builder.py         | tee summaries/06_projection/normalize_batters_for_builder.py.log
+      - run: python scripts/project_batter_props.py                  | tee summaries/06_projection/project_batter_props.py.log
+      - run: python scripts/project_pitcher_props.py                 | tee summaries/06_projection/project_pitcher_props.py.log
+      - run: python scripts/ensure_pitcher_props_schema.py           | tee summaries/06_projection/ensure_pitcher_props_schema.py.log
+      - run: python scripts/inject_pitcher_context.py                | tee summaries/06_projection/inject_pitcher_context.py.log
+      - run: python scripts/inject_pitcher_context_from_tgn.py       | tee summaries/06_projection/inject_pitcher_context_from_tgn.py.log
+      - run: python scripts/build_expanded_batter_props.py           | tee summaries/06_projection/build_expanded_batter_props.py.log
+      - run: python scripts/pitcher_mega_z.py                        | tee summaries/06_projection/pitcher_mega_z.py.log
+      - run: python scripts/starter_coverage_guard.py                | tee summaries/06_projection/starter_coverage_guard.py.log
+      - run: python scripts/post_normalize_pitchers.py               | tee summaries/06_projection/post_normalize_pitchers.py.log
+      - run: python scripts/finalize_projections.py                  | tee summaries/06_projection/finalize_projections.py.log
+      - run: python scripts/fix_missing_batter_stats.py              | tee summaries/06_projection/fix_missing_batter_stats.py.log
+      - run: python scripts/inject_game_ids_from_schedule.py         | tee summaries/06_projection/inject_game_ids_from_schedule.py.log
+      - run: python scripts/inject_batter_woba_adjustments.py        | tee summaries/06_projection/inject_batter_woba_adjustments.py.log
+      - run: python scripts/clean_pitcher_files.py                   | tee summaries/06_projection/clean_pitcher_files.py.log
+      - run: python scripts/impute_missing_batter_adj_woba.py        | tee summaries/06_projection/impute_missing_batter_adj_woba.py.log
+      - run: python scripts/finalbatawp.py                           | tee summaries/06_projection/finalbatawp.py.log
+      - run: python scripts/finalbathwp.py                           | tee summaries/06_projection/finalbathwp.py.log
 
       - name: Commit & push 06 outputs + logs
         if: always()
@@ -72,7 +72,12 @@ jobs:
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/_projections/*.csv data/tagged/* data/end_chain/final/*.csv summaries/06_projection/*.log || true
+          git add data/_projections/*.csv \
+                 data/tagged/* \
+                 data/end_chain/final/*.csv \
+                 data/adjusted/* \
+                 data/end_chain/cleaned/* \
+                 summaries/06_projection/*.log || true
           if git diff --cached --quiet; then
             echo "No changes to commit (06)."
           else
