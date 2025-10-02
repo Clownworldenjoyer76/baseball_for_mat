@@ -43,7 +43,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ---- 06 scripts ----
+      # ---- 06 scripts ---- (stop swallowing errors)
       - run: python scripts/fix_outputs_generate_fixed_files.py      | tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log
       - run: python scripts/normalize_inputs_for_06.py               | tee summaries/06_projection/normalize_inputs_for_06.py.log
       - run: python scripts/project_prep.py                          | tee summaries/06_projection/project_prep.py.log
