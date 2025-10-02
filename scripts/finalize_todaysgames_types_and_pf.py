@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-# Ensure clean data/raw/todaysgames_normalized.csv
-# - IDs as Int64 (no .0 on write)
-# - park_factor as Int64 (no .0 on write)
-# - Drop helper cols (pf_day, pf_night, pf_roof, _hour24)
-# - Fail if any row has home_team_id but missing park_factor
-# - PRESERVE passthrough columns, especially pitcher_home_id and pitcher_away_id
+# scripts/finalize_todaysgames_types_and_pf.py
+#
+# Ensures clean data/raw/todaysgames_normalized.csv
+# - Coerces ID columns to pandas nullable Int64
+# - Coerces park_factor to float
+# - Drops helper columns if present (pf_day, pf_night, pf_roof, _hour24)
+# - Fails if any row with home_team_id has missing park_factor
+# - Preserves and orders anchor columns first, then original order for the rest
 
 from pathlib import Path
 import pandas as pd
@@ -13,21 +15,17 @@ import sys
 ROOT = Path(".")
 GAMES_CSV = ROOT / "data/raw/todaysgames_normalized.csv"
 
-# Helper columns that may have been added upstream and should be removed here if present.
 HELPER_COLS = ["pf_day", "pf_night", "pf_roof", "_hour24"]
 
-# Columns that should be integers (stored as pandas nullable Int64 so they serialize without .0)
 INT_COLS = [
     "game_id",
     "home_team_id",
     "away_team_id",
     "pitcher_home_id",
     "pitcher_away_id",
-    "park_factor",
 ]
 
-# Base display/order anchors that should appear first if present
-BASE_ANCHOR = [
+ANCHORS = [
     "game_id",
     "home_team",
     "away_team",
@@ -41,55 +39,53 @@ BASE_ANCHOR = [
     "park_factor",
 ]
 
-def to_int64_if_present(df: pd.DataFrame, col: str) -> None:
+def _die(msg: str):
+    print(f"INSUFFICIENT INFORMATION\n{msg}")
+    sys.exit(1)
+
+def _to_int64_if_present(df: pd.DataFrame, col: str) -> None:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
 
+def _to_float_if_present(df: pd.DataFrame, col: str) -> None:
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce").astype(float)
+
 def main():
     if not GAMES_CSV.exists():
-        print(f"INSUFFICIENT INFORMATION\nMissing file: {GAMES_CSV}")
-        sys.exit(1)
+        _die(f"Missing file: {GAMES_CSV}")
 
     df = pd.read_csv(GAMES_CSV)
 
-    # Drop known helper columns if present
+    # Drop helpers if present
     df = df.drop(columns=[c for c in HELPER_COLS if c in df.columns], errors="ignore")
 
-    # Coerce integer-like columns to Int64 if present
+    # Coerce ID columns
     for c in INT_COLS:
-        to_int64_if_present(df, c)
+        _to_int64_if_present(df, c)
 
-    # Validation: if we have home_team_id, we must have park_factor non-null
+    # park_factor to float, must exist and be non-null if we have home_team_id
     if "home_team_id" in df.columns:
         if "park_factor" not in df.columns:
-            print("INSUFFICIENT INFORMATION\nMissing column: park_factor")
-            sys.exit(1)
+            _die("Missing column: park_factor")
+        _to_float_if_present(df, "park_factor")
         if df["park_factor"].isna().any():
             bad = df[df["park_factor"].isna()]
-            print("INSUFFICIENT INFORMATION\npark_factor missing for some rows where home_team_id exists.")
             print(bad.to_string(index=False))
-            sys.exit(1)
+            _die("park_factor missing for some rows where home_team_id exists.")
 
-    # Build output column order:
-    # 1) Start with the original order (preserves any extra/pass-through columns)
+    # Column order: anchors first (only those present), then remaining in original order
     original_order = list(df.columns)
-
-    # 2) Ensure anchor columns appear first, **but only those that actually exist**
-    anchors_present = [c for c in BASE_ANCHOR if c in df.columns]
-
-    # 3) Add remaining columns in their original order, excluding those already placed
+    anchors_present = [c for c in ANCHORS if c in df.columns]
     remaining = [c for c in original_order if c not in anchors_present]
-    ordered_cols = anchors_present + remaining
-
-    # Materialize final frame in that order
-    out = df.loc[:, ordered_cols]
+    out = df.loc[:, anchors_present + remaining]
 
     # Save
     GAMES_CSV.parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(GAMES_CSV, index=False)
 
-    dtype_pf = out["park_factor"].dtype if "park_factor" in out.columns else "N/A"
-    print(f"✅ Wrote {GAMES_CSV} | rows={len(out)} | dtype(park_factor)={dtype_pf}")
+    pf_dtype = out["park_factor"].dtype if "park_factor" in out.columns else "N/A"
+    print(f"✅ Wrote {GAMES_CSV} | rows={len(out)} | dtype(park_factor)={pf_dtype}")
 
 if __name__ == "__main__":
     main()
