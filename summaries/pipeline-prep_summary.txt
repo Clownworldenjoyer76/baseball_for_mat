@@ -1,11 +1,12 @@
 === Pipeline Prep Summary (00-05) ===
-Date: 2025-10-02T18:46:51Z
+Date: 2025-10-02T19:14:56Z
 
 [00] Foundation/Normalize/Inject/Rebuild: OK
 [01] Split & Stage: OK
 [02] Context + Normalize/Tag + PF: OK
 [03] Weather Inputs: OK
 [04] Weather Adjustments + Combines: OK
+[05] Pitcher Event Probabilities: OK
 
 --- Weather Audit ---
 Games today (unique game_id): 3
@@ -13,38 +14,41 @@ Weather rows (unique game_id): 3
 
 --- Key files present ---
 total 2.2M
-drwxr-xr-x  2 runner runner 4.0K Oct  2 14:43 .
-drwxr-xr-x 18 runner runner 4.0K Oct  2 14:43 ..
--rw-r--r--  1 runner runner  14K Oct  2 14:43 batter_event_probabilities.csv
--rw-r--r--  1 runner runner  12K Oct  2 14:43 batter_props_expanded_final.csv
--rw-r--r--  1 runner runner 7.8K Oct  2 14:43 batter_props_expanded_final_imputed_adj_woba_rows.csv
--rw-r--r--  1 runner runner  13K Oct  2 14:43 batter_props_projected_final.csv
--rw-r--r--  1 runner runner 7.8K Oct  2 14:43 batter_props_projected_final_imputed_adj_woba_rows.csv
--rw-r--r--  1 runner runner 4.7K Oct  2 14:43 pitcher_event_probabilities.csv
--rw-r--r--  1 runner runner 754K Oct  2 14:43 pitcher_mega_z.csv
--rw-r--r--  1 runner runner 573K Oct  2 14:43 pitcher_mega_z_final.csv
--rw-r--r--  1 runner runner 754K Oct  2 14:43 pitcher_mega_z_fixed.csv
--rw-r--r--  1 runner runner 1.9K Oct  2 14:43 pitcher_props_projected.csv
--rw-r--r--  1 runner runner 2.0K Oct  2 14:43 pitcher_props_projected_final.csv
--rw-r--r--  1 runner runner 1.9K Oct  2 14:43 pitcher_props_projected_fixed.csv
--rw-r--r--  1 runner runner  462 Oct  2 14:43 todaysgames_normalized_fixed.csv
+drwxr-xr-x  2 runner runner 4.0K Oct  2 15:07 .
+drwxr-xr-x 18 runner runner 4.0K Oct  2 15:07 ..
+-rw-r--r--  1 runner runner  14K Oct  2 15:07 batter_event_probabilities.csv
+-rw-r--r--  1 runner runner  12K Oct  2 15:07 batter_props_expanded_final.csv
+-rw-r--r--  1 runner runner 9.9K Oct  2 15:07 batter_props_expanded_final.csv.bak
+-rw-r--r--  1 runner runner 7.8K Oct  2 15:07 batter_props_expanded_final_imputed_adj_woba_rows.csv
+-rw-r--r--  1 runner runner  13K Oct  2 15:07 batter_props_projected_final.csv
+-rw-r--r--  1 runner runner  12K Oct  2 15:07 batter_props_projected_final.csv.bak
+-rw-r--r--  1 runner runner 7.8K Oct  2 15:07 batter_props_projected_final_imputed_adj_woba_rows.csv
+-rw-r--r--  1 runner runner 4.7K Oct  2 15:14 pitcher_event_probabilities.csv
+-rw-r--r--  1 runner runner 754K Oct  2 15:07 pitcher_mega_z.csv
+-rw-r--r--  1 runner runner 573K Oct  2 15:07 pitcher_mega_z_final.csv
+-rw-r--r--  1 runner runner 754K Oct  2 15:07 pitcher_mega_z_fixed.csv
+-rw-r--r--  1 runner runner 1.9K Oct  2 15:07 pitcher_props_projected.csv
+-rw-r--r--  1 runner runner 2.0K Oct  2 15:07 pitcher_props_projected_final.csv
+-rw-r--r--  1 runner runner 1.9K Oct  2 15:07 pitcher_props_projected_fixed.csv
+-rw-r--r--  1 runner runner  462 Oct  2 15:07 todaysgames_normalized_fixed.csv
 total 704K
-drwxr-xr-x 2 runner runner 4.0K Oct  2 14:43 .
-drwxr-xr-x 5 runner runner 4.0K Oct  2 14:43 ..
--rw-r--r-- 1 runner runner  13K Oct  2 14:43 batter_away_final.csv
--rw-r--r-- 1 runner runner  14K Oct  2 14:43 batter_event_probabilities.csv
--rw-r--r-- 1 runner runner  13K Oct  2 14:43 batter_home_final.csv
--rw-r--r-- 1 runner runner  12K Oct  2 14:43 batter_props_expanded_final.csv
--rw-r--r-- 1 runner runner  13K Oct  2 14:43 batter_props_projected_final.csv
--rw-r--r-- 1 runner runner 3.9K Oct  2 14:43 finalbatawp.csv
--rw-r--r-- 1 runner runner 4.0K Oct  2 14:43 finalbathwp.csv
--rw-r--r-- 1 runner runner  558 Oct  2 14:43 game_score_projections.csv
--rw-r--r-- 1 runner runner 4.7K Oct  2 14:43 pitcher_event_probabilities.csv
--rw-r--r-- 1 runner runner 573K Oct  2 14:43 pitcher_mega_z_final.csv
--rw-r--r-- 1 runner runner 2.0K Oct  2 14:43 pitcher_props_projected_final.csv
--rw-r--r-- 1 runner runner  19K Oct  2 14:46 startingpitchers.csv
+drwxr-xr-x 2 runner runner 4.0K Oct  2 15:07 .
+drwxr-xr-x 5 runner runner 4.0K Oct  2 15:07 ..
+-rw-r--r-- 1 runner runner  13K Oct  2 15:07 batter_away_final.csv
+-rw-r--r-- 1 runner runner  14K Oct  2 15:07 batter_event_probabilities.csv
+-rw-r--r-- 1 runner runner  13K Oct  2 15:07 batter_home_final.csv
+-rw-r--r-- 1 runner runner  12K Oct  2 15:07 batter_props_expanded_final.csv
+-rw-r--r-- 1 runner runner  13K Oct  2 15:07 batter_props_projected_final.csv
+-rw-r--r-- 1 runner runner 3.9K Oct  2 15:07 finalbatawp.csv
+-rw-r--r-- 1 runner runner 4.0K Oct  2 15:07 finalbathwp.csv
+-rw-r--r-- 1 runner runner  558 Oct  2 15:07 game_score_projections.csv
+-rw-r--r-- 1 runner runner 4.7K Oct  2 15:14 pitcher_event_probabilities.csv
+-rw-r--r-- 1 runner runner 573K Oct  2 15:07 pitcher_mega_z_final.csv
+-rw-r--r-- 1 runner runner 2.0K Oct  2 15:07 pitcher_props_projected_final.csv
+-rw-r--r-- 1 runner runner  19K Oct  2 15:14 startingpitchers.csv
 
 --- Recent logs ---
+	modified:   logs/00_todaysgames.log
 	modified:   logs/09a_get_weather_data.log
 	modified:   logs/09d_finalize_weather_outputs.log
 	modified:   logs/11_apply_weather_adjustment_pitchers.log
@@ -75,11 +79,9 @@ Your branch is up to date with 'origin/main'.
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/adjusted/batters_away.csv
-	modified:   data/adjusted/batters_away_park.csv
-	modified:   data/adjusted/batters_home.csv
-	modified:   data/adjusted/batters_home_park.csv
 	modified:   data/output/player_totals.txt
+	modified:   data/raw/startingpitchers_with_opp_context.csv
+	modified:   logs/00_todaysgames.log
 	modified:   logs/13_deduplicate_normalized.log
 	modified:   logs/18_apply_pitcher_park_adjustment.log
 	modified:   summaries/summary.txt
@@ -114,30 +116,16 @@ Saved pitchers away → data/end_chain/first/pit_awp.csv
 Saved cleaned batters away → data/end_chain/first/raw/bat_awp_dirty.csv
 Saved batters home → data/end_chain/first/raw/bat_hwp_dirty.csv
 Copied games file → data/end_chain/first/games_today.csv
-On branch main
-Your branch is up to date with 'origin/main'.
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/adjusted/batters_away.csv
-	modified:   data/adjusted/batters_away_park.csv
-	modified:   data/adjusted/batters_home.csv
-	modified:   data/adjusted/batters_home_park.csv
-	modified:   data/end_chain/final/startingpitchers.csv
-	modified:   data/output/player_totals.txt
-	modified:   logs/13_deduplicate_normalized.log
-	modified:   logs/18_apply_pitcher_park_adjustment.log
-	modified:   logs/22_prep_merge.log
-	modified:   summaries/summary.txt
-
-no changes added to commit (use "git add" and/or "git commit -a")
-Git operation failed: Command '['git', 'commit', '-m', 'prep_merge: stage files (player_id/game_id-based)']' returned non-zero exit status 1.
+[main 3caa4dcdb] prep_merge: stage files (player_id/game_id-based)
+ 2 files changed, 168 insertions(+), 84 deletions(-)
+To https://github.com/Clownworldenjoyer76/baseball_for_mat
+   fa4f41267..3caa4dcdb  main -> main
+Git commit/push complete.
 
 ==> logs/23a_get_weather_data.log <==
-2025-10-02 02:46:46 PM 🔄 Read data/weather_input.csv...
-2025-10-02 02:46:46 PM 🌍 Fetch weather for 3 venues...
-2025-10-02 02:46:47 PM ✅ Wrote data/weather_adjustments.csv with 3 rows.
+2025-10-02 03:14:51 PM 🔄 Read data/weather_input.csv...
+2025-10-02 03:14:51 PM 🌍 Fetch weather for 3 venues...
+2025-10-02 03:14:51 PM ✅ Wrote data/weather_adjustments.csv with 3 rows.
 
 ==> logs/23b_generate_weather_csv.log <==
 
@@ -163,15 +151,13 @@ Your branch is up to date with 'origin/main'.
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/adjusted/batters_away.csv
-	modified:   data/adjusted/batters_away_park.csv
 	modified:   data/adjusted/batters_away_weather.csv
-	modified:   data/adjusted/batters_home.csv
-	modified:   data/adjusted/batters_home_park.csv
 	modified:   data/adjusted/batters_home_weather.csv
 	modified:   data/end_chain/final/startingpitchers.csv
 	modified:   data/output/player_totals.txt
+	modified:   data/raw/startingpitchers_with_opp_context.csv
 	modified:   data/weather_adjustments.csv
+	modified:   logs/00_todaysgames.log
 	modified:   logs/13_deduplicate_normalized.log
 	modified:   logs/18_apply_pitcher_park_adjustment.log
 	modified:   logs/22_prep_merge.log
@@ -185,11 +171,29 @@ Git error: Command '['git', 'commit', '-m', 'Apply pitcher weather factor with w
 ==> logs/26_combine_batter_weather_park.log <==
 💾 [HOME] wrote: data/adjusted/batters_home_weather_park.csv (84 rows)
 💾 [AWAY] wrote: data/adjusted/batters_away_weather_park.csv (84 rows)
-[main 161c9cd38] combine_batter_weather_park: id-based merge
- 2 files changed, 168 insertions(+), 84 deletions(-)
-To https://github.com/Clownworldenjoyer76/baseball_for_mat
-   02ca261b1..161c9cd38  main -> main
-✅ committed and pushed.
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   data/adjusted/batters_away_weather.csv
+	modified:   data/adjusted/batters_home_weather.csv
+	modified:   data/end_chain/final/startingpitchers.csv
+	modified:   data/output/player_totals.txt
+	modified:   data/raw/startingpitchers_with_opp_context.csv
+	modified:   data/weather_adjustments.csv
+	modified:   logs/00_todaysgames.log
+	modified:   logs/13_deduplicate_normalized.log
+	modified:   logs/18_apply_pitcher_park_adjustment.log
+	modified:   logs/22_prep_merge.log
+	modified:   logs/23a_get_weather_data.log
+	modified:   logs/25_apply_weather_adjustment_pitchers.log
+	modified:   logs/26_combine_batter_weather_park.log
+	modified:   summaries/summary.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⚠️ git commit/push failed: Command '['git', 'commit', '-m', 'combine_batter_weather_park: id-based merge']' returned non-zero exit status 1.
 
 ==> logs/27_combine_pitcher_weather_park_home.log <==
 On branch main
@@ -198,15 +202,13 @@ Your branch is up to date with 'origin/main'.
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/adjusted/batters_away.csv
-	modified:   data/adjusted/batters_away_park.csv
 	modified:   data/adjusted/batters_away_weather.csv
-	modified:   data/adjusted/batters_home.csv
-	modified:   data/adjusted/batters_home_park.csv
 	modified:   data/adjusted/batters_home_weather.csv
 	modified:   data/end_chain/final/startingpitchers.csv
 	modified:   data/output/player_totals.txt
+	modified:   data/raw/startingpitchers_with_opp_context.csv
 	modified:   data/weather_adjustments.csv
+	modified:   logs/00_todaysgames.log
 	modified:   logs/13_deduplicate_normalized.log
 	modified:   logs/18_apply_pitcher_park_adjustment.log
 	modified:   logs/22_prep_merge.log
@@ -225,15 +227,13 @@ Your branch is up to date with 'origin/main'.
 Changes not staged for commit:
   (use "git add <file>..." to update what will be committed)
   (use "git restore <file>..." to discard changes in working directory)
-	modified:   data/adjusted/batters_away.csv
-	modified:   data/adjusted/batters_away_park.csv
 	modified:   data/adjusted/batters_away_weather.csv
-	modified:   data/adjusted/batters_home.csv
-	modified:   data/adjusted/batters_home_park.csv
 	modified:   data/adjusted/batters_home_weather.csv
 	modified:   data/end_chain/final/startingpitchers.csv
 	modified:   data/output/player_totals.txt
+	modified:   data/raw/startingpitchers_with_opp_context.csv
 	modified:   data/weather_adjustments.csv
+	modified:   logs/00_todaysgames.log
 	modified:   logs/13_deduplicate_normalized.log
 	modified:   logs/18_apply_pitcher_park_adjustment.log
 	modified:   logs/22_prep_merge.log
@@ -245,3 +245,6 @@ Changes not staged for commit:
 	modified:   summaries/summary.txt
 
 no changes added to commit (use "git add" and/or "git commit -a")
+
+==> logs/29_project_pitcher_event_probabilities.log <==
+OK: wrote data/_projections/pitcher_event_probabilities.csv and data/end_chain/final/pitcher_event_probabilities.csv rows=28
