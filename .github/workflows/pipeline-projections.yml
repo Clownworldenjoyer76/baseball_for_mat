@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Setup Python
@@ -43,28 +43,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # ---- 06 scripts ---- (stop swallowing errors)
-      - run: python scripts/fix_outputs_generate_fixed_files.py      | tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log
-      - run: python scripts/normalize_inputs_for_06.py               | tee summaries/06_projection/normalize_inputs_for_06.py.log
-      - run: python scripts/project_prep.py                          | tee summaries/06_projection/project_prep.py.log
-      - run: python scripts/normalize_batters_for_builder.py         | tee summaries/06_projection/normalize_batters_for_builder.py.log
-      - run: python scripts/project_batter_props.py                  | tee summaries/06_projection/project_batter_props.py.log
-      - run: python scripts/project_pitcher_props.py                 | tee summaries/06_projection/project_pitcher_props.py.log
-      - run: python scripts/ensure_pitcher_props_schema.py           | tee summaries/06_projection/ensure_pitcher_props_schema.py.log
-      - run: python scripts/inject_pitcher_context.py                | tee summaries/06_projection/inject_pitcher_context.py.log
-      - run: python scripts/inject_pitcher_context_from_tgn.py       | tee summaries/06_projection/inject_pitcher_context_from_tgn.py.log
-      - run: python scripts/build_expanded_batter_props.py           | tee summaries/06_projection/build_expanded_batter_props.py.log
-      - run: python scripts/pitcher_mega_z.py                        | tee summaries/06_projection/pitcher_mega_z.py.log
-      - run: python scripts/starter_coverage_guard.py                | tee summaries/06_projection/starter_coverage_guard.py.log
-      - run: python scripts/post_normalize_pitchers.py               | tee summaries/06_projection/post_normalize_pitchers.py.log
-      - run: python scripts/finalize_projections.py                  | tee summaries/06_projection/finalize_projections.py.log
-      - run: python scripts/fix_missing_batter_stats.py              | tee summaries/06_projection/fix_missing_batter_stats.py.log
-      - run: python scripts/inject_game_ids_from_schedule.py         | tee summaries/06_projection/inject_game_ids_from_schedule.py.log
-      - run: python scripts/inject_batter_woba_adjustments.py        | tee summaries/06_projection/inject_batter_woba_adjustments.py.log
-      - run: python scripts/clean_pitcher_files.py                   | tee summaries/06_projection/clean_pitcher_files.py.log
-      - run: python scripts/impute_missing_batter_adj_woba.py        | tee summaries/06_projection/impute_missing_batter_adj_woba.py.log
-      - run: python scripts/finalbatawp.py                           | tee summaries/06_projection/finalbatawp.py.log
-      - run: python scripts/finalbathwp.py                           | tee summaries/06_projection/finalbathwp.py.log
+      # ---- 06 scripts ----
+      - run: python scripts/fix_outputs_generate_fixed_files.py       | tee summaries/06_projection/fix_outputs_generate_fixed_files.py.log
+      - run: python scripts/normalize_inputs_for_06.py                | tee summaries/06_projection/normalize_inputs_for_06.py.log
+      - run: python scripts/project_prep.py                           | tee summaries/06_projection/project_prep.py.log
+      - run: python scripts/normalize_batters_for_builder.py          | tee summaries/06_projection/normalize_batters_for_builder.py.log
+      - run: python scripts/project_batter_props.py                   | tee summaries/06_projection/project_batter_props.py.log
+      - run: python scripts/project_pitcher_props.py                  | tee summaries/06_projection/project_pitcher_props.py.log
+      - run: python scripts/ensure_pitcher_props_schema.py            | tee summaries/06_projection/ensure_pitcher_props_schema.py.log
+      - run: python scripts/inject_pitcher_context.py                 | tee summaries/06_projection/inject_pitcher_context.py.log
+      - run: python scripts/inject_pitcher_context_from_tgn.py        | tee summaries/06_projection/inject_pitcher_context_from_tgn.py.log
+      - run: python scripts/build_expanded_batter_props.py            | tee summaries/06_projection/build_expanded_batter_props.py.log
+      - run: python scripts/pitcher_mega_z.py                         | tee summaries/06_projection/pitcher_mega_z.py.log
+      - run: python scripts/starter_coverage_guard.py                 | tee summaries/06_projection/starter_coverage_guard.py.log
+      - run: python scripts/post_normalize_pitchers.py                | tee summaries/06_projection/post_normalize_pitchers.py.log
+      - run: python scripts/finalize_projections.py                   | tee summaries/06_projection/finalize_projections.py.log
+      - run: python scripts/fix_missing_batter_stats.py               | tee summaries/06_projection/fix_missing_batter_stats.py.log
+      - run: python scripts/inject_game_ids_from_schedule.py          | tee summaries/06_projection/inject_game_ids_from_schedule.py.log
+      - run: python scripts/inject_batter_woba_adjustments.py         | tee summaries/06_projection/inject_batter_woba_adjustments.py.log
+      - run: python scripts/clean_pitcher_files.py                    | tee summaries/06_projection/clean_pitcher_files.py.log
+      - run: python scripts/impute_missing_batter_adj_woba.py         | tee summaries/06_projection/impute_missing_batter_adj_woba.py.log
+      - run: python scripts/finalbatawp.py                            | tee summaries/06_projection/finalbatawp.py.log
+      - run: python scripts/finalbathwp.py                            | tee summaries/06_projection/finalbathwp.py.log
+
+      # NEW: always generate pitcher event probabilities
+      - run: python scripts/pitcher_event_probabilities.py            | tee summaries/06_projection/pitcher_event_probabilities.py.log
 
       - name: Commit & push 06 outputs + logs
         if: always()
@@ -82,7 +85,7 @@ jobs:
             echo "No changes to commit (06)."
           else
             git commit -m "06 Projection: outputs + logs"
-            git push --force-with-lease origin HEAD:main
+            git push --force-with-lease origin HEAD:${{ github.ref_name }}
           fi
 
       - name: Write & push 06 summary
@@ -106,5 +109,5 @@ jobs:
             echo "No summary changes (06)."
           else
             git commit -m "06 Projection: overwrite summary.txt"
-            git push --force-with-lease origin HEAD:main
+            git push --force-with-lease origin HEAD:${{ github.ref_name }}
           fi
