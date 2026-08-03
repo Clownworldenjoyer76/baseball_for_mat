@@ -10,6 +10,14 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_03_26,4de2590a17bdf6f8b4a906f4c63162c0,824704,1,Washington Nationals,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
 2026_03_26,afb66747c7f054c593a2674b7b304b4e,823812,1,Chicago White Sox,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
 2026_03_26,7dc467f8d7fca948c9e9ca103825d968,823649,1,Pittsburgh Pirates,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_03_27,964bf73d6e6a9d5e87ffb96d1703af2e,823971,1,Arizona Diamondbacks,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_03_27,dc68cc35f657fa8af1c2f9310055cb33,823162,1,Cleveland Guardians,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_03_27,5a803a22e56c7ecf1ff614f2cd9124c3,823324,1,Detroit Tigers,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_03_27,3a7909f4e2e9f0bedff35e657a6b5cbe,824216,1,Los Angeles Angels,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_03_27,88ab453feed0e220f331817b3aec9b00,824946,1,Kansas City Royals,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_03_27,45eec2b395c23c0449b2d9ee928b3f8d,823893,1,Colorado Rockies,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_03_27,,,,Oakland Athletics,Toronto Blue Jays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_03_27,487285d7a2811bab184f43dff7b4f563,823243,1,New York Yankees,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
 2026_03_26,5c8789e78ef558dfaf6b887deacec21c,823163,1,Cleveland Guardians,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_03_26,a6a0dde319f89b70eb1cf1e004b81fe6,823974,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_03_26,,,,Tampa Bay Rays,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
@@ -33,6 +41,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_03_28,,,,Oakland Athletics,Toronto Blue Jays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_03_28,70e647daf98ec717652b7a06c7a93e6e,824701,1,Washington Nationals,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
 2026_03_28,,,,Tampa Bay Rays,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_03_27,964bf73d6e6a9d5e87ffb96d1703af2e,823971,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_03_29,691a2e76d0dd8b75857aa006417cd71f,823160,1,Cleveland Guardians,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_03_29,1cc0a701f7797bb7a857a7b86d813bc3,824700,1,Washington Nationals,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
 2026_03_29,,,,Tampa Bay Rays,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -49,6 +58,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_03_28,9f95aca01eff5725132691732b38a03e,823973,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_03_28,0b1c8f9394e800658a0fd429a8685edd,823323,1,Detroit Tigers,San Diego Padres,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_03_28,e0d4956a76de96648305fd7ef0d96800,824945,1,Kansas City Royals,Atlanta Braves,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_03_30,4f499b3c97433774d26ebe998b1e9c54,823972,1,Cleveland Guardians,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_03_30,24e5dec72a26c2b5304dda6d4fc9b9d4,825108,1,Detroit Tigers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_03_30,27331c71f78dcb268af96a5483952ca2,823159,1,New York Yankees,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_03_30,b9044eb7a2798e7b9c463104de35f476,823320,1,San Francisco Giants,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_03_30,a482d9f2b799c59df8b639db5cce02e5,824214,1,Boston Red Sox,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_03_30,,,,New York Mets,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_03_30,cb56684da584f70f8c48dec3ad5bdb7c,824702,1,Los Angeles Angels,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_03_30,a263feaf763c1299324e6d7fc4f5f5c5,823809,1,Tampa Bay Rays,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_03_30,,,,Oakland Athletics,Atlanta Braves,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_03_30,0ead2ddb81bd23c5cf3c8bf29237af4b,822834,1,Colorado Rockies,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_03_30,302b4128aeb5c50b679d20539e8816c4,823890,1,Chicago White Sox,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_03_30,1285603c30d60465769201640920f04e,823484,1,Washington Nationals,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_03_30,b780a77331a7f24c19a612abf1b71f30,824539,1,Pittsburgh Pirates,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_03_30,640970e11703be5ad9c5087e476eecc7,824863,1,Texas Rangers,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_03_30,7493ee494cdbb239513b5032bd1d2702,824135,1,Minnesota Twins,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
 2026_03_29,691a2e76d0dd8b75857aa006417cd71f,823160,1,Cleveland Guardians,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_03_31,3606100715aa7a59a44cebf83296c1ee,823969,1,Cleveland Guardians,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_03_31,85518e9fa7d88ada5c7ef6acc3fb06fc,825107,1,Detroit Tigers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
@@ -64,6 +88,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_03_31,484bcc5bc25e0e38e25dcac48903ccea,823485,1,Washington Nationals,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_03_31,445445096cf76e57c1a9dee969e15995,824537,1,Pittsburgh Pirates,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_03_31,a7ee9fc9ac1db47a494d6c4c39dfc4de,824861,1,Texas Rangers,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_03_30,4f499b3c97433774d26ebe998b1e9c54,823972,1,Cleveland Guardians,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_03_30,24e5dec72a26c2b5304dda6d4fc9b9d4,825108,1,Detroit Tigers,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_01,fd93ab95f0912b81f977d64ebcc5df42,823970,1,Cleveland Guardians,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_04_01,cc33d68ceec04cd9b09a8c631d7574a0,824136,1,Minnesota Twins,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
 2026_04_01,25b209388bb30aa144af568ffd0b3921,823157,1,New York Yankees,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
@@ -94,6 +120,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_03,2bb9ef2181cdb59b76492b604e5256d6,823568,1,Miami Marlins,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_04_03,,,,St. Louis Cardinals,Detroit Tigers,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_04_03,0f9bae674791b2ef6540b6c885ca8d67,822758,1,Los Angeles Dodgers,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_04_02,c7e9785b27cff0b87f132c7c63daea75,823242,1,New York Mets,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_04_02,e55dd97cbbe9b080f6059d380832d84f,825105,1,Atlanta Braves,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
 2026_04_05,,,,St. Louis Cardinals,Detroit Tigers,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_04_05,6cfb88cfd2f02bcfc42f9513be8da728,823566,1,Miami Marlins,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_04_05,b58a8d0376af31bc90316319ce719acf,824460,2,Chicago Cubs,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
@@ -111,6 +139,19 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_05,a90501690931f0257555636a2bba3fbf,824781,1,San Diego Padres,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
 2026_04_05,29fe747229e417a970662db96f7b507a,824459,1,Chicago Cubs,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_04_07,cdbfd5e28cb2a7740714cfb069042ee5,824457,1,Kansas City Royals,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_04_06,e82a29b726b7958743405c67fec4b61a,823237,1,Philadelphia Phillies,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_04_06,0bbb2fe84dad148ca7acd671cfd4278a,824052,1,Atlanta Braves,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_04_06,c9b16007bef6e68c3d559ee080921941,824376,1,Houston Astros,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_04_06,71afed60c85a1e206512b59088d8479f,822918,1,Seattle Mariners,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_04_06,9587d8ccb994fa95ccf0d6ea51bb3393,823728,1,Detroit Tigers,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_04_06,7b162981e371aa40406814eda380bb75,824619,1,Baltimore Orioles,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_04_06,5c34cdfbbae06991923848f910bcad7e,822832,1,Los Angeles Dodgers,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_04_06,6852a6697b356bb6e8a0216138056714,824783,1,Milwaukee Brewers,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_04_06,,,,St. Louis Cardinals,Washington Nationals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_06,8638889acbe04188b2fcf40386691db5,823401,1,San Diego Padres,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_04_06,b5ee5b660c88cd4cb3262b4b7e9f236f,823886,1,Cincinnati Reds,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_04_06,e7bc40f9611b8baa6328e83959820910,824456,1,Kansas City Royals,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_04_06,48b9e30cc5595d9696cc12db0aef6114,823002,1,Chicago Cubs,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_04_05,,,,St. Louis Cardinals,Detroit Tigers,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_04_05,6cfb88cfd2f02bcfc42f9513be8da728,823566,1,Miami Marlins,New York Yankees,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_08,d52d861ea5ed462b15486ffb7493bbc4,823403,1,San Diego Padres,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
@@ -145,6 +186,12 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_08,160de2c0d9ab7767e9268364d732e3a3,824455,1,Kansas City Royals,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_04_08,d52d861ea5ed462b15486ffb7493bbc4,823403,1,San Diego Padres,Pittsburgh Pirates,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_07,1a5f8eab5c69c278ea5154ff16256884,823235,1,Philadelphia Phillies,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_09,7d89d3d30b7d4078b13216eb9fb387d2,823319,1,Colorado Rockies,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_04_09,eef70c714ae56d35f8173ff025e0e8bd,824130,1,Chicago White Sox,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_04_09,24a184f33e22a7efc5cc7c836d3b270a,823645,1,Arizona Diamondbacks,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_04_09,4a900f08d0a609bca4a6bda0d78e00a5,823724,1,Detroit Tigers,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_04_09,,,,Oakland Athletics,New York Yankees,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_09,7852034521d5a37d9d67116eba334699,823884,1,Cincinnati Reds,Miami Marlins,1,unique_game_id,accepted; primary key game_id
 2026_04_08,3905b085d9465ee22fdad2d16362cd7a,823726,1,Detroit Tigers,Minnesota Twins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_08,,,,Oakland Athletics,New York Yankees,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_04_08,2f7d7c64bfe4e6ab5864b9f70ae4ba1a,823000,1,Chicago Cubs,Tampa Bay Rays,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -155,6 +202,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_08,74300b0d6c081e81f663475a7fbc6023,823234,1,Philadelphia Phillies,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_08,00d50aafe35c1d5cd48cc12b8dc26bbb,824374,1,Houston Astros,Colorado Rockies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_08,672bd33686c333c6153712db080ee8a9,822833,1,Los Angeles Dodgers,Toronto Blue Jays,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_11,a23f07d17eae739724cce22627234e9d,824294,1,Miami Marlins,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_04_11,82cf57a7eb3eb607b4974df6f4e91d9a,823480,1,Arizona Diamondbacks,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_04_10,e346f0bf21a45185de1dcf8a928deedf,823968,1,Texas Rangers,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_04_10,a75e638966e5f1f6faed34c459043f44,823156,1,Houston Astros,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_04_10,59f40327564ee4d08604733d721958f5,823318,1,Colorado Rockies,San Diego Padres,1,unique_game_id,accepted; primary key game_id
@@ -169,6 +218,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_10,8039217c4e7279df26ad2bbd8d8a3ca0,824534,1,Los Angeles Angels,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_04_10,42e0046642eb115deabbf499117c8534,824297,1,Miami Marlins,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_04_10,23f579057c07153cd0fc94f5986b5182,823482,1,Arizona Diamondbacks,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_04_11,ead7229cac20dbbe3dbf60560e0434bb,823155,1,Houston Astros,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_04_11,56e59f81876d8980be713a90fbef9a3d,823967,1,Texas Rangers,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_04_11,5205127abeb3d8f956e9e3201fd85f68,823316,1,Colorado Rockies,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_04_11,,,,Boston Red Sox,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_11,5242327588eadc6af4c8050a32d92f63,824939,1,Cleveland Guardians,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_04_11,07dae97a577c9f8fc2d464d68dfba8ed,824857,1,San Francisco Giants,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_04_11,760efdb51921a34fbd7c8547eafcb545,823805,1,Washington Nationals,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_04_11,a0e79d40ffa34443e7b94247edbd9363,822996,1,New York Yankees,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_04_11,e1a3281e16fe3ecc561ab59a2150f324,824129,1,Chicago White Sox,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_04_11,,,,Oakland Athletics,New York Mets,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_11,0e8be2dcf9f09a0e06d78026cce411cc,824535,1,Los Angeles Angels,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_04_11,f3793a945f583ad6ff12a5b062c5f3f7,822830,1,Minnesota Twins,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_04_11,52944578139d1cc9d53affce8af65768,824697,1,Pittsburgh Pirates,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_04_11,a23f07d17eae739724cce22627234e9d,824294,1,Miami Marlins,Detroit Tigers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_11,82cf57a7eb3eb607b4974df6f4e91d9a,823480,1,Arizona Diamondbacks,Philadelphia Phillies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_10,e346f0bf21a45185de1dcf8a928deedf,823968,1,Texas Rangers,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_12,b078df49b4b246be7446b434bca64f28,824938,1,Cleveland Guardians,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
 2026_04_12,b71115505615845619d9ea17e964e30f,824126,1,Chicago White Sox,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
@@ -185,6 +249,17 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_12,752e9b625117fe75f792a9f4c0464b06,822828,1,Minnesota Twins,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_04_12,e2d6559de3f32042d39f5da40364950a,824859,1,San Francisco Giants,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_04_12,b83acf62bfc5d9a65fbea3ae78974c7b,823479,1,Arizona Diamondbacks,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_04_11,ead7229cac20dbbe3dbf60560e0434bb,823155,1,Houston Astros,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_13,af4723d660204fd1fb7719261eb7f74b,823964,1,New York Mets,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_04_13,,,,Texas Rangers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_13,,,,Cleveland Guardians,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_13,d68d87788cfa956ebee8d3a758c79ff0,823725,1,Boston Red Sox,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_04_13,eb7b6453caa8162c84f45e9a1f779847,824937,1,Miami Marlins,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_04_13,41cfc5f9fbe204005b41506b477dbe2a,823563,1,Los Angeles Angels,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_04_13,dcb7f3b019ab5e225b354b9e8c2b291e,823481,1,Chicago Cubs,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_04_13,df0e15c1b18c2572248e1e6fa22b5271,823400,1,Washington Nationals,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_04_13,f0a7004057c75d3a27566a9cadac71de,824856,1,Arizona Diamondbacks,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_04_13,d10f53a6fb57a00a4e08f7d5fe1d10de,823153,1,Houston Astros,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_04_12,b078df49b4b246be7446b434bca64f28,824938,1,Cleveland Guardians,Atlanta Braves,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_12,b71115505615845619d9ea17e964e30f,824126,1,Chicago White Sox,Kansas City Royals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_12,396adc6bdadc61665a790a130d131bec,823966,1,Texas Rangers,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -206,6 +281,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_14,42f96d05fcb3bf3aefe7588b7e0de883,823478,1,Chicago Cubs,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_04_14,fb1c5d37a9a3812d5d1e0b5ab2f3e768,824531,1,San Francisco Giants,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_04_14,385f86efd6c56a30190e6bb26a224fe6,824853,1,Arizona Diamondbacks,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_04_13,af4723d660204fd1fb7719261eb7f74b,823964,1,New York Mets,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_15,c4b632a3318002ec947a0861f17d8583,823963,1,New York Mets,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_04_15,f3b41be4bbb9dbffe13b5c0c9f57bb50,823314,1,Seattle Mariners,San Diego Padres,1,unique_game_id,accepted; primary key game_id
 2026_04_15,,,,Texas Rangers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -302,6 +378,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_19,0e8cd1402139869a8535c9d0d09acb45,825100,1,Toronto Blue Jays,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_19,22dc10f0ffdfd73bd79c7bdf5266e95f,823150,1,Texas Rangers,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_19,e1d026d4b97697ac7e0862b37a1e26a5,824047,1,San Diego Padres,Los Angeles Angels,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_21,0438fd942a9f1f07557cef989b1a4e4d,823236,1,Los Angeles Dodgers,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_04_21,b7ec1f6220bc8b3dbe3589c95eabd186,825099,1,Chicago White Sox,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_04_21,,,,Oakland Athletics,Seattle Mariners,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_21,4e1d939bfe81862d61aca2a33e9f716c,824045,1,Toronto Blue Jays,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_04_21,0567a988f9302cca0e4d8ef6eeb73371,824369,1,San Diego Padres,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_04_21,8dd01844bbaffc7ec461c4e06ea83b42,822914,1,Pittsburgh Pirates,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_04_21,b1a87295d83bffd8d9d702ba76f4b1bd,824127,1,Baltimore Orioles,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_04_21,fd082c9fac90847ff16ee7691851778f,824690,1,Philadelphia Phillies,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_04_21,e56e51d0e26b298582dc9ebe9dcf1e22,823640,1,Minnesota Twins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_04_21,d5285248b8322f4781920eb06d586c63,824773,1,New York Yankees,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_04_21,b1f2c684186f6906566a63d457c86009,822747,1,Atlanta Braves,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_04_21,bce74dac7fe3dd7ecf80111287a3dd34,824290,1,Milwaukee Brewers,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_04_21,1d3c338edb1851414b920c5e62833c42,822995,1,Cincinnati Reds,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_04_21,,,,St. Louis Cardinals,Miami Marlins,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_21,c3a389932a73d413d0f0e503a36712ea,824448,1,Houston Astros,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_04_20,,,,Oakland Athletics,Seattle Mariners,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_04_22,a51b58a3d9fe032b72e59da66a7243fc,823231,1,Los Angeles Dodgers,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
 2026_04_22,dfff7f7620a1af42549f691892c9c7cd,825097,1,Chicago White Sox,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
@@ -318,6 +409,16 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_22,07187e7c60013c66b4831e61391ded49,822993,1,Cincinnati Reds,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_04_22,e33bac43c9aeb7a52713962ae0686e1f,824449,1,Houston Astros,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_04_22,,,,St. Louis Cardinals,Miami Marlins,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_21,0438fd942a9f1f07557cef989b1a4e4d,823236,1,Los Angeles Dodgers,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_23,528817a2bf72047f1124e81a7ae55de9,822912,1,Pittsburgh Pirates,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_04_23,1e66733b3f851159b9299af54335356a,823639,1,Minnesota Twins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_04_23,ce566623c1d73c8d56830bafe9334cbb,824770,1,New York Yankees,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_04_23,7350a8d7c4145d7f644e02a87a4bb365,823233,1,Los Angeles Dodgers,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_04_23,a1b5b1f882e1c817603a505107a56d2f,825096,1,Chicago White Sox,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_04_23,de14a27d2ad6df38427c5adcc15cb1c1,824368,1,San Diego Padres,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_04_23,0690cb513a9395d92f4b14ef1ff47d78,824689,1,Philadelphia Phillies,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_04_23,eb87da969b550c21334d689f9113d312,824288,1,Milwaukee Brewers,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_04_23,ce701a760fa0f743a20a0f8c455c6f67,822745,1,Atlanta Braves,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_04_22,a51b58a3d9fe032b72e59da66a7243fc,823231,1,Los Angeles Dodgers,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_22,dfff7f7620a1af42549f691892c9c7cd,825097,1,Chicago White Sox,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_22,863d10a0d1fd4ccb9810966d4740d766,824367,1,San Diego Padres,Colorado Rockies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -339,6 +440,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_24,c5471ce2c30f59270ff07727d27ce902,822827,1,Cleveland Guardians,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_04_24,932ab74f8b661c6fcaea03f907780fce,824854,1,Boston Red Sox,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_04_24,2c16b21f64ac893fc7dd8fd60f2a018c,824529,1,Detroit Tigers,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_04_23,528817a2bf72047f1124e81a7ae55de9,822912,1,Pittsburgh Pirates,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_04_23,1e66733b3f851159b9299af54335356a,823639,1,Minnesota Twins,New York Mets,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_26,0ac87629ee3c61883fb75f522f9e964d,823637,2,Colorado Rockies,New York Mets,1,unique_game_id,accepted; primary key game_id
 2026_04_26,4bd84afb941f32d8212a16abd49c992b,824122,1,Los Angeles Angels,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
 2026_04_26,1461fb537b3598f4090a3bd48ac75aa0,823959,1,Chicago Cubs,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
@@ -355,6 +458,14 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_26,f98073ff54e69128fe75a3c5776fb520,822824,1,Cleveland Guardians,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_04_26,7ec692536ced485b4f6b8d0e30b4fef8,824852,1,Boston Red Sox,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_04_26,c26a6d846d17f3b6d042903c4207d68f,824934,1,Philadelphia Phillies,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_04_27,aede5ca829ddcbc5ee6726a1c0a03117,824609,1,Los Angeles Angels,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_04_27,65f2df473a540a92e7f974a290ed36fb,823961,1,Miami Marlins,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_04_27,717163f13d80f9495ad5b88b9396ca1a,823311,1,Chicago Cubs,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_04_27,371ff765cd40348073b510b2f45d81e9,822906,1,New York Yankees,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_04_27,0b45fce085ac92932833ba131d0e395d,823719,1,Seattle Mariners,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_04_27,eb2a21d7a425f6a975d1eae9da93e4c7,822825,1,Boston Red Sox,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_04_27,,,,St. Louis Cardinals,Pittsburgh Pirates,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_04_27,1a4159875887b1b0c4fe65b367df29a7,824446,1,Tampa Bay Rays,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_04_26,0ac87629ee3c61883fb75f522f9e964d,823637,2,Colorado Rockies,New York Mets,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_26,4bd84afb941f32d8212a16abd49c992b,824122,1,Los Angeles Angels,Kansas City Royals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_26,1461fb537b3598f4090a3bd48ac75aa0,823959,1,Chicago Cubs,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -378,6 +489,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_04_28,781a040a058473c689200f515770de83,824526,1,Colorado Rockies,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_04_28,3c9ebf868da49e615e589bd0d839b640,824849,1,Houston Astros,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_04_28,b2b5566d4285c0ab7ca9f78f4d1a6de7,824447,1,Tampa Bay Rays,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_04_27,aede5ca829ddcbc5ee6726a1c0a03117,824609,1,Los Angeles Angels,Chicago White Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_04_29,,,,Kansas City Royals,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_04_29,dbb1f14488d5ad0f783dce845101d4c1,823796,1,Arizona Diamondbacks,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
 2026_04_29,68d4de1e01d8567e0d2e4a137d4b254b,824930,1,Detroit Tigers,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
@@ -522,14 +634,54 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_08,0f65cc2fecae3661933682f1525e806d,823466,1,Colorado Rockies,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_05_08,40150285b21b0e818a39c0940eca75d7,824522,1,Houston Astros,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_05_07,,,,St. Louis Cardinals,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_09,4e0f5d6412cdfd2b0ade4fee11642753,823955,1,Atlanta Braves,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_05_09,54ac0c67d3a1921cfede4e125572526e,823224,1,Pittsburgh Pirates,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_05_09,9fd60ef171dd7d6b753c07fe32aa37f6,824444,1,Minnesota Twins,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_09,,,,St. Louis Cardinals,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_09,5e7a25171efa4aba6c2670c7d93dbde3,825089,1,New York Mets,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_05_09,bf49c6516b601ce34a25f268cb202250,823792,1,New York Yankees,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_05_09,dd95987c051582f99dbe07d5424b2a03,824115,1,Detroit Tigers,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_05_09,6c26284a3ba72def6e7e0c9db9893fc8,824606,1,Seattle Mariners,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_09,0d5568f7e3f7c4adba722775d2895494,822905,1,Chicago Cubs,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_05_09,3d093f3fea09b2f77b6ccf058d9061ea,823468,1,Colorado Rockies,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_05_09,4cb11bc70bb01deb01ccc535f614ba59,824523,1,Houston Astros,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_05_09,07fcb9aa4b08eff491227a6d817d08a7,823869,1,Washington Nationals,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_05_09,,,,Oakland Athletics,Baltimore Orioles,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_09,6dce302dd60dfcdf0b0f75b0c7526958,822820,1,Los Angeles Angels,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_05_08,,,,Pittsburgh Pirates,San Francisco Giants,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_05_08,9faf187505c47b0f5009cb7d7da5200c,823957,1,Atlanta Braves,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,1a85cdf5d7c53f361d8dd4b822af8f09,824113,1,Detroit Tigers,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_05_10,1a0f51cf52137e602d477a383aededcd,825085,1,New York Mets,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_05_10,,,,St. Louis Cardinals,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_10,ab56a10bb0c4a672e1d846d67e7f703e,823954,1,Atlanta Braves,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_05_10,24f0fb743655b2176ff9d2f1d17bc2d0,823221,1,Pittsburgh Pirates,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_05_10,f39e9272c26acb799cf16afa62e26316,822902,1,Chicago Cubs,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_05_10,e254b4d802742c85bc156989d1b71346,823793,1,New York Yankees,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_05_10,d58ee5722b0d27c98714b46a090df16f,824605,1,Seattle Mariners,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_10,3751eb6375883244bf07ebaa76d74e35,824520,1,Houston Astros,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_05_10,4d2a59061aec314f7265432aacbe8df1,824440,1,Minnesota Twins,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_10,9bfd5fd962a5ede4a98e0c595c9db46f,822819,1,Los Angeles Angels,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_05_10,73c2cde50707b32c9767a0a8fbb2e7d2,824765,1,Tampa Bay Rays,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_10,,,,Oakland Athletics,Baltimore Orioles,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_10,6dd9cd4491079d3cedf1f7d3ff85b358,823463,1,Colorado Rockies,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_05_10,2f41717fcce350329e8ac46662be3d88,823868,1,Washington Nationals,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_05_09,4e0f5d6412cdfd2b0ade4fee11642753,823955,1,Atlanta Braves,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_11,875a5a258588aff680ae69335167dec2,823953,1,San Francisco Giants,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_05_11,80622319ceec1faf47baaee869656e13,824199,1,Seattle Mariners,Houston Astros,1,unique_game_id,accepted; primary key game_id
 2026_05_11,aead05342952ab70ff6c1a772b4295d4,822901,1,Arizona Diamondbacks,Texas Rangers,1,unique_game_id,accepted; primary key game_id
 2026_05_11,8ca76871aa74f5f88b3dba57c6e6e48c,822818,1,Tampa Bay Rays,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_05_11,a96772c4a288f0b16b88697b8dfdd837,824844,1,New York Yankees,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_05_11,5469c15e3925b64e5437f4ebe23e9b60,824441,1,Los Angeles Angels,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_10,1a85cdf5d7c53f361d8dd4b822af8f09,824113,1,Detroit Tigers,Kansas City Royals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,1a0f51cf52137e602d477a383aededcd,825085,1,New York Mets,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,,,,St. Louis Cardinals,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_05_10,ab56a10bb0c4a672e1d846d67e7f703e,823954,1,Atlanta Braves,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,24f0fb743655b2176ff9d2f1d17bc2d0,823221,1,Pittsburgh Pirates,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,f39e9272c26acb799cf16afa62e26316,822902,1,Chicago Cubs,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,e254b4d802742c85bc156989d1b71346,823793,1,New York Yankees,Milwaukee Brewers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,d58ee5722b0d27c98714b46a090df16f,824605,1,Seattle Mariners,Chicago White Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,3751eb6375883244bf07ebaa76d74e35,824520,1,Houston Astros,Cincinnati Reds,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_10,4d2a59061aec314f7265432aacbe8df1,824440,1,Minnesota Twins,Cleveland Guardians,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_13,7018d88c446b88b45928fc75ec91e83c,823952,1,San Francisco Giants,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_05_13,,,,St. Louis Cardinals,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_05_13,6ff5fdd2fde54dc43326a02792b3e79f,824195,1,Seattle Mariners,Houston Astros,1,unique_game_id,accepted; primary key game_id
@@ -545,6 +697,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_13,4546828df054a4ac1c7634c94b4c7012,824519,1,Washington Nationals,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_05_13,67da7d89e932aa7075b0600f26224572,824438,1,Los Angeles Angels,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_05_13,21ff18fdfd96a55a86867197e834497e,824841,1,New York Yankees,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_12,a0929cf66d445eec19f118010165e95c,823951,1,San Francisco Giants,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_05_15,,,,San Francisco Giants,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_05_15,919b933a4af691070848a940a7d07a84,823140,1,San Diego Padres,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_05_15,8a72d8b519cc92911419682fb63aaf67,824037,1,Los Angeles Dodgers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
@@ -561,6 +714,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_15,19b80d07edae4ffcb25b42667963c877,824280,1,Toronto Blue Jays,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_05_15,a051c6df269a83813b248ea222859c65,823384,1,Philadelphia Phillies,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_05_14,bc2f7272b3d5ef426608824387a95824,823950,1,San Francisco Giants,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_05_16,,,,San Francisco Giants,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_16,a6224f9c00c2799d9f58de009bf48393,824038,1,Los Angeles Dodgers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_05_16,d89740dbc48f3d782b0e473629494f6b,823139,1,San Diego Padres,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_05_16,c53d7080fd560dbde65770d1a7facbfd,823627,1,New York Yankees,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_05_16,ca5e359ff82548cecbaa7a8695e9fbf0,824924,1,Boston Red Sox,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_05_16,4b228f8e92985dcf7be730bd8e8c2c5d,824600,1,Chicago Cubs,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_16,a5e515bbcd25515bb500f052064aa31d,823706,1,Milwaukee Brewers,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_05_16,58b1dff480365011b5d7ad2e1c40baae,824193,1,Texas Rangers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_05_16,8cb0cf3de3f70a1993a155d8d3cfef98,824435,1,Cincinnati Reds,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_16,c0881b4a195ada00f7db5d84c6cef8b7,822981,1,Miami Marlins,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_16,cc7b9980605dd66040b354031b4491c8,822737,1,Baltimore Orioles,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_05_16,2638aded4f2e2359a902072c9d2fba22,823382,1,Philadelphia Phillies,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_05_16,e794b5b54765be45db1d4e7681c62e39,824359,1,Arizona Diamondbacks,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_05_16,,,,Kansas City Royals,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_16,6b2d5ebb90ade419f4d5c59b95c1b301,824278,1,Toronto Blue Jays,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_05_15,,,,San Francisco Giants,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_05_17,4a7ed5c0f59bf539dffd13712f0d22e3,823138,1,San Diego Padres,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_05_17,8732923778f83df576e551800c5f68d9,824358,1,Arizona Diamondbacks,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
@@ -577,6 +745,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_17,36d5609a0cc871bc0455884cbbeb54a7,822738,1,Baltimore Orioles,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_05_17,d125d71e5b57f505a63c57086e78bfea,823381,1,Philadelphia Phillies,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_05_17,996ae6b240fb1d4c4f902121937d3569,822982,1,Miami Marlins,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_16,,,,San Francisco Giants,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_05_18,14c70bb665938baff9719079a82cbb93,823137,1,Chicago White Sox,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_05_18,daf39ff0f5f85b7da76274b743b1ab1f,825087,1,San Francisco Giants,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_05_18,d98976061eadebf5d9ba5c0632212976,823301,1,Los Angeles Dodgers,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_05_18,,,,Oakland Athletics,Los Angeles Angels,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_18,13c307bac70250bed56ce2a649cc492e,824357,1,Texas Rangers,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_05_18,42fd4ebc22c3536132b84d9c0a55ef29,823705,1,Houston Astros,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_05_18,a18a19981ef7d4e6c9f6244dc08e597a,824680,1,Milwaukee Brewers,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_05_18,6990aa317792d95bc36b258c5662a9b4,824277,1,Cleveland Guardians,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_05_18,82ca2e0ae47260f1183ee3abf8a69169,824114,1,Boston Red Sox,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_05_18,13038bc4537d05af00935232c7a96b21,823549,1,Toronto Blue Jays,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_05_18,8bf07e3c1ae5450be5661196332a989f,822734,1,New York Mets,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_05_18,5d7782b4079153d44f30c8b3b9ccf495,822980,1,Baltimore Orioles,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_18,0659b2fd47b200a2c0fe612b8a32e5b1,823465,1,Cincinnati Reds,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_05_18,60ea4be5f7a9bd97fd35cbbbe9e208fa,823867,1,Atlanta Braves,Miami Marlins,1,unique_game_id,accepted; primary key game_id
 2026_05_17,4a7ed5c0f59bf539dffd13712f0d22e3,823138,1,San Diego Padres,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_17,8732923778f83df576e551800c5f68d9,824358,1,Arizona Diamondbacks,Colorado Rockies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_19,17b57496d4b06d4d4ecabf5046cb5e37,823136,1,Chicago White Sox,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
@@ -594,6 +777,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_19,c974a8cecb0d3237e2c78f1920c5eaf3,822979,1,Baltimore Orioles,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_05_19,54706a0490ebce80c512adf788e6b1d2,823464,1,Cincinnati Reds,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_05_19,ae09768ff9ace4d90b4d8b78be0ac325,823865,1,Atlanta Braves,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_05_18,14c70bb665938baff9719079a82cbb93,823137,1,Chicago White Sox,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_20,,,,Oakland Athletics,Los Angeles Angels,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_05_20,e4390656e1c8d9fd196a4745760cdf05,823547,1,Toronto Blue Jays,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_05_20,eb71b24bcac6134977abdc1add17dd0a,823299,1,Los Angeles Dodgers,San Diego Padres,1,unique_game_id,accepted; primary key game_id
@@ -610,6 +794,13 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_20,7da6a18b316119afbe4c2a58d5c2cbce,822977,1,Baltimore Orioles,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_05_20,44f850d55bfab7238e84fbd1b0e4c76f,823462,1,Cincinnati Reds,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_05_19,17b57496d4b06d4d4ecabf5046cb5e37,823136,1,Chicago White Sox,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_21,ba2cf88267a9c181d7eed83a461dbaab,825083,1,Colorado Rockies,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_05_21,,,,Oakland Athletics,Los Angeles Angels,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_21,cce976ea22886df248e92176cb5f8f26,823545,1,Toronto Blue Jays,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_05_21,fa85c6e14d2b480b97a6f0004286ec0b,823864,1,Atlanta Braves,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_05_21,6a7d1b1febdcfcc35087e32a118d0e3e,822733,1,New York Mets,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_05_21,,,,Pittsburgh Pirates,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_21,427339d860a9d7bf7b2075fa02850c56,824274,1,Cleveland Guardians,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_05_20,,,,Oakland Athletics,Los Angeles Angels,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_05_20,e4390656e1c8d9fd196a4745760cdf05,823547,1,Toronto Blue Jays,New York Yankees,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_20,eb71b24bcac6134977abdc1add17dd0a,823299,1,Los Angeles Dodgers,San Diego Padres,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -633,6 +824,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_22,7298c47d240347dac3ccc27327e2dd9c,823546,1,Tampa Bay Rays,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_05_22,ea533201c1219a43e8c91415af4065b2,823461,1,Cleveland Guardians,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_05_22,a5ab3fe9c783f6349643c38556202b88,824679,1,Houston Astros,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_05_21,ba2cf88267a9c181d7eed83a461dbaab,825083,1,Colorado Rockies,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_21,,,,Oakland Athletics,Los Angeles Angels,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_05_23,aa331215453a8e2dcfbcdcaa7cacecbe,825080,1,Colorado Rockies,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
 2026_05_23,cdafb9b5d32150ff1e65098271c992b2,824030,1,Texas Rangers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
 2026_05_23,,,,Oakland Athletics,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -649,6 +842,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_23,,,,St. Louis Cardinals,Cincinnati Reds,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_05_22,2e525c53c28c114fe0aeaafcbe01e2be,823223,1,Chicago White Sox,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_22,,,,Oakland Athletics,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_05_24,65d8670f338a88af5bde23a17924de49,824028,1,Texas Rangers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_05_24,a3077ecb7ee3e8827e0af9e701b5e0b7,824840,2,Detroit Tigers,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_24,00df9acbb37e0b01ff82cec41f4c57b8,824921,1,Washington Nationals,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_05_24,,,,Oakland Athletics,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_24,928ebc4404b9485931a3c4232720dc5b,825081,1,Colorado Rockies,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_05_24,bcb23e6708172d9bcdc2a18e01b320ce,823220,1,Chicago White Sox,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_05_24,fb835eef241cc0456eb7fed048643f00,824676,1,Houston Astros,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_05_24,0c7eacfb6fcc01d117cceb47c958a392,824108,1,Seattle Mariners,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_05_24,30932455872c68aa6d63646b48a38fc5,823786,1,Los Angeles Dodgers,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_05_24,24764298bc8225d9b8c29e943649671f,823861,1,New York Mets,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_05_24,6810bebc827ff6339e19bf57045954c2,823459,1,Cleveland Guardians,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_05_24,8f29a5e5e5da656a595405cea1f3dbae,823544,1,Tampa Bay Rays,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_05_24,3d426f5b8c4503c96291d847232b352e,824759,1,Minnesota Twins,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_24,491a9de98e8b6561bbf422febc6f39af,824839,1,Detroit Tigers,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_24,f70aa43669ed4dd4d5fa56bbe2964822,822813,1,Pittsburgh Pirates,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_05_23,aa331215453a8e2dcfbcdcaa7cacecbe,825080,1,Colorado Rockies,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_25,,,,Seattle Mariners,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_05_25,664888c720cda0a13b39fa74f0032e0e,823948,1,Colorado Rockies,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
@@ -663,6 +871,9 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_25,,,,St. Louis Cardinals,Milwaukee Brewers,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_05_25,07cd090c6a690c5a8478fc3834d0421b,824838,1,Tampa Bay Rays,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_05_25,8c78facf9134823f8b8caaecab733fe5,823380,1,Chicago Cubs,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_05_24,65d8670f338a88af5bde23a17924de49,824028,1,Texas Rangers,Los Angeles Angels,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_24,a3077ecb7ee3e8827e0af9e701b5e0b7,824840,2,Detroit Tigers,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_24,00df9acbb37e0b01ff82cec41f4c57b8,824921,1,Washington Nationals,Atlanta Braves,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_26,acd23c21d644ac44611a206f197cdd6b,823949,1,Colorado Rockies,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_05_26,178bf0e15a0e6812cdf47d0523e51ac7,823216,1,Arizona Diamondbacks,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
 2026_05_26,,,,Seattle Mariners,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -695,6 +906,12 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_27,0320eab1e5e078823858b2f7f29d919a,824432,1,Washington Nationals,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_05_27,6dd8c66f2fcc65059e5f099901f4a42b,822809,1,Miami Marlins,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
 2026_05_26,acd23c21d644ac44611a206f197cdd6b,823949,1,Colorado Rockies,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_28,5bacfc86e437d15ee2ffef91a1562308,822896,1,Houston Astros,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_05_28,10c998a5c2995335fd238b7e7e037c62,823378,1,Chicago Cubs,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_05_28,f83cd7ff929aebf58050093ee52c8a86,824834,1,Toronto Blue Jays,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_28,6072e0886fb927d9ece5f578024d31e2,824757,1,Atlanta Braves,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_28,26a9e538184a6f2d2c207fd1872bd028,824595,1,Minnesota Twins,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_28,28a4545a50aea1be3bff69f0dea3afcc,824272,1,Los Angeles Angels,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_05_27,77b3529d80cffeb203543f5f2201f8ff,823947,1,Colorado Rockies,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_27,228dd3c2e156b75b9ed49b10de2e6765,822897,1,Houston Astros,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_27,5245e46d5b599afb14e52536df8267e9,824596,1,Minnesota Twins,Chicago White Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -705,6 +922,54 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_05_27,2b326f001d0f02dd0d2032f5291d9966,823376,1,Chicago Cubs,Pittsburgh Pirates,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_27,163227043e0edc8544e84f24250fe6b3,824836,1,Tampa Bay Rays,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_05_27,37259b2bbe7415ecdf587502c33a932d,823295,1,Philadelphia Phillies,San Diego Padres,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_29,18e8a4acb1d40019544cfef0a5f07ef1,823946,1,Philadelphia Phillies,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_05_29,bc8152dee5f6a9c85e452cc78f0747e4,823135,1,Arizona Diamondbacks,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_05_29,,,,New York Yankees,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_29,2106f4fc8ef576eac2a39262d02f66e7,824353,1,San Francisco Giants,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_05_29,274a30921628d47bff96d4b5f37f6a19,824191,1,Milwaukee Brewers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_05_29,57848c1e5cf12fb46c9c6e5c89c1022e,822894,1,Kansas City Royals,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_05_29,1587b2f52f5f1a490cebb01e524ec361,824594,1,Detroit Tigers,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_29,,,,Chicago Cubs,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_29,d32dadf5a576ba276bac1775287783ba,824433,1,Boston Red Sox,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_29,95952a4215c0c1d281c4dcbed7471d28,822978,1,Los Angeles Angels,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_29,6493e9132fdd464eebd5031d8ad02c41,823623,1,Miami Marlins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_05_29,ddd9481c210fa90dea318ad8e185cf22,824835,1,Toronto Blue Jays,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_29,765d27e397e587aa1885002dd751e9da,823377,1,Minnesota Twins,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_05_29,8c92a04b11da0a1f6f84d1dfd48fbf9d,822732,1,San Diego Padres,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_05_29,0efc76f321b5fc7e72e7e7641d5667f6,824515,1,Atlanta Braves,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_05_28,5bacfc86e437d15ee2ffef91a1562308,822896,1,Houston Astros,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_30,63299887,823132,1,Arizona Diamondbacks,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63300315,823945,1,Philadelphia Phillies,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_05_30,,,,New York Yankees,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_30,63300113,824352,1,San Francisco Giants,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63300119,824513,1,Atlanta Braves,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_05_30,,,,Chicago Cubs,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_30,63300779,823622,1,Miami Marlins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63299695,824190,1,Milwaukee Brewers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63300415,824431,1,Boston Red Sox,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63300689,822975,1,Los Angeles Angels,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63300457,823375,1,Minnesota Twins,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63299705,824833,1,Toronto Blue Jays,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63299501,822893,1,Kansas City Royals,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63299639,822731,1,San Diego Padres,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63299521,824593,1,Detroit Tigers,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_29,18e8a4acb1d40019544cfef0a5f07ef1,823946,1,Philadelphia Phillies,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_31,,,,Chicago Cubs,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_31,63299609,823133,1,Arizona Diamondbacks,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300393,823944,1,Philadelphia Phillies,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_05_31,,,,New York Yankees,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_05_31,63300377,824354,1,San Francisco Giants,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300573,822895,1,Kansas City Royals,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63299785,824187,1,Milwaukee Brewers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300635,824592,1,Detroit Tigers,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63299961,822976,1,Los Angeles Angels,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300095,824430,1,Boston Red Sox,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300337,823621,1,Miami Marlins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300093,824512,1,Atlanta Braves,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300371,823373,1,Minnesota Twins,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63299725,822729,1,San Diego Padres,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_05_31,63300183,824832,1,Toronto Blue Jays,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_05_30,63299887,823132,1,Arizona Diamondbacks,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_01,63303327,823131,1,New York Mets,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_06_01,63301179,825078,1,Los Angeles Dodgers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
 2026_06_01,63302413,824027,1,Colorado Rockies,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
@@ -714,6 +979,13 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_01,63303797,824510,1,Kansas City Royals,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_06_01,63303827,822730,1,Miami Marlins,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_06_01,63301821,822974,1,Detroit Tigers,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_05_31,,,,Chicago Cubs,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_05_31,63299609,823133,1,Arizona Diamondbacks,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_31,63300393,823944,1,Philadelphia Phillies,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_31,,,,New York Yankees,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_05_31,63300377,824354,1,San Francisco Giants,Colorado Rockies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_31,63300573,822895,1,Kansas City Royals,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_05_31,63299785,824187,1,Milwaukee Brewers,Houston Astros,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_02,63303741,823129,1,New York Mets,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_06_02,63300829,825079,1,Los Angeles Dodgers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
 2026_06_02,63303121,824026,1,Colorado Rockies,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
@@ -746,6 +1018,15 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_03,63302849,822973,1,Detroit Tigers,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_06_03,63302469,822727,1,Miami Marlins,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_06_02,63303741,823129,1,New York Mets,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_04,63303705,825076,1,Los Angeles Dodgers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63301039,824185,1,Pittsburgh Pirates,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_06_04,,,,Oakland Athletics,Chicago Cubs,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_04,63303517,823698,1,Kansas City Royals,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63299451,824919,1,Toronto Blue Jays,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63302275,823779,1,San Francisco Giants,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63301333,823542,1,Cleveland Guardians,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63301717,824753,1,Baltimore Orioles,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63303117,823457,1,San Diego Padres,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_06_03,63303717,825077,1,Los Angeles Dodgers,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_03,63302603,824024,1,Colorado Rockies,Los Angeles Angels,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_03,63299145,824188,1,Pittsburgh Pirates,Houston Astros,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -768,6 +1049,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_05,63301997,823455,1,Chicago White Sox,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_06_05,63299231,824271,1,Seattle Mariners,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_06_05,63302659,824673,1,San Francisco Giants,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_06_04,63303705,825076,1,Los Angeles Dodgers,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_06,63302467,823942,1,Los Angeles Angels,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_06_06,63303365,823292,1,New York Mets,San Diego Padres,1,unique_game_id,accepted; primary key game_id
 2026_06_06,63303689,824351,1,Milwaukee Brewers,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
@@ -816,7 +1098,38 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_07,63303673,822890,1,Cleveland Guardians,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_07,,,,Cincinnati Reds,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_06_07,63302133,823696,1,Kansas City Royals,Minnesota Twins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_09,,,,Milwaukee Brewers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,,,,Washington Nationals,San Francisco Giants,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,,,,Cincinnati Reds,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,63303449,824023,1,Houston Astros,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_06_09,63302479,824347,1,Chicago Cubs,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_06_09,63301655,824267,1,Minnesota Twins,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_06_09,63302839,824591,1,Atlanta Braves,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_09,,,,Texas Rangers,Kansas City Royals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,,,,St. Louis Cardinals,New York Mets,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,,,,Philadelphia Phillies,Toronto Blue Jays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,63302059,824429,1,New York Yankees,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_06_09,,,,Boston Red Sox,Tampa Bay Rays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_09,63303851,823858,1,Arizona Diamondbacks,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_06_09,63302797,823374,1,Los Angeles Dodgers,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_06_09,63301687,824830,1,Seattle Mariners,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_06_08,,,,Milwaukee Brewers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_10,63301375,824022,1,Houston Astros,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_06_10,,,,Milwaukee Brewers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,63302269,824348,1,Chicago Cubs,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_06_10,63303445,824590,1,Atlanta Braves,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_10,,,,Texas Rangers,Kansas City Royals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,,,,St. Louis Cardinals,New York Mets,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,,,,Philadelphia Phillies,Toronto Blue Jays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,63302367,824266,1,Minnesota Twins,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_06_10,63301019,823856,1,Arizona Diamondbacks,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_06_10,63301321,823372,1,Los Angeles Dodgers,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_06_10,63303869,824831,1,Seattle Mariners,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_06_10,,,,Cincinnati Reds,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,,,,Washington Nationals,San Francisco Giants,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,,,,Boston Red Sox,Tampa Bay Rays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,63303615,824428,1,New York Yankees,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_06_09,,,,Milwaukee Brewers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_06_11,63302121,824827,1,Seattle Mariners,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_06_11,63303573,823371,1,Los Angeles Dodgers,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_06_11,,,,Texas Rangers,Kansas City Royals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -824,6 +1137,15 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_11,63301431,824265,1,Minnesota Twins,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_06_11,63303803,823855,1,Arizona Diamondbacks,Miami Marlins,1,unique_game_id,accepted; primary key game_id
 2026_06_11,,,,St. Louis Cardinals,New York Mets,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_10,63301375,824022,1,Houston Astros,Los Angeles Angels,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_10,,,,Milwaukee Brewers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_10,63302269,824348,1,Chicago Cubs,Colorado Rockies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_10,63303445,824590,1,Atlanta Braves,Chicago White Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_10,,,,Texas Rangers,Kansas City Royals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_10,,,,St. Louis Cardinals,New York Mets,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_10,,,,Philadelphia Phillies,Toronto Blue Jays,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_10,63302367,824266,1,Minnesota Twins,Detroit Tigers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_10,63301019,823856,1,Arizona Diamondbacks,Miami Marlins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_12,,,,Chicago Cubs,San Francisco Giants,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_06_12,,,,Colorado Rockies,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_06_12,,,,Tampa Bay Rays,Los Angeles Angels,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -840,7 +1162,54 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_12,,,,San Diego Padres,Baltimore Orioles,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_06_12,63303583,823370,1,Miami Marlins,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_06_11,63302121,824827,1,Seattle Mariners,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_13,,,,Tampa Bay Rays,Los Angeles Angels,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,,,,Colorado Rockies,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,,,,Chicago Cubs,San Francisco Giants,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,,,,Houston Astros,Kansas City Royals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,63300913,823776,1,Philadelphia Phillies,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_06_13,63302699,824587,1,Los Angeles Dodgers,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_13,63299171,824426,1,Detroit Tigers,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_06_13,,,,Texas Rangers,Boston Red Sox,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,63302587,823616,1,Atlanta Braves,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_06_13,63302453,824508,1,Arizona Diamondbacks,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_06_13,,,,San Diego Padres,Baltimore Orioles,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,,,,Seattle Mariners,Washington Nationals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_13,63301585,823369,1,Miami Marlins,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_06_13,63299299,822802,1,New York Yankees,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_06_13,,,,St. Louis Cardinals,Minnesota Twins,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_06_12,,,,Chicago Cubs,San Francisco Giants,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_14,,,,Texas Rangers,Boston Red Sox,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,,,,Tampa Bay Rays,Los Angeles Angels,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,,,,Chicago Cubs,San Francisco Giants,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,,,,Colorado Rockies,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,,,,St. Louis Cardinals,Minnesota Twins,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,63302091,824586,1,Los Angeles Dodgers,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_14,,,,Houston Astros,Kansas City Royals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,63302869,823777,1,Philadelphia Phillies,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_06_14,63299225,823615,1,Atlanta Braves,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_06_14,63302635,824506,1,Arizona Diamondbacks,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_06_14,63303833,822801,1,New York Yankees,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_06_14,,,,Seattle Mariners,Washington Nationals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,,,,San Diego Padres,Baltimore Orioles,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_14,63301783,823368,1,Miami Marlins,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_06_13,,,,Tampa Bay Rays,Los Angeles Angels,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_13,,,,Colorado Rockies,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_15,63300977,823938,1,Tampa Bay Rays,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_06_15,,,,Pittsburgh Pirates,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_15,63301683,825071,1,Los Angeles Angels,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_06_15,63299361,824181,1,Detroit Tigers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_06_15,63303721,822887,1,Minnesota Twins,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_06_15,63300953,824666,1,Colorado Rockies,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_06_15,,,,San Diego Padres,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_15,63302919,824505,1,New York Mets,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_06_15,,,,Kansas City Royals,Washington Nationals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_15,63301303,823452,1,Miami Marlins,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_06_14,,,,Texas Rangers,Boston Red Sox,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_14,,,,Tampa Bay Rays,Los Angeles Angels,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_14,,,,Chicago Cubs,San Francisco Giants,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_14,,,,Colorado Rockies,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_14,,,,St. Louis Cardinals,Minnesota Twins,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_14,63302091,824586,1,Los Angeles Dodgers,Chicago White Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_16,63303733,823939,1,Tampa Bay Rays,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_06_16,63303259,825070,1,Los Angeles Angels,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
 2026_06_16,,,,Pittsburgh Pirates,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -855,8 +1224,40 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_16,,,,Kansas City Royals,Washington Nationals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_06_16,63301927,824750,1,Toronto Blue Jays,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
 2026_06_16,63301337,823451,1,Miami Marlins,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_06_15,63300977,823938,1,Tampa Bay Rays,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_15,,,,Pittsburgh Pirates,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_17,,,,Pittsburgh Pirates,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_17,63301575,823127,1,Baltimore Orioles,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63301455,824668,1,Colorado Rockies,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63301973,823774,1,Cleveland Guardians,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63302257,824913,1,San Francisco Giants,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63303305,823536,1,Chicago White Sox,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63299125,824746,1,Toronto Blue Jays,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63302895,825072,1,Los Angeles Angels,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63299121,823940,1,Tampa Bay Rays,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_06_17,,,,San Diego Padres,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_17,63299187,824178,1,Detroit Tigers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_06_17,,,,Kansas City Royals,Washington Nationals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_17,63302151,823450,1,Miami Marlins,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_06_17,63301609,824503,1,New York Mets,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_06_16,63303733,823939,1,Tampa Bay Rays,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_16,63303259,825070,1,Los Angeles Angels,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_18,,,,Los Angeles Angels,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_18,,,,St. Louis Cardinals,Kansas City Royals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_18,63299273,823533,1,Chicago White Sox,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_06_18,63302879,823448,1,New York Mets,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_06_18,63303635,823125,1,Baltimore Orioles,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_06_18,63302927,822889,1,Minnesota Twins,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_06_18,63301219,823772,1,Cleveland Guardians,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_06_18,63301713,824748,1,Toronto Blue Jays,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_17,,,,Pittsburgh Pirates,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_17,63301575,823127,1,Baltimore Orioles,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_17,63301455,824668,1,Colorado Rockies,Chicago Cubs,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_17,63301973,823774,1,Cleveland Guardians,Milwaukee Brewers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_17,63302257,824913,1,San Francisco Giants,Atlanta Braves,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_17,63303305,823536,1,Chicago White Sox,New York Yankees,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_17,63299125,824746,1,Toronto Blue Jays,Boston Red Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_17,63302895,825072,1,Los Angeles Angels,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_19,63300891,823124,1,Boston Red Sox,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_06_19,63300951,823936,1,Baltimore Orioles,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_06_19,63302153,825069,1,Minnesota Twins,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
@@ -871,6 +1272,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_19,63303341,823534,1,Cincinnati Reds,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_06_19,63303633,824264,1,Chicago White Sox,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_06_19,63301885,824663,1,Toronto Blue Jays,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_06_18,,,,Los Angeles Angels,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_18,,,,St. Louis Cardinals,Kansas City Royals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_06_20,63303789,825068,1,Minnesota Twins,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
 2026_06_20,63301109,823937,1,Baltimore Orioles,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_06_20,63304155,823126,1,Boston Red Sox,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
@@ -1031,6 +1434,21 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_06_28,63303063,824744,1,New York Yankees,Boston Red Sox,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_28,63303771,823281,1,Los Angeles Dodgers,San Diego Padres,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_06_28,63301837,823204,1,Atlanta Braves,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_06_30,,,,Los Angeles Dodgers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_30,63303193,823122,1,Los Angeles Angels,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63301785,825066,1,San Francisco Giants,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63299421,824338,1,Miami Marlins,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63302421,824175,1,Minnesota Twins,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63301107,824661,1,San Diego Padres,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63303723,824096,1,Tampa Bay Rays,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63301855,823768,1,Cincinnati Reds,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_06_30,,,,St. Louis Cardinals,Atlanta Braves,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_06_30,63300871,824742,1,Washington Nationals,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63303119,822793,1,New York Mets,Toronto Blue Jays,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63299239,823528,1,Detroit Tigers,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63302041,824418,1,Texas Rangers,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63299271,823445,1,Pittsburgh Pirates,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_06_30,63301873,824819,1,Chicago White Sox,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_06_29,,,,Los Angeles Dodgers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_07_01,,,,Los Angeles Dodgers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_01,63301501,825064,1,San Francisco Giants,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
@@ -1046,6 +1464,17 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_01,63301357,823530,1,Detroit Tigers,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_07_01,63299203,824419,1,Texas Rangers,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
 2026_07_01,63302515,824818,1,Chicago White Sox,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_06_30,,,,Los Angeles Dodgers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_06_30,63303193,823122,1,Los Angeles Angels,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_02,63302113,823935,1,San Diego Padres,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_07_02,63303217,823119,1,Los Angeles Angels,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_07_02,63301173,822884,1,Detroit Tigers,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_07_02,63303531,824093,1,Tampa Bay Rays,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
+2026_07_02,,,,St. Louis Cardinals,Atlanta Braves,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_02,63301307,824416,1,Chicago White Sox,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_07_02,63301675,824335,1,Miami Marlins,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_07_02,63301891,823765,1,Cincinnati Reds,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_07_02,63301691,823442,1,Pittsburgh Pirates,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
 2026_07_01,,,,Los Angeles Dodgers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_07_01,63301501,825064,1,San Francisco Giants,Arizona Diamondbacks,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_01,63301701,824337,1,Miami Marlins,Colorado Rockies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -1053,6 +1482,22 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_01,63301401,823767,1,Cincinnati Reds,Milwaukee Brewers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_01,63301417,824094,1,Tampa Bay Rays,Kansas City Royals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_01,,,,St. Louis Cardinals,Atlanta Braves,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_03,63303077,823120,1,Toronto Blue Jays,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63301491,823933,1,San Diego Padres,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63302951,825062,1,Milwaukee Brewers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
+2026_07_03,,,,Miami Marlins,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_03,63301825,824013,1,Boston Red Sox,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63303313,824173,1,Tampa Bay Rays,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63301981,824336,1,San Francisco Giants,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63302711,824904,1,New York Mets,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63302669,824498,1,Baltimore Orioles,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63299387,824417,1,Chicago White Sox,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63301083,823527,1,Minnesota Twins,New York Yankees,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63303631,822714,1,Pittsburgh Pirates,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_07_03,,,,St. Louis Cardinals,Chicago Cubs,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_02,63302113,823935,1,San Diego Padres,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_02,63303217,823119,1,Los Angeles Angels,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_02,63301173,822884,1,Detroit Tigers,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_04,63301399,823932,1,San Diego Padres,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_07_04,,,,Miami Marlins,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_04,63303815,825063,1,Milwaukee Brewers,Arizona Diamondbacks,1,unique_game_id,accepted; primary key game_id
@@ -1068,6 +1513,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_04,63300843,822882,1,Detroit Tigers,Texas Rangers,1,unique_game_id,accepted; primary key game_id
 2026_07_04,63299431,823526,1,Minnesota Twins,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_07_04,63299269,822716,1,Pittsburgh Pirates,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_07_03,63303077,823120,1,Toronto Blue Jays,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_05,63300857,824010,1,Boston Red Sox,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
 2026_07_05,63303883,823931,1,San Diego Padres,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_07_05,63302863,823117,1,Toronto Blue Jays,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
@@ -1084,6 +1530,14 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_05,63303623,824497,1,Baltimore Orioles,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_07_05,63302315,822715,1,Pittsburgh Pirates,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_07_04,63301399,823932,1,San Diego Padres,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_06,63302475,823930,1,Colorado Rockies,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_07_06,63299185,823205,1,Toronto Blue Jays,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_07_06,63299217,823282,1,Arizona Diamondbacks,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_07_06,,,,Milwaukee Brewers,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_06,63302377,824900,1,New York Mets,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_07_06,63302119,822712,1,Houston Astros,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_07_06,63303439,822958,1,New York Yankees,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_07_06,63302993,824089,1,Philadelphia Phillies,Kansas City Royals,1,unique_game_id,accepted; primary key game_id
 2026_07_05,63300857,824010,1,Boston Red Sox,Los Angeles Angels,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_05,63303883,823931,1,San Diego Padres,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_05,63302863,823117,1,Toronto Blue Jays,Seattle Mariners,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -1171,10 +1625,86 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_11,63302619,823682,1,Los Angeles Angels,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
 2026_07_11,,,,Oakland Athletics,Chicago White Sox,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_11,63299227,823356,2,Milwaukee Brewers,Pittsburgh Pirates,2,conflicting_duplicate_game_id,same game_id had conflicting final-score fields
+2026_07_12,,,,Toronto Blue Jays,San Diego Padres,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_12,63300981,823925,1,Arizona Diamondbacks,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63303105,823199,1,Colorado Rockies,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63301945,822876,1,Houston Astros,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_07_12,,,,Atlanta Braves,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_12,,,,Oakland Athletics,Chicago White Sox,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_12,63301213,823681,1,Los Angeles Angels,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63302047,823602,1,Boston Red Sox,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63303737,823842,1,Cleveland Guardians,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63303189,824250,1,Philadelphia Phillies,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63303419,822951,1,Seattle Mariners,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63302057,824491,1,Chicago Cubs,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63302295,822708,1,New York Yankees,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63301077,824814,1,Kansas City Royals,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_07_12,63303443,823358,1,Milwaukee Brewers,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_07_11,63303307,823926,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Toronto Blue Jays,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63300981,823925,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303105,823199,1,Colorado Rockies,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301945,822876,1,Houston Astros,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Atlanta Braves,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,,,,Oakland Athletics,Chicago White Sox,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63301213,823681,1,Los Angeles Angels,Minnesota Twins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302047,823602,1,Boston Red Sox,New York Mets,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303737,823842,1,Cleveland Guardians,Miami Marlins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303189,824250,1,Philadelphia Phillies,Detroit Tigers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303419,822951,1,Seattle Mariners,Tampa Bay Rays,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302057,824491,1,Chicago Cubs,Cincinnati Reds,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302295,822708,1,New York Yankees,Washington Nationals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301077,824814,1,Kansas City Royals,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303443,823358,1,Milwaukee Brewers,Pittsburgh Pirates,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_11,63303307,823926,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Toronto Blue Jays,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63300981,823925,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303105,823199,1,Colorado Rockies,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301945,822876,1,Houston Astros,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Atlanta Braves,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,,,,Oakland Athletics,Chicago White Sox,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63301213,823681,1,Los Angeles Angels,Minnesota Twins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302047,823602,1,Boston Red Sox,New York Mets,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303737,823842,1,Cleveland Guardians,Miami Marlins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303189,824250,1,Philadelphia Phillies,Detroit Tigers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303419,822951,1,Seattle Mariners,Tampa Bay Rays,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302057,824491,1,Chicago Cubs,Cincinnati Reds,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302295,822708,1,New York Yankees,Washington Nationals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301077,824814,1,Kansas City Royals,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303443,823358,1,Milwaukee Brewers,Pittsburgh Pirates,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_11,63303307,823926,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Toronto Blue Jays,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63300981,823925,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303105,823199,1,Colorado Rockies,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301945,822876,1,Houston Astros,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Atlanta Braves,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,,,,Oakland Athletics,Chicago White Sox,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63301213,823681,1,Los Angeles Angels,Minnesota Twins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302047,823602,1,Boston Red Sox,New York Mets,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303737,823842,1,Cleveland Guardians,Miami Marlins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303189,824250,1,Philadelphia Phillies,Detroit Tigers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303419,822951,1,Seattle Mariners,Tampa Bay Rays,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302057,824491,1,Chicago Cubs,Cincinnati Reds,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302295,822708,1,New York Yankees,Washington Nationals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301077,824814,1,Kansas City Royals,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303443,823358,1,Milwaukee Brewers,Pittsburgh Pirates,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_11,63303307,823926,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_16,63301305,823440,1,New York Mets,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_07_12,,,,Toronto Blue Jays,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63300981,823925,1,Arizona Diamondbacks,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303105,823199,1,Colorado Rockies,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301945,822876,1,Houston Astros,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Atlanta Braves,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,,,,Oakland Athletics,Chicago White Sox,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_12,63301213,823681,1,Los Angeles Angels,Minnesota Twins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302047,823602,1,Boston Red Sox,New York Mets,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303737,823842,1,Cleveland Guardians,Miami Marlins,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303189,824250,1,Philadelphia Phillies,Detroit Tigers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303419,822951,1,Seattle Mariners,Tampa Bay Rays,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302057,824491,1,Chicago Cubs,Cincinnati Reds,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63302295,822708,1,New York Yankees,Washington Nationals,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63301077,824814,1,Kansas City Royals,Baltimore Orioles,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,63303443,823358,1,Milwaukee Brewers,Pittsburgh Pirates,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_17,63302551,823115,1,San Francisco Giants,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
 2026_07_17,,,,Washington Nationals,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_17,,,,St. Louis Cardinals,Arizona Diamondbacks,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -1189,6 +1719,8 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_17,71409220,824766,1,Tampa Bay Rays,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
 2026_07_17,63303845,823524,1,Los Angeles Dodgers,New York Yankees,1,unique_game_id,accepted; primary key game_id
 2026_07_17,71409220,824766,1,Tampa Bay Rays,Boston Red Sox,2,conflicting_duplicate_game_id,same game_id had conflicting final-score fields
+2026_07_16,63301305,823440,1,New York Mets,Philadelphia Phillies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_12,,,,Toronto Blue Jays,San Diego Padres,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_07_18,63301135,824008,1,Detroit Tigers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
 2026_07_18,,,,Washington Nationals,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_18,72946026,824414,1,Pittsburgh Pirates,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
@@ -1317,7 +1849,38 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_25,63300965,822704,1,Arizona Diamondbacks,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_07_25,63302111,824244,1,Kansas City Royals,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
 2026_07_24,63302569,823196,1,Los Angeles Angels,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_26,63302157,823433,1,New York Yankees,Philadelphia Phillies,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63302817,823194,1,Los Angeles Angels,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63302221,822870,1,Seattle Mariners,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_07_26,,,,Cincinnati Reds,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_26,,,,Oakland Athletics,Minnesota Twins,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_26,63300845,824572,1,Houston Astros,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63301835,823755,1,Colorado Rockies,Milwaukee Brewers,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63303285,824246,1,Kansas City Royals,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63303103,823840,1,San Diego Padres,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63302947,823599,1,Los Angeles Dodgers,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63299147,824810,1,Atlanta Braves,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63301463,824730,1,Toronto Blue Jays,Boston Red Sox,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63302021,823354,1,Chicago Cubs,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63303577,822706,1,Arizona Diamondbacks,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63303493,822950,1,Cleveland Guardians,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_07_25,63301235,822869,1,Seattle Mariners,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_27,63301629,823195,1,Milwaukee Brewers,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
+2026_07_27,,,,Boston Red Sox,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_27,63302629,824001,1,Houston Astros,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_07_27,,,,Chicago Cubs,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_27,63301447,824570,1,New York Yankees,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63301499,823597,1,Atlanta Braves,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63303221,822705,1,Toronto Blue Jays,Washington Nationals,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63303057,824245,1,Baltimore Orioles,Detroit Tigers,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63302195,823839,1,Philadelphia Phillies,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63301395,823353,1,Arizona Diamondbacks,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63302077,822868,1,Seattle Mariners,Texas Rangers,1,unique_game_id,accepted; primary key game_id
+2026_07_26,63302157,823433,1,New York Yankees,Philadelphia Phillies,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_26,63302817,823194,1,Los Angeles Angels,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_26,63302221,822870,1,Seattle Mariners,Texas Rangers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_07_26,,,,Cincinnati Reds,St. Louis Cardinals,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
+2026_07_26,,,,Oakland Athletics,Minnesota Twins,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_07_28,63302651,823923,1,Seattle Mariners,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_07_28,63303491,823193,1,Milwaukee Brewers,San Francisco Giants,1,unique_game_id,accepted; primary key game_id
 2026_07_28,,,,Boston Red Sox,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
@@ -1333,6 +1896,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_28,63303463,823350,1,Arizona Diamondbacks,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_07_28,63301639,823838,1,Philadelphia Phillies,Miami Marlins,1,unique_game_id,accepted; primary key game_id
 2026_07_28,73217788,824490,1,Cleveland Guardians,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_07_27,63301629,823195,1,Milwaukee Brewers,San Francisco Giants,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_29,63301415,823924,1,Seattle Mariners,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
 2026_07_29,,,,Boston Red Sox,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_29,63303621,824002,1,Houston Astros,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
@@ -1349,6 +1913,16 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_29,63302509,822702,1,Toronto Blue Jays,Washington Nationals,1,unique_game_id,accepted; primary key game_id
 2026_07_29,63299457,823351,1,Arizona Diamondbacks,Pittsburgh Pirates,1,unique_game_id,accepted; primary key game_id
 2026_07_29,63303073,823837,1,Philadelphia Phillies,Miami Marlins,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63299403,823921,1,Seattle Mariners,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_07_30,,,,Boston Red Sox,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_30,63302579,823271,1,San Francisco Giants,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63300963,823595,1,Miami Marlins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63302455,824894,1,Washington Nationals,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63299173,824488,1,Pittsburgh Pirates,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_07_30,,,,Chicago Cubs,St. Louis Cardinals,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_07_30,63303269,824568,1,New York Yankees,Chicago White Sox,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63301443,823674,1,Kansas City Royals,Minnesota Twins,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63302301,822946,1,Texas Rangers,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_07_29,63301415,823924,1,Seattle Mariners,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_07_29,,,,Boston Red Sox,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
 2026_07_29,63303621,824002,1,Houston Astros,Los Angeles Angels,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
@@ -1370,6 +1944,7 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_07_31,63301603,824809,1,Philadelphia Phillies,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
 2026_07_31,63299237,824486,1,Pittsburgh Pirates,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
 2026_07_31,63302395,824651,1,New York Yankees,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_07_30,63299403,823921,1,Seattle Mariners,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
 2026_08_01,,,,Detroit Tigers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_08_01,63300907,824000,1,Milwaukee Brewers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
 2026_08_01,63303681,823920,1,Boston Red Sox,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
@@ -1386,3 +1961,19 @@ game_date,game_id,gamePk,gameNumber,away_team,home_team,duplicate_count,status,n
 2026_08_01,63303555,822944,1,Chicago White Sox,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
 2026_08_01,,,,St. Louis Cardinals,Toronto Blue Jays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
 2026_07_31,63300867,823922,1,Boston Red Sox,Los Angeles Dodgers,2,identical_duplicate_collapsed,duplicate game_id row was identical and was not written twice
+2026_08_02,63301169,823919,1,Boston Red Sox,Los Angeles Dodgers,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63301809,823107,1,Minnesota Twins,Seattle Mariners,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63302733,823270,1,San Francisco Giants,San Diego Padres,1,unique_game_id,accepted; primary key game_id
+2026_08_02,,,,Detroit Tigers,Oakland Athletics,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_08_02,63302101,823996,1,Milwaukee Brewers,Los Angeles Angels,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63301795,824323,1,Kansas City Royals,Colorado Rockies,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63301987,824648,1,New York Yankees,Chicago Cubs,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63303081,824163,1,Texas Rangers,Houston Astros,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63301149,824404,1,Arizona Diamondbacks,Cleveland Guardians,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63302823,822943,1,Chicago White Sox,Tampa Bay Rays,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63303603,823592,1,Miami Marlins,New York Mets,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63303653,824483,1,Pittsburgh Pirates,Cincinnati Reds,1,unique_game_id,accepted; primary key game_id
+2026_08_02,,,,St. Louis Cardinals,Toronto Blue Jays,1,blank_game_id_written_for_downstream_audit,game_id missing; fallback date/team/time key used only to avoid exact duplicate raw writes
+2026_08_02,63301671,824807,1,Philadelphia Phillies,Baltimore Orioles,1,unique_game_id,accepted; primary key game_id
+2026_08_02,63299353,824891,1,Washington Nationals,Atlanta Braves,1,unique_game_id,accepted; primary key game_id
+2026_08_01,,,,Detroit Tigers,Oakland Athletics,2,blank_game_id_identical_duplicate_collapsed,blank-game_id duplicate was identical and was not written twice
