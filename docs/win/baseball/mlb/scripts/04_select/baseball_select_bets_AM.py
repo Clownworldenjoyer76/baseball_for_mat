@@ -8,7 +8,7 @@ import pandas as pd
 import yaml
 
 INPUT_DIR = Path("docs/win/baseball/mlb/03_edges/ev_kelly")
-OUTPUT_DIR = Path("docs/win/baseball/mlb/04_select")
+OUTPUT_DIR = Path("docs/win/baseball/mlb/04_select/morning")
 CONFIG_PATH = Path("docs/win/baseball/mlb/config/markets.yaml")
 
 AUDIT_DIR = OUTPUT_DIR / "audit"
