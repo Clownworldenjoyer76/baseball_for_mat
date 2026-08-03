@@ -1,4 +1,3 @@
-```python
 #!/usr/bin/env python3
 # docs/win/baseball/scripts/00_intake/transform_baseball.py
 
