@@ -29,17 +29,6 @@ markets:
     # Set false to allow more totals through even when one/both SP samples are low.
     sp_sample_exclude_totals: false
 
-    # Require minimum number of lineup batters found.
-    # Valid values: 0 through 9.
-    min_home_batters_found: 0
-    min_away_batters_found: 0
-
-    # Require total starting pitchers found.
-    # 0 = allow no starting pitchers found
-    # 1 = require at least one starting pitcher found
-    # 2 = require both starting pitchers found
-    sp_found: 0
-
     # Flag only. Does not exclude bets.
     lineup_low_sample_warn: 4
 
@@ -52,32 +41,32 @@ markets:
       # best_ev = one ML side max per game
       # best_prob = one ML side max per game, highest model probability
       # all = can select both if both pass
-      pick_preference: best_prob
+      pick_preference: best_ev
 
       home:
         enabled: true
         odds_bands:
-          - [-125, 500]
+          - [-1000, 1000]
         ev_bands:
-          - [0.04, 0.05]
-          - [0.075, 0.0999]
+          - [-10.00, 99.99] 
         kelly_bands:
-          - [0.03, 99.99]
+          - [-10.00, 99.99]
         prob_bands:
-          - [0.50, 0.60]
-
+          - [0.00, 1.00]
+        
+        
       away:
         enabled: true
         odds_bands:
-          - [-500, -125]
-          - [101, 500]
+          - [-1000, 1000]
         ev_bands:
-          - [0.05, 0.75]
+          - [-10.00, 99.99] 
         kelly_bands:
-          - [0.05, 99.99]
+          - [-10.00, 99.99]
         prob_bands:
-          - [0.60, 0.99]
-
+          - [0.00, 1.00]
+        
+              
     ###################################################
     # ── Run Line ─────────────────────────────────────
     ###################################################
@@ -87,35 +76,36 @@ markets:
       # Step 5 blocks all for run-line so both sides of the same run-line
       # market cannot be selected for one game.
       # Valid values: best_ev, best_prob.
-      pick_preference: best_prob
+      pick_preference: best_ev
 
       home:
         enabled: true
         line_bands:
           - [-2.5, 2.5]
         odds_bands:
-          - [-500, 500]
+          - [-1000, 1000]
         ev_bands:
-          - [0.0001, 99.99]
+          - [-10.00, 99.99] 
         kelly_bands:
-          - [0.0001, 99.99]
+          - [-10.00, 99.99]
         prob_bands:
-          - [0.75, 0.99]
-
+          - [0.00, 1.00]
+       
+        
       away:
         enabled: true
         line_bands:
           - [-2.5, 2.5]
         odds_bands:
-          - [-500, -150]
-          - [-125, 500]
+          - [-1000, 1000]
         ev_bands:
-          - [0.0001, 99.99]
+          - [-10.00, 99.99] 
         kelly_bands:
-          - [0.01, 99.99]
+          - [-10.00, 99.99]
         prob_bands:
-          - [0.50, 0.65]
-
+          - [0.00, 1.00]
+        
+        
     ###################################################
     # ── Totals ───────────────────────────────────────
     ###################################################
@@ -124,30 +114,32 @@ markets:
       enabled: true
       # best_ev = one total side max per game.
       # all = can select both over and under if both pass.
-      pick_preference: best_prob
+      pick_preference: all
 
       over:
         enabled: true
         line_bands:
-          - [7.0, 28.5]
+          - [0.0, 20.0]
         odds_bands:
-          - [-125, -110]
+          - [-1000, 1000]
         ev_bands:
-          - [0.01, 0.04]
+          - [-10.00, 99.99] 
         kelly_bands:
-          - [0.0001, 99.99]
+          - [-10.00, 99.99]
         prob_bands:
-          - [0.10, 0.99]
-
+          - [0.00, 1.00]
+       
+        
       under:
         enabled: true
         line_bands:
-          - [1.5, 11.0]
+          - [0.0, 20.0]
         odds_bands:
-          - [-500, 500]
+          - [-1000, 1000]
         ev_bands:
-          - [0.0001, 99.99]
+          - [-10.00, 99.99] 
         kelly_bands:
-          - [0.0001, 99.99]
+          - [-10.00, 99.99]
         prob_bands:
-          - [0.70, 0.75]
+          - [0.00, 1.00]
+       
