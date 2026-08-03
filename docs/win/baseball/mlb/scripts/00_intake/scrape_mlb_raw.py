@@ -1,4 +1,4 @@
-
+# docs/win/baseball/mlb/scripts/00_intake/scrape_mlb_raw.py
 from __future__ import annotations
 
 import csv
