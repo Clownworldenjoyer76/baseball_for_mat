@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# docs/win/baseball/mlb/scripts/00_intake/build_games_list.py
+# docs/win/baseball/scripts/00_intake/build_games_list.py
 #
 # Runs after scrape_mlb_raw.py and odds_parse.py.
 # Joins mlb_raw to sportsbook to produce an authoritative {date}_games.csv.
@@ -20,13 +20,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-MLB_RAW_DIR  = Path("docs/win/baseball/mlb/00_intake/mlb_raw")
-BOOK_DIR     = Path("docs/win/baseball/mlb/00_intake/sportsbook")
-MAPS_DIR     = Path("docs/win/baseball/maps")
-OUT_DIR      = Path("docs/win/baseball/mlb/00_intake/games")
-ERROR_DIR    = Path("docs/win/baseball/mlb/errors/00_intake")
+MLB_RAW_DIR = Path("docs/win/baseball/mlb/00_intake/mlb_raw")
+BOOK_DIR = Path("docs/win/baseball/mlb/00_intake/sportsbook")
+MAPS_DIR = Path("docs/win/baseball/maps")
 
+OUT_DIR = Path("docs/win/baseball/mlb/00_intake/games")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+ERROR_DIR = Path("docs/win/baseball/mlb/errors/00_intake")
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 
 LOG_FILE = ERROR_DIR / "build_games_list.txt"
@@ -34,10 +35,20 @@ LOG_FILE = ERROR_DIR / "build_games_list.txt"
 MAX_TIME_DIFF_MINUTES = 90
 
 OUTPUT_HEADER = [
-    "gamePk", "game_id", "game_date", "game_time",
-    "home_team", "away_team", "home_team_id", "away_team_id",
-    "venue_id", "doubleheader", "gameNumber",
-    "home_pitcher_id", "away_pitcher_id", "day_night",
+    "gamePk",
+    "game_id",
+    "game_date",
+    "game_time",
+    "home_team",
+    "away_team",
+    "home_team_id",
+    "away_team_id",
+    "venue_id",
+    "doubleheader",
+    "gameNumber",
+    "home_pitcher_id",
+    "away_pitcher_id",
+    "day_night",
 ]
 
 
@@ -70,6 +81,7 @@ def load_csv(path: Path) -> list:
     if not path.exists():
         log(f"MISSING: {path}", "WARN")
         return []
+
     with open(path, newline="", encoding="utf-8-sig") as f:
         return list(csv.DictReader(f))
 
@@ -78,20 +90,34 @@ def load_team_map() -> dict:
     """Returns dict: norm(team_name) -> team_id."""
     rows = load_csv(MAPS_DIR / "mlb_team_ids.csv")
     m = {}
+
     for r in rows:
         tid = r.get("team_id", "").strip()
+
         if not tid:
             continue
-        for col in ["name", "team_name", "short_name", "club_name", "franchise_name"]:
+
+        for col in [
+            "name",
+            "team_name",
+            "short_name",
+            "club_name",
+            "franchise_name",
+        ]:
             val = norm(r.get(col, ""))
+
             if val:
                 m[val] = tid
+
     return m
 
 
 def build_id_to_name_map(rows: list) -> dict:
     """Returns dict: team_id -> full name."""
-    return {r.get("team_id", "").strip(): r.get("name", "").strip() for r in rows}
+    return {
+        r.get("team_id", "").strip(): r.get("name", "").strip()
+        for r in rows
+    }
 
 
 def parse_int(value, default=0) -> int:
@@ -101,7 +127,10 @@ def parse_int(value, default=0) -> int:
         return default
 
 
-def utc_to_local_datetime(utc_str: str, tz_id: str = "America/New_York"):
+def utc_to_local_datetime(
+    utc_str: str,
+    tz_id: str = "America/New_York",
+):
     """Convert MLB UTC ISO time string to local aware datetime."""
     try:
         dt = datetime.fromisoformat(str(utc_str).replace("Z", "+00:00"))
@@ -110,12 +139,19 @@ def utc_to_local_datetime(utc_str: str, tz_id: str = "America/New_York"):
         return None
 
 
-def parse_book_datetime(date_str: str, time_str: str, tz_id: str = "America/New_York"):
+def parse_book_datetime(
+    date_str: str,
+    time_str: str,
+    tz_id: str = "America/New_York",
+):
     """Parse sportsbook date + HH:MM:SS as local aware datetime."""
     try:
         date_clean = str(date_str).replace("_", "-").strip()
         time_clean = str(time_str).strip()
-        dt = datetime.strptime(f"{date_clean} {time_clean}", "%Y-%m-%d %H:%M:%S")
+        dt = datetime.strptime(
+            f"{date_clean} {time_clean}",
+            "%Y-%m-%d %H:%M:%S",
+        )
         return dt.replace(tzinfo=ZoneInfo(tz_id))
     except Exception:
         return None
@@ -123,14 +159,22 @@ def parse_book_datetime(date_str: str, time_str: str, tz_id: str = "America/New_
 
 def sort_dt_key(entry: dict):
     dt = entry.get("local_dt") or entry.get("book_dt")
+
     if dt is None:
-        return (1, datetime.max.replace(tzinfo=ZoneInfo("America/New_York")))
-    return (0, dt)
+        return (
+            1,
+            datetime.max.replace(
+                tzinfo=ZoneInfo("America/New_York")
+            ),
+        )
+
+    return 0, dt
 
 
 def minutes_between(a, b):
     if a is None or b is None:
         return None
+
     return abs((a - b).total_seconds()) / 60.0
 
 
@@ -139,41 +183,67 @@ def make_output_row(raw_entry: dict, book_entry: dict) -> dict:
     b = book_entry["row"]
 
     return {
-        "gamePk":          r.get("gamePk", ""),
-        "game_id":         b.get("game_id", ""),
-        "game_date":       r.get("game_date", ""),
-        "game_time":       b.get("game_time", ""),
-        "home_team":       b.get("home_team", ""),
-        "away_team":       b.get("away_team", ""),
-        "home_team_id":    r.get("home_team_id", ""),
-        "away_team_id":    r.get("away_team_id", ""),
-        "venue_id":        r.get("venue_id", ""),
-        "doubleheader":    r.get("doubleheader", "N"),
-        "gameNumber":      r.get("gameNumber", "1"),
+        "gamePk": r.get("gamePk", ""),
+        "game_id": b.get("game_id", ""),
+        "game_date": r.get("game_date", ""),
+        "game_time": b.get("game_time", ""),
+        "home_team": b.get("home_team", ""),
+        "away_team": b.get("away_team", ""),
+        "home_team_id": r.get("home_team_id", ""),
+        "away_team_id": r.get("away_team_id", ""),
+        "venue_id": r.get("venue_id", ""),
+        "doubleheader": r.get("doubleheader", "N"),
+        "gameNumber": r.get("gameNumber", "1"),
         "home_pitcher_id": r.get("home_pitcher_id", ""),
         "away_pitcher_id": r.get("away_pitcher_id", ""),
-        "day_night":       r.get("day_night", ""),
+        "day_night": r.get("day_night", ""),
     }
+
+
+def write_games_file(
+    out_path: Path,
+    output_rows: list,
+) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(out_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=OUTPUT_HEADER,
+        )
+        writer.writeheader()
+        writer.writerows(output_rows)
 
 
 # ─────────────────────────────────────────────
 # PROCESS ONE DATE
 # ─────────────────────────────────────────────
 
-def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict) -> None:
-    raw_path  = MLB_RAW_DIR / f"{date_str}_mlb_raw.csv"
-    book_path = BOOK_DIR    / f"{date_str}_MLB.csv"
+def process_date(
+    date_str: str,
+    team_map: dict,
+    id_to_name: dict,
+    summary: dict,
+) -> None:
+    raw_path = MLB_RAW_DIR / f"{date_str}_mlb_raw.csv"
+    book_path = BOOK_DIR / f"{date_str}_MLB.csv"
 
-    raw_rows  = load_csv(raw_path)
+    raw_rows = load_csv(raw_path)
     book_rows = load_csv(book_path)
 
     if not raw_rows:
-        log(f"{date_str} | no mlb_raw — skipping", "WARN")
+        log(
+            f"{date_str} | no mlb_raw — skipping",
+            "WARN",
+        )
         summary["skipped"] += 1
         return
 
     if not book_rows:
-        log(f"{date_str} | no sportsbook — skipping", "WARN")
+        log(
+            f"{date_str} | no sportsbook — skipping",
+            "WARN",
+        )
         summary["skipped"] += 1
         return
 
@@ -187,12 +257,17 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
         home_name = id_to_name.get(home_tid, "")
         away_name = id_to_name.get(away_tid, "")
 
-        key = (norm(home_name), norm(away_name))
+        key = (
+            norm(home_name),
+            norm(away_name),
+        )
 
         if not key[0] or not key[1]:
             log(
-                f"{date_str} | raw gamePk={r.get('gamePk', '')} missing team name "
-                f"home_team_id={home_tid} away_team_id={away_tid}",
+                f"{date_str} | raw gamePk={r.get('gamePk', '')} "
+                f"missing team name "
+                f"home_team_id={home_tid} "
+                f"away_team_id={away_tid}",
                 "WARN",
             )
             continue
@@ -201,30 +276,45 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
             raw_groups[key] = []
             raw_key_order.append(key)
 
-        raw_groups[key].append({
-            "row": r,
-            "key": key,
-            "home_name": home_name,
-            "away_name": away_name,
-            "local_dt": utc_to_local_datetime(r.get("game_time", "")),
-            "game_number": parse_int(r.get("gameNumber", "1"), 1),
-        })
+        raw_groups[key].append(
+            {
+                "row": r,
+                "key": key,
+                "home_name": home_name,
+                "away_name": away_name,
+                "local_dt": utc_to_local_datetime(
+                    r.get("game_time", "")
+                ),
+                "game_number": parse_int(
+                    r.get("gameNumber", "1"),
+                    1,
+                ),
+            }
+        )
 
     book_groups = {}
 
     for idx, b in enumerate(book_rows):
-        key = (norm(b.get("home_team", "")), norm(b.get("away_team", "")))
+        key = (
+            norm(b.get("home_team", "")),
+            norm(b.get("away_team", "")),
+        )
 
         if key not in book_groups:
             book_groups[key] = []
 
-        book_groups[key].append({
-            "row": b,
-            "key": key,
-            "book_dt": parse_book_datetime(date_str, b.get("game_time", "")),
-            "used": False,
-            "index": idx,
-        })
+        book_groups[key].append(
+            {
+                "row": b,
+                "key": key,
+                "book_dt": parse_book_datetime(
+                    date_str,
+                    b.get("game_time", ""),
+                ),
+                "used": False,
+                "index": idx,
+            }
+        )
 
     output_rows = []
     matched = 0
@@ -234,49 +324,89 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
         raws = raw_groups.get(key, [])
         books = book_groups.get(key, [])
 
-        matchup_label = f"{raws[0]['away_name']} @ {raws[0]['home_name']}" if raws else str(key)
+        matchup_label = (
+            f"{raws[0]['away_name']} @ "
+            f"{raws[0]['home_name']}"
+            if raws
+            else str(key)
+        )
 
         if not books:
             for raw_entry in raws:
                 log(
-                    f"{date_str} | UNMATCHED no sportsbook rows: "
-                    f"{matchup_label} gamePk={raw_entry['row'].get('gamePk', '')}",
+                    f"{date_str} | "
+                    f"UNMATCHED no sportsbook rows: "
+                    f"{matchup_label} "
+                    f"gamePk="
+                    f"{raw_entry['row'].get('gamePk', '')}",
                     "WARN",
                 )
                 unmatched += 1
+
             continue
 
-        unused_books = [b for b in books if not b["used"]]
+        unused_books = [
+            b
+            for b in books
+            if not b["used"]
+        ]
 
         if len(raws) == 1 and len(unused_books) == 1:
             raw_entry = raws[0]
             book_entry = unused_books[0]
             book_entry["used"] = True
-            output_rows.append(make_output_row(raw_entry, book_entry))
+
+            output_rows.append(
+                make_output_row(
+                    raw_entry,
+                    book_entry,
+                )
+            )
             matched += 1
 
-            diff = minutes_between(raw_entry.get("local_dt"), book_entry.get("book_dt"))
-            diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+            diff = minutes_between(
+                raw_entry.get("local_dt"),
+                book_entry.get("book_dt"),
+            )
+            diff_text = (
+                ""
+                if diff is None
+                else f" diff_minutes={round(diff, 1)}"
+            )
 
             level = "INFO"
             label = "MATCHED one-to-one"
 
-            if diff is not None and diff > MAX_TIME_DIFF_MINUTES:
+            if (
+                diff is not None
+                and diff > MAX_TIME_DIFF_MINUTES
+            ):
                 level = "WARN"
-                label = "MATCHED one-to-one with time mismatch"
+                label = (
+                    "MATCHED one-to-one "
+                    "with time mismatch"
+                )
 
             log(
-                f"{date_str} | {label}: {matchup_label} "
-                f"gamePk={raw_entry['row'].get('gamePk', '')} "
-                f"gameNumber={raw_entry['row'].get('gameNumber', '')} "
-                f"game_id={book_entry['row'].get('game_id', '')}"
+                f"{date_str} | {label}: "
+                f"{matchup_label} "
+                f"gamePk="
+                f"{raw_entry['row'].get('gamePk', '')} "
+                f"gameNumber="
+                f"{raw_entry['row'].get('gameNumber', '')} "
+                f"game_id="
+                f"{book_entry['row'].get('game_id', '')}"
                 f"{diff_text}",
                 level,
             )
 
             continue
 
-        if len(raws) > 1 and len(unused_books) > 1 and len(raws) == len(unused_books):
+        if (
+            len(raws) > 1
+            and len(unused_books) > 1
+            and len(raws) == len(unused_books)
+        ):
             sorted_raws = sorted(
                 raws,
                 key=lambda x: (
@@ -294,22 +424,46 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
             )
 
             log(
-                f"{date_str} | ORDER MATCH duplicate matchup: "
-                f"{matchup_label} raw_count={len(sorted_raws)} sportsbook_count={len(sorted_books)}"
+                f"{date_str} | "
+                f"ORDER MATCH duplicate matchup: "
+                f"{matchup_label} "
+                f"raw_count={len(sorted_raws)} "
+                f"sportsbook_count={len(sorted_books)}"
             )
 
-            for raw_entry, book_entry in zip(sorted_raws, sorted_books):
+            for raw_entry, book_entry in zip(
+                sorted_raws,
+                sorted_books,
+            ):
                 book_entry["used"] = True
-                output_rows.append(make_output_row(raw_entry, book_entry))
+
+                output_rows.append(
+                    make_output_row(
+                        raw_entry,
+                        book_entry,
+                    )
+                )
                 matched += 1
 
-                diff = minutes_between(raw_entry.get("local_dt"), book_entry.get("book_dt"))
-                diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+                diff = minutes_between(
+                    raw_entry.get("local_dt"),
+                    book_entry.get("book_dt"),
+                )
+                diff_text = (
+                    ""
+                    if diff is None
+                    else f" diff_minutes={round(diff, 1)}"
+                )
+
                 log(
-                    f"{date_str} | MATCHED order: {matchup_label} "
-                    f"gamePk={raw_entry['row'].get('gamePk', '')} "
-                    f"gameNumber={raw_entry['row'].get('gameNumber', '')} "
-                    f"game_id={book_entry['row'].get('game_id', '')}"
+                    f"{date_str} | MATCHED order: "
+                    f"{matchup_label} "
+                    f"gamePk="
+                    f"{raw_entry['row'].get('gamePk', '')} "
+                    f"gameNumber="
+                    f"{raw_entry['row'].get('gameNumber', '')} "
+                    f"game_id="
+                    f"{book_entry['row'].get('game_id', '')}"
                     f"{diff_text}"
                 )
 
@@ -325,31 +479,57 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
         )
 
         for raw_entry in sorted_raws:
-            available_books = [b for b in books if not b["used"]]
+            available_books = [
+                b
+                for b in books
+                if not b["used"]
+            ]
 
             if not available_books:
                 log(
-                    f"{date_str} | UNMATCHED no unused sportsbook row: "
-                    f"{matchup_label} gamePk={raw_entry['row'].get('gamePk', '')}",
+                    f"{date_str} | "
+                    f"UNMATCHED no unused sportsbook row: "
+                    f"{matchup_label} "
+                    f"gamePk="
+                    f"{raw_entry['row'].get('gamePk', '')}",
                     "WARN",
                 )
                 unmatched += 1
                 continue
 
             scored = []
-            for book_entry in available_books:
-                diff = minutes_between(raw_entry.get("local_dt"), book_entry.get("book_dt"))
-                scored.append((diff, book_entry))
 
-            scored_valid = [x for x in scored if x[0] is not None]
+            for book_entry in available_books:
+                diff = minutes_between(
+                    raw_entry.get("local_dt"),
+                    book_entry.get("book_dt"),
+                )
+                scored.append(
+                    (
+                        diff,
+                        book_entry,
+                    )
+                )
+
+            scored_valid = [
+                x
+                for x in scored
+                if x[0] is not None
+            ]
 
             selected = None
             selected_diff = None
 
             if scored_valid:
-                selected_diff, selected = min(scored_valid, key=lambda x: x[0])
+                selected_diff, selected = min(
+                    scored_valid,
+                    key=lambda x: x[0],
+                )
 
-                if selected_diff > MAX_TIME_DIFF_MINUTES:
+                if (
+                    selected_diff
+                    > MAX_TIME_DIFF_MINUTES
+                ):
                     selected = None
 
             if selected is None:
@@ -362,8 +542,11 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
                 )
 
                 log(
-                    f"{date_str} | UNMATCHED time threshold: "
-                    f"{matchup_label} gamePk={raw_entry['row'].get('gamePk', '')} "
+                    f"{date_str} | "
+                    f"UNMATCHED time threshold: "
+                    f"{matchup_label} "
+                    f"gamePk="
+                    f"{raw_entry['row'].get('gamePk', '')} "
                     f"candidate_diffs={diffs_text}",
                     "WARN",
                 )
@@ -371,26 +554,52 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
                 continue
 
             selected["used"] = True
-            output_rows.append(make_output_row(raw_entry, selected))
+
+            output_rows.append(
+                make_output_row(
+                    raw_entry,
+                    selected,
+                )
+            )
             matched += 1
 
-            diff_text = "" if selected_diff is None else f" diff_minutes={round(selected_diff, 1)}"
+            diff_text = (
+                ""
+                if selected_diff is None
+                else (
+                    f" diff_minutes="
+                    f"{round(selected_diff, 1)}"
+                )
+            )
+
             log(
-                f"{date_str} | MATCHED closest: {matchup_label} "
-                f"gamePk={raw_entry['row'].get('gamePk', '')} "
-                f"gameNumber={raw_entry['row'].get('gameNumber', '')} "
-                f"game_id={selected['row'].get('game_id', '')}"
+                f"{date_str} | MATCHED closest: "
+                f"{matchup_label} "
+                f"gamePk="
+                f"{raw_entry['row'].get('gamePk', '')} "
+                f"gameNumber="
+                f"{raw_entry['row'].get('gameNumber', '')} "
+                f"game_id="
+                f"{selected['row'].get('game_id', '')}"
                 f"{diff_text}"
             )
 
     for key, books in book_groups.items():
-        unused = [b for b in books if not b["used"]]
+        unused = [
+            b
+            for b in books
+            if not b["used"]
+        ]
+
         for book_entry in unused:
             b = book_entry["row"]
+
             log(
                 f"{date_str} | UNUSED sportsbook row: "
-                f"{b.get('away_team', '')} @ {b.get('home_team', '')} "
-                f"game_id={b.get('game_id', '')} game_time={b.get('game_time', '')}",
+                f"{b.get('away_team', '')} @ "
+                f"{b.get('home_team', '')} "
+                f"game_id={b.get('game_id', '')} "
+                f"game_time={b.get('game_time', '')}",
                 "WARN",
             )
 
@@ -399,22 +608,38 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
 
     for row in output_rows:
         gid = row.get("game_id", "")
+
         if not gid:
             continue
+
         if gid in seen_game_ids:
             duplicate_output_game_ids += 1
+
             log(
-                f"{date_str} | DUPLICATE OUTPUT game_id={gid} "
-                f"first_gamePk={seen_game_ids[gid]} second_gamePk={row.get('gamePk', '')}",
+                f"{date_str} | "
+                f"DUPLICATE OUTPUT game_id={gid} "
+                f"first_gamePk={seen_game_ids[gid]} "
+                f"second_gamePk="
+                f"{row.get('gamePk', '')}",
                 "ERROR",
             )
         else:
-            seen_game_ids[gid] = row.get("gamePk", "")
+            seen_game_ids[gid] = row.get(
+                "gamePk",
+                "",
+            )
 
     if duplicate_output_game_ids:
-        summary["errors"] += duplicate_output_game_ids
+        summary["errors"] += (
+            duplicate_output_game_ids
+        )
 
-    log(f"{date_str} | matched={matched} unmatched={unmatched}")
+    log(
+        f"{date_str} | "
+        f"matched={matched} "
+        f"unmatched={unmatched}"
+    )
+
     summary["total_matched"] += matched
     summary["total_unmatched"] += unmatched
 
@@ -426,20 +651,31 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
                 r.get("game_time", ""),
                 r.get("home_team", ""),
                 r.get("away_team", ""),
-                parse_int(r.get("gameNumber", "1"), 1),
+                parse_int(
+                    r.get("gameNumber", "1"),
+                    1,
+                ),
             ),
         )
 
         out_path = OUT_DIR / f"{date_str}_games.csv"
-        with open(out_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=OUTPUT_HEADER)
-            writer.writeheader()
-            writer.writerows(output_rows)
+        write_games_file(
+            out_path,
+            output_rows,
+        )
 
-        log(f"{date_str} | WROTE: {out_path.name} ({len(output_rows)} games)")
+        log(
+            f"{date_str} | "
+            f"WROTE: {out_path} "
+            f"({len(output_rows)} games)"
+        )
         summary["files_written"] += 1
     else:
-        log(f"{date_str} | no matched games — file not written", "WARN")
+        log(
+            f"{date_str} | "
+            f"no matched games — file not written",
+            "WARN",
+        )
 
 
 # ─────────────────────────────────────────────
@@ -448,48 +684,103 @@ def process_date(date_str: str, team_map: dict, id_to_name: dict, summary: dict)
 
 def main():
     with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write(f"=== build_games_list RUN {_now()} ===\n")
+        f.write(
+            f"=== build_games_list RUN {_now()} ===\n"
+        )
 
     summary = {
-        "files_written":   0,
-        "total_matched":   0,
+        "files_written": 0,
+        "total_matched": 0,
         "total_unmatched": 0,
-        "skipped":         0,
-        "errors":          0,
+        "skipped": 0,
+        "errors": 0,
     }
 
     try:
         team_map = load_team_map()
-        team_rows = load_csv(MAPS_DIR / "mlb_team_ids.csv")
-        id_to_name = build_id_to_name_map(team_rows)
-        log(f"Team map loaded: {len(team_map)} entries | id_to_name: {len(id_to_name)} entries")
+        team_rows = load_csv(
+            MAPS_DIR / "mlb_team_ids.csv"
+        )
+        id_to_name = build_id_to_name_map(
+            team_rows
+        )
 
-        raw_files = sorted(MLB_RAW_DIR.glob("*_mlb_raw.csv"))
-        log(f"mlb_raw files found: {len(raw_files)}")
+        log(
+            f"Team map loaded: "
+            f"{len(team_map)} entries | "
+            f"id_to_name: "
+            f"{len(id_to_name)} entries"
+        )
+
+        raw_files = sorted(
+            MLB_RAW_DIR.glob("*_mlb_raw.csv")
+        )
+        log(
+            f"mlb_raw files found: "
+            f"{len(raw_files)}"
+        )
 
         for rf in raw_files:
-            date_str = rf.stem.replace("_mlb_raw", "")
+            date_str = rf.stem.replace(
+                "_mlb_raw",
+                "",
+            )
+
             try:
-                process_date(date_str, team_map, id_to_name, summary)
+                process_date(
+                    date_str,
+                    team_map,
+                    id_to_name,
+                    summary,
+                )
             except Exception as e:
-                log(f"{date_str} FAILED: {e}\n{traceback.format_exc()}", "ERROR")
+                log(
+                    f"{date_str} FAILED: "
+                    f"{e}\n"
+                    f"{traceback.format_exc()}",
+                    "ERROR",
+                )
                 summary["errors"] += 1
 
     except Exception as e:
-        log(f"FATAL: {e}\n{traceback.format_exc()}", "ERROR")
+        log(
+            f"FATAL: {e}\n"
+            f"{traceback.format_exc()}",
+            "ERROR",
+        )
         summary["errors"] += 1
 
-    status = "SUCCESS" if summary["errors"] == 0 else "COMPLETED WITH ERRORS"
+    status = (
+        "SUCCESS"
+        if summary["errors"] == 0
+        else "COMPLETED WITH ERRORS"
+    )
+
     lines = [
         "",
         "=" * 60,
         f"SUMMARY  {_now()}",
         "=" * 60,
-        f"  files_written   : {summary['files_written']}",
-        f"  total_matched   : {summary['total_matched']}",
-        f"  total_unmatched : {summary['total_unmatched']}",
-        f"  skipped         : {summary['skipped']}",
-        f"  errors          : {summary['errors']}",
+        (
+            f"  files_written   : "
+            f"{summary['files_written']}"
+        ),
+        (
+            f"  total_matched   : "
+            f"{summary['total_matched']}"
+        ),
+        (
+            f"  total_unmatched : "
+            f"{summary['total_unmatched']}"
+        ),
+        (
+            f"  skipped         : "
+            f"{summary['skipped']}"
+        ),
+        (
+            f"  errors          : "
+            f"{summary['errors']}"
+        ),
         "",
         f"STATUS: {status}",
         "=" * 60,
@@ -498,7 +789,12 @@ def main():
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
-    print(f"build_games_list complete. {summary['files_written']} files written. Status: {status}")
+    print(
+        f"build_games_list complete. "
+        f"{summary['files_written']} "
+        f"files written. "
+        f"Status: {status}"
+    )
 
 
 if __name__ == "__main__":
