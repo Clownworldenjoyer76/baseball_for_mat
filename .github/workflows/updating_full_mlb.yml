@@ -1,0 +1,286 @@
+name: Updating MLB Full
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Date to run/scrape (YYYY-MM-DD). Defaults to today."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  MLB_Alt_Full_Update:
+    runs-on: ubuntu-latest
+
+    env:
+      API_ODDS: ${{ secrets.API_ODDS }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Resolve target date
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            echo "TARGET_DATE=${{ github.event.inputs.date }}" >> "$GITHUB_ENV"
+            echo "DATE=$(echo '${{ github.event.inputs.date }}' | tr '-' '_')" >> "$GITHUB_ENV"
+          else
+            echo "TARGET_DATE=$(TZ='America/New_York' date +'%Y-%m-%d')" >> "$GITHUB_ENV"
+            echo "DATE=$(TZ='America/New_York' date +'%Y_%m_%d')" >> "$GITHUB_ENV"
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pandas requests
+
+      - name: Create output directories
+        run: |
+          mkdir -p docs/win/baseball/mlb/odds/updates/
+          mkdir -p docs/win/baseball/mlb/odds/latest/
+
+          mkdir -p docs/win/baseball/mlb/config/
+
+          mkdir -p docs/win/baseball/mlb/maps/
+
+          mkdir -p docs/win/baseball/mlb/00_intake/sportsbook/
+          mkdir -p docs/win/baseball/mlb/00_intake/predictions/
+          mkdir -p docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/
+          mkdir -p docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/rejections/
+          mkdir -p docs/win/baseball/mlb/00_intake/games/
+          mkdir -p docs/win/baseball/mlb/00_intake/mlb_raw/
+          mkdir -p docs/win/baseball/mlb/mappings/no_map/
+          mkdir -p docs/win/baseball/mlb/errors/00_intake/
+
+          mkdir -p docs/win/baseball/mlb/data/
+          mkdir -p docs/win/baseball/mlb/data/batting/
+          mkdir -p docs/win/baseball/mlb/data/pitching/
+          mkdir -p docs/win/baseball/mlb/data/fielding/
+          mkdir -p docs/win/baseball/mlb/data/baserunning/
+          mkdir -p docs/win/baseball/mlb/data/park_factors/
+          mkdir -p docs/win/baseball/mlb/data/weather/
+          mkdir -p docs/win/baseball/mlb/data/weather/metno_raw/
+
+          mkdir -p docs/win/baseball/mlb/01_merge/
+          mkdir -p docs/win/baseball/mlb/01_merge/01_merguiced/
+          mkdir -p docs/win/baseball/mlb/01_merge/audit/
+          mkdir -p docs/win/baseball/mlb/01_merge/rejections/
+          mkdir -p docs/win/baseball/mlb/errors/01_merge/
+
+          mkdir -p docs/win/baseball/mlb/02_juice/
+          mkdir -p docs/win/baseball/mlb/02_juice/audit/
+          mkdir -p docs/win/baseball/mlb/errors/02_juice/
+
+          mkdir -p docs/win/baseball/mlb/03_edges/
+          mkdir -p docs/win/baseball/mlb/03_edges/ev_kelly/
+          mkdir -p docs/win/baseball/mlb/03_edges/ev_kelly/audit/
+          mkdir -p docs/win/baseball/mlb/errors/03_edges/
+
+          mkdir -p docs/win/baseball/mlb/04_select/
+          mkdir -p docs/win/baseball/mlb/04_select/audit/
+          mkdir -p docs/win/baseball/mlb/04_select/history/
+          mkdir -p docs/win/baseball/mlb/errors/04_select/
+
+      - name: MLB Updated Odds Pull
+        run: python docs/win/baseball/mlb/scripts/00_parsing/odds_mlb_update.py
+
+      - name: Baseball Alt Odds Parse
+        run: python docs/win/baseball/mlb/scripts/00_intake/odds_parse.py docs/win/baseball/mlb/odds/latest/${DATE}.json
+
+      - name: Baseball Alt Name Normalization Pre
+        run: python docs/win/baseball/mlb/scripts/00_intake/name_normalization.py
+
+    #  - name: Baseball Alt Transform
+    #    run: python docs/win/baseball/mlb/scripts/00_intake/transform_baseball.py
+
+      - name: Baseball Alt Name Normalization Post
+        run: python docs/win/baseball/mlb/scripts/00_intake/name_normalization.py
+
+     # - name: Baseball Alt Scrape MLB Raw
+     #   run: python docs/win/baseball/mlb/scripts/00_intake/scrape_mlb_raw.py "$TARGET_DATE"
+
+      - name: Baseball Alt Verify MLB Raw
+        run: |
+          echo "Checking docs/win/baseball/mlb/00_intake/mlb_raw/${DATE}_mlb_raw.csv"
+          find docs/win/baseball/mlb/00_intake/mlb_raw -maxdepth 1 -type f -name "${DATE}*" -print || true
+          test -f docs/win/baseball/mlb/00_intake/mlb_raw/${DATE}_mlb_raw.csv
+
+     # - name: Baseball Alt Build Games List
+     #   run: python docs/win/baseball/mlb/scripts/00_intake/build_games_list.py
+
+      - name: Baseball Alt Verify Games File
+        run: |
+          echo "Checking docs/win/baseball/mlb/00_intake/games/${DATE}_games.csv"
+          find docs/win/baseball/mlb/00_intake/games -maxdepth 1 -type f -name "${DATE}*" -print || true
+          test -f docs/win/baseball/mlb/00_intake/games/${DATE}_games.csv
+
+      - name: Baseball Alt Fetch Park Weather
+        env:
+          METNO_USER_AGENT: "MatsPicksWeather/1.0 local-dev"
+        run: python docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py
+
+      - name: Baseball Alt Build Game Weather
+        run: python docs/win/baseball/mlb/scripts/00_intake/build_game_weather.py
+
+     # - name: Baseball Alt Inject Game IDs Into Predictions
+     #   run: python docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py
+
+      - name: Baseball Alt Verify Predictions With Game ID
+        run: |
+          echo "Checking docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/${DATE}_MLB.csv"
+          find docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id -maxdepth 1 -type f -name "${DATE}*" -print || true
+          test -f docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/${DATE}_MLB.csv
+
+      - name: Baseball Alt Enrich Game Context
+        run: python docs/win/baseball/mlb/scripts/00_intake/enrich_game_context.py "$DATE"
+
+      - name: Baseball Alt Verify Game Context
+        run: |
+          echo "Checking docs/win/baseball/mlb/00_intake/mlb_raw/${DATE}_game_context.csv"
+
+          echo ""
+          echo "=== target mlb_raw files ==="
+          find docs/win/baseball/mlb/00_intake/mlb_raw -maxdepth 1 -type f -name "${DATE}*" -print || true
+
+          echo ""
+          echo "=== enrich_game_context log ==="
+          if [ -f docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt ]; then
+            cat docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt
+          else
+            echo "MISSING enrich_game_context.txt"
+          fi
+
+          test -f docs/win/baseball/mlb/00_intake/mlb_raw/${DATE}_game_context.csv
+
+      - name: Baseball Alt Merge Intake
+        run: python docs/win/baseball/mlb/scripts/01_merge/merge_intake.py
+
+      - name: Baseball Alt Build Juice Files
+        run: python docs/win/baseball/mlb/scripts/01_merge/build_juice_files.py
+
+      - name: Baseball Alt Moneyline Juice
+        run: python docs/win/baseball/mlb/scripts/02_juice/apply_moneyline_juice.py
+
+      - name: Baseball Alt Run Line Juice
+        run: python docs/win/baseball/mlb/scripts/02_juice/apply_run_line_juice.py
+
+      - name: Baseball Alt Total Juice
+        run: python docs/win/baseball/mlb/scripts/02_juice/apply_total_juice.py
+
+      - name: Baseball Alt Edges
+        run: python docs/win/baseball/mlb/scripts/03_edges/compute_edges.py
+
+      - name: Baseball Alt EV Kelly
+        run: python docs/win/baseball/mlb/scripts/03_edges/compute_ev_kelly.py
+
+      - name: Baseball Alt Select
+        run: python docs/win/baseball/mlb/scripts/04_select/baseball_select_bets.py
+
+      - name: Print alt full update failure diagnostics
+        if: failure()
+        run: |
+          echo "=== docs/win/baseball/mlb/errors ==="
+          find docs/win/baseball/mlb/errors -type f -print || true
+
+          echo ""
+          echo "=== 00_intake errors ==="
+          find docs/win/baseball/mlb/errors/00_intake -type f -print -exec cat {} \; || true
+
+          echo ""
+          echo "=== target-date input/output files ==="
+          find docs/win/baseball/mlb/00_intake -type f -name "${DATE}*" -print || true
+
+          echo ""
+          echo "=== game_id_pred log ==="
+          if [ -f docs/win/baseball/mlb/errors/00_intake/game_id_pred.txt ]; then
+            cat docs/win/baseball/mlb/errors/00_intake/game_id_pred.txt
+          else
+            echo "game_id_pred.txt not found"
+          fi
+
+          echo ""
+          echo "=== enrich_game_context log ==="
+          if [ -f docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt ]; then
+            cat docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt
+          else
+            echo "enrich_game_context.txt not found"
+          fi
+
+          echo ""
+          echo "=== prediction rejection CSVs ==="
+          find docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/rejections -type f -name "*.csv" -print -exec cat {} \; || true
+
+          echo ""
+          echo "=== 01_merge errors ==="
+          find docs/win/baseball/mlb/errors/01_merge -type f -print -exec cat {} \; || true
+
+          echo ""
+          echo "=== 02_juice errors ==="
+          find docs/win/baseball/mlb/errors/02_juice -type f -print -exec cat {} \; || true
+
+          echo ""
+          echo "=== 03_edges errors ==="
+          find docs/win/baseball/mlb/errors/03_edges -type f -print -exec cat {} \; || true
+
+          echo ""
+          echo "=== 04_select errors ==="
+          find docs/win/baseball/mlb/errors/04_select -type f -print -exec cat {} \; || true
+
+          echo ""
+          echo "=== 04_select history ==="
+          find docs/win/baseball/mlb/04_select/history -type f -print || true
+
+      - name: Upload alt full update diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseball-alt-full-update-diagnostics-${{ env.DATE }}
+          if-no-files-found: ignore
+          path: |
+            docs/win/baseball/mlb/odds/updates/**
+            docs/win/baseball/mlb/odds/latest/**
+            docs/win/baseball/mlb/config/**
+            docs/win/baseball/mlb/maps/**
+            docs/win/baseball/mlb/errors/**
+            docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/rejections/**
+            docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/**
+            docs/win/baseball/mlb/00_intake/games/**
+            docs/win/baseball/mlb/00_intake/mlb_raw/**
+            docs/win/baseball/mlb/00_intake/predictions/**
+            docs/win/baseball/mlb/01_merge/**
+            docs/win/baseball/mlb/02_juice/**
+            docs/win/baseball/mlb/03_edges/**
+            docs/win/baseball/mlb/04_select/**
+            docs/win/baseball/mlb/04_select/audit/**
+            docs/win/baseball/mlb/04_select/history/**
+            docs/win/baseball/mlb/data/**
+
+      - name: Commit alt full update outputs
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git status --short
+
+          git add docs/win/baseball/mlb/odds/updates/
+          git add docs/win/baseball/mlb/odds/latest/
+          git add docs/win/baseball/mlb/
+
+          git status --short
+
+          git diff --cached --quiet || git commit -m "chore: MLB alt full update run $(date -u +'%Y-%m-%d %H:%M UTC')"
+
+          git status --short
+
+          git push
