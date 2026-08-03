@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 
 MLB_RAW_DIR = Path("docs/win/baseball/mlb/00_intake/mlb_raw")
 BOOK_DIR = Path("docs/win/baseball/mlb/00_intake/sportsbook")
-MAPS_DIR = Path("docs/win/baseball/maps")
+MAPS_DIR = Path("docs/win/baseball/mlb/maps")
 
 OUT_DIR = Path("docs/win/baseball/mlb/00_intake/games")
 OUT_DIR.mkdir(parents=True, exist_ok=True)

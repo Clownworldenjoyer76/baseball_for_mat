@@ -2,7 +2,7 @@
 # docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py
 #
 # Reads docs/win/baseball/mlb/00_intake/games/{date}_games.csv
-# Reads docs/win/baseball/maps/mlb_venue_ids.csv
+# Reads docs/win/baseball/mlb/maps/mlb_venue_ids.csv
 # Calls MET Norway Locationforecast /complete for each outdoor game location
 # Writes raw selected MET Norway API fields to:
 # docs/win/baseball/mlb/data/weather/metno_raw/{date}_metno_raw.csv
@@ -25,7 +25,7 @@ import requests
 
 BASE_DIR = Path("docs/win/baseball/mlb")
 GAMES_DIR = BASE_DIR / "00_intake/games"
-MAPS_DIR = Path("docs/win/baseball/maps")
+MAPS_DIR = Path("docs/win/baseball/mlb/maps")
 WEATHER_DIR = BASE_DIR / "data/weather"
 RAW_OUT_DIR = WEATHER_DIR / "metno_raw"
 ERROR_DIR = BASE_DIR / "errors/00_intake"
@@ -212,7 +212,11 @@ def get_today_and_future_games_files():
         file_date = parse_games_file_date(games_file)
 
         if file_date is None:
-            _log(f"{games_file.name} | could not parse date from filename — skipping", "WARN")
+            _log(
+                f"{games_file.name} | "
+                f"could not parse date from filename — skipping",
+                "WARN",
+            )
             continue
 
         if file_date >= today:
@@ -287,9 +291,17 @@ def extract_raw_fields(item: dict) -> dict:
 
     raw["time"] = _clean(item.get("time"))
 
-    data = item.get("data", {}) if isinstance(item.get("data"), dict) else {}
+    data = (
+        item.get("data", {})
+        if isinstance(item.get("data"), dict)
+        else {}
+    )
 
-    instant = data.get("instant", {}) if isinstance(data.get("instant"), dict) else {}
+    instant = (
+        data.get("instant", {})
+        if isinstance(data.get("instant"), dict)
+        else {}
+    )
     instant_details = (
         instant.get("details", {})
         if isinstance(instant.get("details"), dict)
@@ -330,7 +342,10 @@ def extract_raw_fields(item: dict) -> dict:
         else {}
     )
 
-    raw["precipitation_amount"] = next_1_details.get("precipitation_amount", "")
+    raw["precipitation_amount"] = next_1_details.get(
+        "precipitation_amount",
+        "",
+    )
     raw["symbol_code"] = next_1_summary.get("symbol_code", "")
 
     next_6_hours = (
@@ -345,13 +360,25 @@ def extract_raw_fields(item: dict) -> dict:
         else {}
     )
 
-    raw["air_temperature_max"] = next_6_details.get("air_temperature_max", "")
-    raw["air_temperature_min"] = next_6_details.get("air_temperature_min", "")
+    raw["air_temperature_max"] = next_6_details.get(
+        "air_temperature_max",
+        "",
+    )
+    raw["air_temperature_min"] = next_6_details.get(
+        "air_temperature_min",
+        "",
+    )
 
     return raw
 
 
-def build_output_row(game_row: dict, venue_id: str, vinfo: dict, weather_applicable: int, raw_weather: dict) -> dict:
+def build_output_row(
+    game_row: dict,
+    venue_id: str,
+    vinfo: dict,
+    weather_applicable: int,
+    raw_weather: dict,
+) -> dict:
     row = {
         "gamePk": _clean(game_row.get("gamePk")),
         "game_id": _clean(game_row.get("game_id")),
@@ -378,12 +405,19 @@ def build_output_row(game_row: dict, venue_id: str, vinfo: dict, weather_applica
 # PROCESS ONE DATE
 # ─────────────────────────────────────────────
 
-def process_date(date_str: str, venue_map: dict, summary: dict) -> None:
+def process_date(
+    date_str: str,
+    venue_map: dict,
+    summary: dict,
+) -> None:
     games_path = GAMES_DIR / f"{date_str}_games.csv"
     out_path = RAW_OUT_DIR / f"{date_str}_metno_raw.csv"
 
     if not games_path.exists():
-        _log(f"{date_str} | games file not found — skipping", "WARN")
+        _log(
+            f"{date_str} | games file not found — skipping",
+            "WARN",
+        )
         summary["skipped"] += 1
         return
 
@@ -410,7 +444,12 @@ def process_date(date_str: str, venue_map: dict, summary: dict) -> None:
         weather_applicable = is_weather_applicable(roof_type)
         raw_weather = _blank_raw_weather()
 
-        if weather_applicable and lat is not None and lon is not None and time_zone_id:
+        if (
+            weather_applicable
+            and lat is not None
+            and lon is not None
+            and time_zone_id
+        ):
             try:
                 target_utc = parse_game_datetime_utc(
                     _clean(game.get("game_date")),
@@ -418,27 +457,59 @@ def process_date(date_str: str, venue_map: dict, summary: dict) -> None:
                     time_zone_id,
                 )
 
-                coord_key = f"{round(lat, 4):.4f}_{round(lon, 4):.4f}"
+                coord_key = (
+                    f"{round(lat, 4):.4f}_"
+                    f"{round(lon, 4):.4f}"
+                )
 
                 if coord_key in forecast_cache:
                     payload = forecast_cache[coord_key]
-                    _log(f"{game_pk} | reused MET Norway data venue={venue_id}")
+                    _log(
+                        f"{game_pk} | "
+                        f"reused MET Norway data "
+                        f"venue={venue_id}"
+                    )
                 else:
-                    payload = call_metno(round(lat, 4), round(lon, 4))
+                    payload = call_metno(
+                        round(lat, 4),
+                        round(lon, 4),
+                    )
                     forecast_cache[coord_key] = payload
                     summary["api_calls"] += 1
-                    _log(f"{game_pk} | fetched MET Norway data venue={venue_id}")
+                    _log(
+                        f"{game_pk} | "
+                        f"fetched MET Norway data "
+                        f"venue={venue_id}"
+                    )
                     time.sleep(REQUEST_SLEEP_SECONDS)
 
-                selected_item = select_timeseries_item(payload, target_utc)
-                raw_weather = extract_raw_fields(selected_item)
+                selected_item = select_timeseries_item(
+                    payload,
+                    target_utc,
+                )
+                raw_weather = extract_raw_fields(
+                    selected_item
+                )
 
             except requests.HTTPError as e:
-                status = getattr(e.response, "status_code", "")
-                _log(f"{game_pk} | MET Norway HTTP error status={status}", "ERROR")
+                status = getattr(
+                    e.response,
+                    "status_code",
+                    "",
+                )
+                _log(
+                    f"{game_pk} | "
+                    f"MET Norway HTTP error "
+                    f"status={status}",
+                    "ERROR",
+                )
                 summary["errors"] += 1
             except Exception:
-                _log(f"{game_pk} | MET Norway fetch/parse failed", "ERROR")
+                _log(
+                    f"{game_pk} | "
+                    f"MET Norway fetch/parse failed",
+                    "ERROR",
+                )
                 summary["errors"] += 1
 
         rows.append(
@@ -451,7 +522,14 @@ def process_date(date_str: str, venue_map: dict, summary: dict) -> None:
             )
         )
 
-    pd.DataFrame(rows, columns=OUTPUT_COLUMNS).to_csv(out_path, index=False)
+    pd.DataFrame(
+        rows,
+        columns=OUTPUT_COLUMNS,
+    ).to_csv(
+        out_path,
+        index=False,
+    )
+
     _log(f"WROTE: {out_path}")
     summary["files_written"] += 1
 
@@ -462,7 +540,10 @@ def process_date(date_str: str, venue_map: dict, summary: dict) -> None:
 
 def main() -> None:
     with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write(f"=== fetch_park_weather RUN {_now()} ===\n")
+        f.write(
+            f"=== fetch_park_weather RUN "
+            f"{_now()} ===\n"
+        )
 
     summary = {
         "files_written": 0,
@@ -473,30 +554,62 @@ def main() -> None:
 
     try:
         venue_map = load_venue_map()
-        _log(f"Venue map loaded: {len(venue_map)} entries")
+        _log(
+            f"Venue map loaded: "
+            f"{len(venue_map)} entries"
+        )
 
         games_files = get_today_and_future_games_files()
-        _log(f"Today/future games files found: {len(games_files)}")
+        _log(
+            f"Today/future games files found: "
+            f"{len(games_files)}"
+        )
 
         for games_file in games_files:
-            date_str = games_file.stem.replace("_games", "")
-            process_date(date_str, venue_map, summary)
+            date_str = games_file.stem.replace(
+                "_games",
+                "",
+            )
+            process_date(
+                date_str,
+                venue_map,
+                summary,
+            )
 
     except Exception as e:
-        _log(f"FATAL: {type(e).__name__}", "ERROR")
+        _log(
+            f"FATAL: {type(e).__name__}",
+            "ERROR",
+        )
         summary["errors"] += 1
 
-    status = "SUCCESS" if summary["errors"] == 0 else "COMPLETED WITH ERRORS"
+    status = (
+        "SUCCESS"
+        if summary["errors"] == 0
+        else "COMPLETED WITH ERRORS"
+    )
 
     lines = [
         "",
         "=" * 60,
         f"SUMMARY  {_now()}",
         "=" * 60,
-        f"  files_written  : {summary['files_written']}",
-        f"  api_calls      : {summary['api_calls']}",
-        f"  skipped        : {summary['skipped']}",
-        f"  errors         : {summary['errors']}",
+        (
+            f"  files_written  : "
+            f"{summary['files_written']}"
+        ),
+        (
+            f"  api_calls      : "
+            f"{summary['api_calls']}"
+        ),
+        (
+            f"  skipped        : "
+            f"{summary['skipped']}"
+        ),
+        (
+            f"  errors         : "
+            f"{summary['errors']}"
+        ),
         "",
         f"STATUS: {status}",
         "=" * 60,
