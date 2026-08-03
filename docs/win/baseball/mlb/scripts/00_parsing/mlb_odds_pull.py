@@ -1,4 +1,5 @@
-# docs/win/baseball/mlb/scripts/00_parsing/mlb_odds_pull.py
+#!/usr/bin/env python3
+# docs/win/baseball/scripts/00_parsing/mlb_odds_pull.py
 
 import requests
 import os
@@ -32,7 +33,9 @@ NOW_ET = NOW_UTC.astimezone(ET)
 
 TARGET_ET_DATE = NOW_ET.date()
 today = TARGET_ET_DATE.strftime("%Y_%m_%d")
-path = Path(f"docs/win/baseball/mlb/odds/{today}.json")
+
+PRIMARY_OUTPUT_PATH = Path(f"docs/win/baseball/mlb/odds/{today}.json")
+OUTPUT_PATHS = [PRIMARY_OUTPUT_PATH]
 
 
 def get_json(endpoint, params):
@@ -722,6 +725,17 @@ def merge_with_existing(existing_events, pulled_events):
     return sort_events(merged), updated, added, preserved_started
 
 
+def write_json(output_path, data):
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    temp_path = output_path.with_suffix(output_path.suffix + ".tmp")
+
+    with open(temp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+    temp_path.replace(output_path)
+
+
 events, event_counts, skipped_non_target_counts, skipped_started_counts = fetch_events()
 
 if not events:
@@ -759,18 +773,16 @@ else:
 
 data = sort_events(data)
 
-existing_data = read_json_list(path)
+existing_data = read_json_list(PRIMARY_OUTPUT_PATH)
 output_data, updated_existing, added_new, preserved_started_existing = merge_with_existing(
     existing_data,
     data,
 )
 
-path.parent.mkdir(parents=True, exist_ok=True)
+for output_path in OUTPUT_PATHS:
+    write_json(output_path, output_data)
+    print(f"Saved {output_path}")
 
-with open(path, "w", encoding="utf-8") as f:
-    json.dump(output_data, f, indent=2)
-
-print(f"Saved {path}")
 print(f"Target ET date: {TARGET_ET_DATE.isoformat()}")
 print(f"Target date string: {today}")
 print(f"Current UTC time: {NOW_UTC.isoformat()}")
