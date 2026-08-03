@@ -1,0 +1,58 @@
+name: MLB Select Bets AM
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-select-bets-am-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  select-bets-am:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Sync selected branch
+        run: git pull --rebase origin "${GITHUB_REF_NAME}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas pyyaml
+
+      - name: Run MLB AM bet selection
+        run: |
+          python docs/win/baseball/mlb/scripts/04_select/baseball_select_bets_AM.py
+
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A -- \
+            docs/win/baseball/mlb/04_select/morning \
+            docs/win/baseball/mlb/errors/04_select/select_bets.txt
+
+          if git diff --cached --quiet; then
+            echo "No generated changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Update MLB morning bet selections"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
