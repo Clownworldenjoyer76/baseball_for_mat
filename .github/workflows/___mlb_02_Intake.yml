@@ -1,0 +1,213 @@
+name: MLB 02 Intake
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Date to run/scrape (YYYY-MM-DD). Defaults to today in America/New_York."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  baseball-intake:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Sync selected branch
+        run: git pull --rebase origin "${GITHUB_REF_NAME}"
+
+      - name: Resolve target date
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            TARGET_DATE="${{ github.event.inputs.date }}"
+          else
+            TARGET_DATE="$(TZ='America/New_York' date +'%Y-%m-%d')"
+          fi
+
+          if ! [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "Invalid date: $TARGET_DATE"
+            echo "Expected YYYY-MM-DD"
+            exit 1
+          fi
+
+          DATE="${TARGET_DATE//-/_}"
+
+          echo "TARGET_DATE=$TARGET_DATE" >> "$GITHUB_ENV"
+          echo "DATE=$DATE" >> "$GITHUB_ENV"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pandas requests playwright pytz
+
+      - name: Install Playwright Chromium
+        run: |
+          python -m playwright install-deps chromium
+          python -m playwright install chromium
+
+      - name: Create required output directories
+        run: |
+          mkdir -p docs/win/baseball/mlb/odds
+          mkdir -p docs/win/baseball/mlb/00_intake/sportsbook
+          mkdir -p docs/win/baseball/mlb/00_intake/drat_raw
+          mkdir -p docs/win/baseball/mlb/00_intake/predictions
+          mkdir -p docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id
+          mkdir -p docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/rejections
+          mkdir -p docs/win/baseball/mlb/00_intake/mlb_raw
+          mkdir -p docs/win/baseball/mlb/00_intake/games
+          mkdir -p docs/win/baseball/mlb/data/weather
+          mkdir -p docs/win/baseball/mlb/data/weather/metno_raw
+          mkdir -p docs/win/baseball/mlb/errors/00_intake
+          mkdir -p docs/win/baseball/mlb/maps/no_map
+
+      - name: Validate required scripts
+        run: |
+          scripts=(
+            "docs/win/baseball/mlb/scripts/00_intake/odds_parse.py"
+            "docs/win/baseball/mlb/scripts/00_intake/name_normalization.py"
+            "docs/win/baseball/mlb/scripts/00_intake/baseball_drat_scraper.py"
+            "docs/win/baseball/mlb/scripts/00_intake/transform_baseball.py"
+            "docs/win/baseball/mlb/scripts/00_intake/scrape_mlb_raw.py"
+            "docs/win/baseball/mlb/scripts/00_intake/build_games_list.py"
+            "docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py"
+            "docs/win/baseball/mlb/scripts/00_intake/build_game_weather.py"
+            "docs/win/baseball/mlb/scripts/00_intake/enrich_game_context.py"
+            "docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py"
+          )
+
+          for script in "${scripts[@]}"; do
+            if [ ! -f "$script" ]; then
+              echo "Missing required script: $script"
+              exit 1
+            fi
+          done
+
+      - name: Validate required odds input
+        run: |
+          ODDS_FILE="docs/win/baseball/mlb/odds/${DATE}.json"
+
+          if [ ! -f "$ODDS_FILE" ]; then
+            echo "Missing required odds file: $ODDS_FILE"
+            exit 1
+          fi
+
+      - name: 01 Baseball Odds Parse
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/odds_parse.py \
+            "docs/win/baseball/mlb/odds/${DATE}.json"
+
+      - name: 02 Baseball Name Normalization Pre
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/name_normalization.py
+
+      - name: 03 Baseball DRatings Scraper
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/baseball_drat_scraper.py
+
+      - name: 04 Baseball Transform
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/transform_baseball.py
+
+      - name: 05 Baseball Name Normalization Post
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/name_normalization.py
+
+      - name: 06 Baseball Scrape MLB Raw
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/scrape_mlb_raw.py \
+            "$TARGET_DATE"
+
+      - name: 07 Baseball Build Games List
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/build_games_list.py
+
+      - name: 08 Baseball Fetch Park Weather
+        env:
+          METNO_USER_AGENT: "MatsPicksWeather/1.0 local-dev"
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py
+
+      - name: 09 Baseball Build Game Weather
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/build_game_weather.py
+
+      - name: 10 Baseball Enrich Game Context
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/enrich_game_context.py
+
+      - name: 11 Baseball Inject Game IDs Into Predictions
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py
+
+      - name: Print intake diagnostics
+        if: failure()
+        run: |
+          echo "=== Error and summary logs ==="
+          find docs/win/baseball/mlb/errors/00_intake \
+            -maxdepth 1 \
+            -type f \
+            -print \
+            -exec cat {} \; || true
+
+          echo ""
+          echo "=== Target-date MLB intake files ==="
+          find docs/win/baseball/mlb/00_intake \
+            -type f \
+            -name "${DATE}*" \
+            -print || true
+
+          echo ""
+          echo "=== Prediction rejection CSVs ==="
+          find docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/rejections \
+            -type f \
+            -name "*.csv" \
+            -print \
+            -exec cat {} \; || true
+
+      - name: Upload intake diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: baseball-intake-diagnostics-${{ env.DATE }}
+          if-no-files-found: ignore
+          path: |
+            docs/win/baseball/mlb/errors/00_intake/**
+            docs/win/baseball/mlb/00_intake/sportsbook/**
+            docs/win/baseball/mlb/00_intake/drat_raw/**
+            docs/win/baseball/mlb/00_intake/mlb_raw/**
+            docs/win/baseball/mlb/00_intake/games/**
+            docs/win/baseball/mlb/00_intake/predictions/**
+            docs/win/baseball/mlb/data/weather/**
+
+      - name: Commit and push outputs
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A docs/win/baseball/mlb
+
+          git status --short
+
+          if git diff --cached --quiet; then
+            echo "No MLB intake changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: MLB intake run ${TARGET_DATE}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

@@ -1,0 +1,57 @@
+name: Morning MLB Odds Pull
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mlb-odds:
+    runs-on: ubuntu-latest
+
+    env:
+      API_ODDS: ${{ secrets.API_ODDS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install requests
+
+      - name: Verify API key
+        run: |
+          if [ -z "$API_ODDS" ]; then
+            echo "API_ODDS is not set"
+            exit 1
+          fi
+
+      - name: Create output directory
+        run: mkdir -p docs/win/baseball/mlb/odds
+
+      - name: Run MLB odds pull
+        run: python docs/win/baseball/mlb/scripts/00_parsing/mlb_odds_pull.py
+
+      - name: Commit output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add docs/win/baseball/mlb/odds/
+
+          if git diff --cached --quiet; then
+            echo "No output changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: manual MLB odds pull $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin main
+          git push
