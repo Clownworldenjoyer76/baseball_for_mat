@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# docs/win/baseball/scripts/01_merge/merge_intake.py
+# docs/win/baseball/mlb/scripts/01_merge/merge_intake.py
 #
 # Step 2 behavior:
 #   - Duplicate prediction game_id remains fatal.
