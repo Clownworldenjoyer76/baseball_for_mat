@@ -148,7 +148,17 @@ jobs:
 
       - name: 10 Baseball Enrich Game Context
         run: |
-          python docs/win/baseball/mlb/scripts/00_intake/enrich_game_context.py
+          python docs/win/baseball/mlb/scripts/00_intake/enrich_game_context.py || {
+            echo "=== enrich_game_context failure log ==="
+
+            if [ -f docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt ]; then
+              cat docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt
+            else
+              echo "docs/win/baseball/mlb/errors/00_intake/enrich_game_context.txt was not created"
+            fi
+
+            exit 1
+          }
 
       - name: 11 Baseball Inject Game IDs Into Predictions
         run: |
