@@ -358,11 +358,37 @@ def probability_source_mismatch_count(df: pd.DataFrame, sides: list) -> int:
     return int(mismatch.sum())
 
 
-def add_probability_basis_columns(df: pd.DataFrame, side: str, source_col: str) -> None:
-    df[f"{side}_prob_for_ev"] = pd.to_numeric(df[source_col], errors="coerce")
-    df[f"{side}_prob_for_kelly"] = pd.to_numeric(df[source_col], errors="coerce")
-    df[f"{side}_ev_probability_source"] = source_col
-    df[f"{side}_kelly_probability_source"] = source_col
+def probability_basis_columns(
+    df: pd.DataFrame,
+    side: str,
+    source_col: str,
+) -> tuple[pd.Series, dict]:
+    probability = pd.to_numeric(df[source_col], errors="coerce")
+
+    columns = {
+        f"{side}_prob_for_ev": probability,
+        f"{side}_prob_for_kelly": probability,
+        f"{side}_ev_probability_source": source_col,
+        f"{side}_kelly_probability_source": source_col,
+    }
+
+    return probability, columns
+
+
+def add_columns_at_once(df: pd.DataFrame, columns: dict) -> pd.DataFrame:
+    """Add or replace calculated columns in one operation.
+
+    Repeated single-column assignments fragment wide DataFrames and trigger
+    pandas PerformanceWarning messages. Building one calculated-column frame
+    and concatenating it once keeps the table compact.
+    """
+    calculated = pd.DataFrame(columns, index=df.index)
+    overlapping = [col for col in calculated.columns if col in df.columns]
+
+    if overlapping:
+        df = df.drop(columns=overlapping)
+
+    return pd.concat([df, calculated], axis=1).copy()
 
 
 def status_for_row(raw_ev, adjusted, kelly, ev_source, kelly_source) -> str:
@@ -443,43 +469,57 @@ def audit_rows(df: pd.DataFrame, market: str, sides: list, decimal_cols: dict, e
 # =========================
 
 def process_moneyline(df, file_name):
-    add_probability_basis_columns(df, "home", PROBABILITY_SOURCES["moneyline"]["home"])
-    add_probability_basis_columns(df, "away", PROBABILITY_SOURCES["moneyline"]["away"])
+    home_prob, home_basis = probability_basis_columns(
+        df,
+        "home",
+        PROBABILITY_SOURCES["moneyline"]["home"],
+    )
+    away_prob, away_basis = probability_basis_columns(
+        df,
+        "away",
+        PROBABILITY_SOURCES["moneyline"]["away"],
+    )
 
-    df["home_ml_raw_ev"] = compute_ev(df["home_prob_for_ev"], df["home_dk_decimal_moneyline"])
-    df["away_ml_raw_ev"] = compute_ev(df["away_prob_for_ev"], df["away_dk_decimal_moneyline"])
+    home_raw_ev = compute_ev(home_prob, df["home_dk_decimal_moneyline"])
+    away_raw_ev = compute_ev(away_prob, df["away_dk_decimal_moneyline"])
 
-    df["home_ml_adjusted_ev"], h_missing = adjusted_ev(
+    home_adjusted_ev, h_missing = adjusted_ev(
         df,
         "home_edge_decimal_moneyline",
-        df["home_ml_raw_ev"],
+        home_raw_ev,
         file_name,
     )
-
-    df["away_ml_adjusted_ev"], a_missing = adjusted_ev(
+    away_adjusted_ev, a_missing = adjusted_ev(
         df,
         "away_edge_decimal_moneyline",
-        df["away_ml_raw_ev"],
+        away_raw_ev,
         file_name,
     )
 
-    df["home_ml_ev"] = df["home_ml_adjusted_ev"]
-    df["away_ml_ev"] = df["away_ml_adjusted_ev"]
-
     home_kelly, h_neg = compute_kelly(
-        df["home_prob_for_kelly"],
+        home_prob,
         df["home_dk_decimal_moneyline"],
         file_name,
     )
-
     away_kelly, a_neg = compute_kelly(
-        df["away_prob_for_kelly"],
+        away_prob,
         df["away_dk_decimal_moneyline"],
         file_name,
     )
 
-    df["home_ml_kelly"] = home_kelly
-    df["away_ml_kelly"] = away_kelly
+    calculated_columns = {
+        **home_basis,
+        **away_basis,
+        "home_ml_raw_ev": home_raw_ev,
+        "away_ml_raw_ev": away_raw_ev,
+        "home_ml_adjusted_ev": home_adjusted_ev,
+        "away_ml_adjusted_ev": away_adjusted_ev,
+        "home_ml_ev": home_adjusted_ev,
+        "away_ml_ev": away_adjusted_ev,
+        "home_ml_kelly": home_kelly,
+        "away_ml_kelly": away_kelly,
+    }
+    df = add_columns_at_once(df, calculated_columns)
 
     counts = {
         "probability_source_mismatches": probability_source_mismatch_count(df, ["home", "away"]),
@@ -507,43 +547,57 @@ def process_moneyline(df, file_name):
 
 
 def process_run_line(df, file_name):
-    add_probability_basis_columns(df, "home", PROBABILITY_SOURCES["run_line"]["home"])
-    add_probability_basis_columns(df, "away", PROBABILITY_SOURCES["run_line"]["away"])
+    home_prob, home_basis = probability_basis_columns(
+        df,
+        "home",
+        PROBABILITY_SOURCES["run_line"]["home"],
+    )
+    away_prob, away_basis = probability_basis_columns(
+        df,
+        "away",
+        PROBABILITY_SOURCES["run_line"]["away"],
+    )
 
-    df["home_rl_raw_ev"] = compute_ev(df["home_prob_for_ev"], df["home_dk_run_line_decimal"])
-    df["away_rl_raw_ev"] = compute_ev(df["away_prob_for_ev"], df["away_dk_run_line_decimal"])
+    home_raw_ev = compute_ev(home_prob, df["home_dk_run_line_decimal"])
+    away_raw_ev = compute_ev(away_prob, df["away_dk_run_line_decimal"])
 
-    df["home_rl_adjusted_ev"], h_missing = adjusted_ev(
+    home_adjusted_ev, h_missing = adjusted_ev(
         df,
         "home_edge_decimal_run_line",
-        df["home_rl_raw_ev"],
+        home_raw_ev,
         file_name,
     )
-
-    df["away_rl_adjusted_ev"], a_missing = adjusted_ev(
+    away_adjusted_ev, a_missing = adjusted_ev(
         df,
         "away_edge_decimal_run_line",
-        df["away_rl_raw_ev"],
+        away_raw_ev,
         file_name,
     )
 
-    df["home_rl_ev"] = df["home_rl_adjusted_ev"]
-    df["away_rl_ev"] = df["away_rl_adjusted_ev"]
-
     home_kelly, h_neg = compute_kelly(
-        df["home_prob_for_kelly"],
+        home_prob,
         df["home_dk_run_line_decimal"],
         file_name,
     )
-
     away_kelly, a_neg = compute_kelly(
-        df["away_prob_for_kelly"],
+        away_prob,
         df["away_dk_run_line_decimal"],
         file_name,
     )
 
-    df["home_rl_kelly"] = home_kelly
-    df["away_rl_kelly"] = away_kelly
+    calculated_columns = {
+        **home_basis,
+        **away_basis,
+        "home_rl_raw_ev": home_raw_ev,
+        "away_rl_raw_ev": away_raw_ev,
+        "home_rl_adjusted_ev": home_adjusted_ev,
+        "away_rl_adjusted_ev": away_adjusted_ev,
+        "home_rl_ev": home_adjusted_ev,
+        "away_rl_ev": away_adjusted_ev,
+        "home_rl_kelly": home_kelly,
+        "away_rl_kelly": away_kelly,
+    }
+    df = add_columns_at_once(df, calculated_columns)
 
     counts = {
         "probability_source_mismatches": probability_source_mismatch_count(df, ["home", "away"]),
@@ -571,43 +625,57 @@ def process_run_line(df, file_name):
 
 
 def process_total(df, file_name):
-    add_probability_basis_columns(df, "over", PROBABILITY_SOURCES["total"]["over"])
-    add_probability_basis_columns(df, "under", PROBABILITY_SOURCES["total"]["under"])
+    over_prob, over_basis = probability_basis_columns(
+        df,
+        "over",
+        PROBABILITY_SOURCES["total"]["over"],
+    )
+    under_prob, under_basis = probability_basis_columns(
+        df,
+        "under",
+        PROBABILITY_SOURCES["total"]["under"],
+    )
 
-    df["over_raw_ev"] = compute_ev(df["over_prob_for_ev"], df["dk_total_over_decimal"])
-    df["under_raw_ev"] = compute_ev(df["under_prob_for_ev"], df["dk_total_under_decimal"])
+    over_raw_ev = compute_ev(over_prob, df["dk_total_over_decimal"])
+    under_raw_ev = compute_ev(under_prob, df["dk_total_under_decimal"])
 
-    df["over_adjusted_ev"], o_missing = adjusted_ev(
+    over_adjusted_ev, o_missing = adjusted_ev(
         df,
         "over_edge_decimal_total",
-        df["over_raw_ev"],
+        over_raw_ev,
         file_name,
     )
-
-    df["under_adjusted_ev"], u_missing = adjusted_ev(
+    under_adjusted_ev, u_missing = adjusted_ev(
         df,
         "under_edge_decimal_total",
-        df["under_raw_ev"],
+        under_raw_ev,
         file_name,
     )
 
-    df["over_ev"] = df["over_adjusted_ev"]
-    df["under_ev"] = df["under_adjusted_ev"]
-
     over_kelly, o_neg = compute_kelly(
-        df["over_prob_for_kelly"],
+        over_prob,
         df["dk_total_over_decimal"],
         file_name,
     )
-
     under_kelly, u_neg = compute_kelly(
-        df["under_prob_for_kelly"],
+        under_prob,
         df["dk_total_under_decimal"],
         file_name,
     )
 
-    df["over_kelly"] = over_kelly
-    df["under_kelly"] = under_kelly
+    calculated_columns = {
+        **over_basis,
+        **under_basis,
+        "over_raw_ev": over_raw_ev,
+        "under_raw_ev": under_raw_ev,
+        "over_adjusted_ev": over_adjusted_ev,
+        "under_adjusted_ev": under_adjusted_ev,
+        "over_ev": over_adjusted_ev,
+        "under_ev": under_adjusted_ev,
+        "over_kelly": over_kelly,
+        "under_kelly": under_kelly,
+    }
+    df = add_columns_at_once(df, calculated_columns)
 
     counts = {
         "probability_source_mismatches": probability_source_mismatch_count(df, ["over", "under"]),
