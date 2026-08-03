@@ -6,13 +6,24 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: final-scores-mlb-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   MLB_Post_Game_Final_Scores:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Sync selected branch
+        run: git pull --rebase origin "${GITHUB_REF_NAME}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,19 +35,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Create output directories
+      - name: Create MLB output directories
         run: |
-          mkdir -p docs/win/baseball/05_final_scores/results/final_scores
-          mkdir -p docs/win/baseball/05_final_scores/results/graded/daily
-          mkdir -p docs/win/baseball/05_final_scores/results/unmatched
-          mkdir -p docs/win/baseball/05_final_scores/results/audit
-          mkdir -p docs/win/baseball/05_final_scores/intermediate
-          mkdir -p docs/win/baseball/05_final_scores/reports/overview
-          mkdir -p docs/win/baseball/05_final_scores/reports/moneyline
-          mkdir -p docs/win/baseball/05_final_scores/reports/run_line
-          mkdir -p docs/win/baseball/05_final_scores/reports/totals
-          mkdir -p docs/win/baseball/errors/05_final_scores
-
           mkdir -p docs/win/baseball/mlb/05_final_scores/results/final_scores
           mkdir -p docs/win/baseball/mlb/05_final_scores/results/graded/daily
           mkdir -p docs/win/baseball/mlb/05_final_scores/results/unmatched
@@ -48,200 +48,200 @@ jobs:
           mkdir -p docs/win/baseball/mlb/05_final_scores/reports/totals
           mkdir -p docs/win/baseball/mlb/errors/05_final_scores
 
-      - name: Build MLB Final Scores 1
-        run: |
-          python docs/win/baseball/scripts/05_final_scores/build_mlb_final_scores.py || {
-            echo ""
-            echo "===== MLB FINAL SCORE BUILD LOGS ====="
-            find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-            echo ""
-            echo "===== MLB FINAL SCORE BUILD AUDIT PREVIEW ====="
-            find docs/win/baseball/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \;
-            exit 1
-          }
-
-      - name: Build MLB Final Scores Alt
+      - name: Build MLB final scores
         run: |
           python docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py || {
             echo ""
             echo "===== MLB FINAL SCORE BUILD LOGS ====="
-            find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
+            find docs/win/baseball/mlb/errors/05_final_scores \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sed -n '1,260p' {} \;
+
             echo ""
             echo "===== MLB FINAL SCORE BUILD AUDIT PREVIEW ====="
-            find docs/win/baseball/mlb/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \;
+            find docs/win/baseball/mlb/05_final_scores/results/audit \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sh -c \
+                'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' \
+                sh {} \;
+
             exit 1
           }
 
-      - name: Normalize Final Score Team Names 1
-        run: |
-          python docs/win/baseball/scripts/05_final_scores/normalize_final_score_mlb_names.py || {
-            echo ""
-            echo "===== FINAL SCORE TEAM NORMALIZATION LOGS ====="
-            find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-            exit 1
-          }
-
-      - name: Normalize Final Score Team Names Alt
+      - name: Normalize MLB final-score team names
         run: |
           python docs/win/baseball/mlb/scripts/05_final_scores/normalize_final_score_mlb_names.py || {
             echo ""
             echo "===== FINAL SCORE TEAM NORMALIZATION LOGS ====="
-            find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
+            find docs/win/baseball/mlb/errors/05_final_scores \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sed -n '1,260p' {} \;
+
             exit 1
           }
 
-      - name: Normalize MLB Results 1
-        run: |
-          python docs/win/baseball/scripts/05_final_scores/normalize_mlb_results.py || {
-            echo ""
-            echo "===== MLB RESULTS NORMALIZATION LOGS ====="
-            find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-            exit 1
-          }
-
-      - name: Normalize MLB Results Alt
+      - name: Normalize MLB results
         run: |
           python docs/win/baseball/mlb/scripts/05_final_scores/normalize_mlb_results.py || {
             echo ""
             echo "===== MLB RESULTS NORMALIZATION LOGS ====="
-            find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-            exit 1
-          }
-
-      - name: Grade MLB Bets 1
-        run: |
-          python docs/win/baseball/scripts/05_final_scores/01_mlb_results_grade.py || {
-            echo ""
-            echo "===== MLB GRADING LOGS ====="
-            find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-
-            echo ""
-            echo "===== MLB UNMATCHED SELECTED BETS PREVIEW ====="
-            if [ -f docs/win/baseball/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv ]; then
-              echo "ROWS: $(($(wc -l < docs/win/baseball/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv) - 1))"
-              sed -n '1,26p' docs/win/baseball/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv
-            else
-              echo "No unmatched selected bets file found."
-            fi
-
-            echo ""
-            echo "===== MLB AUDIT PREVIEW ====="
-            find docs/win/baseball/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \;
+            find docs/win/baseball/mlb/errors/05_final_scores \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sed -n '1,260p' {} \;
 
             exit 1
           }
 
-      - name: Grade MLB Bets Alt 
+      - name: Grade MLB bets
         run: |
           python docs/win/baseball/mlb/scripts/05_final_scores/01_mlb_results_grade.py || {
             echo ""
             echo "===== MLB GRADING LOGS ====="
-            find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
+            find docs/win/baseball/mlb/errors/05_final_scores \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sed -n '1,260p' {} \;
 
             echo ""
             echo "===== MLB UNMATCHED SELECTED BETS PREVIEW ====="
-            if [ -f docs/win/baseball/mlb/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv ]; then
-              echo "ROWS: $(($(wc -l < docs/win/baseball/mlb/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv) - 1))"
-              sed -n '1,26p' docs/win/baseball/mlb/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv
+            UNMATCHED_FILE="docs/win/baseball/mlb/05_final_scores/results/unmatched/MLB_unmatched_selected_bets.csv"
+
+            if [ -f "$UNMATCHED_FILE" ]; then
+              echo "ROWS: $(($(wc -l < "$UNMATCHED_FILE") - 1))"
+              sed -n '1,26p' "$UNMATCHED_FILE"
             else
               echo "No unmatched selected bets file found."
             fi
 
             echo ""
             echo "===== MLB AUDIT PREVIEW ====="
-            find docs/win/baseball/mlb/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \;
+            find docs/win/baseball/mlb/05_final_scores/results/audit \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sh -c \
+                'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' \
+                sh {} \;
 
             exit 1
           }
 
-      - name: Analyze MLB Results 1
-        run: |
-          python docs/win/baseball/scripts/05_final_scores/02_mlb_results_analyze.py || {
-            echo ""
-            echo "===== MLB ANALYSIS LOGS ====="
-            find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-            exit 1
-          }
-
-      - name: Analyze MLB Results Alt
+      - name: Analyze MLB results
         run: |
           python docs/win/baseball/mlb/scripts/05_final_scores/02_mlb_results_analyze.py || {
             echo ""
             echo "===== MLB ANALYSIS LOGS ====="
-            find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-            exit 1
-          }
-
-      - name: Generate MLB Reports 1
-        run: |
-          python docs/win/baseball/scripts/05_final_scores/03_mlb_results_reports.py || {
-            echo ""
-            echo "===== MLB REPORT LOGS ====="
-            find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
-
-            echo ""
-            echo "===== MLB AUDIT PREVIEW ====="
-            find docs/win/baseball/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \;
+            find docs/win/baseball/mlb/errors/05_final_scores \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sed -n '1,260p' {} \;
 
             exit 1
           }
 
-      - name: Generate MLB Reports Alt
+      - name: Generate MLB reports
         run: |
           python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports.py || {
             echo ""
             echo "===== MLB REPORT LOGS ====="
-            find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \;
+            find docs/win/baseball/mlb/errors/05_final_scores \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sed -n '1,260p' {} \;
 
             echo ""
             echo "===== MLB AUDIT PREVIEW ====="
-            find docs/win/baseball/mlb/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \;
+            find docs/win/baseball/mlb/05_final_scores/results/audit \
+              -maxdepth 1 \
+              -type f \
+              -print \
+              -exec sh -c \
+                'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' \
+                sh {} \;
 
             exit 1
           }
 
-      - name: Print final audit summaries
+      - name: Print final MLB audit summaries
         if: always()
         run: |
           echo ""
-          echo "===== FINAL SCORE ERROR LOGS ====="
-          find docs/win/baseball/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \; || true
+          echo "===== MLB FINAL SCORE ERROR LOGS ====="
+          find docs/win/baseball/mlb/errors/05_final_scores \
+            -maxdepth 1 \
+            -type f \
+            -print \
+            -exec sed -n '1,260p' {} \; || true
 
           echo ""
-          echo "===== FINAL SCORE AUDIT FILES ====="
-          find docs/win/baseball/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \; || true
+          echo "===== MLB FINAL SCORE AUDIT FILES ====="
+          find docs/win/baseball/mlb/05_final_scores/results/audit \
+            -maxdepth 1 \
+            -type f \
+            -print \
+            -exec sh -c \
+              'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' \
+              sh {} \; || true
 
           echo ""
-          echo "===== UNMATCHED FILES ====="
-          find docs/win/baseball/05_final_scores/results/unmatched -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \; || true
+          echo "===== MLB UNMATCHED FILES ====="
+          find docs/win/baseball/mlb/05_final_scores/results/unmatched \
+            -maxdepth 1 \
+            -type f \
+            -print \
+            -exec sh -c \
+              'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' \
+              sh {} \; || true
 
-          echo ""
-          echo "===== FINAL SCORE ERROR LOGS ====="
-          find docs/win/baseball/mlb/errors/05_final_scores -maxdepth 1 -type f -print -exec sed -n '1,260p' {} \; || true
+      - name: Reject changes outside MLB directory
+        run: |
+          OUTSIDE_CHANGES="$(
+            git status --porcelain |
+            awk '
+              {
+                path = substr($0, 4)
+                if (path ~ / -> /) {
+                  split(path, paths, " -> ")
+                  path = paths[2]
+                }
+                if (path !~ /^docs\/win\/baseball\/mlb\//) {
+                  print $0
+                }
+              }
+            '
+          )"
 
-          echo ""
-          echo "===== FINAL SCORE AUDIT FILES ====="
-          find docs/win/baseball/mlb/05_final_scores/results/audit -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \; || true
+          if [ -n "$OUTSIDE_CHANGES" ]; then
+            echo "The workflow changed files outside docs/win/baseball/mlb/:"
+            echo "$OUTSIDE_CHANGES"
+            exit 1
+          fi
 
-          echo ""
-          echo "===== UNMATCHED FILES ====="
-          find docs/win/baseball/mlb/05_final_scores/results/unmatched -maxdepth 1 -type f -print -exec sh -c 'echo "ROWS: $(($(wc -l < "$1") - 1))"; echo "HEAD:"; sed -n "1,26p" "$1"' sh {} \; || true
+          echo "All generated changes are confined to docs/win/baseball/mlb/."
 
-      - name: Commit outputs
+      - name: Commit MLB outputs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -f docs/win/baseball/05_final_scores/
-          git add -f docs/win/baseball/errors/05_final_scores/
-          git add -f docs/win/baseball/mlb/05_final_scores/
-          git add -f docs/win/baseball/mlb/errors/05_final_scores/
+          git add -A -- docs/win/baseball/mlb/
 
           if git diff --cached --quiet; then
-            echo "No output changes to commit."
+            echo "No MLB output changes to commit."
             exit 0
           fi
 
           git commit -m "chore: MLB post-game final scores $(date -u +'%Y-%m-%d %H:%M UTC')"
-          git pull --rebase origin main
-          git push
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
