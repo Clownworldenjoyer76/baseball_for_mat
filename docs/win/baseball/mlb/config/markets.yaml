@@ -32,6 +32,14 @@ markets:
     # Flag only. Does not exclude bets.
     lineup_low_sample_warn: 4
 
+    # Require complete lineup and starting-pitcher data.
+    context_data_filters:
+      enabled: true
+      home_batters_found_min: 5
+      away_batters_found_min: 5
+      home_sp_found_required: 0
+      away_sp_found_required: 0
+
     ###################################################
     # ── Moneyline ────────────────────────────────────
     ###################################################
@@ -48,25 +56,23 @@ markets:
         odds_bands:
           - [-1000, 1000]
         ev_bands:
-          - [-10.00, 99.99] 
+          - [-10.00, 99.99]
         kelly_bands:
           - [-10.00, 99.99]
         prob_bands:
           - [0.00, 1.00]
-        
-        
+
       away:
         enabled: true
         odds_bands:
           - [-1000, 1000]
         ev_bands:
-          - [-10.00, 99.99] 
+          - [-10.00, 99.99]
         kelly_bands:
           - [-10.00, 99.99]
         prob_bands:
           - [0.00, 1.00]
-        
-              
+
     ###################################################
     # ── Run Line ─────────────────────────────────────
     ###################################################
@@ -85,13 +91,12 @@ markets:
         odds_bands:
           - [-1000, 1000]
         ev_bands:
-          - [-10.00, 99.99] 
+          - [-10.00, 99.99]
         kelly_bands:
           - [-10.00, 99.99]
         prob_bands:
           - [0.00, 1.00]
-       
-        
+
       away:
         enabled: true
         line_bands:
@@ -99,13 +104,12 @@ markets:
         odds_bands:
           - [-1000, 1000]
         ev_bands:
-          - [-10.00, 99.99] 
+          - [-10.00, 99.99]
         kelly_bands:
           - [-10.00, 99.99]
         prob_bands:
           - [0.00, 1.00]
-        
-        
+
     ###################################################
     # ── Totals ───────────────────────────────────────
     ###################################################
@@ -123,13 +127,12 @@ markets:
         odds_bands:
           - [-1000, 1000]
         ev_bands:
-          - [-10.00, 99.99] 
+          - [-10.00, 99.99]
         kelly_bands:
           - [-10.00, 99.99]
         prob_bands:
           - [0.00, 1.00]
-       
-        
+
       under:
         enabled: true
         line_bands:
@@ -137,9 +140,8 @@ markets:
         odds_bands:
           - [-1000, 1000]
         ev_bands:
-          - [-10.00, 99.99] 
+          - [-10.00, 99.99]
         kelly_bands:
           - [-10.00, 99.99]
         prob_bands:
           - [0.00, 1.00]
-       

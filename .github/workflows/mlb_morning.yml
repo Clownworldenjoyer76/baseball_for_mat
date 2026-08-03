@@ -1,0 +1,191 @@
+name: MLB Morning Pipeline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-manual-pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TZ: America/New_York
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  mlb-morning-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify branch and sync repository
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.ref_type }}" != "branch" ]; then
+            echo "This workflow must be run against a branch."
+            exit 1
+          fi
+
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install Python dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run MLB morning pipeline
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          scripts=(
+            "docs/win/baseball/mlb/scripts/00_parsing/mlb_odds_pull.py"
+            "docs/win/baseball/mlb/scripts/00_intake/odds_parse.py"
+            "docs/win/baseball/mlb/scripts/00_intake/name_normalization.py"
+            "docs/win/baseball/mlb/scripts/00_intake/baseball_drat_scraper.py"
+            "docs/win/baseball/mlb/scripts/00_intake/transform_baseball.py"
+            "docs/win/baseball/mlb/scripts/00_intake/name_normalization.py"
+            "docs/win/baseball/mlb/scripts/00_intake/scrape_mlb_raw.py"
+            "docs/win/baseball/mlb/scripts/00_intake/build_games_list.py"
+            "docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py"
+            "docs/win/baseball/mlb/scripts/00_intake/build_game_weather.py"
+            "docs/win/baseball/mlb/scripts/00_intake/enrich_game_context.py"
+            "docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py"
+            "docs/win/baseball/mlb/scripts/01_merge/merge_intake.py"
+            "docs/win/baseball/mlb/scripts/01_merge/build_juice_files.py"
+            "docs/win/baseball/mlb/scripts/02_juice/apply_moneyline_juice.py"
+            "docs/win/baseball/mlb/scripts/02_juice/apply_run_line_juice.py"
+            "docs/win/baseball/mlb/scripts/02_juice/apply_total_juice.py"
+            "docs/win/baseball/mlb/scripts/03_edges/compute_edges.py"
+            "docs/win/baseball/mlb/scripts/03_edges/compute_ev_kelly.py"
+            "docs/win/baseball/mlb/scripts/04_select/baseball_select_bets.py"
+            "docs/win/baseball/mlb/scripts/04_select/baseball_select_bets_AM.py"
+            "docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py"
+            "docs/win/baseball/mlb/scripts/05_final_scores/normalize_final_score_mlb_names.py"
+            "docs/win/baseball/mlb/scripts/05_final_scores/normalize_mlb_results.py"
+            "docs/win/baseball/mlb/scripts/05_final_scores/01_mlb_results_grade.py"
+            "docs/win/baseball/mlb/scripts/05_final_scores/02_mlb_results_analyze.py"
+            "docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports.py"
+          )
+
+          echo "Validating morning pipeline scripts..."
+
+          for script in "${scripts[@]}"; do
+            if [ ! -f "$script" ]; then
+              echo "Missing required script: $script"
+              exit 1
+            fi
+          done
+
+          for script in "${scripts[@]}"; do
+            echo "::group::Running $script"
+
+            if ! python -u "$script"; then
+              status=$?
+              echo "::endgroup::"
+              echo "Script failed: $script"
+              exit "$status"
+            fi
+
+            echo "::endgroup::"
+          done
+
+      - name: Reject changes outside MLB folders
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t changed_paths < <(
+            {
+              git diff --name-only --no-renames HEAD
+              git ls-files --others --exclude-standard
+            } |
+            sed '/^$/d' |
+            sort -u
+          )
+
+          outside_changes=()
+
+          for path in "${changed_paths[@]}"; do
+            case "$path" in
+              docs/win/baseball/mlb/*)
+                ;;
+              *)
+                outside_changes+=("$path")
+                ;;
+            esac
+          done
+
+          if [ "${#outside_changes[@]}" -gt 0 ]; then
+            echo "The pipeline changed files outside docs/win/baseball/mlb/:"
+
+            for path in "${outside_changes[@]}"; do
+              echo "  $path"
+            done
+
+            exit 1
+          fi
+
+          echo "All repository changes are inside docs/win/baseball/mlb/."
+
+      - name: Commit morning pipeline outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A -- docs/win/baseball/mlb/
+
+          while IFS= read -r -d '' directory; do
+            git add -A -f -- "$directory"
+          done < <(
+            find docs/win/baseball/mlb \
+              -mindepth 1 \
+              -maxdepth 1 \
+              -type d \
+              ! -name "scripts" \
+              ! -name "config" \
+              ! -name "maps" \
+              -print0
+          )
+
+          while IFS= read -r -d '' file; do
+            git add -f -- "$file"
+          done < <(
+            find docs/win/baseball/mlb \
+              -mindepth 1 \
+              -maxdepth 1 \
+              -type f \
+              -print0
+          )
+
+          if git diff --cached --quiet; then
+            echo "No MLB morning output changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: update MLB morning pipeline outputs $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
