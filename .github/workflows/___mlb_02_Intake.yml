@@ -63,6 +63,8 @@ jobs:
       - name: Create required output directories
         run: |
           mkdir -p docs/win/baseball/mlb/odds
+          mkdir -p docs/win/baseball/mlb/odds/updates
+          mkdir -p docs/win/baseball/mlb/odds/latest
           mkdir -p docs/win/baseball/mlb/00_intake/sportsbook
           mkdir -p docs/win/baseball/mlb/00_intake/drat_raw
           mkdir -p docs/win/baseball/mlb/00_intake/predictions
@@ -78,6 +80,7 @@ jobs:
       - name: Validate required scripts
         run: |
           scripts=(
+            "docs/win/baseball/mlb/scripts/00_parsing/odds_mlb_update.py"
             "docs/win/baseball/mlb/scripts/00_intake/odds_parse.py"
             "docs/win/baseball/mlb/scripts/00_intake/name_normalization.py"
             "docs/win/baseball/mlb/scripts/00_intake/baseball_drat_scraper.py"
@@ -96,6 +99,12 @@ jobs:
               exit 1
             fi
           done
+
+      - name: 00 Baseball Odds Update
+        env:
+          API_ODDS: ${{ secrets.API_ODDS }}
+        run: |
+          python docs/win/baseball/mlb/scripts/00_parsing/odds_mlb_update.py
 
       - name: Validate required odds input
         run: |
