@@ -1,5 +1,6 @@
+```python
 #!/usr/bin/env python3
-# docs/win/baseball/mlb/scripts/00_intake/transform_baseball.py
+# docs/win/baseball/scripts/00_intake/transform_baseball.py
 
 import csv
 import json
@@ -248,3 +249,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
