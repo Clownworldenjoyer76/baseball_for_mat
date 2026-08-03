@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py
+# docs/win/baseball/scripts/00_intake/game_id_pred.py
 #
 # Injects game_id into prediction files using:
 #   docs/win/baseball/mlb/00_intake/games/{date}_games.csv
@@ -10,6 +10,7 @@
 #   docs/win/baseball/mlb/00_intake/sportsbook/{date}_MLB.csv
 #
 # Output:
+#   docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/{date}_MLB.csv
 #   docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/{date}_MLB.csv
 #
 # Rejections:
@@ -45,14 +46,15 @@ import os
 import re
 import sys
 import traceback
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 
 PRED_DIR = Path("docs/win/baseball/mlb/00_intake/predictions")
 GAMES_DIR = Path("docs/win/baseball/mlb/00_intake/games")
 BOOK_DIR = Path("docs/win/baseball/mlb/00_intake/sportsbook")
-OUT_DIR = PRED_DIR / "pred_with_game_id"
+
+OUT_DIR = Path("docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id")
 REJECTION_DIR = OUT_DIR / "rejections"
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/00_intake")
 
@@ -221,6 +223,13 @@ def write_csv(path: Path, header: list[str], rows: list[dict]):
         writer.writerows(rows)
 
     log(f"WROTE: {path} | rows={len(rows)}")
+
+
+def write_output_csv(date_str: str, header: list[str], rows: list[dict], summary: dict) -> Path:
+    out_path = OUT_DIR / f"{date_str}_MLB.csv"
+    write_csv(out_path, header, rows)
+    summary["files_written"] += 1
+    return out_path
 
 
 # ─────────────────────────────────────────────
@@ -801,7 +810,6 @@ def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[d
 def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
     games_path = GAMES_DIR / f"{date_str}_games.csv"
     book_path = BOOK_DIR / f"{date_str}_MLB.csv"
-    out_path = OUT_DIR / f"{date_str}_MLB.csv"
     rejection_path = REJECTION_DIR / f"{date_str}_unmatched_predictions.csv"
 
     pred_rows = load_csv(pred_path, REQUIRED_PRED_COLS, "prediction input")
@@ -867,7 +875,7 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
             write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
             print_rejection_rows(date_str, rejection_path, rejection_rows)
 
-        write_csv(out_path, OUTPUT_HEADER, [])
+        write_output_csv(date_str, OUTPUT_HEADER, [], summary)
 
         log(
             f"{date_str} | no sportsbook-eligible prediction rows. "
@@ -875,7 +883,6 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
             f"output_rows=0"
         )
 
-        summary["files_written"] += 1
         summary["rejected"] += len(rejection_rows)
         summary["nonfatal_rejections"] += nonfatal_rejection_count
         return
@@ -919,7 +926,7 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
                 print_rejection_rows(date_str, rejection_path, rejection_rows)
 
-            write_csv(out_path, OUTPUT_HEADER, [])
+            write_output_csv(date_str, OUTPUT_HEADER, [], summary)
 
             log(
                 f"{date_str} | current/future games file missing. "
@@ -928,7 +935,6 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 f"output_rows=0 nonfatal_rejections={nonfatal_rejection_count}"
             )
 
-            summary["files_written"] += 1
             summary["rejected"] += len(rejection_rows)
             summary["nonfatal_rejections"] += nonfatal_rejection_count
             return
@@ -976,7 +982,7 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
                 print_rejection_rows(date_str, rejection_path, rejection_rows)
 
-            write_csv(out_path, OUTPUT_HEADER, [])
+            write_output_csv(date_str, OUTPUT_HEADER, [], summary)
 
             log(
                 f"{date_str} | current/future games file empty. "
@@ -985,7 +991,6 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 f"output_rows=0 nonfatal_rejections={nonfatal_rejection_count}"
             )
 
-            summary["files_written"] += 1
             summary["rejected"] += len(rejection_rows)
             summary["nonfatal_rejections"] += nonfatal_rejection_count
             return
@@ -1342,10 +1347,10 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
 
     validate_output_rows(date_str, eligible_count, output_rows)
 
-    write_csv(out_path, OUTPUT_HEADER, output_rows)
+    written_path = write_output_csv(date_str, OUTPUT_HEADER, output_rows, summary)
 
     log(
-        f"{date_str} | WROTE: {out_path} | rows={len(output_rows)} "
+        f"{date_str} | WROTE: {written_path} | rows={len(output_rows)} "
         f"matched={matched} "
         f"input_predictions={len(pred_rows)} "
         f"sportsbook_rows={len(book_rows)} "
@@ -1354,7 +1359,6 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
         f"fatal_rejections=0"
     )
 
-    summary["files_written"] += 1
     summary["total_rows"] += len(output_rows)
     summary["matched"] += matched
     summary["rejected"] += len(rejection_rows)
