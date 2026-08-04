@@ -1,525 +1,440 @@
-=== build_mlb_final_scores RUN 2026-08-03T19:17:32.328250+00:00 ===
-2026-08-03T19:17:32.328771+00:00 | Selected-bet files found before final-score build: 128
-2026-08-03T19:17:32.329166+00:00 | Raw files found: 125
-2026-08-03T19:17:32.329177+00:00 | Post-selection final-score build timestamp: 2026-08-03T19:17:32.328250+00:00
-2026-08-03T19:17:32.329187+00:00 | Processing 2026_03_26_mlb_raw.json
-2026-08-03T19:17:32.345849+00:00 |   completed_rows_seen=1, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=11, skipped_no_selected_file=1, final_score_dates_written=0
-2026-08-03T19:17:32.345878+00:00 | Processing 2026_03_27_mlb_raw.json
-2026-08-03T19:17:32.382863+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_26_final_scores_MLB.csv (11 rows)
-2026-08-03T19:17:32.382880+00:00 |   completed_rows_seen=11, accepted_rows=11, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.382898+00:00 | Processing 2026_03_28_mlb_raw.json
-2026-08-03T19:17:32.383605+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_27_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.383617+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.383636+00:00 | Processing 2026_03_29_mlb_raw.json
-2026-08-03T19:17:32.384346+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.384358+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=12, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.384405+00:00 | Processing 2026_03_30_mlb_raw.json
-2026-08-03T19:17:32.385190+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_29_final_scores_MLB.csv (12 rows)
-2026-08-03T19:17:32.385202+00:00 |   completed_rows_seen=16, accepted_rows=12, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.385223+00:00 | Processing 2026_03_31_mlb_raw.json
-2026-08-03T19:17:32.385928+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_30_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.385939+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.385963+00:00 | Processing 2026_04_01_mlb_raw.json
-2026-08-03T19:17:32.386700+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_31_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.386712+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.386734+00:00 | Processing 2026_04_02_mlb_raw.json
-2026-08-03T19:17:32.387422+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_01_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.387434+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=3, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.387453+00:00 | Processing 2026_04_04_mlb_raw.json
-2026-08-03T19:17:32.388056+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_03_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.388105+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_02_final_scores_MLB.csv (2 rows)
-2026-08-03T19:17:32.388115+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.388132+00:00 | Processing 2026_04_06_mlb_raw.json
-2026-08-03T19:17:32.389014+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_05_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.389026+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.389044+00:00 | Processing 2026_04_07_mlb_raw.json
-2026-08-03T19:17:32.389971+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.390048+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_06_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.390057+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.390082+00:00 | Processing 2026_04_08_mlb_raw.json
-2026-08-03T19:17:32.390771+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.392326+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.392337+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.392381+00:00 | Processing 2026_04_09_mlb_raw.json
-2026-08-03T19:17:32.393163+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.393175+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=6, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.393196+00:00 | Processing 2026_04_10_mlb_raw.json
-2026-08-03T19:17:32.393870+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_09_final_scores_MLB.csv (6 rows)
-2026-08-03T19:17:32.393882+00:00 |   completed_rows_seen=16, accepted_rows=6, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=10, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.393901+00:00 | Processing 2026_04_11_mlb_raw.json
-2026-08-03T19:17:32.394615+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (2 rows)
-2026-08-03T19:17:32.394704+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_10_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.394713+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.394743+00:00 | Processing 2026_04_12_mlb_raw.json
-2026-08-03T19:17:32.395487+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.395498+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.395521+00:00 | Processing 2026_04_13_mlb_raw.json
-2026-08-03T19:17:32.396224+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_12_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.396235+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.396254+00:00 | Processing 2026_04_14_mlb_raw.json
-2026-08-03T19:17:32.396935+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_13_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.396945+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.396964+00:00 | Processing 2026_04_15_mlb_raw.json
-2026-08-03T19:17:32.397666+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_14_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.397677+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.397696+00:00 | Processing 2026_04_16_mlb_raw.json
-2026-08-03T19:17:32.398415+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_15_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.398427+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.398447+00:00 | Processing 2026_04_17_mlb_raw.json
-2026-08-03T19:17:32.399122+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_16_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.399132+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.399151+00:00 | Processing 2026_04_18_mlb_raw.json
-2026-08-03T19:17:32.400434+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_17_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.400450+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.400479+00:00 | Processing 2026_04_19_mlb_raw.json
-2026-08-03T19:17:32.401236+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_18_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.401247+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.401267+00:00 | Processing 2026_04_20_mlb_raw.json
-2026-08-03T19:17:32.401976+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_19_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.401989+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.402009+00:00 | Processing 2026_04_21_mlb_raw.json
-2026-08-03T19:17:32.402712+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_20_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.402726+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.402746+00:00 | Processing 2026_04_22_mlb_raw.json
-2026-08-03T19:17:32.403430+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_21_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.403441+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.403461+00:00 | Processing 2026_04_23_mlb_raw.json
-2026-08-03T19:17:32.404191+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_22_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.404202+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.404222+00:00 | Processing 2026_04_24_mlb_raw.json
-2026-08-03T19:17:32.404901+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_23_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.404913+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.404931+00:00 | Processing 2026_04_25_mlb_raw.json
-2026-08-03T19:17:32.405595+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_24_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.405606+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.405625+00:00 | Processing 2026_04_27_mlb_raw.json
-2026-08-03T19:17:32.406251+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_26_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.406262+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.406279+00:00 | Processing 2026_04_28_mlb_raw.json
-2026-08-03T19:17:32.407027+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_27_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.407039+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.407058+00:00 | Processing 2026_04_29_mlb_raw.json
-2026-08-03T19:17:32.407725+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.407736+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.407755+00:00 | Processing 2026_04_30_mlb_raw.json
-2026-08-03T19:17:32.408522+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_29_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.408534+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.408556+00:00 | Processing 2026_05_01_mlb_raw.json
-2026-08-03T19:17:32.409511+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.409579+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_30_final_scores_MLB.csv (11 rows)
-2026-08-03T19:17:32.409589+00:00 |   completed_rows_seen=16, accepted_rows=12, accepted_blank_game_id_rows=4, parse_errors=0, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.409614+00:00 | Processing 2026_05_02_mlb_raw.json
-2026-08-03T19:17:32.410691+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.410705+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.410726+00:00 | Processing 2026_05_03_mlb_raw.json
-2026-08-03T19:17:32.411496+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_02_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.411508+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.411532+00:00 | Processing 2026_05_04_mlb_raw.json
-2026-08-03T19:17:32.412251+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_03_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.412262+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=12, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.412281+00:00 | Processing 2026_05_05_mlb_raw.json
-2026-08-03T19:17:32.412987+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_04_final_scores_MLB.csv (12 rows)
-2026-08-03T19:17:32.412998+00:00 |   completed_rows_seen=16, accepted_rows=12, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.413018+00:00 | Processing 2026_05_06_mlb_raw.json
-2026-08-03T19:17:32.413735+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_05_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.413745+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.413764+00:00 | Processing 2026_05_07_mlb_raw.json
-2026-08-03T19:17:32.414486+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_06_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.414497+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.414517+00:00 | Processing 2026_05_09_mlb_raw.json
-2026-08-03T19:17:32.415166+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_08_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.415207+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_07_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.415221+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=4, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.415242+00:00 | Processing 2026_05_10_mlb_raw.json
-2026-08-03T19:17:32.415958+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_09_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.415970+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.415991+00:00 | Processing 2026_05_11_mlb_raw.json
-2026-08-03T19:17:32.416733+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_10_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.416744+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=6, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.416763+00:00 | Processing 2026_05_12_mlb_raw.json
-2026-08-03T19:17:32.417428+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_11_final_scores_MLB.csv (6 rows)
-2026-08-03T19:17:32.417439+00:00 |   completed_rows_seen=16, accepted_rows=6, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=10, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.417460+00:00 | Processing 2026_05_14_mlb_raw.json
-2026-08-03T19:17:32.418176+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_13_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.418221+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_12_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.418230+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=11, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.418251+00:00 | Processing 2026_05_16_mlb_raw.json
-2026-08-03T19:17:32.418956+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_15_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.418997+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_14_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.419006+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
-2026-08-03T19:17:32.419025+00:00 | Processing 2026_05_17_mlb_raw.json
-2026-08-03T19:17:32.419777+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_16_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.419789+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.419810+00:00 | Processing 2026_05_18_mlb_raw.json
-2026-08-03T19:17:32.420536+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_17_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.420552+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.420572+00:00 | Processing 2026_05_19_mlb_raw.json
-2026-08-03T19:17:32.421447+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_18_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.421461+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.421487+00:00 | Processing 2026_05_20_mlb_raw.json
-2026-08-03T19:17:32.422215+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_19_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.422226+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.422247+00:00 | Processing 2026_05_21_mlb_raw.json
-2026-08-03T19:17:32.422981+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_20_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.422992+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=7, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.423012+00:00 | Processing 2026_05_22_mlb_raw.json
-2026-08-03T19:17:32.423673+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_21_final_scores_MLB.csv (7 rows)
-2026-08-03T19:17:32.423684+00:00 |   completed_rows_seen=16, accepted_rows=7, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=9, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.423709+00:00 | Processing 2026_05_23_mlb_raw.json
-2026-08-03T19:17:32.424388+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_22_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.424400+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=16, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.424419+00:00 | Processing 2026_05_24_mlb_raw.json
-2026-08-03T19:17:32.425179+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_23_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.425190+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=16, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.425212+00:00 | Processing 2026_05_25_mlb_raw.json
-2026-08-03T19:17:32.426043+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_24_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.426054+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.426075+00:00 | Processing 2026_05_26_mlb_raw.json
-2026-08-03T19:17:32.426873+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_25_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.426885+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.426906+00:00 | Processing 2026_05_27_mlb_raw.json
-2026-08-03T19:17:32.427630+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_26_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.427643+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.427662+00:00 | Processing 2026_05_28_mlb_raw.json
-2026-08-03T19:17:32.428378+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_27_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.428393+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=6, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.428414+00:00 | Processing 2026_05_29_mlb_raw.json
-2026-08-03T19:17:32.429051+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_28_final_scores_MLB.csv (6 rows)
-2026-08-03T19:17:32.429061+00:00 |   completed_rows_seen=16, accepted_rows=6, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=10, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.429079+00:00 | Processing 2026_05_30_mlb_raw.json
-2026-08-03T19:17:32.429746+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_29_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.429758+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.429777+00:00 | Processing 2026_05_31_mlb_raw.json
-2026-08-03T19:17:32.430515+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_30_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.430527+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.430546+00:00 | Processing 2026_06_01_mlb_raw.json
-2026-08-03T19:17:32.431236+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_31_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.431247+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.431267+00:00 | Processing 2026_06_02_mlb_raw.json
-2026-08-03T19:17:32.431938+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_01_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.431949+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.431968+00:00 | Processing 2026_06_03_mlb_raw.json
-2026-08-03T19:17:32.432651+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_02_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.432662+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.432681+00:00 | Processing 2026_06_04_mlb_raw.json
-2026-08-03T19:17:32.433408+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_03_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.433419+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.433439+00:00 | Processing 2026_06_05_mlb_raw.json
-2026-08-03T19:17:32.434252+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_04_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.434270+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.434314+00:00 | Processing 2026_06_06_mlb_raw.json
-2026-08-03T19:17:32.435183+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_05_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.435197+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.435221+00:00 | Processing 2026_06_07_mlb_raw.json
-2026-08-03T19:17:32.435988+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_06_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.436001+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.436023+00:00 | Processing 2026_06_08_mlb_raw.json
-2026-08-03T19:17:32.436761+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_07_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.436772+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.436793+00:00 | Processing 2026_06_09_mlb_raw.json
-2026-08-03T19:17:32.437479+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_08_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.437491+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.437511+00:00 | Processing 2026_06_10_mlb_raw.json
-2026-08-03T19:17:32.438129+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_09_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.438140+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=7, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.438158+00:00 | Processing 2026_06_11_mlb_raw.json
-2026-08-03T19:17:32.438810+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_10_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.438822+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=7, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.438840+00:00 | Processing 2026_06_12_mlb_raw.json
-2026-08-03T19:17:32.439471+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_11_final_scores_MLB.csv (7 rows)
-2026-08-03T19:17:32.439488+00:00 |   completed_rows_seen=16, accepted_rows=7, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=9, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.439506+00:00 | Processing 2026_06_13_mlb_raw.json
-2026-08-03T19:17:32.440136+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_12_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.440149+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=8, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.440168+00:00 | Processing 2026_06_14_mlb_raw.json
-2026-08-03T19:17:32.440815+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_13_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.440827+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=8, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.440848+00:00 | Processing 2026_06_15_mlb_raw.json
-2026-08-03T19:17:32.441496+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_14_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.441509+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=8, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.441527+00:00 | Processing 2026_06_16_mlb_raw.json
-2026-08-03T19:17:32.442133+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_15_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.442144+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.442162+00:00 | Processing 2026_06_17_mlb_raw.json
-2026-08-03T19:17:32.442875+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_16_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.442887+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.442908+00:00 | Processing 2026_06_18_mlb_raw.json
-2026-08-03T19:17:32.443635+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_17_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.443646+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.443671+00:00 | Processing 2026_06_19_mlb_raw.json
-2026-08-03T19:17:32.444304+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_18_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.444315+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.444335+00:00 | Processing 2026_06_20_mlb_raw.json
-2026-08-03T19:17:32.445012+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_19_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.445023+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.445041+00:00 | Processing 2026_06_21_mlb_raw.json
-2026-08-03T19:17:32.445744+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_20_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.445755+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.445775+00:00 | Processing 2026_06_22_mlb_raw.json
-2026-08-03T19:17:32.446478+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_21_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.446490+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.446512+00:00 | Processing 2026_06_23_mlb_raw.json
-2026-08-03T19:17:32.447202+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_22_final_scores_MLB.csv (12 rows)
-2026-08-03T19:17:32.447212+00:00 |   completed_rows_seen=16, accepted_rows=12, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=16, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.447232+00:00 | Processing 2026_06_24_mlb_raw.json
-2026-08-03T19:17:32.447899+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_23_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.447909+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=0, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.447928+00:00 | Processing 2026_06_25_mlb_raw.json
-2026-08-03T19:17:32.448564+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_24_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.448576+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.448593+00:00 | Processing 2026_06_26_mlb_raw.json
-2026-08-03T19:17:32.449315+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_25_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.449326+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.449345+00:00 | Processing 2026_06_27_mlb_raw.json
-2026-08-03T19:17:32.450001+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_26_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.450011+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.450030+00:00 | Processing 2026_06_28_mlb_raw.json
-2026-08-03T19:17:32.450744+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_27_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.450756+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.450776+00:00 | Processing 2026_06_29_mlb_raw.json
-2026-08-03T19:17:32.451465+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.451476+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.451497+00:00 | Processing 2026_06_30_mlb_raw.json
-2026-08-03T19:17:32.452159+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_29_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.452169+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.452188+00:00 | Processing 2026_07_01_mlb_raw.json
-2026-08-03T19:17:32.452855+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_30_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.452865+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.452885+00:00 | Processing 2026_07_02_mlb_raw.json
-2026-08-03T19:17:32.453580+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_01_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.453591+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.453610+00:00 | Processing 2026_07_03_mlb_raw.json
-2026-08-03T19:17:32.454244+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_02_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.454255+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.454273+00:00 | Processing 2026_07_04_mlb_raw.json
-2026-08-03T19:17:32.454918+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_03_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.454929+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.454947+00:00 | Processing 2026_07_05_mlb_raw.json
-2026-08-03T19:17:32.455632+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_04_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.455644+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.455663+00:00 | Processing 2026_07_06_mlb_raw.json
-2026-08-03T19:17:32.456361+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_05_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.456387+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=16, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.456409+00:00 | Processing 2026_07_07_mlb_raw.json
-2026-08-03T19:17:32.457021+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_06_final_scores_MLB.csv (7 rows)
-2026-08-03T19:17:32.457032+00:00 |   completed_rows_seen=15, accepted_rows=7, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.457051+00:00 | Processing 2026_07_08_mlb_raw.json
-2026-08-03T19:17:32.457606+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_07_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.457619+00:00 |   completed_rows_seen=15, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.457637+00:00 | Processing 2026_07_09_mlb_raw.json
-2026-08-03T19:17:32.458356+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_08_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.458379+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.458403+00:00 | Processing 2026_07_10_mlb_raw.json
-2026-08-03T19:17:32.459081+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_09_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.459094+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.459114+00:00 | Processing 2026_07_11_mlb_raw.json
-2026-08-03T19:17:32.459796+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_10_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.459807+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.459826+00:00 | Processing 2026_07_12_mlb_raw.json
-2026-08-03T19:17:32.460391+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_11_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.460402+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=0, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.460418+00:00 | Processing 2026_07_13_mlb_raw.json
-2026-08-03T19:17:32.461106+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_12_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.461116+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.461137+00:00 | Processing 2026_07_14_mlb_raw.json
-2026-08-03T19:17:32.461776+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=16, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=0
-2026-08-03T19:17:32.461797+00:00 | Processing 2026_07_15_mlb_raw.json
-2026-08-03T19:17:32.462394+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=16, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=0
-2026-08-03T19:17:32.462415+00:00 | Processing 2026_07_16_mlb_raw.json
-2026-08-03T19:17:32.463041+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=16, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=0
-2026-08-03T19:17:32.463076+00:00 | Processing 2026_07_17_mlb_raw.json
-2026-08-03T19:17:32.463849+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_16_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.463866+00:00 |   completed_rows_seen=16, accepted_rows=1, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=15, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.463895+00:00 | Processing 2026_07_18_mlb_raw.json
-2026-08-03T19:17:32.464352+00:00 | FATAL: Conflicting final-score duplicate game_id found: game_id=71409220 date=2026_07_17 away=Tampa Bay Rays home=Boston Red Sox
-2026-08-03T19:17:32.464767+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_17_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.464778+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=1, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.464799+00:00 | Processing 2026_07_19_mlb_raw.json
-2026-08-03T19:17:32.465208+00:00 | FATAL: Conflicting final-score duplicate game_id found: game_id=72946026 date=2026_07_18 away=Pittsburgh Pirates home=Cleveland Guardians
-2026-08-03T19:17:32.465512+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_18_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.465525+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=1, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.465546+00:00 | Processing 2026_07_20_mlb_raw.json
-2026-08-03T19:17:32.466141+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_19_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.466151+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.466167+00:00 | Processing 2026_07_21_mlb_raw.json
-2026-08-03T19:17:32.466918+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_20_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.466930+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.466950+00:00 | Processing 2026_07_22_mlb_raw.json
-2026-08-03T19:17:32.467666+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_21_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.467678+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=5, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.467699+00:00 | Processing 2026_07_23_mlb_raw.json
-2026-08-03T19:17:32.468321+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_22_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.468332+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.468348+00:00 | Processing 2026_07_24_mlb_raw.json
-2026-08-03T19:17:32.469065+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_23_final_scores_MLB.csv (5 rows)
-2026-08-03T19:17:32.469076+00:00 |   completed_rows_seen=16, accepted_rows=5, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=11, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.469094+00:00 | Processing 2026_07_25_mlb_raw.json
-2026-08-03T19:17:32.469734+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_24_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.469745+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.469763+00:00 | Processing 2026_07_26_mlb_raw.json
-2026-08-03T19:17:32.470526+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_25_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.470538+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=12, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.470558+00:00 | Processing 2026_07_27_mlb_raw.json
-2026-08-03T19:17:32.471243+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_26_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.471254+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.471275+00:00 | Processing 2026_07_28_mlb_raw.json
-2026-08-03T19:17:32.471974+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_27_final_scores_MLB.csv (11 rows)
-2026-08-03T19:17:32.471986+00:00 |   completed_rows_seen=16, accepted_rows=11, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=5, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.472004+00:00 | Processing 2026_07_29_mlb_raw.json
-2026-08-03T19:17:32.472759+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.472770+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.472793+00:00 | Processing 2026_07_30_mlb_raw.json
-2026-08-03T19:17:32.473393+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_29_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.473406+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.473426+00:00 | Processing 2026_07_31_mlb_raw.json
-2026-08-03T19:17:32.474109+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_30_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.474120+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.474139+00:00 | Processing 2026_08_01_mlb_raw.json
-2026-08-03T19:17:32.474798+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_31_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.474809+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.474828+00:00 | Processing 2026_08_02_mlb_raw.json
-2026-08-03T19:17:32.475498+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_08_01_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.475509+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.475529+00:00 | Processing 2026_08_03_mlb_raw.json
-2026-08-03T19:17:32.476188+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_08_02_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.476198+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
-2026-08-03T19:17:32.488188+00:00 | WROTE final-score status audit -> docs/win/baseball/mlb/05_final_scores/results/audit/final_score_status_audit.csv (3620 rows)
-2026-08-03T19:17:32.494244+00:00 | WROTE final-score key audit -> docs/win/baseball/mlb/05_final_scores/results/audit/final_score_key_audit.csv (1977 rows)
-2026-08-03T19:17:32.494931+00:00 | --- SUMMARY ---
-2026-08-03T19:17:32.494949+00:00 | Raw files processed: 125
-2026-08-03T19:17:32.494956+00:00 | Files written: 129
-2026-08-03T19:17:32.494964+00:00 | Final-score game_id primary-key rows: 1363
-2026-08-03T19:17:32.494971+00:00 | Final-score blank game_id fallback rows: 315
-2026-08-03T19:17:32.494978+00:00 | Unknown status audit rows: 1645
-2026-08-03T19:17:32.494988+00:00 | Status audit: docs/win/baseball/mlb/05_final_scores/results/audit/final_score_status_audit.csv
-2026-08-03T19:17:32.494996+00:00 | Key audit: docs/win/baseball/mlb/05_final_scores/results/audit/final_score_key_audit.csv
-2026-08-03T19:17:32.495003+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_26_final_scores_MLB.csv (11 rows)
-2026-08-03T19:17:32.495010+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_27_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.495017+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495024+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_29_final_scores_MLB.csv (12 rows)
-2026-08-03T19:17:32.495031+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_30_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495037+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_31_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495044+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_01_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495051+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_03_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495057+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_02_final_scores_MLB.csv (2 rows)
-2026-08-03T19:17:32.495064+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_05_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495071+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495078+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_06_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495084+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495091+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495097+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495104+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_09_final_scores_MLB.csv (6 rows)
-2026-08-03T19:17:32.495111+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (2 rows)
-2026-08-03T19:17:32.495118+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_10_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495125+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495131+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_12_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495138+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_13_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.495145+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_14_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495151+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_15_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495158+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_16_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.495165+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_17_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495172+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_18_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495179+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_19_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495186+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_20_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.495193+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_21_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495200+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_22_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495206+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_23_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.495213+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_24_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495220+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_26_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495227+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_27_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.495233+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495240+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_29_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495247+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495253+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_30_final_scores_MLB.csv (11 rows)
-2026-08-03T19:17:32.495260+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495267+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_02_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495274+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_03_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495280+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_04_final_scores_MLB.csv (12 rows)
-2026-08-03T19:17:32.495287+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_05_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495293+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_06_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495300+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_08_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495306+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_07_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495313+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_09_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495319+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_10_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495326+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_11_final_scores_MLB.csv (6 rows)
-2026-08-03T19:17:32.495333+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_13_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495340+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_12_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495347+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_15_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495353+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_14_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495360+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_16_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495379+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_17_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495388+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_18_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495395+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_19_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495402+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_20_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495409+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_21_final_scores_MLB.csv (7 rows)
-2026-08-03T19:17:32.495415+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_22_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495421+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_23_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495428+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_24_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495434+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_25_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495441+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_26_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495448+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_27_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495454+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_28_final_scores_MLB.csv (6 rows)
-2026-08-03T19:17:32.495461+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_29_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495468+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_30_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495474+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_31_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495481+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_01_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.495488+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_02_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495494+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_03_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495501+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_04_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.495507+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_05_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495514+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_06_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495521+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_07_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495528+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_08_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.495534+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_09_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495541+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_10_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495548+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_11_final_scores_MLB.csv (7 rows)
-2026-08-03T19:17:32.495554+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_12_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495561+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_13_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495568+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_14_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495574+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_15_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.495582+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_16_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495588+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_17_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495595+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_18_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.495602+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_19_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495608+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_20_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495615+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_21_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495622+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_22_final_scores_MLB.csv (12 rows)
-2026-08-03T19:17:32.495628+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_23_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495635+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_24_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495641+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_25_final_scores_MLB.csv (8 rows)
-2026-08-03T19:17:32.495648+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_26_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495655+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_27_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495662+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495668+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_29_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495675+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_30_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495682+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_01_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495688+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_02_final_scores_MLB.csv (9 rows)
-2026-08-03T19:17:32.495695+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_03_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495701+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_04_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495708+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_05_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495714+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_06_final_scores_MLB.csv (7 rows)
-2026-08-03T19:17:32.495721+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_07_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495728+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_08_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495734+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_09_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495741+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_10_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495748+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_11_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495754+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_12_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495761+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_16_final_scores_MLB.csv (1 rows)
-2026-08-03T19:17:32.495767+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_17_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495775+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_18_final_scores_MLB.csv (14 rows)
-2026-08-03T19:17:32.495782+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_19_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495789+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_20_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495795+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_21_final_scores_MLB.csv (13 rows)
-2026-08-03T19:17:32.495802+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_22_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495808+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_23_final_scores_MLB.csv (5 rows)
-2026-08-03T19:17:32.495815+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_24_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495822+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_25_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495828+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_26_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495835+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_27_final_scores_MLB.csv (11 rows)
-2026-08-03T19:17:32.495842+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_28_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495848+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_29_final_scores_MLB.csv (16 rows)
-2026-08-03T19:17:32.495855+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_30_final_scores_MLB.csv (10 rows)
-2026-08-03T19:17:32.495862+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_07_31_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495868+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_08_01_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495875+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_08_02_final_scores_MLB.csv (15 rows)
-2026-08-03T19:17:32.495886+00:00 | STATUS: SUCCESS
+=== build_mlb_final_scores RUN 2026-08-04T11:44:20.102532+00:00 ===
+2026-08-04T11:44:20.103190+00:00 | Selected-bet files found before final-score build: 84
+2026-08-04T11:44:20.103893+00:00 | Raw files found: 126
+2026-08-04T11:44:20.103925+00:00 | Post-selection final-score build timestamp: 2026-08-04T11:44:20.102532+00:00
+2026-08-04T11:44:20.103953+00:00 | Processing 2026_03_26_mlb_raw.json
+2026-08-04T11:44:20.106368+00:00 |   completed_rows_seen=1, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=11, skipped_no_selected_file=1, final_score_dates_written=0
+2026-08-04T11:44:20.106409+00:00 | Processing 2026_03_27_mlb_raw.json
+2026-08-04T11:44:20.107624+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_26_final_scores_MLB.csv (11 rows)
+2026-08-04T11:44:20.107693+00:00 |   completed_rows_seen=11, accepted_rows=11, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.107735+00:00 | Processing 2026_03_28_mlb_raw.json
+2026-08-04T11:44:20.109154+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_27_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.109188+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.109229+00:00 | Processing 2026_03_29_mlb_raw.json
+2026-08-04T11:44:20.110564+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_28_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.110597+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=12, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.110637+00:00 | Processing 2026_03_30_mlb_raw.json
+2026-08-04T11:44:20.112038+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_29_final_scores_MLB.csv (12 rows)
+2026-08-04T11:44:20.112070+00:00 |   completed_rows_seen=16, accepted_rows=12, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.112113+00:00 | Processing 2026_03_31_mlb_raw.json
+2026-08-04T11:44:20.113503+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_30_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.113535+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.113577+00:00 | Processing 2026_04_01_mlb_raw.json
+2026-08-04T11:44:20.114996+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_31_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.115028+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.115074+00:00 | Processing 2026_04_02_mlb_raw.json
+2026-08-04T11:44:20.116420+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_01_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.116451+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=3, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.116493+00:00 | Processing 2026_04_04_mlb_raw.json
+2026-08-04T11:44:20.117759+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_03_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.117986+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_02_final_scores_MLB.csv (2 rows)
+2026-08-04T11:44:20.118017+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.118056+00:00 | Processing 2026_04_06_mlb_raw.json
+2026-08-04T11:44:20.119695+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_05_final_scores_MLB.csv (16 rows)
+2026-08-04T11:44:20.119728+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.119767+00:00 | Processing 2026_04_07_mlb_raw.json
+2026-08-04T11:44:20.121549+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.121779+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_06_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.121809+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.121859+00:00 | Processing 2026_04_08_mlb_raw.json
+2026-08-04T11:44:20.123203+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.123417+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.123447+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.123489+00:00 | Processing 2026_04_09_mlb_raw.json
+2026-08-04T11:44:20.124880+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.124915+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=6, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.124973+00:00 | Processing 2026_04_10_mlb_raw.json
+2026-08-04T11:44:20.126229+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_09_final_scores_MLB.csv (6 rows)
+2026-08-04T11:44:20.126260+00:00 |   completed_rows_seen=16, accepted_rows=6, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=10, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.126300+00:00 | Processing 2026_04_11_mlb_raw.json
+2026-08-04T11:44:20.127665+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (2 rows)
+2026-08-04T11:44:20.127888+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_10_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.127918+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.127960+00:00 | Processing 2026_04_12_mlb_raw.json
+2026-08-04T11:44:20.129372+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.129403+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.129469+00:00 | Processing 2026_04_13_mlb_raw.json
+2026-08-04T11:44:20.130836+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_12_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.130867+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.130920+00:00 | Processing 2026_04_14_mlb_raw.json
+2026-08-04T11:44:20.132233+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_13_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.132263+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.132313+00:00 | Processing 2026_04_15_mlb_raw.json
+2026-08-04T11:44:20.133667+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_14_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.133702+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.133757+00:00 | Processing 2026_04_16_mlb_raw.json
+2026-08-04T11:44:20.135117+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_15_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.135148+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.135190+00:00 | Processing 2026_04_17_mlb_raw.json
+2026-08-04T11:44:20.136521+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_16_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.136551+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.136592+00:00 | Processing 2026_04_18_mlb_raw.json
+2026-08-04T11:44:20.137962+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_17_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.137993+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.138035+00:00 | Processing 2026_04_19_mlb_raw.json
+2026-08-04T11:44:20.139450+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_18_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.139480+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.139523+00:00 | Processing 2026_04_20_mlb_raw.json
+2026-08-04T11:44:20.140925+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_19_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.140961+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.141005+00:00 | Processing 2026_04_21_mlb_raw.json
+2026-08-04T11:44:20.142332+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_20_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.142368+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.142410+00:00 | Processing 2026_04_22_mlb_raw.json
+2026-08-04T11:44:20.143765+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_21_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.143795+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.143836+00:00 | Processing 2026_04_23_mlb_raw.json
+2026-08-04T11:44:20.145251+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_22_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.145282+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.145324+00:00 | Processing 2026_04_24_mlb_raw.json
+2026-08-04T11:44:20.146669+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_23_final_scores_MLB.csv (9 rows)
+2026-08-04T11:44:20.146707+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.146754+00:00 | Processing 2026_04_25_mlb_raw.json
+2026-08-04T11:44:20.148050+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_24_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.148081+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.148128+00:00 | Processing 2026_04_27_mlb_raw.json
+2026-08-04T11:44:20.149318+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_26_final_scores_MLB.csv (16 rows)
+2026-08-04T11:44:20.149349+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.149387+00:00 | Processing 2026_04_28_mlb_raw.json
+2026-08-04T11:44:20.150830+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_27_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.150861+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.150902+00:00 | Processing 2026_04_29_mlb_raw.json
+2026-08-04T11:44:20.152223+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_28_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.152254+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.152295+00:00 | Processing 2026_04_30_mlb_raw.json
+2026-08-04T11:44:20.154161+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_29_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.154193+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.154244+00:00 | Processing 2026_05_01_mlb_raw.json
+2026-08-04T11:44:20.155342+00:00 | FATAL: Conflicting final-score duplicate game_id found: game_id=75e319bc9e7b409bff4aedc4aeb21051 date=2026_04_30 away=San Francisco Giants home=Philadelphia Phillies
+2026-08-04T11:44:20.156131+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.156326+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_30_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.156358+00:00 |   completed_rows_seen=16, accepted_rows=11, accepted_blank_game_id_rows=2, parse_errors=1, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.156406+00:00 | Processing 2026_05_02_mlb_raw.json
+2026-08-04T11:44:20.157730+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.157761+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.157804+00:00 | Processing 2026_05_03_mlb_raw.json
+2026-08-04T11:44:20.159189+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_02_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.159220+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.159264+00:00 | Processing 2026_05_04_mlb_raw.json
+2026-08-04T11:44:20.160695+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_03_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.160727+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=12, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.160771+00:00 | Processing 2026_05_05_mlb_raw.json
+2026-08-04T11:44:20.162130+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_04_final_scores_MLB.csv (12 rows)
+2026-08-04T11:44:20.162161+00:00 |   completed_rows_seen=16, accepted_rows=12, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=4, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.162215+00:00 | Processing 2026_05_06_mlb_raw.json
+2026-08-04T11:44:20.163582+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_05_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.163613+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.163692+00:00 | Processing 2026_05_07_mlb_raw.json
+2026-08-04T11:44:20.165060+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_06_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.165090+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.165133+00:00 | Processing 2026_05_09_mlb_raw.json
+2026-08-04T11:44:20.166444+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_08_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.166603+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_07_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.166641+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=4, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.166721+00:00 | Processing 2026_05_10_mlb_raw.json
+2026-08-04T11:44:20.168116+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_09_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.168147+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.168190+00:00 | Processing 2026_05_11_mlb_raw.json
+2026-08-04T11:44:20.169586+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_10_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.169618+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=6, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.169684+00:00 | Processing 2026_05_12_mlb_raw.json
+2026-08-04T11:44:20.170970+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_11_final_scores_MLB.csv (6 rows)
+2026-08-04T11:44:20.171001+00:00 |   completed_rows_seen=16, accepted_rows=6, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=10, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.171042+00:00 | Processing 2026_05_14_mlb_raw.json
+2026-08-04T11:44:20.172435+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_13_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.172591+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_12_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.172624+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=11, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.172696+00:00 | Processing 2026_05_16_mlb_raw.json
+2026-08-04T11:44:20.174049+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_15_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.174254+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_14_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.174295+00:00 |   completed_rows_seen=16, accepted_rows=16, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=2
+2026-08-04T11:44:20.174358+00:00 | Processing 2026_05_17_mlb_raw.json
+2026-08-04T11:44:20.176056+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_16_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.176087+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.176146+00:00 | Processing 2026_05_18_mlb_raw.json
+2026-08-04T11:44:20.176878+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=14, skipped_no_selected_file=15, final_score_dates_written=0
+2026-08-04T11:44:20.176921+00:00 | Processing 2026_05_19_mlb_raw.json
+2026-08-04T11:44:20.177895+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_18_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.177925+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=2, final_score_dates_written=1
+2026-08-04T11:44:20.177970+00:00 | Processing 2026_05_20_mlb_raw.json
+2026-08-04T11:44:20.179399+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_19_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.179431+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.179474+00:00 | Processing 2026_05_21_mlb_raw.json
+2026-08-04T11:44:20.180860+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_20_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.180891+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=7, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.180934+00:00 | Processing 2026_05_22_mlb_raw.json
+2026-08-04T11:44:20.182220+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_21_final_scores_MLB.csv (7 rows)
+2026-08-04T11:44:20.182251+00:00 |   completed_rows_seen=16, accepted_rows=7, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=9, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.182292+00:00 | Processing 2026_05_23_mlb_raw.json
+2026-08-04T11:44:20.183600+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_22_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.183631+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=16, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.183695+00:00 | Processing 2026_05_24_mlb_raw.json
+2026-08-04T11:44:20.185146+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_23_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.185176+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=16, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.185221+00:00 | Processing 2026_05_25_mlb_raw.json
+2026-08-04T11:44:20.186806+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_24_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.186837+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=13, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.186880+00:00 | Processing 2026_05_26_mlb_raw.json
+2026-08-04T11:44:20.188368+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_25_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.188400+00:00 |   completed_rows_seen=16, accepted_rows=13, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=3, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.188443+00:00 | Processing 2026_05_27_mlb_raw.json
+2026-08-04T11:44:20.189856+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_26_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.189902+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.189976+00:00 | Processing 2026_05_28_mlb_raw.json
+2026-08-04T11:44:20.191566+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_27_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.191603+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=6, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.191675+00:00 | Processing 2026_05_29_mlb_raw.json
+2026-08-04T11:44:20.192940+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_28_final_scores_MLB.csv (6 rows)
+2026-08-04T11:44:20.192980+00:00 |   completed_rows_seen=16, accepted_rows=6, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=10, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.193039+00:00 | Processing 2026_05_30_mlb_raw.json
+2026-08-04T11:44:20.194304+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_29_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.194334+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.194374+00:00 | Processing 2026_05_31_mlb_raw.json
+2026-08-04T11:44:20.195781+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_30_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.195812+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.195862+00:00 | Processing 2026_06_01_mlb_raw.json
+2026-08-04T11:44:20.197212+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_31_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.197243+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.197285+00:00 | Processing 2026_06_02_mlb_raw.json
+2026-08-04T11:44:20.198568+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_01_final_scores_MLB.csv (9 rows)
+2026-08-04T11:44:20.198599+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.198641+00:00 | Processing 2026_06_03_mlb_raw.json
+2026-08-04T11:44:20.199959+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_02_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.199989+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.200030+00:00 | Processing 2026_06_04_mlb_raw.json
+2026-08-04T11:44:20.201398+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_03_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.201428+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=9, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.201471+00:00 | Processing 2026_06_05_mlb_raw.json
+2026-08-04T11:44:20.202780+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_04_final_scores_MLB.csv (9 rows)
+2026-08-04T11:44:20.202811+00:00 |   completed_rows_seen=16, accepted_rows=9, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=7, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.202860+00:00 | Processing 2026_06_06_mlb_raw.json
+2026-08-04T11:44:20.204173+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_05_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.204204+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.204245+00:00 | Processing 2026_06_07_mlb_raw.json
+2026-08-04T11:44:20.205618+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_06_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.205669+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.205717+00:00 | Processing 2026_06_08_mlb_raw.json
+2026-08-04T11:44:20.207063+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_07_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.207094+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.207137+00:00 | Processing 2026_06_09_mlb_raw.json
+2026-08-04T11:44:20.208410+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_08_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.208440+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.208481+00:00 | Processing 2026_06_10_mlb_raw.json
+2026-08-04T11:44:20.209706+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_09_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.209738+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=7, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.209786+00:00 | Processing 2026_06_11_mlb_raw.json
+2026-08-04T11:44:20.210993+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_10_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.211024+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=7, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=8, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.211063+00:00 | Processing 2026_06_12_mlb_raw.json
+2026-08-04T11:44:20.212241+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_11_final_scores_MLB.csv (7 rows)
+2026-08-04T11:44:20.212271+00:00 |   completed_rows_seen=16, accepted_rows=7, accepted_blank_game_id_rows=2, parse_errors=0, skipped_summary=3, skipped_duplicate=9, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.212325+00:00 | Processing 2026_06_13_mlb_raw.json
+2026-08-04T11:44:20.213492+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_12_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.213523+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=8, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.213561+00:00 | Processing 2026_06_14_mlb_raw.json
+2026-08-04T11:44:20.214745+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_13_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.214780+00:00 |   completed_rows_seen=16, accepted_rows=15, accepted_blank_game_id_rows=8, parse_errors=0, skipped_summary=3, skipped_duplicate=1, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.214819+00:00 | Processing 2026_06_15_mlb_raw.json
+2026-08-04T11:44:20.216043+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_14_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.216073+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=8, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=10, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.216112+00:00 | Processing 2026_06_16_mlb_raw.json
+2026-08-04T11:44:20.217336+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_15_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.217367+00:00 |   completed_rows_seen=16, accepted_rows=10, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=6, skipped_not_completed=15, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.217406+00:00 | Processing 2026_06_17_mlb_raw.json
+2026-08-04T11:44:20.218721+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_16_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.218752+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.218793+00:00 | Processing 2026_06_18_mlb_raw.json
+2026-08-04T11:44:20.220151+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_17_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.220182+00:00 |   completed_rows_seen=16, accepted_rows=14, accepted_blank_game_id_rows=3, parse_errors=0, skipped_summary=3, skipped_duplicate=2, skipped_not_completed=14, skipped_no_selected_file=0, final_score_dates_written=1
+2026-08-04T11:44:20.220224+00:00 | Processing 2026_06_19_mlb_raw.json
+2026-08-04T11:44:20.221013+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=8, skipped_not_completed=14, skipped_no_selected_file=8, final_score_dates_written=0
+2026-08-04T11:44:20.221056+00:00 | Processing 2026_06_20_mlb_raw.json
+2026-08-04T11:44:20.221363+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.221397+00:00 | Processing 2026_06_21_mlb_raw.json
+2026-08-04T11:44:20.221724+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.221759+00:00 | Processing 2026_06_22_mlb_raw.json
+2026-08-04T11:44:20.222059+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.222092+00:00 | Processing 2026_06_23_mlb_raw.json
+2026-08-04T11:44:20.222401+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=16, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.222433+00:00 | Processing 2026_06_24_mlb_raw.json
+2026-08-04T11:44:20.222733+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=0, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.222766+00:00 | Processing 2026_06_25_mlb_raw.json
+2026-08-04T11:44:20.223093+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.223127+00:00 | Processing 2026_06_26_mlb_raw.json
+2026-08-04T11:44:20.223447+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.223479+00:00 | Processing 2026_06_27_mlb_raw.json
+2026-08-04T11:44:20.223809+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.223843+00:00 | Processing 2026_06_28_mlb_raw.json
+2026-08-04T11:44:20.224137+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.224168+00:00 | Processing 2026_06_29_mlb_raw.json
+2026-08-04T11:44:20.224464+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.224508+00:00 | Processing 2026_06_30_mlb_raw.json
+2026-08-04T11:44:20.224826+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=14, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.224859+00:00 | Processing 2026_07_01_mlb_raw.json
+2026-08-04T11:44:20.225146+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=9, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.225177+00:00 | Processing 2026_07_02_mlb_raw.json
+2026-08-04T11:44:20.225472+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.225503+00:00 | Processing 2026_07_03_mlb_raw.json
+2026-08-04T11:44:20.225831+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.225864+00:00 | Processing 2026_07_04_mlb_raw.json
+2026-08-04T11:44:20.226159+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.226191+00:00 | Processing 2026_07_05_mlb_raw.json
+2026-08-04T11:44:20.226472+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.226503+00:00 | Processing 2026_07_06_mlb_raw.json
+2026-08-04T11:44:20.226831+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=16, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.226865+00:00 | Processing 2026_07_07_mlb_raw.json
+2026-08-04T11:44:20.227144+00:00 |   completed_rows_seen=15, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=15, final_score_dates_written=0
+2026-08-04T11:44:20.227183+00:00 | Processing 2026_07_08_mlb_raw.json
+2026-08-04T11:44:20.227465+00:00 |   completed_rows_seen=15, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=13, skipped_no_selected_file=15, final_score_dates_written=0
+2026-08-04T11:44:20.227497+00:00 | Processing 2026_07_09_mlb_raw.json
+2026-08-04T11:44:20.227819+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.227852+00:00 | Processing 2026_07_10_mlb_raw.json
+2026-08-04T11:44:20.228157+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.228189+00:00 | Processing 2026_07_11_mlb_raw.json
+2026-08-04T11:44:20.228480+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.228511+00:00 | Processing 2026_07_12_mlb_raw.json
+2026-08-04T11:44:20.228804+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=0, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.228836+00:00 | Processing 2026_07_13_mlb_raw.json
+2026-08-04T11:44:20.229131+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.229163+00:00 | Processing 2026_07_14_mlb_raw.json
+2026-08-04T11:44:20.229450+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.229481+00:00 | Processing 2026_07_15_mlb_raw.json
+2026-08-04T11:44:20.229798+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.229831+00:00 | Processing 2026_07_16_mlb_raw.json
+2026-08-04T11:44:20.230124+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.230155+00:00 | Processing 2026_07_17_mlb_raw.json
+2026-08-04T11:44:20.230450+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.230482+00:00 | Processing 2026_07_18_mlb_raw.json
+2026-08-04T11:44:20.230800+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.230834+00:00 | Processing 2026_07_19_mlb_raw.json
+2026-08-04T11:44:20.231127+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.231159+00:00 | Processing 2026_07_20_mlb_raw.json
+2026-08-04T11:44:20.231450+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.231488+00:00 | Processing 2026_07_21_mlb_raw.json
+2026-08-04T11:44:20.231814+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.231847+00:00 | Processing 2026_07_22_mlb_raw.json
+2026-08-04T11:44:20.232122+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=5, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.232153+00:00 | Processing 2026_07_23_mlb_raw.json
+2026-08-04T11:44:20.232443+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.232475+00:00 | Processing 2026_07_24_mlb_raw.json
+2026-08-04T11:44:20.232799+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.232832+00:00 | Processing 2026_07_25_mlb_raw.json
+2026-08-04T11:44:20.233146+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.233178+00:00 | Processing 2026_07_26_mlb_raw.json
+2026-08-04T11:44:20.233472+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=12, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.233504+00:00 | Processing 2026_07_27_mlb_raw.json
+2026-08-04T11:44:20.233821+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.233853+00:00 | Processing 2026_07_28_mlb_raw.json
+2026-08-04T11:44:20.234150+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.234182+00:00 | Processing 2026_07_29_mlb_raw.json
+2026-08-04T11:44:20.234468+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=10, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.234506+00:00 | Processing 2026_07_30_mlb_raw.json
+2026-08-04T11:44:20.234830+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.234872+00:00 | Processing 2026_07_31_mlb_raw.json
+2026-08-04T11:44:20.235169+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.235201+00:00 | Processing 2026_08_01_mlb_raw.json
+2026-08-04T11:44:20.235490+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.235521+00:00 | Processing 2026_08_02_mlb_raw.json
+2026-08-04T11:44:20.235830+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.235869+00:00 | Processing 2026_08_03_mlb_raw.json
+2026-08-04T11:44:20.236167+00:00 |   completed_rows_seen=16, accepted_rows=0, accepted_blank_game_id_rows=0, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=8, skipped_no_selected_file=16, final_score_dates_written=0
+2026-08-04T11:44:20.236199+00:00 | Processing 2026_08_04_mlb_raw.json
+2026-08-04T11:44:20.237050+00:00 | WROTE final scores -> docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_08_03_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.237080+00:00 |   completed_rows_seen=16, accepted_rows=8, accepted_blank_game_id_rows=1, parse_errors=0, skipped_summary=3, skipped_duplicate=0, skipped_not_completed=15, skipped_no_selected_file=8, final_score_dates_written=1
+2026-08-04T11:44:20.250943+00:00 | WROTE final-score status audit -> docs/win/baseball/mlb/05_final_scores/results/audit/final_score_status_audit.csv (2901 rows)
+2026-08-04T11:44:20.256825+00:00 | WROTE final-score key audit -> docs/win/baseball/mlb/05_final_scores/results/audit/final_score_key_audit.csv (1242 rows)
+2026-08-04T11:44:20.257323+00:00 | --- SUMMARY ---
+2026-08-04T11:44:20.257350+00:00 | Raw files processed: 126
+2026-08-04T11:44:20.257372+00:00 | Files written: 86
+2026-08-04T11:44:20.257392+00:00 | Final-score game_id primary-key rows: 864
+2026-08-04T11:44:20.257411+00:00 | Final-score blank game_id fallback rows: 209
+2026-08-04T11:44:20.257430+00:00 | Unknown status audit rows: 1660
+2026-08-04T11:44:20.257448+00:00 | Status audit: docs/win/baseball/mlb/05_final_scores/results/audit/final_score_status_audit.csv
+2026-08-04T11:44:20.257467+00:00 | Key audit: docs/win/baseball/mlb/05_final_scores/results/audit/final_score_key_audit.csv
+2026-08-04T11:44:20.257486+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_26_final_scores_MLB.csv (11 rows)
+2026-08-04T11:44:20.257505+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_27_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.257522+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_28_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257540+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_29_final_scores_MLB.csv (12 rows)
+2026-08-04T11:44:20.257558+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_30_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257576+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_03_31_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.257593+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_01_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257611+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_03_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.257628+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_02_final_scores_MLB.csv (2 rows)
+2026-08-04T11:44:20.257682+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_05_final_scores_MLB.csv (16 rows)
+2026-08-04T11:44:20.257711+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.257731+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_06_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.257750+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.257768+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_07_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.257785+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_08_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.257804+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_09_final_scores_MLB.csv (6 rows)
+2026-08-04T11:44:20.257832+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (2 rows)
+2026-08-04T11:44:20.257852+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_10_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.257869+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_11_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.257887+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_12_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257904+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_13_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.257922+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_14_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257939+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_15_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257956+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_16_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.257974+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_17_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.257991+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_18_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258008+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_19_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258025+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_20_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.258043+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_21_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258060+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_22_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258077+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_23_final_scores_MLB.csv (9 rows)
+2026-08-04T11:44:20.258095+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_24_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258112+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_26_final_scores_MLB.csv (16 rows)
+2026-08-04T11:44:20.258129+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_27_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.258147+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_28_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258164+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_29_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.258182+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.258199+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_04_30_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.258217+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_01_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258234+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_02_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258253+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_03_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258271+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_04_final_scores_MLB.csv (12 rows)
+2026-08-04T11:44:20.258288+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_05_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.258306+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_06_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258323+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_08_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258346+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_07_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.258365+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_09_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258382+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_10_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258400+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_11_final_scores_MLB.csv (6 rows)
+2026-08-04T11:44:20.258417+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_13_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258435+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_12_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.258452+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_15_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258469+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_14_final_scores_MLB.csv (1 rows)
+2026-08-04T11:44:20.258487+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_16_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258504+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_18_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258522+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_19_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258539+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_20_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258556+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_21_final_scores_MLB.csv (7 rows)
+2026-08-04T11:44:20.258574+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_22_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258591+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_23_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258608+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_24_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258625+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_25_final_scores_MLB.csv (13 rows)
+2026-08-04T11:44:20.258643+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_26_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258684+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_27_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258704+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_28_final_scores_MLB.csv (6 rows)
+2026-08-04T11:44:20.258722+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_29_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258740+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_30_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258758+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_05_31_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258775+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_01_final_scores_MLB.csv (9 rows)
+2026-08-04T11:44:20.258793+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_02_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258810+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_03_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258828+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_04_final_scores_MLB.csv (9 rows)
+2026-08-04T11:44:20.258845+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_05_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258868+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_06_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.258886+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_07_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258904+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_08_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.258921+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_09_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258938+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_10_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258955+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_11_final_scores_MLB.csv (7 rows)
+2026-08-04T11:44:20.258972+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_12_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.258990+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_13_final_scores_MLB.csv (15 rows)
+2026-08-04T11:44:20.259007+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_14_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.259025+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_15_final_scores_MLB.csv (10 rows)
+2026-08-04T11:44:20.259042+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_16_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.259059+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_06_17_final_scores_MLB.csv (14 rows)
+2026-08-04T11:44:20.259076+00:00 |   FILE: docs/win/baseball/mlb/05_final_scores/results/final_scores/2026_08_03_final_scores_MLB.csv (8 rows)
+2026-08-04T11:44:20.259094+00:00 | STATUS: SUCCESS
