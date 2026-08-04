@@ -13,6 +13,7 @@ jobs:
     env:
       TZ: America/New_York
       PYTHONUNBUFFERED: "1"
+      API_ODDS: ${{ secrets.API_ODDS }}
 
     steps:
       - name: Checkout repo
