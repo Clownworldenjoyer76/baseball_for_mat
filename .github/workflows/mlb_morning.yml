@@ -95,22 +95,44 @@ jobs:
       - name: MLB Select Morning Bets
         run: python docs/win/baseball/mlb/scripts/04_select/baseball_select_bets_AM.py
 
+      - name: Check for selected bet files
+        id: selected_bets
+        shell: bash
+        run: |
+          if find docs/win/baseball/mlb/04_select \
+            -maxdepth 1 \
+            -type f \
+            ! -name ".gitkeep" \
+            | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Selected-bet files found."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No selected-bet files found. Skipping final-score steps."
+          fi
+
       - name: MLB Build Final Scores
+        if: steps.selected_bets.outputs.found == 'true'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py
 
       - name: MLB Normalize Final Score Names
+        if: steps.selected_bets.outputs.found == 'true'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_final_score_mlb_names.py
 
       - name: MLB Normalize Results
+        if: steps.selected_bets.outputs.found == 'true'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_mlb_results.py
 
       - name: MLB Grade Results
+        if: steps.selected_bets.outputs.found == 'true'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/01_mlb_results_grade.py
 
       - name: MLB Analyze Results
+        if: steps.selected_bets.outputs.found == 'true'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/02_mlb_results_analyze.py
 
       - name: MLB Build Results Reports
+        if: steps.selected_bets.outputs.found == 'true'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports.py
 
       - name: Commit MLB outputs
