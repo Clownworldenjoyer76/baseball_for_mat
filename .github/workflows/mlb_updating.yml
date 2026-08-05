@@ -34,7 +34,11 @@ jobs:
         run: python docs/win/baseball/mlb/scripts/00_parsing/odds_mlb_update.py
 
       - name: MLB Odds Parse
-        run: python docs/win/baseball/mlb/scripts/00_intake/odds_parse.py
+        run: |
+          TARGET_DATE="$(TZ='America/New_York' date +'%Y_%m_%d')"
+          ODDS_FILE="docs/win/baseball/mlb/odds/latest/${TARGET_DATE}.json"
+          test -f "${ODDS_FILE}"
+          python docs/win/baseball/mlb/scripts/00_intake/odds_parse.py "${ODDS_FILE}"
 
       - name: MLB Name Normalization Pre
         run: python docs/win/baseball/mlb/scripts/00_intake/name_normalization.py
