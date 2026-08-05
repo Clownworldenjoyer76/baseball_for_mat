@@ -291,6 +291,26 @@ def load_sportsbook_lookup(date):
 
 SUMMARY_ROW_PREFIXES = {"Sportsbooks", "DRatings"}
 
+FINAL_HEADER = [
+    "sport",
+    "league",
+    "game_id",
+    "gamePk",
+    "gameNumber",
+    "game_date",
+    "game_time",
+    "home_team",
+    "away_team",
+    "final_away_score",
+    "final_home_score",
+    "final_total",
+    "away_run_line",
+    "home_run_line",
+    "total",
+    "game_status",
+    "final_scores_generated_at",
+]
+
 
 def is_summary_row(row):
     return row and isinstance(row, list) and str(row[0]).strip() in SUMMARY_ROW_PREFIXES
@@ -488,7 +508,7 @@ def add_final_record(
 
 def process_file(
     file_path,
-    files_written,
+    final_records_by_date,
     seen_by_game_id,
     seen_by_fallback_key,
     selected_dates,
@@ -500,7 +520,6 @@ def process_file(
     with open(file_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    final_records_by_date = {}
     games_lookup_cache = {}
     predictions_lookup_cache = {}
     sportsbook_lookup_cache = {}
@@ -651,31 +670,6 @@ def process_file(
             parse_errors += 1
             continue
 
-    final_header = [
-        "sport",
-        "league",
-        "game_id",
-        "gamePk",
-        "gameNumber",
-        "game_date",
-        "game_time",
-        "home_team",
-        "away_team",
-        "final_away_score",
-        "final_home_score",
-        "final_total",
-        "away_run_line",
-        "home_run_line",
-        "total",
-        "game_status",
-        "final_scores_generated_at",
-    ]
-
-    for date, records in final_records_by_date.items():
-        out = FINAL_DIR / f"{date}_final_scores_MLB.csv"
-        rows = [[record.get(col, "") for col in final_header] for record in records]
-        write_csv(out, final_header, rows, files_written, "final scores")
-
     log(
         f"  completed_rows_seen={completed_rows_seen}, "
         f"accepted_rows={accepted_rows}, "
@@ -685,12 +679,13 @@ def process_file(
         f"skipped_duplicate={skipped_duplicate}, "
         f"skipped_not_completed={skipped_not_completed}, "
         f"skipped_no_selected_file={skipped_no_selected_file}, "
-        f"final_score_dates_written={len(final_records_by_date)}"
+        f"final_score_dates_accumulated={len(final_records_by_date)}"
     )
 
 
 def main():
     files_written = []
+    final_records_by_date = {}
     seen_by_game_id = {}
     seen_by_fallback_key = {}
     status_audit_rows = []
@@ -732,13 +727,19 @@ def main():
         for file in raw_files:
             process_file(
                 file_path=file,
-                files_written=files_written,
+                final_records_by_date=final_records_by_date,
                 seen_by_game_id=seen_by_game_id,
                 seen_by_fallback_key=seen_by_fallback_key,
                 selected_dates=selected_dates,
                 status_audit_rows=status_audit_rows,
                 key_audit_rows=key_audit_rows,
             )
+
+        for date in sorted(final_records_by_date):
+            records = final_records_by_date[date]
+            out = FINAL_DIR / f"{date}_final_scores_MLB.csv"
+            rows = [[record.get(col, "") for col in FINAL_HEADER] for record in records]
+            write_csv(out, FINAL_HEADER, rows, files_written, "final scores")
 
         write_audit_csv(
             STATUS_AUDIT_FILE,
@@ -768,6 +769,7 @@ def main():
         log("--- SUMMARY ---")
         log(f"Raw files processed: {len(raw_files)}")
         log(f"Files written: {len(files_written)}")
+        log(f"Final-score dates written once: {len(final_records_by_date)}")
         log(f"Final-score game_id primary-key rows: {len(seen_by_game_id)}")
         log(f"Final-score blank game_id fallback rows: {blank_game_id_count}")
         log(f"Unknown status audit rows: {unknown_status_count}")
