@@ -9,7 +9,7 @@ import yaml
 
 INPUT_DIR = Path("docs/win/baseball/mlb/03_edges/ev_kelly")
 OUTPUT_DIR = Path("docs/win/baseball/mlb/04_select/morning")
-CONFIG_PATH = Path("docs/win/baseball/mlb/config/markets.yaml")
+CONFIG_PATH = Path("docs/win/baseball/mlb/config/markets_AM.yaml")
 
 AUDIT_DIR = OUTPUT_DIR / "audit"
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/04_select")
@@ -121,7 +121,14 @@ REQUIRED_BASE_COLUMNS = [
     "away_team",
 ]
 
-REQUIRED_MONEYLINE_COLUMNS = REQUIRED_BASE_COLUMNS + [
+REQUIRED_CONTEXT_COLUMNS = [
+    "home_batters_found",
+    "away_batters_found",
+    "home_sp_found",
+    "away_sp_found",
+]
+
+REQUIRED_MONEYLINE_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "home_dk_moneyline_american",
     "away_dk_moneyline_american",
     "home_dk_decimal_moneyline",
@@ -146,7 +153,7 @@ REQUIRED_MONEYLINE_COLUMNS = REQUIRED_BASE_COLUMNS + [
     "away_ml_kelly",
 ]
 
-REQUIRED_RUN_LINE_COLUMNS = REQUIRED_BASE_COLUMNS + [
+REQUIRED_RUN_LINE_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "home_run_line",
     "away_run_line",
     "home_dk_run_line_american",
@@ -173,7 +180,7 @@ REQUIRED_RUN_LINE_COLUMNS = REQUIRED_BASE_COLUMNS + [
     "away_rl_kelly",
 ]
 
-REQUIRED_TOTAL_COLUMNS = REQUIRED_BASE_COLUMNS + [
+REQUIRED_TOTAL_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "total",
     "dk_total_over_american",
     "dk_total_under_american",
@@ -1153,6 +1160,13 @@ def main():
                     tt_row = get_market_row(tt_df, game_id)
 
                     context_row = rl_row if rl_row is not None else (tt_row if tt_row is not None else ml_row)
+
+                    base.update({
+                        "home_batters_found": iv(context_row.get("home_batters_found")) if context_row is not None else None,
+                        "away_batters_found": iv(context_row.get("away_batters_found")) if context_row is not None else None,
+                        "home_sp_found": iv(context_row.get("home_sp_found")) if context_row is not None else None,
+                        "away_sp_found": iv(context_row.get("away_sp_found")) if context_row is not None else None,
+                    })
                     low_conf = is_low_confidence(context_row)
 
                     rain_reason = rain_exclusion_reason(context_row)

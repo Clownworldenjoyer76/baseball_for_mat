@@ -1242,6 +1242,13 @@ def main():
 
                     context_row = rl_row if rl_row is not None else (tt_row if tt_row is not None else ml_row)
 
+                    base.update({
+                        "home_batters_found": iv(context_row.get("home_batters_found")) if context_row is not None else None,
+                        "away_batters_found": iv(context_row.get("away_batters_found")) if context_row is not None else None,
+                        "home_sp_found": iv(context_row.get("home_sp_found")) if context_row is not None else None,
+                        "away_sp_found": iv(context_row.get("away_sp_found")) if context_row is not None else None,
+                    })
+
                     context_failure = context_data_exclusion_reason(context_row)
 
                     if context_failure:
