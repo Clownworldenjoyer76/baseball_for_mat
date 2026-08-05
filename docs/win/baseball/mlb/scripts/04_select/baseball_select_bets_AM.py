@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# docs/win/baseball/mlb/scripts/04_select/baseball_select_bets.py
+# docs/win/baseball/mlb/scripts/04_select/baseball_select_bets_AM.py
 import traceback
 from datetime import datetime, UTC
 from pathlib import Path
