@@ -64,7 +64,6 @@ def _write_summary(summary: dict, per_slate: list) -> None:
         f"  selected_nonpositive_kelly        : {summary['selected_nonpositive_kelly']}",
         f"  selected_blank_probability_source : {summary['selected_blank_probability_source']}",
         f"  selected_probability_source_mismatch: {summary['selected_probability_source_mismatch']}",
-        f"  selected_adjusted_only_positive   : {summary['selected_adjusted_only_positive']}",
         f"  schema_errors                     : {summary['schema_errors']}",
         f"  rain_excluded                     : {summary['rain_excluded']}",
         f"  rain_excluded_will_it_rain        : {summary['rain_excluded_will_it_rain']}",
@@ -85,7 +84,7 @@ def _write_summary(summary: dict, per_slate: list) -> None:
                 f"ev_fail={c['ev_fail']:>4} kelly_fail={c['kelly_fail']:>4} "
                 f"odds_fail={c['odds_fail']:>4} line_fail={c['line_fail']:>4} "
                 f"prob_fail={c['prob_fail']:>4} source_fail={c['source_fail']:>4} "
-                f"adjusted_only_fail={c['adjusted_only_fail']:>4} missing={c['missing']:>4} "
+                f"missing={c['missing']:>4} "
                 f"excluded={c['excluded']:>4}"
             )
 
@@ -312,7 +311,6 @@ def validate_selected_output(df: pd.DataFrame, label: str) -> dict:
         "selected_nonpositive_kelly": 0,
         "selected_blank_probability_source": 0,
         "selected_probability_source_mismatch": 0,
-        "selected_adjusted_only_positive": 0,
     }
 
     if df.empty:
@@ -333,13 +331,9 @@ def validate_selected_output(df: pd.DataFrame, label: str) -> dict:
     prob_mismatch = int(((prob_ev - prob_kelly).abs() > PROB_TOLERANCE).sum())
     counts["selected_probability_source_mismatch"] += prob_mismatch
 
-    raw_ev = pd.to_numeric(df["raw_ev"], errors="coerce")
-    adjusted_ev = pd.to_numeric(df["adjusted_ev"], errors="coerce")
-    counts["selected_adjusted_only_positive"] = int(((raw_ev <= 0) & (adjusted_ev > 0)).sum())
-
     failures = {
         k: v for k, v in counts.items()
-        if v > 0 and k != "selected_adjusted_only_positive"
+        if v > 0
     }
 
     if failures:
@@ -568,7 +562,6 @@ def init_counter():
         "line_fail": 0,
         "prob_fail": 0,
         "source_fail": 0,
-        "adjusted_only_fail": 0,
         "excluded": 0,
         "missing": 0,
     }
@@ -637,16 +630,6 @@ def build_base_games(market_frames: dict) -> pd.DataFrame:
         rows.append(base)
 
     return pd.DataFrame(rows)
-
-
-def adjusted_only_positive(raw_ev, adjusted_ev) -> bool:
-    raw = fv(raw_ev)
-    adj = fv(adjusted_ev)
-
-    if raw is None or adj is None:
-        return False
-
-    return raw <= 0 and adj > 0
 
 
 def base_candidate_audit(row, candidate, fail_reason="", fail_detail=""):
@@ -978,7 +961,6 @@ def main():
         "selected_nonpositive_kelly": 0,
         "selected_blank_probability_source": 0,
         "selected_probability_source_mismatch": 0,
-        "selected_adjusted_only_positive": 0,
         "schema_errors": 0,
         "rain_excluded": 0,
         "rain_excluded_will_it_rain": 0,
@@ -1010,7 +992,6 @@ def main():
         f"Lineup low sample warn: {FILTERS.get('lineup_low_sample_warn')}"
     )
     _log("Selection requires kelly > 0 and matching EV/Kelly probability source per selected row.")
-    _log("Selection rejects rows where adjusted EV is positive but raw EV is zero/negative.")
     _log("Selection matches market rows by game_id only. Team/date fallback matching is disabled.")
 
     try:
@@ -1359,7 +1340,6 @@ def main():
         f"total_mkt_bets={summary['total_mkt_bets']} "
         f"selected_nonpositive_kelly={summary['selected_nonpositive_kelly']} "
         f"selected_probability_source_mismatch={summary['selected_probability_source_mismatch']} "
-        f"selected_adjusted_only_positive={summary['selected_adjusted_only_positive']} "
         f"rain_excluded_will_it_rain={summary['rain_excluded_will_it_rain']} "
         f"rain_excluded_symbol_code={summary['rain_excluded_symbol_code']} "
         f"rejection_audit_rows={summary['rejection_audit_rows']} "
