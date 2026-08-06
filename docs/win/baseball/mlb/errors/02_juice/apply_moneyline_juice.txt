@@ -1,408 +1,411 @@
-=== apply_moneyline_juice RUN 2026-08-05T21:01:51.939887+00:00 ===
-2026-08-05T21:01:51.944613+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/01_merge/01_merguiced
-2026-08-05T21:01:51.944658+00:00 | INFO  | SOURCE_MERGE_DIR: docs/win/baseball/mlb/01_merge
-2026-08-05T21:01:51.944686+00:00 | INFO  | JUICE_FILE: docs/win/baseball/mlb/config/juice/mlb_ml_juice.csv
-2026-08-05T21:01:51.953352+00:00 | INFO  | Files found: 130
-2026-08-05T21:01:51.953415+00:00 | INFO  | --- FILE: 2026_03_26_mlb_moneyline.csv
-2026-08-05T21:01:51.979626+00:00 | INFO  | 2026_03_26_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:51.979667+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_26_mlb_moneyline.csv
-2026-08-05T21:01:51.979716+00:00 | INFO  | --- FILE: 2026_03_27_mlb_moneyline.csv
-2026-08-05T21:01:51.999951+00:00 | INFO  | 2026_03_27_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:51.999990+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_27_mlb_moneyline.csv
-2026-08-05T21:01:52.000055+00:00 | INFO  | --- FILE: 2026_03_28_mlb_moneyline.csv
-2026-08-05T21:01:52.029631+00:00 | INFO  | 2026_03_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.029669+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_28_mlb_moneyline.csv
-2026-08-05T21:01:52.029713+00:00 | INFO  | --- FILE: 2026_03_29_mlb_moneyline.csv
-2026-08-05T21:01:52.055411+00:00 | INFO  | 2026_03_29_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.055452+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_29_mlb_moneyline.csv
-2026-08-05T21:01:52.055496+00:00 | INFO  | --- FILE: 2026_03_30_mlb_moneyline.csv
-2026-08-05T21:01:52.084865+00:00 | INFO  | 2026_03_30_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.084905+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_30_mlb_moneyline.csv
-2026-08-05T21:01:52.084948+00:00 | INFO  | --- FILE: 2026_03_31_mlb_moneyline.csv
-2026-08-05T21:01:52.112682+00:00 | INFO  | 2026_03_31_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.112719+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_31_mlb_moneyline.csv
-2026-08-05T21:01:52.112762+00:00 | INFO  | --- FILE: 2026_04_01_mlb_moneyline.csv
-2026-08-05T21:01:52.141846+00:00 | INFO  | 2026_04_01_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.141885+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_01_mlb_moneyline.csv
-2026-08-05T21:01:52.141930+00:00 | INFO  | --- FILE: 2026_04_02_mlb_moneyline.csv
-2026-08-05T21:01:52.155421+00:00 | INFO  | 2026_04_02_mlb_moneyline.csv | rows=3 applied=3 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.155459+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_02_mlb_moneyline.csv
-2026-08-05T21:01:52.155502+00:00 | INFO  | --- FILE: 2026_04_03_mlb_moneyline.csv
-2026-08-05T21:01:52.187678+00:00 | INFO  | 2026_04_03_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.187732+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_03_mlb_moneyline.csv
-2026-08-05T21:01:52.187781+00:00 | INFO  | --- FILE: 2026_04_04_mlb_moneyline.csv
-2026-08-05T21:01:52.221115+00:00 | INFO  | 2026_04_04_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.221155+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_04_mlb_moneyline.csv
-2026-08-05T21:01:52.221199+00:00 | INFO  | --- FILE: 2026_04_05_mlb_moneyline.csv
-2026-08-05T21:01:52.251674+00:00 | INFO  | 2026_04_05_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.251713+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_05_mlb_moneyline.csv
-2026-08-05T21:01:52.251761+00:00 | INFO  | --- FILE: 2026_04_06_mlb_moneyline.csv
-2026-08-05T21:01:52.287982+00:00 | INFO  | 2026_04_06_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.288034+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_06_mlb_moneyline.csv
-2026-08-05T21:01:52.288087+00:00 | INFO  | --- FILE: 2026_04_07_mlb_moneyline.csv
-2026-08-05T21:01:52.320818+00:00 | INFO  | 2026_04_07_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.320858+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_07_mlb_moneyline.csv
-2026-08-05T21:01:52.320901+00:00 | INFO  | --- FILE: 2026_04_08_mlb_moneyline.csv
-2026-08-05T21:01:52.349901+00:00 | INFO  | 2026_04_08_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.349939+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_08_mlb_moneyline.csv
-2026-08-05T21:01:52.349981+00:00 | INFO  | --- FILE: 2026_04_09_mlb_moneyline.csv
-2026-08-05T21:01:52.367073+00:00 | INFO  | 2026_04_09_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.367110+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_09_mlb_moneyline.csv
-2026-08-05T21:01:52.367153+00:00 | INFO  | --- FILE: 2026_04_10_mlb_moneyline.csv
-2026-08-05T21:01:52.396337+00:00 | INFO  | 2026_04_10_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.396376+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_10_mlb_moneyline.csv
-2026-08-05T21:01:52.396418+00:00 | INFO  | --- FILE: 2026_04_11_mlb_moneyline.csv
-2026-08-05T21:01:52.420294+00:00 | INFO  | 2026_04_11_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.420331+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_11_mlb_moneyline.csv
-2026-08-05T21:01:52.420374+00:00 | INFO  | --- FILE: 2026_04_12_mlb_moneyline.csv
-2026-08-05T21:01:52.449495+00:00 | INFO  | 2026_04_12_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.449533+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_12_mlb_moneyline.csv
-2026-08-05T21:01:52.449575+00:00 | INFO  | --- FILE: 2026_04_13_mlb_moneyline.csv
-2026-08-05T21:01:52.472141+00:00 | INFO  | 2026_04_13_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.472178+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_13_mlb_moneyline.csv
-2026-08-05T21:01:52.472219+00:00 | INFO  | --- FILE: 2026_04_14_mlb_moneyline.csv
-2026-08-05T21:01:52.501984+00:00 | INFO  | 2026_04_14_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.502040+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_14_mlb_moneyline.csv
-2026-08-05T21:01:52.502083+00:00 | INFO  | --- FILE: 2026_04_15_mlb_moneyline.csv
-2026-08-05T21:01:52.531641+00:00 | INFO  | 2026_04_15_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.531678+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_15_mlb_moneyline.csv
-2026-08-05T21:01:52.531721+00:00 | INFO  | --- FILE: 2026_04_16_mlb_moneyline.csv
-2026-08-05T21:01:52.554214+00:00 | INFO  | 2026_04_16_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.554250+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_16_mlb_moneyline.csv
-2026-08-05T21:01:52.554292+00:00 | INFO  | --- FILE: 2026_04_17_mlb_moneyline.csv
-2026-08-05T21:01:52.583536+00:00 | INFO  | 2026_04_17_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.583578+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_17_mlb_moneyline.csv
-2026-08-05T21:01:52.583621+00:00 | INFO  | --- FILE: 2026_04_18_mlb_moneyline.csv
-2026-08-05T21:01:52.613152+00:00 | INFO  | 2026_04_18_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.613189+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_18_mlb_moneyline.csv
-2026-08-05T21:01:52.613231+00:00 | INFO  | --- FILE: 2026_04_19_mlb_moneyline.csv
-2026-08-05T21:01:52.643299+00:00 | INFO  | 2026_04_19_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.643336+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_19_mlb_moneyline.csv
-2026-08-05T21:01:52.643379+00:00 | INFO  | --- FILE: 2026_04_20_mlb_moneyline.csv
-2026-08-05T21:01:52.665634+00:00 | INFO  | 2026_04_20_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.665671+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_20_mlb_moneyline.csv
-2026-08-05T21:01:52.665713+00:00 | INFO  | --- FILE: 2026_04_21_mlb_moneyline.csv
-2026-08-05T21:01:52.694873+00:00 | INFO  | 2026_04_21_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.694910+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_21_mlb_moneyline.csv
-2026-08-05T21:01:52.694953+00:00 | INFO  | --- FILE: 2026_04_22_mlb_moneyline.csv
-2026-08-05T21:01:52.724043+00:00 | INFO  | 2026_04_22_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.724082+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_22_mlb_moneyline.csv
-2026-08-05T21:01:52.724125+00:00 | INFO  | --- FILE: 2026_04_23_mlb_moneyline.csv
-2026-08-05T21:01:52.745529+00:00 | INFO  | 2026_04_23_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.745565+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_23_mlb_moneyline.csv
-2026-08-05T21:01:52.745607+00:00 | INFO  | --- FILE: 2026_04_24_mlb_moneyline.csv
-2026-08-05T21:01:52.773646+00:00 | INFO  | 2026_04_24_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.773684+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_24_mlb_moneyline.csv
-2026-08-05T21:01:52.773728+00:00 | INFO  | --- FILE: 2026_04_25_mlb_moneyline.csv
-2026-08-05T21:01:52.803003+00:00 | INFO  | 2026_04_25_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.803062+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_25_mlb_moneyline.csv
-2026-08-05T21:01:52.803106+00:00 | INFO  | --- FILE: 2026_04_26_mlb_moneyline.csv
-2026-08-05T21:01:52.833713+00:00 | INFO  | 2026_04_26_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.833750+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_26_mlb_moneyline.csv
-2026-08-05T21:01:52.833792+00:00 | INFO  | --- FILE: 2026_04_27_mlb_moneyline.csv
-2026-08-05T21:01:52.853661+00:00 | INFO  | 2026_04_27_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.853697+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_27_mlb_moneyline.csv
-2026-08-05T21:01:52.853739+00:00 | INFO  | --- FILE: 2026_04_28_mlb_moneyline.csv
-2026-08-05T21:01:52.882920+00:00 | INFO  | 2026_04_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.882957+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_28_mlb_moneyline.csv
-2026-08-05T21:01:52.883000+00:00 | INFO  | --- FILE: 2026_04_29_mlb_moneyline.csv
-2026-08-05T21:01:52.912237+00:00 | INFO  | 2026_04_29_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.912279+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_29_mlb_moneyline.csv
-2026-08-05T21:01:52.912322+00:00 | INFO  | --- FILE: 2026_04_30_mlb_moneyline.csv
-2026-08-05T21:01:52.933483+00:00 | INFO  | 2026_04_30_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.933520+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_30_mlb_moneyline.csv
-2026-08-05T21:01:52.933562+00:00 | INFO  | --- FILE: 2026_05_01_mlb_moneyline.csv
-2026-08-05T21:01:52.961494+00:00 | INFO  | 2026_05_01_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.961531+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_01_mlb_moneyline.csv
-2026-08-05T21:01:52.961572+00:00 | INFO  | --- FILE: 2026_05_02_mlb_moneyline.csv
-2026-08-05T21:01:52.990657+00:00 | INFO  | 2026_05_02_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:52.990696+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_02_mlb_moneyline.csv
-2026-08-05T21:01:52.990739+00:00 | INFO  | --- FILE: 2026_05_03_mlb_moneyline.csv
-2026-08-05T21:01:53.020238+00:00 | INFO  | 2026_05_03_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.020274+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_03_mlb_moneyline.csv
-2026-08-05T21:01:53.020318+00:00 | INFO  | --- FILE: 2026_05_04_mlb_moneyline.csv
-2026-08-05T21:01:53.045356+00:00 | INFO  | 2026_05_04_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.045392+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_04_mlb_moneyline.csv
-2026-08-05T21:01:53.045433+00:00 | INFO  | --- FILE: 2026_05_05_mlb_moneyline.csv
-2026-08-05T21:01:53.074490+00:00 | INFO  | 2026_05_05_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.074528+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_05_mlb_moneyline.csv
-2026-08-05T21:01:53.074571+00:00 | INFO  | --- FILE: 2026_05_06_mlb_moneyline.csv
-2026-08-05T21:01:53.103860+00:00 | INFO  | 2026_05_06_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.103898+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_06_mlb_moneyline.csv
-2026-08-05T21:01:53.103941+00:00 | INFO  | --- FILE: 2026_05_07_mlb_moneyline.csv
-2026-08-05T21:01:53.126429+00:00 | INFO  | 2026_05_07_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.126465+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_07_mlb_moneyline.csv
-2026-08-05T21:01:53.126506+00:00 | INFO  | --- FILE: 2026_05_08_mlb_moneyline.csv
-2026-08-05T21:01:53.154327+00:00 | INFO  | 2026_05_08_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.154365+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_08_mlb_moneyline.csv
-2026-08-05T21:01:53.154409+00:00 | INFO  | --- FILE: 2026_05_09_mlb_moneyline.csv
-2026-08-05T21:01:53.183824+00:00 | INFO  | 2026_05_09_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.183860+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_09_mlb_moneyline.csv
-2026-08-05T21:01:53.183902+00:00 | INFO  | --- FILE: 2026_05_10_mlb_moneyline.csv
-2026-08-05T21:01:53.213175+00:00 | INFO  | 2026_05_10_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.213211+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_10_mlb_moneyline.csv
-2026-08-05T21:01:53.213253+00:00 | INFO  | --- FILE: 2026_05_11_mlb_moneyline.csv
-2026-08-05T21:01:53.230511+00:00 | INFO  | 2026_05_11_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.230552+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_11_mlb_moneyline.csv
-2026-08-05T21:01:53.230595+00:00 | INFO  | --- FILE: 2026_05_12_mlb_moneyline.csv
-2026-08-05T21:01:53.260350+00:00 | INFO  | 2026_05_12_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.260387+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_12_mlb_moneyline.csv
-2026-08-05T21:01:53.260431+00:00 | INFO  | --- FILE: 2026_05_13_mlb_moneyline.csv
-2026-08-05T21:01:53.289802+00:00 | INFO  | 2026_05_13_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.289839+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_13_mlb_moneyline.csv
-2026-08-05T21:01:53.289881+00:00 | INFO  | --- FILE: 2026_05_14_mlb_moneyline.csv
-2026-08-05T21:01:53.313784+00:00 | INFO  | 2026_05_14_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.313823+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_14_mlb_moneyline.csv
-2026-08-05T21:01:53.313866+00:00 | INFO  | --- FILE: 2026_05_15_mlb_moneyline.csv
-2026-08-05T21:01:53.341968+00:00 | INFO  | 2026_05_15_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.342007+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_15_mlb_moneyline.csv
-2026-08-05T21:01:53.342068+00:00 | INFO  | --- FILE: 2026_05_16_mlb_moneyline.csv
-2026-08-05T21:01:53.371695+00:00 | INFO  | 2026_05_16_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.371733+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_16_mlb_moneyline.csv
-2026-08-05T21:01:53.371775+00:00 | INFO  | --- FILE: 2026_05_17_mlb_moneyline.csv
-2026-08-05T21:01:53.399564+00:00 | INFO  | 2026_05_17_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.399602+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_17_mlb_moneyline.csv
-2026-08-05T21:01:53.399644+00:00 | INFO  | --- FILE: 2026_05_18_mlb_moneyline.csv
-2026-08-05T21:01:53.427572+00:00 | INFO  | 2026_05_18_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.427609+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_18_mlb_moneyline.csv
-2026-08-05T21:01:53.427652+00:00 | INFO  | --- FILE: 2026_05_19_mlb_moneyline.csv
-2026-08-05T21:01:53.456946+00:00 | INFO  | 2026_05_19_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.456982+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_19_mlb_moneyline.csv
-2026-08-05T21:01:53.457043+00:00 | INFO  | --- FILE: 2026_05_20_mlb_moneyline.csv
-2026-08-05T21:01:53.486136+00:00 | INFO  | 2026_05_20_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.486173+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_20_mlb_moneyline.csv
-2026-08-05T21:01:53.486216+00:00 | INFO  | --- FILE: 2026_05_21_mlb_moneyline.csv
-2026-08-05T21:01:53.504958+00:00 | INFO  | 2026_05_21_mlb_moneyline.csv | rows=7 applied=7 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.504996+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_21_mlb_moneyline.csv
-2026-08-05T21:01:53.505059+00:00 | INFO  | --- FILE: 2026_05_22_mlb_moneyline.csv
-2026-08-05T21:01:53.534444+00:00 | INFO  | 2026_05_22_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.534481+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_22_mlb_moneyline.csv
-2026-08-05T21:01:53.534525+00:00 | INFO  | --- FILE: 2026_05_23_mlb_moneyline.csv
-2026-08-05T21:01:53.565056+00:00 | INFO  | 2026_05_23_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.565101+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_23_mlb_moneyline.csv
-2026-08-05T21:01:53.565145+00:00 | INFO  | --- FILE: 2026_05_24_mlb_moneyline.csv
-2026-08-05T21:01:53.595944+00:00 | INFO  | 2026_05_24_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.595984+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_24_mlb_moneyline.csv
-2026-08-05T21:01:53.596047+00:00 | INFO  | --- FILE: 2026_05_25_mlb_moneyline.csv
-2026-08-05T21:01:53.622507+00:00 | INFO  | 2026_05_25_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.622544+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_25_mlb_moneyline.csv
-2026-08-05T21:01:53.622587+00:00 | INFO  | --- FILE: 2026_05_26_mlb_moneyline.csv
-2026-08-05T21:01:53.652058+00:00 | INFO  | 2026_05_26_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.652098+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_26_mlb_moneyline.csv
-2026-08-05T21:01:53.652142+00:00 | INFO  | --- FILE: 2026_05_27_mlb_moneyline.csv
-2026-08-05T21:01:53.681424+00:00 | INFO  | 2026_05_27_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.681461+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_27_mlb_moneyline.csv
-2026-08-05T21:01:53.681503+00:00 | INFO  | --- FILE: 2026_05_28_mlb_moneyline.csv
-2026-08-05T21:01:53.698842+00:00 | INFO  | 2026_05_28_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.698877+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_28_mlb_moneyline.csv
-2026-08-05T21:01:53.698919+00:00 | INFO  | --- FILE: 2026_05_29_mlb_moneyline.csv
-2026-08-05T21:01:53.728434+00:00 | INFO  | 2026_05_29_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.728473+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_29_mlb_moneyline.csv
-2026-08-05T21:01:53.728516+00:00 | INFO  | --- FILE: 2026_05_30_mlb_moneyline.csv
-2026-08-05T21:01:53.758153+00:00 | INFO  | 2026_05_30_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.758190+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_30_mlb_moneyline.csv
-2026-08-05T21:01:53.758233+00:00 | INFO  | --- FILE: 2026_05_31_mlb_moneyline.csv
-2026-08-05T21:01:53.773519+00:00 | SKIP  | row=7 reason=missing_dk_odds
-2026-08-05T21:01:53.786780+00:00 | INFO  | 2026_05_31_mlb_moneyline.csv | rows=15 applied=14 skipped_bad=1 skipped_noband=0 missing_any_moneyline_dk=1
-2026-08-05T21:01:53.786817+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_31_mlb_moneyline.csv
-2026-08-05T21:01:53.786860+00:00 | INFO  | --- FILE: 2026_06_01_mlb_moneyline.csv
-2026-08-05T21:01:53.808222+00:00 | INFO  | 2026_06_01_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.808259+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_01_mlb_moneyline.csv
-2026-08-05T21:01:53.808302+00:00 | INFO  | --- FILE: 2026_06_02_mlb_moneyline.csv
-2026-08-05T21:01:53.837721+00:00 | INFO  | 2026_06_02_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.837759+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_02_mlb_moneyline.csv
-2026-08-05T21:01:53.837801+00:00 | INFO  | --- FILE: 2026_06_03_mlb_moneyline.csv
-2026-08-05T21:01:53.867128+00:00 | INFO  | 2026_06_03_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.867165+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_03_mlb_moneyline.csv
-2026-08-05T21:01:53.867209+00:00 | INFO  | --- FILE: 2026_06_04_mlb_moneyline.csv
-2026-08-05T21:01:53.888531+00:00 | INFO  | 2026_06_04_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.888573+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_04_mlb_moneyline.csv
-2026-08-05T21:01:53.888616+00:00 | INFO  | --- FILE: 2026_06_05_mlb_moneyline.csv
-2026-08-05T21:01:53.916591+00:00 | INFO  | 2026_06_05_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.916630+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_05_mlb_moneyline.csv
-2026-08-05T21:01:53.916673+00:00 | INFO  | --- FILE: 2026_06_06_mlb_moneyline.csv
-2026-08-05T21:01:53.946126+00:00 | INFO  | 2026_06_06_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.946163+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_06_mlb_moneyline.csv
-2026-08-05T21:01:53.946205+00:00 | INFO  | --- FILE: 2026_06_07_mlb_moneyline.csv
-2026-08-05T21:01:53.975332+00:00 | INFO  | 2026_06_07_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.975369+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_07_mlb_moneyline.csv
-2026-08-05T21:01:53.975412+00:00 | INFO  | --- FILE: 2026_06_08_mlb_moneyline.csv
-2026-08-05T21:01:53.995277+00:00 | INFO  | 2026_06_08_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:53.995315+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_08_mlb_moneyline.csv
-2026-08-05T21:01:53.995358+00:00 | INFO  | --- FILE: 2026_06_09_mlb_moneyline.csv
-2026-08-05T21:01:54.016575+00:00 | INFO  | 2026_06_09_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.016612+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_09_mlb_moneyline.csv
-2026-08-05T21:01:54.016654+00:00 | INFO  | --- FILE: 2026_06_10_mlb_moneyline.csv
-2026-08-05T21:01:54.038136+00:00 | INFO  | 2026_06_10_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.038172+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_10_mlb_moneyline.csv
-2026-08-05T21:01:54.038214+00:00 | INFO  | --- FILE: 2026_06_11_mlb_moneyline.csv
-2026-08-05T21:01:54.055255+00:00 | INFO  | 2026_06_11_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.055292+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_11_mlb_moneyline.csv
-2026-08-05T21:01:54.055333+00:00 | INFO  | --- FILE: 2026_06_12_mlb_moneyline.csv
-2026-08-05T21:01:54.075182+00:00 | INFO  | 2026_06_12_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.075220+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_12_mlb_moneyline.csv
-2026-08-05T21:01:54.075262+00:00 | INFO  | --- FILE: 2026_06_13_mlb_moneyline.csv
-2026-08-05T21:01:54.095263+00:00 | INFO  | 2026_06_13_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.095302+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_13_mlb_moneyline.csv
-2026-08-05T21:01:54.095345+00:00 | INFO  | --- FILE: 2026_06_14_mlb_moneyline.csv
-2026-08-05T21:01:54.115283+00:00 | INFO  | 2026_06_14_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.115320+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_14_mlb_moneyline.csv
-2026-08-05T21:01:54.115363+00:00 | INFO  | --- FILE: 2026_06_15_mlb_moneyline.csv
-2026-08-05T21:01:54.136765+00:00 | INFO  | 2026_06_15_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.136800+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_15_mlb_moneyline.csv
-2026-08-05T21:01:54.136842+00:00 | INFO  | --- FILE: 2026_06_16_mlb_moneyline.csv
-2026-08-05T21:01:54.165358+00:00 | INFO  | 2026_06_16_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.165402+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_16_mlb_moneyline.csv
-2026-08-05T21:01:54.165446+00:00 | INFO  | --- FILE: 2026_06_17_mlb_moneyline.csv
-2026-08-05T21:01:54.192089+00:00 | INFO  | 2026_06_17_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.192126+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_17_mlb_moneyline.csv
-2026-08-05T21:01:54.192169+00:00 | INFO  | --- FILE: 2026_06_18_mlb_moneyline.csv
-2026-08-05T21:01:54.213400+00:00 | INFO  | 2026_06_18_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.213437+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_18_mlb_moneyline.csv
-2026-08-05T21:01:54.213481+00:00 | INFO  | --- FILE: 2026_06_19_mlb_moneyline.csv
-2026-08-05T21:01:54.240216+00:00 | INFO  | 2026_06_19_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.240255+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_19_mlb_moneyline.csv
-2026-08-05T21:01:54.240298+00:00 | INFO  | --- FILE: 2026_06_20_mlb_moneyline.csv
-2026-08-05T21:01:54.268134+00:00 | INFO  | 2026_06_20_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.268172+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_20_mlb_moneyline.csv
-2026-08-05T21:01:54.268216+00:00 | INFO  | --- FILE: 2026_06_21_mlb_moneyline.csv
-2026-08-05T21:01:54.296355+00:00 | INFO  | 2026_06_21_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.296392+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_21_mlb_moneyline.csv
-2026-08-05T21:01:54.296435+00:00 | INFO  | --- FILE: 2026_06_22_mlb_moneyline.csv
-2026-08-05T21:01:54.322805+00:00 | INFO  | 2026_06_22_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.322843+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_22_mlb_moneyline.csv
-2026-08-05T21:01:54.322886+00:00 | INFO  | --- FILE: 2026_06_23_mlb_moneyline.csv
-2026-08-05T21:01:54.350371+00:00 | INFO  | 2026_06_23_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.350409+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_23_mlb_moneyline.csv
-2026-08-05T21:01:54.350451+00:00 | INFO  | --- FILE: 2026_06_24_mlb_moneyline.csv
-2026-08-05T21:01:54.377946+00:00 | INFO  | 2026_06_24_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.377982+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_24_mlb_moneyline.csv
-2026-08-05T21:01:54.378043+00:00 | INFO  | --- FILE: 2026_06_25_mlb_moneyline.csv
-2026-08-05T21:01:54.399073+00:00 | INFO  | 2026_06_25_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.399112+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_25_mlb_moneyline.csv
-2026-08-05T21:01:54.399154+00:00 | INFO  | --- FILE: 2026_06_26_mlb_moneyline.csv
-2026-08-05T21:01:54.426704+00:00 | INFO  | 2026_06_26_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.426742+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_26_mlb_moneyline.csv
-2026-08-05T21:01:54.426784+00:00 | INFO  | --- FILE: 2026_06_27_mlb_moneyline.csv
-2026-08-05T21:01:54.455663+00:00 | INFO  | 2026_06_27_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.455701+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_27_mlb_moneyline.csv
-2026-08-05T21:01:54.455744+00:00 | INFO  | --- FILE: 2026_06_28_mlb_moneyline.csv
-2026-08-05T21:01:54.484760+00:00 | INFO  | 2026_06_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.484798+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_28_mlb_moneyline.csv
-2026-08-05T21:01:54.484839+00:00 | INFO  | --- FILE: 2026_06_29_mlb_moneyline.csv
-2026-08-05T21:01:54.511186+00:00 | INFO  | 2026_06_29_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.511223+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_29_mlb_moneyline.csv
-2026-08-05T21:01:54.511265+00:00 | INFO  | --- FILE: 2026_06_30_mlb_moneyline.csv
-2026-08-05T21:01:54.540044+00:00 | INFO  | 2026_06_30_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.540083+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_30_mlb_moneyline.csv
-2026-08-05T21:01:54.540125+00:00 | INFO  | --- FILE: 2026_07_01_mlb_moneyline.csv
-2026-08-05T21:01:54.567798+00:00 | INFO  | 2026_07_01_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.567837+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_01_mlb_moneyline.csv
-2026-08-05T21:01:54.567880+00:00 | INFO  | --- FILE: 2026_07_02_mlb_moneyline.csv
-2026-08-05T21:01:54.588711+00:00 | INFO  | 2026_07_02_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.588747+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_02_mlb_moneyline.csv
-2026-08-05T21:01:54.588788+00:00 | INFO  | --- FILE: 2026_07_03_mlb_moneyline.csv
-2026-08-05T21:01:54.614858+00:00 | INFO  | 2026_07_03_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.614896+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_03_mlb_moneyline.csv
-2026-08-05T21:01:54.614939+00:00 | INFO  | --- FILE: 2026_07_04_mlb_moneyline.csv
-2026-08-05T21:01:54.643683+00:00 | INFO  | 2026_07_04_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.643720+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_04_mlb_moneyline.csv
-2026-08-05T21:01:54.643763+00:00 | INFO  | --- FILE: 2026_07_05_mlb_moneyline.csv
-2026-08-05T21:01:54.671197+00:00 | INFO  | 2026_07_05_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.671234+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_05_mlb_moneyline.csv
-2026-08-05T21:01:54.671277+00:00 | INFO  | --- FILE: 2026_07_06_mlb_moneyline.csv
-2026-08-05T21:01:54.690717+00:00 | INFO  | 2026_07_06_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.690752+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_06_mlb_moneyline.csv
-2026-08-05T21:01:54.690794+00:00 | INFO  | --- FILE: 2026_07_07_mlb_moneyline.csv
-2026-08-05T21:01:54.719803+00:00 | INFO  | 2026_07_07_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.719839+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_07_mlb_moneyline.csv
-2026-08-05T21:01:54.719882+00:00 | INFO  | --- FILE: 2026_07_08_mlb_moneyline.csv
-2026-08-05T21:01:54.749130+00:00 | INFO  | 2026_07_08_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.749167+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_08_mlb_moneyline.csv
-2026-08-05T21:01:54.749210+00:00 | INFO  | --- FILE: 2026_07_09_mlb_moneyline.csv
-2026-08-05T21:01:54.786298+00:00 | INFO  | 2026_07_09_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.786336+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_09_mlb_moneyline.csv
-2026-08-05T21:01:54.786381+00:00 | INFO  | --- FILE: 2026_07_10_mlb_moneyline.csv
-2026-08-05T21:01:54.815698+00:00 | INFO  | 2026_07_10_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.815735+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_10_mlb_moneyline.csv
-2026-08-05T21:01:54.815778+00:00 | INFO  | --- FILE: 2026_07_11_mlb_moneyline.csv
-2026-08-05T21:01:54.838334+00:00 | INFO  | 2026_07_11_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.838372+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_11_mlb_moneyline.csv
-2026-08-05T21:01:54.838413+00:00 | INFO  | --- FILE: 2026_07_12_mlb_moneyline.csv
-2026-08-05T21:01:54.866027+00:00 | INFO  | 2026_07_12_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.866067+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_12_mlb_moneyline.csv
-2026-08-05T21:01:54.866111+00:00 | INFO  | --- FILE: 2026_07_16_mlb_moneyline.csv
-2026-08-05T21:01:54.876255+00:00 | INFO  | 2026_07_16_mlb_moneyline.csv | rows=1 applied=1 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.876290+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_16_mlb_moneyline.csv
-2026-08-05T21:01:54.876331+00:00 | INFO  | --- FILE: 2026_07_17_mlb_moneyline.csv
-2026-08-05T21:01:54.904186+00:00 | INFO  | 2026_07_17_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.904225+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_17_mlb_moneyline.csv
-2026-08-05T21:01:54.904268+00:00 | INFO  | --- FILE: 2026_07_18_mlb_moneyline.csv
-2026-08-05T21:01:54.925663+00:00 | INFO  | 2026_07_18_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.925700+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_18_mlb_moneyline.csv
-2026-08-05T21:01:54.925742+00:00 | INFO  | --- FILE: 2026_07_19_mlb_moneyline.csv
-2026-08-05T21:01:54.950792+00:00 | INFO  | 2026_07_19_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.950830+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_19_mlb_moneyline.csv
-2026-08-05T21:01:54.950873+00:00 | INFO  | --- FILE: 2026_07_20_mlb_moneyline.csv
-2026-08-05T21:01:54.980060+00:00 | INFO  | 2026_07_20_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:54.980097+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_20_mlb_moneyline.csv
-2026-08-05T21:01:54.980140+00:00 | INFO  | --- FILE: 2026_07_21_mlb_moneyline.csv
-2026-08-05T21:01:55.001101+00:00 | INFO  | 2026_07_21_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.001139+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_21_mlb_moneyline.csv
-2026-08-05T21:01:55.001181+00:00 | INFO  | --- FILE: 2026_07_22_mlb_moneyline.csv
-2026-08-05T21:01:55.014111+00:00 | INFO  | 2026_07_22_mlb_moneyline.csv | rows=3 applied=3 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.014147+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_22_mlb_moneyline.csv
-2026-08-05T21:01:55.014188+00:00 | INFO  | --- FILE: 2026_07_23_mlb_moneyline.csv
-2026-08-05T21:01:55.029672+00:00 | INFO  | 2026_07_23_mlb_moneyline.csv | rows=5 applied=5 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.029708+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_23_mlb_moneyline.csv
-2026-08-05T21:01:55.029750+00:00 | INFO  | --- FILE: 2026_07_24_mlb_moneyline.csv
-2026-08-05T21:01:55.058494+00:00 | INFO  | 2026_07_24_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.058530+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_24_mlb_moneyline.csv
-2026-08-05T21:01:55.058573+00:00 | INFO  | --- FILE: 2026_07_25_mlb_moneyline.csv
-2026-08-05T21:01:55.087364+00:00 | INFO  | 2026_07_25_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.087402+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_25_mlb_moneyline.csv
-2026-08-05T21:01:55.087445+00:00 | INFO  | --- FILE: 2026_07_26_mlb_moneyline.csv
-2026-08-05T21:01:55.116404+00:00 | INFO  | 2026_07_26_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.116442+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_26_mlb_moneyline.csv
-2026-08-05T21:01:55.116485+00:00 | INFO  | --- FILE: 2026_07_27_mlb_moneyline.csv
-2026-08-05T21:01:55.141610+00:00 | INFO  | 2026_07_27_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.141646+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_27_mlb_moneyline.csv
-2026-08-05T21:01:55.141687+00:00 | INFO  | --- FILE: 2026_07_28_mlb_moneyline.csv
-2026-08-05T21:01:55.170791+00:00 | INFO  | 2026_07_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.170830+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_28_mlb_moneyline.csv
-2026-08-05T21:01:55.170873+00:00 | INFO  | --- FILE: 2026_07_29_mlb_moneyline.csv
-2026-08-05T21:01:55.199945+00:00 | INFO  | 2026_07_29_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.199982+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_29_mlb_moneyline.csv
-2026-08-05T21:01:55.200043+00:00 | INFO  | --- FILE: 2026_07_30_mlb_moneyline.csv
-2026-08-05T21:01:55.222813+00:00 | INFO  | 2026_07_30_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.222850+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_30_mlb_moneyline.csv
-2026-08-05T21:01:55.222891+00:00 | INFO  | --- FILE: 2026_07_31_mlb_moneyline.csv
-2026-08-05T21:01:55.252156+00:00 | INFO  | 2026_07_31_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.252193+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_31_mlb_moneyline.csv
-2026-08-05T21:01:55.252237+00:00 | INFO  | --- FILE: 2026_08_01_mlb_moneyline.csv
-2026-08-05T21:01:55.281466+00:00 | INFO  | 2026_08_01_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.281504+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_01_mlb_moneyline.csv
-2026-08-05T21:01:55.281547+00:00 | INFO  | --- FILE: 2026_08_02_mlb_moneyline.csv
-2026-08-05T21:01:55.310754+00:00 | INFO  | 2026_08_02_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.310790+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_02_mlb_moneyline.csv
-2026-08-05T21:01:55.310833+00:00 | INFO  | --- FILE: 2026_08_03_mlb_moneyline.csv
-2026-08-05T21:01:55.327901+00:00 | INFO  | 2026_08_03_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.327938+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_03_mlb_moneyline.csv
-2026-08-05T21:01:55.327980+00:00 | INFO  | --- FILE: 2026_08_04_mlb_moneyline.csv
-2026-08-05T21:01:55.357042+00:00 | INFO  | 2026_08_04_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.357082+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_04_mlb_moneyline.csv
-2026-08-05T21:01:55.357126+00:00 | INFO  | --- FILE: 2026_08_05_mlb_moneyline.csv
-2026-08-05T21:01:55.381042+00:00 | INFO  | 2026_08_05_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
-2026-08-05T21:01:55.381080+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_05_mlb_moneyline.csv
-2026-08-05T21:01:55.400940+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/02_juice/audit/moneyline_post_juice_audit.csv
+=== apply_moneyline_juice RUN 2026-08-06T13:01:13.412487+00:00 ===
+2026-08-06T13:01:13.417179+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/01_merge/01_merguiced
+2026-08-06T13:01:13.417223+00:00 | INFO  | SOURCE_MERGE_DIR: docs/win/baseball/mlb/01_merge
+2026-08-06T13:01:13.417252+00:00 | INFO  | JUICE_FILE: docs/win/baseball/mlb/config/juice/mlb_ml_juice.csv
+2026-08-06T13:01:13.425886+00:00 | INFO  | Files found: 131
+2026-08-06T13:01:13.425951+00:00 | INFO  | --- FILE: 2026_03_26_mlb_moneyline.csv
+2026-08-06T13:01:13.452108+00:00 | INFO  | 2026_03_26_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.452148+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_26_mlb_moneyline.csv
+2026-08-06T13:01:13.452196+00:00 | INFO  | --- FILE: 2026_03_27_mlb_moneyline.csv
+2026-08-06T13:01:13.472249+00:00 | INFO  | 2026_03_27_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.472288+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_27_mlb_moneyline.csv
+2026-08-06T13:01:13.472336+00:00 | INFO  | --- FILE: 2026_03_28_mlb_moneyline.csv
+2026-08-06T13:01:13.501766+00:00 | INFO  | 2026_03_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.501805+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_28_mlb_moneyline.csv
+2026-08-06T13:01:13.501850+00:00 | INFO  | --- FILE: 2026_03_29_mlb_moneyline.csv
+2026-08-06T13:01:13.527407+00:00 | INFO  | 2026_03_29_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.527448+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_29_mlb_moneyline.csv
+2026-08-06T13:01:13.527493+00:00 | INFO  | --- FILE: 2026_03_30_mlb_moneyline.csv
+2026-08-06T13:01:13.557000+00:00 | INFO  | 2026_03_30_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.557040+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_30_mlb_moneyline.csv
+2026-08-06T13:01:13.557083+00:00 | INFO  | --- FILE: 2026_03_31_mlb_moneyline.csv
+2026-08-06T13:01:13.584720+00:00 | INFO  | 2026_03_31_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.584757+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_03_31_mlb_moneyline.csv
+2026-08-06T13:01:13.584801+00:00 | INFO  | --- FILE: 2026_04_01_mlb_moneyline.csv
+2026-08-06T13:01:13.614146+00:00 | INFO  | 2026_04_01_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.614189+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_01_mlb_moneyline.csv
+2026-08-06T13:01:13.614235+00:00 | INFO  | --- FILE: 2026_04_02_mlb_moneyline.csv
+2026-08-06T13:01:13.627402+00:00 | INFO  | 2026_04_02_mlb_moneyline.csv | rows=3 applied=3 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.627442+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_02_mlb_moneyline.csv
+2026-08-06T13:01:13.627484+00:00 | INFO  | --- FILE: 2026_04_03_mlb_moneyline.csv
+2026-08-06T13:01:13.655139+00:00 | INFO  | 2026_04_03_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.655178+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_03_mlb_moneyline.csv
+2026-08-06T13:01:13.655223+00:00 | INFO  | --- FILE: 2026_04_04_mlb_moneyline.csv
+2026-08-06T13:01:13.684682+00:00 | INFO  | 2026_04_04_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.684723+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_04_mlb_moneyline.csv
+2026-08-06T13:01:13.684768+00:00 | INFO  | --- FILE: 2026_04_05_mlb_moneyline.csv
+2026-08-06T13:01:13.715132+00:00 | INFO  | 2026_04_05_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.715172+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_05_mlb_moneyline.csv
+2026-08-06T13:01:13.715223+00:00 | INFO  | --- FILE: 2026_04_06_mlb_moneyline.csv
+2026-08-06T13:01:13.741610+00:00 | INFO  | 2026_04_06_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.741649+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_06_mlb_moneyline.csv
+2026-08-06T13:01:13.741693+00:00 | INFO  | --- FILE: 2026_04_07_mlb_moneyline.csv
+2026-08-06T13:01:13.771268+00:00 | INFO  | 2026_04_07_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.771307+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_07_mlb_moneyline.csv
+2026-08-06T13:01:13.771352+00:00 | INFO  | --- FILE: 2026_04_08_mlb_moneyline.csv
+2026-08-06T13:01:13.800190+00:00 | INFO  | 2026_04_08_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.800228+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_08_mlb_moneyline.csv
+2026-08-06T13:01:13.800271+00:00 | INFO  | --- FILE: 2026_04_09_mlb_moneyline.csv
+2026-08-06T13:01:13.817049+00:00 | INFO  | 2026_04_09_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.817086+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_09_mlb_moneyline.csv
+2026-08-06T13:01:13.817127+00:00 | INFO  | --- FILE: 2026_04_10_mlb_moneyline.csv
+2026-08-06T13:01:13.845867+00:00 | INFO  | 2026_04_10_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.845905+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_10_mlb_moneyline.csv
+2026-08-06T13:01:13.845949+00:00 | INFO  | --- FILE: 2026_04_11_mlb_moneyline.csv
+2026-08-06T13:01:13.869551+00:00 | INFO  | 2026_04_11_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.869590+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_11_mlb_moneyline.csv
+2026-08-06T13:01:13.869634+00:00 | INFO  | --- FILE: 2026_04_12_mlb_moneyline.csv
+2026-08-06T13:01:13.898262+00:00 | INFO  | 2026_04_12_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.898304+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_12_mlb_moneyline.csv
+2026-08-06T13:01:13.898347+00:00 | INFO  | --- FILE: 2026_04_13_mlb_moneyline.csv
+2026-08-06T13:01:13.920525+00:00 | INFO  | 2026_04_13_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.920562+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_13_mlb_moneyline.csv
+2026-08-06T13:01:13.920604+00:00 | INFO  | --- FILE: 2026_04_14_mlb_moneyline.csv
+2026-08-06T13:01:13.949401+00:00 | INFO  | 2026_04_14_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.949438+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_14_mlb_moneyline.csv
+2026-08-06T13:01:13.949482+00:00 | INFO  | --- FILE: 2026_04_15_mlb_moneyline.csv
+2026-08-06T13:01:13.978695+00:00 | INFO  | 2026_04_15_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:13.978732+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_15_mlb_moneyline.csv
+2026-08-06T13:01:13.978776+00:00 | INFO  | --- FILE: 2026_04_16_mlb_moneyline.csv
+2026-08-06T13:01:14.000861+00:00 | INFO  | 2026_04_16_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.000898+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_16_mlb_moneyline.csv
+2026-08-06T13:01:14.000939+00:00 | INFO  | --- FILE: 2026_04_17_mlb_moneyline.csv
+2026-08-06T13:01:14.029690+00:00 | INFO  | 2026_04_17_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.029730+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_17_mlb_moneyline.csv
+2026-08-06T13:01:14.029774+00:00 | INFO  | --- FILE: 2026_04_18_mlb_moneyline.csv
+2026-08-06T13:01:14.058708+00:00 | INFO  | 2026_04_18_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.058745+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_18_mlb_moneyline.csv
+2026-08-06T13:01:14.058789+00:00 | INFO  | --- FILE: 2026_04_19_mlb_moneyline.csv
+2026-08-06T13:01:14.087788+00:00 | INFO  | 2026_04_19_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.087829+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_19_mlb_moneyline.csv
+2026-08-06T13:01:14.087874+00:00 | INFO  | --- FILE: 2026_04_20_mlb_moneyline.csv
+2026-08-06T13:01:14.110032+00:00 | INFO  | 2026_04_20_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.110070+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_20_mlb_moneyline.csv
+2026-08-06T13:01:14.110112+00:00 | INFO  | --- FILE: 2026_04_21_mlb_moneyline.csv
+2026-08-06T13:01:14.140074+00:00 | INFO  | 2026_04_21_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.140118+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_21_mlb_moneyline.csv
+2026-08-06T13:01:14.140169+00:00 | INFO  | --- FILE: 2026_04_22_mlb_moneyline.csv
+2026-08-06T13:01:14.170275+00:00 | INFO  | 2026_04_22_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.170318+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_22_mlb_moneyline.csv
+2026-08-06T13:01:14.170388+00:00 | INFO  | --- FILE: 2026_04_23_mlb_moneyline.csv
+2026-08-06T13:01:14.192264+00:00 | INFO  | 2026_04_23_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.192307+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_23_mlb_moneyline.csv
+2026-08-06T13:01:14.192374+00:00 | INFO  | --- FILE: 2026_04_24_mlb_moneyline.csv
+2026-08-06T13:01:14.220684+00:00 | INFO  | 2026_04_24_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.220728+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_24_mlb_moneyline.csv
+2026-08-06T13:01:14.220775+00:00 | INFO  | --- FILE: 2026_04_25_mlb_moneyline.csv
+2026-08-06T13:01:14.250271+00:00 | INFO  | 2026_04_25_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.250313+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_25_mlb_moneyline.csv
+2026-08-06T13:01:14.250378+00:00 | INFO  | --- FILE: 2026_04_26_mlb_moneyline.csv
+2026-08-06T13:01:14.281377+00:00 | INFO  | 2026_04_26_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.281422+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_26_mlb_moneyline.csv
+2026-08-06T13:01:14.281471+00:00 | INFO  | --- FILE: 2026_04_27_mlb_moneyline.csv
+2026-08-06T13:01:14.301886+00:00 | INFO  | 2026_04_27_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.301927+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_27_mlb_moneyline.csv
+2026-08-06T13:01:14.301975+00:00 | INFO  | --- FILE: 2026_04_28_mlb_moneyline.csv
+2026-08-06T13:01:14.331259+00:00 | INFO  | 2026_04_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.331299+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_28_mlb_moneyline.csv
+2026-08-06T13:01:14.331343+00:00 | INFO  | --- FILE: 2026_04_29_mlb_moneyline.csv
+2026-08-06T13:01:14.360577+00:00 | INFO  | 2026_04_29_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.360627+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_29_mlb_moneyline.csv
+2026-08-06T13:01:14.360672+00:00 | INFO  | --- FILE: 2026_04_30_mlb_moneyline.csv
+2026-08-06T13:01:14.382015+00:00 | INFO  | 2026_04_30_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.382053+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_04_30_mlb_moneyline.csv
+2026-08-06T13:01:14.382098+00:00 | INFO  | --- FILE: 2026_05_01_mlb_moneyline.csv
+2026-08-06T13:01:14.409654+00:00 | INFO  | 2026_05_01_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.409692+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_01_mlb_moneyline.csv
+2026-08-06T13:01:14.409734+00:00 | INFO  | --- FILE: 2026_05_02_mlb_moneyline.csv
+2026-08-06T13:01:14.438772+00:00 | INFO  | 2026_05_02_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.438810+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_02_mlb_moneyline.csv
+2026-08-06T13:01:14.438853+00:00 | INFO  | --- FILE: 2026_05_03_mlb_moneyline.csv
+2026-08-06T13:01:14.468002+00:00 | INFO  | 2026_05_03_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.468039+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_03_mlb_moneyline.csv
+2026-08-06T13:01:14.468082+00:00 | INFO  | --- FILE: 2026_05_04_mlb_moneyline.csv
+2026-08-06T13:01:14.493277+00:00 | INFO  | 2026_05_04_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.493315+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_04_mlb_moneyline.csv
+2026-08-06T13:01:14.493379+00:00 | INFO  | --- FILE: 2026_05_05_mlb_moneyline.csv
+2026-08-06T13:01:14.522258+00:00 | INFO  | 2026_05_05_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.522296+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_05_mlb_moneyline.csv
+2026-08-06T13:01:14.522339+00:00 | INFO  | --- FILE: 2026_05_06_mlb_moneyline.csv
+2026-08-06T13:01:14.551505+00:00 | INFO  | 2026_05_06_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.551542+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_06_mlb_moneyline.csv
+2026-08-06T13:01:14.551585+00:00 | INFO  | --- FILE: 2026_05_07_mlb_moneyline.csv
+2026-08-06T13:01:14.574086+00:00 | INFO  | 2026_05_07_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.574124+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_07_mlb_moneyline.csv
+2026-08-06T13:01:14.574167+00:00 | INFO  | --- FILE: 2026_05_08_mlb_moneyline.csv
+2026-08-06T13:01:14.601800+00:00 | INFO  | 2026_05_08_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.601838+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_08_mlb_moneyline.csv
+2026-08-06T13:01:14.601881+00:00 | INFO  | --- FILE: 2026_05_09_mlb_moneyline.csv
+2026-08-06T13:01:14.630772+00:00 | INFO  | 2026_05_09_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.630811+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_09_mlb_moneyline.csv
+2026-08-06T13:01:14.630856+00:00 | INFO  | --- FILE: 2026_05_10_mlb_moneyline.csv
+2026-08-06T13:01:14.659871+00:00 | INFO  | 2026_05_10_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.659912+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_10_mlb_moneyline.csv
+2026-08-06T13:01:14.659956+00:00 | INFO  | --- FILE: 2026_05_11_mlb_moneyline.csv
+2026-08-06T13:01:14.677134+00:00 | INFO  | 2026_05_11_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.677178+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_11_mlb_moneyline.csv
+2026-08-06T13:01:14.677221+00:00 | INFO  | --- FILE: 2026_05_12_mlb_moneyline.csv
+2026-08-06T13:01:14.706280+00:00 | INFO  | 2026_05_12_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.706317+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_12_mlb_moneyline.csv
+2026-08-06T13:01:14.706378+00:00 | INFO  | --- FILE: 2026_05_13_mlb_moneyline.csv
+2026-08-06T13:01:14.735342+00:00 | INFO  | 2026_05_13_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.735398+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_13_mlb_moneyline.csv
+2026-08-06T13:01:14.735442+00:00 | INFO  | --- FILE: 2026_05_14_mlb_moneyline.csv
+2026-08-06T13:01:14.759201+00:00 | INFO  | 2026_05_14_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.759239+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_14_mlb_moneyline.csv
+2026-08-06T13:01:14.759281+00:00 | INFO  | --- FILE: 2026_05_15_mlb_moneyline.csv
+2026-08-06T13:01:14.787090+00:00 | INFO  | 2026_05_15_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.787127+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_15_mlb_moneyline.csv
+2026-08-06T13:01:14.787171+00:00 | INFO  | --- FILE: 2026_05_16_mlb_moneyline.csv
+2026-08-06T13:01:14.816336+00:00 | INFO  | 2026_05_16_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.816392+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_16_mlb_moneyline.csv
+2026-08-06T13:01:14.816437+00:00 | INFO  | --- FILE: 2026_05_17_mlb_moneyline.csv
+2026-08-06T13:01:14.844225+00:00 | INFO  | 2026_05_17_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.844265+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_17_mlb_moneyline.csv
+2026-08-06T13:01:14.844312+00:00 | INFO  | --- FILE: 2026_05_18_mlb_moneyline.csv
+2026-08-06T13:01:14.872523+00:00 | INFO  | 2026_05_18_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.872561+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_18_mlb_moneyline.csv
+2026-08-06T13:01:14.872605+00:00 | INFO  | --- FILE: 2026_05_19_mlb_moneyline.csv
+2026-08-06T13:01:14.901877+00:00 | INFO  | 2026_05_19_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.901918+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_19_mlb_moneyline.csv
+2026-08-06T13:01:14.901964+00:00 | INFO  | --- FILE: 2026_05_20_mlb_moneyline.csv
+2026-08-06T13:01:14.930966+00:00 | INFO  | 2026_05_20_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.931006+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_20_mlb_moneyline.csv
+2026-08-06T13:01:14.931051+00:00 | INFO  | --- FILE: 2026_05_21_mlb_moneyline.csv
+2026-08-06T13:01:14.949469+00:00 | INFO  | 2026_05_21_mlb_moneyline.csv | rows=7 applied=7 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.949511+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_21_mlb_moneyline.csv
+2026-08-06T13:01:14.949556+00:00 | INFO  | --- FILE: 2026_05_22_mlb_moneyline.csv
+2026-08-06T13:01:14.978601+00:00 | INFO  | 2026_05_22_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:14.978638+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_22_mlb_moneyline.csv
+2026-08-06T13:01:14.978682+00:00 | INFO  | --- FILE: 2026_05_23_mlb_moneyline.csv
+2026-08-06T13:01:15.009201+00:00 | INFO  | 2026_05_23_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.009247+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_23_mlb_moneyline.csv
+2026-08-06T13:01:15.009290+00:00 | INFO  | --- FILE: 2026_05_24_mlb_moneyline.csv
+2026-08-06T13:01:15.039861+00:00 | INFO  | 2026_05_24_mlb_moneyline.csv | rows=16 applied=16 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.039902+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_24_mlb_moneyline.csv
+2026-08-06T13:01:15.039945+00:00 | INFO  | --- FILE: 2026_05_25_mlb_moneyline.csv
+2026-08-06T13:01:15.066549+00:00 | INFO  | 2026_05_25_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.066590+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_25_mlb_moneyline.csv
+2026-08-06T13:01:15.066635+00:00 | INFO  | --- FILE: 2026_05_26_mlb_moneyline.csv
+2026-08-06T13:01:15.096008+00:00 | INFO  | 2026_05_26_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.096051+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_26_mlb_moneyline.csv
+2026-08-06T13:01:15.096098+00:00 | INFO  | --- FILE: 2026_05_27_mlb_moneyline.csv
+2026-08-06T13:01:15.125526+00:00 | INFO  | 2026_05_27_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.125568+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_27_mlb_moneyline.csv
+2026-08-06T13:01:15.125611+00:00 | INFO  | --- FILE: 2026_05_28_mlb_moneyline.csv
+2026-08-06T13:01:15.143040+00:00 | INFO  | 2026_05_28_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.143077+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_28_mlb_moneyline.csv
+2026-08-06T13:01:15.143121+00:00 | INFO  | --- FILE: 2026_05_29_mlb_moneyline.csv
+2026-08-06T13:01:15.172477+00:00 | INFO  | 2026_05_29_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.172516+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_29_mlb_moneyline.csv
+2026-08-06T13:01:15.172560+00:00 | INFO  | --- FILE: 2026_05_30_mlb_moneyline.csv
+2026-08-06T13:01:15.204538+00:00 | INFO  | 2026_05_30_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.204578+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_30_mlb_moneyline.csv
+2026-08-06T13:01:15.204625+00:00 | INFO  | --- FILE: 2026_05_31_mlb_moneyline.csv
+2026-08-06T13:01:15.220245+00:00 | SKIP  | row=7 reason=missing_dk_odds
+2026-08-06T13:01:15.233397+00:00 | INFO  | 2026_05_31_mlb_moneyline.csv | rows=15 applied=14 skipped_bad=1 skipped_noband=0 missing_any_moneyline_dk=1
+2026-08-06T13:01:15.233435+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_05_31_mlb_moneyline.csv
+2026-08-06T13:01:15.233480+00:00 | INFO  | --- FILE: 2026_06_01_mlb_moneyline.csv
+2026-08-06T13:01:15.255052+00:00 | INFO  | 2026_06_01_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.255091+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_01_mlb_moneyline.csv
+2026-08-06T13:01:15.255192+00:00 | INFO  | --- FILE: 2026_06_02_mlb_moneyline.csv
+2026-08-06T13:01:15.284542+00:00 | INFO  | 2026_06_02_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.284581+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_02_mlb_moneyline.csv
+2026-08-06T13:01:15.284625+00:00 | INFO  | --- FILE: 2026_06_03_mlb_moneyline.csv
+2026-08-06T13:01:15.313767+00:00 | INFO  | 2026_06_03_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.313807+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_03_mlb_moneyline.csv
+2026-08-06T13:01:15.313851+00:00 | INFO  | --- FILE: 2026_06_04_mlb_moneyline.csv
+2026-08-06T13:01:15.334764+00:00 | INFO  | 2026_06_04_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.334804+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_04_mlb_moneyline.csv
+2026-08-06T13:01:15.334846+00:00 | INFO  | --- FILE: 2026_06_05_mlb_moneyline.csv
+2026-08-06T13:01:15.362387+00:00 | INFO  | 2026_06_05_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.362426+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_05_mlb_moneyline.csv
+2026-08-06T13:01:15.362471+00:00 | INFO  | --- FILE: 2026_06_06_mlb_moneyline.csv
+2026-08-06T13:01:15.391702+00:00 | INFO  | 2026_06_06_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.391739+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_06_mlb_moneyline.csv
+2026-08-06T13:01:15.391782+00:00 | INFO  | --- FILE: 2026_06_07_mlb_moneyline.csv
+2026-08-06T13:01:15.420746+00:00 | INFO  | 2026_06_07_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.420785+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_07_mlb_moneyline.csv
+2026-08-06T13:01:15.420831+00:00 | INFO  | --- FILE: 2026_06_08_mlb_moneyline.csv
+2026-08-06T13:01:15.440587+00:00 | INFO  | 2026_06_08_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.440628+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_08_mlb_moneyline.csv
+2026-08-06T13:01:15.440672+00:00 | INFO  | --- FILE: 2026_06_09_mlb_moneyline.csv
+2026-08-06T13:01:15.461885+00:00 | INFO  | 2026_06_09_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.461926+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_09_mlb_moneyline.csv
+2026-08-06T13:01:15.461969+00:00 | INFO  | --- FILE: 2026_06_10_mlb_moneyline.csv
+2026-08-06T13:01:15.483571+00:00 | INFO  | 2026_06_10_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.483609+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_10_mlb_moneyline.csv
+2026-08-06T13:01:15.483656+00:00 | INFO  | --- FILE: 2026_06_11_mlb_moneyline.csv
+2026-08-06T13:01:15.500542+00:00 | INFO  | 2026_06_11_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.500579+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_11_mlb_moneyline.csv
+2026-08-06T13:01:15.500621+00:00 | INFO  | --- FILE: 2026_06_12_mlb_moneyline.csv
+2026-08-06T13:01:15.520460+00:00 | INFO  | 2026_06_12_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.520500+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_12_mlb_moneyline.csv
+2026-08-06T13:01:15.520543+00:00 | INFO  | --- FILE: 2026_06_13_mlb_moneyline.csv
+2026-08-06T13:01:15.540435+00:00 | INFO  | 2026_06_13_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.540474+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_13_mlb_moneyline.csv
+2026-08-06T13:01:15.540518+00:00 | INFO  | --- FILE: 2026_06_14_mlb_moneyline.csv
+2026-08-06T13:01:15.560553+00:00 | INFO  | 2026_06_14_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.560594+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_14_mlb_moneyline.csv
+2026-08-06T13:01:15.560639+00:00 | INFO  | --- FILE: 2026_06_15_mlb_moneyline.csv
+2026-08-06T13:01:15.581685+00:00 | INFO  | 2026_06_15_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.581723+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_15_mlb_moneyline.csv
+2026-08-06T13:01:15.581765+00:00 | INFO  | --- FILE: 2026_06_16_mlb_moneyline.csv
+2026-08-06T13:01:15.609344+00:00 | INFO  | 2026_06_16_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.609404+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_16_mlb_moneyline.csv
+2026-08-06T13:01:15.609450+00:00 | INFO  | --- FILE: 2026_06_17_mlb_moneyline.csv
+2026-08-06T13:01:15.635871+00:00 | INFO  | 2026_06_17_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.635908+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_17_mlb_moneyline.csv
+2026-08-06T13:01:15.635952+00:00 | INFO  | --- FILE: 2026_06_18_mlb_moneyline.csv
+2026-08-06T13:01:15.657229+00:00 | INFO  | 2026_06_18_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.657271+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_18_mlb_moneyline.csv
+2026-08-06T13:01:15.657318+00:00 | INFO  | --- FILE: 2026_06_19_mlb_moneyline.csv
+2026-08-06T13:01:15.683797+00:00 | INFO  | 2026_06_19_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.683837+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_19_mlb_moneyline.csv
+2026-08-06T13:01:15.683882+00:00 | INFO  | --- FILE: 2026_06_20_mlb_moneyline.csv
+2026-08-06T13:01:15.711517+00:00 | INFO  | 2026_06_20_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.711556+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_20_mlb_moneyline.csv
+2026-08-06T13:01:15.711601+00:00 | INFO  | --- FILE: 2026_06_21_mlb_moneyline.csv
+2026-08-06T13:01:15.739321+00:00 | INFO  | 2026_06_21_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.739377+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_21_mlb_moneyline.csv
+2026-08-06T13:01:15.739424+00:00 | INFO  | --- FILE: 2026_06_22_mlb_moneyline.csv
+2026-08-06T13:01:15.765546+00:00 | INFO  | 2026_06_22_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.765584+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_22_mlb_moneyline.csv
+2026-08-06T13:01:15.765627+00:00 | INFO  | --- FILE: 2026_06_23_mlb_moneyline.csv
+2026-08-06T13:01:15.793302+00:00 | INFO  | 2026_06_23_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.793342+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_23_mlb_moneyline.csv
+2026-08-06T13:01:15.793407+00:00 | INFO  | --- FILE: 2026_06_24_mlb_moneyline.csv
+2026-08-06T13:01:15.820757+00:00 | INFO  | 2026_06_24_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.820795+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_24_mlb_moneyline.csv
+2026-08-06T13:01:15.820838+00:00 | INFO  | --- FILE: 2026_06_25_mlb_moneyline.csv
+2026-08-06T13:01:15.841708+00:00 | INFO  | 2026_06_25_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.841746+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_25_mlb_moneyline.csv
+2026-08-06T13:01:15.841788+00:00 | INFO  | --- FILE: 2026_06_26_mlb_moneyline.csv
+2026-08-06T13:01:15.869480+00:00 | INFO  | 2026_06_26_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.869517+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_26_mlb_moneyline.csv
+2026-08-06T13:01:15.869560+00:00 | INFO  | --- FILE: 2026_06_27_mlb_moneyline.csv
+2026-08-06T13:01:15.898449+00:00 | INFO  | 2026_06_27_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.898487+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_27_mlb_moneyline.csv
+2026-08-06T13:01:15.898532+00:00 | INFO  | --- FILE: 2026_06_28_mlb_moneyline.csv
+2026-08-06T13:01:15.927059+00:00 | INFO  | 2026_06_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.927098+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_28_mlb_moneyline.csv
+2026-08-06T13:01:15.927141+00:00 | INFO  | --- FILE: 2026_06_29_mlb_moneyline.csv
+2026-08-06T13:01:15.953107+00:00 | INFO  | 2026_06_29_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.953143+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_29_mlb_moneyline.csv
+2026-08-06T13:01:15.953186+00:00 | INFO  | --- FILE: 2026_06_30_mlb_moneyline.csv
+2026-08-06T13:01:15.982083+00:00 | INFO  | 2026_06_30_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:15.982123+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_06_30_mlb_moneyline.csv
+2026-08-06T13:01:15.982169+00:00 | INFO  | --- FILE: 2026_07_01_mlb_moneyline.csv
+2026-08-06T13:01:16.009902+00:00 | INFO  | 2026_07_01_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.009942+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_01_mlb_moneyline.csv
+2026-08-06T13:01:16.009986+00:00 | INFO  | --- FILE: 2026_07_02_mlb_moneyline.csv
+2026-08-06T13:01:16.030831+00:00 | INFO  | 2026_07_02_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.030872+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_02_mlb_moneyline.csv
+2026-08-06T13:01:16.030917+00:00 | INFO  | --- FILE: 2026_07_03_mlb_moneyline.csv
+2026-08-06T13:01:16.057310+00:00 | INFO  | 2026_07_03_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.057349+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_03_mlb_moneyline.csv
+2026-08-06T13:01:16.057413+00:00 | INFO  | --- FILE: 2026_07_04_mlb_moneyline.csv
+2026-08-06T13:01:16.085991+00:00 | INFO  | 2026_07_04_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.086032+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_04_mlb_moneyline.csv
+2026-08-06T13:01:16.086077+00:00 | INFO  | --- FILE: 2026_07_05_mlb_moneyline.csv
+2026-08-06T13:01:16.113680+00:00 | INFO  | 2026_07_05_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.113717+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_05_mlb_moneyline.csv
+2026-08-06T13:01:16.113761+00:00 | INFO  | --- FILE: 2026_07_06_mlb_moneyline.csv
+2026-08-06T13:01:16.133654+00:00 | INFO  | 2026_07_06_mlb_moneyline.csv | rows=8 applied=8 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.133692+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_06_mlb_moneyline.csv
+2026-08-06T13:01:16.133736+00:00 | INFO  | --- FILE: 2026_07_07_mlb_moneyline.csv
+2026-08-06T13:01:16.162544+00:00 | INFO  | 2026_07_07_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.162583+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_07_mlb_moneyline.csv
+2026-08-06T13:01:16.162628+00:00 | INFO  | --- FILE: 2026_07_08_mlb_moneyline.csv
+2026-08-06T13:01:16.191083+00:00 | INFO  | 2026_07_08_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.191121+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_08_mlb_moneyline.csv
+2026-08-06T13:01:16.191163+00:00 | INFO  | --- FILE: 2026_07_09_mlb_moneyline.csv
+2026-08-06T13:01:16.230296+00:00 | INFO  | 2026_07_09_mlb_moneyline.csv | rows=13 applied=13 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.230339+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_09_mlb_moneyline.csv
+2026-08-06T13:01:16.230406+00:00 | INFO  | --- FILE: 2026_07_10_mlb_moneyline.csv
+2026-08-06T13:01:16.259483+00:00 | INFO  | 2026_07_10_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.259522+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_10_mlb_moneyline.csv
+2026-08-06T13:01:16.259564+00:00 | INFO  | --- FILE: 2026_07_11_mlb_moneyline.csv
+2026-08-06T13:01:16.281832+00:00 | INFO  | 2026_07_11_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.281874+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_11_mlb_moneyline.csv
+2026-08-06T13:01:16.281918+00:00 | INFO  | --- FILE: 2026_07_12_mlb_moneyline.csv
+2026-08-06T13:01:16.309486+00:00 | INFO  | 2026_07_12_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.309527+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_12_mlb_moneyline.csv
+2026-08-06T13:01:16.309574+00:00 | INFO  | --- FILE: 2026_07_16_mlb_moneyline.csv
+2026-08-06T13:01:16.319854+00:00 | INFO  | 2026_07_16_mlb_moneyline.csv | rows=1 applied=1 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.319890+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_16_mlb_moneyline.csv
+2026-08-06T13:01:16.319933+00:00 | INFO  | --- FILE: 2026_07_17_mlb_moneyline.csv
+2026-08-06T13:01:16.347096+00:00 | INFO  | 2026_07_17_mlb_moneyline.csv | rows=14 applied=14 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.347136+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_17_mlb_moneyline.csv
+2026-08-06T13:01:16.347179+00:00 | INFO  | --- FILE: 2026_07_18_mlb_moneyline.csv
+2026-08-06T13:01:16.368613+00:00 | INFO  | 2026_07_18_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.368652+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_18_mlb_moneyline.csv
+2026-08-06T13:01:16.368696+00:00 | INFO  | --- FILE: 2026_07_19_mlb_moneyline.csv
+2026-08-06T13:01:16.393646+00:00 | INFO  | 2026_07_19_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.393685+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_19_mlb_moneyline.csv
+2026-08-06T13:01:16.393729+00:00 | INFO  | --- FILE: 2026_07_20_mlb_moneyline.csv
+2026-08-06T13:01:16.422642+00:00 | INFO  | 2026_07_20_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.422682+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_20_mlb_moneyline.csv
+2026-08-06T13:01:16.422725+00:00 | INFO  | --- FILE: 2026_07_21_mlb_moneyline.csv
+2026-08-06T13:01:16.443832+00:00 | INFO  | 2026_07_21_mlb_moneyline.csv | rows=9 applied=9 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.443872+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_21_mlb_moneyline.csv
+2026-08-06T13:01:16.443917+00:00 | INFO  | --- FILE: 2026_07_22_mlb_moneyline.csv
+2026-08-06T13:01:16.457177+00:00 | INFO  | 2026_07_22_mlb_moneyline.csv | rows=3 applied=3 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.457215+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_22_mlb_moneyline.csv
+2026-08-06T13:01:16.457257+00:00 | INFO  | --- FILE: 2026_07_23_mlb_moneyline.csv
+2026-08-06T13:01:16.473192+00:00 | INFO  | 2026_07_23_mlb_moneyline.csv | rows=5 applied=5 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.473230+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_23_mlb_moneyline.csv
+2026-08-06T13:01:16.473274+00:00 | INFO  | --- FILE: 2026_07_24_mlb_moneyline.csv
+2026-08-06T13:01:16.501982+00:00 | INFO  | 2026_07_24_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.502022+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_24_mlb_moneyline.csv
+2026-08-06T13:01:16.502068+00:00 | INFO  | --- FILE: 2026_07_25_mlb_moneyline.csv
+2026-08-06T13:01:16.530549+00:00 | INFO  | 2026_07_25_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.530596+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_25_mlb_moneyline.csv
+2026-08-06T13:01:16.530641+00:00 | INFO  | --- FILE: 2026_07_26_mlb_moneyline.csv
+2026-08-06T13:01:16.559546+00:00 | INFO  | 2026_07_26_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.559582+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_26_mlb_moneyline.csv
+2026-08-06T13:01:16.559627+00:00 | INFO  | --- FILE: 2026_07_27_mlb_moneyline.csv
+2026-08-06T13:01:16.584471+00:00 | INFO  | 2026_07_27_mlb_moneyline.csv | rows=12 applied=12 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.584510+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_27_mlb_moneyline.csv
+2026-08-06T13:01:16.584553+00:00 | INFO  | --- FILE: 2026_07_28_mlb_moneyline.csv
+2026-08-06T13:01:16.613355+00:00 | INFO  | 2026_07_28_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.613412+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_28_mlb_moneyline.csv
+2026-08-06T13:01:16.613456+00:00 | INFO  | --- FILE: 2026_07_29_mlb_moneyline.csv
+2026-08-06T13:01:16.642431+00:00 | INFO  | 2026_07_29_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.642473+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_29_mlb_moneyline.csv
+2026-08-06T13:01:16.642516+00:00 | INFO  | --- FILE: 2026_07_30_mlb_moneyline.csv
+2026-08-06T13:01:16.664997+00:00 | INFO  | 2026_07_30_mlb_moneyline.csv | rows=10 applied=10 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.665037+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_30_mlb_moneyline.csv
+2026-08-06T13:01:16.665080+00:00 | INFO  | --- FILE: 2026_07_31_mlb_moneyline.csv
+2026-08-06T13:01:16.693772+00:00 | INFO  | 2026_07_31_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.693813+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_07_31_mlb_moneyline.csv
+2026-08-06T13:01:16.693857+00:00 | INFO  | --- FILE: 2026_08_01_mlb_moneyline.csv
+2026-08-06T13:01:16.722863+00:00 | INFO  | 2026_08_01_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.722901+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_01_mlb_moneyline.csv
+2026-08-06T13:01:16.722943+00:00 | INFO  | --- FILE: 2026_08_02_mlb_moneyline.csv
+2026-08-06T13:01:16.751798+00:00 | INFO  | 2026_08_02_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.751838+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_02_mlb_moneyline.csv
+2026-08-06T13:01:16.751880+00:00 | INFO  | --- FILE: 2026_08_03_mlb_moneyline.csv
+2026-08-06T13:01:16.768997+00:00 | INFO  | 2026_08_03_mlb_moneyline.csv | rows=6 applied=6 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.769035+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_03_mlb_moneyline.csv
+2026-08-06T13:01:16.769079+00:00 | INFO  | --- FILE: 2026_08_04_mlb_moneyline.csv
+2026-08-06T13:01:16.797960+00:00 | INFO  | 2026_08_04_mlb_moneyline.csv | rows=15 applied=15 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.797997+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_04_mlb_moneyline.csv
+2026-08-06T13:01:16.798041+00:00 | INFO  | --- FILE: 2026_08_05_mlb_moneyline.csv
+2026-08-06T13:01:16.821732+00:00 | INFO  | 2026_08_05_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.821768+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_05_mlb_moneyline.csv
+2026-08-06T13:01:16.821811+00:00 | INFO  | --- FILE: 2026_08_06_mlb_moneyline.csv
+2026-08-06T13:01:16.845225+00:00 | INFO  | 2026_08_06_mlb_moneyline.csv | rows=11 applied=11 skipped_bad=0 skipped_noband=0 missing_any_moneyline_dk=0
+2026-08-06T13:01:16.845263+00:00 | INFO  | WROTE: docs/win/baseball/mlb/02_juice/2026_08_06_mlb_moneyline.csv
+2026-08-06T13:01:16.865097+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/02_juice/audit/moneyline_post_juice_audit.csv
 
 ============================================================
-SUMMARY  2026-08-05T21:01:55.400967+00:00
+SUMMARY  2026-08-06T13:01:16.865121+00:00
 ============================================================
-  files_found                       : 130
-  files_written                     : 130
-  total_rows                        : 1639
-  applied                           : 1638
+  files_found                       : 131
+  files_written                     : 131
+  total_rows                        : 1650
+  applied                           : 1649
   skipped_bad                       : 1
   skipped_noband                    : 0
   missing_home_moneyline_dk         : 1
@@ -544,6 +547,7 @@ SUMMARY  2026-08-05T21:01:55.400967+00:00
   2026_08_03_mlb_moneyline.csv                      6        6     0       0          0          0         0       0
   2026_08_04_mlb_moneyline.csv                     15       15     0       0          0          0         0       0
   2026_08_05_mlb_moneyline.csv                     11       11     0       0          0          0         0       0
+  2026_08_06_mlb_moneyline.csv                     11       11     0       0          0          0         0       0
 
 STATUS: SUCCESS
 ============================================================
