@@ -1,0 +1,58 @@
+name: New Soccer Odds
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Optional date (YYYY-MM-DD or YYYY_MM_DD). Blank uses today in America/New_York."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  soccer-odds:
+    runs-on: ubuntu-latest
+
+    env:
+      TZ: America/New_York
+      RUN_DATE: ${{ inputs.date }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run soccer odds intake
+        shell: bash
+        run: |
+          args=(--verbose)
+          if [[ -n "${RUN_DATE}" ]]; then
+            args+=(--date "${RUN_DATE}")
+          fi
+          python docs/win/soccer/scripts/00_intake/soccer_odds.py "${args[@]}"
+
+      - name: Show sportsbook outputs
+        run: |
+          find docs/win/soccer/00_intake/sportsbook \
+            -type f -name "*_soccer.csv" -print | sort
+
+      - name: Commit soccer odds outputs
+        shell: bash
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add docs/win/soccer/00_intake/sportsbook/
+
+          if git diff --cached --quiet; then
+            echo "No soccer odds changes to commit."
+          else
+            git commit -m "Update soccer odds outputs"
+            git push
+          fi
