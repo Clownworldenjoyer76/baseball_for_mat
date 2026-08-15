@@ -10,6 +10,8 @@ GitHub-hosted runners:
 - Primary markets come from the reachable Core competition /odds endpoint.
 - Prop markets follow each odds provider's own propBets.$ref when ESPN exposes
   one, rather than the generic competition /propbets path.
+- Provider prop trees are recursively dereferenced so nested markets such as
+  Both Teams To Score can be discovered.
 - Blocked Site summary and non-JSON CDN game fallbacks are not requested.
 
 The target date plus adjacent dates must each return a valid CDN scoreboard
@@ -40,6 +42,18 @@ from _soccer_odds_core import *  # noqa: F401,F403 - preserve existing imports/A
 
 CDN_SCOREBOARD = "https://cdn.espn.com/core/soccer/scoreboard"
 
+_PROP_TREE_REF_MARKERS = (
+    "/propbets",
+    "/markets",
+    "/market/",
+    "/offers",
+    "/offer/",
+    "/selections",
+    "/selection/",
+    "/outcomes",
+    "/outcome/",
+)
+
 
 # Extend the core league configuration without changing the underlying parsers.
 # main() reads these dictionaries at runtime, so Ligue 1 is included by default
@@ -64,15 +78,19 @@ def _cdn_events(payload: Any) -> list[Mapping[str, Any]] | None:
     """Return CDN scoreboard events, or None when the payload shape is invalid."""
     if not isinstance(payload, dict):
         return None
+
     content = payload.get("content")
     if not isinstance(content, dict):
         return None
+
     sb_data = content.get("sbData")
     if not isinstance(sb_data, dict):
         return None
+
     events = sb_data.get("events")
     if not isinstance(events, list):
         return None
+
     return [event for event in events if isinstance(event, dict)]
 
 
@@ -99,16 +117,22 @@ def fetch_scoreboard(
 
     for day in date_candidates:
         day_text = day.strftime("%Y%m%d")
+
         payload = client.get_json(
             CDN_SCOREBOARD,
-            params={"xhr": 1, "league": league_slug, "dates": day_text},
+            params={
+                "xhr": 1,
+                "league": league_slug,
+                "dates": day_text,
+            },
         )
+
         events = _cdn_events(payload)
 
         if events is None:
             client.log(
-                f"  invalid CDN scoreboard payload for {league_slug} {day_text}: "
-                "missing content.sbData.events list"
+                f"  invalid CDN scoreboard payload for {league_slug} "
+                f"{day_text}: missing content.sbData.events list"
             )
             failed_days.append(day_text)
             continue
@@ -146,10 +170,102 @@ def _iter_provider_prop_refs(
         normalized_ref = core.normalize_espn_ref(ref.strip())
         if normalized_ref in seen:
             continue
+
         seen.add(normalized_ref)
 
         provider, provider_priority = core.provider_from_dict(obj)
         yield normalized_ref, provider, provider_priority
+
+
+def _prop_request_url(ref: str) -> str:
+    """Add a large page limit to propBets collection refs, not leaf refs."""
+    normalized = core.normalize_espn_ref(ref.strip())
+    path_only = normalized.split("?", 1)[0].rstrip("/").lower()
+
+    if path_only.endswith("/propbets") and "limit=" not in normalized.lower():
+        separator = "&" if "?" in normalized else "?"
+        return f"{normalized}{separator}limit=2000"
+
+    return normalized
+
+
+def _iter_provider_prop_tree(
+    client: core.ESPNClient,
+    root_ref: str,
+    *,
+    max_refs: int = 400,
+) -> Iterator[tuple[Any, int, str]]:
+    """Recursively follow prop/market refs for one ESPN odds provider.
+
+    ESPN's provider propBets endpoint may return collections containing further
+    $ref objects rather than all market/outcome information inline.
+
+    This stays scoped to the same provider's odds tree so unrelated ESPN event,
+    league, team, athlete, or venue references are not followed.
+
+    Yields:
+        payload, traversal depth, normalized reference URL
+    """
+    root = core.normalize_espn_ref(root_ref.strip())
+    root_lower = root.lower()
+
+    if "/propbets" in root_lower:
+        provider_scope = root_lower.split("/propbets", 1)[0]
+    else:
+        provider_scope = root_lower.rstrip("/")
+
+    queue: list[tuple[str, int]] = [(root, 0)]
+    seen: set[str] = set()
+    cursor = 0
+
+    while cursor < len(queue):
+        if len(seen) >= max_refs:
+            client.log(
+                f"  provider prop traversal stopped after {max_refs} refs: "
+                f"{root}"
+            )
+            break
+
+        ref, depth = queue[cursor]
+        cursor += 1
+
+        normalized_ref = core.normalize_espn_ref(ref.strip())
+
+        if normalized_ref in seen:
+            continue
+
+        seen.add(normalized_ref)
+
+        payload = client.get_json(_prop_request_url(normalized_ref))
+        if payload is None:
+            continue
+
+        yield payload, depth, normalized_ref
+
+        for obj in core.walk_dicts(payload):
+            nested_ref = obj.get("$ref")
+
+            if not isinstance(nested_ref, str) or not nested_ref.strip():
+                continue
+
+            nested_ref = core.normalize_espn_ref(nested_ref.strip())
+            nested_lower = nested_ref.lower()
+
+            if nested_ref in seen:
+                continue
+
+            # Stay inside this sportsbook/provider odds branch.
+            if not nested_lower.startswith(provider_scope):
+                continue
+
+            # Follow only betting-market branches, avoiding unrelated Core refs.
+            if not any(
+                marker in nested_lower
+                for marker in _PROP_TREE_REF_MARKERS
+            ):
+                continue
+
+            queue.append((nested_ref, depth + 1))
 
 
 def _ingest_propbets_with_provider_hint(
@@ -176,11 +292,16 @@ def _ingest_propbets_with_provider_hint(
 
     for field_name, offers in target.offers.items():
         start = before[field_name]
+
         for offer in offers[start:]:
             if core.normalize_provider_name(offer.provider) != "unknown":
                 continue
+
             offer.provider = provider or "unknown"
-            offer.provider_priority = core.safe_int(provider_priority, 9999)
+            offer.provider_priority = core.safe_int(
+                provider_priority,
+                9999,
+            )
             offer.sort_key = (
                 core.provider_rank(offer.provider),
                 offer.provider_priority,
@@ -195,7 +316,7 @@ def fetch_event_odds(
     competition_id: str,
     scoreboard_event: Mapping[str, Any],
 ) -> core.EventOdds:
-    """Fetch ESPN odds using only surfaces proven reachable from GitHub Actions."""
+    """Fetch ESPN odds using surfaces proven reachable from GitHub Actions."""
     result = core.EventOdds()
 
     # The CDN scoreboard event may itself contain usable betting objects.
@@ -210,7 +331,11 @@ def fetch_event_odds(
         f"{core.CORE_BASE}/{league_slug}/events/{event_id}/"
         f"competitions/{competition_id}/odds"
     )
-    core_payload = client.get_json(core_url, params={"limit": 100})
+
+    core_payload = client.get_json(
+        core_url,
+        params={"limit": 100},
+    )
 
     if core_payload is None:
         return result
@@ -223,7 +348,11 @@ def fetch_event_odds(
         source="core_odds",
     )
 
-    resolved_items = core.dereference_core_items(client, core_payload)
+    resolved_items = core.dereference_core_items(
+        client,
+        core_payload,
+    )
+
     for item in resolved_items:
         core.ingest_all_match_odds_objects(
             result,
@@ -233,41 +362,68 @@ def fetch_event_odds(
         )
 
     # ESPN exposes provider-specific prop endpoints from each odds object, e.g.
-    # .../odds/100/propBets for DraftKings. Follow those instead of the generic
-    # competition /propbets endpoint, which returned 404 in GitHub Actions.
-    prop_sources = [core_payload, *resolved_items]
+    # .../odds/100/propBets for DraftKings.
+    #
+    # Follow those instead of the generic competition /propbets endpoint, which
+    # returns 404 for these events. Provider prop trees can contain additional
+    # nested references, so recursively traverse the provider betting branch.
+    prop_sources = [
+        core_payload,
+        *resolved_items,
+    ]
+
     seen_refs: set[str] = set()
 
     for source_payload in prop_sources:
-        for ref, provider, provider_priority in _iter_provider_prop_refs(source_payload):
+        for ref, provider, provider_priority in _iter_provider_prop_refs(
+            source_payload
+        ):
             if ref in seen_refs:
                 continue
+
             seen_refs.add(ref)
 
-            separator = "&" if "?" in ref else "?"
-            prop_payload = client.get_json(f"{ref}{separator}limit=2000")
-            if prop_payload is None:
-                continue
+            for prop_payload, depth, prop_ref in _iter_provider_prop_tree(
+                client,
+                ref,
+            ):
+                source_name = (
+                    "provider_propbets"
+                    if depth == 0
+                    else "provider_propbets_nested"
+                )
 
-            _ingest_propbets_with_provider_hint(
-                result,
-                prop_payload,
-                provider=provider,
-                provider_priority=provider_priority,
-                path_priority=2,
-                source="provider_propbets",
-            )
-
-            # Some provider prop lists can themselves contain pointer items.
-            for item in core.dereference_core_items(client, prop_payload):
                 _ingest_propbets_with_provider_hint(
                     result,
-                    item,
+                    prop_payload,
                     provider=provider,
                     provider_priority=provider_priority,
                     path_priority=2,
-                    source="provider_propbets_ref",
+                    source=source_name,
                 )
+
+                if client.verbose:
+                    yes_offer = result.best("btts_yes")
+                    no_offer = result.best("btts_no")
+
+                    if yes_offer or no_offer:
+                        yes_text = (
+                            f"{yes_offer.value:.2f}"
+                            if yes_offer
+                            else "missing"
+                        )
+                        no_text = (
+                            f"{no_offer.value:.2f}"
+                            if no_offer
+                            else "missing"
+                        )
+
+                        client.log(
+                            f"  BTTS found for {event_id} via {prop_ref}: "
+                            f"yes={yes_text}, "
+                            f"no={no_text}, "
+                            f"provider={provider}"
+                        )
 
     return result
 
@@ -279,23 +435,38 @@ def _is_blank(value: Any) -> bool:
 def _read_existing(path: Path) -> list[dict[str, str]]:
     if not path.exists():
         return []
+
     try:
-        with path.open("r", newline="", encoding="utf-8") as handle:
+        with path.open(
+            "r",
+            newline="",
+            encoding="utf-8",
+        ) as handle:
             reader = csv.DictReader(handle)
+
             return [
-                {field: str(row.get(field) or "") for field in core.CSV_FIELDS}
+                {
+                    field: str(row.get(field) or "")
+                    for field in core.CSV_FIELDS
+                }
                 for row in reader
             ]
+
     except (OSError, csv.Error) as exc:
-        print(f"warning: could not read existing CSV {path}: {exc}", file=sys.stderr)
+        print(
+            f"warning: could not read existing CSV {path}: {exc}",
+            file=sys.stderr,
+        )
         return []
 
 
 def _merge_rows(
-    path: Path, rows: Sequence[Mapping[str, str]]
+    path: Path,
+    rows: Sequence[Mapping[str, str]],
 ) -> list[dict[str, str]]:
     """Merge fresh rows into a prior daily CSV without erasing captured data."""
     existing_rows = _read_existing(path)
+
     existing_by_id = {
         row["game_id"]: row
         for row in existing_rows
@@ -306,23 +477,34 @@ def _merge_rows(
     seen_ids: set[str] = set()
 
     for fresh in rows:
-        merged = {field: str(fresh.get(field) or "") for field in core.CSV_FIELDS}
+        merged = {
+            field: str(fresh.get(field) or "")
+            for field in core.CSV_FIELDS
+        }
+
         game_id = merged["game_id"].strip()
         prior = existing_by_id.get(game_id) if game_id else None
 
         if prior is not None:
             for field in core.CSV_FIELDS:
-                if _is_blank(merged[field]) and not _is_blank(prior.get(field)):
+                if (
+                    _is_blank(merged[field])
+                    and not _is_blank(prior.get(field))
+                ):
                     merged[field] = prior[field]
+
             seen_ids.add(game_id)
 
         merged_rows.append(merged)
 
-    # Keep previously captured games if ESPN no longer returns them later that day.
+    # Keep previously captured games if ESPN no longer returns them later that
+    # day.
     for prior in existing_rows:
         game_id = prior.get("game_id", "").strip()
+
         if game_id and game_id in seen_ids:
             continue
+
         merged_rows.append(prior)
 
     merged_rows.sort(
@@ -332,16 +514,35 @@ def _merge_rows(
             row.get("away_team", ""),
         )
     )
+
     return merged_rows
 
 
-def write_csv(path: Path, rows: Sequence[Mapping[str, str]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    merged_rows = _merge_rows(path, rows)
-    with path.open("w", newline="", encoding="utf-8") as handle:
+def write_csv(
+    path: Path,
+    rows: Sequence[Mapping[str, str]],
+) -> None:
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    merged_rows = _merge_rows(
+        path,
+        rows,
+    )
+
+    with path.open(
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=core.CSV_FIELDS, extrasaction="ignore"
+            handle,
+            fieldnames=core.CSV_FIELDS,
+            extrasaction="ignore",
         )
+
         writer.writeheader()
         writer.writerows(merged_rows)
 
@@ -352,6 +553,7 @@ def write_csv(path: Path, rows: Sequence[Mapping[str, str]]) -> None:
 core.fetch_scoreboard = fetch_scoreboard
 core.fetch_event_odds = fetch_event_odds
 core.write_csv = write_csv
+
 main = core.main
 
 
