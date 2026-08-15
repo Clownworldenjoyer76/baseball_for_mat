@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""ESPN soccer odds intake.
+""" soccer odds intake.
 
-Fetches ESPN soccer fixtures and odds for:
+Fetches soccer fixtures and odds for:
   - Bundesliga
   - La Liga
   - EPL
