@@ -71,6 +71,103 @@ jobs:
           touch docs/win/soccer/05_final_scores/soccer_market_tally.csv
 
       # -------------------------
+      # ESPN RUNNER DIAGNOSTIC
+      # -------------------------
+      - name: Diagnose ESPN endpoints from GitHub runner
+        shell: bash
+        run: |
+          LOG="docs/win/soccer/errors/00_intake/espn_endpoint_diagnostic.txt"
+
+          if [[ -n "${RUN_DATE}" ]]; then
+            DATE_COMPACT="$(printf '%s' "${RUN_DATE}" | tr -d '_-')"
+          else
+            DATE_COMPACT="$(TZ='America/New_York' date +%Y%m%d)"
+          fi
+
+          {
+            echo "=== ESPN endpoint diagnostic ==="
+            echo "utc_time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "runner=${RUNNER_NAME:-unknown}"
+            echo "date=${DATE_COMPACT}"
+            echo "league=usa.1"
+            echo
+          } > "${LOG}"
+
+          probe() {
+            local label="$1"
+            local url="$2"
+            local body
+            body="$(mktemp)"
+
+            set +e
+            metrics=$(curl -L -sS \
+              --connect-timeout 10 \
+              --max-time 25 \
+              -A 'Mozilla/5.0 (compatible; SoccerOddsDiagnostic/1.0; +https://www.espn.com/)' \
+              -H 'Accept: application/json,text/plain,*/*' \
+              -o "${body}" \
+              -w '%{http_code}|%{content_type}|%{size_download}|%{url_effective}' \
+              "${url}" 2>>"${LOG}")
+            curl_exit=$?
+            set -e
+
+            json_info=$(python - "${body}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          try:
+              payload = json.loads(path.read_text(encoding="utf-8"))
+          except Exception:
+              print("json=no")
+          else:
+              if isinstance(payload, dict) and isinstance(payload.get("events"), list):
+                  print(f"json=yes events={len(payload['events'])}")
+              else:
+                  print(f"json=yes type={type(payload).__name__} events=unavailable")
+          PY
+          )
+
+            {
+              echo "[${label}]"
+              echo "url=${url}"
+              echo "curl_exit=${curl_exit}"
+              echo "http|content_type|bytes|effective_url=${metrics}"
+              echo "${json_info}"
+              echo
+            } >> "${LOG}"
+
+            rm -f "${body}"
+          }
+
+          probe "production_limit_1000" \
+            "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=${DATE_COMPACT}&limit=1000"
+
+          probe "site_api_limit_100" \
+            "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=${DATE_COMPACT}&limit=100"
+
+          probe "site_api_no_limit" \
+            "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=${DATE_COMPACT}"
+
+          probe "site_web_api" \
+            "https://site.web.api.espn.com/apis/v2/sports/soccer/usa.1/scoreboard?region=us&lang=en&contentorigin=espn&isqualified=true&limit=1000&dates=${DATE_COMPACT}"
+
+          probe "cdn_scoreboard" \
+            "https://cdn.espn.com/core/soccer/scoreboard?xhr=1&league=usa.1&dates=${DATE_COMPACT}"
+
+          probe "public_scoreboard_page" \
+            "https://www.espn.com/soccer/scoreboard/_/league/usa.1/date/${DATE_COMPACT}"
+
+          cat "${LOG}"
+          {
+            echo '### ESPN endpoint diagnostic'
+            echo '```text'
+            cat "${LOG}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      # -------------------------
       # ODDS + INTAKE
       # -------------------------
       - name: Pull ESPN soccer odds
@@ -81,6 +178,15 @@ jobs:
             args+=(--date "${RUN_DATE}")
           fi
           python docs/win/soccer/scripts/00_intake/soccer_odds.py "${args[@]}"
+
+      - name: Upload ESPN diagnostic log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: espn-endpoint-diagnostic
+          path: docs/win/soccer/errors/00_intake/espn_endpoint_diagnostic.txt
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Normalize soccer names
         run: python docs/win/soccer/scripts/00_intake/name_normalization.py
@@ -131,6 +237,9 @@ jobs:
           echo "=== Normalized sportsbook CSVs ==="
           find docs/win/soccer/00_intake/sportsbook/normalized \
             -maxdepth 1 -type f -name "*.csv" -print | sort || true
+
+          echo "=== ESPN diagnostic ==="
+          cat docs/win/soccer/errors/00_intake/espn_endpoint_diagnostic.txt || true
 
           echo "=== Intake logs ==="
           cat docs/win/soccer/errors/00_intake/name_normalization.txt || true
