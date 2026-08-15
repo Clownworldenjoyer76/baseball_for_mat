@@ -1,0 +1,178 @@
+name: Soccer Full Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Optional ESPN odds date (YYYY-MM-DD or YYYY_MM_DD). Blank uses today in America/New_York."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: soccer-full-pipeline
+  cancel-in-progress: false
+
+jobs:
+  soccer-pipeline:
+    runs-on: ubuntu-latest
+
+    env:
+      TZ: America/New_York
+      RUN_DATE: ${{ inputs.date }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pandas
+
+      - name: Create soccer directories
+        run: |
+          mkdir -p docs/win/soccer/errors/00_intake
+          mkdir -p docs/win/soccer/00_intake/predictions
+          mkdir -p docs/win/soccer/00_intake/predictions/normalized
+          mkdir -p docs/win/soccer/00_intake/sportsbook
+          mkdir -p docs/win/soccer/00_intake/sportsbook/normalized
+          mkdir -p docs/win/soccer/mappings/no_map
+
+          mkdir -p docs/win/soccer/01_merge/01_merguiced
+          mkdir -p docs/win/soccer/errors/01_merge
+
+          mkdir -p docs/win/soccer/02_juice
+          mkdir -p docs/win/soccer/errors/02_juice
+
+          mkdir -p docs/win/soccer/03_edges
+          mkdir -p docs/win/soccer/errors/03_edges
+
+          mkdir -p docs/win/soccer/04_select
+          mkdir -p docs/win/soccer/errors/04_select
+
+          mkdir -p docs/win/soccer/05_final_scores/intermediate
+          mkdir -p docs/win/soccer/05_final_scores/errors
+          mkdir -p docs/win/soccer/05_final_scores/results/final_scores_dirty
+          mkdir -p docs/win/soccer/05_final_scores/results/final_scores
+          mkdir -p docs/win/soccer/05_final_scores/results/graded
+          mkdir -p docs/win/soccer/05_final_scores/deeper_summaries/soccer
+
+          touch docs/win/soccer/05_final_scores/soccer_market_tally.csv
+
+      # -------------------------
+      # ODDS + INTAKE
+      # -------------------------
+      - name: Pull ESPN soccer odds
+        shell: bash
+        run: |
+          args=(--verbose)
+          if [[ -n "${RUN_DATE}" ]]; then
+            args+=(--date "${RUN_DATE}")
+          fi
+          python docs/win/soccer/scripts/00_intake/soccer_odds.py "${args[@]}"
+
+      - name: Normalize soccer names
+        run: python docs/win/soccer/scripts/00_intake/name_normalization.py
+
+      - name: Normalize sportsbook and predictions
+        run: python docs/win/soccer/scripts/00_intake/soccer_cleaner.py
+
+      # -------------------------
+      # MERGE + BETTING PIPELINE
+      # -------------------------
+      - name: Soccer merge intake
+        run: python docs/win/soccer/scripts/01_merge/merge_intake.py
+
+      - name: Soccer build juice files
+        run: python docs/win/soccer/scripts/01_merge/build_juice_files.py
+
+      - name: Soccer juice
+        run: python docs/win/soccer/scripts/02_juice/apply_juice.py
+
+      - name: Soccer edges
+        run: python docs/win/soccer/scripts/03_edges/build_edges.py
+
+      - name: Soccer select
+        run: python docs/win/soccer/scripts/04_select/soccer_select_bets.py
+
+      # Selection files are the game_id source for this step, so run it after select.
+      - name: Add game IDs to soccer final scores
+        run: python docs/win/soccer/scripts/00_intake/soccer_add_game_id.py
+
+      # -------------------------
+      # RESULTS
+      # -------------------------
+      - name: Run soccer results grade
+        run: python docs/win/soccer/scripts/05_final_scores/01_soccer_results_grade.py
+
+      - name: Run soccer results analyze
+        run: python docs/win/soccer/scripts/05_final_scores/02_soccer_results_analyze.py
+
+      - name: Run soccer results reports
+        run: python docs/win/soccer/scripts/05_final_scores/03_soccer_results_reports.py
+
+      - name: Show key soccer outputs and logs
+        run: |
+          echo "=== Raw sportsbook CSVs ==="
+          find docs/win/soccer/00_intake/sportsbook \
+            -mindepth 2 -maxdepth 2 -type f -name "*_soccer.csv" -print | sort || true
+
+          echo "=== Normalized sportsbook CSVs ==="
+          find docs/win/soccer/00_intake/sportsbook/normalized \
+            -maxdepth 1 -type f -name "*.csv" -print | sort || true
+
+          echo "=== Intake logs ==="
+          cat docs/win/soccer/errors/00_intake/name_normalization.txt || true
+          cat docs/win/soccer/errors/00_intake/soccer_cleaner.txt || true
+
+          echo "=== Final score logs ==="
+          cat docs/win/soccer/05_final_scores/errors/soccer_results_grade_summary.txt || true
+          cat docs/win/soccer/05_final_scores/errors/soccer_results_grade_errors.txt || true
+          cat docs/win/soccer/05_final_scores/errors/soccer_results_analyze_summary.txt || true
+          cat docs/win/soccer/05_final_scores/errors/soccer_results_analyze_errors.txt || true
+          cat docs/win/soccer/05_final_scores/errors/soccer_results_reports_summary.txt || true
+          cat docs/win/soccer/05_final_scores/errors/soccer_results_reports_errors.txt || true
+
+      # -------------------------
+      # ONE FINAL REPO WRITE
+      # -------------------------
+      - name: Commit soccer pipeline outputs
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          echo "Changed files before staging:"
+          git status --short
+
+          git add -A docs/win/soccer/
+
+          if [[ -d docs/win/final_scores/results/soccer/final_scores ]]; then
+            git add -A docs/win/final_scores/results/soccer/final_scores/
+          fi
+
+          if [[ -d mappings/soccer/no_map ]]; then
+            git add -A mappings/soccer/no_map/
+          fi
+
+          echo "Changed files after staging:"
+          git status --short
+
+          if git diff --cached --quiet; then
+            echo "No soccer pipeline changes to commit."
+          else
+            git commit -m "chore: soccer full pipeline run $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git pull --rebase --autostash origin main
+            git push origin main
+          fi
