@@ -5,6 +5,10 @@ The ESPN retrieval/parsing implementation lives in _soccer_odds_core.py. This
 wrapper preserves the public script path while ensuring later runs never replace
 an already-populated CSV value with a blank and never drop previously captured
 games that disappear from a later same-day ESPN scoreboard response.
+
+Ligue 1 is enabled here as ESPN league ``fra.1`` so it participates in the same
+retrieval, provider fallback, persistence, and daily CSV workflow as the other
+configured soccer leagues.
 """
 
 from __future__ import annotations
@@ -16,6 +20,21 @@ from typing import Any, Mapping, Sequence
 
 import _soccer_odds_core as core
 from _soccer_odds_core import *  # noqa: F401,F403 - preserve existing imports/API
+
+
+# Extend the core league configuration without changing the proven ESPN parser.
+# main() reads these dictionaries at runtime, so Ligue 1 is included by default
+# and is also selectable explicitly through --league.
+core.LEAGUES["ligue_1"] = "fra.1"
+core.LEAGUE_ALIASES.update(
+    {
+        "ligue_1": "ligue_1",
+        "ligue1": "ligue_1",
+        "ligue-1": "ligue_1",
+        "fra.1": "ligue_1",
+        "france": "ligue_1",
+    }
+)
 
 
 def _is_blank(value: Any) -> bool:
