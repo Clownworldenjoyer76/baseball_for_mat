@@ -1,19 +1,19 @@
 === ESPN endpoint diagnostic ===
-utc_time=2026-08-16T11:52:27Z
-runner=GitHub Actions 1000094936
+utc_time=2026-08-16T12:06:49Z
+runner=GitHub Actions 1000094952
 date=20260816
 league=usa.1
 
 [production_limit_1000]
 url=https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=20260816&limit=1000
 curl_exit=0
-http|content_type|bytes|effective_url=403|text/html|451|https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=20260816&limit=1000
+http|content_type|bytes|effective_url=403|text/html|449|https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=20260816&limit=1000
 json=no
 
 [site_api_limit_100]
 url=https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=20260816&limit=100
 curl_exit=0
-http|content_type|bytes|effective_url=403|text/html|451|https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=20260816&limit=100
+http|content_type|bytes|effective_url=403|text/html|449|https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard?dates=20260816&limit=100
 json=no
 
 [site_api_no_limit]
@@ -61,7 +61,7 @@ json=yes type=dict | keys=$ref,id,uid,date,name,shortName,season,seasonType,time
 [site_summary]
 url=https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/summary?event=761723
 curl_exit=0
-http|content_type|bytes|effective_url=403|text/html|448|https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/summary?event=761723
+http|content_type|bytes|effective_url=403|text/html|446|https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/summary?event=761723
 json=no
 
 [cdn_game]
