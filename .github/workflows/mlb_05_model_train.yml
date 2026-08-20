@@ -88,9 +88,17 @@ jobs:
               away_meta_path,
               training_path,
           ]
-          missing_paths = [str(path) for path in required_paths if not path.exists()]
+
+          missing_paths = [
+              str(path)
+              for path in required_paths
+              if not path.exists()
+          ]
+
           if missing_paths:
-              raise RuntimeError(f"Missing required model-training artifacts: {missing_paths}")
+              raise RuntimeError(
+                  f"Missing required model-training artifacts: {missing_paths}"
+              )
 
           required_metadata = [
               "training_start_date",
@@ -109,22 +117,46 @@ jobs:
               "created_at",
           ]
 
-          home_meta = json.loads(home_meta_path.read_text(encoding="utf-8"))
-          away_meta = json.loads(away_meta_path.read_text(encoding="utf-8"))
+          home_meta = json.loads(
+              home_meta_path.read_text(encoding="utf-8")
+          )
+          away_meta = json.loads(
+              away_meta_path.read_text(encoding="utf-8")
+          )
 
-          for label, meta in [("home", home_meta), ("away", away_meta)]:
-              missing = [key for key in required_metadata if key not in meta]
+          for label, meta in [
+              ("home", home_meta),
+              ("away", away_meta),
+          ]:
+              missing = [
+                  key
+                  for key in required_metadata
+                  if key not in meta
+              ]
+
               if missing:
-                  raise RuntimeError(f"{label} metadata missing required keys: {missing}")
+                  raise RuntimeError(
+                      f"{label} metadata missing required keys: {missing}"
+                  )
 
               features = meta["feature_columns"]
-              if not isinstance(features, list) or not features:
-                  raise RuntimeError(f"{label} metadata feature_columns is empty or invalid")
-              if len(features) != len(set(features)):
-                  raise RuntimeError(f"{label} metadata feature_columns contains duplicates")
 
-          home_features = list(home_meta["feature_columns"])
-          away_features = list(away_meta["feature_columns"])
+              if not isinstance(features, list) or not features:
+                  raise RuntimeError(
+                      f"{label} metadata feature_columns is empty or invalid"
+                  )
+
+              if len(features) != len(set(features)):
+                  raise RuntimeError(
+                      f"{label} metadata feature_columns contains duplicates"
+                  )
+
+          home_features = list(
+              home_meta["feature_columns"]
+          )
+          away_features = list(
+              away_meta["feature_columns"]
+          )
 
           if home_features != away_features:
               raise RuntimeError(
@@ -132,14 +164,22 @@ jobs:
                   f"home={home_features} away={away_features}"
               )
 
-          home_model = joblib.load(home_model_path)
-          away_model = joblib.load(away_model_path)
+          home_model = joblib.load(
+              home_model_path
+          )
+          away_model = joblib.load(
+              away_model_path
+          )
 
           for label, model, features in [
               ("home", home_model, home_features),
               ("away", away_model, away_features),
           ]:
-              model_features = getattr(model, "feature_names_in_", None)
+              model_features = getattr(
+                  model,
+                  "feature_names_in_",
+                  None,
+              )
 
               if model_features is None:
                   raise RuntimeError(
@@ -147,7 +187,10 @@ jobs:
                       "cannot validate production feature order"
                   )
 
-              model_features = [str(value) for value in model_features.tolist()]
+              model_features = [
+                  str(value)
+                  for value in model_features.tolist()
+              ]
 
               if model_features != features:
                   raise RuntimeError(
@@ -155,7 +198,9 @@ jobs:
                       f"model={model_features} metadata={features}"
                   )
 
-          training = pd.read_csv(training_path)
+          training = pd.read_csv(
+              training_path
+          )
 
           missing_training_features = [
               col
@@ -170,15 +215,30 @@ jobs:
               )
 
           if training.empty:
-              raise RuntimeError("Training set is empty")
+              raise RuntimeError(
+                  "Training set is empty"
+              )
 
-          sample = training.loc[:, home_features].head(1).copy()
+          sample = training.loc[
+              :,
+              home_features,
+          ].head(1).copy()
 
           for col in home_features:
-              sample[col] = pd.to_numeric(sample[col], errors="coerce")
+              sample[col] = pd.to_numeric(
+                  sample[col],
+                  errors="coerce",
+              )
 
-          home_pred = np.asarray(home_model.predict(sample), dtype=float)
-          away_pred = np.asarray(away_model.predict(sample), dtype=float)
+          home_pred = np.asarray(
+              home_model.predict(sample),
+              dtype=float,
+          )
+
+          away_pred = np.asarray(
+              away_model.predict(sample),
+              dtype=float,
+          )
 
           for label, pred in [
               ("home", home_pred),
@@ -186,7 +246,8 @@ jobs:
           ]:
               if pred.size != 1:
                   raise RuntimeError(
-                      f"{label} model smoke test returned unexpected shape: {pred.shape}"
+                      f"{label} model smoke test returned unexpected shape: "
+                      f"{pred.shape}"
                   )
 
               if not np.isfinite(pred).all():
@@ -201,37 +262,77 @@ jobs:
                       f"{pred.tolist()}"
                   )
 
-          report_dir.mkdir(parents=True, exist_ok=True)
+          report_dir.mkdir(
+              parents=True,
+              exist_ok=True,
+          )
 
           report = {
-              "validated_at": datetime.now(timezone.utc).isoformat(),
+              "validated_at": datetime.now(
+                  timezone.utc
+              ).isoformat(),
               "status": "passed",
-              "training_set": str(training_path),
-              "training_rows": int(len(training)),
+              "training_set": str(
+                  training_path
+              ),
+              "training_rows": int(
+                  len(training)
+              ),
               "feature_columns": home_features,
               "home_model": {
-                  "artifact": str(home_model_path),
-                  "metadata": str(home_meta_path),
-                  "smoke_prediction": float(home_pred[0]),
-                  "baseline_metrics": home_meta["baseline_metrics"],
-                  "model_metrics": home_meta["model_metrics"],
+                  "artifact": str(
+                      home_model_path
+                  ),
+                  "metadata": str(
+                      home_meta_path
+                  ),
+                  "smoke_prediction": float(
+                      home_pred[0]
+                  ),
+                  "baseline_metrics": home_meta[
+                      "baseline_metrics"
+                  ],
+                  "model_metrics": home_meta[
+                      "model_metrics"
+                  ],
               },
               "away_model": {
-                  "artifact": str(away_model_path),
-                  "metadata": str(away_meta_path),
-                  "smoke_prediction": float(away_pred[0]),
-                  "baseline_metrics": away_meta["baseline_metrics"],
-                  "model_metrics": away_meta["model_metrics"],
+                  "artifact": str(
+                      away_model_path
+                  ),
+                  "metadata": str(
+                      away_meta_path
+                  ),
+                  "smoke_prediction": float(
+                      away_pred[0]
+                  ),
+                  "baseline_metrics": away_meta[
+                      "baseline_metrics"
+                  ],
+                  "model_metrics": away_meta[
+                      "model_metrics"
+                  ],
               },
           }
 
           report_path.write_text(
-              json.dumps(report, indent=2, sort_keys=True) + "\n",
+              json.dumps(
+                  report,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
               encoding="utf-8",
           )
 
-          print(f"Model validation passed: {report_path}")
+          print(
+              f"Model validation passed: {report_path}"
+          )
           PY
+
+      - name: MLB Evaluate Run Model
+        run: |
+          python docs/win/baseball/mlb/scripts/modeling/evaluate_run_model.py
 
       - name: Upload model training data and reports
         uses: actions/upload-artifact@v4
