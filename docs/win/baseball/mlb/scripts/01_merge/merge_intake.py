@@ -7,8 +7,8 @@
 #   - Duplicate sportsbook game_id remains fatal.
 #   - Team normalization and cross-source team mismatches remain fatal.
 #   - Missing context for matched games remains fatal.
-#   - Unmatched sportsbook rows are written to rejection CSV and merge audit.
-#   - Unmatched sportsbook rows are nonfatal and omitted from merged outputs.
+#   - Model-projection input is required for every sportsbook game in production output.
+#   - Missing model projection is written to rejection/audit and is fatal.
 #
 # Mapping behavior:
 #   - Uses docs/win/baseball/mlb/maps/team_map_mlb.csv as the single MLB team map.
@@ -26,7 +26,7 @@ import hashlib
 from pathlib import Path
 from datetime import datetime, timezone
 
-PRED_DIR = Path("docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id")
+PRED_DIR = Path("docs/win/baseball/mlb/00_intake/predictions/model_projection")
 BOOK_DIR = Path("docs/win/baseball/mlb/00_intake/sportsbook")
 GAMES_DIR = Path("docs/win/baseball/mlb/00_intake/games")
 CONTEXT_DIR = Path("docs/win/baseball/mlb/00_intake/mlb_raw")
@@ -383,11 +383,29 @@ REQUIRED_PRED_COLS = [
     "game_time",
     "home_pitcher",
     "away_pitcher",
-    "home_prob",
-    "away_prob",
-    "away_projected_runs",
-    "home_projected_runs",
-    "total_projected_runs",
+    "dratings_home_prob",
+    "dratings_away_prob",
+    "dratings_home_projected_runs",
+    "dratings_away_projected_runs",
+    "dratings_total_projected_runs",
+    "model_home_runs",
+    "model_away_runs",
+    "model_total_runs",
+    "run_model_version",
+    "run_model_feature_status",
+]
+
+MODEL_PROJECTION_OUTPUT_COLS = [
+    "dratings_home_prob",
+    "dratings_away_prob",
+    "dratings_home_projected_runs",
+    "dratings_away_projected_runs",
+    "dratings_total_projected_runs",
+    "model_home_runs",
+    "model_away_runs",
+    "model_total_runs",
+    "run_model_version",
+    "run_model_feature_status",
 ]
 
 REQUIRED_BOOK_COLS = [
@@ -658,13 +676,26 @@ def normalize_probs(p1, p2):
 # AUDIT / VALIDATION HELPERS
 # ─────────────────────────────────────────────
 
-def add_audit_row(audit_rows, date, game_id, away_team, home_team, pred, book, games, context, status):
+def add_audit_row(
+    audit_rows,
+    date,
+    game_id,
+    away_team,
+    home_team,
+    pred,
+    book,
+    games,
+    context,
+    model_projection,
+    status,
+):
     audit_rows.append({
         "date": date,
         "game_id": game_id,
         "away_team": away_team,
         "home_team": home_team,
         "source_present_pred": "1" if pred else "0",
+        "source_present_model_projection": "1" if model_projection else "0",
         "source_present_book": "1" if book else "0",
         "source_present_games": "1" if games else "0",
         "source_present_context": "1" if context else "0",
@@ -679,6 +710,43 @@ def choose_team_for_audit(pred_row, book_row, games_row, side):
             if value:
                 return value
     return ""
+
+
+def validate_model_projection_row(date, game_id, pred_row):
+    missing = [
+        col for col in MODEL_PROJECTION_OUTPUT_COLS
+        if not _clean(pred_row.get(col))
+    ]
+
+    if missing:
+        fail(
+            f"{date} | model projection row missing required values "
+            f"game_id={game_id}: {missing}"
+        )
+
+    try:
+        model_home = float(pred_row["model_home_runs"])
+        model_away = float(pred_row["model_away_runs"])
+        model_total = float(pred_row["model_total_runs"])
+    except Exception:
+        fail(
+            f"{date} | model projection run values are nonnumeric "
+            f"game_id={game_id}"
+        )
+
+    if model_home < 0 or model_away < 0 or model_total < 0:
+        fail(
+            f"{date} | model projection run values are negative "
+            f"game_id={game_id}: "
+            f"home={model_home} away={model_away} total={model_total}"
+        )
+
+    if abs(model_total - (model_home + model_away)) > 1e-9:
+        fail(
+            f"{date} | model_total_runs does not equal home + away "
+            f"game_id={game_id}: "
+            f"home={model_home} away={model_away} total={model_total}"
+        )
 
 
 def validate_market_outputs(date, ml_rows, rl_rows, tot_rows):
@@ -805,11 +873,11 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
     pred_path = PRED_DIR / f"{date}_MLB.csv"
     book_path = BOOK_DIR / f"{date}_MLB.csv"
 
-    preds = load_csv(pred_path, REQUIRED_PRED_COLS, "prediction input")
+    preds = load_csv(pred_path, REQUIRED_PRED_COLS, "model projection input", required_file=True)
     books = load_csv(book_path, REQUIRED_BOOK_COLS, "sportsbook input")
 
     if not preds:
-        log(f"SKIP {date}: no predictions")
+        log(f"SKIP {date}: no model projection rows")
         summary["skipped"] += 1
         return
 
@@ -831,13 +899,22 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
     for row_num, p in enumerate(preds, start=2):
         game_id = _clean(p.get("game_id"))
         if not game_id:
-            fail(f"{date} | prediction row has blank game_id at csv_row={row_num}: {p}")
+            fail(f"{date} | model projection row has blank game_id at csv_row={row_num}: {p}")
         if game_id in pred_idx:
-            fail(f"{date} | duplicate prediction game_id={game_id}")
+            fail(f"{date} | duplicate model projection game_id={game_id}")
 
         p["_csv_row"] = row_num
-        p["_home_team_norm"] = normalize_team_name(p.get("home_team"), alias_map, f"prediction.home_team game_id={game_id}")
-        p["_away_team_norm"] = normalize_team_name(p.get("away_team"), alias_map, f"prediction.away_team game_id={game_id}")
+        p["_home_team_norm"] = normalize_team_name(
+            p.get("home_team"),
+            alias_map,
+            f"model_projection.home_team game_id={game_id}",
+        )
+        p["_away_team_norm"] = normalize_team_name(
+            p.get("away_team"),
+            alias_map,
+            f"model_projection.away_team game_id={game_id}",
+        )
+        validate_model_projection_row(date, game_id, p)
         pred_idx[game_id] = p
 
     for row_num, b in enumerate(books, start=2):
@@ -866,7 +943,7 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
     for game_id in sorted(unmatched_sportsbook_ids):
         row = dict(book_idx[game_id])
         row["date"] = date
-        row["reject_reason"] = "sportsbook_game_id_not_found_in_predictions"
+        row["reject_reason"] = "sportsbook_game_id_not_found_in_model_projection"
         rejection_rows.append(row)
 
     rejection_path = REJECTION_DIR / f"{date}_unmatched_sportsbook_rows.csv"
@@ -919,6 +996,7 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
             book=book_row is not None,
             games=games_row is not None,
             context=context_row is not None,
+            model_projection=pred_row is not None,
             status=";".join(statuses),
         )
 
@@ -929,6 +1007,7 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
         "away_team",
         "home_team",
         "source_present_pred",
+        "source_present_model_projection",
         "source_present_book",
         "source_present_games",
         "source_present_context",
@@ -939,11 +1018,11 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
     log(
         f"{date} | ROW RECONCILIATION "
         f"sportsbook_rows={len(books)} "
-        f"prediction_rows={len(preds)} "
+        f"model_projection_rows={len(preds)} "
         f"games_rows={len(games_rows)} "
         f"context_rows={len(context_rows)} "
         f"merge_rows={len(matched_ids)} "
-        f"unmatched_prediction_rows={len(unmatched_prediction_ids)} "
+        f"unmatched_model_projection_rows={len(unmatched_prediction_ids)} "
         f"unmatched_sportsbook_rows={len(unmatched_sportsbook_ids)} "
         f"unmatched_games_rows={len(unmatched_games_ids)} "
         f"missing_context_rows={len(missing_context_ids)} "
@@ -964,9 +1043,10 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
     fatal_errors = []
 
     if unmatched_sportsbook_ids:
-        log(
-            f"{date} | unmatched sportsbook rows nonfatal rejection: "
-            f"count={len(unmatched_sportsbook_ids)} game_ids={sorted(unmatched_sportsbook_ids)} "
+        fatal_errors.append(
+            f"{date} | sportsbook games missing model projection hard failure: "
+            f"count={len(unmatched_sportsbook_ids)} "
+            f"game_ids={sorted(unmatched_sportsbook_ids)} "
             f"rejection_file={rejection_path}"
         )
 
@@ -1030,11 +1110,16 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
             b.get("home_dk_moneyline_decimal", ""),
             p.get("home_pitcher", ""),
             p.get("away_pitcher", ""),
-            p.get("home_prob", ""),
-            p.get("away_prob", ""),
-            p.get("away_projected_runs", ""),
-            p.get("home_projected_runs", ""),
-            p.get("total_projected_runs", ""),
+            p.get("dratings_home_prob", ""),
+            p.get("dratings_away_prob", ""),
+            p.get("dratings_home_projected_runs", ""),
+            p.get("dratings_away_projected_runs", ""),
+            p.get("dratings_total_projected_runs", ""),
+            p.get("model_home_runs", ""),
+            p.get("model_away_runs", ""),
+            p.get("model_total_runs", ""),
+            p.get("run_model_version", ""),
+            p.get("run_model_feature_status", ""),
         ] + ctx_vals)
 
         rl_rows.append([
@@ -1055,11 +1140,16 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
             b.get("home_dk_run_line_decimal", ""),
             p.get("home_pitcher", ""),
             p.get("away_pitcher", ""),
-            p.get("home_prob", ""),
-            p.get("away_prob", ""),
-            p.get("away_projected_runs", ""),
-            p.get("home_projected_runs", ""),
-            p.get("total_projected_runs", ""),
+            p.get("dratings_home_prob", ""),
+            p.get("dratings_away_prob", ""),
+            p.get("dratings_home_projected_runs", ""),
+            p.get("dratings_away_projected_runs", ""),
+            p.get("dratings_total_projected_runs", ""),
+            p.get("model_home_runs", ""),
+            p.get("model_away_runs", ""),
+            p.get("model_total_runs", ""),
+            p.get("run_model_version", ""),
+            p.get("run_model_feature_status", ""),
         ] + ctx_vals)
 
         over_raw = american_to_prob(b.get("dk_total_over_american", ""))
@@ -1084,11 +1174,16 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
             b.get("dk_total_under_decimal", ""),
             p.get("home_pitcher", ""),
             p.get("away_pitcher", ""),
-            p.get("home_prob", ""),
-            p.get("away_prob", ""),
-            p.get("away_projected_runs", ""),
-            p.get("home_projected_runs", ""),
-            p.get("total_projected_runs", ""),
+            p.get("dratings_home_prob", ""),
+            p.get("dratings_away_prob", ""),
+            p.get("dratings_home_projected_runs", ""),
+            p.get("dratings_away_projected_runs", ""),
+            p.get("dratings_total_projected_runs", ""),
+            p.get("model_home_runs", ""),
+            p.get("model_away_runs", ""),
+            p.get("model_total_runs", ""),
+            p.get("run_model_version", ""),
+            p.get("run_model_feature_status", ""),
             over_prob,
             under_prob,
         ] + ctx_vals)
@@ -1105,8 +1200,12 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
         "away_run_line", "home_run_line", "total",
         "away_dk_moneyline_american", "home_dk_moneyline_american",
         "away_dk_moneyline_decimal", "home_dk_moneyline_decimal",
-        "home_pitcher", "away_pitcher", "home_prob", "away_prob",
-        "away_projected_runs", "home_projected_runs", "total_projected_runs",
+        "home_pitcher", "away_pitcher",
+        "dratings_home_prob", "dratings_away_prob",
+        "dratings_home_projected_runs", "dratings_away_projected_runs",
+        "dratings_total_projected_runs",
+        "model_home_runs", "model_away_runs", "model_total_runs",
+        "run_model_version", "run_model_feature_status",
     ]
 
     base_rl_header = [
@@ -1116,8 +1215,12 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
         "away_run_line", "home_run_line", "total",
         "away_dk_run_line_american", "home_dk_run_line_american",
         "away_dk_run_line_decimal", "home_dk_run_line_decimal",
-        "home_pitcher", "away_pitcher", "home_prob", "away_prob",
-        "away_projected_runs", "home_projected_runs", "total_projected_runs",
+        "home_pitcher", "away_pitcher",
+        "dratings_home_prob", "dratings_away_prob",
+        "dratings_home_projected_runs", "dratings_away_projected_runs",
+        "dratings_total_projected_runs",
+        "model_home_runs", "model_away_runs", "model_total_runs",
+        "run_model_version", "run_model_feature_status",
     ]
 
     base_tot_header = [
@@ -1127,8 +1230,12 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
         "away_run_line", "home_run_line", "total",
         "dk_total_over_american", "dk_total_under_american",
         "dk_total_over_decimal", "dk_total_under_decimal",
-        "home_pitcher", "away_pitcher", "home_prob", "away_prob",
-        "away_projected_runs", "home_projected_runs", "total_projected_runs",
+        "home_pitcher", "away_pitcher",
+        "dratings_home_prob", "dratings_away_prob",
+        "dratings_home_projected_runs", "dratings_away_projected_runs",
+        "dratings_total_projected_runs",
+        "model_home_runs", "model_away_runs", "model_total_runs",
+        "run_model_version", "run_model_feature_status",
         "total_runs_over_prob", "total_runs_under_prob",
     ]
 
@@ -1169,7 +1276,7 @@ if __name__ == "__main__":
         alias_map, team_id_to_canonical, _canonical_to_team_id = load_team_maps()
 
         pred_files = sorted(PRED_DIR.glob("*_MLB.csv"))
-        log(f"Prediction files found: {len(pred_files)}")
+        log(f"Model projection files found: {len(pred_files)}")
 
         for file in pred_files:
             date = file.stem.replace("_MLB", "")
@@ -1182,12 +1289,12 @@ if __name__ == "__main__":
         log(f"Slates written: {summary['slates_written']}")
         log(f"Slates skipped: {summary['skipped']}")
         log(f"Files written: {summary['files_written']}")
-        log(f"Total prediction rows: {summary['total_prediction_rows']}")
+        log(f"Total model projection rows: {summary['total_prediction_rows']}")
         log(f"Total sportsbook rows: {summary['total_sportsbook_rows']}")
         log(f"Total games rows: {summary['total_games_rows']}")
         log(f"Total context rows: {summary['total_context_rows']}")
         log(f"Total matched: {summary['total_matched']}")
-        log(f"Total unmatched prediction rows: {summary['total_unmatched_prediction']}")
+        log(f"Total unmatched model projection rows: {summary['total_unmatched_prediction']}")
         log(f"Total unmatched sportsbook rows: {summary['total_unmatched_sportsbook']}")
         log(f"Total unmatched games rows: {summary['total_unmatched_games']}")
         log(f"Total missing context rows: {summary['total_missing_context']}")
