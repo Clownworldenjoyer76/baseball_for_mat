@@ -23,6 +23,7 @@ LEAKAGE_AUDIT_FILE = AUDIT_DIR / "leakage_audit.csv"
 FORBIDDEN_READ_TOKENS = ["05_" + "final_scores", "final" + "_scores", "graded", "results", "reports"]  # LEAKAGE_GUARD_ALLOWED_REFERENCE
 SCRIPT_NAME = "compute_edges.py"
 STAGE_NAME = "03_edges"
+PROB_TOLERANCE = 1e-6
 
 
 def record_file_read(path: Path, path_allowed: bool, reason: str) -> None:
@@ -68,8 +69,8 @@ MONEYLINE_REQUIRED_COLUMNS = [
     "game_time",
     "home_team",
     "away_team",
-    "home_normalized_prob_moneyline",
-    "away_normalized_prob_moneyline",
+    "home_model_prob_moneyline",
+    "away_model_prob_moneyline",
     "home_dk_decimal_moneyline",
     "away_dk_decimal_moneyline",
 ]
@@ -82,8 +83,8 @@ RUN_LINE_REQUIRED_COLUMNS = [
     "game_time",
     "home_team",
     "away_team",
-    "home_normalized_prob_run_line",
-    "away_normalized_prob_run_line",
+    "home_model_prob_run_line",
+    "away_model_prob_run_line",
     "home_dk_run_line_decimal",
     "away_dk_run_line_decimal",
 ]
@@ -98,8 +99,11 @@ TOTAL_REQUIRED_COLUMNS = [
     "away_team",
     "fair_total_over_decimal",
     "fair_total_under_decimal",
-    "over_normalized_prob_total",
-    "under_normalized_prob_total",
+    "over_model_prob_total_win",
+    "over_model_prob_total_loss",
+    "under_model_prob_total_win",
+    "under_model_prob_total_loss",
+    "total_model_prob_push",
     "dk_total_over_decimal",
     "dk_total_under_decimal",
 ]
@@ -178,6 +182,88 @@ def validate_required_columns(df: pd.DataFrame, required_columns: list, label: s
         raise ValueError(f"{label} missing required columns: {missing}")
 
 
+def validate_probability_values(df: pd.DataFrame, columns: list, label: str) -> None:
+    bad = pd.Series(False, index=df.index)
+
+    for col in columns:
+        values = pd.to_numeric(df[col], errors="coerce")
+        bad = bad | values.isna() | ~np.isfinite(values) | (values < 0) | (values > 1)
+
+    if bad.any():
+        sample = df.loc[bad, ["game_id"] + columns].head(10).to_dict("records")
+        raise ValueError(
+            f"{label} has missing, non-finite, or out-of-range canonical probabilities; "
+            f"bad_rows={int(bad.sum())}; sample={sample}"
+        )
+
+
+def validate_probability_sum(df: pd.DataFrame, columns: list, label: str) -> None:
+    total = sum(pd.to_numeric(df[col], errors="coerce") for col in columns)
+    bad = (total - 1.0).abs() > PROB_TOLERANCE
+
+    if bad.any():
+        sample = df.loc[bad, ["game_id"] + columns].head(10).to_dict("records")
+        raise ValueError(
+            f"{label} canonical probabilities do not sum to 1 within {PROB_TOLERANCE}; "
+            f"bad_rows={int(bad.sum())}; sample={sample}"
+        )
+
+
+def validate_probability_contract(df: pd.DataFrame, market: str, label: str) -> None:
+    if market == "moneyline":
+        cols = ["home_model_prob_moneyline", "away_model_prob_moneyline"]
+        validate_probability_values(df, cols, label)
+        validate_probability_sum(df, cols, label)
+        return
+
+    if market == "run_line":
+        cols = ["home_model_prob_run_line", "away_model_prob_run_line"]
+        validate_probability_values(df, cols, label)
+        validate_probability_sum(df, cols, label)
+        return
+
+    if market == "total":
+        cols = [
+            "over_model_prob_total_win",
+            "over_model_prob_total_loss",
+            "under_model_prob_total_win",
+            "under_model_prob_total_loss",
+            "total_model_prob_push",
+        ]
+        validate_probability_values(df, cols, label)
+        validate_probability_sum(
+            df,
+            ["over_model_prob_total_win", "over_model_prob_total_loss", "total_model_prob_push"],
+            label,
+        )
+        validate_probability_sum(
+            df,
+            ["under_model_prob_total_win", "under_model_prob_total_loss", "total_model_prob_push"],
+            label,
+        )
+
+        over_win = pd.to_numeric(df["over_model_prob_total_win"], errors="coerce")
+        over_loss = pd.to_numeric(df["over_model_prob_total_loss"], errors="coerce")
+        under_win = pd.to_numeric(df["under_model_prob_total_win"], errors="coerce")
+        under_loss = pd.to_numeric(df["under_model_prob_total_loss"], errors="coerce")
+
+        bad = (
+            (under_win - over_loss).abs() > PROB_TOLERANCE
+        ) | (
+            (under_loss - over_win).abs() > PROB_TOLERANCE
+        )
+
+        if bad.any():
+            sample = df.loc[bad, ["game_id"] + cols].head(10).to_dict("records")
+            raise ValueError(
+                f"{label} totals win/loss identities are inconsistent; "
+                f"bad_rows={int(bad.sum())}; sample={sample}"
+            )
+        return
+
+    raise ValueError(f"{label} unknown market for probability validation: {market}")
+
+
 def validate_input_schema(df: pd.DataFrame, market: str, file_name: str) -> None:
     validate_no_duplicate_columns(df, f"{file_name} input")
 
@@ -189,6 +275,8 @@ def validate_input_schema(df: pd.DataFrame, market: str, file_name: str) -> None
         validate_required_columns(df, TOTAL_REQUIRED_COLUMNS, f"{file_name} total input")
     else:
         raise ValueError(f"{file_name} unknown market for schema validation: {market}")
+
+    validate_probability_contract(df, market, f"{file_name} {market} input")
 
 
 def write_csv_checked(df: pd.DataFrame, output_path: Path) -> None:
@@ -226,10 +314,10 @@ def _col(df, name):
 
 def compute_moneyline(df):
     df["home_edge_decimal_moneyline"] = safe_edge(
-        df["home_dk_decimal_moneyline"], df["home_normalized_prob_moneyline"]
+        df["home_dk_decimal_moneyline"], df["home_model_prob_moneyline"]
     )
     df["away_edge_decimal_moneyline"] = safe_edge(
-        df["away_dk_decimal_moneyline"], df["away_normalized_prob_moneyline"]
+        df["away_dk_decimal_moneyline"], df["away_model_prob_moneyline"]
     )
     null_edges = count_null_edges(df, [
         "home_edge_decimal_moneyline",
@@ -240,10 +328,10 @@ def compute_moneyline(df):
 
 def compute_run_line(df):
     df["home_edge_decimal_run_line"] = safe_edge(
-        df["home_dk_run_line_decimal"], df["home_normalized_prob_run_line"]
+        df["home_dk_run_line_decimal"], df["home_model_prob_run_line"]
     )
     df["away_edge_decimal_run_line"] = safe_edge(
-        df["away_dk_run_line_decimal"], df["away_normalized_prob_run_line"]
+        df["away_dk_run_line_decimal"], df["away_model_prob_run_line"]
     )
     null_edges = count_null_edges(df, [
         "home_edge_decimal_run_line",
@@ -256,8 +344,8 @@ def compute_total(df):
     df["over_prob"]  = 1 / pd.to_numeric(df["fair_total_over_decimal"],  errors="coerce")
     df["under_prob"] = 1 / pd.to_numeric(df["fair_total_under_decimal"], errors="coerce")
 
-    df["over_edge_decimal_total"]  = safe_edge(df["dk_total_over_decimal"],  df["over_normalized_prob_total"])
-    df["under_edge_decimal_total"] = safe_edge(df["dk_total_under_decimal"], df["under_normalized_prob_total"])
+    df["over_edge_decimal_total"]  = safe_edge(df["dk_total_over_decimal"],  df["over_model_prob_total_win"])
+    df["under_edge_decimal_total"] = safe_edge(df["dk_total_under_decimal"], df["under_model_prob_total_win"])
 
     null_edges = count_null_edges(df, [
         "over_edge_decimal_total",

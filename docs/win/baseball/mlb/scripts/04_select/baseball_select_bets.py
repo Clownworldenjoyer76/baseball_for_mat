@@ -21,6 +21,14 @@ ERROR_DIR.mkdir(parents=True, exist_ok=True)
 
 LEAGUE_CODE = "MLB"
 PROB_TOLERANCE = 1e-9
+LEGACY_OFFICIAL_PROBABILITY_COLUMNS = [
+    "home_normalized_prob_moneyline",
+    "away_normalized_prob_moneyline",
+    "home_normalized_prob_run_line",
+    "away_normalized_prob_run_line",
+    "over_normalized_prob_total",
+    "under_normalized_prob_total",
+]
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     _yaml = yaml.safe_load(f)["markets"]["mlb"]
@@ -135,8 +143,8 @@ REQUIRED_MONEYLINE_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + 
     "away_dk_moneyline_american",
     "home_dk_decimal_moneyline",
     "away_dk_decimal_moneyline",
-    "home_normalized_prob_moneyline",
-    "away_normalized_prob_moneyline",
+    "home_model_prob_moneyline",
+    "away_model_prob_moneyline",
     "home_prob_for_ev",
     "away_prob_for_ev",
     "home_prob_for_kelly",
@@ -162,8 +170,8 @@ REQUIRED_RUN_LINE_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "away_dk_run_line_american",
     "home_dk_run_line_decimal",
     "away_dk_run_line_decimal",
-    "home_normalized_prob_run_line",
-    "away_normalized_prob_run_line",
+    "home_model_prob_run_line",
+    "away_model_prob_run_line",
     "home_prob_for_ev",
     "away_prob_for_ev",
     "home_prob_for_kelly",
@@ -188,8 +196,11 @@ REQUIRED_TOTAL_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "dk_total_under_american",
     "dk_total_over_decimal",
     "dk_total_under_decimal",
-    "over_normalized_prob_total",
-    "under_normalized_prob_total",
+    "over_model_prob_total_win",
+    "over_model_prob_total_loss",
+    "under_model_prob_total_win",
+    "under_model_prob_total_loss",
+    "total_model_prob_push",
     "over_prob_for_ev",
     "under_prob_for_ev",
     "over_prob_for_kelly",
@@ -281,8 +292,45 @@ def validate_forbidden_columns(df: pd.DataFrame, forbidden_columns: list, label:
     if present:
         raise ValueError(
             f"{label} contains obsolete forbidden columns: {present}. "
-            f"Use home_normalized_prob_run_line / away_normalized_prob_run_line."
+            f"Use home_model_prob_run_line / away_model_prob_run_line."
         )
+
+
+def validate_canonical_probability_contract(df: pd.DataFrame, label: str) -> None:
+    legacy = [c for c in LEGACY_OFFICIAL_PROBABILITY_COLUMNS if c in df.columns]
+    if legacy:
+        raise ValueError(f"{label} contains obsolete official probability columns: {legacy}")
+
+    if "home_model_prob_moneyline" in df.columns:
+        cols = ["home_model_prob_moneyline", "away_model_prob_moneyline"]
+        values = [pd.to_numeric(df[c], errors="coerce") for c in cols]
+        bad = values[0].isna() | values[1].isna() | (values[0] < 0) | (values[0] > 1) | (values[1] < 0) | (values[1] > 1) | ((values[0] + values[1] - 1).abs() > 1e-6)
+        if bad.any():
+            raise ValueError(f"{label} invalid canonical moneyline probabilities; bad_rows={int(bad.sum())}")
+
+    if "home_model_prob_run_line" in df.columns:
+        cols = ["home_model_prob_run_line", "away_model_prob_run_line"]
+        values = [pd.to_numeric(df[c], errors="coerce") for c in cols]
+        bad = values[0].isna() | values[1].isna() | (values[0] < 0) | (values[0] > 1) | (values[1] < 0) | (values[1] > 1) | ((values[0] + values[1] - 1).abs() > 1e-6)
+        if bad.any():
+            raise ValueError(f"{label} invalid canonical run-line probabilities; bad_rows={int(bad.sum())}")
+
+    if "over_model_prob_total_win" in df.columns:
+        cols = [
+            "over_model_prob_total_win", "over_model_prob_total_loss",
+            "under_model_prob_total_win", "under_model_prob_total_loss",
+            "total_model_prob_push",
+        ]
+        v = {c: pd.to_numeric(df[c], errors="coerce") for c in cols}
+        bad = pd.Series(False, index=df.index)
+        for c in cols:
+            bad = bad | v[c].isna() | (v[c] < 0) | (v[c] > 1)
+        bad = bad | ((v["over_model_prob_total_win"] + v["over_model_prob_total_loss"] + v["total_model_prob_push"] - 1).abs() > 1e-6)
+        bad = bad | ((v["under_model_prob_total_win"] + v["under_model_prob_total_loss"] + v["total_model_prob_push"] - 1).abs() > 1e-6)
+        bad = bad | ((v["under_model_prob_total_win"] - v["over_model_prob_total_loss"]).abs() > 1e-6)
+        bad = bad | ((v["under_model_prob_total_loss"] - v["over_model_prob_total_win"]).abs() > 1e-6)
+        if bad.any():
+            raise ValueError(f"{label} invalid canonical totals probabilities; bad_rows={int(bad.sum())}")
 
 
 def validate_unique_game_id(df: pd.DataFrame, label: str) -> None:
@@ -305,6 +353,7 @@ def read_market_csv(path: Path, required_columns: list, label: str) -> pd.DataFr
     validate_no_duplicate_columns(df, label)
     validate_required_columns(df, required_columns, label)
     validate_unique_game_id(df, label)
+    validate_canonical_probability_contract(df, label)
 
     return df
 
@@ -457,7 +506,7 @@ def matched_band(val, ranges):
 
 
 
-def check_probability_basis(prob_for_ev, prob_for_kelly, ev_source, kelly_source, counters):
+def check_probability_basis(prob_for_selection, prob_for_ev, prob_for_kelly, ev_source, kelly_source, counters):
     if not ev_source or not kelly_source:
         counters["source_fail"] += 1
         return False, "source_fail", "blank_probability_source"
@@ -466,13 +515,17 @@ def check_probability_basis(prob_for_ev, prob_for_kelly, ev_source, kelly_source
         counters["source_fail"] += 1
         return False, "source_fail", "ev_kelly_source_mismatch"
 
-    if prob_for_ev is None or prob_for_kelly is None:
+    if prob_for_selection is None or prob_for_ev is None or prob_for_kelly is None:
         counters["source_fail"] += 1
         return False, "source_fail", "missing_probability_basis"
 
     if abs(prob_for_ev - prob_for_kelly) > PROB_TOLERANCE:
         counters["source_fail"] += 1
         return False, "source_fail", "prob_for_ev_prob_for_kelly_mismatch"
+
+    if abs(prob_for_selection - prob_for_ev) > PROB_TOLERANCE:
+        counters["source_fail"] += 1
+        return False, "source_fail", "selection_probability_not_canonical_ev_probability"
 
     return True, "", ""
 
@@ -821,6 +874,7 @@ def is_low_confidence(row) -> int:
 
 def evaluate_candidate(row, candidate, rules, side_counter, rejection_rows):
     basis_ok, fail_reason, fail_detail = check_probability_basis(
+        candidate["prob_used_for_selection"],
         candidate["prob_for_ev"],
         candidate["prob_for_kelly"],
         candidate["ev_probability_source"],
@@ -867,6 +921,7 @@ def process_moneyline(row, counters, rejection_rows):
 
         prob_for_ev = fv(row.get(f"{side}_prob_for_ev"))
         prob_for_kelly = fv(row.get(f"{side}_prob_for_kelly"))
+        canonical_prob = fv(row.get(f"{side}_model_prob_moneyline"))
 
         candidate = {
             "market_type": "moneyline",
@@ -877,8 +932,8 @@ def process_moneyline(row, counters, rejection_rows):
             "take_bet": f"{side}_moneyline",
             "dk_odds_american": odds_by_side[side],
             "dk_odds_decimal": fv(row.get(f"{side}_dk_decimal_moneyline")),
-            "model_prob": prob_for_ev,
-            "prob_used_for_selection": prob_for_ev,
+            "model_prob": canonical_prob,
+            "prob_used_for_selection": canonical_prob,
             "prob_for_ev": prob_for_ev,
             "prob_for_kelly": prob_for_kelly,
             "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),
@@ -918,6 +973,7 @@ def process_run_line(row, counters, rejection_rows):
 
         prob_for_ev = fv(row.get(f"{side}_prob_for_ev"))
         prob_for_kelly = fv(row.get(f"{side}_prob_for_kelly"))
+        canonical_prob = fv(row.get(f"{side}_model_prob_run_line"))
 
         candidate = {
             "market_type": "run_line",
@@ -928,8 +984,8 @@ def process_run_line(row, counters, rejection_rows):
             "take_bet": f"{side}_run_line",
             "dk_odds_american": odds_by_side[side],
             "dk_odds_decimal": fv(row.get(f"{side}_dk_run_line_decimal")),
-            "model_prob": prob_for_ev,
-            "prob_used_for_selection": prob_for_ev,
+            "model_prob": canonical_prob,
+            "prob_used_for_selection": canonical_prob,
             "prob_for_ev": prob_for_ev,
             "prob_for_kelly": prob_for_kelly,
             "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),
@@ -969,6 +1025,7 @@ def process_total(row, counters, rejection_rows):
 
         prob_for_ev = fv(row.get(f"{side}_prob_for_ev"))
         prob_for_kelly = fv(row.get(f"{side}_prob_for_kelly"))
+        canonical_prob = fv(row.get(f"{side}_model_prob_total_win"))
 
         candidate = {
             "market_type": "total",
@@ -979,8 +1036,8 @@ def process_total(row, counters, rejection_rows):
             "take_bet": f"{side}_total",
             "dk_odds_american": odds_by_side[side],
             "dk_odds_decimal": fv(row.get(f"dk_total_{side}_decimal")),
-            "model_prob": prob_for_ev,
-            "prob_used_for_selection": prob_for_ev,
+            "model_prob": canonical_prob,
+            "prob_used_for_selection": canonical_prob,
             "prob_for_ev": prob_for_ev,
             "prob_for_kelly": prob_for_kelly,
             "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),

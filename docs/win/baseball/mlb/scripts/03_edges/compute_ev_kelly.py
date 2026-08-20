@@ -71,16 +71,16 @@ PROB_TOLERANCE = 1e-6
 
 PROBABILITY_SOURCES = {
     "moneyline": {
-        "home": "home_normalized_prob_moneyline",
-        "away": "away_normalized_prob_moneyline",
+        "home": "home_model_prob_moneyline",
+        "away": "away_model_prob_moneyline",
     },
     "run_line": {
-        "home": "home_normalized_prob_run_line",
-        "away": "away_normalized_prob_run_line",
+        "home": "home_model_prob_run_line",
+        "away": "away_model_prob_run_line",
     },
     "total": {
-        "over": "over_normalized_prob_total",
-        "under": "under_normalized_prob_total",
+        "over": "over_model_prob_total_win",
+        "under": "under_model_prob_total_win",
     },
 }
 
@@ -92,8 +92,8 @@ MONEYLINE_REQUIRED_COLUMNS = [
     "game_time",
     "home_team",
     "away_team",
-    "home_normalized_prob_moneyline",
-    "away_normalized_prob_moneyline",
+    "home_model_prob_moneyline",
+    "away_model_prob_moneyline",
     "home_dk_decimal_moneyline",
     "away_dk_decimal_moneyline",
     "home_edge_decimal_moneyline",
@@ -108,8 +108,8 @@ RUN_LINE_REQUIRED_COLUMNS = [
     "game_time",
     "home_team",
     "away_team",
-    "home_normalized_prob_run_line",
-    "away_normalized_prob_run_line",
+    "home_model_prob_run_line",
+    "away_model_prob_run_line",
     "home_dk_run_line_decimal",
     "away_dk_run_line_decimal",
     "home_edge_decimal_run_line",
@@ -124,8 +124,11 @@ TOTAL_REQUIRED_COLUMNS = [
     "game_time",
     "home_team",
     "away_team",
-    "over_normalized_prob_total",
-    "under_normalized_prob_total",
+    "over_model_prob_total_win",
+    "over_model_prob_total_loss",
+    "under_model_prob_total_win",
+    "under_model_prob_total_loss",
+    "total_model_prob_push",
     "dk_total_over_decimal",
     "dk_total_under_decimal",
     "over_edge_decimal_total",
@@ -244,8 +247,31 @@ def assert_forbidden_columns_absent(
     if present:
         raise ValueError(
             f"{label} contains obsolete forbidden columns: {present}. "
-            f"Use home_normalized_prob_run_line / "
-            f"away_normalized_prob_run_line."
+            f"Use home_model_prob_run_line / "
+            f"away_model_prob_run_line."
+        )
+
+
+def validate_probability_values(
+    df: pd.DataFrame,
+    columns: list,
+    label: str,
+) -> None:
+    bad = pd.Series(False, index=df.index)
+
+    for col in columns:
+        values = pd.to_numeric(df[col], errors="coerce")
+        bad = bad | values.isna() | ~np.isfinite(values) | (values < 0) | (values > 1)
+
+    if bad.any():
+        sample = (
+            df.loc[bad, ["game_id"] + columns]
+            .head(10)
+            .to_dict("records")
+        )
+        raise ValueError(
+            f"{label} has missing, non-finite, or out-of-range canonical "
+            f"probabilities; bad_rows={int(bad.sum())}; sample={sample}"
         )
 
 
@@ -255,17 +281,11 @@ def validate_probability_pair(
     col_b: str,
     label: str,
 ) -> None:
+    validate_probability_values(df, [col_a, col_b], label)
+
     a = pd.to_numeric(df[col_a], errors="coerce")
     b = pd.to_numeric(df[col_b], errors="coerce")
-
-    both_blank = a.isna() & b.isna()
-    incomplete = a.isna() ^ b.isna()
-    invalid_sum = (
-        (~both_blank)
-        & (~incomplete)
-        & ((a + b - 1.0).abs() > PROB_TOLERANCE)
-    )
-    bad = incomplete | invalid_sum
+    bad = ((a + b - 1.0).abs() > PROB_TOLERANCE)
 
     if bad.any():
         sample = (
@@ -274,8 +294,45 @@ def validate_probability_pair(
             .to_dict("records")
         )
         raise ValueError(
-            f"{label} official probability columns contain an incomplete "
-            f"pair or do not sum to 1.0 within tolerance; "
+            f"{label} canonical probability pair does not sum to 1.0 "
+            f"within tolerance; bad_rows={int(bad.sum())}; sample={sample}"
+        )
+
+
+def validate_total_probability_contract(
+    df: pd.DataFrame,
+    label: str,
+) -> None:
+    cols = [
+        "over_model_prob_total_win",
+        "over_model_prob_total_loss",
+        "under_model_prob_total_win",
+        "under_model_prob_total_loss",
+        "total_model_prob_push",
+    ]
+    validate_probability_values(df, cols, label)
+
+    over_win = pd.to_numeric(df["over_model_prob_total_win"], errors="coerce")
+    over_loss = pd.to_numeric(df["over_model_prob_total_loss"], errors="coerce")
+    under_win = pd.to_numeric(df["under_model_prob_total_win"], errors="coerce")
+    under_loss = pd.to_numeric(df["under_model_prob_total_loss"], errors="coerce")
+    push = pd.to_numeric(df["total_model_prob_push"], errors="coerce")
+
+    bad = (
+        ((over_win + over_loss + push - 1.0).abs() > PROB_TOLERANCE)
+        | ((under_win + under_loss + push - 1.0).abs() > PROB_TOLERANCE)
+        | ((under_win - over_loss).abs() > PROB_TOLERANCE)
+        | ((under_loss - over_win).abs() > PROB_TOLERANCE)
+    )
+
+    if bad.any():
+        sample = (
+            df.loc[bad, ["game_id"] + cols]
+            .head(10)
+            .to_dict("records")
+        )
+        raise ValueError(
+            f"{label} totals canonical probability contract failed; "
             f"bad_rows={int(bad.sum())}; sample={sample}"
         )
 
@@ -295,8 +352,8 @@ def validate_input_schema(
         )
         validate_probability_pair(
             df,
-            "home_normalized_prob_moneyline",
-            "away_normalized_prob_moneyline",
+            "home_model_prob_moneyline",
+            "away_model_prob_moneyline",
             f"{file_name} moneyline input",
         )
 
@@ -313,8 +370,8 @@ def validate_input_schema(
         )
         validate_probability_pair(
             df,
-            "home_normalized_prob_run_line",
-            "away_normalized_prob_run_line",
+            "home_model_prob_run_line",
+            "away_model_prob_run_line",
             f"{file_name} run_line input",
         )
 
@@ -324,10 +381,8 @@ def validate_input_schema(
             TOTAL_REQUIRED_COLUMNS,
             f"{file_name} total input",
         )
-        validate_probability_pair(
+        validate_total_probability_contract(
             df,
-            "over_normalized_prob_total",
-            "under_normalized_prob_total",
             f"{file_name} total input",
         )
 
@@ -1088,13 +1143,13 @@ def main():
     _log(f"OUTPUT_DIR: {OUTPUT_DIR}")
     _log(
         "Official probability basis: "
-        "moneyline=normalized moneyline, "
-        "run_line=normalized run_line, "
-        "total=normalized total"
+        "moneyline=canonical model probability, "
+        "run_line=canonical model probability, "
+        "total=canonical model win probability"
     )
     _log(
         "Contextual adjustments affect EV only. "
-        "Kelly uses official normalized probability without "
+        "Kelly uses the same canonical model probability without "
         "contextual adjustment."
     )
 

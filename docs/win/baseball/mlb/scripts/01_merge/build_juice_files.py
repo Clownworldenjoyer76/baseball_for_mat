@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # docs/win/baseball/mlb/scripts/01_merge/build_juice_files.py
+
 import glob
 import math
 import sys
 import traceback
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
 
+import numpy as np
 import pandas as pd
 from scipy.stats import poisson, skellam
 
@@ -18,9 +20,25 @@ ERROR_DIR = Path("docs/win/baseball/mlb/errors/01_merge")
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = ERROR_DIR / "build_juice_files.txt"
 
-with open(LOG_FILE, "w", encoding="utf-8") as f:
-    f.write(f"=== build_juice_files RUN {datetime.now(UTC).isoformat()} ===\n")
+PROB_TOLERANCE = 1e-6
 
+LEGACY_OFFICIAL_PROBABILITY_COLUMNS = [
+    "home_normalized_prob_moneyline",
+    "away_normalized_prob_moneyline",
+    "home_normalized_prob_run_line",
+    "away_normalized_prob_run_line",
+    "over_normalized_prob_total",
+    "under_normalized_prob_total",
+]
+
+RUN_PROJECTION_COLUMNS = [
+    "dratings_home_projected_runs",
+    "dratings_away_projected_runs",
+    "dratings_total_projected_runs",
+    "model_home_runs",
+    "model_away_runs",
+    "model_total_runs",
+]
 
 CONTEXT_COLS = [
     "gamePk",
@@ -53,114 +71,84 @@ CONTEXT_COLS = [
     "sp_data_available", "lineup_data_available",
 ]
 
-MONEYLINE_REQUIRED_COLUMNS = [
+BASE_REQUIRED = [
     "game_id", "sport", "league", "game_date", "game_time", "home_team", "away_team",
     "away_run_line", "home_run_line", "total",
+    "home_pitcher", "away_pitcher",
+] + RUN_PROJECTION_COLUMNS + CONTEXT_COLS
+
+MONEYLINE_REQUIRED_COLUMNS = BASE_REQUIRED + [
     "away_dk_moneyline_american", "home_dk_moneyline_american",
     "away_dk_moneyline_decimal", "home_dk_moneyline_decimal",
-    "home_pitcher", "away_pitcher", "home_prob", "away_prob",
-    "away_projected_runs", "home_projected_runs", "total_projected_runs",
-] + CONTEXT_COLS
+]
 
-RUN_LINE_REQUIRED_COLUMNS = [
-    "game_id", "sport", "league", "game_date", "game_time", "home_team", "away_team",
-    "away_run_line", "home_run_line", "total",
+RUN_LINE_REQUIRED_COLUMNS = BASE_REQUIRED + [
     "away_dk_run_line_american", "home_dk_run_line_american",
     "away_dk_run_line_decimal", "home_dk_run_line_decimal",
-    "home_pitcher", "away_pitcher", "home_prob", "away_prob",
-    "away_projected_runs", "home_projected_runs", "total_projected_runs",
-] + CONTEXT_COLS
+]
 
-TOTAL_REQUIRED_COLUMNS = [
-    "game_id", "sport", "league", "game_date", "game_time", "home_team", "away_team",
-    "away_run_line", "home_run_line", "total",
+TOTAL_REQUIRED_COLUMNS = BASE_REQUIRED + [
     "dk_total_over_american", "dk_total_under_american",
     "dk_total_over_decimal", "dk_total_under_decimal",
-    "home_pitcher", "away_pitcher", "home_prob", "away_prob",
-    "away_projected_runs", "home_projected_runs", "total_projected_runs",
-    "total_runs_over_prob", "total_runs_under_prob",
-] + CONTEXT_COLS
+]
+
+
+def _now():
+    return datetime.now(UTC).isoformat()
 
 
 def log(msg):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now(UTC).isoformat()} | {msg}\n")
+        f.write(f"{_now()} | {msg}\n")
 
 
 def american_to_decimal(odds):
     try:
         if pd.isna(odds):
             return None
-
         odds = float(odds)
-
         if odds == 0:
             return None
-
-        if odds > 0:
-            return 1 + (odds / 100)
-
-        return 1 + (100 / abs(odds))
-
+        return 1 + (odds / 100) if odds > 0 else 1 + (100 / abs(odds))
     except Exception:
         return None
 
 
 def parse_slate_date_and_market(file_path: str):
     stem = Path(file_path).stem
-
     if stem.endswith("_mlb_moneyline"):
         return stem.replace("_mlb_moneyline", ""), "moneyline"
-
     if stem.endswith("_mlb_run_line"):
         return stem.replace("_mlb_run_line", ""), "run_line"
-
     if stem.endswith("_mlb_total"):
         return stem.replace("_mlb_total", ""), "total"
-
     return None, None
 
 
 def duplicate_columns(columns):
     seen = set()
-    duplicates = []
-
+    dupes = []
     for col in columns:
-        if col in seen and col not in duplicates:
-            duplicates.append(col)
+        if col in seen and col not in dupes:
+            dupes.append(col)
         seen.add(col)
-
-    return duplicates
+    return dupes
 
 
 def validate_no_duplicate_columns(df, label):
     dupes = duplicate_columns(list(df.columns))
-
     if dupes:
-        log(f"SCHEMA ERROR: {label} duplicate columns: {dupes}")
-        return False
-
-    return True
+        raise ValueError(f"{label} duplicate columns: {dupes}")
 
 
-def validate_schema(df, required_columns, file_path):
-    if not validate_no_duplicate_columns(df, f"{file_path} input"):
-        return False
-
-    missing_cols = [c for c in required_columns if c not in df.columns]
-
-    if missing_cols:
-        log(f"SCHEMA ERROR: {file_path} missing columns: {missing_cols}")
-        return False
-
-    return True
-
-
-def write_csv_checked(df, out_path):
-    if not validate_no_duplicate_columns(df, f"{out_path} output"):
-        raise RuntimeError(f"{out_path} has duplicate output columns")
-
-    df.to_csv(out_path, index=False)
+def validate_schema(df, required_columns, label):
+    validate_no_duplicate_columns(df, label)
+    missing = [c for c in required_columns if c not in df.columns]
+    if missing:
+        raise ValueError(f"{label} missing columns: {missing}")
+    legacy = [c for c in LEGACY_OFFICIAL_PROBABILITY_COLUMNS if c in df.columns]
+    if legacy:
+        raise ValueError(f"{label} contains obsolete official probability columns: {legacy}")
 
 
 def coerce_numeric(df, cols):
@@ -168,244 +156,271 @@ def coerce_numeric(df, cols):
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
 
+def _validate_prob_series(df, cols, label):
+    for col in cols:
+        values = pd.to_numeric(df[col], errors="coerce")
+        bad = values.isna() | ~np.isfinite(values) | (values < 0) | (values > 1)
+        if bad.any():
+            sample = df.loc[bad, ["game_id", col]].head(10).to_dict("records")
+            raise ValueError(
+                f"{label} invalid probability column {col}; bad_rows={int(bad.sum())}; sample={sample}"
+            )
+
+
+def _validate_pair(df, a_col, b_col, label):
+    _validate_prob_series(df, [a_col, b_col], label)
+    a = pd.to_numeric(df[a_col], errors="coerce")
+    b = pd.to_numeric(df[b_col], errors="coerce")
+    bad = ((a + b - 1.0).abs() > PROB_TOLERANCE)
+    if bad.any():
+        sample = df.loc[bad, ["game_id", a_col, b_col]].head(10).to_dict("records")
+        raise ValueError(
+            f"{label} probability pair does not sum to 1 within {PROB_TOLERANCE}; "
+            f"bad_rows={int(bad.sum())}; sample={sample}"
+        )
+
+
+def _validate_totals(df, label):
+    cols = [
+        "over_model_prob_total_win",
+        "over_model_prob_total_loss",
+        "under_model_prob_total_win",
+        "under_model_prob_total_loss",
+        "total_model_prob_push",
+    ]
+    _validate_prob_series(df, cols, label)
+    ow = pd.to_numeric(df["over_model_prob_total_win"], errors="coerce")
+    ol = pd.to_numeric(df["over_model_prob_total_loss"], errors="coerce")
+    uw = pd.to_numeric(df["under_model_prob_total_win"], errors="coerce")
+    ul = pd.to_numeric(df["under_model_prob_total_loss"], errors="coerce")
+    push = pd.to_numeric(df["total_model_prob_push"], errors="coerce")
+    bad = (
+        ((ow + ol + push - 1.0).abs() > PROB_TOLERANCE)
+        | ((uw + ul + push - 1.0).abs() > PROB_TOLERANCE)
+        | ((uw - ol).abs() > PROB_TOLERANCE)
+        | ((ul - ow).abs() > PROB_TOLERANCE)
+    )
+    if bad.any():
+        sample_cols = ["game_id"] + cols
+        sample = df.loc[bad, sample_cols].head(10).to_dict("records")
+        raise ValueError(
+            f"{label} totals probability contract failed; bad_rows={int(bad.sum())}; sample={sample}"
+        )
+
+
+def _validate_run_projection(df, label):
+    coerce_numeric(df, RUN_PROJECTION_COLUMNS)
+    for col in RUN_PROJECTION_COLUMNS:
+        values = pd.to_numeric(df[col], errors="coerce")
+        bad = values.isna() | ~np.isfinite(values) | (values < 0)
+        if bad.any():
+            sample = df.loc[bad, ["game_id", col]].head(10).to_dict("records")
+            raise ValueError(f"{label} invalid {col}; bad_rows={int(bad.sum())}; sample={sample}")
+    total_diff = (df["model_total_runs"] - (df["model_home_runs"] + df["model_away_runs"])).abs()
+    bad_total = total_diff > 1e-6
+    if bad_total.any():
+        sample = df.loc[
+            bad_total,
+            ["game_id", "model_home_runs", "model_away_runs", "model_total_runs"],
+        ].head(10).to_dict("records")
+        raise ValueError(f"{label} model_total_runs mismatch; sample={sample}")
+
+
+def write_csv_checked(df, out_path, market):
+    validate_no_duplicate_columns(df, f"{out_path} output")
+    if market == "moneyline":
+        _validate_pair(df, "home_model_prob_moneyline", "away_model_prob_moneyline", str(out_path))
+    elif market == "run_line":
+        _validate_pair(df, "home_model_prob_run_line", "away_model_prob_run_line", str(out_path))
+    elif market == "total":
+        _validate_totals(df, str(out_path))
+    else:
+        raise ValueError(f"Unknown market {market}")
+    legacy = [c for c in LEGACY_OFFICIAL_PROBABILITY_COLUMNS if c in df.columns]
+    if legacy:
+        raise ValueError(f"{out_path} contains obsolete official probability columns: {legacy}")
+    df.to_csv(out_path, index=False)
+
+
+def moneyline_probabilities(model_home_runs, model_away_runs):
+    p_home_raw = 1.0 - skellam.cdf(0, model_home_runs, model_away_runs)
+    p_away_raw = skellam.cdf(-1, model_home_runs, model_away_runs)
+    p_tie = skellam.pmf(0, model_home_runs, model_away_runs)
+    resolved = p_home_raw + p_away_raw
+    if not np.isfinite(resolved) or resolved <= 0:
+        raise ValueError("invalid moneyline resolved probability mass")
+    return p_home_raw / resolved, p_away_raw / resolved, p_tie
+
+
+def run_line_probabilities(model_home_runs, model_away_runs, home_line, away_line):
+    if not np.isfinite(home_line) or not np.isfinite(away_line):
+        raise ValueError("missing run line")
+    if abs(home_line + away_line) > PROB_TOLERANCE:
+        raise ValueError(f"run lines are not complementary: home={home_line} away={away_line}")
+    if sorted([round(home_line, 6), round(away_line, 6)]) != [-1.5, 1.5]:
+        raise ValueError(f"unsupported run-line pair: home={home_line} away={away_line}")
+    threshold = math.floor(-home_line) + 1
+    p_home = 1.0 - skellam.cdf(threshold - 1, model_home_runs, model_away_runs)
+    p_away = 1.0 - p_home
+    return p_home, p_away
+
+
+def totals_probabilities(model_total_runs, total_line):
+    if not np.isfinite(total_line):
+        raise ValueError("missing total line")
+    frac = abs(total_line - round(total_line))
+    if frac < 1e-9:
+        k = int(round(total_line))
+        p_under = poisson.cdf(k - 1, model_total_runs)
+        p_push = poisson.pmf(k, model_total_runs)
+        p_over = 1.0 - poisson.cdf(k, model_total_runs)
+    elif abs(frac - 0.5) < 1e-9:
+        k = math.floor(total_line)
+        p_under = poisson.cdf(k, model_total_runs)
+        p_push = 0.0
+        p_over = 1.0 - p_under
+    else:
+        raise ValueError(f"unsupported total line: {total_line}")
+    return p_over, p_under, p_push
+
+
+def _prepare(file_path, required_columns, numeric_cols):
+    df = pd.read_csv(file_path)
+    if df.empty:
+        raise ValueError(f"{file_path} is empty")
+    validate_schema(df, required_columns, str(file_path))
+    coerce_numeric(df, list(dict.fromkeys(RUN_PROJECTION_COLUMNS + numeric_cols)))
+    _validate_run_projection(df, str(file_path))
+    return df
+
+
 def process_moneyline(file_path, summary):
-    try:
-        df = pd.read_csv(file_path)
-
-        if df.empty:
-            log(f"EMPTY: {file_path} — skipping")
-            summary["empty"] += 1
-            return
-
-        if not validate_schema(df, MONEYLINE_REQUIRED_COLUMNS, file_path):
-            summary["schema_errors"] += 1
-            return
-
-        coerce_numeric(df, [
-            "home_prob", "away_prob",
-            "home_projected_runs", "away_projected_runs", "total_projected_runs",
+    df = _prepare(
+        file_path,
+        MONEYLINE_REQUIRED_COLUMNS,
+        [
             "away_run_line", "home_run_line", "total",
             "away_dk_moneyline_american", "home_dk_moneyline_american",
             "away_dk_moneyline_decimal", "home_dk_moneyline_decimal",
-        ])
+        ],
+    )
+    home_probs, away_probs, ties = [], [], []
+    for i, r in df.iterrows():
+        try:
+            hp, ap, tp = moneyline_probabilities(r["model_home_runs"], r["model_away_runs"])
+        except Exception as e:
+            raise ValueError(f"{file_path} idx={i} moneyline probability failure: {e}") from e
+        home_probs.append(hp)
+        away_probs.append(ap)
+        ties.append(tp)
 
-        for i, r in df.iterrows():
-            if pd.isna(r["home_prob"]) or pd.isna(r["away_prob"]):
-                log(f"ROW ISSUE: {file_path} idx={i} bad probs")
-                summary["row_issues"] += 1
+    ml = df.copy()
+    ml["away_dk_decimal_moneyline"] = ml["away_dk_moneyline_american"].apply(american_to_decimal)
+    ml["home_dk_decimal_moneyline"] = ml["home_dk_moneyline_american"].apply(american_to_decimal)
+    ml["home_model_prob_moneyline"] = home_probs
+    ml["away_model_prob_moneyline"] = away_probs
+    ml["model_prob_moneyline_tie_raw"] = ties
+    ml["home_model_fair_decimal_moneyline"] = 1.0 / ml["home_model_prob_moneyline"]
+    ml["away_model_fair_decimal_moneyline"] = 1.0 / ml["away_model_prob_moneyline"]
 
-        ml = df.copy()
-        ml["away_dk_decimal_moneyline"] = ml["away_dk_moneyline_american"].apply(american_to_decimal)
-        ml["home_dk_decimal_moneyline"] = ml["home_dk_moneyline_american"].apply(american_to_decimal)
-        ml["away_fair_decimal_moneyline"] = ml["away_prob"].apply(lambda x: 1 / x if pd.notna(x) and x > 0 else None)
-        ml["home_fair_decimal_moneyline"] = ml["home_prob"].apply(lambda x: 1 / x if pd.notna(x) and x > 0 else None)
-
-        slate_date, market = parse_slate_date_and_market(file_path)
-
-        if not slate_date or market != "moneyline":
-            log(f"FILENAME ERROR: {file_path}")
-            summary["errors"] += 1
-            return
-
-        out = OUTPUT_DIR / f"{slate_date}_mlb_moneyline.csv"
-        write_csv_checked(ml, out)
-
-        log(f"WROTE {out} ({len(ml)} rows)")
-        summary["files_written"] += 1
-        summary["rows_written"] += len(ml)
-
-    except Exception as e:
-        log(f"ERROR moneyline {file_path}: {e}\n{traceback.format_exc()}")
-        summary["errors"] += 1
-
-
-def process_total(file_path, summary):
-    try:
-        df = pd.read_csv(file_path)
-
-        if df.empty:
-            log(f"EMPTY: {file_path} — skipping")
-            summary["empty"] += 1
-            return
-
-        if not validate_schema(df, TOTAL_REQUIRED_COLUMNS, file_path):
-            summary["schema_errors"] += 1
-            return
-
-        coerce_numeric(df, [
-            "home_prob", "away_prob",
-            "home_projected_runs", "away_projected_runs", "total_projected_runs",
-            "away_run_line", "home_run_line", "total",
-            "dk_total_over_american", "dk_total_under_american",
-            "dk_total_over_decimal", "dk_total_under_decimal",
-            "total_runs_over_prob", "total_runs_under_prob",
-        ])
-
-        tot = df.copy()
-        tot["dk_total_over_decimal"] = tot["dk_total_over_american"].apply(american_to_decimal)
-        tot["dk_total_under_decimal"] = tot["dk_total_under_american"].apply(american_to_decimal)
-
-        over = []
-        under = []
-
-        for i, r in tot.iterrows():
-            lam = r["total_projected_runs"]
-            total_line = r["total"]
-
-            if pd.isna(lam) or pd.isna(total_line) or lam <= 0:
-                log(f"ROW ISSUE: {file_path} idx={i} bad total inputs")
-                summary["row_issues"] += 1
-                over.append(None)
-                under.append(None)
-                continue
-
-            if total_line % 1 == 0:
-                k = int(total_line)
-                p_over = 1 - poisson.cdf(k, lam)
-                p_under = poisson.cdf(k - 1, lam)
-                p_push = poisson.pmf(k, lam)
-
-                log(
-                    f"WHOLE NUMBER TOTAL: {file_path} idx={i} total={total_line} "
-                    f"lam={lam:.3f} p_push={p_push:.4f} — modelled with push"
-                )
-
-                under.append(1 / p_under if p_under > 0 else None)
-                over.append(1 / p_over if p_over > 0 else None)
-                continue
-
-            k = math.floor(total_line)
-            p_under = poisson.cdf(k, lam)
-            p_over = 1 - p_under
-
-            under.append(1 / p_under if p_under > 0 else None)
-            over.append(1 / p_over if p_over > 0 else None)
-
-        tot["fair_total_over_decimal"] = over
-        tot["fair_total_under_decimal"] = under
-
-        slate_date, market = parse_slate_date_and_market(file_path)
-
-        if not slate_date or market != "total":
-            log(f"FILENAME ERROR: {file_path}")
-            summary["errors"] += 1
-            return
-
-        out = OUTPUT_DIR / f"{slate_date}_mlb_total.csv"
-        write_csv_checked(tot, out)
-
-        log(f"WROTE {out} ({len(tot)} rows)")
-        summary["files_written"] += 1
-        summary["rows_written"] += len(tot)
-
-    except Exception as e:
-        log(f"ERROR total {file_path}: {e}\n{traceback.format_exc()}")
-        summary["errors"] += 1
+    slate_date, market = parse_slate_date_and_market(file_path)
+    if not slate_date or market != "moneyline":
+        raise ValueError(f"FILENAME ERROR: {file_path}")
+    out = OUTPUT_DIR / f"{slate_date}_mlb_moneyline.csv"
+    write_csv_checked(ml, out, market)
+    log(f"WROTE {out} ({len(ml)} rows)")
+    summary["files_written"] += 1
+    summary["rows_written"] += len(ml)
 
 
 def process_run_line(file_path, summary):
-    try:
-        df = pd.read_csv(file_path)
-
-        if df.empty:
-            log(f"EMPTY: {file_path} — skipping")
-            summary["empty"] += 1
-            return
-
-        if not validate_schema(df, RUN_LINE_REQUIRED_COLUMNS, file_path):
-            summary["schema_errors"] += 1
-            return
-
-        coerce_numeric(df, [
-            "home_prob", "away_prob",
-            "home_projected_runs", "away_projected_runs", "total_projected_runs",
+    df = _prepare(
+        file_path,
+        RUN_LINE_REQUIRED_COLUMNS,
+        [
             "away_run_line", "home_run_line", "total",
             "away_dk_run_line_american", "home_dk_run_line_american",
             "away_dk_run_line_decimal", "home_dk_run_line_decimal",
-        ])
+        ],
+    )
+    home_probs, away_probs = [], []
+    for i, r in df.iterrows():
+        try:
+            hp, ap = run_line_probabilities(
+                r["model_home_runs"], r["model_away_runs"], r["home_run_line"], r["away_run_line"]
+            )
+        except Exception as e:
+            raise ValueError(f"{file_path} idx={i} run-line probability failure: {e}") from e
+        home_probs.append(hp)
+        away_probs.append(ap)
 
-        rl = df.copy()
-        rl["home_dk_run_line_decimal"] = rl["home_dk_run_line_american"].apply(american_to_decimal)
-        rl["away_dk_run_line_decimal"] = rl["away_dk_run_line_american"].apply(american_to_decimal)
+    rl = df.copy()
+    rl["home_dk_run_line_decimal"] = rl["home_dk_run_line_american"].apply(american_to_decimal)
+    rl["away_dk_run_line_decimal"] = rl["away_dk_run_line_american"].apply(american_to_decimal)
+    rl["home_model_prob_run_line"] = home_probs
+    rl["away_model_prob_run_line"] = away_probs
+    rl["home_model_fair_decimal_run_line"] = 1.0 / rl["home_model_prob_run_line"]
+    rl["away_model_fair_decimal_run_line"] = 1.0 / rl["away_model_prob_run_line"]
 
-        home_vals = []
-        away_vals = []
-        home_probs = []
-        away_probs = []
+    slate_date, market = parse_slate_date_and_market(file_path)
+    if not slate_date or market != "run_line":
+        raise ValueError(f"FILENAME ERROR: {file_path}")
+    out = OUTPUT_DIR / f"{slate_date}_mlb_run_line.csv"
+    write_csv_checked(rl, out, market)
+    log(f"WROTE {out} ({len(rl)} rows)")
+    summary["files_written"] += 1
+    summary["rows_written"] += len(rl)
 
-        for i, r in rl.iterrows():
-            lambda_home = r["home_projected_runs"]
-            lambda_away = r["away_projected_runs"]
 
-            if pd.isna(lambda_home) or pd.isna(lambda_away) or lambda_home <= 0 or lambda_away <= 0:
-                log(f"ROW ISSUE: {file_path} idx={i} run line invalid lambdas")
-                summary["row_issues"] += 1
-                home_vals.append(None)
-                away_vals.append(None)
-                home_probs.append(None)
-                away_probs.append(None)
-                continue
+def process_total(file_path, summary):
+    df = _prepare(
+        file_path,
+        TOTAL_REQUIRED_COLUMNS,
+        [
+            "away_run_line", "home_run_line", "total",
+            "dk_total_over_american", "dk_total_under_american",
+            "dk_total_over_decimal", "dk_total_under_decimal",
+        ],
+    )
+    over_win, over_loss, under_win, under_loss, pushes = [], [], [], [], []
+    for i, r in df.iterrows():
+        try:
+            p_over, p_under, p_push = totals_probabilities(r["model_total_runs"], r["total"])
+        except Exception as e:
+            raise ValueError(f"{file_path} idx={i} total probability failure: {e}") from e
+        over_win.append(p_over)
+        over_loss.append(p_under)
+        under_win.append(p_under)
+        under_loss.append(p_over)
+        pushes.append(p_push)
 
-            home_line = r["home_run_line"]
-            away_line = r["away_run_line"]
+    tot = df.copy()
+    tot["dk_total_over_decimal"] = tot["dk_total_over_american"].apply(american_to_decimal)
+    tot["dk_total_under_decimal"] = tot["dk_total_under_american"].apply(american_to_decimal)
+    tot["over_model_prob_total_win"] = over_win
+    tot["over_model_prob_total_loss"] = over_loss
+    tot["under_model_prob_total_win"] = under_win
+    tot["under_model_prob_total_loss"] = under_loss
+    tot["total_model_prob_push"] = pushes
 
-            if pd.isna(home_line) or pd.isna(away_line):
-                log(f"ROW ISSUE: {file_path} idx={i} missing run lines")
-                summary["row_issues"] += 1
-                home_vals.append(None)
-                away_vals.append(None)
-                home_probs.append(None)
-                away_probs.append(None)
-                continue
+    # Existing fair-total column names are retained; the probability contract is canonical.
+    tot["fair_total_over_decimal"] = 1.0 / tot["over_model_prob_total_win"]
+    tot["fair_total_under_decimal"] = 1.0 / tot["under_model_prob_total_win"]
 
-            if home_line == -1.5:
-                p_home = 1 - skellam.cdf(1, lambda_home, lambda_away)
-                p_away = skellam.cdf(1, lambda_home, lambda_away)
-            elif away_line == -1.5:
-                p_away = 1 - skellam.cdf(1, lambda_away, lambda_home)
-                p_home = skellam.cdf(1, lambda_away, lambda_home)
-            else:
-                log(f"ROW ISSUE: {file_path} idx={i} unexpected run lines: home={home_line} away={away_line}")
-                summary["row_issues"] += 1
-                home_vals.append(None)
-                away_vals.append(None)
-                home_probs.append(None)
-                away_probs.append(None)
-                continue
-
-            p_home = min(max(p_home, 0.01), 0.99)
-            p_away = min(max(p_away, 0.01), 0.99)
-
-            home_probs.append(p_home)
-            away_probs.append(p_away)
-            home_vals.append(1 / p_home)
-            away_vals.append(1 / p_away)
-
-        rl["home_fair_run_line_decimal"] = home_vals
-        rl["away_fair_run_line_decimal"] = away_vals
-        rl["home_prob_run_line"] = home_probs
-        rl["away_prob_run_line"] = away_probs
-
-        slate_date, market = parse_slate_date_and_market(file_path)
-
-        if not slate_date or market != "run_line":
-            log(f"FILENAME ERROR: {file_path}")
-            summary["errors"] += 1
-            return
-
-        out = OUTPUT_DIR / f"{slate_date}_mlb_run_line.csv"
-        write_csv_checked(rl, out)
-
-        log(f"WROTE {out} ({len(rl)} rows)")
-        summary["files_written"] += 1
-        summary["rows_written"] += len(rl)
-
-    except Exception as e:
-        log(f"ERROR run_line {file_path}: {e}\n{traceback.format_exc()}")
-        summary["errors"] += 1
+    slate_date, market = parse_slate_date_and_market(file_path)
+    if not slate_date or market != "total":
+        raise ValueError(f"FILENAME ERROR: {file_path}")
+    out = OUTPUT_DIR / f"{slate_date}_mlb_total.csv"
+    write_csv_checked(tot, out, market)
+    log(f"WROTE {out} ({len(tot)} rows)")
+    summary["files_written"] += 1
+    summary["rows_written"] += len(tot)
 
 
 def main():
+    with open(LOG_FILE, "w", encoding="utf-8") as f:
+        f.write(f"=== build_juice_files RUN {_now()} ===\n")
+
     summary = {
         "files_written": 0,
         "rows_written": 0,
@@ -415,53 +430,47 @@ def main():
         "errors": 0,
     }
 
+    log("MODEL PROBABILITIES ARE PRICE-INDEPENDENT: sportsbook odds are not probability inputs")
+
     for f in OUTPUT_DIR.glob("*.csv"):
         f.unlink()
 
     try:
-        moneyline_files = sorted(glob.glob(str(INPUT_DIR / "*_mlb_moneyline.csv")))
-        run_line_files = sorted(glob.glob(str(INPUT_DIR / "*_mlb_run_line.csv")))
-        total_files = sorted(glob.glob(str(INPUT_DIR / "*_mlb_total.csv")))
-
-        log(f"Moneyline files: {len(moneyline_files)}")
-        log(f"Run line files: {len(run_line_files)}")
-        log(f"Total files: {len(total_files)}")
-
-        for f in moneyline_files:
-            process_moneyline(f, summary)
-
-        for f in run_line_files:
-            process_run_line(f, summary)
-
-        for f in total_files:
-            process_total(f, summary)
+        groups = [
+            ("moneyline", sorted(glob.glob(str(INPUT_DIR / "*_mlb_moneyline.csv"))), process_moneyline),
+            ("run_line", sorted(glob.glob(str(INPUT_DIR / "*_mlb_run_line.csv"))), process_run_line),
+            ("total", sorted(glob.glob(str(INPUT_DIR / "*_mlb_total.csv"))), process_total),
+        ]
+        for market, files, processor in groups:
+            log(f"{market} files: {len(files)}")
+            for file_path in files:
+                try:
+                    processor(file_path, summary)
+                except ValueError as e:
+                    log(f"SCHEMA/CONTRACT ERROR {market} {file_path}: {e}\n{traceback.format_exc()}")
+                    summary["schema_errors"] += 1
+                except Exception as e:
+                    log(f"ERROR {market} {file_path}: {e}\n{traceback.format_exc()}")
+                    summary["errors"] += 1
 
         status = "SUCCESS" if summary["errors"] == 0 and summary["schema_errors"] == 0 else "COMPLETED WITH ERRORS"
-
         log("--- SUMMARY ---")
-        log(f"files_written={summary['files_written']}")
-        log(f"rows_written={summary['rows_written']}")
-        log(f"empty_files={summary['empty']}")
-        log(f"schema_errors={summary['schema_errors']}")
-        log(f"row_issues={summary['row_issues']}")
-        log(f"errors={summary['errors']}")
+        for key, value in summary.items():
+            log(f"{key}={value}")
         log(f"STATUS: {status}")
 
         if summary["errors"] > 0 or summary["schema_errors"] > 0:
             print(
-                f"build_juice_files completed with errors. "
-                f"errors={summary['errors']} schema_errors={summary['schema_errors']}"
+                f"build_juice_files completed with errors. errors={summary['errors']} "
+                f"schema_errors={summary['schema_errors']}"
             )
             sys.exit(1)
 
         print(
-            f"build_juice_files complete. "
-            f"files_written={summary['files_written']} "
-            f"rows_written={summary['rows_written']} "
-            f"schema_errors={summary['schema_errors']} "
+            f"build_juice_files complete. files_written={summary['files_written']} "
+            f"rows_written={summary['rows_written']} schema_errors={summary['schema_errors']} "
             f"errors={summary['errors']}"
         )
-
     except Exception as e:
         log(f"FATAL ERROR: {e}\n{traceback.format_exc()}")
         log("STATUS: FAILED")
