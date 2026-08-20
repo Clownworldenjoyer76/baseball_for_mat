@@ -52,6 +52,12 @@ jobs:
       - name: MLB Train Run Models
         run: python docs/win/baseball/mlb/scripts/modeling/train_run_model.py
 
+      - name: MLB Probability EV Kelly Tests
+        run: |
+          python -m pytest \
+            docs/win/baseball/mlb/scripts/modeling/test_probability_ev_kelly.py \
+            -q
+
       - name: MLB Validate Run Models
         shell: bash
         run: |
@@ -119,6 +125,7 @@ jobs:
 
           home_features = list(home_meta["feature_columns"])
           away_features = list(away_meta["feature_columns"])
+
           if home_features != away_features:
               raise RuntimeError(
                   "Home and away model metadata feature order differs: "
@@ -133,6 +140,7 @@ jobs:
               ("away", away_model, away_features),
           ]:
               model_features = getattr(model, "feature_names_in_", None)
+
               if model_features is None:
                   raise RuntimeError(
                       f"{label} model does not expose feature_names_in_; "
@@ -140,6 +148,7 @@ jobs:
                   )
 
               model_features = [str(value) for value in model_features.tolist()]
+
               if model_features != features:
                   raise RuntimeError(
                       f"{label} model feature order differs from metadata: "
@@ -147,10 +156,13 @@ jobs:
                   )
 
           training = pd.read_csv(training_path)
+
           missing_training_features = [
-              col for col in home_features
+              col
+              for col in home_features
               if col not in training.columns
           ]
+
           if missing_training_features:
               raise RuntimeError(
                   "Training set missing metadata features: "
@@ -161,27 +173,36 @@ jobs:
               raise RuntimeError("Training set is empty")
 
           sample = training.loc[:, home_features].head(1).copy()
+
           for col in home_features:
               sample[col] = pd.to_numeric(sample[col], errors="coerce")
 
           home_pred = np.asarray(home_model.predict(sample), dtype=float)
           away_pred = np.asarray(away_model.predict(sample), dtype=float)
 
-          for label, pred in [("home", home_pred), ("away", away_pred)]:
+          for label, pred in [
+              ("home", home_pred),
+              ("away", away_pred),
+          ]:
               if pred.size != 1:
                   raise RuntimeError(
                       f"{label} model smoke test returned unexpected shape: {pred.shape}"
                   )
+
               if not np.isfinite(pred).all():
                   raise RuntimeError(
-                      f"{label} model smoke test produced non-finite prediction: {pred.tolist()}"
+                      f"{label} model smoke test produced non-finite prediction: "
+                      f"{pred.tolist()}"
                   )
+
               if (pred < 0).any():
                   raise RuntimeError(
-                      f"{label} model smoke test produced negative prediction: {pred.tolist()}"
+                      f"{label} model smoke test produced negative prediction: "
+                      f"{pred.tolist()}"
                   )
 
           report_dir.mkdir(parents=True, exist_ok=True)
+
           report = {
               "validated_at": datetime.now(timezone.utc).isoformat(),
               "status": "passed",
@@ -203,6 +224,7 @@ jobs:
                   "model_metrics": away_meta["model_metrics"],
               },
           }
+
           report_path.write_text(
               json.dumps(report, indent=2, sort_keys=True) + "\n",
               encoding="utf-8",
