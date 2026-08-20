@@ -2,15 +2,6 @@ name: MLB 05 Model Train
 
 on:
   workflow_dispatch:
-    inputs:
-      from_date:
-        description: "Inclusive SDV backfill start date (YYYY-MM-DD)"
-        required: true
-        type: string
-      to_date:
-        description: "Inclusive SDV backfill end date (YYYY-MM-DD)"
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -40,11 +31,51 @@ jobs:
       - name: Install vendored SportsDataverse
         run: python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
 
+      - name: MLB Determine SDV Backfill Range
+        id: sdv_range
+        shell: bash
+        run: |
+          GAMES_DIR="docs/win/baseball/mlb/00_intake/games"
+
+          mapfile -t GAME_FILES < <(
+            find "${GAMES_DIR}" \
+              -maxdepth 1 \
+              -type f \
+              -name '????_??_??_games.csv' \
+              -printf '%f\n' \
+              | sort
+          )
+
+          if [ "${#GAME_FILES[@]}" -eq 0 ]; then
+            echo "ERROR: No game files found in ${GAMES_DIR}"
+            exit 1
+          fi
+
+          LAST_INDEX=$((${#GAME_FILES[@]} - 1))
+
+          FIRST_FILE="${GAME_FILES[0]}"
+          LAST_FILE="${GAME_FILES[$LAST_INDEX]}"
+
+          FROM_DATE="${FIRST_FILE%_games.csv}"
+          TO_DATE="${LAST_FILE%_games.csv}"
+
+          FROM_DATE="${FROM_DATE//_/-}"
+          TO_DATE="${TO_DATE//_/-}"
+
+          echo "SDV backfill range derived from repository game files:"
+          echo "  first game file: ${FIRST_FILE}"
+          echo "  last game file : ${LAST_FILE}"
+          echo "  from_date      : ${FROM_DATE}"
+          echo "  to_date        : ${TO_DATE}"
+
+          echo "from_date=${FROM_DATE}" >> "${GITHUB_OUTPUT}"
+          echo "to_date=${TO_DATE}" >> "${GITHUB_OUTPUT}"
+
       - name: MLB Backfill Leakage-Safe SportsDataverse Features
         run: |
           python docs/win/baseball/mlb/scripts/00_intake/sportsdataverse_mlb.py \
-            --from-date "${{ inputs.from_date }}" \
-            --to-date "${{ inputs.to_date }}"
+            --from-date "${{ steps.sdv_range.outputs.from_date }}" \
+            --to-date "${{ steps.sdv_range.outputs.to_date }}"
 
       - name: MLB Build Run Training Set
         run: python docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py
