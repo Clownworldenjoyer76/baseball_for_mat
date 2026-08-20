@@ -265,22 +265,30 @@ def run_line_probabilities(model_home_runs, model_away_runs, home_line, away_lin
     return p_home, p_away
 
 
-def totals_probabilities(model_total_runs, total_line):
+def totals_probabilities(model_home_runs, model_away_runs, total_line):
+    if not np.isfinite(model_home_runs) or not np.isfinite(model_away_runs):
+        raise ValueError("missing model run projection")
+    if model_home_runs < 0 or model_away_runs < 0:
+        raise ValueError("negative model run projection")
     if not np.isfinite(total_line):
         raise ValueError("missing total line")
+
+    lambda_total = model_home_runs + model_away_runs
     frac = abs(total_line - round(total_line))
+
     if frac < 1e-9:
         k = int(round(total_line))
-        p_under = poisson.cdf(k - 1, model_total_runs)
-        p_push = poisson.pmf(k, model_total_runs)
-        p_over = 1.0 - poisson.cdf(k, model_total_runs)
+        p_under = poisson.cdf(k - 1, lambda_total)
+        p_push = poisson.pmf(k, lambda_total)
+        p_over = 1.0 - poisson.cdf(k, lambda_total)
     elif abs(frac - 0.5) < 1e-9:
         k = math.floor(total_line)
-        p_under = poisson.cdf(k, model_total_runs)
+        p_under = poisson.cdf(k, lambda_total)
         p_push = 0.0
         p_over = 1.0 - p_under
     else:
         raise ValueError(f"unsupported total line: {total_line}")
+
     return p_over, p_under, p_push
 
 
@@ -385,7 +393,9 @@ def process_total(file_path, summary):
     over_win, over_loss, under_win, under_loss, pushes = [], [], [], [], []
     for i, r in df.iterrows():
         try:
-            p_over, p_under, p_push = totals_probabilities(r["model_total_runs"], r["total"])
+            p_over, p_under, p_push = totals_probabilities(
+                r["model_home_runs"], r["model_away_runs"], r["total"]
+            )
         except Exception as e:
             raise ValueError(f"{file_path} idx={i} total probability failure: {e}") from e
         over_win.append(p_over)
@@ -403,9 +413,16 @@ def process_total(file_path, summary):
     tot["under_model_prob_total_loss"] = under_loss
     tot["total_model_prob_push"] = pushes
 
-    # Existing fair-total column names are retained; the probability contract is canonical.
-    tot["fair_total_over_decimal"] = 1.0 / tot["over_model_prob_total_win"]
-    tot["fair_total_under_decimal"] = 1.0 / tot["under_model_prob_total_win"]
+    # Push-aware fair decimal: 1 + (p_loss / p_win).
+    # For half-run totals, p_push == 0 and this reduces to 1 / p_win.
+    tot["fair_total_over_decimal"] = (
+        1.0
+        + tot["over_model_prob_total_loss"] / tot["over_model_prob_total_win"]
+    )
+    tot["fair_total_under_decimal"] = (
+        1.0
+        + tot["under_model_prob_total_loss"] / tot["under_model_prob_total_win"]
+    )
 
     slate_date, market = parse_slate_date_and_market(file_path)
     if not slate_date or market != "total":
