@@ -153,10 +153,6 @@ REQUIRED_MONEYLINE_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + 
     "away_ev_probability_source",
     "home_kelly_probability_source",
     "away_kelly_probability_source",
-    "home_ml_raw_ev",
-    "away_ml_raw_ev",
-    "home_ml_adjusted_ev",
-    "away_ml_adjusted_ev",
     "home_ml_ev",
     "away_ml_ev",
     "home_ml_kelly",
@@ -180,10 +176,6 @@ REQUIRED_RUN_LINE_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "away_ev_probability_source",
     "home_kelly_probability_source",
     "away_kelly_probability_source",
-    "home_rl_raw_ev",
-    "away_rl_raw_ev",
-    "home_rl_adjusted_ev",
-    "away_rl_adjusted_ev",
     "home_rl_ev",
     "away_rl_ev",
     "home_rl_kelly",
@@ -209,10 +201,6 @@ REQUIRED_TOTAL_COLUMNS = REQUIRED_BASE_COLUMNS + REQUIRED_CONTEXT_COLUMNS + [
     "under_ev_probability_source",
     "over_kelly_probability_source",
     "under_kelly_probability_source",
-    "over_raw_ev",
-    "under_raw_ev",
-    "over_adjusted_ev",
-    "under_adjusted_ev",
     "over_ev",
     "under_ev",
     "over_kelly",
@@ -239,6 +227,21 @@ SELECTED_AUDIT_COLUMNS = [
     "selection_reason",
 ]
 
+RUN_LINE_AUDIT_COLUMNS = [
+    "game_id",
+    "side",
+    "line",
+    "model_probability",
+    "dk_decimal",
+    "break_even_probability",
+    "probability_edge",
+    "ev",
+    "kelly",
+    "candidate_passed",
+    "candidate_rejection_reason",
+    "selected",
+]
+
 REJECTION_AUDIT_COLUMNS = [
     "date",
     "game_id",
@@ -253,8 +256,6 @@ REJECTION_AUDIT_COLUMNS = [
     "kelly",
     "odds",
     "line",
-    "raw_ev",
-    "adjusted_ev",
     "ev_probability_source",
     "kelly_probability_source",
 ]
@@ -435,10 +436,9 @@ def validate_config() -> None:
                 raise ValueError(f"context_data_filters.{key} must be 0 or 1")
 
     run_line_preference = CONFIG.get("run_line", {}).get("pick_preference", "best_ev")
-    if run_line_preference not in {"best_ev", "best_prob"}:
+    if run_line_preference != "best_ev":
         raise ValueError(
-            "run_line.pick_preference must be best_ev or best_prob. "
-            "Use of all is blocked to prevent both run-line sides on one game."
+            "run_line.pick_preference must be best_ev for side-neutral value-based selection."
         )
 
     for market in ["moneyline", "run_line", "total"]:
@@ -504,6 +504,11 @@ def matched_band(val, ranges):
 
     return None
 
+
+def decimal_break_even(decimal_odds):
+    if decimal_odds is None or decimal_odds <= 1:
+        return None
+    return 1.0 / decimal_odds
 
 
 def check_probability_basis(prob_for_selection, prob_for_ev, prob_for_kelly, ev_source, kelly_source, counters):
@@ -640,8 +645,12 @@ def select_candidate(candidates, preference, market_name=None, game_id=None):
     if not candidates:
         return []
 
-    if market_name == "run_line" and preference == "all":
-        raise ValueError(f"{game_id} run_line pick_preference=all is not allowed")
+    if market_name == "run_line":
+        if preference != "best_ev":
+            raise ValueError(
+                f"{game_id} run_line pick_preference must be best_ev, got {preference}"
+            )
+        return [max(candidates, key=lambda x: x["ev"] if x["ev"] is not None else float("-inf"))]
 
     if preference == "all":
         return candidates
@@ -716,8 +725,6 @@ def base_candidate_audit(row, candidate, fail_reason="", fail_detail=""):
         "kelly": candidate.get("kelly"),
         "odds": candidate.get("dk_odds_american"),
         "line": candidate.get("line"),
-        "raw_ev": candidate.get("raw_ev"),
-        "adjusted_ev": candidate.get("adjusted_ev"),
         "ev_probability_source": candidate.get("ev_probability_source"),
         "kelly_probability_source": candidate.get("kelly_probability_source"),
     }
@@ -737,6 +744,32 @@ def selected_audit_row(row):
         "odds": row.get("dk_odds_american"),
         "line": row.get("line"),
         "selection_reason": row.get("selection_reason"),
+    }
+
+
+def run_line_audit_row(candidate, passed, rejection_reason="", selected=False):
+    decimal_odds = candidate.get("dk_odds_decimal")
+    model_prob = candidate.get("model_prob")
+    break_even = decimal_break_even(decimal_odds)
+    probability_edge = (
+        model_prob - break_even
+        if model_prob is not None and break_even is not None
+        else None
+    )
+
+    return {
+        "game_id": candidate.get("game_id"),
+        "side": candidate.get("side"),
+        "line": candidate.get("line"),
+        "model_probability": model_prob,
+        "dk_decimal": decimal_odds,
+        "break_even_probability": break_even,
+        "probability_edge": probability_edge,
+        "ev": candidate.get("ev"),
+        "kelly": candidate.get("kelly"),
+        "candidate_passed": 1 if passed else 0,
+        "candidate_rejection_reason": rejection_reason,
+        "selected": 1 if selected else 0,
     }
 
 
@@ -938,8 +971,6 @@ def process_moneyline(row, counters, rejection_rows):
             "prob_for_kelly": prob_for_kelly,
             "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),
             "kelly_probability_source": sv(row.get(f"{side}_kelly_probability_source")),
-            "raw_ev": fv(row.get(f"{side}_ml_raw_ev")),
-            "adjusted_ev": fv(row.get(f"{side}_ml_adjusted_ev")),
             "ev": fv(row.get(f"{side}_ml_ev")),
             "kelly": fv(row.get(f"{side}_ml_kelly")),
         }
@@ -956,56 +987,187 @@ def process_moneyline(row, counters, rejection_rows):
     )
 
 
-def process_run_line(row, counters, rejection_rows):
-    candidates = []
+def build_run_line_candidate(row, side):
+    canonical_prob = fv(row.get(f"{side}_model_prob_run_line"))
 
-    odds_by_side = {
-        "home": fv(row.get("home_dk_run_line_american")),
-        "away": fv(row.get("away_dk_run_line_american")),
+    return {
+        "game_id": str(row.get("game_id")).strip(),
+        "market_type": "run_line",
+        "bet_side": side,
+        "market": "run_line",
+        "side": side,
+        "line": fv(row.get(f"{side}_run_line")),
+        "take_bet": f"{side}_run_line",
+        "dk_odds_american": fv(row.get(f"{side}_dk_run_line_american")),
+        "dk_odds_decimal": fv(row.get(f"{side}_dk_run_line_decimal")),
+        "model_prob": canonical_prob,
+        "prob_used_for_selection": canonical_prob,
+        "prob_for_ev": fv(row.get(f"{side}_prob_for_ev")),
+        "prob_for_kelly": fv(row.get(f"{side}_prob_for_kelly")),
+        "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),
+        "kelly_probability_source": sv(row.get(f"{side}_kelly_probability_source")),
+        "ev": fv(row.get(f"{side}_rl_ev")),
+        "kelly": fv(row.get(f"{side}_rl_kelly")),
     }
+
+
+def audit_run_line_global_rejection(row, run_line_audit_rows, reason):
+    for side in ["home", "away"]:
+        candidate = build_run_line_candidate(row, side)
+        run_line_audit_rows.append(
+            run_line_audit_row(
+                candidate,
+                passed=False,
+                rejection_reason=reason,
+            )
+        )
+
+
+def process_run_line(row, counters, rejection_rows, run_line_audit_rows):
+    candidates = []
+    audit_positions = {}
 
     for side in ["home", "away"]:
         rules = CONFIG["run_line"][side]
         side_counter = counters["run_line"][side]
+        candidate = build_run_line_candidate(row, side)
 
-        if not rules["enabled"]:
+        # Every side gets an audit row before the final one-side choice.
+        if not rules.get("enabled", False):
+            audit_positions[side] = len(run_line_audit_rows)
+            run_line_audit_rows.append(
+                run_line_audit_row(
+                    candidate,
+                    passed=False,
+                    rejection_reason="side_disabled",
+                )
+            )
             continue
 
-        prob_for_ev = fv(row.get(f"{side}_prob_for_ev"))
-        prob_for_kelly = fv(row.get(f"{side}_prob_for_kelly"))
-        canonical_prob = fv(row.get(f"{side}_model_prob_run_line"))
+        basis_ok, fail_reason, fail_detail = check_probability_basis(
+            candidate["prob_used_for_selection"],
+            candidate["prob_for_ev"],
+            candidate["prob_for_kelly"],
+            candidate["ev_probability_source"],
+            candidate["kelly_probability_source"],
+            side_counter,
+        )
 
-        candidate = {
-            "market_type": "run_line",
-            "bet_side": side,
-            "market": "run_line",
-            "side": side,
-            "line": fv(row.get(f"{side}_run_line")),
-            "take_bet": f"{side}_run_line",
-            "dk_odds_american": odds_by_side[side],
-            "dk_odds_decimal": fv(row.get(f"{side}_dk_run_line_decimal")),
-            "model_prob": canonical_prob,
-            "prob_used_for_selection": canonical_prob,
-            "prob_for_ev": prob_for_ev,
-            "prob_for_kelly": prob_for_kelly,
-            "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),
-            "kelly_probability_source": sv(row.get(f"{side}_kelly_probability_source")),
-            "raw_ev": fv(row.get(f"{side}_rl_raw_ev")),
-            "adjusted_ev": fv(row.get(f"{side}_rl_adjusted_ev")),
-            "ev": fv(row.get(f"{side}_rl_ev")),
-            "kelly": fv(row.get(f"{side}_rl_kelly")),
-        }
+        if not basis_ok:
+            rejection_reason = f"{fail_reason}:{fail_detail}"
+            rejection_rows.append(
+                base_candidate_audit(
+                    row,
+                    candidate,
+                    fail_reason,
+                    fail_detail,
+                )
+            )
+            audit_positions[side] = len(run_line_audit_rows)
+            run_line_audit_rows.append(
+                run_line_audit_row(
+                    candidate,
+                    passed=False,
+                    rejection_reason=rejection_reason,
+                )
+            )
+            continue
 
-        selected = evaluate_candidate(row, candidate, rules, side_counter, rejection_rows)
-        if selected is not None:
-            candidates.append(selected)
+        # TODO 13 hard gate: EV and Kelly must both be strictly positive.
+        if candidate["ev"] is None or candidate["ev"] <= 0:
+            side_counter["ev_fail"] += 1
+            rejection_rows.append(
+                base_candidate_audit(
+                    row,
+                    candidate,
+                    "ev_fail",
+                    "ev<=0",
+                )
+            )
+            audit_positions[side] = len(run_line_audit_rows)
+            run_line_audit_rows.append(
+                run_line_audit_row(
+                    candidate,
+                    passed=False,
+                    rejection_reason="ev<=0",
+                )
+            )
+            continue
 
-    return select_candidate(
+        if candidate["kelly"] is None or candidate["kelly"] <= 0:
+            side_counter["kelly_fail"] += 1
+            rejection_rows.append(
+                base_candidate_audit(
+                    row,
+                    candidate,
+                    "kelly_fail",
+                    "kelly<=0",
+                )
+            )
+            audit_positions[side] = len(run_line_audit_rows)
+            run_line_audit_rows.append(
+                run_line_audit_row(
+                    candidate,
+                    passed=False,
+                    rejection_reason="kelly<=0",
+                )
+            )
+            continue
+
+        passed, fail_reason, detail = check_rules(
+            candidate["ev"],
+            candidate["kelly"],
+            candidate["dk_odds_american"],
+            candidate["line"],
+            candidate["prob_used_for_selection"],
+            rules,
+            side_counter,
+        )
+
+        if not passed:
+            rejection_rows.append(
+                base_candidate_audit(
+                    row,
+                    candidate,
+                    fail_reason,
+                    detail,
+                )
+            )
+            audit_positions[side] = len(run_line_audit_rows)
+            run_line_audit_rows.append(
+                run_line_audit_row(
+                    candidate,
+                    passed=False,
+                    rejection_reason=f"{fail_reason}:{detail}",
+                )
+            )
+            continue
+
+        candidate["selection_reason"] = detail
+        candidates.append(candidate)
+
+        audit_positions[side] = len(run_line_audit_rows)
+        run_line_audit_rows.append(
+            run_line_audit_row(
+                candidate,
+                passed=True,
+                rejection_reason="",
+            )
+        )
+
+    selected = select_candidate(
         candidates,
         CONFIG["run_line"].get("pick_preference", "best_ev"),
         "run_line",
         row.get("game_id"),
     )
+
+    if selected:
+        selected_side = selected[0]["side"]
+        audit_idx = audit_positions[selected_side]
+        run_line_audit_rows[audit_idx]["selected"] = 1
+
+    return selected
 
 
 def process_total(row, counters, rejection_rows):
@@ -1042,8 +1204,6 @@ def process_total(row, counters, rejection_rows):
             "prob_for_kelly": prob_for_kelly,
             "ev_probability_source": sv(row.get(f"{side}_ev_probability_source")),
             "kelly_probability_source": sv(row.get(f"{side}_kelly_probability_source")),
-            "raw_ev": fv(row.get(f"{side}_raw_ev")),
-            "adjusted_ev": fv(row.get(f"{side}_adjusted_ev")),
             "ev": fv(row.get(f"{side}_ev")),
             "kelly": fv(row.get(f"{side}_kelly")),
         }
@@ -1113,6 +1273,7 @@ def main():
     per_slate = []
     selected_audit_rows = []
     rejection_rows = []
+    run_line_audit_rows = []
 
     for old in OUTPUT_DIR.glob("*.csv"):
         old.unlink()
@@ -1129,7 +1290,7 @@ def main():
         f"Lineup low sample warn: {FILTERS.get('lineup_low_sample_warn')} | "
         f"Context data filters: {FILTERS.get('context_data_filters')}"
     )
-    _log("Selection requires kelly > 0 and matching EV/Kelly probability source per selected row.")
+    _log("Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.")
     _log("Selection matches market rows by game_id only. Team/date fallback matching is disabled.")
 
     try:
@@ -1318,11 +1479,15 @@ def main():
                             "kelly": None,
                             "odds": None,
                             "line": None,
-                            "raw_ev": None,
-                            "adjusted_ev": None,
                             "ev_probability_source": None,
                             "kelly_probability_source": None,
                         })
+                        if rl_row is not None:
+                            audit_run_line_global_rejection(
+                                rl_row,
+                                run_line_audit_rows,
+                                "context_data_excluded",
+                            )
                         continue
 
                     low_conf = is_low_confidence(context_row)
@@ -1357,15 +1522,19 @@ def main():
                             "kelly": None,
                             "odds": None,
                             "line": None,
-                            "raw_ev": None,
-                            "adjusted_ev": None,
                             "ev_probability_source": None,
                             "kelly_probability_source": None,
                         })
+                        if rl_row is not None:
+                            audit_run_line_global_rejection(
+                                rl_row,
+                                run_line_audit_rows,
+                                f"rain_excluded:{rain_reason}",
+                            )
                         continue
 
                     if rl_row is not None:
-                        for r in process_run_line(rl_row, global_counters, rejection_rows):
+                        for r in process_run_line(rl_row, global_counters, rejection_rows, run_line_audit_rows):
                             k = f"{game_id}_{r['market_type']}"
 
                             if k not in seen:
@@ -1404,9 +1573,7 @@ def main():
                                 "kelly": None,
                                 "odds": None,
                                 "line": fv(tt_row.get("total")),
-                                "raw_ev": None,
-                                "adjusted_ev": None,
-                                "ev_probability_source": None,
+                                        "ev_probability_source": None,
                                 "kelly_probability_source": None,
                                 })
                         else:
@@ -1481,18 +1648,22 @@ def main():
 
         rejection_df = pd.DataFrame(rejection_rows, columns=REJECTION_AUDIT_COLUMNS)
         selected_audit_df = pd.DataFrame(selected_audit_rows, columns=SELECTED_AUDIT_COLUMNS)
+        run_line_audit_df = pd.DataFrame(run_line_audit_rows, columns=RUN_LINE_AUDIT_COLUMNS)
 
         rejection_audit_path = AUDIT_DIR / "selection_rejection_audit.csv"
         selected_audit_path = AUDIT_DIR / "selected_bet_audit.csv"
+        run_line_audit_path = AUDIT_DIR / "run_line_selection_audit.csv"
 
         rejection_df.to_csv(rejection_audit_path, index=False)
         selected_audit_df.to_csv(selected_audit_path, index=False)
+        run_line_audit_df.to_csv(run_line_audit_path, index=False)
 
         summary["rejection_audit_rows"] = len(rejection_df)
         summary["selected_audit_rows"] = len(selected_audit_df)
 
         _log(f"WROTE AUDIT: {rejection_audit_path} rows={len(rejection_df)}")
         _log(f"WROTE AUDIT: {selected_audit_path} rows={len(selected_audit_df)}")
+        _log(f"WROTE AUDIT: {run_line_audit_path} rows={len(run_line_audit_df)}")
 
     except Exception as e:
         _log(f"FATAL: {e}\n{traceback.format_exc()}", "ERROR")

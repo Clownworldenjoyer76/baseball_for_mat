@@ -91,50 +91,51 @@ markets:
     run_line:
       enabled: true
 
-      # Step 5 blocks all for run-line so both sides of the same run-line
-      # market cannot be selected for one game.
-      # Valid values: best_ev, best_prob.
-      pick_preference: best_prob
+      # TODO 13: evaluate both +1.5 and -1.5 sides in the same domain,
+      # then select at most one side using the larger positive EV.
+      pick_preference: best_ev
 
       home:
         enabled: true
 
         line_bands:
-          - [-2.5, 2.5]
+          - [-1.5, -1.5]
+          - [1.5, 1.5]
 
         odds_bands:
-          - [-1000, -150]
+          - [-1000, 1000]
 
+        # Strict EV > 0 is enforced in selector code.
         ev_bands:
-          - [0.020, 0.0299]
-          - [0.040, 0.0499]
-          - [0.075, 99.99]
+          - [0.0, 99.99]
 
+        # Strict Kelly > 0 is enforced in selector code.
         kelly_bands:
-          - [-10.00, 99.99]
+          - [0.0, 99.99]
 
         prob_bands:
-          - [0.65, 0.7499]
-          - [0.80, 0.99]
+          - [0.0, 1.0]
 
       away:
         enabled: true
 
         line_bands:
-          - [-2.5, 2.5]
+          - [-1.5, -1.5]
+          - [1.5, 1.5]
 
         odds_bands:
-          - [-199, -150]
+          - [-1000, 1000]
 
+        # Strict EV > 0 is enforced in selector code.
         ev_bands:
-          - [-10.00, 0.0099]
-          - [0.03, 0.075]
+          - [0.0, 99.99]
 
+        # Strict Kelly > 0 is enforced in selector code.
         kelly_bands:
-          - [-10.00, 99.99]
+          - [0.0, 99.99]
 
         prob_bands:
-          - [0.50, 0.6499]
+          - [0.0, 1.0]
 
     ###################################################
     # ── Totals ───────────────────────────────────────
