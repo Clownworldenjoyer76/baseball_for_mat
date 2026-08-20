@@ -9,6 +9,19 @@ clean row per game to:
 
 All features are as-of the day before the game date. Same-day pitches are
 never included.
+
+This file remains a separate upstream model input. Its ``sdv_*`` columns are
+not intended to be copied wholesale through the downstream merge/edge/EV
+pipeline. The run-projection stage should read this file directly and convert
+the relevant SDV features into ``model_home_runs`` and ``model_away_runs``.
+
+Model-facing feature meanings:
+    sdv_*_sp_stuff_plus
+        SportsDataverse pitch-quality score.
+    sdv_*_sp_command_plus
+        SportsDataverse location/command-quality score.
+
+The raw SDV output column names are preserved intentionally.
 """
 
 from __future__ import annotations
@@ -42,6 +55,14 @@ ERROR_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = ERROR_DIR / "sportsdataverse_mlb.txt"
 
 DEFAULT_LOOKBACK_DAYS = 30
+
+# Raw SportsDataverse feature names are intentionally preserved in output.
+# Model-training code may map these to clearer internal feature labels, but
+# this source script should remain consistent with the existing sdv_* schema.
+SDV_MODEL_FEATURE_DESCRIPTIONS = {
+    "sp_stuff_plus": "SportsDataverse pitch-quality score",
+    "sp_command_plus": "SportsDataverse location/command-quality score",
+}
 
 PITCHER_FEATURE_COLUMNS = [
     "pitcher_id",
