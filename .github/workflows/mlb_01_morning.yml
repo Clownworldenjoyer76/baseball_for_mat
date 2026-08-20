@@ -59,6 +59,9 @@ jobs:
       - name: MLB Build Games List
         run: python docs/win/baseball/mlb/scripts/00_intake/build_games_list.py
 
+      - name: MLB SportsDataverse Features
+        run: python docs/win/baseball/mlb/scripts/00_intake/sportsdataverse_mlb.py
+
       - name: MLB Fetch Park Weather
         run: python docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py
 
@@ -71,14 +74,14 @@ jobs:
       - name: MLB Game ID Predictions
         run: python docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py
 
+      - name: MLB Build Run Projection
+        run: python docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py
+
       - name: MLB Merge Intake
         run: python docs/win/baseball/mlb/scripts/01_merge/merge_intake.py
 
       - name: MLB Build Juice Files
         run: python docs/win/baseball/mlb/scripts/01_merge/build_juice_files.py
-
-
-
 
       - name: MLB Compute Edges
         run: python docs/win/baseball/mlb/scripts/03_edges/compute_edges.py
