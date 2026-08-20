@@ -1,15 +1,4 @@
-from pathlib import Path
-import py_compile
-import importlib.util
-import pandas as pd
-import numpy as np
-
-src = Path("/mnt/data/compute_ev_kelly.py")
-out_dir = Path("/mnt/data/mlb_todo5_updated")
-out_dir.mkdir(parents=True, exist_ok=True)
-out = out_dir / "compute_ev_kelly.py"
-
-updated = r'''#!/usr/bin/env python3
+#!/usr/bin/env python3
 # docs/win/baseball/mlb/scripts/03_edges/compute_ev_kelly.py
 
 import traceback
@@ -18,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
 
 INPUT_DIR = Path("docs/win/baseball/mlb/03_edges")
 OUTPUT_DIR = Path("docs/win/baseball/mlb/03_edges/ev_kelly")
@@ -118,37 +108,77 @@ FORBIDDEN_RUN_LINE_COLUMNS = [
 # LEAKAGE / READ GUARDS
 # =========================
 
-def record_file_read(path: Path, path_allowed: bool, reason: str) -> None:
+def record_file_read(
+    path: Path,
+    path_allowed: bool,
+    reason: str,
+) -> None:
     path = Path(path)
     new_file = not LEAKAGE_AUDIT_FILE.exists()
 
-    with open(LEAKAGE_AUDIT_FILE, "a", encoding="utf-8", newline="") as f:
+    with open(
+        LEAKAGE_AUDIT_FILE,
+        "a",
+        encoding="utf-8",
+        newline="",
+    ) as f:
         if new_file:
-            f.write("script,file_read,path_allowed,reason,stage,timestamp\n")
+            f.write(
+                "script,file_read,path_allowed,reason,stage,timestamp\n"
+            )
 
         safe_path = str(path).replace('"', "''")
         f.write(
-            f'{SCRIPT_NAME},"{safe_path}",{1 if path_allowed else 0},'
-            f'"{reason}",{STAGE_NAME},{datetime.now(UTC).isoformat()}\n'
+            f'{SCRIPT_NAME},"{safe_path}",'
+            f'{1 if path_allowed else 0},'
+            f'"{reason}",{STAGE_NAME},'
+            f'{datetime.now(UTC).isoformat()}\n'
         )
 
 
-def assert_read_path_allowed(path: Path) -> None:
+def assert_read_path_allowed(
+    path: Path,
+) -> None:
     path = Path(path)
-    lower_path = str(path).replace("\\", "/").lower()
-    matched = [token for token in FORBIDDEN_READ_TOKENS if token in lower_path]
+    lower_path = (
+        str(path)
+        .replace("\\", "/")
+        .lower()
+    )
+
+    matched = [
+        token
+        for token in FORBIDDEN_READ_TOKENS
+        if token in lower_path
+    ]
 
     if matched:
-        reason = "forbidden_pre_selection_read:" + ";".join(matched)
-        record_file_read(path, False, reason)
-        raise RuntimeError(
-            f"Blocked forbidden pre-selection read path: {path} ({reason})"
+        reason = (
+            "forbidden_pre_selection_read:"
+            + ";".join(matched)
         )
 
-    record_file_read(path, True, "allowed")
+        record_file_read(
+            path,
+            False,
+            reason,
+        )
+
+        raise RuntimeError(
+            f"Blocked forbidden pre-selection read path: "
+            f"{path} ({reason})"
+        )
+
+    record_file_read(
+        path,
+        True,
+        "allowed",
+    )
 
 
-def read_csv_guarded(path: Path) -> pd.DataFrame:
+def read_csv_guarded(
+    path: Path,
+) -> pd.DataFrame:
     assert_read_path_allowed(path)
     return pd.read_csv(path)
 
@@ -161,72 +191,130 @@ def _now():
     return datetime.now(UTC).isoformat()
 
 
-def _log(msg: str, level: str = "INFO") -> None:
-    with open(LOG_FILE, "a", encoding="utf-8") as log_f:
-        log_f.write(f"{_now()} | {level:<5} | {msg.rstrip()}\n")
+def _log(
+    msg: str,
+    level: str = "INFO",
+) -> None:
+    with open(
+        LOG_FILE,
+        "a",
+        encoding="utf-8",
+    ) as log_f:
+        log_f.write(
+            f"{_now()} | "
+            f"{level:<5} | "
+            f"{msg.rstrip()}\n"
+        )
 
 
-def _write_summary(summary: dict, per_file: list) -> None:
+def _write_summary(
+    summary: dict,
+    per_file: list,
+) -> None:
     lines = [
         "",
         "=" * 60,
         f"SUMMARY  {_now()}",
         "=" * 60,
-        f"  files_processed              : {summary['files_processed']}",
-        f"  rows_processed               : {summary['rows_processed']}",
-        f"  moneyline_files              : {summary['moneyline_files']}",
-        f"  run_line_files               : {summary['run_line_files']}",
-        f"  total_files                  : {summary['total_files']}",
-        f"  skipped                      : {summary['skipped']}",
-        f"  schema_errors                : {summary['schema_errors']}",
-        f"  neg_kelly_clipped            : {summary['neg_kelly_clipped']}",
+        f"  files_processed              : "
+        f"{summary['files_processed']}",
+        f"  rows_processed               : "
+        f"{summary['rows_processed']}",
+        f"  moneyline_files              : "
+        f"{summary['moneyline_files']}",
+        f"  run_line_files               : "
+        f"{summary['run_line_files']}",
+        f"  total_files                  : "
+        f"{summary['total_files']}",
+        f"  skipped                      : "
+        f"{summary['skipped']}",
+        f"  schema_errors                : "
+        f"{summary['schema_errors']}",
+        f"  neg_kelly_clipped            : "
+        f"{summary['neg_kelly_clipped']}",
         f"  probability_source_mismatches: "
         f"{summary['probability_source_mismatches']}",
-        f"  audit_rows                   : {summary['audit_rows']}",
-        f"  errors                       : {summary['errors']}",
+        f"  audit_rows                   : "
+        f"{summary['audit_rows']}",
+        f"  errors                       : "
+        f"{summary['errors']}",
         "",
-        f"  {'file':<48} {'market':<12} {'rows':>5} "
-        f"{'neg_kelly':>10} {'status':>14}",
+        f"  {'file':<48} "
+        f"{'market':<12} "
+        f"{'rows':>5} "
+        f"{'neg_kelly':>10} "
+        f"{'status':>14}",
     ]
 
     for pf in per_file:
         lines.append(
-            f"  {pf['name']:<48} {pf['market']:<12} {pf['rows']:>5} "
-            f"{pf['neg_kelly']:>10} {pf['status']:>14}"
+            f"  {pf['name']:<48} "
+            f"{pf['market']:<12} "
+            f"{pf['rows']:>5} "
+            f"{pf['neg_kelly']:>10} "
+            f"{pf['status']:>14}"
         )
 
     status = (
         "SUCCESS"
-        if summary["errors"] == 0 and summary["schema_errors"] == 0
+        if (
+            summary["errors"] == 0
+            and summary["schema_errors"] == 0
+        )
         else "COMPLETED WITH ERRORS"
     )
-    lines += ["", f"STATUS: {status}", "=" * 60]
 
-    with open(LOG_FILE, "a", encoding="utf-8") as log_f:
-        log_f.write("\n".join(lines) + "\n")
+    lines += [
+        "",
+        f"STATUS: {status}",
+        "=" * 60,
+    ]
+
+    with open(
+        LOG_FILE,
+        "a",
+        encoding="utf-8",
+    ) as log_f:
+        log_f.write(
+            "\n".join(lines) + "\n"
+        )
 
 
 # =========================
 # SCHEMA GUARDS
 # =========================
 
-def duplicate_columns(columns) -> list:
+def duplicate_columns(
+    columns,
+) -> list:
     seen = set()
     dupes = []
 
     for col in columns:
-        if col in seen and col not in dupes:
+        if (
+            col in seen
+            and col not in dupes
+        ):
             dupes.append(col)
+
         seen.add(col)
 
     return dupes
 
 
-def assert_no_duplicate_columns(df: pd.DataFrame, label: str) -> None:
-    dupes = duplicate_columns(list(df.columns))
+def assert_no_duplicate_columns(
+    df: pd.DataFrame,
+    label: str,
+) -> None:
+    dupes = duplicate_columns(
+        list(df.columns)
+    )
 
     if dupes:
-        raise ValueError(f"{label} has duplicate columns: {dupes}")
+        raise ValueError(
+            f"{label} has duplicate columns: "
+            f"{dupes}"
+        )
 
 
 def assert_required_columns(
@@ -234,10 +322,17 @@ def assert_required_columns(
     required_columns: list,
     label: str,
 ) -> None:
-    missing = [col for col in required_columns if col not in df.columns]
+    missing = [
+        col
+        for col in required_columns
+        if col not in df.columns
+    ]
 
     if missing:
-        raise ValueError(f"{label} missing required columns: {missing}")
+        raise ValueError(
+            f"{label} missing required columns: "
+            f"{missing}"
+        )
 
 
 def assert_forbidden_columns_absent(
@@ -245,12 +340,18 @@ def assert_forbidden_columns_absent(
     forbidden_columns: list,
     label: str,
 ) -> None:
-    present = [col for col in forbidden_columns if col in df.columns]
+    present = [
+        col
+        for col in forbidden_columns
+        if col in df.columns
+    ]
 
     if present:
         raise ValueError(
-            f"{label} contains obsolete forbidden columns: {present}. "
-            "Use home_model_prob_run_line / away_model_prob_run_line."
+            f"{label} contains obsolete forbidden columns: "
+            f"{present}. "
+            "Use home_model_prob_run_line / "
+            "away_model_prob_run_line."
         )
 
 
@@ -259,10 +360,17 @@ def validate_probability_values(
     columns: list,
     label: str,
 ) -> None:
-    bad = pd.Series(False, index=df.index)
+    bad = pd.Series(
+        False,
+        index=df.index,
+    )
 
     for col in columns:
-        values = pd.to_numeric(df[col], errors="coerce")
+        values = pd.to_numeric(
+            df[col],
+            errors="coerce",
+        )
+
         bad = (
             bad
             | values.isna()
@@ -273,13 +381,19 @@ def validate_probability_values(
 
     if bad.any():
         sample = (
-            df.loc[bad, ["game_id"] + columns]
+            df.loc[
+                bad,
+                ["game_id"] + columns,
+            ]
             .head(10)
             .to_dict("records")
         )
+
         raise ValueError(
-            f"{label} has missing, non-finite, or out-of-range canonical "
-            f"probabilities; bad_rows={int(bad.sum())}; sample={sample}"
+            f"{label} has missing, non-finite, "
+            f"or out-of-range canonical probabilities; "
+            f"bad_rows={int(bad.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -289,21 +403,47 @@ def validate_probability_pair(
     col_b: str,
     label: str,
 ) -> None:
-    validate_probability_values(df, [col_a, col_b], label)
+    validate_probability_values(
+        df,
+        [col_a, col_b],
+        label,
+    )
 
-    a = pd.to_numeric(df[col_a], errors="coerce")
-    b = pd.to_numeric(df[col_b], errors="coerce")
-    bad = (a + b - 1.0).abs() > PROB_TOLERANCE
+    a = pd.to_numeric(
+        df[col_a],
+        errors="coerce",
+    )
+
+    b = pd.to_numeric(
+        df[col_b],
+        errors="coerce",
+    )
+
+    bad = (
+        a
+        + b
+        - 1.0
+    ).abs() > PROB_TOLERANCE
 
     if bad.any():
         sample = (
-            df.loc[bad, ["game_id", col_a, col_b]]
+            df.loc[
+                bad,
+                [
+                    "game_id",
+                    col_a,
+                    col_b,
+                ],
+            ]
             .head(10)
             .to_dict("records")
         )
+
         raise ValueError(
-            f"{label} canonical probability pair does not sum to 1.0 "
-            f"within tolerance; bad_rows={int(bad.sum())}; sample={sample}"
+            f"{label} canonical probability pair "
+            f"does not sum to 1.0 within tolerance; "
+            f"bad_rows={int(bad.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -318,44 +458,100 @@ def validate_total_probability_contract(
         "under_model_prob_total_loss",
         "total_model_prob_push",
     ]
-    validate_probability_values(df, cols, label)
+
+    validate_probability_values(
+        df,
+        cols,
+        label,
+    )
 
     over_win = pd.to_numeric(
-        df["over_model_prob_total_win"], errors="coerce"
+        df["over_model_prob_total_win"],
+        errors="coerce",
     )
+
     over_loss = pd.to_numeric(
-        df["over_model_prob_total_loss"], errors="coerce"
+        df["over_model_prob_total_loss"],
+        errors="coerce",
     )
+
     under_win = pd.to_numeric(
-        df["under_model_prob_total_win"], errors="coerce"
+        df["under_model_prob_total_win"],
+        errors="coerce",
     )
+
     under_loss = pd.to_numeric(
-        df["under_model_prob_total_loss"], errors="coerce"
+        df["under_model_prob_total_loss"],
+        errors="coerce",
     )
+
     push = pd.to_numeric(
-        df["total_model_prob_push"], errors="coerce"
+        df["total_model_prob_push"],
+        errors="coerce",
     )
 
     bad = (
-        ((over_win + over_loss + push - 1.0).abs() > PROB_TOLERANCE)
-        | ((under_win + under_loss + push - 1.0).abs() > PROB_TOLERANCE)
-        | ((under_win - over_loss).abs() > PROB_TOLERANCE)
-        | ((under_loss - over_win).abs() > PROB_TOLERANCE)
+        (
+            (
+                over_win
+                + over_loss
+                + push
+                - 1.0
+            ).abs()
+            > PROB_TOLERANCE
+        )
+        | (
+            (
+                under_win
+                + under_loss
+                + push
+                - 1.0
+            ).abs()
+            > PROB_TOLERANCE
+        )
+        | (
+            (
+                under_win
+                - over_loss
+            ).abs()
+            > PROB_TOLERANCE
+        )
+        | (
+            (
+                under_loss
+                - over_win
+            ).abs()
+            > PROB_TOLERANCE
+        )
     )
 
     if bad.any():
         sample = (
-            df.loc[bad, ["game_id"] + cols]
+            df.loc[
+                bad,
+                ["game_id"] + cols,
+            ]
             .head(10)
             .to_dict("records")
         )
+
         raise ValueError(
-            f"{label} totals canonical probability contract failed; "
-            f"bad_rows={int(bad.sum())}; sample={sample}"
+            f"{label} totals canonical probability "
+            f"contract failed; "
+            f"bad_rows={int(bad.sum())}; "
+            f"sample={sample}"
         )
 
-    over_resolved = over_win + over_loss
-    under_resolved = under_win + under_loss
+    over_resolved = (
+        over_win
+        + over_loss
+    )
+
+    under_resolved = (
+        under_win
+        + under_loss
+    )
+
     invalid_resolved = (
         ~np.isfinite(over_resolved)
         | ~np.isfinite(under_resolved)
@@ -379,10 +575,13 @@ def validate_total_probability_contract(
             .head(10)
             .to_dict("records")
         )
+
         raise ValueError(
-            f"{label} totals have no resolved probability mass "
+            f"{label} totals have no resolved "
+            f"probability mass "
             f"(p_win + p_loss must be > 0); "
-            f"bad_rows={int(invalid_resolved.sum())}; sample={sample}"
+            f"bad_rows={int(invalid_resolved.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -391,21 +590,39 @@ def validate_decimal_odds(
     columns: list,
     label: str,
 ) -> None:
-    bad = pd.Series(False, index=df.index)
+    bad = pd.Series(
+        False,
+        index=df.index,
+    )
 
     for col in columns:
-        values = pd.to_numeric(df[col], errors="coerce")
-        bad = bad | values.isna() | ~np.isfinite(values) | (values <= 1.0)
+        values = pd.to_numeric(
+            df[col],
+            errors="coerce",
+        )
+
+        bad = (
+            bad
+            | values.isna()
+            | ~np.isfinite(values)
+            | (values <= 1.0)
+        )
 
     if bad.any():
         sample = (
-            df.loc[bad, ["game_id"] + columns]
+            df.loc[
+                bad,
+                ["game_id"] + columns,
+            ]
             .head(10)
             .to_dict("records")
         )
+
         raise ValueError(
-            f"{label} has missing, non-finite, or invalid decimal odds; "
-            f"bad_rows={int(bad.sum())}; sample={sample}"
+            f"{label} has missing, non-finite, "
+            f"or invalid decimal odds; "
+            f"bad_rows={int(bad.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -414,7 +631,10 @@ def validate_input_schema(
     market: str,
     file_name: str,
 ) -> None:
-    assert_no_duplicate_columns(df, f"{file_name} input")
+    assert_no_duplicate_columns(
+        df,
+        f"{file_name} input",
+    )
 
     if market == "moneyline":
         assert_required_columns(
@@ -422,12 +642,14 @@ def validate_input_schema(
             MONEYLINE_REQUIRED_COLUMNS,
             f"{file_name} moneyline input",
         )
+
         validate_probability_pair(
             df,
             "home_model_prob_moneyline",
             "away_model_prob_moneyline",
             f"{file_name} moneyline input",
         )
+
         validate_decimal_odds(
             df,
             [
@@ -443,17 +665,20 @@ def validate_input_schema(
             RUN_LINE_REQUIRED_COLUMNS,
             f"{file_name} run_line input",
         )
+
         assert_forbidden_columns_absent(
             df,
             FORBIDDEN_RUN_LINE_COLUMNS,
             f"{file_name} run_line input",
         )
+
         validate_probability_pair(
             df,
             "home_model_prob_run_line",
             "away_model_prob_run_line",
             f"{file_name} run_line input",
         )
+
         validate_decimal_odds(
             df,
             [
@@ -469,10 +694,12 @@ def validate_input_schema(
             TOTAL_REQUIRED_COLUMNS,
             f"{file_name} total input",
         )
+
         validate_total_probability_contract(
             df,
             f"{file_name} total input",
         )
+
         validate_decimal_odds(
             df,
             [
@@ -484,7 +711,8 @@ def validate_input_schema(
 
     else:
         raise ValueError(
-            f"{file_name} unknown market for schema validation: {market}"
+            f"{file_name} unknown market "
+            f"for schema validation: {market}"
         )
 
 
@@ -492,35 +720,71 @@ def write_csv_checked(
     df: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    assert_no_duplicate_columns(df, f"{output_path} output")
-    df.to_csv(output_path, index=False)
+    assert_no_duplicate_columns(
+        df,
+        f"{output_path} output",
+    )
+
+    df.to_csv(
+        output_path,
+        index=False,
+    )
 
 
 # =========================
 # EV / KELLY HELPERS
 # =========================
 
-def compute_binary_ev(probability, decimal_odds) -> pd.Series:
-    probability = pd.to_numeric(probability, errors="coerce")
-    decimal_odds = pd.to_numeric(decimal_odds, errors="coerce")
-    return (probability * decimal_odds) - 1.0
+def compute_binary_ev(
+    probability,
+    decimal_odds,
+) -> pd.Series:
+    probability = pd.to_numeric(
+        probability,
+        errors="coerce",
+    )
+
+    decimal_odds = pd.to_numeric(
+        decimal_odds,
+        errors="coerce",
+    )
+
+    return (
+        probability
+        * decimal_odds
+    ) - 1.0
 
 
 def compute_binary_kelly_raw(
     probability,
     decimal_odds,
 ) -> pd.Series:
-    probability = pd.to_numeric(probability, errors="coerce")
-    decimal_odds = pd.to_numeric(decimal_odds, errors="coerce")
+    probability = pd.to_numeric(
+        probability,
+        errors="coerce",
+    )
 
-    b = decimal_odds - 1.0
-    q = 1.0 - probability
+    decimal_odds = pd.to_numeric(
+        decimal_odds,
+        errors="coerce",
+    )
+
+    b = (
+        decimal_odds
+        - 1.0
+    )
+
+    q = (
+        1.0
+        - probability
+    )
 
     raw_kelly = pd.Series(
         np.nan,
         index=probability.index,
         dtype="float64",
     )
+
     valid = (
         probability.notna()
         & decimal_odds.notna()
@@ -530,7 +794,10 @@ def compute_binary_kelly_raw(
     )
 
     raw_kelly.loc[valid] = (
-        (b.loc[valid] * probability.loc[valid])
+        (
+            b.loc[valid]
+            * probability.loc[valid]
+        )
         - q.loc[valid]
     ) / b.loc[valid]
 
@@ -542,12 +809,30 @@ def compute_total_ev(
     p_loss,
     decimal_odds,
 ) -> pd.Series:
-    p_win = pd.to_numeric(p_win, errors="coerce")
-    p_loss = pd.to_numeric(p_loss, errors="coerce")
-    decimal_odds = pd.to_numeric(decimal_odds, errors="coerce")
+    p_win = pd.to_numeric(
+        p_win,
+        errors="coerce",
+    )
 
-    b = decimal_odds - 1.0
-    return (p_win * b) - p_loss
+    p_loss = pd.to_numeric(
+        p_loss,
+        errors="coerce",
+    )
+
+    decimal_odds = pd.to_numeric(
+        decimal_odds,
+        errors="coerce",
+    )
+
+    b = (
+        decimal_odds
+        - 1.0
+    )
+
+    return (
+        p_win
+        * b
+    ) - p_loss
 
 
 def compute_total_kelly_raw(
@@ -557,11 +842,30 @@ def compute_total_kelly_raw(
     game_id,
     label: str,
 ) -> pd.Series:
-    p_win = pd.to_numeric(p_win, errors="coerce")
-    p_loss = pd.to_numeric(p_loss, errors="coerce")
-    decimal_odds = pd.to_numeric(decimal_odds, errors="coerce")
-    resolved = p_win + p_loss
-    b = decimal_odds - 1.0
+    p_win = pd.to_numeric(
+        p_win,
+        errors="coerce",
+    )
+
+    p_loss = pd.to_numeric(
+        p_loss,
+        errors="coerce",
+    )
+
+    decimal_odds = pd.to_numeric(
+        decimal_odds,
+        errors="coerce",
+    )
+
+    resolved = (
+        p_win
+        + p_loss
+    )
+
+    b = (
+        decimal_odds
+        - 1.0
+    )
 
     invalid = (
         p_win.isna()
@@ -584,16 +888,35 @@ def compute_total_kelly_raw(
                 "decimal_odds": decimal_odds,
             }
         )
-        sample = audit.loc[invalid].head(10).to_dict("records")
-        raise ValueError(
-            f"{label} invalid totals Kelly inputs; "
-            f"p_win + p_loss must be > 0 and decimal odds must be > 1; "
-            f"bad_rows={int(invalid.sum())}; sample={sample}"
+
+        sample = (
+            audit.loc[invalid]
+            .head(10)
+            .to_dict("records")
         )
 
-    numerator = (p_win * b) - p_loss
-    denominator = b * resolved
-    return numerator / denominator
+        raise ValueError(
+            f"{label} invalid totals Kelly inputs; "
+            f"p_win + p_loss must be > 0 and "
+            f"decimal odds must be > 1; "
+            f"bad_rows={int(invalid.sum())}; "
+            f"sample={sample}"
+        )
+
+    numerator = (
+        p_win
+        * b
+    ) - p_loss
+
+    denominator = (
+        b
+        * resolved
+    )
+
+    return (
+        numerator
+        / denominator
+    )
 
 
 def clip_negative_kelly(
@@ -601,18 +924,32 @@ def clip_negative_kelly(
     file_name: str,
     label: str,
 ) -> tuple[pd.Series, int]:
-    raw_kelly = pd.to_numeric(raw_kelly, errors="coerce")
-    negative = raw_kelly.notna() & (raw_kelly < 0)
-    count = int(negative.sum())
+    raw_kelly = pd.to_numeric(
+        raw_kelly,
+        errors="coerce",
+    )
+
+    negative = (
+        raw_kelly.notna()
+        & (raw_kelly < 0)
+    )
+
+    count = int(
+        negative.sum()
+    )
 
     if count:
         _log(
-            f"{file_name} | {label} | {count} negative raw Kelly values "
+            f"{file_name} | {label} | "
+            f"{count} negative raw Kelly values "
             f"clipped to 0 after audit calculation",
             "INFO",
         )
 
-    return raw_kelly.clip(lower=0), count
+    return (
+        raw_kelly.clip(lower=0),
+        count,
+    )
 
 
 def validate_ev_kelly_sign_consistency(
@@ -621,8 +958,15 @@ def validate_ev_kelly_sign_consistency(
     raw_kelly,
     label: str,
 ) -> None:
-    ev = pd.to_numeric(ev, errors="coerce")
-    raw_kelly = pd.to_numeric(raw_kelly, errors="coerce")
+    ev = pd.to_numeric(
+        ev,
+        errors="coerce",
+    )
+
+    raw_kelly = pd.to_numeric(
+        raw_kelly,
+        errors="coerce",
+    )
 
     invalid_numeric = (
         ev.isna()
@@ -631,14 +975,39 @@ def validate_ev_kelly_sign_consistency(
         | ~np.isfinite(raw_kelly)
     )
 
-    positive_bad = (ev > SIGN_TOLERANCE) & (raw_kelly <= SIGN_TOLERANCE)
-    negative_bad = (ev < -SIGN_TOLERANCE) & (raw_kelly >= -SIGN_TOLERANCE)
-    zero_bad = (
-        (ev.abs() <= SIGN_TOLERANCE)
-        & (raw_kelly.abs() > SIGN_TOLERANCE)
+    positive_bad = (
+        (ev > SIGN_TOLERANCE)
+        & (
+            raw_kelly
+            <= SIGN_TOLERANCE
+        )
     )
 
-    bad = invalid_numeric | positive_bad | negative_bad | zero_bad
+    negative_bad = (
+        (ev < -SIGN_TOLERANCE)
+        & (
+            raw_kelly
+            >= -SIGN_TOLERANCE
+        )
+    )
+
+    zero_bad = (
+        (
+            ev.abs()
+            <= SIGN_TOLERANCE
+        )
+        & (
+            raw_kelly.abs()
+            > SIGN_TOLERANCE
+        )
+    )
+
+    bad = (
+        invalid_numeric
+        | positive_bad
+        | negative_bad
+        | zero_bad
+    )
 
     if bad.any():
         audit = pd.DataFrame(
@@ -648,10 +1017,18 @@ def validate_ev_kelly_sign_consistency(
                 "raw_kelly": raw_kelly,
             }
         )
-        sample = audit.loc[bad].head(10).to_dict("records")
+
+        sample = (
+            audit.loc[bad]
+            .head(10)
+            .to_dict("records")
+        )
+
         raise ValueError(
-            f"{label} EV/raw-Kelly sign consistency failed; "
-            f"bad_rows={int(bad.sum())}; sample={sample}"
+            f"{label} EV/raw-Kelly sign "
+            f"consistency failed; "
+            f"bad_rows={int(bad.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -660,61 +1037,115 @@ def probability_basis_columns(
     side: str,
     source_col: str,
 ) -> tuple[pd.Series, dict]:
-    probability = pd.to_numeric(df[source_col], errors="coerce")
+    probability = pd.to_numeric(
+        df[source_col],
+        errors="coerce",
+    )
 
     columns = {
-        f"{side}_prob_for_ev": probability,
-        f"{side}_prob_for_kelly": probability,
-        f"{side}_ev_probability_source": source_col,
-        f"{side}_kelly_probability_source": source_col,
+        f"{side}_prob_for_ev":
+            probability,
+        f"{side}_prob_for_kelly":
+            probability,
+        f"{side}_ev_probability_source":
+            source_col,
+        f"{side}_kelly_probability_source":
+            source_col,
     }
 
-    return probability, columns
+    return (
+        probability,
+        columns,
+    )
 
 
 def probability_source_mismatch_count(
     df: pd.DataFrame,
     sides: list,
 ) -> int:
-    mismatch = pd.Series(False, index=df.index)
+    mismatch = pd.Series(
+        False,
+        index=df.index,
+    )
 
     for side in sides:
-        ev_source = df[f"{side}_ev_probability_source"].astype(str)
-        kelly_source = df[f"{side}_kelly_probability_source"].astype(str)
+        ev_source = (
+            df[
+                f"{side}_ev_probability_source"
+            ]
+            .astype(str)
+        )
+
+        kelly_source = (
+            df[
+                f"{side}_kelly_probability_source"
+            ]
+            .astype(str)
+        )
 
         prob_ev = pd.to_numeric(
-            df[f"{side}_prob_for_ev"],
+            df[
+                f"{side}_prob_for_ev"
+            ],
             errors="coerce",
         )
+
         prob_kelly = pd.to_numeric(
-            df[f"{side}_prob_for_kelly"],
+            df[
+                f"{side}_prob_for_kelly"
+            ],
             errors="coerce",
         )
 
         mismatch = (
             mismatch
-            | (ev_source != kelly_source)
+            | (
+                ev_source
+                != kelly_source
+            )
             | prob_ev.isna()
             | prob_kelly.isna()
-            | ((prob_ev - prob_kelly).abs() > PROB_TOLERANCE)
+            | (
+                (
+                    prob_ev
+                    - prob_kelly
+                ).abs()
+                > PROB_TOLERANCE
+            )
         )
 
-    return int(mismatch.sum())
+    return int(
+        mismatch.sum()
+    )
 
 
 def add_columns_at_once(
     df: pd.DataFrame,
     columns: dict,
 ) -> pd.DataFrame:
-    calculated = pd.DataFrame(columns, index=df.index)
+    calculated = pd.DataFrame(
+        columns,
+        index=df.index,
+    )
+
     overlapping = [
-        col for col in calculated.columns if col in df.columns
+        col
+        for col in calculated.columns
+        if col in df.columns
     ]
 
     if overlapping:
-        df = df.drop(columns=overlapping)
+        df = df.drop(
+            columns=overlapping,
+        )
 
-    return pd.concat([df, calculated], axis=1).copy()
+    return pd.concat(
+        [
+            df,
+            calculated,
+        ],
+        axis=1,
+    ).copy()
 
 
 def audit_rows(
@@ -732,23 +1163,52 @@ def audit_rows(
         for _, row in df.iterrows():
             records.append(
                 {
-                    "date": row.get("game_date"),
-                    "game_id": row.get("game_id"),
-                    "market": market,
-                    "side": side,
-                    "prob_for_ev": row.get(f"{side}_prob_for_ev"),
-                    "prob_for_kelly": row.get(f"{side}_prob_for_kelly"),
-                    "dk_decimal": row.get(decimal_cols[side]),
-                    "ev": row.get(ev_cols[side]),
-                    "raw_kelly": row.get(raw_kelly_cols[side]),
-                    "kelly": row.get(kelly_cols[side]),
-                    "ev_probability_source": row.get(
-                        f"{side}_ev_probability_source"
-                    ),
-                    "kelly_probability_source": row.get(
-                        f"{side}_kelly_probability_source"
-                    ),
-                    "status": "ok",
+                    "date":
+                        row.get(
+                            "game_date"
+                        ),
+                    "game_id":
+                        row.get(
+                            "game_id"
+                        ),
+                    "market":
+                        market,
+                    "side":
+                        side,
+                    "prob_for_ev":
+                        row.get(
+                            f"{side}_prob_for_ev"
+                        ),
+                    "prob_for_kelly":
+                        row.get(
+                            f"{side}_prob_for_kelly"
+                        ),
+                    "dk_decimal":
+                        row.get(
+                            decimal_cols[side]
+                        ),
+                    "ev":
+                        row.get(
+                            ev_cols[side]
+                        ),
+                    "raw_kelly":
+                        row.get(
+                            raw_kelly_cols[side]
+                        ),
+                    "kelly":
+                        row.get(
+                            kelly_cols[side]
+                        ),
+                    "ev_probability_source":
+                        row.get(
+                            f"{side}_ev_probability_source"
+                        ),
+                    "kelly_probability_source":
+                        row.get(
+                            f"{side}_kelly_probability_source"
+                        ),
+                    "status":
+                        "ok",
                 }
             )
 
@@ -763,33 +1223,58 @@ def process_moneyline(
     df: pd.DataFrame,
     file_name: str,
 ):
-    home_prob, home_basis = probability_basis_columns(
+    (
+        home_prob,
+        home_basis,
+    ) = probability_basis_columns(
         df,
         "home",
-        PROBABILITY_SOURCES["moneyline"]["home"],
+        PROBABILITY_SOURCES[
+            "moneyline"
+        ]["home"],
     )
-    away_prob, away_basis = probability_basis_columns(
+
+    (
+        away_prob,
+        away_basis,
+    ) = probability_basis_columns(
         df,
         "away",
-        PROBABILITY_SOURCES["moneyline"]["away"],
+        PROBABILITY_SOURCES[
+            "moneyline"
+        ]["away"],
     )
 
     home_ev = compute_binary_ev(
         home_prob,
-        df["home_dk_decimal_moneyline"],
-    )
-    away_ev = compute_binary_ev(
-        away_prob,
-        df["away_dk_decimal_moneyline"],
+        df[
+            "home_dk_decimal_moneyline"
+        ],
     )
 
-    home_raw_kelly = compute_binary_kelly_raw(
-        home_prob,
-        df["home_dk_decimal_moneyline"],
-    )
-    away_raw_kelly = compute_binary_kelly_raw(
+    away_ev = compute_binary_ev(
         away_prob,
-        df["away_dk_decimal_moneyline"],
+        df[
+            "away_dk_decimal_moneyline"
+        ],
+    )
+
+    home_raw_kelly = (
+        compute_binary_kelly_raw(
+            home_prob,
+            df[
+                "home_dk_decimal_moneyline"
+            ],
+        )
+    )
+
+    away_raw_kelly = (
+        compute_binary_kelly_raw(
+            away_prob,
+            df[
+                "away_dk_decimal_moneyline"
+            ],
+        )
     )
 
     validate_ev_kelly_sign_consistency(
@@ -798,6 +1283,7 @@ def process_moneyline(
         home_raw_kelly,
         f"{file_name} home moneyline",
     )
+
     validate_ev_kelly_sign_consistency(
         df["game_id"],
         away_ev,
@@ -805,12 +1291,19 @@ def process_moneyline(
         f"{file_name} away moneyline",
     )
 
-    home_kelly, home_neg = clip_negative_kelly(
+    (
+        home_kelly,
+        home_neg,
+    ) = clip_negative_kelly(
         home_raw_kelly,
         file_name,
         "home moneyline",
     )
-    away_kelly, away_neg = clip_negative_kelly(
+
+    (
+        away_kelly,
+        away_neg,
+    ) = clip_negative_kelly(
         away_raw_kelly,
         file_name,
         "away moneyline",
@@ -821,81 +1314,135 @@ def process_moneyline(
         {
             **home_basis,
             **away_basis,
-            "home_ml_ev": home_ev,
-            "away_ml_ev": away_ev,
-            "home_ml_kelly_raw": home_raw_kelly,
-            "away_ml_kelly_raw": away_raw_kelly,
-            "home_ml_kelly": home_kelly,
-            "away_ml_kelly": away_kelly,
+            "home_ml_ev":
+                home_ev,
+            "away_ml_ev":
+                away_ev,
+            "home_ml_kelly_raw":
+                home_raw_kelly,
+            "away_ml_kelly_raw":
+                away_raw_kelly,
+            "home_ml_kelly":
+                home_kelly,
+            "away_ml_kelly":
+                away_kelly,
         },
     )
 
-    mismatch_count = probability_source_mismatch_count(
-        df,
-        ["home", "away"],
+    mismatch_count = (
+        probability_source_mismatch_count(
+            df,
+            [
+                "home",
+                "away",
+            ],
+        )
     )
+
     if mismatch_count:
         raise ValueError(
-            f"{file_name} EV/Kelly probability basis mismatch rows="
+            f"{file_name} EV/Kelly probability "
+            f"basis mismatch rows="
             f"{mismatch_count}"
         )
 
     audit = audit_rows(
         df,
         "moneyline",
-        ["home", "away"],
+        [
+            "home",
+            "away",
+        ],
         {
-            "home": "home_dk_decimal_moneyline",
-            "away": "away_dk_decimal_moneyline",
+            "home":
+                "home_dk_decimal_moneyline",
+            "away":
+                "away_dk_decimal_moneyline",
         },
         {
-            "home": "home_ml_ev",
-            "away": "away_ml_ev",
+            "home":
+                "home_ml_ev",
+            "away":
+                "away_ml_ev",
         },
         {
-            "home": "home_ml_kelly_raw",
-            "away": "away_ml_kelly_raw",
+            "home":
+                "home_ml_kelly_raw",
+            "away":
+                "away_ml_kelly_raw",
         },
         {
-            "home": "home_ml_kelly",
-            "away": "away_ml_kelly",
+            "home":
+                "home_ml_kelly",
+            "away":
+                "away_ml_kelly",
         },
     )
 
-    return df, home_neg + away_neg, mismatch_count, audit
+    return (
+        df,
+        home_neg + away_neg,
+        mismatch_count,
+        audit,
+    )
 
 
 def process_run_line(
     df: pd.DataFrame,
     file_name: str,
 ):
-    home_prob, home_basis = probability_basis_columns(
+    (
+        home_prob,
+        home_basis,
+    ) = probability_basis_columns(
         df,
         "home",
-        PROBABILITY_SOURCES["run_line"]["home"],
+        PROBABILITY_SOURCES[
+            "run_line"
+        ]["home"],
     )
-    away_prob, away_basis = probability_basis_columns(
+
+    (
+        away_prob,
+        away_basis,
+    ) = probability_basis_columns(
         df,
         "away",
-        PROBABILITY_SOURCES["run_line"]["away"],
+        PROBABILITY_SOURCES[
+            "run_line"
+        ]["away"],
     )
 
     home_ev = compute_binary_ev(
         home_prob,
-        df["home_dk_run_line_decimal"],
-    )
-    away_ev = compute_binary_ev(
-        away_prob,
-        df["away_dk_run_line_decimal"],
+        df[
+            "home_dk_run_line_decimal"
+        ],
     )
 
-    home_raw_kelly = compute_binary_kelly_raw(
-        home_prob,
-        df["home_dk_run_line_decimal"],
-    )
-    away_raw_kelly = compute_binary_kelly_raw(
+    away_ev = compute_binary_ev(
         away_prob,
-        df["away_dk_run_line_decimal"],
+        df[
+            "away_dk_run_line_decimal"
+        ],
+    )
+
+    home_raw_kelly = (
+        compute_binary_kelly_raw(
+            home_prob,
+            df[
+                "home_dk_run_line_decimal"
+            ],
+        )
+    )
+
+    away_raw_kelly = (
+        compute_binary_kelly_raw(
+            away_prob,
+            df[
+                "away_dk_run_line_decimal"
+            ],
+        )
     )
 
     validate_ev_kelly_sign_consistency(
@@ -904,6 +1451,7 @@ def process_run_line(
         home_raw_kelly,
         f"{file_name} home run line",
     )
+
     validate_ev_kelly_sign_consistency(
         df["game_id"],
         away_ev,
@@ -911,12 +1459,19 @@ def process_run_line(
         f"{file_name} away run line",
     )
 
-    home_kelly, home_neg = clip_negative_kelly(
+    (
+        home_kelly,
+        home_neg,
+    ) = clip_negative_kelly(
         home_raw_kelly,
         file_name,
         "home run line",
     )
-    away_kelly, away_neg = clip_negative_kelly(
+
+    (
+        away_kelly,
+        away_neg,
+    ) = clip_negative_kelly(
         away_raw_kelly,
         file_name,
         "away run line",
@@ -927,98 +1482,157 @@ def process_run_line(
         {
             **home_basis,
             **away_basis,
-            "home_rl_ev": home_ev,
-            "away_rl_ev": away_ev,
-            "home_rl_kelly_raw": home_raw_kelly,
-            "away_rl_kelly_raw": away_raw_kelly,
-            "home_rl_kelly": home_kelly,
-            "away_rl_kelly": away_kelly,
+            "home_rl_ev":
+                home_ev,
+            "away_rl_ev":
+                away_ev,
+            "home_rl_kelly_raw":
+                home_raw_kelly,
+            "away_rl_kelly_raw":
+                away_raw_kelly,
+            "home_rl_kelly":
+                home_kelly,
+            "away_rl_kelly":
+                away_kelly,
         },
     )
 
-    mismatch_count = probability_source_mismatch_count(
-        df,
-        ["home", "away"],
+    mismatch_count = (
+        probability_source_mismatch_count(
+            df,
+            [
+                "home",
+                "away",
+            ],
+        )
     )
+
     if mismatch_count:
         raise ValueError(
-            f"{file_name} EV/Kelly probability basis mismatch rows="
+            f"{file_name} EV/Kelly probability "
+            f"basis mismatch rows="
             f"{mismatch_count}"
         )
 
     audit = audit_rows(
         df,
         "run_line",
-        ["home", "away"],
+        [
+            "home",
+            "away",
+        ],
         {
-            "home": "home_dk_run_line_decimal",
-            "away": "away_dk_run_line_decimal",
+            "home":
+                "home_dk_run_line_decimal",
+            "away":
+                "away_dk_run_line_decimal",
         },
         {
-            "home": "home_rl_ev",
-            "away": "away_rl_ev",
+            "home":
+                "home_rl_ev",
+            "away":
+                "away_rl_ev",
         },
         {
-            "home": "home_rl_kelly_raw",
-            "away": "away_rl_kelly_raw",
+            "home":
+                "home_rl_kelly_raw",
+            "away":
+                "away_rl_kelly_raw",
         },
         {
-            "home": "home_rl_kelly",
-            "away": "away_rl_kelly",
+            "home":
+                "home_rl_kelly",
+            "away":
+                "away_rl_kelly",
         },
     )
 
-    return df, home_neg + away_neg, mismatch_count, audit
+    return (
+        df,
+        home_neg + away_neg,
+        mismatch_count,
+        audit,
+    )
 
 
 def process_total(
     df: pd.DataFrame,
     file_name: str,
 ):
-    over_prob, over_basis = probability_basis_columns(
+    (
+        over_prob,
+        over_basis,
+    ) = probability_basis_columns(
         df,
         "over",
-        PROBABILITY_SOURCES["total"]["over"],
+        PROBABILITY_SOURCES[
+            "total"
+        ]["over"],
     )
-    under_prob, under_basis = probability_basis_columns(
+
+    (
+        under_prob,
+        under_basis,
+    ) = probability_basis_columns(
         df,
         "under",
-        PROBABILITY_SOURCES["total"]["under"],
+        PROBABILITY_SOURCES[
+            "total"
+        ]["under"],
     )
 
     over_loss = pd.to_numeric(
-        df["over_model_prob_total_loss"],
+        df[
+            "over_model_prob_total_loss"
+        ],
         errors="coerce",
     )
+
     under_loss = pd.to_numeric(
-        df["under_model_prob_total_loss"],
+        df[
+            "under_model_prob_total_loss"
+        ],
         errors="coerce",
     )
 
     over_ev = compute_total_ev(
         over_prob,
         over_loss,
-        df["dk_total_over_decimal"],
+        df[
+            "dk_total_over_decimal"
+        ],
     )
+
     under_ev = compute_total_ev(
         under_prob,
         under_loss,
-        df["dk_total_under_decimal"],
+        df[
+            "dk_total_under_decimal"
+        ],
     )
 
-    over_raw_kelly = compute_total_kelly_raw(
-        over_prob,
-        over_loss,
-        df["dk_total_over_decimal"],
-        df["game_id"],
-        f"{file_name} over total",
+    over_raw_kelly = (
+        compute_total_kelly_raw(
+            over_prob,
+            over_loss,
+            df[
+                "dk_total_over_decimal"
+            ],
+            df["game_id"],
+            f"{file_name} over total",
+        )
     )
-    under_raw_kelly = compute_total_kelly_raw(
-        under_prob,
-        under_loss,
-        df["dk_total_under_decimal"],
-        df["game_id"],
-        f"{file_name} under total",
+
+    under_raw_kelly = (
+        compute_total_kelly_raw(
+            under_prob,
+            under_loss,
+            df[
+                "dk_total_under_decimal"
+            ],
+            df["game_id"],
+            f"{file_name} under total",
+        )
     )
 
     validate_ev_kelly_sign_consistency(
@@ -1027,6 +1641,7 @@ def process_total(
         over_raw_kelly,
         f"{file_name} over total",
     )
+
     validate_ev_kelly_sign_consistency(
         df["game_id"],
         under_ev,
@@ -1034,12 +1649,19 @@ def process_total(
         f"{file_name} under total",
     )
 
-    over_kelly, over_neg = clip_negative_kelly(
+    (
+        over_kelly,
+        over_neg,
+    ) = clip_negative_kelly(
         over_raw_kelly,
         file_name,
         "over total",
     )
-    under_kelly, under_neg = clip_negative_kelly(
+
+    (
+        under_kelly,
+        under_neg,
+    ) = clip_negative_kelly(
         under_raw_kelly,
         file_name,
         "under total",
@@ -1050,48 +1672,77 @@ def process_total(
         {
             **over_basis,
             **under_basis,
-            "over_ev": over_ev,
-            "under_ev": under_ev,
-            "over_kelly_raw": over_raw_kelly,
-            "under_kelly_raw": under_raw_kelly,
-            "over_kelly": over_kelly,
-            "under_kelly": under_kelly,
+            "over_ev":
+                over_ev,
+            "under_ev":
+                under_ev,
+            "over_kelly_raw":
+                over_raw_kelly,
+            "under_kelly_raw":
+                under_raw_kelly,
+            "over_kelly":
+                over_kelly,
+            "under_kelly":
+                under_kelly,
         },
     )
 
-    mismatch_count = probability_source_mismatch_count(
-        df,
-        ["over", "under"],
+    mismatch_count = (
+        probability_source_mismatch_count(
+            df,
+            [
+                "over",
+                "under",
+            ],
+        )
     )
+
     if mismatch_count:
         raise ValueError(
-            f"{file_name} EV/Kelly probability basis mismatch rows="
+            f"{file_name} EV/Kelly probability "
+            f"basis mismatch rows="
             f"{mismatch_count}"
         )
 
     audit = audit_rows(
         df,
         "total",
-        ["over", "under"],
+        [
+            "over",
+            "under",
+        ],
         {
-            "over": "dk_total_over_decimal",
-            "under": "dk_total_under_decimal",
+            "over":
+                "dk_total_over_decimal",
+            "under":
+                "dk_total_under_decimal",
         },
         {
-            "over": "over_ev",
-            "under": "under_ev",
+            "over":
+                "over_ev",
+            "under":
+                "under_ev",
         },
         {
-            "over": "over_kelly_raw",
-            "under": "under_kelly_raw",
+            "over":
+                "over_kelly_raw",
+            "under":
+                "under_kelly_raw",
         },
         {
-            "over": "over_kelly",
-            "under": "under_kelly",
+            "over":
+                "over_kelly",
+            "under":
+                "under_kelly",
         },
     )
 
-    return df, over_neg + under_neg, mismatch_count, audit
+    return (
+        df,
+        over_neg + under_neg,
+        mismatch_count,
+        audit,
+    )
 
 
 # =========================
@@ -1099,8 +1750,15 @@ def process_total(
 # =========================
 
 def main():
-    with open(LOG_FILE, "w", encoding="utf-8") as log_f:
-        log_f.write(f"=== compute_ev_kelly RUN {_now()} ===\n")
+    with open(
+        LOG_FILE,
+        "w",
+        encoding="utf-8",
+    ) as log_f:
+        log_f.write(
+            f"=== compute_ev_kelly RUN "
+            f"{_now()} ===\n"
+        )
 
     summary = {
         "files_processed": 0,
@@ -1119,22 +1777,40 @@ def main():
     per_file = []
     all_audit_rows = []
 
-    _log(f"INPUT_DIR : {INPUT_DIR}")
-    _log(f"OUTPUT_DIR: {OUTPUT_DIR}")
     _log(
-        "EV AND KELLY USE THE SAME CANONICAL MODEL PROBABILITY BASIS"
-    )
-    _log(
-        "Totals EV/Kelly are push-aware: pushes are neither wins nor losses."
+        f"INPUT_DIR : {INPUT_DIR}"
     )
 
-    input_files = sorted(INPUT_DIR.glob("*.csv"))
-    _log(f"Files found: {len(input_files)}")
+    _log(
+        f"OUTPUT_DIR: {OUTPUT_DIR}"
+    )
 
-    for out_file in OUTPUT_DIR.glob("*.csv"):
+    _log(
+        "EV AND KELLY USE THE SAME "
+        "CANONICAL MODEL PROBABILITY BASIS"
+    )
+
+    _log(
+        "Totals EV/Kelly are push-aware: "
+        "pushes are neither wins nor losses."
+    )
+
+    input_files = sorted(
+        INPUT_DIR.glob("*.csv")
+    )
+
+    _log(
+        f"Files found: {len(input_files)}"
+    )
+
+    for out_file in OUTPUT_DIR.glob(
+        "*.csv"
+    ):
         out_file.unlink()
 
-    for old_audit in AUDIT_DIR.glob("*.csv"):
+    for old_audit in AUDIT_DIR.glob(
+        "*.csv"
+    ):
         old_audit.unlink()
 
     for input_file in input_files:
@@ -1142,34 +1818,56 @@ def main():
         market = None
 
         pf = {
-            "name": input_file.name,
-            "market": "unknown",
-            "rows": 0,
-            "neg_kelly": 0,
-            "status": "ok",
+            "name":
+                input_file.name,
+            "market":
+                "unknown",
+            "rows":
+                0,
+            "neg_kelly":
+                0,
+            "status":
+                "ok",
         }
 
         if "moneyline" in name:
             market = "moneyline"
+
         elif "run_line" in name:
             market = "run_line"
+
         elif "total" in name:
             market = "total"
+
         else:
-            _log(f"SKIP unrecognized file: {input_file.name}")
+            _log(
+                f"SKIP unrecognized file: "
+                f"{input_file.name}"
+            )
+
             pf["status"] = "skipped"
             summary["skipped"] += 1
             per_file.append(pf)
             continue
 
         pf["market"] = market
-        _log(f"--- FILE: {input_file.name}  market={market}")
+
+        _log(
+            f"--- FILE: {input_file.name}  "
+            f"market={market}"
+        )
 
         try:
-            df = read_csv_guarded(input_file)
+            df = read_csv_guarded(
+                input_file
+            )
 
             if df.empty:
-                _log(f"{input_file.name} empty — skipping")
+                _log(
+                    f"{input_file.name} "
+                    f"empty — skipping"
+                )
+
                 pf["status"] = "empty"
                 summary["skipped"] += 1
                 per_file.append(pf)
@@ -1181,18 +1879,31 @@ def main():
                     market,
                     input_file.name,
                 )
+
             except Exception as schema_error:
                 _log(
-                    f"{input_file.name} SCHEMA FAILED: {schema_error}",
+                    f"{input_file.name} "
+                    f"SCHEMA FAILED: "
+                    f"{schema_error}",
                     "ERROR",
                 )
-                pf["status"] = "schema_error"
-                summary["schema_errors"] += 1
+
+                pf["status"] = (
+                    "schema_error"
+                )
+
+                summary[
+                    "schema_errors"
+                ] += 1
+
                 per_file.append(pf)
                 continue
 
             pf["rows"] = len(df)
-            summary["rows_processed"] += len(df)
+
+            summary[
+                "rows_processed"
+            ] += len(df)
 
             if market == "moneyline":
                 (
@@ -1204,7 +1915,10 @@ def main():
                     df,
                     input_file.name,
                 )
-                summary["moneyline_files"] += 1
+
+                summary[
+                    "moneyline_files"
+                ] += 1
 
             elif market == "run_line":
                 (
@@ -1216,7 +1930,10 @@ def main():
                     df,
                     input_file.name,
                 )
-                summary["run_line_files"] += 1
+
+                summary[
+                    "run_line_files"
+                ] += 1
 
             else:
                 (
@@ -1228,38 +1945,70 @@ def main():
                     df,
                     input_file.name,
                 )
-                summary["total_files"] += 1
 
-            pf["neg_kelly"] = neg_kelly
-            summary["neg_kelly_clipped"] += neg_kelly
-            summary["probability_source_mismatches"] += mismatch_count
-            summary["audit_rows"] += len(audit)
-            all_audit_rows.extend(audit)
+                summary[
+                    "total_files"
+                ] += 1
 
-            output_path = OUTPUT_DIR / input_file.name
+            pf["neg_kelly"] = (
+                neg_kelly
+            )
+
+            summary[
+                "neg_kelly_clipped"
+            ] += neg_kelly
+
+            summary[
+                "probability_source_mismatches"
+            ] += mismatch_count
+
+            summary[
+                "audit_rows"
+            ] += len(audit)
+
+            all_audit_rows.extend(
+                audit
+            )
+
+            output_path = (
+                OUTPUT_DIR
+                / input_file.name
+            )
+
             write_csv_checked(
                 df,
                 output_path,
             )
 
-            summary["files_processed"] += 1
+            summary[
+                "files_processed"
+            ] += 1
+
             _log(
                 f"WROTE: {output_path} "
-                f"({len(df)} rows, {neg_kelly} negative Kelly values clipped)"
+                f"({len(df)} rows, "
+                f"{neg_kelly} negative "
+                f"Kelly values clipped)"
             )
 
         except Exception as e:
             _log(
-                f"{input_file.name} FAILED: {e}\n"
+                f"{input_file.name} "
+                f"FAILED: {e}\n"
                 f"{traceback.format_exc()}",
                 "ERROR",
             )
+
             pf["status"] = "error"
             summary["errors"] += 1
 
         per_file.append(pf)
 
-    audit_path = AUDIT_DIR / "post_ev_kelly_audit.csv"
+    audit_path = (
+        AUDIT_DIR
+        / "post_ev_kelly_audit.csv"
+    )
+
     audit_columns = [
         "date",
         "game_id",
@@ -1287,7 +2036,8 @@ def main():
     )
 
     _log(
-        f"WROTE AUDIT: {audit_path} "
+        f"WROTE AUDIT: "
+        f"{audit_path} "
         f"rows={len(audit_df)}"
     )
 
@@ -1299,191 +2049,41 @@ def main():
     if (
         summary["errors"] > 0
         or summary["schema_errors"] > 0
-        or summary["probability_source_mismatches"] > 0
+        or (
+            summary[
+                "probability_source_mismatches"
+            ]
+            > 0
+        )
     ):
         print(
-            "compute_ev_kelly completed with errors. "
+            "compute_ev_kelly completed "
+            "with errors. "
             f"errors={summary['errors']} "
-            f"schema_errors={summary['schema_errors']} "
+            f"schema_errors="
+            f"{summary['schema_errors']} "
             f"probability_source_mismatches="
             f"{summary['probability_source_mismatches']}"
         )
+
         raise SystemExit(1)
 
     print(
         "compute_ev_kelly complete. "
-        f"files_processed={summary['files_processed']} "
-        f"rows_processed={summary['rows_processed']} "
-        f"neg_kelly_clipped={summary['neg_kelly_clipped']} "
+        f"files_processed="
+        f"{summary['files_processed']} "
+        f"rows_processed="
+        f"{summary['rows_processed']} "
+        f"neg_kelly_clipped="
+        f"{summary['neg_kelly_clipped']} "
         f"probability_source_mismatches="
         f"{summary['probability_source_mismatches']} "
-        f"schema_errors={summary['schema_errors']} "
-        f"errors={summary['errors']}"
+        f"schema_errors="
+        f"{summary['schema_errors']} "
+        f"errors="
+        f"{summary['errors']}"
     )
 
 
 if __name__ == "__main__":
     main()
-'''
-
-out.write_text(updated, encoding="utf-8")
-
-# ---------- Validation ----------
-py_compile.compile(str(out), doraise=True)
-
-spec = importlib.util.spec_from_file_location("compute_ev_kelly_todo5", out)
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-
-# Binary market positive/negative/zero EV and Kelly sign consistency.
-p = pd.Series([0.60, 0.40, 0.50])
-d = pd.Series([2.00, 2.00, 2.00])
-ev = mod.compute_binary_ev(p, d)
-raw_kelly = mod.compute_binary_kelly_raw(p, d)
-mod.validate_ev_kelly_sign_consistency(
-    pd.Series(["pos", "neg", "zero"]),
-    ev,
-    raw_kelly,
-    "binary test",
-)
-assert ev.iloc[0] > 0 and raw_kelly.iloc[0] > 0
-assert ev.iloc[1] < 0 and raw_kelly.iloc[1] < 0
-assert abs(ev.iloc[2]) < 1e-12 and abs(raw_kelly.iloc[2]) < 1e-12
-
-# Clipping occurs after raw Kelly is available.
-clipped, neg_count = mod.clip_negative_kelly(
-    raw_kelly,
-    "test.csv",
-    "binary test",
-)
-assert neg_count == 1
-assert raw_kelly.iloc[1] < 0
-assert clipped.iloc[1] == 0
-
-# Totals with push: EV = p_win*b - p_loss; Kelly denominator excludes push.
-p_win = pd.Series([0.40])
-p_loss = pd.Series([0.50])
-dec = pd.Series([2.40])
-game_id = pd.Series(["g1"])
-total_ev = mod.compute_total_ev(p_win, p_loss, dec)
-total_raw_kelly = mod.compute_total_kelly_raw(
-    p_win,
-    p_loss,
-    dec,
-    game_id,
-    "totals test",
-)
-expected_ev = 0.40 * 1.40 - 0.50
-expected_kelly = expected_ev / (1.40 * 0.90)
-assert abs(total_ev.iloc[0] - expected_ev) < 1e-12
-assert abs(total_raw_kelly.iloc[0] - expected_kelly) < 1e-12
-mod.validate_ev_kelly_sign_consistency(
-    game_id,
-    total_ev,
-    total_raw_kelly,
-    "totals test",
-)
-
-# Invalid totals resolved mass hard-fails.
-try:
-    mod.compute_total_kelly_raw(
-        pd.Series([0.0]),
-        pd.Series([0.0]),
-        pd.Series([2.0]),
-        pd.Series(["bad"]),
-        "invalid totals test",
-    )
-    raise AssertionError("p_win + p_loss == 0 did not hard-fail")
-except ValueError:
-    pass
-
-# Processor source-basis checks.
-ml_df = pd.DataFrame({
-    "game_id": ["m1"],
-    "game_date": ["2026-08-20"],
-    "home_model_prob_moneyline": [0.60],
-    "away_model_prob_moneyline": [0.40],
-    "home_dk_decimal_moneyline": [2.00],
-    "away_dk_decimal_moneyline": [2.50],
-})
-ml_out, _, mismatch, _ = mod.process_moneyline(ml_df, "ml.csv")
-assert mismatch == 0
-assert ml_out.loc[0, "home_ev_probability_source"] == "home_model_prob_moneyline"
-assert ml_out.loc[0, "home_kelly_probability_source"] == "home_model_prob_moneyline"
-assert ml_out.loc[0, "home_prob_for_ev"] == ml_out.loc[0, "home_prob_for_kelly"]
-
-tot_df = pd.DataFrame({
-    "game_id": ["t1"],
-    "game_date": ["2026-08-20"],
-    "over_model_prob_total_win": [0.40],
-    "over_model_prob_total_loss": [0.50],
-    "under_model_prob_total_win": [0.50],
-    "under_model_prob_total_loss": [0.40],
-    "total_model_prob_push": [0.10],
-    "dk_total_over_decimal": [2.40],
-    "dk_total_under_decimal": [2.00],
-})
-tot_out, _, mismatch, _ = mod.process_total(tot_df, "tot.csv")
-assert mismatch == 0
-assert abs(tot_out.loc[0, "over_ev"] - expected_ev) < 1e-12
-
-# Static removal checks.
-text = out.read_text(encoding="utf-8")
-for forbidden in [
-    "adjusted_ev(",
-    "home_ml_raw_ev",
-    "away_ml_raw_ev",
-    "home_ml_adjusted_ev",
-    "away_ml_adjusted_ev",
-    "home_rl_raw_ev",
-    "away_rl_raw_ev",
-    "home_rl_adjusted_ev",
-    "away_rl_adjusted_ev",
-    "over_raw_ev",
-    "under_raw_ev",
-    "over_adjusted_ev",
-    "under_adjusted_ev",
-    "positive_ev_zero_kelly",
-    "raw_adjusted_ev_sign_flips",
-    "adjusted_only_positive",
-    "missing_adj_ev",
-    "home_edge_decimal_moneyline",
-    "away_edge_decimal_moneyline",
-    "home_edge_decimal_run_line",
-    "away_edge_decimal_run_line",
-    "over_edge_decimal_total",
-    "under_edge_decimal_total",
-]:
-    assert forbidden not in text, f"Forbidden TODO 5 element remains: {forbidden}"
-
-for required in [
-    "home_ml_ev",
-    "away_ml_ev",
-    "home_ml_kelly",
-    "away_ml_kelly",
-    "home_rl_ev",
-    "away_rl_ev",
-    "home_rl_kelly",
-    "away_rl_kelly",
-    "over_ev",
-    "under_ev",
-    "over_kelly",
-    "under_kelly",
-    "validate_ev_kelly_sign_consistency",
-    "prob_for_ev",
-    "prob_for_kelly",
-    "ev_probability_source",
-    "kelly_probability_source",
-]:
-    assert required in text, f"Required TODO 5 element missing: {required}"
-
-print("TODO 5 validation passed")
-print("- Python syntax")
-print("- binary EV/Kelly same canonical probability basis")
-print("- negative raw Kelly audited before clipping")
-print("- push-aware totals EV/Kelly")
-print("- p_win + p_loss == 0 hard-fails")
-print("- EV/raw-Kelly sign consistency hard-fails")
-print("- adjusted/raw EV system removed")
-print("- probability source audit columns retained")
-print(f"\nUpdated file: {out}")
