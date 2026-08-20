@@ -13,7 +13,7 @@ import pandas as pd
 from scipy.stats import poisson, skellam
 
 INPUT_DIR = Path("docs/win/baseball/mlb/01_merge")
-OUTPUT_DIR = INPUT_DIR / "01_merguiced"
+OUTPUT_DIR = Path("docs/win/baseball/mlb/02_juice")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/01_merge")
