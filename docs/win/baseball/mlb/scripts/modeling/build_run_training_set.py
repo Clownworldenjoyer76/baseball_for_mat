@@ -103,10 +103,8 @@ SDV_REQUIRED = [
 ]
 
 FINAL_REQUIRED = [
-    "gamePk",
     "game_id",
     "game_date",
-    "game_status",
     "final_home_score",
     "final_away_score",
 ]
@@ -677,26 +675,34 @@ def build_date_training_rows(
     )
 
     final_keep = [
-        "gamePk",
-        "game_id",
-        "game_status",
-        "final_home_score",
-        "final_away_score",
+        col for col in [
+            "gamePk",
+            "game_id",
+            "game_status",
+            "final_home_score",
+            "final_away_score",
+        ]
+        if col in final.columns
     ]
 
+    final_join = final[final_keep].copy()
+    if "gamePk" in final_join.columns:
+        final_join = final_join.rename(columns={"gamePk": "gamePk_final"})
+
     joined = joined.merge(
-        final[final_keep].rename(columns={"gamePk": "gamePk_final"}),
+        final_join,
         on="game_id",
         how="left",
         validate="one_to_one",
     )
 
-    _assert_secondary_gamepk_match(
-        joined,
-        "gamePk",
-        "gamePk_final",
-        f"{date_str} games->final_scores",
-    )
+    if "gamePk_final" in joined.columns:
+        _assert_secondary_gamepk_match(
+            joined,
+            "gamePk",
+            "gamePk_final",
+            f"{date_str} games->final_scores",
+        )
 
     final_home = pd.to_numeric(
         joined["final_home_score"],
@@ -706,15 +712,24 @@ def build_date_training_rows(
         joined["final_away_score"],
         errors="coerce",
     )
-    final_status = (
-        joined["game_status"]
-        .astype("string")
-        .str.strip()
-        .str.lower()
-    )
+
+    if "game_status" in joined.columns:
+        final_status = (
+            joined["game_status"]
+            .astype("string")
+            .str.strip()
+            .str.lower()
+        )
+        status_invalid = final_status.ne("final")
+    else:
+        status_invalid = pd.Series(
+            False,
+            index=joined.index,
+            dtype=bool,
+        )
 
     invalid_final = (
-        final_status.ne("final")
+        status_invalid
         | final_home.isna()
         | final_away.isna()
         | ~np.isfinite(final_home)
