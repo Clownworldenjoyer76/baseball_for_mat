@@ -1,0 +1,14 @@
+=== train_run_model RUN 2026-08-21T13:32:53.342321+00:00 ===
+2026-08-21T13:32:53.342627+00:00 | ERROR | Training set not found: docs\win\baseball\mlb\modeling\data\mlb_run_training_set.csv
+2026-08-21T13:32:53.343621+00:00 | ERROR | FATAL: Training set not found: docs\win\baseball\mlb\modeling\data\mlb_run_training_set.csv
+Traceback (most recent call last):
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\train_run_model.py", line 618, in main
+    training_df = load_training_set(
+        args.input
+    )
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\train_run_model.py", line 153, in load_training_set
+    fail(f"Training set not found: {path}")
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\train_run_model.py", line 136, in fail
+    raise RuntimeError(message)
+RuntimeError: Training set not found: docs\win\baseball\mlb\modeling\data\mlb_run_training_set.csv

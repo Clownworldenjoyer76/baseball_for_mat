@@ -1,0 +1,14 @@
+=== evaluate_run_model RUN 2026-08-21T13:32:54.851221+00:00 ===
+2026-08-21T13:32:54.854118+00:00 | ERROR | home model metadata not found: docs\win\baseball\mlb\models\run_projection\home_runs_model_metadata.json
+2026-08-21T13:32:54.855579+00:00 | ERROR | Traceback (most recent call last):
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\evaluate_run_model.py", line 2437, in main
+    home_metadata = load_json(
+        args.model_dir / HOME_METADATA_NAME,
+        "home model metadata",
+    )
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\evaluate_run_model.py", line 307, in load_json
+    fail(f"{label} not found: {path}")
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\evaluate_run_model.py", line 124, in fail
+    raise RuntimeError(message)
+RuntimeError: home model metadata not found: docs\win\baseball\mlb\models\run_projection\home_runs_model_metadata.json

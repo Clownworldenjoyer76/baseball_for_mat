@@ -31,6 +31,14 @@ jobs:
       - name: Install vendored SportsDataverse
         run: python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
 
+      - name: Restore MLB SDV backfill cache
+        uses: actions/cache/restore@v4
+        with:
+          path: docs/win/baseball/mlb/00_intake/sportsdataverse
+          key: mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-
+
       - name: MLB Determine SDV Backfill Range
         id: sdv_range
         shell: bash
@@ -76,6 +84,12 @@ jobs:
           python docs/win/baseball/mlb/scripts/00_intake/sportsdataverse_mlb.py \
             --from-date "${{ steps.sdv_range.outputs.from_date }}" \
             --to-date "${{ steps.sdv_range.outputs.to_date }}"
+
+      - name: Save MLB SDV backfill cache
+        uses: actions/cache/save@v4
+        with:
+          path: docs/win/baseball/mlb/00_intake/sportsdataverse
+          key: mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: MLB Build Run Training Set
         run: python docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py

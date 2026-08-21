@@ -1,0 +1,49 @@
+=== build_run_training_set RUN 2026-08-21T13:34:46.277097+00:00 ===
+2026-08-21T13:34:46.285855+00:00 | INFO  | dates_to_process=145
+2026-08-21T13:34:46.286127+00:00 | INFO  | processing date=2026_03_26
+2026-08-21T13:34:46.345534+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_26_weather.csv
+2026-08-21T13:34:46.353422+00:00 | INFO  | processing date=2026_03_27
+2026-08-21T13:34:46.400849+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_27_weather.csv
+2026-08-21T13:34:46.408394+00:00 | INFO  | processing date=2026_03_28
+2026-08-21T13:34:46.456639+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_28_weather.csv
+2026-08-21T13:34:46.464279+00:00 | INFO  | processing date=2026_03_29
+2026-08-21T13:34:46.512148+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_29_weather.csv
+2026-08-21T13:34:46.520476+00:00 | INFO  | processing date=2026_03_30
+2026-08-21T13:34:46.572701+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_30_weather.csv
+2026-08-21T13:34:46.581268+00:00 | INFO  | processing date=2026_03_31
+2026-08-21T13:34:46.633548+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_31_weather.csv
+2026-08-21T13:34:46.642195+00:00 | INFO  | processing date=2026_04_01
+2026-08-21T13:34:46.692042+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_01_weather.csv
+2026-08-21T13:34:46.700412+00:00 | INFO  | processing date=2026_04_02
+2026-08-21T13:34:46.748500+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_02_weather.csv
+2026-08-21T13:34:46.754526+00:00 | INFO  | processing date=2026_04_03
+2026-08-21T13:34:46.804028+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_03_weather.csv
+2026-08-21T13:34:46.810137+00:00 | INFO  | processing date=2026_04_04
+2026-08-21T13:34:46.817502+00:00 | ERROR | final_scores 2026_04_04 missing required columns: ['gamePk', 'game_status']
+2026-08-21T13:34:46.818654+00:00 | ERROR | FATAL: final_scores 2026_04_04 missing required columns: ['gamePk', 'game_status']
+Traceback (most recent call last):
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\build_run_training_set.py", line 911, in main
+    frame = build_date_training_rows(
+        date_str,
+        summary,
+    )
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\build_run_training_set.py", line 583, in build_date_training_rows
+    final = read_csv_checked(
+        final_path,
+        FINAL_REQUIRED,
+        f"final_scores {date_str}",
+    )
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\build_run_training_set.py", line 249, in read_csv_checked
+    fail(f"{label} missing required columns: {missing}")
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Mat\Documents\GitHub\baseball_for_mat\docs\win\baseball\mlb\scripts\modeling\build_run_training_set.py", line 220, in fail
+    raise RuntimeError(message)
+RuntimeError: final_scores 2026_04_04 missing required columns: ['gamePk', 'game_status']
+2026-08-21T13:34:46.818916+00:00 | INFO  | rows_loaded=107
+2026-08-21T13:34:46.819160+00:00 | INFO  | rows_joined=107
+2026-08-21T13:34:46.819399+00:00 | INFO  | missing_sdv=0
+2026-08-21T13:34:46.819637+00:00 | INFO  | missing_final_score=1
+2026-08-21T13:34:46.819872+00:00 | INFO  | duplicate_game_id=0
+2026-08-21T13:34:46.820108+00:00 | INFO  | duplicate_gamePk=0
+2026-08-21T13:34:46.820341+00:00 | INFO  | leakage_rejections=0
+2026-08-21T13:34:46.820574+00:00 | INFO  | rows_written=0

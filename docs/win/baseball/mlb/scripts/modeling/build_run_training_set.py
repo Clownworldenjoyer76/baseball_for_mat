@@ -339,6 +339,32 @@ def _assert_secondary_game_id_match(
         )
 
 
+def _assert_secondary_gamepk_match(
+    df: pd.DataFrame,
+    left_col: str,
+    right_col: str,
+    label: str,
+) -> None:
+    if left_col not in df.columns or right_col not in df.columns:
+        return
+
+    left = _normalize_gamepk(df[left_col])
+    right = _normalize_gamepk(df[right_col])
+    comparable = left.notna() & right.notna() & (left != "") & (right != "")
+    mismatch = comparable & (left != right)
+
+    if mismatch.any():
+        sample_cols = [
+            col for col in ["game_id", left_col, right_col]
+            if col in df.columns
+        ]
+        sample = df.loc[mismatch, sample_cols].head(10).to_dict("records")
+        fail(
+            f"{label} gamePk consistency check failed; "
+            f"bad_rows={int(mismatch.sum())}; sample={sample}"
+        )
+
+
 def _assert_team_consistency(
     df: pd.DataFrame,
     left_col: str,
@@ -431,8 +457,18 @@ def _safe_weather_frame(
         )
         return None
 
+    weather_gamepk = _normalize_gamepk(weather["gamePk"])
+    weather = weather.loc[
+        weather_gamepk.notna() & (weather_gamepk != "")
+    ].copy()
+
     game_times = games[["gamePk"]].copy()
     game_times["_game_start"] = _resolve_game_datetime(games)
+    game_gamepk = _normalize_gamepk(game_times["gamePk"])
+    game_times = game_times.loc[
+        game_gamepk.notna() & (game_gamepk != "")
+    ].copy()
+
     check = game_times.merge(
         weather[["gamePk", provenance_col] + keep_features],
         on="gamePk",
@@ -624,8 +660,8 @@ def build_date_training_rows(
     ] + list(SDV_FEATURE_MAP.keys())
 
     joined = joined.merge(
-        sdv[sdv_keep].rename(columns={"game_id": "game_id_sdv"}),
-        on="gamePk",
+        sdv[sdv_keep].rename(columns={"gamePk": "gamePk_sdv"}),
+        on="game_id",
         how="left",
         validate="one_to_one",
     )
@@ -633,10 +669,10 @@ def build_date_training_rows(
     missing_sdv = joined["sdv_as_of_date"].isna()
     summary["missing_sdv"] += int(missing_sdv.sum())
 
-    _assert_secondary_game_id_match(
+    _assert_secondary_gamepk_match(
         joined,
-        "game_id",
-        "game_id_sdv",
+        "gamePk",
+        "gamePk_sdv",
         f"{date_str} games->sportsdataverse",
     )
 
@@ -649,16 +685,16 @@ def build_date_training_rows(
     ]
 
     joined = joined.merge(
-        final[final_keep].rename(columns={"game_id": "game_id_final"}),
-        on="gamePk",
+        final[final_keep].rename(columns={"gamePk": "gamePk_final"}),
+        on="game_id",
         how="left",
         validate="one_to_one",
     )
 
-    _assert_secondary_game_id_match(
+    _assert_secondary_gamepk_match(
         joined,
-        "game_id",
-        "game_id_final",
+        "gamePk",
+        "gamePk_final",
         f"{date_str} games->final_scores",
     )
 
@@ -733,7 +769,7 @@ def build_date_training_rows(
             weather,
             on="gamePk",
             how="left",
-            validate="one_to_one",
+            validate="many_to_one",
         )
 
     output_columns = (
