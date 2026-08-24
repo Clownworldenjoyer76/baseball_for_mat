@@ -532,7 +532,44 @@ def _discover_dates() -> list[str]:
         if date_str:
             dates.append(date_str)
 
-    return dates
+    final_files = sorted(FINAL_DIR.glob("*_final_scores_MLB.csv"))
+    final_dates: list[str] = []
+
+    for path in final_files:
+        stem = path.stem
+        suffix = "_final_scores_MLB"
+        if not stem.endswith(suffix):
+            continue
+
+        date_str = stem[:-len(suffix)]
+        if date_str:
+            final_dates.append(date_str)
+
+    if not final_dates:
+        fail(f"No final-score files found in {FINAL_DIR}")
+
+    latest_final_date = max(
+        pd.Timestamp(date_str.replace("_", "-")).normalize()
+        for date_str in final_dates
+    )
+
+    eligible_dates = [
+        date_str
+        for date_str in dates
+        if pd.Timestamp(date_str.replace("_", "-")).normalize()
+        <= latest_final_date
+    ]
+
+    skipped = len(dates) - len(eligible_dates)
+
+    if skipped:
+        _log(
+            f"Skipping {skipped} prediction date(s) after latest available "
+            f"final-score date {latest_final_date.strftime('%Y-%m-%d')}",
+            "INFO",
+        )
+
+    return eligible_dates
 
 
 def _filter_dates(
@@ -553,8 +590,10 @@ def _filter_dates(
         fail("--from-date must be <= --to-date")
 
     selected: list[str] = []
+
     for date_str in dates:
         parsed = pd.Timestamp(date_str.replace("_", "-")).normalize()
+
         if start <= parsed <= end:
             selected.append(date_str)
 
@@ -588,31 +627,54 @@ def build_date_training_rows(
         PRED_REQUIRED,
         f"predictions {date_str}",
     )
+
     games = read_csv_checked(
         games_path,
         GAMES_REQUIRED,
         f"games {date_str}",
     )
+
     sdv = read_csv_checked(
         sdv_path,
         SDV_REQUIRED,
         f"sportsdataverse {date_str}",
     )
+
     final = read_csv_checked(
         final_path,
         FINAL_REQUIRED,
         f"final_scores {date_str}",
     )
 
-    pred = _prepare_source_keys(pred, f"predictions {date_str}", summary)
-    games = _prepare_source_keys(games, f"games {date_str}", summary)
-    sdv = _prepare_source_keys(sdv, f"sportsdataverse {date_str}", summary)
-    final = _prepare_source_keys(final, f"final_scores {date_str}", summary)
+    pred = _prepare_source_keys(
+        pred,
+        f"predictions {date_str}",
+        summary,
+    )
+
+    games = _prepare_source_keys(
+        games,
+        f"games {date_str}",
+        summary,
+    )
+
+    sdv = _prepare_source_keys(
+        sdv,
+        f"sportsdataverse {date_str}",
+        summary,
+    )
+
+    final = _prepare_source_keys(
+        final,
+        f"final_scores {date_str}",
+        summary,
+    )
 
     sdv = _drop_blank_game_id_rows(
         sdv,
         f"sportsdataverse {date_str}",
     )
+
     final = _drop_blank_game_id_rows(
         final,
         f"final_scores {date_str}",
@@ -630,7 +692,8 @@ def build_date_training_rows(
     ] + DRATINGS_COLUMNS
 
     game_keep = [
-        col for col in [
+        col
+        for col in [
             "gamePk",
             "game_id",
             "game_date",
@@ -655,6 +718,7 @@ def build_date_training_rows(
 
     if len(joined) != len(pred):
         missing = len(pred) - len(joined)
+
         fail(
             f"{date_str} prediction->games join lost {missing} rows; "
             "game_id spine must resolve one-to-one"
@@ -666,6 +730,7 @@ def build_date_training_rows(
         "home_team_games",
         f"{date_str} home team",
     )
+
     _assert_team_consistency(
         joined,
         "away_team_pred",
@@ -687,7 +752,11 @@ def build_date_training_rows(
     ] + list(SDV_FEATURE_MAP.keys())
 
     joined = joined.merge(
-        sdv[sdv_keep].rename(columns={"gamePk": "gamePk_sdv"}),
+        sdv[sdv_keep].rename(
+            columns={
+                "gamePk": "gamePk_sdv",
+            }
+        ),
         on="game_id",
         how="left",
         validate="one_to_one",
@@ -704,7 +773,8 @@ def build_date_training_rows(
     )
 
     final_keep = [
-        col for col in [
+        col
+        for col in [
             "gamePk",
             "game_id",
             "game_status",
@@ -715,8 +785,13 @@ def build_date_training_rows(
     ]
 
     final_join = final[final_keep].copy()
+
     if "gamePk" in final_join.columns:
-        final_join = final_join.rename(columns={"gamePk": "gamePk_final"})
+        final_join = final_join.rename(
+            columns={
+                "gamePk": "gamePk_final",
+            }
+        )
 
     joined = joined.merge(
         final_join,
@@ -737,6 +812,7 @@ def build_date_training_rows(
         joined["final_home_score"],
         errors="coerce",
     )
+
     final_away = pd.to_numeric(
         joined["final_away_score"],
         errors="coerce",
@@ -749,7 +825,9 @@ def build_date_training_rows(
             .str.strip()
             .str.lower()
         )
+
         status_invalid = final_status.ne("final")
+
     else:
         status_invalid = pd.Series(
             False,
@@ -766,13 +844,20 @@ def build_date_training_rows(
         | (final_home < 0)
         | (final_away < 0)
     )
+
     summary["missing_final_score"] += int(invalid_final.sum())
 
     joined["target_home_runs"] = final_home
     joined["target_away_runs"] = final_away
 
-    game_date = _normalize_date(joined["game_date"])
-    sdv_as_of_date = _normalize_date(joined["sdv_as_of_date"])
+    game_date = _normalize_date(
+        joined["game_date"]
+    )
+
+    sdv_as_of_date = _normalize_date(
+        joined["sdv_as_of_date"]
+    )
+
     leakage = (
         ~missing_sdv
         & (
@@ -781,33 +866,48 @@ def build_date_training_rows(
             | (sdv_as_of_date >= game_date)
         )
     )
-    summary["leakage_rejections"] += int(leakage.sum())
 
-    # Any SDV as-of-date violation is fatal, per TODO 9.
+    summary["leakage_rejections"] += int(
+        leakage.sum()
+    )
+
     if leakage.any():
         sample = joined.loc[
             leakage,
-            ["game_id", "gamePk", "game_date", "sdv_as_of_date"],
+            [
+                "game_id",
+                "gamePk",
+                "game_date",
+                "sdv_as_of_date",
+            ],
         ].head(10).to_dict("records")
+
         fail(
             f"{date_str} SDV leakage validation failed; "
             f"sdv_as_of_date must be < game_date; "
-            f"bad_rows={int(leakage.sum())}; sample={sample}"
+            f"bad_rows={int(leakage.sum())}; "
+            f"sample={sample}"
         )
 
-    # Required model-input source: rows with no matching SDV record cannot be
-    # leakage-validated and are excluded from the training dataset.
-    keep = ~missing_sdv & ~invalid_final
-    joined = joined.loc[keep].copy()
+    keep = (
+        ~missing_sdv
+        & ~invalid_final
+    )
 
-    # Map raw SportsDataverse names to stable model-facing feature names.
-    joined = joined.rename(columns=SDV_FEATURE_MAP)
+    joined = joined.loc[
+        keep
+    ].copy()
+
+    joined = joined.rename(
+        columns=SDV_FEATURE_MAP
+    )
 
     weather = _safe_weather_frame(
         weather_path,
         games,
         summary,
     )
+
     if weather is not None:
         joined = joined.merge(
             weather,
@@ -820,108 +920,198 @@ def build_date_training_rows(
         AUDIT_COLUMNS
         + DRATINGS_COLUMNS
         + [
-            col for col in SAFE_GAME_FEATURES
+            col
+            for col in SAFE_GAME_FEATURES
             if col in joined.columns
         ]
-        + list(SDV_FEATURE_MAP.values())
+        + list(
+            SDV_FEATURE_MAP.values()
+        )
         + [
-            col for col in WEATHER_FEATURES
+            col
+            for col in WEATHER_FEATURES
             if col in joined.columns
         ]
         + TARGET_COLUMNS
     )
 
-    output = joined[output_columns].copy()
+    output = joined[
+        output_columns
+    ].copy()
 
-    for col in DRATINGS_COLUMNS + list(SDV_FEATURE_MAP.values()) + TARGET_COLUMNS:
+    for col in (
+        DRATINGS_COLUMNS
+        + list(SDV_FEATURE_MAP.values())
+        + TARGET_COLUMNS
+    ):
         if col in output.columns:
-            output[col] = pd.to_numeric(output[col], errors="coerce")
+            output[col] = pd.to_numeric(
+                output[col],
+                errors="coerce",
+            )
 
     for col in WEATHER_FEATURES:
         if col in output.columns:
-            output[col] = pd.to_numeric(output[col], errors="coerce")
+            output[col] = pd.to_numeric(
+                output[col],
+                errors="coerce",
+            )
 
     output["game_date"] = (
-        pd.to_datetime(output["game_date"], errors="coerce")
+        pd.to_datetime(
+            output["game_date"],
+            errors="coerce",
+        )
         .dt.strftime("%Y-%m-%d")
     )
+
     output["sdv_as_of_date"] = (
-        pd.to_datetime(output["sdv_as_of_date"], errors="coerce")
+        pd.to_datetime(
+            output["sdv_as_of_date"],
+            errors="coerce",
+        )
         .dt.strftime("%Y-%m-%d")
     )
 
     return output
 
 
-def validate_final_output(df: pd.DataFrame) -> None:
-    dupes = duplicate_columns(list(df.columns))
+def validate_final_output(
+    df: pd.DataFrame,
+) -> None:
+    dupes = duplicate_columns(
+        list(df.columns)
+    )
+
     if dupes:
-        fail(f"training output has duplicate columns: {dupes}")
+        fail(
+            f"training output has duplicate columns: {dupes}"
+        )
 
     missing = [
-        col for col in AUDIT_COLUMNS + DRATINGS_COLUMNS
-        + list(SDV_FEATURE_MAP.values()) + TARGET_COLUMNS
+        col
+        for col in (
+            AUDIT_COLUMNS
+            + DRATINGS_COLUMNS
+            + list(SDV_FEATURE_MAP.values())
+            + TARGET_COLUMNS
+        )
         if col not in df.columns
     ]
+
     if missing:
-        fail(f"training output missing required columns: {missing}")
+        fail(
+            f"training output missing required columns: {missing}"
+        )
 
     forbidden = [
-        col for col in df.columns
-        if any(token in col.lower() for token in FORBIDDEN_OUTPUT_TOKENS)
+        col
+        for col in df.columns
+        if any(
+            token in col.lower()
+            for token in FORBIDDEN_OUTPUT_TOKENS
+        )
     ]
-    if forbidden:
-        fail(f"training output contains forbidden feature columns: {forbidden}")
 
-    game_date = pd.to_datetime(df["game_date"], errors="coerce")
-    as_of = pd.to_datetime(df["sdv_as_of_date"], errors="coerce")
+    if forbidden:
+        fail(
+            f"training output contains forbidden feature columns: {forbidden}"
+        )
+
+    game_date = pd.to_datetime(
+        df["game_date"],
+        errors="coerce",
+    )
+
+    as_of = pd.to_datetime(
+        df["sdv_as_of_date"],
+        errors="coerce",
+    )
+
     bad_leakage = (
         game_date.isna()
         | as_of.isna()
         | (as_of >= game_date)
     )
+
     if bad_leakage.any():
         sample = df.loc[
             bad_leakage,
-            ["game_id", "gamePk", "game_date", "sdv_as_of_date"],
+            [
+                "game_id",
+                "gamePk",
+                "game_date",
+                "sdv_as_of_date",
+            ],
         ].head(10).to_dict("records")
+
         fail(
             "final training output failed SDV as-of validation; "
-            f"bad_rows={int(bad_leakage.sum())}; sample={sample}"
+            f"bad_rows={int(bad_leakage.sum())}; "
+            f"sample={sample}"
         )
 
     for col in TARGET_COLUMNS:
-        values = pd.to_numeric(df[col], errors="coerce")
-        bad = values.isna() | ~np.isfinite(values) | (values < 0)
+        values = pd.to_numeric(
+            df[col],
+            errors="coerce",
+        )
+
+        bad = (
+            values.isna()
+            | ~np.isfinite(values)
+            | (values < 0)
+        )
+
         if bad.any():
             sample = df.loc[
                 bad,
-                ["game_id", "gamePk", col],
+                [
+                    "game_id",
+                    "gamePk",
+                    col,
+                ],
             ].head(10).to_dict("records")
+
             fail(
                 f"final training output invalid target {col}; "
-                f"bad_rows={int(bad.sum())}; sample={sample}"
+                f"bad_rows={int(bad.sum())}; "
+                f"sample={sample}"
             )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "--from-date",
-        help="Optional inclusive start date (YYYY-MM-DD or YYYY_MM_DD).",
+        help=(
+            "Optional inclusive start date "
+            "(YYYY-MM-DD or YYYY_MM_DD)."
+        ),
     )
+
     parser.add_argument(
         "--to-date",
-        help="Optional inclusive end date (YYYY-MM-DD or YYYY_MM_DD).",
+        help=(
+            "Optional inclusive end date "
+            "(YYYY-MM-DD or YYYY_MM_DD)."
+        ),
     )
+
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
 
-    with LOG_FILE.open("w", encoding="utf-8") as f:
-        f.write(f"=== build_run_training_set RUN {_now()} ===\n")
+    with LOG_FILE.open(
+        "w",
+        encoding="utf-8",
+    ) as f:
+        f.write(
+            f"=== build_run_training_set RUN {_now()} ===\n"
+        )
 
     summary = {
         "rows_loaded": 0,
@@ -936,6 +1126,7 @@ def main() -> None:
 
     try:
         dates = _discover_dates()
+
         dates = _filter_dates(
             dates,
             args.from_date,
@@ -943,14 +1134,22 @@ def main() -> None:
         )
 
         if not dates:
-            fail("No prediction dates found for the requested range")
+            fail(
+                "No prediction dates found for the requested range"
+            )
 
-        _log(f"dates_to_process={len(dates)}")
+        _log(
+            f"dates_to_process={len(dates)}"
+        )
 
-        all_rows: list[pd.DataFrame] = []
+        all_rows: list[
+            pd.DataFrame
+        ] = []
 
         for date_str in dates:
-            _log(f"processing date={date_str}")
+            _log(
+                f"processing date={date_str}"
+            )
 
             frame = build_date_training_rows(
                 date_str,
@@ -958,7 +1157,9 @@ def main() -> None:
             )
 
             if not frame.empty:
-                all_rows.append(frame)
+                all_rows.append(
+                    frame
+                )
 
         if all_rows:
             training = pd.concat(
@@ -966,25 +1167,38 @@ def main() -> None:
                 ignore_index=True,
                 sort=False,
             )
+
         else:
             training = pd.DataFrame(
                 columns=(
                     AUDIT_COLUMNS
                     + DRATINGS_COLUMNS
                     + SAFE_GAME_FEATURES
-                    + list(SDV_FEATURE_MAP.values())
+                    + list(
+                        SDV_FEATURE_MAP.values()
+                    )
                     + TARGET_COLUMNS
                 )
             )
 
-        validate_final_output(training)
+        validate_final_output(
+            training
+        )
 
         training = training.sort_values(
-            ["game_date", "game_id"],
+            [
+                "game_date",
+                "game_id",
+            ],
             kind="stable",
-        ).reset_index(drop=True)
+        ).reset_index(
+            drop=True
+        )
 
-        summary["rows_written"] = len(training)
+        summary["rows_written"] = len(
+            training
+        )
+
         training.to_csv(
             OUTPUT_FILE,
             index=False,
@@ -1000,9 +1214,14 @@ def main() -> None:
             "leakage_rejections",
             "rows_written",
         ]:
-            _log(f"{key}={summary[key]}")
+            _log(
+                f"{key}={summary[key]}"
+            )
 
-        _log(f"WROTE {OUTPUT_FILE}")
+        _log(
+            f"WROTE {OUTPUT_FILE}"
+        )
+
         print(
             "build_run_training_set complete. "
             f"rows_written={summary['rows_written']} "
@@ -1012,7 +1231,10 @@ def main() -> None:
         )
 
     except Exception as exc:
-        _log(f"FATAL: {exc}\n{traceback.format_exc()}", "ERROR")
+        _log(
+            f"FATAL: {exc}\n{traceback.format_exc()}",
+            "ERROR",
+        )
 
         for key in [
             "rows_loaded",
@@ -1024,9 +1246,14 @@ def main() -> None:
             "leakage_rejections",
             "rows_written",
         ]:
-            _log(f"{key}={summary[key]}")
+            _log(
+                f"{key}={summary[key]}"
+            )
 
-        print(f"build_run_training_set failed: {exc}")
+        print(
+            f"build_run_training_set failed: {exc}"
+        )
+
         raise SystemExit(1)
 
 
