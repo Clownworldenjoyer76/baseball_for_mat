@@ -1,0 +1,15 @@
+=== build_run_projection RUN 2026-08-24T14:52:11.014031+00:00 ===
+2026-08-24T14:52:11.025843+00:00 | ERROR | home_runs metadata missing: docs/win/baseball/mlb/models/run_projection/home_runs_model_metadata.json
+2026-08-24T14:52:11.026489+00:00 | ERROR | FATAL: home_runs metadata missing: docs/win/baseball/mlb/models/run_projection/home_runs_model_metadata.json
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py", line 711, in main
+    output_path = process_date(date_str)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py", line 572, in process_date
+    home_metadata = load_metadata(
+                    ^^^^^^^^^^^^^^
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py", line 221, in load_metadata
+    fail(f"{label} metadata missing: {path}")
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py", line 145, in fail
+    raise RuntimeError(message)
+RuntimeError: home_runs metadata missing: docs/win/baseball/mlb/models/run_projection/home_runs_model_metadata.json
