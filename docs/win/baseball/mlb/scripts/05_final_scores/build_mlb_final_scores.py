@@ -15,7 +15,6 @@ RAW_DIR = Path("docs/win/baseball/mlb/00_intake/drat_raw")
 GAMES_DIR = Path("docs/win/baseball/mlb/00_intake/games")
 PRED_DIR = Path("docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id")
 SPORTSBOOK_DIR = Path("docs/win/baseball/mlb/00_intake/sportsbook")
-SELECT_DIR = Path("docs/win/baseball/mlb/04_select")
 FINAL_DIR = Path("docs/win/baseball/mlb/05_final_scores/results/final_scores")
 AUDIT_DIR = Path("docs/win/baseball/mlb/05_final_scores/results/audit")
 
@@ -66,12 +65,6 @@ def clean_team(team_str):
     return str(team_str).split("(")[0].strip()
 
 
-def safe_get(row, key, default=""):
-    if isinstance(row, dict):
-        return row.get(key, default)
-    return default
-
-
 def normalize_status(raw_status):
     raw = str(raw_status or "").strip().lower()
 
@@ -103,10 +96,9 @@ def infer_game_status(row):
     """
     DRatings raw rows currently appear list-based.
 
-    Existing behavior treated len(row) == 8 as completed/final-score rows.
-    If an explicit status field exists in a dict-shaped source later, preserve it.
-    Otherwise completed-score rows are inferred as final, and non-completed rows
-    are treated as unknown for audit purposes.
+    Completed historical score rows use the 8-field row shape.
+    If an explicit status field exists in a dict-shaped source later,
+    preserve it. Otherwise 8-field rows are inferred as final.
     """
     explicit_status_fields = [
         "game_status",
@@ -198,18 +190,6 @@ def closest_time_book_match(candidates, target_game_time):
     return closest_time_record_match(candidates, target_game_time)
 
 
-def assert_selected_files_exist():
-    select_files = sorted(SELECT_DIR.glob("*_MLB.csv"))
-    if not select_files:
-        fail(
-            f"No selected-bet files found in {SELECT_DIR}. "
-            "Final-score generation is post-selection only. Run baseball_select_bets.py first."
-        )
-
-    log(f"Selected-bet files found before final-score build: {len(select_files)}")
-    return {p.stem.replace("_MLB", "") for p in select_files}
-
-
 def load_games_lookup(date):
     path = GAMES_DIR / f"{date}_games.csv"
     lookup = {}
@@ -249,11 +229,13 @@ def load_predictions_lookup(date):
 
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
+
         for r in reader:
             key = (
                 r.get("home_team", "").strip(),
                 r.get("away_team", "").strip(),
             )
+
             lookup.setdefault(key, []).append({
                 "game_id": r.get("game_id", ""),
                 "game_time": r.get("game_time", ""),
@@ -274,11 +256,13 @@ def load_sportsbook_lookup(date):
 
     with open(path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
+
         for r in reader:
             key = (
                 r.get("home_team", "").strip(),
                 r.get("away_team", "").strip(),
             )
+
             lookup.setdefault(key, []).append({
                 "game_time": r.get("game_time", ""),
                 "away_run_line": r.get("away_run_line"),
@@ -360,6 +344,7 @@ def make_parse_error_row(*, source_file, row_index, stage, error, row):
 
 def log_review_rows(parse_error_rows, blank_game_id_rows):
     log("--- PARSE ERROR ROWS FOR REVIEW ---")
+
     if not parse_error_rows:
         log("None")
     else:
@@ -374,6 +359,7 @@ def log_review_rows(parse_error_rows, blank_game_id_rows):
             )
 
     log("--- BLANK GAME_ID ROWS FOR REVIEW ---")
+
     if not blank_game_id_rows:
         log("None")
     else:
@@ -507,10 +493,16 @@ def add_final_record(
 
     if use_game_time_for_fallback:
         fallback_key = (game_date, home_team, away_team, game_time)
-        fallback_notes = "game_id missing; fallback date/team/time key used for doubleheader identification"
+        fallback_notes = (
+            "game_id missing; fallback date/team/time key used "
+            "for doubleheader identification"
+        )
     else:
         fallback_key = (game_date, home_team, away_team)
-        fallback_notes = "game_id missing; fallback date/team key used to avoid exact duplicate raw writes"
+        fallback_notes = (
+            "game_id missing; fallback date/team key used "
+            "to avoid exact duplicate raw writes"
+        )
 
     existing_fallback = seen_by_fallback_key.get(fallback_key)
 
@@ -570,7 +562,6 @@ def process_file(
     final_records_by_date,
     seen_by_game_id,
     seen_by_fallback_key,
-    selected_dates,
     status_audit_rows,
     key_audit_rows,
     parse_error_rows,
@@ -588,7 +579,6 @@ def process_file(
     parse_errors = 0
     skipped_summary = 0
     skipped_duplicate = 0
-    skipped_no_selected_file = 0
     skipped_not_completed = 0
     completed_rows_seen = 0
     accepted_rows = 0
@@ -612,7 +602,6 @@ def process_file(
             f"skipped_summary={skipped_summary}, "
             f"skipped_duplicate={skipped_duplicate}, "
             f"skipped_not_completed={skipped_not_completed}, "
-            f"skipped_no_selected_file={skipped_no_selected_file}, "
             f"final_score_dates_accumulated={len(final_records_by_date)}"
         )
         return
@@ -690,18 +679,16 @@ def process_file(
             ))
             continue
 
-        if game_date not in selected_dates:
-            skipped_no_selected_file += 1
-            continue
-
         try:
             team_value = row[1]
+
             if not isinstance(team_value, str):
                 raise TypeError(
                     f"expected team field to be str, found {type(team_value).__name__}"
                 )
 
             teams = team_value.split("\n")
+
             if len(teams) < 2:
                 raise ValueError("expected at least two team names")
 
@@ -726,14 +713,21 @@ def process_file(
 
         try:
             score_value = row[5]
+
             if not isinstance(score_value, str):
                 raise TypeError(
                     f"expected score field to be str, found {type(score_value).__name__}"
                 )
 
             scores = score_value.split("\n")
+
+            if len(scores) < 2:
+                raise ValueError(
+                    f"expected away/home final scores, found {len(scores)} score field(s)"
+                )
+
             away_score = int(scores[0].strip())
-            home_score = int(scores[1].strip()) if len(scores) > 1 else 0
+            home_score = int(scores[1].strip())
             final_total = str(away_score + home_score)
 
         except Exception as exc:
@@ -750,8 +744,10 @@ def process_file(
         try:
             if game_date not in games_lookup_cache:
                 games_lookup_cache[game_date] = load_games_lookup(game_date)
+
             if game_date not in predictions_lookup_cache:
                 predictions_lookup_cache[game_date] = load_predictions_lookup(game_date)
+
             if game_date not in sportsbook_lookup_cache:
                 sportsbook_lookup_cache[game_date] = load_sportsbook_lookup(game_date)
 
@@ -760,17 +756,35 @@ def process_file(
             book_lookup = sportsbook_lookup_cache[game_date]
 
             games_candidates = games_lookup.get(key, [])
-            games_match = closest_time_record_match(games_candidates, game_time)
+            games_match = closest_time_record_match(
+                games_candidates,
+                game_time,
+            )
 
             pred_candidates = pred_lookup.get(key, [])
-            pred_game_id = closest_time_match(pred_candidates, game_time, "game_id")
+            pred_game_id = closest_time_match(
+                pred_candidates,
+                game_time,
+                "game_id",
+            )
 
-            game_id = str(games_match.get("game_id", "") or pred_game_id or "").strip()
-            gamePk = str(games_match.get("gamePk", "") or "").strip()
-            gameNumber = str(games_match.get("gameNumber", "") or "").strip()
+            game_id = str(
+                games_match.get("game_id", "") or pred_game_id or ""
+            ).strip()
+
+            gamePk = str(
+                games_match.get("gamePk", "") or ""
+            ).strip()
+
+            gameNumber = str(
+                games_match.get("gameNumber", "") or ""
+            ).strip()
 
             book_candidates = book_lookup.get(key, [])
-            book = closest_time_book_match(book_candidates, game_time)
+            book = closest_time_book_match(
+                book_candidates,
+                game_time,
+            )
 
             record = {
                 "sport": "baseball",
@@ -814,14 +828,19 @@ def process_file(
                 seen_by_fallback_key=seen_by_fallback_key,
                 key_audit_rows=key_audit_rows,
                 use_game_time_for_fallback=(
-                    len(games_candidates) > 1 or len(pred_candidates) > 1
+                    len(games_candidates) > 1 or
+                    len(pred_candidates) > 1
                 ),
             )
 
-            if action in {"duplicate_collapsed", "blank_game_id_duplicate_collapsed"}:
+            if action in {
+                "duplicate_collapsed",
+                "blank_game_id_duplicate_collapsed",
+            }:
                 skipped_duplicate += 1
             else:
                 accepted_rows += 1
+
                 if not game_id:
                     accepted_blank_game_id_rows += 1
 
@@ -863,9 +882,9 @@ def process_file(
         f"skipped_summary={skipped_summary}, "
         f"skipped_duplicate={skipped_duplicate}, "
         f"skipped_not_completed={skipped_not_completed}, "
-        f"skipped_no_selected_file={skipped_no_selected_file}, "
         f"final_score_dates_accumulated={len(final_records_by_date)}"
     )
+
 
 def main():
     files_written = []
@@ -905,10 +924,13 @@ def main():
     ]
 
     try:
-        selected_dates = assert_selected_files_exist()
         raw_files = sorted(RAW_DIR.glob("*_mlb_raw.json"))
+
+        if not raw_files:
+            fail(f"No DRatings raw files found in {RAW_DIR}")
+
         log(f"Raw files found: {len(raw_files)}")
-        log(f"Post-selection final-score build timestamp: {RUN_TS}")
+        log(f"Historical final-score build timestamp: {RUN_TS}")
 
         for file in raw_files:
             process_file(
@@ -916,7 +938,6 @@ def main():
                 final_records_by_date=final_records_by_date,
                 seen_by_game_id=seen_by_game_id,
                 seen_by_fallback_key=seen_by_fallback_key,
-                selected_dates=selected_dates,
                 status_audit_rows=status_audit_rows,
                 key_audit_rows=key_audit_rows,
                 parse_error_rows=parse_error_rows,
@@ -926,8 +947,18 @@ def main():
         for date in sorted(final_records_by_date):
             records = final_records_by_date[date]
             out = FINAL_DIR / f"{date}_final_scores_MLB.csv"
-            rows = [[record.get(col, "") for col in FINAL_HEADER] for record in records]
-            write_csv(out, FINAL_HEADER, rows, files_written, "final scores")
+            rows = [
+                [record.get(col, "") for col in FINAL_HEADER]
+                for record in records
+            ]
+
+            write_csv(
+                out,
+                FINAL_HEADER,
+                rows,
+                files_written,
+                "final scores",
+            )
 
         write_audit_csv(
             STATUS_AUDIT_FILE,
@@ -944,18 +975,20 @@ def main():
         )
 
         blank_game_id_count = sum(
-            1 for row in key_audit_rows
+            1
+            for row in key_audit_rows
             if str(row.get("game_id", "")).strip() == ""
             and str(row.get("status", "")).startswith("blank_game_id")
         )
 
         unknown_status_count = sum(
-            1 for row in status_audit_rows
+            1
+            for row in status_audit_rows
             if str(row.get("game_status", "")).strip().lower() == "unknown"
         )
 
         total_parse_errors = len(parse_error_rows)
-        selected_blank_game_id_rows = len(blank_game_id_rows)
+        blank_game_id_rows_count = len(blank_game_id_rows)
 
         log("--- SUMMARY ---")
         log(f"Raw files processed: {len(raw_files)}")
@@ -963,7 +996,7 @@ def main():
         log(f"Final-score dates written once: {len(final_records_by_date)}")
         log(f"Final-score game_id primary-key rows: {len(seen_by_game_id)}")
         log(f"Final-score blank game_id key-audit rows: {blank_game_id_count}")
-        log(f"Selected completed rows with blank game_id: {selected_blank_game_id_rows}")
+        log(f"Completed rows with blank game_id: {blank_game_id_rows_count}")
         log(f"Parse errors encountered: {total_parse_errors}")
         log(f"Unknown status audit rows: {unknown_status_count}")
         log(f"Status audit: {STATUS_AUDIT_FILE}")
@@ -977,18 +1010,21 @@ def main():
         else:
             log("Parse-error review: no parse errors encountered.")
 
-        if selected_blank_game_id_rows:
+        if blank_game_id_rows_count:
             log(
-                "WARNING: Selected completed games with blank game_id were written. "
+                "WARNING: Completed games with blank game_id were written. "
                 "See BLANK GAME_ID ROWS FOR REVIEW below."
             )
         else:
-            log("Blank-game_id review: no selected completed rows had blank game_id.")
+            log("Blank-game_id review: no completed rows had blank game_id.")
 
         for path, count in files_written:
             log(f"  FILE: {path} ({count} rows)")
 
-        log_review_rows(parse_error_rows, blank_game_id_rows)
+        log_review_rows(
+            parse_error_rows,
+            blank_game_id_rows,
+        )
 
         log("STATUS: SUCCESS")
 
@@ -1002,4 +1038,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

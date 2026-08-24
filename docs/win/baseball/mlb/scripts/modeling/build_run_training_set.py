@@ -293,6 +293,26 @@ def _assert_unique_key(
         )
 
 
+def _drop_blank_game_id_rows(
+    df: pd.DataFrame,
+    label: str,
+) -> pd.DataFrame:
+    if "game_id" not in df.columns:
+        return df
+
+    values = _normalize_game_id(df["game_id"])
+    keep = values.notna() & (values != "")
+    dropped = int((~keep).sum())
+
+    if dropped:
+        _log(
+            f"{label} dropped rows with blank game_id: {dropped}",
+            "WARN",
+        )
+
+    return df.loc[keep].copy()
+
+
 def _prepare_source_keys(
     df: pd.DataFrame,
     label: str,
@@ -588,6 +608,15 @@ def build_date_training_rows(
     games = _prepare_source_keys(games, f"games {date_str}", summary)
     sdv = _prepare_source_keys(sdv, f"sportsdataverse {date_str}", summary)
     final = _prepare_source_keys(final, f"final_scores {date_str}", summary)
+
+    sdv = _drop_blank_game_id_rows(
+        sdv,
+        f"sportsdataverse {date_str}",
+    )
+    final = _drop_blank_game_id_rows(
+        final,
+        f"final_scores {date_str}",
+    )
 
     summary["rows_loaded"] += len(pred)
 
