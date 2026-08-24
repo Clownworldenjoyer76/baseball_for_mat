@@ -103,8 +103,10 @@ SDV_REQUIRED = [
 ]
 
 FINAL_REQUIRED = [
+    "gamePk",
     "game_id",
     "game_date",
+    "game_status",
     "final_home_score",
     "final_away_score",
 ]
@@ -1014,16 +1016,6 @@ def build_date_training_rows(
         summary,
     )
 
-    sdv = _drop_blank_game_id_rows(
-        sdv,
-        f"sportsdataverse {date_str}",
-    )
-
-    final = _drop_blank_game_id_rows(
-        final,
-        f"final_scores {date_str}",
-    )
-
     summary["rows_loaded"] += len(
         pred
     )
@@ -1121,15 +1113,21 @@ def build_date_training_rows(
         SDV_FEATURE_MAP.keys()
     )
 
-    joined = joined.merge(
+    sdv_join = (
         sdv[
             sdv_keep
-        ].rename(
+        ]
+        .copy()
+        .rename(
             columns={
-                "gamePk": "gamePk_sdv",
+                "game_id": "game_id_sdv",
             }
-        ),
-        on="game_id",
+        )
+    )
+
+    joined = joined.merge(
+        sdv_join,
+        on="gamePk",
         how="left",
         validate="one_to_one",
     )
@@ -1143,50 +1141,46 @@ def build_date_training_rows(
         missing_sdv.sum()
     )
 
-    _assert_secondary_gamepk_match(
+    _assert_secondary_game_id_match(
         joined,
-        "gamePk",
-        "gamePk_sdv",
+        "game_id",
+        "game_id_sdv",
         f"{date_str} games->sportsdataverse",
     )
 
     final_keep = [
-        col
-        for col in [
-            "gamePk",
-            "game_id",
-            "game_status",
-            "final_home_score",
-            "final_away_score",
-        ]
-        if col in final.columns
+        "gamePk",
+        "game_id",
+        "game_status",
+        "final_home_score",
+        "final_away_score",
     ]
 
-    final_join = final[
-        final_keep
-    ].copy()
-
-    if "gamePk" in final_join.columns:
-        final_join = final_join.rename(
+    final_join = (
+        final[
+            final_keep
+        ]
+        .copy()
+        .rename(
             columns={
-                "gamePk": "gamePk_final",
+                "game_id": "game_id_final",
             }
         )
+    )
 
     joined = joined.merge(
         final_join,
-        on="game_id",
+        on="gamePk",
         how="left",
         validate="one_to_one",
     )
 
-    if "gamePk_final" in joined.columns:
-        _assert_secondary_gamepk_match(
-            joined,
-            "gamePk",
-            "gamePk_final",
-            f"{date_str} games->final_scores",
-        )
+    _assert_secondary_game_id_match(
+        joined,
+        "game_id",
+        "game_id_final",
+        f"{date_str} games->final_scores",
+    )
 
     final_home = pd.to_numeric(
         joined["final_home_score"],
@@ -1198,24 +1192,16 @@ def build_date_training_rows(
         errors="coerce",
     )
 
-    if "game_status" in joined.columns:
-        final_status = (
-            joined["game_status"]
-            .astype("string")
-            .str.strip()
-            .str.lower()
-        )
+    final_status = (
+        joined["game_status"]
+        .astype("string")
+        .str.strip()
+        .str.lower()
+    )
 
-        status_invalid = (
-            final_status.ne("final")
-        )
-
-    else:
-        status_invalid = pd.Series(
-            False,
-            index=joined.index,
-            dtype=bool,
-        )
+    status_invalid = (
+        final_status.ne("final")
+    )
 
     invalid_final = (
         status_invalid
