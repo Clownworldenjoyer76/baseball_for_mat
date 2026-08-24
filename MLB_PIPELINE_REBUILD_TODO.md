@@ -1662,7 +1662,8 @@ Decide separately which generated training/report files belong in Git. The produ
 Create:
 
 ```text
-tests/mlb/test_probability_ev_kelly.py
+docs/win/baseball/mlb/scripts/modeling/test_probability_ev_kelly.py
+
 ```
 
 ### Required tests
