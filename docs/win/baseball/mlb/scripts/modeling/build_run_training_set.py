@@ -399,6 +399,37 @@ def _drop_blank_game_id_rows(
     ].copy()
 
 
+def _drop_blank_gamepk_rows(
+    df: pd.DataFrame,
+    label: str,
+) -> pd.DataFrame:
+    if "gamePk" not in df.columns:
+        return df
+
+    values = _normalize_gamepk(
+        df["gamePk"]
+    )
+
+    keep = (
+        values.notna()
+        & (values != "")
+    )
+
+    dropped = int(
+        (~keep).sum()
+    )
+
+    if dropped:
+        _log(
+            f"{label} dropped rows with blank gamePk: {dropped}",
+            "WARN",
+        )
+
+    return df.loc[
+        keep
+    ].copy()
+
+
 def _prepare_source_keys(
     df: pd.DataFrame,
     label: str,
@@ -1113,16 +1144,19 @@ def build_date_training_rows(
         SDV_FEATURE_MAP.keys()
     )
 
-    sdv_join = (
-        sdv[
-            sdv_keep
-        ]
-        .copy()
-        .rename(
-            columns={
-                "game_id": "game_id_sdv",
-            }
-        )
+    sdv_join = sdv[
+        sdv_keep
+    ].copy()
+
+    sdv_join = _drop_blank_gamepk_rows(
+        sdv_join,
+        f"sportsdataverse {date_str} join",
+    )
+
+    sdv_join = sdv_join.rename(
+        columns={
+            "game_id": "game_id_sdv",
+        }
     )
 
     joined = joined.merge(
@@ -1156,16 +1190,19 @@ def build_date_training_rows(
         "final_away_score",
     ]
 
-    final_join = (
-        final[
-            final_keep
-        ]
-        .copy()
-        .rename(
-            columns={
-                "game_id": "game_id_final",
-            }
-        )
+    final_join = final[
+        final_keep
+    ].copy()
+
+    final_join = _drop_blank_gamepk_rows(
+        final_join,
+        f"final_scores {date_str} join",
+    )
+
+    final_join = final_join.rename(
+        columns={
+            "game_id": "game_id_final",
+        }
     )
 
     joined = joined.merge(
