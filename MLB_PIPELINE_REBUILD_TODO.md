@@ -1,3 +1,9 @@
+* **TODO 9**
+* **TODO 16**
+* **TODO 18**
+
+
+
 # MLB Pipeline Rebuild TODO
 ## SportsDataverse Integration, Probability Repair, EV/Kelly Repair, and Run-Line Selection
 
