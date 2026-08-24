@@ -119,8 +119,6 @@ WEATHER_FEATURES = [
     "weather_applicable",
 ]
 
-# weather_time is a forecast valid time, not proof that the row was generated
-# before first pitch. At least one true provenance timestamp is required.
 WEATHER_PROVENANCE_COLUMNS = [
     "weather_generated_at",
     "forecast_generated_at",
@@ -221,10 +219,12 @@ def fail(message: str) -> None:
 def duplicate_columns(columns) -> list[str]:
     seen: set[str] = set()
     dupes: list[str] = []
+
     for col in columns:
         if col in seen and col not in dupes:
             dupes.append(col)
         seen.add(col)
+
     return dupes
 
 
@@ -236,35 +236,79 @@ def read_csv_checked(
     if not path.exists():
         fail(f"{label} missing required file: {path}")
 
-    df = pd.read_csv(path, dtype=str, encoding="utf-8-sig")
+    df = pd.read_csv(
+        path,
+        dtype=str,
+        encoding="utf-8-sig",
+    )
 
-    dupes = duplicate_columns(list(df.columns))
+    dupes = duplicate_columns(
+        list(df.columns)
+    )
+
     if dupes:
-        fail(f"{label} duplicate columns: {dupes}")
+        fail(
+            f"{label} duplicate columns: {dupes}"
+        )
 
-    missing = [col for col in required if col not in df.columns]
+    missing = [
+        col
+        for col in required
+        if col not in df.columns
+    ]
+
     if missing:
-        fail(f"{label} missing required columns: {missing}")
+        fail(
+            f"{label} missing required columns: {missing}"
+        )
 
     return df
 
 
-def _normalize_game_id(series: pd.Series) -> pd.Series:
-    return series.astype("string").str.strip()
+def _normalize_game_id(
+    series: pd.Series,
+) -> pd.Series:
+    return (
+        series
+        .astype("string")
+        .str.strip()
+    )
 
 
-def _normalize_gamepk(series: pd.Series) -> pd.Series:
-    raw = series.astype("string").str.strip()
-    numeric = pd.to_numeric(raw, errors="coerce")
+def _normalize_gamepk(
+    series: pd.Series,
+) -> pd.Series:
+    raw = (
+        series
+        .astype("string")
+        .str.strip()
+    )
+
+    numeric = pd.to_numeric(
+        raw,
+        errors="coerce",
+    )
+
     out = raw.copy()
     valid = numeric.notna()
-    out.loc[valid] = numeric.loc[valid].round().astype("Int64").astype("string")
+
+    out.loc[valid] = (
+        numeric.loc[valid]
+        .round()
+        .astype("Int64")
+        .astype("string")
+    )
+
     return out
 
 
-def _normalize_date(series: pd.Series) -> pd.Series:
+def _normalize_date(
+    series: pd.Series,
+) -> pd.Series:
     return pd.to_datetime(
-        series.astype("string").str.replace("_", "-", regex=False),
+        series
+        .astype("string")
+        .str.replace("_", "-", regex=False),
         errors="coerce",
     ).dt.normalize()
 
@@ -278,18 +322,47 @@ def _assert_unique_key(
     if key not in df.columns:
         return
 
-    values = df[key].astype("string").str.strip()
-    nonblank = values.notna() & (values != "")
-    duplicated = nonblank & values.duplicated(keep=False)
-    count = int(duplicated.sum())
+    values = (
+        df[key]
+        .astype("string")
+        .str.strip()
+    )
+
+    nonblank = (
+        values.notna()
+        & (values != "")
+    )
+
+    duplicated = (
+        nonblank
+        & values.duplicated(
+            keep=False
+        )
+    )
+
+    count = int(
+        duplicated.sum()
+    )
 
     if count:
-        metric = "duplicate_game_id" if key == "game_id" else "duplicate_gamePk"
+        metric = (
+            "duplicate_game_id"
+            if key == "game_id"
+            else "duplicate_gamePk"
+        )
+
         summary[metric] += count
-        sample = values.loc[duplicated].head(10).tolist()
+
+        sample = (
+            values.loc[duplicated]
+            .head(10)
+            .tolist()
+        )
+
         fail(
             f"{label} contains duplicate {key}; "
-            f"duplicate_rows={count}; sample={sample}"
+            f"duplicate_rows={count}; "
+            f"sample={sample}"
         )
 
 
@@ -300,9 +373,18 @@ def _drop_blank_game_id_rows(
     if "game_id" not in df.columns:
         return df
 
-    values = _normalize_game_id(df["game_id"])
-    keep = values.notna() & (values != "")
-    dropped = int((~keep).sum())
+    values = _normalize_game_id(
+        df["game_id"]
+    )
+
+    keep = (
+        values.notna()
+        & (values != "")
+    )
+
+    dropped = int(
+        (~keep).sum()
+    )
 
     if dropped:
         _log(
@@ -310,7 +392,9 @@ def _drop_blank_game_id_rows(
             "WARN",
         )
 
-    return df.loc[keep].copy()
+    return df.loc[
+        keep
+    ].copy()
 
 
 def _prepare_source_keys(
@@ -321,12 +405,28 @@ def _prepare_source_keys(
     df = df.copy()
 
     if "game_id" in df.columns:
-        df["game_id"] = _normalize_game_id(df["game_id"])
-        _assert_unique_key(df, "game_id", label, summary)
+        df["game_id"] = _normalize_game_id(
+            df["game_id"]
+        )
+
+        _assert_unique_key(
+            df,
+            "game_id",
+            label,
+            summary,
+        )
 
     if "gamePk" in df.columns:
-        df["gamePk"] = _normalize_gamepk(df["gamePk"])
-        _assert_unique_key(df, "gamePk", label, summary)
+        df["gamePk"] = _normalize_gamepk(
+            df["gamePk"]
+        )
+
+        _assert_unique_key(
+            df,
+            "gamePk",
+            label,
+            summary,
+        )
 
     return df
 
@@ -337,23 +437,56 @@ def _assert_secondary_game_id_match(
     right_col: str,
     label: str,
 ) -> None:
-    if left_col not in df.columns or right_col not in df.columns:
+    if (
+        left_col not in df.columns
+        or right_col not in df.columns
+    ):
         return
 
-    left = _normalize_game_id(df[left_col])
-    right = _normalize_game_id(df[right_col])
-    comparable = left.notna() & right.notna() & (left != "") & (right != "")
-    mismatch = comparable & (left != right)
+    left = _normalize_game_id(
+        df[left_col]
+    )
+
+    right = _normalize_game_id(
+        df[right_col]
+    )
+
+    comparable = (
+        left.notna()
+        & right.notna()
+        & (left != "")
+        & (right != "")
+    )
+
+    mismatch = (
+        comparable
+        & (left != right)
+    )
 
     if mismatch.any():
         sample_cols = [
-            col for col in ["gamePk", left_col, right_col]
+            col
+            for col in [
+                "gamePk",
+                left_col,
+                right_col,
+            ]
             if col in df.columns
         ]
-        sample = df.loc[mismatch, sample_cols].head(10).to_dict("records")
+
+        sample = (
+            df.loc[
+                mismatch,
+                sample_cols,
+            ]
+            .head(10)
+            .to_dict("records")
+        )
+
         fail(
             f"{label} game_id consistency check failed; "
-            f"bad_rows={int(mismatch.sum())}; sample={sample}"
+            f"bad_rows={int(mismatch.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -363,23 +496,56 @@ def _assert_secondary_gamepk_match(
     right_col: str,
     label: str,
 ) -> None:
-    if left_col not in df.columns or right_col not in df.columns:
+    if (
+        left_col not in df.columns
+        or right_col not in df.columns
+    ):
         return
 
-    left = _normalize_gamepk(df[left_col])
-    right = _normalize_gamepk(df[right_col])
-    comparable = left.notna() & right.notna() & (left != "") & (right != "")
-    mismatch = comparable & (left != right)
+    left = _normalize_gamepk(
+        df[left_col]
+    )
+
+    right = _normalize_gamepk(
+        df[right_col]
+    )
+
+    comparable = (
+        left.notna()
+        & right.notna()
+        & (left != "")
+        & (right != "")
+    )
+
+    mismatch = (
+        comparable
+        & (left != right)
+    )
 
     if mismatch.any():
         sample_cols = [
-            col for col in ["game_id", left_col, right_col]
+            col
+            for col in [
+                "game_id",
+                left_col,
+                right_col,
+            ]
             if col in df.columns
         ]
-        sample = df.loc[mismatch, sample_cols].head(10).to_dict("records")
+
+        sample = (
+            df.loc[
+                mismatch,
+                sample_cols,
+            ]
+            .head(10)
+            .to_dict("records")
+        )
+
         fail(
             f"{label} gamePk consistency check failed; "
-            f"bad_rows={int(mismatch.sum())}; sample={sample}"
+            f"bad_rows={int(mismatch.sum())}; "
+            f"sample={sample}"
         )
 
 
@@ -389,36 +555,83 @@ def _assert_team_consistency(
     right_col: str,
     label: str,
 ) -> None:
-    if left_col not in df.columns or right_col not in df.columns:
+    if (
+        left_col not in df.columns
+        or right_col not in df.columns
+    ):
         return
 
-    left = df[left_col].astype("string").str.strip()
-    right = df[right_col].astype("string").str.strip()
-    comparable = left.notna() & right.notna() & (left != "") & (right != "")
-    mismatch = comparable & (left != right)
+    left = (
+        df[left_col]
+        .astype("string")
+        .str.strip()
+    )
+
+    right = (
+        df[right_col]
+        .astype("string")
+        .str.strip()
+    )
+
+    comparable = (
+        left.notna()
+        & right.notna()
+        & (left != "")
+        & (right != "")
+    )
+
+    mismatch = (
+        comparable
+        & (left != right)
+    )
 
     if mismatch.any():
-        sample = df.loc[
-            mismatch,
-            ["game_id", left_col, right_col],
-        ].head(10).to_dict("records")
+        sample = (
+            df.loc[
+                mismatch,
+                [
+                    "game_id",
+                    left_col,
+                    right_col,
+                ],
+            ]
+            .head(10)
+            .to_dict("records")
+        )
+
         fail(
             f"{label} team consistency check failed; "
-            f"bad_rows={int(mismatch.sum())}; sample={sample}"
+            f"bad_rows={int(mismatch.sum())}; "
+            f"sample={sample}"
         )
 
 
-def _resolve_game_datetime(games: pd.DataFrame) -> pd.Series:
+def _resolve_game_datetime(
+    games: pd.DataFrame,
+) -> pd.Series:
     if "game_time" not in games.columns:
-        return pd.Series(pd.NaT, index=games.index, dtype="datetime64[ns]")
+        return pd.Series(
+            pd.NaT,
+            index=games.index,
+            dtype="datetime64[ns]",
+        )
 
     date_text = (
         games["game_date"]
         .astype("string")
-        .str.replace("_", "-", regex=False)
+        .str.replace(
+            "_",
+            "-",
+            regex=False,
+        )
         .str.strip()
     )
-    time_text = games["game_time"].astype("string").str.strip()
+
+    time_text = (
+        games["game_time"]
+        .astype("string")
+        .str.strip()
+    )
 
     return pd.to_datetime(
         date_text + " " + time_text,
@@ -432,14 +645,26 @@ def _safe_weather_frame(
     summary: dict,
 ) -> pd.DataFrame | None:
     if not weather_path.exists():
-        _log(f"weather missing; no weather features joined: {weather_path}", "INFO")
+        _log(
+            f"weather missing; no weather features joined: {weather_path}",
+            "INFO",
+        )
         return None
 
-    weather = pd.read_csv(weather_path, dtype=str, encoding="utf-8-sig")
+    weather = pd.read_csv(
+        weather_path,
+        dtype=str,
+        encoding="utf-8-sig",
+    )
 
-    dupes = duplicate_columns(list(weather.columns))
+    dupes = duplicate_columns(
+        list(weather.columns)
+    )
+
     if dupes:
-        fail(f"weather duplicate columns: {dupes}")
+        fail(
+            f"weather duplicate columns: {dupes}"
+        )
 
     if "gamePk" not in weather.columns:
         _log(
@@ -455,47 +680,81 @@ def _safe_weather_frame(
     )
 
     provenance_col = next(
-        (col for col in WEATHER_PROVENANCE_COLUMNS if col in weather.columns),
+        (
+            col
+            for col in WEATHER_PROVENANCE_COLUMNS
+            if col in weather.columns
+        ),
         None,
     )
+
     if provenance_col is None:
         _log(
-            f"weather ignored because no pregame-generation provenance "
+            "weather ignored because no pregame-generation provenance "
             f"timestamp exists: {weather_path.name}",
             "WARN",
         )
         return None
 
-    keep_features = [col for col in WEATHER_FEATURES if col in weather.columns]
+    keep_features = [
+        col
+        for col in WEATHER_FEATURES
+        if col in weather.columns
+    ]
+
     if not keep_features:
         _log(
-            f"weather ignored because no approved environment features exist: "
+            "weather ignored because no approved environment features exist: "
             f"{weather_path.name}",
             "WARN",
         )
         return None
 
-    weather_gamepk = _normalize_gamepk(weather["gamePk"])
+    weather_gamepk = _normalize_gamepk(
+        weather["gamePk"]
+    )
+
     weather = weather.loc[
-        weather_gamepk.notna() & (weather_gamepk != "")
+        weather_gamepk.notna()
+        & (weather_gamepk != "")
     ].copy()
 
-    game_times = games[["gamePk"]].copy()
-    game_times["_game_start"] = _resolve_game_datetime(games)
-    game_gamepk = _normalize_gamepk(game_times["gamePk"])
+    game_times = games[
+        ["gamePk"]
+    ].copy()
+
+    game_times["_game_start"] = (
+        _resolve_game_datetime(games)
+    )
+
+    game_gamepk = _normalize_gamepk(
+        game_times["gamePk"]
+    )
+
     game_times = game_times.loc[
-        game_gamepk.notna() & (game_gamepk != "")
+        game_gamepk.notna()
+        & (game_gamepk != "")
     ].copy()
 
     check = game_times.merge(
-        weather[["gamePk", provenance_col] + keep_features],
+        weather[
+            ["gamePk", provenance_col]
+            + keep_features
+        ],
         on="gamePk",
         how="left",
         validate="one_to_one",
     )
 
-    generated = pd.to_datetime(check[provenance_col], errors="coerce")
-    game_start = pd.to_datetime(check["_game_start"], errors="coerce")
+    generated = pd.to_datetime(
+        check[provenance_col],
+        errors="coerce",
+    )
+
+    game_start = pd.to_datetime(
+        check["_game_start"],
+        errors="coerce",
+    )
 
     unsafe = (
         generated.isna()
@@ -503,69 +762,105 @@ def _safe_weather_frame(
         | (generated >= game_start)
     )
 
-    matched_weather = check[provenance_col].notna()
-    unsafe_matched = unsafe & matched_weather
+    matched_weather = (
+        check[provenance_col]
+        .notna()
+    )
+
+    unsafe_matched = (
+        unsafe
+        & matched_weather
+    )
 
     if unsafe_matched.any():
-        sample = check.loc[
-            unsafe_matched,
-            ["gamePk", provenance_col, "_game_start"],
-        ].head(10).to_dict("records")
+        sample = (
+            check.loc[
+                unsafe_matched,
+                [
+                    "gamePk",
+                    provenance_col,
+                    "_game_start",
+                ],
+            ]
+            .head(10)
+            .to_dict("records")
+        )
+
         fail(
-            f"weather provenance is not safely pregame for "
-            f"{weather_path.name}; bad_rows={int(unsafe_matched.sum())}; "
+            "weather provenance is not safely pregame for "
+            f"{weather_path.name}; "
+            f"bad_rows={int(unsafe_matched.sum())}; "
             f"sample={sample}"
         )
 
-    return weather[["gamePk"] + keep_features].copy()
+    return weather[
+        ["gamePk"]
+        + keep_features
+    ].copy()
 
 
 def _discover_dates() -> list[str]:
-    files = sorted(PRED_DIR.glob("*_MLB.csv"))
-    dates: list[str] = []
+    prediction_dates: list[str] = []
 
-    for path in files:
+    for path in sorted(
+        PRED_DIR.glob("*_MLB.csv")
+    ):
         stem = path.stem
+
         if not stem.endswith("_MLB"):
             continue
+
         date_str = stem[:-4]
+
         if date_str:
-            dates.append(date_str)
+            prediction_dates.append(
+                date_str
+            )
 
-    final_files = sorted(FINAL_DIR.glob("*_final_scores_MLB.csv"))
-    final_dates: list[str] = []
+    final_dates: set[str] = set()
 
-    for path in final_files:
+    final_suffix = "_final_scores_MLB"
+
+    for path in sorted(
+        FINAL_DIR.glob("*_final_scores_MLB.csv")
+    ):
         stem = path.stem
-        suffix = "_final_scores_MLB"
-        if not stem.endswith(suffix):
+
+        if not stem.endswith(
+            final_suffix
+        ):
             continue
 
-        date_str = stem[:-len(suffix)]
+        date_str = stem[
+            :-len(final_suffix)
+        ]
+
         if date_str:
-            final_dates.append(date_str)
+            final_dates.add(
+                date_str
+            )
 
     if not final_dates:
-        fail(f"No final-score files found in {FINAL_DIR}")
-
-    latest_final_date = max(
-        pd.Timestamp(date_str.replace("_", "-")).normalize()
-        for date_str in final_dates
-    )
+        fail(
+            f"No final-score files found in {FINAL_DIR}"
+        )
 
     eligible_dates = [
         date_str
-        for date_str in dates
-        if pd.Timestamp(date_str.replace("_", "-")).normalize()
-        <= latest_final_date
+        for date_str in prediction_dates
+        if date_str in final_dates
     ]
 
-    skipped = len(dates) - len(eligible_dates)
+    missing_final_dates = [
+        date_str
+        for date_str in prediction_dates
+        if date_str not in final_dates
+    ]
 
-    if skipped:
+    if missing_final_dates:
         _log(
-            f"Skipping {skipped} prediction date(s) after latest available "
-            f"final-score date {latest_final_date.strftime('%Y-%m-%d')}",
+            "Skipping prediction dates with no matching final-score file: "
+            + ", ".join(missing_final_dates),
             "INFO",
         )
 
@@ -577,30 +872,60 @@ def _filter_dates(
     from_date: str | None,
     to_date: str | None,
 ) -> list[str]:
-    if not from_date and not to_date:
+    if (
+        not from_date
+        and not to_date
+    ):
         return dates
 
-    if not from_date or not to_date:
-        fail("--from-date and --to-date must be provided together")
+    if (
+        not from_date
+        or not to_date
+    ):
+        fail(
+            "--from-date and --to-date must be provided together"
+        )
 
-    start = pd.Timestamp(str(from_date).replace("_", "-")).normalize()
-    end = pd.Timestamp(str(to_date).replace("_", "-")).normalize()
+    start = pd.Timestamp(
+        str(from_date).replace(
+            "_",
+            "-",
+        )
+    ).normalize()
+
+    end = pd.Timestamp(
+        str(to_date).replace(
+            "_",
+            "-",
+        )
+    ).normalize()
 
     if start > end:
-        fail("--from-date must be <= --to-date")
+        fail(
+            "--from-date must be <= --to-date"
+        )
 
     selected: list[str] = []
 
     for date_str in dates:
-        parsed = pd.Timestamp(date_str.replace("_", "-")).normalize()
+        parsed = pd.Timestamp(
+            date_str.replace(
+                "_",
+                "-",
+            )
+        ).normalize()
 
         if start <= parsed <= end:
-            selected.append(date_str)
+            selected.append(
+                date_str
+            )
 
     return selected
 
 
-def _rename_prediction_features(pred: pd.DataFrame) -> pd.DataFrame:
+def _rename_prediction_features(
+    pred: pd.DataFrame,
+) -> pd.DataFrame:
     return pred.rename(
         columns={
             "home_prob": "dratings_home_prob",
@@ -616,11 +941,30 @@ def build_date_training_rows(
     date_str: str,
     summary: dict,
 ) -> pd.DataFrame:
-    pred_path = PRED_DIR / f"{date_str}_MLB.csv"
-    games_path = GAMES_DIR / f"{date_str}_games.csv"
-    sdv_path = SDV_DIR / f"{date_str}_sportsdataverse.csv"
-    final_path = FINAL_DIR / f"{date_str}_final_scores_MLB.csv"
-    weather_path = WEATHER_DIR / f"{date_str}_weather.csv"
+    pred_path = (
+        PRED_DIR
+        / f"{date_str}_MLB.csv"
+    )
+
+    games_path = (
+        GAMES_DIR
+        / f"{date_str}_games.csv"
+    )
+
+    sdv_path = (
+        SDV_DIR
+        / f"{date_str}_sportsdataverse.csv"
+    )
+
+    final_path = (
+        FINAL_DIR
+        / f"{date_str}_final_scores_MLB.csv"
+    )
+
+    weather_path = (
+        WEATHER_DIR
+        / f"{date_str}_weather.csv"
+    )
 
     pred = read_csv_checked(
         pred_path,
@@ -680,9 +1024,13 @@ def build_date_training_rows(
         f"final_scores {date_str}",
     )
 
-    summary["rows_loaded"] += len(pred)
+    summary["rows_loaded"] += len(
+        pred
+    )
 
-    pred = _rename_prediction_features(pred)
+    pred = _rename_prediction_features(
+        pred
+    )
 
     pred_keep = [
         "game_id",
@@ -706,18 +1054,30 @@ def build_date_training_rows(
         if col in games.columns
     ]
 
-    joined = pred[pred_keep].merge(
-        games[game_keep],
+    joined = pred[
+        pred_keep
+    ].merge(
+        games[
+            game_keep
+        ],
         on="game_id",
         how="inner",
-        suffixes=("_pred", "_games"),
+        suffixes=(
+            "_pred",
+            "_games",
+        ),
         validate="one_to_one",
     )
 
-    summary["rows_joined"] += len(joined)
+    summary["rows_joined"] += len(
+        joined
+    )
 
     if len(joined) != len(pred):
-        missing = len(pred) - len(joined)
+        missing = (
+            len(pred)
+            - len(joined)
+        )
 
         fail(
             f"{date_str} prediction->games join lost {missing} rows; "
@@ -738,9 +1098,17 @@ def build_date_training_rows(
         f"{date_str} away team",
     )
 
-    joined["game_date"] = joined["game_date_games"]
-    joined["home_team"] = joined["home_team_games"]
-    joined["away_team"] = joined["away_team_games"]
+    joined["game_date"] = (
+        joined["game_date_games"]
+    )
+
+    joined["home_team"] = (
+        joined["home_team_games"]
+    )
+
+    joined["away_team"] = (
+        joined["away_team_games"]
+    )
 
     sdv_keep = [
         "gamePk",
@@ -749,10 +1117,14 @@ def build_date_training_rows(
         "sdv_status",
         "sdv_home_sp_found",
         "sdv_away_sp_found",
-    ] + list(SDV_FEATURE_MAP.keys())
+    ] + list(
+        SDV_FEATURE_MAP.keys()
+    )
 
     joined = joined.merge(
-        sdv[sdv_keep].rename(
+        sdv[
+            sdv_keep
+        ].rename(
             columns={
                 "gamePk": "gamePk_sdv",
             }
@@ -762,8 +1134,14 @@ def build_date_training_rows(
         validate="one_to_one",
     )
 
-    missing_sdv = joined["sdv_as_of_date"].isna()
-    summary["missing_sdv"] += int(missing_sdv.sum())
+    missing_sdv = (
+        joined["sdv_as_of_date"]
+        .isna()
+    )
+
+    summary["missing_sdv"] += int(
+        missing_sdv.sum()
+    )
 
     _assert_secondary_gamepk_match(
         joined,
@@ -784,7 +1162,9 @@ def build_date_training_rows(
         if col in final.columns
     ]
 
-    final_join = final[final_keep].copy()
+    final_join = final[
+        final_keep
+    ].copy()
 
     if "gamePk" in final_join.columns:
         final_join = final_join.rename(
@@ -826,7 +1206,9 @@ def build_date_training_rows(
             .str.lower()
         )
 
-        status_invalid = final_status.ne("final")
+        status_invalid = (
+            final_status.ne("final")
+        )
 
     else:
         status_invalid = pd.Series(
@@ -845,10 +1227,17 @@ def build_date_training_rows(
         | (final_away < 0)
     )
 
-    summary["missing_final_score"] += int(invalid_final.sum())
+    summary["missing_final_score"] += int(
+        invalid_final.sum()
+    )
 
-    joined["target_home_runs"] = final_home
-    joined["target_away_runs"] = final_away
+    joined["target_home_runs"] = (
+        final_home
+    )
+
+    joined["target_away_runs"] = (
+        final_away
+    )
 
     game_date = _normalize_date(
         joined["game_date"]
@@ -863,28 +1252,37 @@ def build_date_training_rows(
         & (
             game_date.isna()
             | sdv_as_of_date.isna()
-            | (sdv_as_of_date >= game_date)
+            | (
+                sdv_as_of_date
+                >= game_date
+            )
         )
     )
 
-    summary["leakage_rejections"] += int(
+    summary[
+        "leakage_rejections"
+    ] += int(
         leakage.sum()
     )
 
     if leakage.any():
-        sample = joined.loc[
-            leakage,
-            [
-                "game_id",
-                "gamePk",
-                "game_date",
-                "sdv_as_of_date",
-            ],
-        ].head(10).to_dict("records")
+        sample = (
+            joined.loc[
+                leakage,
+                [
+                    "game_id",
+                    "gamePk",
+                    "game_date",
+                    "sdv_as_of_date",
+                ],
+            ]
+            .head(10)
+            .to_dict("records")
+        )
 
         fail(
             f"{date_str} SDV leakage validation failed; "
-            f"sdv_as_of_date must be < game_date; "
+            "sdv_as_of_date must be < game_date; "
             f"bad_rows={int(leakage.sum())}; "
             f"sample={sample}"
         )
@@ -941,7 +1339,9 @@ def build_date_training_rows(
 
     for col in (
         DRATINGS_COLUMNS
-        + list(SDV_FEATURE_MAP.values())
+        + list(
+            SDV_FEATURE_MAP.values()
+        )
         + TARGET_COLUMNS
     ):
         if col in output.columns:
@@ -993,7 +1393,9 @@ def validate_final_output(
         for col in (
             AUDIT_COLUMNS
             + DRATINGS_COLUMNS
-            + list(SDV_FEATURE_MAP.values())
+            + list(
+                SDV_FEATURE_MAP.values()
+            )
             + TARGET_COLUMNS
         )
         if col not in df.columns
@@ -1015,7 +1417,8 @@ def validate_final_output(
 
     if forbidden:
         fail(
-            f"training output contains forbidden feature columns: {forbidden}"
+            "training output contains forbidden feature columns: "
+            f"{forbidden}"
         )
 
     game_date = pd.to_datetime(
@@ -1035,15 +1438,19 @@ def validate_final_output(
     )
 
     if bad_leakage.any():
-        sample = df.loc[
-            bad_leakage,
-            [
-                "game_id",
-                "gamePk",
-                "game_date",
-                "sdv_as_of_date",
-            ],
-        ].head(10).to_dict("records")
+        sample = (
+            df.loc[
+                bad_leakage,
+                [
+                    "game_id",
+                    "gamePk",
+                    "game_date",
+                    "sdv_as_of_date",
+                ],
+            ]
+            .head(10)
+            .to_dict("records")
+        )
 
         fail(
             "final training output failed SDV as-of validation; "
@@ -1064,14 +1471,18 @@ def validate_final_output(
         )
 
         if bad.any():
-            sample = df.loc[
-                bad,
-                [
-                    "game_id",
-                    "gamePk",
-                    col,
-                ],
-            ].head(10).to_dict("records")
+            sample = (
+                df.loc[
+                    bad,
+                    [
+                        "game_id",
+                        "gamePk",
+                        col,
+                    ],
+                ]
+                .head(10)
+                .to_dict("records")
+            )
 
             fail(
                 f"final training output invalid target {col}; "
@@ -1135,7 +1546,8 @@ def main() -> None:
 
         if not dates:
             fail(
-                "No prediction dates found for the requested range"
+                "No prediction dates with matching final-score files "
+                "found for the requested range"
             )
 
         _log(
