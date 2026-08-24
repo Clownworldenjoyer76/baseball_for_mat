@@ -219,6 +219,37 @@ def load_games_lookup(date):
     return lookup
 
 
+def load_games_by_game_id(date):
+    path = GAMES_DIR / f"{date}_games.csv"
+    lookup = {}
+
+    if not path.exists():
+        log(f"GAMES FILE MISSING FOR LEGACY FINAL-SCORE BACKFILL: {path}")
+        return lookup
+
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            game_id = str(row.get("game_id", "") or "").strip()
+
+            if not game_id:
+                continue
+
+            if game_id in lookup:
+                fail(
+                    "Duplicate game_id in games file during legacy final-score backfill: "
+                    f"date={date} game_id={game_id}"
+                )
+
+            lookup[game_id] = {
+                "gamePk": str(row.get("gamePk", "") or "").strip(),
+                "gameNumber": str(row.get("gameNumber", "") or "").strip(),
+            }
+
+    return lookup
+
+
 def load_predictions_lookup(date):
     path = PRED_DIR / f"{date}_MLB.csv"
     lookup = {}
@@ -886,6 +917,134 @@ def process_file(
     )
 
 
+def legacy_final_date_from_path(path):
+    suffix = "_final_scores_MLB.csv"
+    name = path.name
+
+    if not name.endswith(suffix):
+        return ""
+
+    return name[:-len(suffix)]
+
+
+def legacy_row_has_final_score(row):
+    try:
+        away_score = int(str(row.get("final_away_score", "")).strip())
+        home_score = int(str(row.get("final_home_score", "")).strip())
+    except (TypeError, ValueError):
+        return False
+
+    return away_score >= 0 and home_score >= 0
+
+
+def migrate_legacy_final_score_files(files_written):
+    migrated_files = 0
+    migrated_rows = 0
+    unresolved_gamepk_rows = 0
+
+    for path in sorted(FINAL_DIR.glob("*_final_scores_MLB.csv")):
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+            fieldnames = list(reader.fieldnames or [])
+            rows = list(reader)
+
+        if not fieldnames:
+            fail(f"Legacy final-score file has no header: {path}")
+
+        missing_header_columns = [
+            col
+            for col in FINAL_HEADER
+            if col not in fieldnames
+        ]
+
+        if not missing_header_columns:
+            continue
+
+        date = legacy_final_date_from_path(path)
+
+        if not date:
+            fail(f"Could not derive date from legacy final-score path: {path}")
+
+        games_by_game_id = load_games_by_game_id(date)
+
+        output_rows = []
+
+        for row_index, row in enumerate(rows, start=2):
+            record = {
+                col: str(row.get(col, "") or "").strip()
+                for col in FINAL_HEADER
+            }
+
+            record["sport"] = record["sport"] or "baseball"
+            record["league"] = record["league"] or "mlb"
+            record["game_date"] = record["game_date"] or date
+
+            game_id = record["game_id"]
+            game_match = games_by_game_id.get(game_id, {}) if game_id else {}
+
+            if not record["gamePk"]:
+                record["gamePk"] = str(
+                    game_match.get("gamePk", "") or ""
+                ).strip()
+
+            if not record["gameNumber"]:
+                record["gameNumber"] = str(
+                    game_match.get("gameNumber", "") or ""
+                ).strip()
+
+            if not record["game_status"] and legacy_row_has_final_score(record):
+                record["game_status"] = "final"
+
+            if not record["final_total"] and legacy_row_has_final_score(record):
+                record["final_total"] = str(
+                    int(record["final_away_score"])
+                    + int(record["final_home_score"])
+                )
+
+            if not record["final_scores_generated_at"]:
+                record["final_scores_generated_at"] = RUN_TS
+
+            if game_id and not record["gamePk"]:
+                unresolved_gamepk_rows += 1
+                log(
+                    "LEGACY FINAL-SCORE GAMEPK UNRESOLVED | "
+                    f"file={path.name} | row={row_index} | "
+                    f"game_id={game_id}"
+                )
+
+            output_rows.append([
+                record.get(col, "")
+                for col in FINAL_HEADER
+            ])
+
+        write_csv(
+            path,
+            FINAL_HEADER,
+            output_rows,
+            files_written,
+            "legacy final-score schema backfill",
+        )
+
+        migrated_files += 1
+        migrated_rows += len(output_rows)
+
+        log(
+            "MIGRATED LEGACY FINAL-SCORE FILE | "
+            f"file={path.name} | rows={len(output_rows)} | "
+            f"missing_header_columns={missing_header_columns}"
+        )
+
+    log(f"Legacy final-score files migrated: {migrated_files}")
+    log(f"Legacy final-score rows migrated: {migrated_rows}")
+    log(f"Legacy final-score rows with unresolved gamePk: {unresolved_gamepk_rows}")
+
+    return {
+        "migrated_files": migrated_files,
+        "migrated_rows": migrated_rows,
+        "unresolved_gamepk_rows": unresolved_gamepk_rows,
+    }
+
+
 def main():
     files_written = []
     final_records_by_date = {}
@@ -960,6 +1119,10 @@ def main():
                 "final scores",
             )
 
+        legacy_backfill_summary = migrate_legacy_final_score_files(
+            files_written
+        )
+
         write_audit_csv(
             STATUS_AUDIT_FILE,
             status_audit_header,
@@ -999,6 +1162,18 @@ def main():
         log(f"Completed rows with blank game_id: {blank_game_id_rows_count}")
         log(f"Parse errors encountered: {total_parse_errors}")
         log(f"Unknown status audit rows: {unknown_status_count}")
+        log(
+            "Legacy final-score files migrated: "
+            f"{legacy_backfill_summary['migrated_files']}"
+        )
+        log(
+            "Legacy final-score rows migrated: "
+            f"{legacy_backfill_summary['migrated_rows']}"
+        )
+        log(
+            "Legacy final-score rows with unresolved gamePk: "
+            f"{legacy_backfill_summary['unresolved_gamepk_rows']}"
+        )
         log(f"Status audit: {STATUS_AUDIT_FILE}")
         log(f"Key audit: {KEY_AUDIT_FILE}")
 
