@@ -1,29 +1,32 @@
-=== MLB select_bets RUN 2026-08-24T16:00:11.698838+00:00 ===
-2026-08-24T16:00:11.703145+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges/ev_kelly
-2026-08-24T16:00:11.703189+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/04_select/morning
-2026-08-24T16:00:11.703224+00:00 | INFO  | Rain filter: will_it_rain=False symbol_code=False symbol_terms=['rain', 'heavyrain', 'lightrain', 'sleet', 'snow', 'thunder'] | SP sample exclude totals: False | Lineup low sample warn: 4
-2026-08-24T16:00:11.703251+00:00 | INFO  | Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.
-2026-08-24T16:00:11.703275+00:00 | INFO  | Selection matches market rows by game_id only. Team/date fallback matching is disabled.
-2026-08-24T16:00:11.703505+00:00 | INFO  | Files found: 3
-2026-08-24T16:00:11.703549+00:00 | INFO  | Selected run mode: rebuild_all
-2026-08-24T16:00:11.703579+00:00 | INFO  | Slate keys to process: ['2026_08_24']
-2026-08-24T16:00:11.703610+00:00 | INFO  | --- SLATE: 2026_08_24
-2026-08-24T16:00:11.729204+00:00 | INFO  | 2026_08_24 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-24T16:00:11.844373+00:00 | INFO  | WROTE: 2026_08_24_MLB.csv (9 bets | ml=1 rl=8 tot=0)
-2026-08-24T16:00:11.849208+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selection_rejection_audit.csv rows=51
-2026-08-24T16:00:11.849247+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selected_bet_audit.csv rows=9
-2026-08-24T16:00:11.849275+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/run_line_selection_audit.csv rows=20
+=== MLB select_bets RUN 2026-08-25T11:05:03.173835+00:00 ===
+2026-08-25T11:05:03.174284+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges/ev_kelly
+2026-08-25T11:05:03.174324+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/04_select/morning
+2026-08-25T11:05:03.174357+00:00 | INFO  | Rain filter: will_it_rain=False symbol_code=False symbol_terms=['rain', 'heavyrain', 'lightrain', 'sleet', 'snow', 'thunder'] | SP sample exclude totals: False | Lineup low sample warn: 4
+2026-08-25T11:05:03.174380+00:00 | INFO  | Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.
+2026-08-25T11:05:03.174402+00:00 | INFO  | Selection matches market rows by game_id only. Team/date fallback matching is disabled.
+2026-08-25T11:05:03.174607+00:00 | INFO  | Files found: 6
+2026-08-25T11:05:03.174660+00:00 | INFO  | Selected run mode: rebuild_all
+2026-08-25T11:05:03.174687+00:00 | INFO  | Slate keys to process: ['2026_08_24', '2026_08_25']
+2026-08-25T11:05:03.174716+00:00 | INFO  | --- SLATE: 2026_08_24
+2026-08-25T11:05:03.197799+00:00 | INFO  | 2026_08_24 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-25T11:05:03.290685+00:00 | INFO  | WROTE: 2026_08_24_MLB.csv (9 bets | ml=1 rl=8 tot=0)
+2026-08-25T11:05:03.290727+00:00 | INFO  | --- SLATE: 2026_08_25
+2026-08-25T11:05:03.307844+00:00 | INFO  | 2026_08_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-25T11:05:03.436000+00:00 | INFO  | WROTE: 2026_08_25_MLB.csv (12 bets | ml=1 rl=11 tot=0)
+2026-08-25T11:05:03.441584+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selection_rejection_audit.csv rows=129
+2026-08-25T11:05:03.441620+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selected_bet_audit.csv rows=21
+2026-08-25T11:05:03.441645+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/run_line_selection_audit.csv rows=50
 
 ============================================================
-SUMMARY  2026-08-24T16:00:11.849288+00:00
+SUMMARY  2026-08-25T11:05:03.441657+00:00
 ============================================================
   run_mode                          : rebuild_all
-  slates_found                      : 1
-  slates_processed                  : 1
-  slates_written                    : 1
-  total_bets                        : 9
-  moneyline_bets                    : 1
-  run_line_bets                     : 8
+  slates_found                      : 2
+  slates_processed                  : 2
+  slates_written                    : 2
+  total_bets                        : 21
+  moneyline_bets                    : 2
+  run_line_bets                     : 19
   total_mkt_bets                    : 0
   skipped_slates                    : 0
   missing_moneyline                 : 0
@@ -40,20 +43,21 @@ SUMMARY  2026-08-24T16:00:11.849288+00:00
   rain_excluded_symbol_code         : 0
   sp_sample_excluded                : 0
   low_confidence                    : 0
-  rejection_audit_rows              : 51
-  selected_audit_rows               : 9
+  rejection_audit_rows              : 129
+  selected_audit_rows               : 21
   errors                            : 0
 
 --- Filter Breakdown ---
-  moneyline-home       passed=   1 ev_fail=   3 kelly_fail=   6 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
-  moneyline-away       passed=   0 ev_fail=   6 kelly_fail=   4 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
-  run_line-home       passed=   4 ev_fail=   6 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
-  run_line-away       passed=   4 ev_fail=   6 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
-  total-over       passed=   0 ev_fail=   2 kelly_fail=   2 odds_fail=   6 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
-  total-under      passed=   0 ev_fail=   0 kelly_fail=   9 odds_fail=   0 line_fail=   0 prob_fail=   1 source_fail=   0 missing=   0 excluded=   0
+  moneyline-home       passed=   2 ev_fail=  12 kelly_fail=  11 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
+  moneyline-away       passed=   0 ev_fail=  10 kelly_fail=  15 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
+  run_line-home       passed=  14 ev_fail=  11 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
+  run_line-away       passed=   5 ev_fail=  20 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
+  total-over       passed=   0 ev_fail=   4 kelly_fail=   6 odds_fail=  15 line_fail=   0 prob_fail=   0 source_fail=   0 missing=   0 excluded=   0
+  total-under      passed=   0 ev_fail=   0 kelly_fail=  22 odds_fail=   0 line_fail=   0 prob_fail=   3 source_fail=   0 missing=   0 excluded=   0
 
   slate                           bets    ml    rl   tot         status
   2026_08_24                         9     1     8     0             ok
+  2026_08_25                        12     1    11     0             ok
 
 STATUS: SUCCESS
 ============================================================
