@@ -1,0 +1,636 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MLB Moneyline Feature Test</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 28px;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 28px;
+}
+th, td {
+    border: 1px solid #bbb;
+    padding: 6px 8px;
+}
+</style>
+</head>
+<body>
+
+<h1>MLB Moneyline Feature Expansion Test</h1>
+
+<p>
+Goal: determine whether adding more pregame information causes
+higher predicted moneyline probability to produce a higher actual win rate.
+</p>
+
+<p>
+Evaluation begins: 2026-07-05<br>
+Evaluation dates: 43<br>
+Statcast rows: 558,231
+</p>
+
+<h2>Summary</h2>
+<table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Version</th>
+      <th>Games</th>
+      <th>Probability vs win result</th>
+      <th>Lowest probability group win %</th>
+      <th>Highest probability group win %</th>
+      <th>High minus low win %</th>
+      <th>Rising groups out of 4</th>
+      <th>Probability error</th>
+      <th>Predicted vs actual gap</th>
+      <th>Signal change vs baseline</th>
+      <th>Error change vs baseline</th>
+      <th>Gap change vs baseline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>baseline</td>
+      <td>348</td>
+      <td>0.0361</td>
+      <td>55.71%</td>
+      <td>60.00%</td>
+      <td>4.29%</td>
+      <td>3</td>
+      <td>0.2655</td>
+      <td>10.36%</td>
+      <td>0.0000</td>
+      <td>0.0000</td>
+      <td>0.00%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>348</td>
+      <td>0.0363</td>
+      <td>51.43%</td>
+      <td>55.71%</td>
+      <td>4.29%</td>
+      <td>2</td>
+      <td>0.2704</td>
+      <td>10.28%</td>
+      <td>0.0002</td>
+      <td>0.0050</td>
+      <td>-0.07%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>348</td>
+      <td>0.0734</td>
+      <td>45.71%</td>
+      <td>55.71%</td>
+      <td>10.00%</td>
+      <td>2</td>
+      <td>0.2633</td>
+      <td>11.98%</td>
+      <td>0.0372</td>
+      <td>-0.0022</td>
+      <td>1.62%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>348</td>
+      <td>0.0284</td>
+      <td>55.71%</td>
+      <td>55.71%</td>
+      <td>0.00%</td>
+      <td>2</td>
+      <td>0.2683</td>
+      <td>12.06%</td>
+      <td>-0.0077</td>
+      <td>0.0028</td>
+      <td>1.70%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>348</td>
+      <td>0.0135</td>
+      <td>55.71%</td>
+      <td>61.43%</td>
+      <td>5.71%</td>
+      <td>3</td>
+      <td>0.2633</td>
+      <td>8.56%</td>
+      <td>-0.0227</td>
+      <td>-0.0022</td>
+      <td>-1.80%</td>
+    </tr>
+    <tr>
+      <td>all_extra</td>
+      <td>348</td>
+      <td>0.0022</td>
+      <td>54.29%</td>
+      <td>54.29%</td>
+      <td>0.00%</td>
+      <td>2</td>
+      <td>0.2712</td>
+      <td>11.60%</td>
+      <td>-0.0339</td>
+      <td>0.0057</td>
+      <td>1.24%</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Probability Groups</h2>
+<h3>baseline</h3><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Probability group</th>
+      <th>Games</th>
+      <th>Average predicted probability</th>
+      <th>Actual win %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>70</td>
+      <td>32.26%</td>
+      <td>55.71%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>69</td>
+      <td>46.61%</td>
+      <td>44.93%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+      <td>54.99%</td>
+      <td>50.00%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>69</td>
+      <td>62.94%</td>
+      <td>55.07%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>70</td>
+      <td>73.63%</td>
+      <td>60.00%</td>
+    </tr>
+  </tbody>
+</table><h3>starter_extra</h3><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Probability group</th>
+      <th>Games</th>
+      <th>Average predicted probability</th>
+      <th>Actual win %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>70</td>
+      <td>28.30%</td>
+      <td>51.43%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>69</td>
+      <td>43.83%</td>
+      <td>47.83%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+      <td>53.69%</td>
+      <td>50.00%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>69</td>
+      <td>62.22%</td>
+      <td>60.87%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>70</td>
+      <td>74.74%</td>
+      <td>55.71%</td>
+    </tr>
+  </tbody>
+</table><h3>bullpen</h3><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Probability group</th>
+      <th>Games</th>
+      <th>Average predicted probability</th>
+      <th>Actual win %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>70</td>
+      <td>30.59%</td>
+      <td>45.71%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>69</td>
+      <td>43.86%</td>
+      <td>55.07%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+      <td>53.34%</td>
+      <td>44.29%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>69</td>
+      <td>61.36%</td>
+      <td>65.22%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>70</td>
+      <td>76.22%</td>
+      <td>55.71%</td>
+    </tr>
+  </tbody>
+</table><h3>team_hitting</h3><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Probability group</th>
+      <th>Games</th>
+      <th>Average predicted probability</th>
+      <th>Actual win %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>70</td>
+      <td>29.40%</td>
+      <td>55.71%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>69</td>
+      <td>41.72%</td>
+      <td>49.28%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+      <td>50.21%</td>
+      <td>52.86%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>69</td>
+      <td>59.66%</td>
+      <td>52.17%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>70</td>
+      <td>71.87%</td>
+      <td>55.71%</td>
+    </tr>
+  </tbody>
+</table><h3>team_form</h3><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Probability group</th>
+      <th>Games</th>
+      <th>Average predicted probability</th>
+      <th>Actual win %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>70</td>
+      <td>34.89%</td>
+      <td>55.71%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>69</td>
+      <td>46.14%</td>
+      <td>47.83%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+      <td>52.81%</td>
+      <td>50.00%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>69</td>
+      <td>59.17%</td>
+      <td>50.72%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>70</td>
+      <td>70.36%</td>
+      <td>61.43%</td>
+    </tr>
+  </tbody>
+</table><h3>all_extra</h3><table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Probability group</th>
+      <th>Games</th>
+      <th>Average predicted probability</th>
+      <th>Actual win %</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>70</td>
+      <td>30.19%</td>
+      <td>54.29%</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>69</td>
+      <td>43.97%</td>
+      <td>52.17%</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>70</td>
+      <td>52.34%</td>
+      <td>51.43%</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>69</td>
+      <td>60.22%</td>
+      <td>53.62%</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>70</td>
+      <td>72.34%</td>
+      <td>54.29%</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Extra Feature Availability</h2>
+<table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>group</th>
+      <th>feature</th>
+      <th>coverage_pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_pitch_types_extra</td>
+      <td>92.3%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_pitch_types_extra</td>
+      <td>92.4%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_avg_spin_extra</td>
+      <td>92.3%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_avg_spin_extra</td>
+      <td>92.4%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_avg_spin_30d_extra</td>
+      <td>91.6%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_avg_spin_30d_extra</td>
+      <td>91.8%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_spin_delta_30d_extra</td>
+      <td>91.6%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_spin_delta_30d_extra</td>
+      <td>91.8%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_stuff_sample_extra</td>
+      <td>92.3%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_stuff_sample_extra</td>
+      <td>92.4%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_command_sample_extra</td>
+      <td>92.3%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_command_sample_extra</td>
+      <td>92.4%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>home_sp_days_rest_extra</td>
+      <td>92.3%</td>
+    </tr>
+    <tr>
+      <td>starter_extra</td>
+      <td>away_sp_days_rest_extra</td>
+      <td>92.4%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>home_bp_pa_14d</td>
+      <td>100.0%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>away_bp_pa_14d</td>
+      <td>100.0%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>home_bp_woba_allowed_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>away_bp_woba_allowed_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>home_bp_k_rate_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>away_bp_k_rate_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>home_bp_bb_rate_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>away_bp_bb_rate_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>home_bp_hard_rate_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>away_bp_hard_rate_14d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>home_bp_pitches_3d</td>
+      <td>100.0%</td>
+    </tr>
+    <tr>
+      <td>bullpen</td>
+      <td>away_bp_pitches_3d</td>
+      <td>100.0%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>home_hit_pa_30d</td>
+      <td>100.0%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>away_hit_pa_30d</td>
+      <td>100.0%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>home_hit_woba_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>away_hit_woba_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>home_hit_k_rate_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>away_hit_k_rate_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>home_hit_bb_rate_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>away_hit_bb_rate_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>home_hit_hard_rate_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>away_hit_hard_rate_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>home_hit_avg_ev_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_hitting</td>
+      <td>away_hit_avg_ev_30d</td>
+      <td>99.1%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>home_form_win_pct_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>away_form_win_pct_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>home_form_runs_for_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>away_form_runs_for_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>home_form_runs_against_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>away_form_runs_against_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>home_form_run_diff_10</td>
+      <td>98.9%</td>
+    </tr>
+    <tr>
+      <td>team_form</td>
+      <td>away_form_run_diff_10</td>
+      <td>98.9%</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>
