@@ -22,6 +22,12 @@ LOG_FILE = ERROR_DIR / "build_juice_files.txt"
 
 PROB_TOLERANCE = 1e-6
 
+# Run-line calibration fitted out-of-sample on the current production model.
+# The underlying Skellam run-line probability formula remains unchanged.
+RUN_LINE_CALIBRATION_INTERCEPT = 0.0
+RUN_LINE_CALIBRATION_SLOPE = 0.281791
+RUN_LINE_CALIBRATION_EPS = 1e-12
+
 LEGACY_OFFICIAL_PROBABILITY_COLUMNS = [
     "home_normalized_prob_moneyline",
     "away_normalized_prob_moneyline",
@@ -265,6 +271,71 @@ def run_line_probabilities(model_home_runs, model_away_runs, home_line, away_lin
     return p_home, p_away
 
 
+def _calibrate_run_line_probability(probability):
+    probability = float(probability)
+
+    if not np.isfinite(probability) or probability < 0.0 or probability > 1.0:
+        raise ValueError(f"invalid raw run-line probability: {probability}")
+
+    clipped = min(
+        max(probability, RUN_LINE_CALIBRATION_EPS),
+        1.0 - RUN_LINE_CALIBRATION_EPS,
+    )
+
+    raw_logit = math.log(clipped / (1.0 - clipped))
+    calibrated_logit = (
+        RUN_LINE_CALIBRATION_INTERCEPT
+        + RUN_LINE_CALIBRATION_SLOPE * raw_logit
+    )
+    calibrated = 1.0 / (1.0 + math.exp(-calibrated_logit))
+
+    if not np.isfinite(calibrated) or calibrated <= 0.0 or calibrated >= 1.0:
+        raise ValueError(
+            f"invalid calibrated run-line probability: raw={probability} calibrated={calibrated}"
+        )
+
+    return calibrated
+
+
+def calibrate_run_line_probabilities(home_probability, away_probability):
+    home_probability = float(home_probability)
+    away_probability = float(away_probability)
+
+    if (
+        not np.isfinite(home_probability)
+        or not np.isfinite(away_probability)
+        or abs(home_probability + away_probability - 1.0) > PROB_TOLERANCE
+    ):
+        raise ValueError(
+            "raw run-line probability pair must be finite and sum to 1: "
+            f"home={home_probability} away={away_probability}"
+        )
+
+    calibrated_home = _calibrate_run_line_probability(home_probability)
+    calibrated_away = 1.0 - calibrated_home
+
+    return calibrated_home, calibrated_away
+
+
+def calibrated_run_line_probabilities(
+    model_home_runs,
+    model_away_runs,
+    home_line,
+    away_line,
+):
+    raw_home, raw_away = run_line_probabilities(
+        model_home_runs,
+        model_away_runs,
+        home_line,
+        away_line,
+    )
+
+    return calibrate_run_line_probabilities(
+        raw_home,
+        raw_away,
+    )
+
+
 def totals_probabilities(model_home_runs, model_away_runs, total_line):
     if not np.isfinite(model_home_runs) or not np.isfinite(model_away_runs):
         raise ValueError("missing model run projection")
@@ -354,9 +425,10 @@ def process_run_line(file_path, summary):
     home_probs, away_probs = [], []
     for i, r in df.iterrows():
         try:
-            hp, ap = run_line_probabilities(
+            raw_hp, raw_ap = run_line_probabilities(
                 r["model_home_runs"], r["model_away_runs"], r["home_run_line"], r["away_run_line"]
             )
+            hp, ap = calibrate_run_line_probabilities(raw_hp, raw_ap)
         except Exception as e:
             raise ValueError(f"{file_path} idx={i} run-line probability failure: {e}") from e
         home_probs.append(hp)
@@ -410,7 +482,7 @@ def process_total(file_path, summary):
     tot["over_model_prob_total_win"] = over_win
     tot["over_model_prob_total_loss"] = over_loss
     tot["under_model_prob_total_win"] = under_win
-    tot["under_model_prob_total_loss"] = under_loss
+    tot["under_model_prob_total_loss"] = over_loss
     tot["total_model_prob_push"] = pushes
 
     # Push-aware fair decimal: 1 + (p_loss / p_win).
