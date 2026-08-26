@@ -426,7 +426,10 @@ def process_run_line(file_path, summary):
     for i, r in df.iterrows():
         try:
             raw_hp, raw_ap = run_line_probabilities(
-                r["model_home_runs"], r["model_away_runs"], r["home_run_line"], r["away_run_line"]
+                r["model_home_runs"],
+                r["model_away_runs"],
+                r["home_run_line"],
+                r["away_run_line"],
             )
             hp, ap = calibrate_run_line_probabilities(raw_hp, raw_ap)
         except Exception as e:
@@ -482,7 +485,7 @@ def process_total(file_path, summary):
     tot["over_model_prob_total_win"] = over_win
     tot["over_model_prob_total_loss"] = over_loss
     tot["under_model_prob_total_win"] = under_win
-    tot["under_model_prob_total_loss"] = over_loss
+    tot["under_model_prob_total_loss"] = under_loss
     tot["total_model_prob_push"] = pushes
 
     # Push-aware fair decimal: 1 + (p_loss / p_win).
