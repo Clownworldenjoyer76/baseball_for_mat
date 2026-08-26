@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 import traceback
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -75,6 +76,114 @@ SDV_MODEL_FEATURE_DESCRIPTIONS = {
     "sp_stuff_plus": "SportsDataverse pitch-quality score",
     "sp_command_plus": "SportsDataverse location/command-quality score",
 }
+
+BULLPEN_FEATURE_COLUMNS = [
+    "bp_pa_14d",
+    "bp_woba_allowed_14d",
+    "bp_k_rate_14d",
+    "bp_bb_rate_14d",
+    "bp_hard_rate_14d",
+    "bp_pitches_3d",
+    "bp_pa_7d",
+    "bp_woba_allowed_7d",
+    "bp_k_rate_7d",
+    "bp_bb_rate_7d",
+    "bp_hard_rate_7d",
+]
+
+TEAM_ALIASES = {
+    "ARI": "ARI", "AZ": "ARI", "ARIZONA DIAMONDBACKS": "ARI",
+    "ATL": "ATL", "ATLANTA BRAVES": "ATL",
+    "ATH": "ATH", "OAK": "ATH", "ATHLETICS": "ATH",
+    "OAKLAND ATHLETICS": "ATH", "SACRAMENTO ATHLETICS": "ATH",
+    "BAL": "BAL", "BALTIMORE ORIOLES": "BAL",
+    "BOS": "BOS", "BOSTON RED SOX": "BOS",
+    "CHC": "CHC", "CHICAGO CUBS": "CHC",
+    "CWS": "CWS", "CHW": "CWS", "CHICAGO WHITE SOX": "CWS",
+    "CIN": "CIN", "CINCINNATI REDS": "CIN",
+    "CLE": "CLE", "CLEVELAND GUARDIANS": "CLE",
+    "COL": "COL", "COLORADO ROCKIES": "COL",
+    "DET": "DET", "DETROIT TIGERS": "DET",
+    "HOU": "HOU", "HOUSTON ASTROS": "HOU",
+    "KC": "KC", "KCR": "KC", "KANSAS CITY ROYALS": "KC",
+    "LAA": "LAA", "LOS ANGELES ANGELS": "LAA",
+    "LAD": "LAD", "LOS ANGELES DODGERS": "LAD",
+    "MIA": "MIA", "MIAMI MARLINS": "MIA",
+    "MIL": "MIL", "MILWAUKEE BREWERS": "MIL",
+    "MIN": "MIN", "MINNESOTA TWINS": "MIN",
+    "NYM": "NYM", "NEW YORK METS": "NYM",
+    "NYY": "NYY", "NEW YORK YANKEES": "NYY",
+    "PHI": "PHI", "PHILADELPHIA PHILLIES": "PHI",
+    "PIT": "PIT", "PITTSBURGH PIRATES": "PIT",
+    "SD": "SD", "SDP": "SD", "SAN DIEGO PADRES": "SD",
+    "SF": "SF", "SFG": "SF", "SAN FRANCISCO GIANTS": "SF",
+    "SEA": "SEA", "SEATTLE MARINERS": "SEA",
+    "STL": "STL", "ST. LOUIS CARDINALS": "STL", "ST LOUIS CARDINALS": "STL",
+    "TB": "TB", "TBR": "TB", "TAMPA BAY RAYS": "TB",
+    "TEX": "TEX", "TEXAS RANGERS": "TEX",
+    "TOR": "TOR", "TORONTO BLUE JAYS": "TOR",
+    "WSH": "WSH", "WSN": "WSH", "WASHINGTON NATIONALS": "WSH",
+}
+
+STRIKEOUT_EVENTS = {
+    "strikeout",
+    "strikeout_double_play",
+}
+
+WALK_EVENTS = {
+    "walk",
+    "intent_walk",
+}
+
+TEAM_STATCAST_KEEP_COLUMNS = [
+    "game_date",
+    "game_pk",
+    "home_team",
+    "away_team",
+    "inning_topbot",
+    "inning",
+    "at_bat_number",
+    "pitch_number",
+    "pitcher",
+    "events",
+    "woba_value",
+    "launch_speed",
+]
+
+TEAM_STATCAST_REQUIRED_COLUMNS = [
+    "game_date",
+    "game_pk",
+    "home_team",
+    "away_team",
+    "inning_topbot",
+    "at_bat_number",
+    "pitch_number",
+    "pitcher",
+    "events",
+    "woba_value",
+    "launch_speed",
+]
+
+TEAM_STATCAST_CHUNK_DAYS = 4
+TEAM_STATCAST_FETCH_RETRIES = 3
+
+
+def canonical_team(value) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    text = str(value).strip().upper()
+    if not text:
+        return None
+    return TEAM_ALIASES.get(text)
+
+
+def _safe_ratio(numerator: float, denominator: float) -> float:
+    if denominator is None or denominator <= 0:
+        return float("nan")
+    if pd.isna(denominator) or pd.isna(numerator):
+        return float("nan")
+    return float(numerator / denominator)
+
 
 PITCHER_FEATURE_COLUMNS = [
     "pitcher_id",
@@ -676,6 +785,442 @@ def ensure_season_cache(
 
 
 # =========================
+# LEAGUE STATCAST CACHE FOR BULLPEN FEATURES
+# =========================
+
+def _team_cache_path(season: int) -> Path:
+    return CACHE_DIR / f"{season}_team_statcast.parquet"
+
+
+def _read_team_cache(season: int) -> pl.DataFrame:
+    path = _team_cache_path(season)
+    if not path.exists():
+        return pl.DataFrame()
+
+    try:
+        frame = pl.read_parquet(path)
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not read bullpen Statcast cache {path}: {exc}"
+        ) from exc
+
+    missing = [
+        col
+        for col in TEAM_STATCAST_REQUIRED_COLUMNS
+        if col not in frame.columns
+    ]
+    if frame.height and missing:
+        raise ValueError(
+            f"Bullpen Statcast cache {path} missing columns: {missing}"
+        )
+
+    return frame
+
+
+def _write_team_cache_atomic(
+    season: int,
+    frame: pl.DataFrame,
+) -> None:
+    path = _team_cache_path(season)
+    tmp = path.with_suffix(".tmp.parquet")
+    frame.write_parquet(tmp)
+    tmp.replace(path)
+
+
+def _team_cache_date_bounds(
+    cache: pl.DataFrame,
+) -> tuple[date | None, date | None]:
+    if cache is None or cache.height == 0:
+        return None, None
+
+    parsed = _with_parsed_game_date(cache)
+    values = (
+        parsed
+        .select(
+            pl.col("_sdv_game_date").min().alias("min_date"),
+            pl.col("_sdv_game_date").max().alias("max_date"),
+        )
+        .to_dicts()
+    )
+    if not values:
+        return None, None
+    return values[0].get("min_date"), values[0].get("max_date")
+
+
+def _fetch_team_statcast_chunk(
+    start_date: date,
+    end_date: date,
+) -> pl.DataFrame:
+    last_error = None
+
+    for attempt in range(1, TEAM_STATCAST_FETCH_RETRIES + 1):
+        try:
+            _log(
+                "Bullpen Statcast fetch "
+                f"start={start_date.isoformat()} "
+                f"end={end_date.isoformat()}"
+            )
+
+            raw = mlb_statcast_search(
+                start_date.isoformat(),
+                end_date.isoformat(),
+                player_type="batter",
+                game_type="R",
+            )
+            frame = _as_polars(raw)
+
+            if frame.height == 0:
+                return pl.DataFrame()
+
+            missing = [
+                col
+                for col in TEAM_STATCAST_REQUIRED_COLUMNS
+                if col not in frame.columns
+            ]
+            if missing:
+                raise RuntimeError(
+                    "Bullpen Statcast response missing required columns: "
+                    f"{missing}"
+                )
+
+            keep = [
+                col
+                for col in TEAM_STATCAST_KEEP_COLUMNS
+                if col in frame.columns
+            ]
+            return frame.select(keep)
+
+        except Exception as exc:
+            last_error = exc
+            if attempt < TEAM_STATCAST_FETCH_RETRIES:
+                time.sleep(3 * attempt)
+
+    raise RuntimeError(
+        "Bullpen Statcast download failed for "
+        f"{start_date.isoformat()}..{end_date.isoformat()}: {last_error}"
+    )
+
+
+def _fetch_team_statcast_range(
+    start_date: date,
+    end_date: date,
+) -> list[pl.DataFrame]:
+    if start_date > end_date:
+        return []
+
+    frames: list[pl.DataFrame] = []
+    current = start_date
+
+    while current <= end_date:
+        chunk_end = min(
+            current + timedelta(days=TEAM_STATCAST_CHUNK_DAYS - 1),
+            end_date,
+        )
+        fetched = _fetch_team_statcast_chunk(current, chunk_end)
+        if fetched.height:
+            frames.append(fetched)
+        current = chunk_end + timedelta(days=1)
+
+    return frames
+
+
+def ensure_team_season_cache(
+    season: int,
+    required_from_date: date,
+    required_through_date: date,
+    summary: dict,
+) -> pl.DataFrame:
+    """Ensure the bullpen cache covers only the dates the feature needs.
+
+    Bullpen features use a maximum 14-day lookback. A normal daily run therefore
+    downloads at most that recent window when no cache is available, instead of
+    downloading the entire season. Historical model-training backfills request
+    the full union of the needed 14-day windows once, then reuse it for every
+    target date.
+    """
+    cache = _read_team_cache(season)
+    season_start = date(season, 3, 1)
+
+    required_from_date = max(required_from_date, season_start)
+    if required_through_date < required_from_date:
+        return cache
+
+    min_cached, max_cached = _team_cache_date_bounds(cache)
+    fetched_frames: list[pl.DataFrame] = []
+
+    if min_cached is None or max_cached is None:
+        fetched_frames.extend(
+            _fetch_team_statcast_range(
+                required_from_date,
+                required_through_date,
+            )
+        )
+    else:
+        if required_from_date < min_cached:
+            fetched_frames.extend(
+                _fetch_team_statcast_range(
+                    required_from_date,
+                    min_cached - timedelta(days=1),
+                )
+            )
+
+        if required_through_date > max_cached:
+            fetched_frames.extend(
+                _fetch_team_statcast_range(
+                    max_cached + timedelta(days=1),
+                    required_through_date,
+                )
+            )
+
+    if fetched_frames:
+        pieces = [cache] if cache.height else []
+        pieces.extend(fetched_frames)
+        cache = pl.concat(pieces, how="diagonal_relaxed")
+        cache = _dedupe_raw_statcast(cache)
+        _write_team_cache_atomic(season, cache)
+
+        fetched_rows = sum(frame.height for frame in fetched_frames)
+        summary["team_statcast_pitches_fetched"] += fetched_rows
+        summary["team_cache_writes"] += 1
+        _log(
+            f"BULLPEN CACHE WROTE {_team_cache_path(season)} "
+            f"rows={cache.height} fetched_rows={fetched_rows}"
+        )
+    elif cache.height:
+        _log(
+            f"BULLPEN CACHE HIT {_team_cache_path(season)} rows={cache.height}"
+        )
+
+    return cache
+
+def _prepare_bullpen_statcast(
+    team_cache: pl.DataFrame,
+    target_game_date: date,
+) -> pd.DataFrame:
+    if team_cache is None or team_cache.height == 0:
+        return pd.DataFrame()
+
+    # Only the longest tested performance window is needed. The helper also
+    # enforces the strict upper bound pitch.game_date < target_game_date.
+    recent = _filter_recent_window(
+        team_cache,
+        target_game_date,
+        14,
+    )
+    if recent.height == 0:
+        return pd.DataFrame()
+
+    df = recent.to_pandas()
+    df["_game_date_dt"] = pd.to_datetime(
+        df["game_date"],
+        errors="coerce",
+    ).dt.normalize()
+    df["_gamePk"] = pd.to_numeric(
+        df["game_pk"],
+        errors="coerce",
+    ).astype("Int64")
+    df["_home_code"] = df["home_team"].map(canonical_team)
+    df["_away_code"] = df["away_team"].map(canonical_team)
+
+    top = (
+        df["inning_topbot"]
+        .astype("string")
+        .str.lower()
+        .str.startswith("top")
+    )
+    bottom = (
+        df["inning_topbot"]
+        .astype("string")
+        .str.lower()
+        .str.startswith("bot")
+    )
+
+    invalid_half = ~(top | bottom)
+    if invalid_half.any():
+        bad_values = sorted(
+            df.loc[invalid_half, "inning_topbot"]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+        raise RuntimeError(
+            f"Unexpected Statcast inning_topbot values: {bad_values}"
+        )
+
+    df["_pitching_team"] = df["_home_code"].where(top, df["_away_code"])
+    df["_pitcher"] = pd.to_numeric(df["pitcher"], errors="coerce").astype("Int64")
+    df["_inning"] = (
+        pd.to_numeric(df["inning"], errors="coerce")
+        if "inning" in df.columns
+        else 0
+    )
+    df["_at_bat_number"] = pd.to_numeric(df["at_bat_number"], errors="coerce")
+    df["_pitch_number"] = pd.to_numeric(df["pitch_number"], errors="coerce")
+    df["_events"] = (
+        df["events"]
+        .astype("string")
+        .str.strip()
+        .str.lower()
+    )
+    df["_woba_value"] = pd.to_numeric(df["woba_value"], errors="coerce")
+    df["_launch_speed"] = pd.to_numeric(df["launch_speed"], errors="coerce")
+
+    ordered = df.sort_values(
+        [
+            "_game_date_dt",
+            "_gamePk",
+            "_pitching_team",
+            "_inning",
+            "_at_bat_number",
+            "_pitch_number",
+        ]
+    ).copy()
+
+    starters = (
+        ordered[ordered["_pitcher"].notna()]
+        .groupby(
+            ["_gamePk", "_pitching_team"],
+            as_index=False,
+            sort=False,
+        )
+        .first()[["_gamePk", "_pitching_team", "_pitcher"]]
+        .rename(columns={"_pitcher": "_starter_pitcher"})
+    )
+
+    df = df.merge(
+        starters,
+        on=["_gamePk", "_pitching_team"],
+        how="left",
+        validate="many_to_one",
+    )
+    df["_is_bullpen"] = (
+        df["_pitcher"].notna()
+        & df["_starter_pitcher"].notna()
+        & (df["_pitcher"] != df["_starter_pitcher"])
+    )
+    df["_is_pa"] = df["_events"].notna() & (df["_events"] != "")
+    df["_is_k"] = df["_events"].isin(STRIKEOUT_EVENTS)
+    df["_is_bb"] = df["_events"].isin(WALK_EVENTS)
+    df["_is_bbe"] = df["_launch_speed"].notna()
+    df["_is_hard"] = df["_launch_speed"] >= 95.0
+
+    return df[df["_is_bullpen"]].copy()
+
+
+def _bullpen_performance(
+    bullpen: pd.DataFrame,
+    team: str | None,
+    target_game_date: date,
+    days: int,
+) -> dict[str, float]:
+    if bullpen.empty or team is None:
+        return {
+            "pa": 0.0,
+            "woba": float("nan"),
+            "k_rate": float("nan"),
+            "bb_rate": float("nan"),
+            "hard_rate": float("nan"),
+        }
+
+    target = pd.Timestamp(target_game_date)
+    start = target - pd.Timedelta(days=days)
+    part = bullpen[
+        (bullpen["_pitching_team"] == team)
+        & (bullpen["_game_date_dt"] >= start)
+        & (bullpen["_game_date_dt"] < target)
+        & bullpen["_is_pa"]
+    ].copy()
+
+    if part.empty:
+        return {
+            "pa": 0.0,
+            "woba": float("nan"),
+            "k_rate": float("nan"),
+            "bb_rate": float("nan"),
+            "hard_rate": float("nan"),
+        }
+
+    pa = float(len(part))
+    woba_n = float(part["_woba_value"].notna().sum())
+    bbe = float(part["_is_bbe"].sum())
+
+    return {
+        "pa": pa,
+        "woba": _safe_ratio(float(part["_woba_value"].fillna(0.0).sum()), woba_n),
+        "k_rate": _safe_ratio(float(part["_is_k"].sum()), pa),
+        "bb_rate": _safe_ratio(float(part["_is_bb"].sum()), pa),
+        "hard_rate": _safe_ratio(float(part["_is_hard"].sum()), bbe),
+    }
+
+
+def _bullpen_pitches_3d(
+    bullpen: pd.DataFrame,
+    team: str | None,
+    target_game_date: date,
+) -> float:
+    if bullpen.empty or team is None:
+        return 0.0
+
+    target = pd.Timestamp(target_game_date)
+    start = target - pd.Timedelta(days=3)
+    part = bullpen[
+        (bullpen["_pitching_team"] == team)
+        & (bullpen["_game_date_dt"] >= start)
+        & (bullpen["_game_date_dt"] < target)
+    ]
+    return float(len(part))
+
+
+def attach_bullpen_features(
+    games: pd.DataFrame,
+    team_cache: pl.DataFrame | None,
+    target_game_date: date,
+) -> pd.DataFrame:
+    output = games.copy()
+    bullpen = _prepare_bullpen_statcast(
+        team_cache if team_cache is not None else pl.DataFrame(),
+        target_game_date,
+    )
+
+    for side in ("home", "away"):
+        teams = output[f"{side}_team"].map(canonical_team)
+
+        for index, team in teams.items():
+            perf14 = _bullpen_performance(
+                bullpen,
+                team,
+                target_game_date,
+                14,
+            )
+            perf7 = _bullpen_performance(
+                bullpen,
+                team,
+                target_game_date,
+                7,
+            )
+            pitches3 = _bullpen_pitches_3d(
+                bullpen,
+                team,
+                target_game_date,
+            )
+
+            output.loc[index, f"sdv_{side}_bp_pa_14d"] = perf14["pa"]
+            output.loc[index, f"sdv_{side}_bp_woba_allowed_14d"] = perf14["woba"]
+            output.loc[index, f"sdv_{side}_bp_k_rate_14d"] = perf14["k_rate"]
+            output.loc[index, f"sdv_{side}_bp_bb_rate_14d"] = perf14["bb_rate"]
+            output.loc[index, f"sdv_{side}_bp_hard_rate_14d"] = perf14["hard_rate"]
+            output.loc[index, f"sdv_{side}_bp_pitches_3d"] = pitches3
+            output.loc[index, f"sdv_{side}_bp_pa_7d"] = perf7["pa"]
+            output.loc[index, f"sdv_{side}_bp_woba_allowed_7d"] = perf7["woba"]
+            output.loc[index, f"sdv_{side}_bp_k_rate_7d"] = perf7["k_rate"]
+            output.loc[index, f"sdv_{side}_bp_bb_rate_7d"] = perf7["bb_rate"]
+            output.loc[index, f"sdv_{side}_bp_hard_rate_7d"] = perf7["hard_rate"]
+
+    return output
+
+
+# =========================
 # OUTPUT BUILD / VALIDATION
 # =========================
 
@@ -786,8 +1331,13 @@ def write_base_output(
     game_date: date,
     lookback_days: int,
     status: str,
+    team_cache: pl.DataFrame | None = None,
 ) -> None:
-    out = games.copy()
+    out = attach_bullpen_features(
+        games,
+        team_cache,
+        game_date,
+    )
     out["sdv_as_of_date"] = (
         game_date - timedelta(days=1)
     ).isoformat()
@@ -802,11 +1352,11 @@ def write_base_output(
 
     write_output_checked(out, out_path)
 
-
 def process_date(
     date_str: str,
     lookback_days: int,
     summary: dict,
+    team_cache: pl.DataFrame | None = None,
 ) -> None:
     games_path = GAMES_DIR / f"{date_str}_games.csv"
     out_path = OUT_DIR / f"{date_str}_sportsdataverse.csv"
@@ -866,6 +1416,7 @@ def process_date(
             game_date,
             lookback_days,
             "no_probable_pitchers",
+            team_cache,
         )
         summary["files_written"] += 1
         summary["rows_written"] += len(games)
@@ -878,6 +1429,7 @@ def process_date(
             game_date,
             lookback_days,
             "no_prior_regular_season_data",
+            team_cache,
         )
         summary["files_written"] += 1
         summary["rows_written"] += len(games)
@@ -901,6 +1453,7 @@ def process_date(
             game_date,
             lookback_days,
             "statcast_pull_error",
+            team_cache,
         )
         summary["files_written"] += 1
         summary["rows_written"] += len(games)
@@ -914,6 +1467,7 @@ def process_date(
             game_date,
             lookback_days,
             "no_statcast_rows",
+            team_cache,
         )
         _log(
             f"{date_str} | Statcast cache has zero rows",
@@ -940,6 +1494,7 @@ def process_date(
             game_date,
             lookback_days,
             "no_statcast_rows",
+            team_cache,
         )
         _log(
             f"{date_str} | zero pregame Statcast rows after cutoff",
@@ -961,7 +1516,11 @@ def process_date(
         lookback_days,
     )
 
-    output = games.copy()
+    output = attach_bullpen_features(
+        games,
+        team_cache,
+        game_date,
+    )
     output = attach_side_features(
         output,
         pitcher_features,
@@ -1136,6 +1695,8 @@ def main() -> None:
         "pregame_statcast_pitches": 0,
         "statcast_pitches_fetched": 0,
         "cache_writes": 0,
+        "team_statcast_pitches_fetched": 0,
+        "team_cache_writes": 0,
         "errors": 0,
     }
 
@@ -1174,12 +1735,50 @@ def main() -> None:
         )
         return
 
+    team_caches: dict[int, pl.DataFrame] = {}
+    season_required_ranges: dict[int, tuple[date, date]] = {}
+
+    for date_str in dates:
+        target_date = parse_date(date_str)
+        required_from = target_date - timedelta(days=14)
+        required_through = target_date - timedelta(days=1)
+        existing = season_required_ranges.get(target_date.year)
+
+        if existing is None:
+            season_required_ranges[target_date.year] = (
+                required_from,
+                required_through,
+            )
+        else:
+            season_required_ranges[target_date.year] = (
+                min(existing[0], required_from),
+                max(existing[1], required_through),
+            )
+
+    for season, required_range in season_required_ranges.items():
+        try:
+            team_caches[season] = ensure_team_season_cache(
+                season,
+                required_range[0],
+                required_range[1],
+                summary,
+            )
+        except Exception as exc:
+            _log(
+                f"Bullpen Statcast cache/fetch failed for season {season}: {exc}",
+                "ERROR",
+            )
+            summary["errors"] += 1
+            team_caches[season] = pl.DataFrame()
+
     for date_str in dates:
         try:
+            target_date = parse_date(date_str)
             process_date(
                 date_str,
                 args.lookback_days,
                 summary,
+                team_caches.get(target_date.year),
             )
         except Exception as exc:
             _log(
@@ -1204,6 +1803,9 @@ def main() -> None:
         f"statcast_pitches_fetched="
         f"{summary['statcast_pitches_fetched']} "
         f"cache_writes={summary['cache_writes']} "
+        f"team_statcast_pitches_fetched="
+        f"{summary['team_statcast_pitches_fetched']} "
+        f"team_cache_writes={summary['team_cache_writes']} "
         f"errors={summary['errors']} "
         f"status={status}"
     )
