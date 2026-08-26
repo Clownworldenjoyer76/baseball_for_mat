@@ -1,8 +1,13 @@
-=== sportsdataverse_mlb RUN 2026-08-26T10:44:09.835446+00:00 ===
-2026-08-26T10:44:09.836310+00:00 | INFO  | dates=['2026_08_26'] lookback_days=30 cache_dir=docs/win/baseball/mlb/00_intake/sportsdataverse/cache
-2026-08-26T10:44:09.841661+00:00 | INFO  | 2026_08_26 | games=15 pitchers=29 as_of=2026-08-25
-2026-08-26T10:44:09.978426+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-24 end=2026-08-25 pitchers=29
-2026-08-26T10:45:29.037172+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=354440 fetched_rows=42070
-2026-08-26T10:45:29.050761+00:00 | INFO  | 2026_08_26 | pregame Statcast pitches=49977
-2026-08-26T10:45:29.370325+00:00 | INFO  | 2026_08_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_26_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
-2026-08-26T10:45:29.371175+00:00 | INFO  | SUMMARY files_written=1 rows_written=15 pregame_statcast_pitches=49977 statcast_pitches_fetched=42070 cache_writes=1 errors=0 status=SUCCESS
+=== sportsdataverse_mlb RUN 2026-08-26T13:20:00.456950+00:00 ===
+2026-08-26T13:20:00.457879+00:00 | INFO  | dates=['2026_08_26'] lookback_days=30 cache_dir=docs/win/baseball/mlb/00_intake/sportsdataverse/cache
+2026-08-26T13:20:00.458332+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-12 end=2026-08-15
+2026-08-26T13:20:19.891613+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-16 end=2026-08-19
+2026-08-26T13:20:40.310348+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-20 end=2026-08-23
+2026-08-26T13:21:03.294035+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-24 end=2026-08-25
+2026-08-26T13:21:12.998163+00:00 | INFO  | BULLPEN CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_team_statcast.parquet rows=55975 fetched_rows=55975
+2026-08-26T13:21:13.001679+00:00 | INFO  | 2026_08_26 | games=15 pitchers=29 as_of=2026-08-25
+2026-08-26T13:21:13.139531+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-17 end=2026-08-25 pitchers=29
+2026-08-26T13:21:22.326230+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=354440 fetched_rows=2401
+2026-08-26T13:21:22.337255+00:00 | INFO  | 2026_08_26 | pregame Statcast pitches=49977
+2026-08-26T13:21:23.077343+00:00 | INFO  | 2026_08_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_26_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-26T13:21:23.077926+00:00 | INFO  | SUMMARY files_written=1 rows_written=15 pregame_statcast_pitches=49977 statcast_pitches_fetched=2401 cache_writes=1 team_statcast_pitches_fetched=55975 team_cache_writes=1 errors=0 status=SUCCESS

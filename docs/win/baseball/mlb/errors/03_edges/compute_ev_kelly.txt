@@ -1,49 +1,49 @@
-=== compute_ev_kelly RUN 2026-08-26T10:46:05.766809+00:00 ===
-2026-08-26T10:46:05.766955+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges
-2026-08-26T10:46:05.767053+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/03_edges/ev_kelly
-2026-08-26T10:46:05.767109+00:00 | INFO  | EV AND KELLY USE THE SAME CANONICAL MODEL PROBABILITY BASIS
-2026-08-26T10:46:05.767164+00:00 | INFO  | Totals EV/Kelly are push-aware: pushes are neither wins nor losses.
-2026-08-26T10:46:05.767538+00:00 | INFO  | Files found: 9
-2026-08-26T10:46:05.768148+00:00 | INFO  | --- FILE: 2026_08_24_mlb_moneyline.csv  market=moneyline
-2026-08-26T10:46:05.786046+00:00 | INFO  | 2026_08_24_mlb_moneyline.csv | home moneyline | 6 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.786744+00:00 | INFO  | 2026_08_24_mlb_moneyline.csv | away moneyline | 4 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.798989+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_24_mlb_moneyline.csv (10 rows, 10 negative Kelly values clipped)
-2026-08-26T10:46:05.799030+00:00 | INFO  | --- FILE: 2026_08_24_mlb_run_line.csv  market=run_line
-2026-08-26T10:46:05.809565+00:00 | INFO  | 2026_08_24_mlb_run_line.csv | home run line | 6 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.810151+00:00 | INFO  | 2026_08_24_mlb_run_line.csv | away run line | 6 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.820693+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_24_mlb_run_line.csv (10 rows, 12 negative Kelly values clipped)
-2026-08-26T10:46:05.820732+00:00 | INFO  | --- FILE: 2026_08_24_mlb_total.csv  market=total
-2026-08-26T10:46:05.833561+00:00 | INFO  | 2026_08_24_mlb_total.csv | over total | 2 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.834160+00:00 | INFO  | 2026_08_24_mlb_total.csv | under total | 9 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.845010+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_24_mlb_total.csv (10 rows, 11 negative Kelly values clipped)
-2026-08-26T10:46:05.845050+00:00 | INFO  | --- FILE: 2026_08_25_mlb_moneyline.csv  market=moneyline
-2026-08-26T10:46:05.855647+00:00 | INFO  | 2026_08_25_mlb_moneyline.csv | home moneyline | 5 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.856217+00:00 | INFO  | 2026_08_25_mlb_moneyline.csv | away moneyline | 11 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.868205+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_25_mlb_moneyline.csv (15 rows, 16 negative Kelly values clipped)
-2026-08-26T10:46:05.868246+00:00 | INFO  | --- FILE: 2026_08_25_mlb_run_line.csv  market=run_line
-2026-08-26T10:46:05.878737+00:00 | INFO  | 2026_08_25_mlb_run_line.csv | home run line | 5 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.879305+00:00 | INFO  | 2026_08_25_mlb_run_line.csv | away run line | 14 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.891118+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_25_mlb_run_line.csv (15 rows, 19 negative Kelly values clipped)
-2026-08-26T10:46:05.891159+00:00 | INFO  | --- FILE: 2026_08_25_mlb_total.csv  market=total
-2026-08-26T10:46:05.903938+00:00 | INFO  | 2026_08_25_mlb_total.csv | over total | 2 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.904517+00:00 | INFO  | 2026_08_25_mlb_total.csv | under total | 13 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.916267+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_25_mlb_total.csv (15 rows, 15 negative Kelly values clipped)
-2026-08-26T10:46:05.916307+00:00 | INFO  | --- FILE: 2026_08_26_mlb_moneyline.csv  market=moneyline
-2026-08-26T10:46:05.926738+00:00 | INFO  | 2026_08_26_mlb_moneyline.csv | home moneyline | 9 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.927297+00:00 | INFO  | 2026_08_26_mlb_moneyline.csv | away moneyline | 6 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.938570+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_26_mlb_moneyline.csv (15 rows, 15 negative Kelly values clipped)
-2026-08-26T10:46:05.938608+00:00 | INFO  | --- FILE: 2026_08_26_mlb_run_line.csv  market=run_line
-2026-08-26T10:46:05.948894+00:00 | INFO  | 2026_08_26_mlb_run_line.csv | home run line | 8 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.949536+00:00 | INFO  | 2026_08_26_mlb_run_line.csv | away run line | 9 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.961157+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_26_mlb_run_line.csv (15 rows, 17 negative Kelly values clipped)
-2026-08-26T10:46:05.961195+00:00 | INFO  | --- FILE: 2026_08_26_mlb_total.csv  market=total
-2026-08-26T10:46:05.974096+00:00 | INFO  | 2026_08_26_mlb_total.csv | over total | 3 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.974728+00:00 | INFO  | 2026_08_26_mlb_total.csv | under total | 13 negative raw Kelly values clipped to 0 after audit calculation
-2026-08-26T10:46:05.987232+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_26_mlb_total.csv (15 rows, 16 negative Kelly values clipped)
-2026-08-26T10:46:05.991030+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/03_edges/ev_kelly/audit/post_ev_kelly_audit.csv rows=240
+=== compute_ev_kelly RUN 2026-08-26T13:21:58.311206+00:00 ===
+2026-08-26T13:21:58.311317+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges
+2026-08-26T13:21:58.311356+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/03_edges/ev_kelly
+2026-08-26T13:21:58.311383+00:00 | INFO  | EV AND KELLY USE THE SAME CANONICAL MODEL PROBABILITY BASIS
+2026-08-26T13:21:58.311408+00:00 | INFO  | Totals EV/Kelly are push-aware: pushes are neither wins nor losses.
+2026-08-26T13:21:58.311673+00:00 | INFO  | Files found: 9
+2026-08-26T13:21:58.312123+00:00 | INFO  | --- FILE: 2026_08_24_mlb_moneyline.csv  market=moneyline
+2026-08-26T13:21:58.327700+00:00 | INFO  | 2026_08_24_mlb_moneyline.csv | home moneyline | 6 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.328361+00:00 | INFO  | 2026_08_24_mlb_moneyline.csv | away moneyline | 4 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.340275+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_24_mlb_moneyline.csv (10 rows, 10 negative Kelly values clipped)
+2026-08-26T13:21:58.340318+00:00 | INFO  | --- FILE: 2026_08_24_mlb_run_line.csv  market=run_line
+2026-08-26T13:21:58.351032+00:00 | INFO  | 2026_08_24_mlb_run_line.csv | home run line | 6 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.351626+00:00 | INFO  | 2026_08_24_mlb_run_line.csv | away run line | 6 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.362436+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_24_mlb_run_line.csv (10 rows, 12 negative Kelly values clipped)
+2026-08-26T13:21:58.362475+00:00 | INFO  | --- FILE: 2026_08_24_mlb_total.csv  market=total
+2026-08-26T13:21:58.375625+00:00 | INFO  | 2026_08_24_mlb_total.csv | over total | 2 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.376245+00:00 | INFO  | 2026_08_24_mlb_total.csv | under total | 9 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.387186+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_24_mlb_total.csv (10 rows, 11 negative Kelly values clipped)
+2026-08-26T13:21:58.387224+00:00 | INFO  | --- FILE: 2026_08_25_mlb_moneyline.csv  market=moneyline
+2026-08-26T13:21:58.397990+00:00 | INFO  | 2026_08_25_mlb_moneyline.csv | home moneyline | 5 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.398581+00:00 | INFO  | 2026_08_25_mlb_moneyline.csv | away moneyline | 11 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.410689+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_25_mlb_moneyline.csv (15 rows, 16 negative Kelly values clipped)
+2026-08-26T13:21:58.410729+00:00 | INFO  | --- FILE: 2026_08_25_mlb_run_line.csv  market=run_line
+2026-08-26T13:21:58.421476+00:00 | INFO  | 2026_08_25_mlb_run_line.csv | home run line | 5 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.422088+00:00 | INFO  | 2026_08_25_mlb_run_line.csv | away run line | 14 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.433807+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_25_mlb_run_line.csv (15 rows, 19 negative Kelly values clipped)
+2026-08-26T13:21:58.433845+00:00 | INFO  | --- FILE: 2026_08_25_mlb_total.csv  market=total
+2026-08-26T13:21:58.447065+00:00 | INFO  | 2026_08_25_mlb_total.csv | over total | 2 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.447659+00:00 | INFO  | 2026_08_25_mlb_total.csv | under total | 13 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.459588+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_25_mlb_total.csv (15 rows, 15 negative Kelly values clipped)
+2026-08-26T13:21:58.459627+00:00 | INFO  | --- FILE: 2026_08_26_mlb_moneyline.csv  market=moneyline
+2026-08-26T13:21:58.470468+00:00 | INFO  | 2026_08_26_mlb_moneyline.csv | home moneyline | 5 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.471066+00:00 | INFO  | 2026_08_26_mlb_moneyline.csv | away moneyline | 10 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.482354+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_26_mlb_moneyline.csv (15 rows, 15 negative Kelly values clipped)
+2026-08-26T13:21:58.482390+00:00 | INFO  | --- FILE: 2026_08_26_mlb_run_line.csv  market=run_line
+2026-08-26T13:21:58.493136+00:00 | INFO  | 2026_08_26_mlb_run_line.csv | home run line | 5 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.493791+00:00 | INFO  | 2026_08_26_mlb_run_line.csv | away run line | 13 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.506024+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_26_mlb_run_line.csv (15 rows, 18 negative Kelly values clipped)
+2026-08-26T13:21:58.506063+00:00 | INFO  | --- FILE: 2026_08_26_mlb_total.csv  market=total
+2026-08-26T13:21:58.519149+00:00 | INFO  | 2026_08_26_mlb_total.csv | over total | 3 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.519749+00:00 | INFO  | 2026_08_26_mlb_total.csv | under total | 14 negative raw Kelly values clipped to 0 after audit calculation
+2026-08-26T13:21:58.531286+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/ev_kelly/2026_08_26_mlb_total.csv (15 rows, 17 negative Kelly values clipped)
+2026-08-26T13:21:58.534865+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/03_edges/ev_kelly/audit/post_ev_kelly_audit.csv rows=240
 
 ============================================================
-SUMMARY  2026-08-26T10:46:05.991052+00:00
+SUMMARY  2026-08-26T13:21:58.534886+00:00
 ============================================================
   files_processed              : 9
   rows_processed               : 120
@@ -52,7 +52,7 @@ SUMMARY  2026-08-26T10:46:05.991052+00:00
   total_files                  : 3
   skipped                      : 0
   schema_errors                : 0
-  neg_kelly_clipped            : 131
+  neg_kelly_clipped            : 133
   probability_source_mismatches: 0
   audit_rows                   : 240
   errors                       : 0
@@ -65,8 +65,8 @@ SUMMARY  2026-08-26T10:46:05.991052+00:00
   2026_08_25_mlb_run_line.csv                      run_line        15         19             ok
   2026_08_25_mlb_total.csv                         total           15         15             ok
   2026_08_26_mlb_moneyline.csv                     moneyline       15         15             ok
-  2026_08_26_mlb_run_line.csv                      run_line        15         17             ok
-  2026_08_26_mlb_total.csv                         total           15         16             ok
+  2026_08_26_mlb_run_line.csv                      run_line        15         18             ok
+  2026_08_26_mlb_total.csv                         total           15         17             ok
 
 STATUS: SUCCESS
 ============================================================

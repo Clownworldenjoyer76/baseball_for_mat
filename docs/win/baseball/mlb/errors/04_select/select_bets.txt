@@ -1,67 +1,67 @@
-=== MLB select_bets RUN 2026-08-26T10:46:06.406955+00:00 ===
-2026-08-26T10:46:06.407381+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges/ev_kelly
-2026-08-26T10:46:06.407422+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/04_select
-2026-08-26T10:46:06.407459+00:00 | INFO  | Rain filter: will_it_rain=False symbol_code=False symbol_terms=['rain', 'heavyrain', 'lightrain', 'sleet', 'snow', 'thunder'] | SP sample exclude totals: False | Lineup low sample warn: 4 | Context data filters: {'enabled': True, 'home_batters_found_min': 5, 'away_batters_found_min': 5, 'home_sp_found_required': 1, 'away_sp_found_required': 1}
-2026-08-26T10:46:06.407525+00:00 | INFO  | Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.
-2026-08-26T10:46:06.407558+00:00 | INFO  | Selection matches market rows by game_id only. Team/date fallback matching is disabled.
-2026-08-26T10:46:06.407785+00:00 | INFO  | Files found: 9
-2026-08-26T10:46:06.407843+00:00 | INFO  | Selected run mode: rebuild_all
-2026-08-26T10:46:06.407873+00:00 | INFO  | Slate keys to process: ['2026_08_24', '2026_08_25', '2026_08_26']
-2026-08-26T10:46:06.407904+00:00 | INFO  | --- SLATE: 2026_08_24
-2026-08-26T10:46:06.433435+00:00 | INFO  | 2026_08_24 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-26T10:46:06.459989+00:00 | WARN  |   63300909 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.469036+00:00 | WARN  |   63300957 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.477924+00:00 | WARN  |   63301347 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.486884+00:00 | WARN  |   63301535 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.495846+00:00 | WARN  |   63301551 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.504713+00:00 | WARN  |   63302035 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.513653+00:00 | WARN  |   63302115 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.522569+00:00 | WARN  |   63302291 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
-2026-08-26T10:46:06.531581+00:00 | WARN  |   63302779 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.540472+00:00 | WARN  |   63303767 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.540610+00:00 | WARN  | 2026_08_24 no bets passed filters
-2026-08-26T10:46:06.540643+00:00 | INFO  | --- SLATE: 2026_08_25
-2026-08-26T10:46:06.560206+00:00 | INFO  | 2026_08_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-26T10:46:06.589228+00:00 | WARN  |   63301267 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.598469+00:00 | WARN  |   63301275 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.607516+00:00 | WARN  |   63301309 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.616655+00:00 | WARN  |   63301403 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
-2026-08-26T10:46:06.625947+00:00 | WARN  |   63301843 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.635013+00:00 | WARN  |   63302051 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|away_sp_found=0;required=1)
-2026-08-26T10:46:06.644105+00:00 | WARN  |   63302213 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.653215+00:00 | WARN  |   63302415 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.662536+00:00 | WARN  |   63302667 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.671683+00:00 | WARN  |   63302885 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|away_sp_found=0;required=1)
-2026-08-26T10:46:06.680978+00:00 | WARN  |   63303161 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.690244+00:00 | WARN  |   63303383 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.699617+00:00 | WARN  |   63303431 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.708768+00:00 | WARN  |   63303591 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
-2026-08-26T10:46:06.717851+00:00 | WARN  |   63303865 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.717969+00:00 | WARN  | 2026_08_25 no bets passed filters
-2026-08-26T10:46:06.718000+00:00 | INFO  | --- SLATE: 2026_08_26
-2026-08-26T10:46:06.738053+00:00 | INFO  | 2026_08_26 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-26T10:46:06.767339+00:00 | WARN  |   63299301 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.776574+00:00 | WARN  |   63300889 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.785688+00:00 | WARN  |   63301707 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.794790+00:00 | WARN  |   63301813 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.804190+00:00 | WARN  |   63301827 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.825875+00:00 | WARN  |   63301929 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.835065+00:00 | WARN  |   63302087 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
-2026-08-26T10:46:06.844507+00:00 | WARN  |   63302217 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.853852+00:00 | WARN  |   63302271 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.863181+00:00 | WARN  |   63302283 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.872567+00:00 | WARN  |   63302549 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.881883+00:00 | WARN  |   63302741 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.891080+00:00 | WARN  |   63302981 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.900265+00:00 | WARN  |   63303453 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.909383+00:00 | WARN  |   63303761 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
-2026-08-26T10:46:06.909524+00:00 | WARN  | 2026_08_26 no bets passed filters
-2026-08-26T10:46:06.914219+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/audit/selection_rejection_audit.csv rows=40
-2026-08-26T10:46:06.914260+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/audit/selected_bet_audit.csv rows=0
-2026-08-26T10:46:06.914287+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/audit/run_line_selection_audit.csv rows=80
+=== MLB select_bets RUN 2026-08-26T13:21:58.949537+00:00 ===
+2026-08-26T13:21:58.949958+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges/ev_kelly
+2026-08-26T13:21:58.950001+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/04_select
+2026-08-26T13:21:58.950038+00:00 | INFO  | Rain filter: will_it_rain=False symbol_code=False symbol_terms=['rain', 'heavyrain', 'lightrain', 'sleet', 'snow', 'thunder'] | SP sample exclude totals: False | Lineup low sample warn: 4 | Context data filters: {'enabled': True, 'home_batters_found_min': 5, 'away_batters_found_min': 5, 'home_sp_found_required': 1, 'away_sp_found_required': 1}
+2026-08-26T13:21:58.950064+00:00 | INFO  | Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.
+2026-08-26T13:21:58.950089+00:00 | INFO  | Selection matches market rows by game_id only. Team/date fallback matching is disabled.
+2026-08-26T13:21:58.950314+00:00 | INFO  | Files found: 9
+2026-08-26T13:21:58.950373+00:00 | INFO  | Selected run mode: rebuild_all
+2026-08-26T13:21:58.950404+00:00 | INFO  | Slate keys to process: ['2026_08_24', '2026_08_25', '2026_08_26']
+2026-08-26T13:21:58.950435+00:00 | INFO  | --- SLATE: 2026_08_24
+2026-08-26T13:21:58.976515+00:00 | INFO  | 2026_08_24 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-26T13:21:59.004164+00:00 | WARN  |   63300909 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.013401+00:00 | WARN  |   63300957 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.022525+00:00 | WARN  |   63301347 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.031694+00:00 | WARN  |   63301535 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.040850+00:00 | WARN  |   63301551 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.049890+00:00 | WARN  |   63302035 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.058884+00:00 | WARN  |   63302115 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.068085+00:00 | WARN  |   63302291 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
+2026-08-26T13:21:59.077153+00:00 | WARN  |   63302779 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.086279+00:00 | WARN  |   63303767 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.086397+00:00 | WARN  | 2026_08_24 no bets passed filters
+2026-08-26T13:21:59.086432+00:00 | INFO  | --- SLATE: 2026_08_25
+2026-08-26T13:21:59.106960+00:00 | INFO  | 2026_08_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-26T13:21:59.137191+00:00 | WARN  |   63301267 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.146847+00:00 | WARN  |   63301275 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.156091+00:00 | WARN  |   63301309 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.165689+00:00 | WARN  |   63301403 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
+2026-08-26T13:21:59.174844+00:00 | WARN  |   63301843 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.184018+00:00 | WARN  |   63302051 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|away_sp_found=0;required=1)
+2026-08-26T13:21:59.193172+00:00 | WARN  |   63302213 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.202303+00:00 | WARN  |   63302415 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.211549+00:00 | WARN  |   63302667 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.220986+00:00 | WARN  |   63302885 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|away_sp_found=0;required=1)
+2026-08-26T13:21:59.230810+00:00 | WARN  |   63303161 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.240063+00:00 | WARN  |   63303383 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.249107+00:00 | WARN  |   63303431 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.258179+00:00 | WARN  |   63303591 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
+2026-08-26T13:21:59.267404+00:00 | WARN  |   63303865 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.267519+00:00 | WARN  | 2026_08_25 no bets passed filters
+2026-08-26T13:21:59.267551+00:00 | INFO  | --- SLATE: 2026_08_26
+2026-08-26T13:21:59.287677+00:00 | INFO  | 2026_08_26 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-26T13:21:59.317977+00:00 | WARN  |   63299301 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.327244+00:00 | WARN  |   63300889 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.336369+00:00 | WARN  |   63301707 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.345386+00:00 | WARN  |   63301813 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.354587+00:00 | WARN  |   63301827 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.377024+00:00 | WARN  |   63301929 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.386169+00:00 | WARN  |   63302087 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5|home_sp_found=0;required=1)
+2026-08-26T13:21:59.395462+00:00 | WARN  |   63302217 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.404701+00:00 | WARN  |   63302271 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.413847+00:00 | WARN  |   63302283 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.422932+00:00 | WARN  |   63302549 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.431982+00:00 | WARN  |   63302741 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.442357+00:00 | WARN  |   63302981 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.451415+00:00 | WARN  |   63303453 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.460492+00:00 | WARN  |   63303761 context data excluded (home_batters_found=0;required_min=5|away_batters_found=0;required_min=5)
+2026-08-26T13:21:59.460605+00:00 | WARN  | 2026_08_26 no bets passed filters
+2026-08-26T13:21:59.465366+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/audit/selection_rejection_audit.csv rows=40
+2026-08-26T13:21:59.465407+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/audit/selected_bet_audit.csv rows=0
+2026-08-26T13:21:59.465435+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/audit/run_line_selection_audit.csv rows=80
 
 ============================================================
-SUMMARY  2026-08-26T10:46:06.914299+00:00
+SUMMARY  2026-08-26T13:21:59.465448+00:00
 ============================================================
   run_mode                          : rebuild_all
   slates_found                      : 3
