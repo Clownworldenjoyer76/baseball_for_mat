@@ -1,0 +1,435 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MLB Total Park + Recency Test</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+}
+table {
+    border-collapse: collapse;
+    margin-bottom: 30px;
+}
+th, td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    text-align: right;
+}
+th:first-child, td:first-child {
+    text-align: left;
+}
+h1, h2 {
+    margin-top: 28px;
+}
+.note {
+    max-width: 1000px;
+    line-height: 1.5;
+}
+</style>
+</head>
+<body>
+
+<h1>MLB Total Park + Recency Test</h1>
+
+<p class="note">
+Generated: 2026-08-26T20:49:48.795575+00:00
+</p>
+
+<p class="note">
+Static repository park-factor files were intentionally not used because
+they are labeled 2024-2026 and are therefore not leakage-safe for a
+historical 2026 holdout test.
+</p>
+
+<p class="note">
+The park variant uses only completed games from dates before the target
+game. Games on the same date cannot affect one another's park factor.
+</p>
+
+<h2>Summary</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>variant</th>
+      <th>resolved_games</th>
+      <th>candidate_rows</th>
+      <th>probability_win_corr</th>
+      <th>over_auc</th>
+      <th>brier</th>
+      <th>log_loss</th>
+      <th>low_bucket_win_rate</th>
+      <th>high_bucket_win_rate</th>
+      <th>high_minus_low</th>
+      <th>rising_bucket_steps</th>
+      <th>mean_model_probability</th>
+      <th>mean_actual_win_rate</th>
+      <th>test_over_rate</th>
+      <th>feature_count</th>
+      <th>recency_half_life_days</th>
+      <th>selected_hyperparameters</th>
+      <th>corr_change_vs_baseline</th>
+      <th>gap_change_vs_baseline</th>
+      <th>brier_change_vs_baseline</th>
+      <th>log_loss_change_vs_baseline</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>park_recent</td>
+      <td>142</td>
+      <td>284</td>
+      <td>0.130269</td>
+      <td>0.587625</td>
+      <td>0.246107</td>
+      <td>0.685290</td>
+      <td>0.456140</td>
+      <td>0.543860</td>
+      <td>0.087719</td>
+      <td>2</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.394366</td>
+      <td>109</td>
+      <td>90.000000</td>
+      <td>{"l2_regularization": 5, "learning_rate": 0.03, "max_leaf_nodes": 7, "min_samples_leaf": 10}</td>
+      <td>0.034131</td>
+      <td>-0.035088</td>
+      <td>-0.002396</td>
+      <td>-0.004670</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>142</td>
+      <td>284</td>
+      <td>0.101786</td>
+      <td>0.570806</td>
+      <td>0.248418</td>
+      <td>0.689924</td>
+      <td>0.456140</td>
+      <td>0.543860</td>
+      <td>0.087719</td>
+      <td>2</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.394366</td>
+      <td>106</td>
+      <td>90.000000</td>
+      <td>{"l2_regularization": 5, "learning_rate": 0.03, "max_leaf_nodes": 7, "min_samples_leaf": 10}</td>
+      <td>0.005648</td>
+      <td>-0.035088</td>
+      <td>-0.000085</td>
+      <td>-0.000036</td>
+    </tr>
+    <tr>
+      <td>baseline</td>
+      <td>142</td>
+      <td>284</td>
+      <td>0.096138</td>
+      <td>0.540698</td>
+      <td>0.248503</td>
+      <td>0.689960</td>
+      <td>0.438596</td>
+      <td>0.561404</td>
+      <td>0.122807</td>
+      <td>4</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.394366</td>
+      <td>106</td>
+      <td>NaN</td>
+      <td>{"l2_regularization": 5, "learning_rate": 0.03, "max_leaf_nodes": 7, "min_samples_leaf": 10}</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <td>park</td>
+      <td>142</td>
+      <td>284</td>
+      <td>0.092651</td>
+      <td>0.534884</td>
+      <td>0.248639</td>
+      <td>0.690230</td>
+      <td>0.491228</td>
+      <td>0.508772</td>
+      <td>0.017544</td>
+      <td>2</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.394366</td>
+      <td>109</td>
+      <td>NaN</td>
+      <td>{"l2_regularization": 5, "learning_rate": 0.03, "max_leaf_nodes": 7, "min_samples_leaf": 10}</td>
+      <td>-0.003487</td>
+      <td>-0.105263</td>
+      <td>0.000136</td>
+      <td>0.000270</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Probability Buckets</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>variant</th>
+      <th>bucket</th>
+      <th>count</th>
+      <th>mean_model_probability</th>
+      <th>actual_win_rate</th>
+      <th>min_model_probability</th>
+      <th>max_model_probability</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>baseline</td>
+      <td>1</td>
+      <td>57</td>
+      <td>0.393521</td>
+      <td>0.438596</td>
+      <td>0.290085</td>
+      <td>0.432098</td>
+    </tr>
+    <tr>
+      <td>baseline</td>
+      <td>2</td>
+      <td>57</td>
+      <td>0.455875</td>
+      <td>0.456140</td>
+      <td>0.433019</td>
+      <td>0.477121</td>
+    </tr>
+    <tr>
+      <td>baseline</td>
+      <td>3</td>
+      <td>56</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.477158</td>
+      <td>0.522842</td>
+    </tr>
+    <tr>
+      <td>baseline</td>
+      <td>4</td>
+      <td>57</td>
+      <td>0.544125</td>
+      <td>0.543860</td>
+      <td>0.522879</td>
+      <td>0.566981</td>
+    </tr>
+    <tr>
+      <td>baseline</td>
+      <td>5</td>
+      <td>57</td>
+      <td>0.606479</td>
+      <td>0.561404</td>
+      <td>0.567902</td>
+      <td>0.709915</td>
+    </tr>
+    <tr>
+      <td>park</td>
+      <td>1</td>
+      <td>57</td>
+      <td>0.397064</td>
+      <td>0.491228</td>
+      <td>0.298173</td>
+      <td>0.430113</td>
+    </tr>
+    <tr>
+      <td>park</td>
+      <td>2</td>
+      <td>57</td>
+      <td>0.456297</td>
+      <td>0.421053</td>
+      <td>0.431326</td>
+      <td>0.478276</td>
+    </tr>
+    <tr>
+      <td>park</td>
+      <td>3</td>
+      <td>56</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.478301</td>
+      <td>0.521699</td>
+    </tr>
+    <tr>
+      <td>park</td>
+      <td>4</td>
+      <td>57</td>
+      <td>0.543703</td>
+      <td>0.578947</td>
+      <td>0.521724</td>
+      <td>0.568674</td>
+    </tr>
+    <tr>
+      <td>park</td>
+      <td>5</td>
+      <td>57</td>
+      <td>0.602936</td>
+      <td>0.508772</td>
+      <td>0.569887</td>
+      <td>0.701827</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>1</td>
+      <td>57</td>
+      <td>0.385141</td>
+      <td>0.456140</td>
+      <td>0.263836</td>
+      <td>0.434210</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>2</td>
+      <td>57</td>
+      <td>0.454421</td>
+      <td>0.403509</td>
+      <td>0.434222</td>
+      <td>0.476631</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>3</td>
+      <td>56</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.477570</td>
+      <td>0.522430</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>4</td>
+      <td>57</td>
+      <td>0.545579</td>
+      <td>0.596491</td>
+      <td>0.523369</td>
+      <td>0.565778</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>5</td>
+      <td>57</td>
+      <td>0.614859</td>
+      <td>0.543860</td>
+      <td>0.565790</td>
+      <td>0.736164</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>1</td>
+      <td>57</td>
+      <td>0.383230</td>
+      <td>0.456140</td>
+      <td>0.275237</td>
+      <td>0.430174</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>2</td>
+      <td>57</td>
+      <td>0.454270</td>
+      <td>0.368421</td>
+      <td>0.430759</td>
+      <td>0.477843</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>3</td>
+      <td>56</td>
+      <td>0.500000</td>
+      <td>0.500000</td>
+      <td>0.478012</td>
+      <td>0.521988</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>4</td>
+      <td>57</td>
+      <td>0.545730</td>
+      <td>0.631579</td>
+      <td>0.522157</td>
+      <td>0.569241</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>5</td>
+      <td>57</td>
+      <td>0.616770</td>
+      <td>0.543860</td>
+      <td>0.569826</td>
+      <td>0.724763</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Recency Half-Life Validation</h2>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>variant</th>
+      <th>half_life_days</th>
+      <th>validation_log_loss</th>
+      <th>validation_brier</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>recent</td>
+      <td>14</td>
+      <td>0.720078</td>
+      <td>0.262509</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>30</td>
+      <td>0.711923</td>
+      <td>0.258965</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>60</td>
+      <td>0.698574</td>
+      <td>0.252588</td>
+    </tr>
+    <tr>
+      <td>recent</td>
+      <td>90</td>
+      <td>0.697703</td>
+      <td>0.252180</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>14</td>
+      <td>0.721111</td>
+      <td>0.262969</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>30</td>
+      <td>0.709522</td>
+      <td>0.257800</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>60</td>
+      <td>0.696178</td>
+      <td>0.251413</td>
+    </tr>
+    <tr>
+      <td>park_recent</td>
+      <td>90</td>
+      <td>0.693254</td>
+      <td>0.249994</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>
