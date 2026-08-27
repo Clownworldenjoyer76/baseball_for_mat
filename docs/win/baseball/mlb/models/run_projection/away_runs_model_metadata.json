@@ -1,10 +1,10 @@
 {
   "training_start_date": "2026-03-26",
-  "training_end_date": "2026-07-04",
-  "validation_start_date": "2026-07-05",
-  "validation_end_date": "2026-07-28",
-  "test_start_date": "2026-07-29",
-  "test_end_date": "2026-08-19",
+  "training_end_date": "2026-07-05",
+  "validation_start_date": "2026-07-06",
+  "validation_end_date": "2026-07-30",
+  "test_start_date": "2026-07-31",
+  "test_end_date": "2026-08-25",
   "feature_columns": [
     "dratings_home_prob",
     "dratings_away_prob",
@@ -66,28 +66,28 @@
     "min_samples_leaf": 10,
     "l2_regularization": 5
   },
-  "training_row_count": 1080,
-  "validation_row_count": 204,
-  "test_row_count": 144,
+  "training_row_count": 1092,
+  "validation_row_count": 213,
+  "test_row_count": 145,
   "baseline_metrics": {
-    "mae": 2.1936805555555554,
-    "mean_poisson_deviance": 2.0243794560362662,
-    "mean_predicted_runs": 4.165763888888888,
-    "mean_actual_runs": 3.673611111111111
+    "mae": 2.2528275862068967,
+    "mean_poisson_deviance": 2.112691503012108,
+    "mean_predicted_runs": 4.171310344827585,
+    "mean_actual_runs": 3.7586206896551726
   },
   "model_metrics": {
-    "mae": 2.3231422814223643,
-    "mean_poisson_deviance": 2.175833475090091,
-    "mean_predicted_runs": 4.581134403095198,
-    "mean_actual_runs": 3.673611111111111
+    "mae": 2.3592099969598297,
+    "mean_poisson_deviance": 2.2479183433991623,
+    "mean_predicted_runs": 4.5304384569866,
+    "mean_actual_runs": 3.7586206896551726
   },
-  "created_at": "2026-08-26T13:14:09.774284+00:00",
-  "validation_mean_poisson_deviance": 2.256771338975874,
+  "created_at": "2026-08-26T18:37:54.950323+00:00",
+  "validation_mean_poisson_deviance": 2.2110321131565165,
   "target_column": "target_away_runs",
   "baseline_column": "dratings_away_projected_runs",
   "model_class": "HistGradientBoostingRegressor",
   "loss": "poisson",
   "random_state": 42,
-  "final_fit_row_count": 1284,
+  "final_fit_row_count": 1305,
   "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection"
 }
