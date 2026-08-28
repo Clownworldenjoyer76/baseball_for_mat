@@ -139,6 +139,7 @@ def _write_summary(summary: dict, per_file: list) -> None:
         "=" * 60,
         f"  files_processed  : {summary['files_processed']}",
         f"  rows_processed   : {summary['rows_processed']}",
+        f"  rows_skipped     : {summary['rows_skipped']}",
         f"  moneyline_files  : {summary['moneyline_files']}",
         f"  run_line_files   : {summary['run_line_files']}",
         f"  total_files      : {summary['total_files']}",
@@ -147,13 +148,14 @@ def _write_summary(summary: dict, per_file: list) -> None:
         f"  schema_errors    : {summary['schema_errors']}",
         f"  errors           : {summary['errors']}",
         "",
-        f"  {'file':<48} {'market':<12} {'rows':>5} {'null_edges':>10} {'status':>10}",
+        f"  {'file':<48} {'market':<12} {'rows':>5} "
+        f"{'skipped':>8} {'null_edges':>10} {'status':>10}",
     ]
 
     for pf in per_file:
         lines.append(
             f"  {pf['name']:<48} {pf['market']:<12} {pf['rows']:>5} "
-            f"{pf['null_edges']:>10} {pf['status']:>10}"
+            f"{pf['rows_skipped']:>8} {pf['null_edges']:>10} {pf['status']:>10}"
         )
 
     status = (
@@ -201,154 +203,7 @@ def validate_required_columns(
         raise ValueError(f"{label} missing required columns: {missing}")
 
 
-def validate_probability_values(
-    df: pd.DataFrame,
-    columns: list,
-    label: str,
-) -> None:
-    bad = pd.Series(False, index=df.index)
-
-    for col in columns:
-        values = pd.to_numeric(df[col], errors="coerce")
-        bad = (
-            bad
-            | values.isna()
-            | ~np.isfinite(values)
-            | (values < 0)
-            | (values > 1)
-        )
-
-    if bad.any():
-        sample = df.loc[bad, ["game_id"] + columns].head(10).to_dict("records")
-        raise ValueError(
-            f"{label} has missing, non-finite, or out-of-range canonical probabilities; "
-            f"bad_rows={int(bad.sum())}; sample={sample}"
-        )
-
-
-def validate_probability_sum(
-    df: pd.DataFrame,
-    columns: list,
-    label: str,
-) -> None:
-    total = sum(pd.to_numeric(df[col], errors="coerce") for col in columns)
-    bad = (total - 1.0).abs() > PROB_TOLERANCE
-
-    if bad.any():
-        sample = df.loc[bad, ["game_id"] + columns].head(10).to_dict("records")
-        raise ValueError(
-            f"{label} canonical probabilities do not sum to 1 within "
-            f"{PROB_TOLERANCE}; bad_rows={int(bad.sum())}; sample={sample}"
-        )
-
-
-def validate_probability_contract(
-    df: pd.DataFrame,
-    market: str,
-    label: str,
-) -> None:
-    if market == "moneyline":
-        cols = [
-            "home_model_prob_moneyline",
-            "away_model_prob_moneyline",
-        ]
-        validate_probability_values(df, cols, label)
-        validate_probability_sum(df, cols, label)
-        return
-
-    if market == "run_line":
-        cols = [
-            "home_model_prob_run_line",
-            "away_model_prob_run_line",
-        ]
-        validate_probability_values(df, cols, label)
-        validate_probability_sum(df, cols, label)
-        return
-
-    if market == "total":
-        cols = [
-            "over_model_prob_total_win",
-            "over_model_prob_total_loss",
-            "under_model_prob_total_win",
-            "under_model_prob_total_loss",
-            "total_model_prob_push",
-        ]
-        validate_probability_values(df, cols, label)
-
-        validate_probability_sum(
-            df,
-            [
-                "over_model_prob_total_win",
-                "over_model_prob_total_loss",
-                "total_model_prob_push",
-            ],
-            label,
-        )
-        validate_probability_sum(
-            df,
-            [
-                "under_model_prob_total_win",
-                "under_model_prob_total_loss",
-                "total_model_prob_push",
-            ],
-            label,
-        )
-
-        over_win = pd.to_numeric(
-            df["over_model_prob_total_win"], errors="coerce"
-        )
-        over_loss = pd.to_numeric(
-            df["over_model_prob_total_loss"], errors="coerce"
-        )
-        under_win = pd.to_numeric(
-            df["under_model_prob_total_win"], errors="coerce"
-        )
-        under_loss = pd.to_numeric(
-            df["under_model_prob_total_loss"], errors="coerce"
-        )
-
-        bad = (
-            (under_win - over_loss).abs() > PROB_TOLERANCE
-        ) | (
-            (under_loss - over_win).abs() > PROB_TOLERANCE
-        )
-
-        if bad.any():
-            sample = df.loc[
-                bad,
-                ["game_id"] + cols,
-            ].head(10).to_dict("records")
-            raise ValueError(
-                f"{label} totals win/loss identities are inconsistent; "
-                f"bad_rows={int(bad.sum())}; sample={sample}"
-            )
-        return
-
-    raise ValueError(
-        f"{label} unknown market for probability validation: {market}"
-    )
-
-
-def validate_decimal_odds(
-    df: pd.DataFrame,
-    columns: list,
-    label: str,
-) -> None:
-    bad = pd.Series(False, index=df.index)
-
-    for col in columns:
-        values = pd.to_numeric(df[col], errors="coerce")
-        bad = bad | values.isna() | ~np.isfinite(values) | (values <= 1.0)
-
-    if bad.any():
-        sample = df.loc[bad, ["game_id"] + columns].head(10).to_dict("records")
-        raise ValueError(
-            f"{label} has missing, non-finite, or invalid decimal odds; "
-            f"bad_rows={int(bad.sum())}; sample={sample}"
-        )
-
-
-def validate_input_schema(
+def validate_input_structure(
     df: pd.DataFrame,
     market: str,
     file_name: str,
@@ -361,27 +216,11 @@ def validate_input_schema(
             MONEYLINE_REQUIRED_COLUMNS,
             f"{file_name} moneyline input",
         )
-        validate_decimal_odds(
-            df,
-            [
-                "home_dk_decimal_moneyline",
-                "away_dk_decimal_moneyline",
-            ],
-            f"{file_name} moneyline input",
-        )
 
     elif market == "run_line":
         validate_required_columns(
             df,
             RUN_LINE_REQUIRED_COLUMNS,
-            f"{file_name} run_line input",
-        )
-        validate_decimal_odds(
-            df,
-            [
-                "home_dk_run_line_decimal",
-                "away_dk_run_line_decimal",
-            ],
             f"{file_name} run_line input",
         )
 
@@ -391,25 +230,174 @@ def validate_input_schema(
             TOTAL_REQUIRED_COLUMNS,
             f"{file_name} total input",
         )
-        validate_decimal_odds(
-            df,
-            [
-                "dk_total_over_decimal",
-                "dk_total_under_decimal",
-            ],
-            f"{file_name} total input",
-        )
 
     else:
         raise ValueError(
             f"{file_name} unknown market for schema validation: {market}"
         )
 
-    validate_probability_contract(
-        df,
-        market,
-        f"{file_name} {market} input",
-    )
+
+def _finite_probability(value) -> bool:
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return False
+
+    return np.isfinite(value) and 0.0 <= value <= 1.0
+
+
+def _valid_decimal_odds(value) -> bool:
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return False
+
+    return np.isfinite(value) and value > 1.0
+
+
+def _row_issue(row: pd.Series, market: str) -> str | None:
+    if market == "moneyline":
+        home_prob = row.get("home_model_prob_moneyline")
+        away_prob = row.get("away_model_prob_moneyline")
+        home_odds = row.get("home_dk_decimal_moneyline")
+        away_odds = row.get("away_dk_decimal_moneyline")
+
+        if not _finite_probability(home_prob):
+            return f"invalid/missing home_model_prob_moneyline={home_prob}"
+
+        if not _finite_probability(away_prob):
+            return f"invalid/missing away_model_prob_moneyline={away_prob}"
+
+        if abs(float(home_prob) + float(away_prob) - 1.0) > PROB_TOLERANCE:
+            return (
+                "moneyline probabilities do not sum to 1: "
+                f"home={home_prob} away={away_prob}"
+            )
+
+        if not _valid_decimal_odds(home_odds):
+            return f"invalid/missing home_dk_decimal_moneyline={home_odds}"
+
+        if not _valid_decimal_odds(away_odds):
+            return f"invalid/missing away_dk_decimal_moneyline={away_odds}"
+
+        return None
+
+    if market == "run_line":
+        home_prob = row.get("home_model_prob_run_line")
+        away_prob = row.get("away_model_prob_run_line")
+        home_odds = row.get("home_dk_run_line_decimal")
+        away_odds = row.get("away_dk_run_line_decimal")
+
+        if not _finite_probability(home_prob):
+            return f"invalid/missing home_model_prob_run_line={home_prob}"
+
+        if not _finite_probability(away_prob):
+            return f"invalid/missing away_model_prob_run_line={away_prob}"
+
+        if abs(float(home_prob) + float(away_prob) - 1.0) > PROB_TOLERANCE:
+            return (
+                "run-line probabilities do not sum to 1: "
+                f"home={home_prob} away={away_prob}"
+            )
+
+        if not _valid_decimal_odds(home_odds):
+            return f"invalid/missing home_dk_run_line_decimal={home_odds}"
+
+        if not _valid_decimal_odds(away_odds):
+            return f"invalid/missing away_dk_run_line_decimal={away_odds}"
+
+        return None
+
+    if market == "total":
+        probability_columns = [
+            "over_model_prob_total_win",
+            "over_model_prob_total_loss",
+            "under_model_prob_total_win",
+            "under_model_prob_total_loss",
+            "total_model_prob_push",
+        ]
+
+        for col in probability_columns:
+            value = row.get(col)
+
+            if not _finite_probability(value):
+                return f"invalid/missing {col}={value}"
+
+        over_win = float(row["over_model_prob_total_win"])
+        over_loss = float(row["over_model_prob_total_loss"])
+        under_win = float(row["under_model_prob_total_win"])
+        under_loss = float(row["under_model_prob_total_loss"])
+        push = float(row["total_model_prob_push"])
+
+        if abs(over_win + over_loss + push - 1.0) > PROB_TOLERANCE:
+            return (
+                "over total probabilities do not sum to 1: "
+                f"win={over_win} loss={over_loss} push={push}"
+            )
+
+        if abs(under_win + under_loss + push - 1.0) > PROB_TOLERANCE:
+            return (
+                "under total probabilities do not sum to 1: "
+                f"win={under_win} loss={under_loss} push={push}"
+            )
+
+        if abs(under_win - over_loss) > PROB_TOLERANCE:
+            return (
+                "totals probability identity mismatch: "
+                f"under_win={under_win} over_loss={over_loss}"
+            )
+
+        if abs(under_loss - over_win) > PROB_TOLERANCE:
+            return (
+                "totals probability identity mismatch: "
+                f"under_loss={under_loss} over_win={over_win}"
+            )
+
+        over_odds = row.get("dk_total_over_decimal")
+        under_odds = row.get("dk_total_under_decimal")
+
+        if not _valid_decimal_odds(over_odds):
+            return f"invalid/missing dk_total_over_decimal={over_odds}"
+
+        if not _valid_decimal_odds(under_odds):
+            return f"invalid/missing dk_total_under_decimal={under_odds}"
+
+        return None
+
+    return f"unknown market={market}"
+
+
+def filter_bad_rows(
+    df: pd.DataFrame,
+    market: str,
+    file_name: str,
+) -> tuple[pd.DataFrame, int]:
+    valid_indices = []
+    skipped = 0
+
+    for idx, row in df.iterrows():
+        issue = _row_issue(row, market)
+
+        if issue is None:
+            valid_indices.append(idx)
+            continue
+
+        skipped += 1
+
+        _log(
+            f"ROW ISSUE SKIPPED | file={file_name} | market={market} "
+            f"| idx={idx} | game_id={row.get('game_id', '')} "
+            f"| game_date={row.get('game_date', '')} "
+            f"| away_team={row.get('away_team', '')} "
+            f"| home_team={row.get('home_team', '')} "
+            f"| issue={issue}",
+            "WARN",
+        )
+
+    if not valid_indices:
+        return df.iloc[0:0].copy(), skipped
+
+    return df.loc[valid_indices].copy(), skipped
 
 
 def write_csv_checked(
@@ -426,22 +414,36 @@ def write_csv_checked(
 
 def market_break_even_probability(decimal_odds) -> pd.Series:
     decimal_odds = pd.to_numeric(decimal_odds, errors="coerce")
-    out = pd.Series(np.nan, index=decimal_odds.index, dtype="float64")
+
+    out = pd.Series(
+        np.nan,
+        index=decimal_odds.index,
+        dtype="float64",
+    )
 
     valid = (
         decimal_odds.notna()
         & np.isfinite(decimal_odds)
         & (decimal_odds > 1.0)
     )
-    out.loc[valid] = 1.0 / decimal_odds.loc[valid]
+
+    out.loc[valid] = (
+        1.0
+        / decimal_odds.loc[valid]
+    )
+
     return out
 
 
-def probability_edge(model_probability, market_break_even_prob) -> pd.Series:
+def probability_edge(
+    model_probability,
+    market_break_even_prob,
+) -> pd.Series:
     model_probability = pd.to_numeric(
         model_probability,
         errors="coerce",
     )
+
     market_break_even_prob = pd.to_numeric(
         market_break_even_prob,
         errors="coerce",
@@ -464,6 +466,7 @@ def probability_edge(model_probability, market_break_even_prob) -> pd.Series:
         model_probability.loc[valid]
         - market_break_even_prob.loc[valid]
     )
+
     return out
 
 
@@ -475,12 +478,17 @@ def conditional_win_probability(
         win_probability,
         errors="coerce",
     )
+
     loss_probability = pd.to_numeric(
         loss_probability,
         errors="coerce",
     )
 
-    resolved = win_probability + loss_probability
+    resolved = (
+        win_probability
+        + loss_probability
+    )
+
     out = pd.Series(
         np.nan,
         index=win_probability.index,
@@ -501,10 +509,14 @@ def conditional_win_probability(
         win_probability.loc[valid]
         / resolved.loc[valid]
     )
+
     return out
 
 
-def count_null_edges(df: pd.DataFrame, columns: list) -> int:
+def count_null_edges(
+    df: pd.DataFrame,
+    columns: list,
+) -> int:
     return sum(
         int(df[col].isna().sum())
         for col in columns
@@ -516,85 +528,147 @@ def count_null_edges(df: pd.DataFrame, columns: list) -> int:
 # PROBABILITY EDGE COMPUTATION
 # =========================
 
-def compute_moneyline(df: pd.DataFrame):
-    df["home_market_break_even_prob"] = market_break_even_probability(
-        df["home_dk_decimal_moneyline"]
-    )
-    df["away_market_break_even_prob"] = market_break_even_probability(
-        df["away_dk_decimal_moneyline"]
+def compute_moneyline(
+    df: pd.DataFrame,
+):
+    df["home_market_break_even_prob"] = (
+        market_break_even_probability(
+            df["home_dk_decimal_moneyline"]
+        )
     )
 
-    df["home_edge_prob_moneyline"] = probability_edge(
-        df["home_model_prob_moneyline"],
-        df["home_market_break_even_prob"],
+    df["away_market_break_even_prob"] = (
+        market_break_even_probability(
+            df["away_dk_decimal_moneyline"]
+        )
     )
-    df["away_edge_prob_moneyline"] = probability_edge(
-        df["away_model_prob_moneyline"],
-        df["away_market_break_even_prob"],
+
+    df["home_edge_prob_moneyline"] = (
+        probability_edge(
+            df["home_model_prob_moneyline"],
+            df["home_market_break_even_prob"],
+        )
+    )
+
+    df["away_edge_prob_moneyline"] = (
+        probability_edge(
+            df["away_model_prob_moneyline"],
+            df["away_market_break_even_prob"],
+        )
     )
 
     edge_columns = [
         "home_edge_prob_moneyline",
         "away_edge_prob_moneyline",
     ]
-    return df, count_null_edges(df, edge_columns)
 
-
-def compute_run_line(df: pd.DataFrame):
-    df["home_market_break_even_prob_run_line"] = market_break_even_probability(
-        df["home_dk_run_line_decimal"]
-    )
-    df["away_market_break_even_prob_run_line"] = market_break_even_probability(
-        df["away_dk_run_line_decimal"]
+    return (
+        df,
+        count_null_edges(
+            df,
+            edge_columns,
+        ),
     )
 
-    df["home_edge_prob_run_line"] = probability_edge(
-        df["home_model_prob_run_line"],
-        df["home_market_break_even_prob_run_line"],
+
+def compute_run_line(
+    df: pd.DataFrame,
+):
+    df["home_market_break_even_prob_run_line"] = (
+        market_break_even_probability(
+            df["home_dk_run_line_decimal"]
+        )
     )
-    df["away_edge_prob_run_line"] = probability_edge(
-        df["away_model_prob_run_line"],
-        df["away_market_break_even_prob_run_line"],
+
+    df["away_market_break_even_prob_run_line"] = (
+        market_break_even_probability(
+            df["away_dk_run_line_decimal"]
+        )
+    )
+
+    df["home_edge_prob_run_line"] = (
+        probability_edge(
+            df["home_model_prob_run_line"],
+            df["home_market_break_even_prob_run_line"],
+        )
+    )
+
+    df["away_edge_prob_run_line"] = (
+        probability_edge(
+            df["away_model_prob_run_line"],
+            df["away_market_break_even_prob_run_line"],
+        )
     )
 
     edge_columns = [
         "home_edge_prob_run_line",
         "away_edge_prob_run_line",
     ]
-    return df, count_null_edges(df, edge_columns)
+
+    return (
+        df,
+        count_null_edges(
+            df,
+            edge_columns,
+        ),
+    )
 
 
-def compute_total(df: pd.DataFrame):
-    df["over_conditional_win_prob"] = conditional_win_probability(
-        df["over_model_prob_total_win"],
-        df["over_model_prob_total_loss"],
-    )
-    df["under_conditional_win_prob"] = conditional_win_probability(
-        df["under_model_prob_total_win"],
-        df["under_model_prob_total_loss"],
-    )
-
-    df["over_market_break_even_prob_total"] = market_break_even_probability(
-        df["dk_total_over_decimal"]
-    )
-    df["under_market_break_even_prob_total"] = market_break_even_probability(
-        df["dk_total_under_decimal"]
+def compute_total(
+    df: pd.DataFrame,
+):
+    df["over_conditional_win_prob"] = (
+        conditional_win_probability(
+            df["over_model_prob_total_win"],
+            df["over_model_prob_total_loss"],
+        )
     )
 
-    df["over_edge_prob_total"] = probability_edge(
-        df["over_conditional_win_prob"],
-        df["over_market_break_even_prob_total"],
+    df["under_conditional_win_prob"] = (
+        conditional_win_probability(
+            df["under_model_prob_total_win"],
+            df["under_model_prob_total_loss"],
+        )
     )
-    df["under_edge_prob_total"] = probability_edge(
-        df["under_conditional_win_prob"],
-        df["under_market_break_even_prob_total"],
+
+    df["over_market_break_even_prob_total"] = (
+        market_break_even_probability(
+            df["dk_total_over_decimal"]
+        )
+    )
+
+    df["under_market_break_even_prob_total"] = (
+        market_break_even_probability(
+            df["dk_total_under_decimal"]
+        )
+    )
+
+    df["over_edge_prob_total"] = (
+        probability_edge(
+            df["over_conditional_win_prob"],
+            df["over_market_break_even_prob_total"],
+        )
+    )
+
+    df["under_edge_prob_total"] = (
+        probability_edge(
+            df["under_conditional_win_prob"],
+            df["under_market_break_even_prob_total"],
+        )
     )
 
     edge_columns = [
         "over_edge_prob_total",
         "under_edge_prob_total",
     ]
-    return df, count_null_edges(df, edge_columns)
+
+    return (
+        df,
+        count_null_edges(
+            df,
+            edge_columns,
+        ),
+    )
 
 
 # =========================
@@ -602,12 +676,20 @@ def compute_total(df: pd.DataFrame):
 # =========================
 
 def main():
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write(f"=== compute_edges RUN {_now()} ===\n")
+    with open(
+        LOG_FILE,
+        "w",
+        encoding="utf-8",
+    ) as f:
+        f.write(
+            f"=== compute_edges RUN "
+            f"{_now()} ===\n"
+        )
 
     summary = {
         "files_processed": 0,
         "rows_processed": 0,
+        "rows_skipped": 0,
         "moneyline_files": 0,
         "run_line_files": 0,
         "total_files": 0,
@@ -616,84 +698,166 @@ def main():
         "schema_errors": 0,
         "errors": 0,
     }
+
     per_file = []
 
-    _log(f"INPUT_DIR : {INPUT_DIR}")
-    _log(f"OUTPUT_DIR: {OUTPUT_DIR}")
     _log(
-        "EDGE DEFINITION: model probability minus sportsbook break-even probability"
+        f"INPUT_DIR : {INPUT_DIR}"
     )
 
-    input_files = sorted(INPUT_DIR.glob("*.csv"))
-    _log(f"Files found: {len(input_files)}")
+    _log(
+        f"OUTPUT_DIR: {OUTPUT_DIR}"
+    )
 
-    for out_file in OUTPUT_DIR.glob("*.csv"):
+    _log(
+        "EDGE DEFINITION: model probability "
+        "minus sportsbook break-even probability"
+    )
+
+    input_files = sorted(
+        INPUT_DIR.glob("*.csv")
+    )
+
+    _log(
+        f"Files found: {len(input_files)}"
+    )
+
+    for out_file in OUTPUT_DIR.glob(
+        "*.csv"
+    ):
         out_file.unlink()
 
     for input_file in input_files:
         name = input_file.name.lower()
         market = None
+
         pf = {
             "name": input_file.name,
             "market": "unknown",
             "rows": 0,
+            "rows_skipped": 0,
             "null_edges": 0,
             "status": "ok",
         }
 
         if "moneyline" in name:
             market = "moneyline"
+
         elif "run_line" in name:
             market = "run_line"
+
         elif "total" in name:
             market = "total"
+
         else:
-            _log(f"SKIP unrecognized file: {input_file.name}")
+            _log(
+                f"SKIP unrecognized file: "
+                f"{input_file.name}"
+            )
+
             pf["status"] = "skipped"
             summary["skipped"] += 1
             per_file.append(pf)
             continue
 
         pf["market"] = market
-        _log(f"--- FILE: {input_file.name}  market={market}")
+
+        _log(
+            f"--- FILE: "
+            f"{input_file.name} "
+            f"market={market}"
+        )
 
         try:
-            df = read_csv_guarded(input_file)
+            df = read_csv_guarded(
+                input_file
+            )
 
             if df.empty:
-                _log(f"{input_file.name} empty — skipping")
+                _log(
+                    f"{input_file.name} "
+                    f"empty — skipping",
+                    "WARN",
+                )
+
                 pf["status"] = "empty"
                 summary["skipped"] += 1
                 per_file.append(pf)
                 continue
 
             try:
-                validate_input_schema(
+                validate_input_structure(
                     df,
                     market,
                     input_file.name,
                 )
+
             except Exception as schema_error:
                 _log(
-                    f"{input_file.name} SCHEMA FAILED: {schema_error}",
+                    f"{input_file.name} "
+                    f"STRUCTURAL SCHEMA FAILED: "
+                    f"{schema_error}",
                     "ERROR",
                 )
+
                 pf["status"] = "schema_error"
                 summary["schema_errors"] += 1
+                per_file.append(pf)
+                continue
+
+            original_rows = len(df)
+
+            df, rows_skipped = filter_bad_rows(
+                df,
+                market,
+                input_file.name,
+            )
+
+            pf["rows_skipped"] = rows_skipped
+            summary["rows_skipped"] += rows_skipped
+
+            if df.empty:
+                _log(
+                    f"{input_file.name} "
+                    f"has no valid rows after "
+                    f"row-level validation; "
+                    f"file skipped without failing pipeline",
+                    "WARN",
+                )
+
+                pf["status"] = "no_valid_rows"
+                summary["skipped"] += 1
                 per_file.append(pf)
                 continue
 
             pf["rows"] = len(df)
             summary["rows_processed"] += len(df)
 
+            if rows_skipped:
+                _log(
+                    f"{input_file.name} | "
+                    f"input_rows={original_rows} | "
+                    f"valid_rows={len(df)} | "
+                    f"bad_rows_skipped={rows_skipped}",
+                    "WARN",
+                )
+
             if market == "moneyline":
-                df, null_edges = compute_moneyline(df)
+                df, null_edges = compute_moneyline(
+                    df
+                )
                 summary["moneyline_files"] += 1
+
             elif market == "run_line":
-                df, null_edges = compute_run_line(df)
+                df, null_edges = compute_run_line(
+                    df
+                )
                 summary["run_line_files"] += 1
+
             else:
-                df, null_edges = compute_total(df)
+                df, null_edges = compute_total(
+                    df
+                )
                 summary["total_files"] += 1
 
             pf["null_edges"] = null_edges
@@ -701,40 +865,67 @@ def main():
 
             if null_edges > 0:
                 _log(
-                    f"{input_file.name} | {null_edges} null probability edges",
+                    f"{input_file.name} | "
+                    f"{null_edges} null probability edges",
                     "WARN",
                 )
 
-            output_path = OUTPUT_DIR / input_file.name
-            write_csv_checked(df, output_path)
+            output_path = (
+                OUTPUT_DIR
+                / input_file.name
+            )
+
+            write_csv_checked(
+                df,
+                output_path,
+            )
 
             summary["files_processed"] += 1
+
             _log(
                 f"WROTE: {output_path} "
-                f"({len(df)} rows, {null_edges} null probability edges)"
+                f"({len(df)} rows, "
+                f"{rows_skipped} bad rows skipped, "
+                f"{null_edges} null probability edges)"
             )
 
         except Exception as e:
             _log(
-                f"{input_file.name} FAILED: {e}\n{traceback.format_exc()}",
+                f"{input_file.name} FAILED: "
+                f"{e}\n"
+                f"{traceback.format_exc()}",
                 "ERROR",
             )
+
             pf["status"] = "error"
             summary["errors"] += 1
 
         per_file.append(pf)
 
-    _write_summary(summary, per_file)
+    _write_summary(
+        summary,
+        per_file,
+    )
 
-    if summary["errors"] > 0 or summary["schema_errors"] > 0:
+    if (
+        summary["errors"] > 0
+        or summary["schema_errors"] > 0
+    ):
         print(
             "compute_edges completed with errors. "
             f"errors={summary['errors']} "
-            f"schema_errors={summary['schema_errors']}"
+            f"schema_errors={summary['schema_errors']} "
+            f"rows_skipped={summary['rows_skipped']}"
         )
         raise SystemExit(1)
 
-    print("compute_edges complete.")
+    print(
+        "compute_edges complete. "
+        f"files_processed={summary['files_processed']} "
+        f"rows_processed={summary['rows_processed']} "
+        f"rows_skipped={summary['rows_skipped']} "
+        f"null_edges={summary['null_edges']}"
+    )
 
 
 if __name__ == "__main__":
