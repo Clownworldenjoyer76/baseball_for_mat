@@ -7,8 +7,8 @@
 #   - Duplicate sportsbook game_id remains fatal.
 #   - Team normalization and cross-source team mismatches remain fatal.
 #   - Missing context for matched games remains fatal.
-#   - Model-projection input is required for every sportsbook game in production output.
-#   - Missing model projection is written to rejection/audit and is fatal.
+#   - Model-projection input is required for a sportsbook game to enter production output.
+#   - Missing model projection is written to rejection/audit, skipped, and is non-fatal.
 #
 # Mapping behavior:
 #   - Uses docs/win/baseball/mlb/maps/team_map_mlb.csv as the single MLB team map.
@@ -1043,8 +1043,9 @@ def process_date(date, summary, alias_map, team_id_to_canonical):
     fatal_errors = []
 
     if unmatched_sportsbook_ids:
-        fatal_errors.append(
-            f"{date} | sportsbook games missing model projection hard failure: "
+        log(
+            f"{date} | sportsbook games missing model projection; "
+            f"skipping unmatched games and continuing: "
             f"count={len(unmatched_sportsbook_ids)} "
             f"game_ids={sorted(unmatched_sportsbook_ids)} "
             f"rejection_file={rejection_path}"
