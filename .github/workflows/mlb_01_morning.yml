@@ -61,15 +61,7 @@ jobs:
         run: python docs/win/baseball/mlb/scripts/00_intake/build_games_list.py
 
       - name: MLB SportsDataverse Features
-        shell: bash
-        run: |
-          mapfile -t DATES < <(
-            find docs/win/baseball/mlb/00_intake/games \
-              -maxdepth 1 -type f -name '*_games.csv' -printf '%f\n' \
-              | sed 's/_games\.csv$//' \
-              | sort
-          )
-          python docs/win/baseball/mlb/scripts/00_intake/sportsdataverse_mlb.py "${DATES[@]}"
+        run: python docs/win/baseball/mlb/scripts/00_intake/sportsdataverse_mlb.py
 
       - name: MLB Fetch Park Weather
         run: python docs/win/baseball/mlb/scripts/00_intake/fetch_park_weather.py
@@ -84,15 +76,7 @@ jobs:
         run: python docs/win/baseball/mlb/scripts/00_intake/game_id_pred.py
 
       - name: MLB Build Run Projection
-        shell: bash
-        run: |
-          mapfile -t DATES < <(
-            find docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id \
-              -maxdepth 1 -type f -name '*_MLB.csv' -printf '%f\n' \
-              | sed 's/_MLB\.csv$//' \
-              | sort
-          )
-          python docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py "${DATES[@]}"
+        run: python docs/win/baseball/mlb/scripts/00_intake/build_run_projection.py
 
       - name: MLB Merge Intake
         run: python docs/win/baseball/mlb/scripts/01_merge/merge_intake.py
