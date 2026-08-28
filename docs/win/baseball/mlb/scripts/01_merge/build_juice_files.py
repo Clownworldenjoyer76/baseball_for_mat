@@ -22,12 +22,6 @@ LOG_FILE = ERROR_DIR / "build_juice_files.txt"
 
 PROB_TOLERANCE = 1e-6
 
-# Run-line calibration fitted out-of-sample on the current production model.
-# The underlying Skellam run-line probability formula remains unchanged.
-RUN_LINE_CALIBRATION_INTERCEPT = 0.0
-RUN_LINE_CALIBRATION_SLOPE = 0.281791
-RUN_LINE_CALIBRATION_EPS = 1e-12
-
 LEGACY_OFFICIAL_PROBABILITY_COLUMNS = [
     "home_normalized_prob_moneyline",
     "away_normalized_prob_moneyline",
@@ -408,138 +402,23 @@ def run_line_probabilities(
 
     p_away = 1.0 - p_home
 
+    if (
+        not np.isfinite(p_home)
+        or not np.isfinite(p_away)
+        or p_home < 0.0
+        or p_home > 1.0
+        or p_away < 0.0
+        or p_away > 1.0
+        or abs(p_home + p_away - 1.0) > PROB_TOLERANCE
+    ):
+        raise ValueError(
+            "invalid raw Skellam run-line probabilities: "
+            f"home={p_home} away={p_away}"
+        )
+
     return (
         p_home,
         p_away,
-    )
-
-
-def _calibrate_run_line_probability(
-    probability,
-):
-    probability = float(probability)
-
-    if (
-        not np.isfinite(probability)
-        or probability < 0.0
-        or probability > 1.0
-    ):
-        raise ValueError(
-            f"invalid raw run-line probability: "
-            f"{probability}"
-        )
-
-    clipped = min(
-        max(
-            probability,
-            RUN_LINE_CALIBRATION_EPS,
-        ),
-        1.0 - RUN_LINE_CALIBRATION_EPS,
-    )
-
-    raw_logit = math.log(
-        clipped
-        / (1.0 - clipped)
-    )
-
-    calibrated_logit = (
-        RUN_LINE_CALIBRATION_INTERCEPT
-        + RUN_LINE_CALIBRATION_SLOPE
-        * raw_logit
-    )
-
-    calibrated = (
-        1.0
-        / (
-            1.0
-            + math.exp(
-                -calibrated_logit
-            )
-        )
-    )
-
-    if (
-        not np.isfinite(calibrated)
-        or calibrated <= 0.0
-        or calibrated >= 1.0
-    ):
-        raise ValueError(
-            "invalid calibrated run-line probability: "
-            f"raw={probability} "
-            f"calibrated={calibrated}"
-        )
-
-    return calibrated
-
-
-def calibrate_run_line_probabilities(
-    home_probability,
-    away_probability,
-):
-    home_probability = float(
-        home_probability
-    )
-    away_probability = float(
-        away_probability
-    )
-
-    if (
-        not np.isfinite(
-            home_probability
-        )
-        or not np.isfinite(
-            away_probability
-        )
-        or abs(
-            home_probability
-            + away_probability
-            - 1.0
-        ) > PROB_TOLERANCE
-    ):
-        raise ValueError(
-            "raw run-line probability pair "
-            "must be finite and sum to 1: "
-            f"home={home_probability} "
-            f"away={away_probability}"
-        )
-
-    calibrated_home = (
-        _calibrate_run_line_probability(
-            home_probability
-        )
-    )
-
-    calibrated_away = (
-        1.0
-        - calibrated_home
-    )
-
-    return (
-        calibrated_home,
-        calibrated_away,
-    )
-
-
-def calibrated_run_line_probabilities(
-    model_home_runs,
-    model_away_runs,
-    home_line,
-    away_line,
-):
-    raw_home, raw_away = (
-        run_line_probabilities(
-            model_home_runs,
-            model_away_runs,
-            home_line,
-            away_line,
-        )
-    )
-
-    return (
-        calibrate_run_line_probabilities(
-            raw_home,
-            raw_away,
-        )
     )
 
 
@@ -996,19 +875,12 @@ def process_run_line(
 
     for i, r in df.iterrows():
         try:
-            raw_hp, raw_ap = (
+            hp, ap = (
                 run_line_probabilities(
                     r["model_home_runs"],
                     r["model_away_runs"],
                     r["home_run_line"],
                     r["away_run_line"],
-                )
-            )
-
-            hp, ap = (
-                calibrate_run_line_probabilities(
-                    raw_hp,
-                    raw_ap,
                 )
             )
 
@@ -1312,6 +1184,10 @@ def main():
     log(
         "MODEL PROBABILITIES ARE PRICE-INDEPENDENT: "
         "sportsbook odds are not probability inputs"
+    )
+    log(
+        "RUN-LINE PROBABILITIES USE RAW SKELLAM OUTPUT: "
+        "no post-hoc calibration is applied"
     )
 
     for f in OUTPUT_DIR.glob(
