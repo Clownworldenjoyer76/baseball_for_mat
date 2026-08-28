@@ -1,53 +1,1358 @@
-=== compute_edges RUN 2026-08-28T11:08:19.985676+00:00 ===
-2026-08-28T11:08:20.061380+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/02_juice
-2026-08-28T11:08:20.061417+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/03_edges
-2026-08-28T11:08:20.061432+00:00 | INFO  | EDGE DEFINITION: model probability minus sportsbook break-even probability
-2026-08-28T11:08:20.061673+00:00 | INFO  | Files found: 15
-2026-08-28T11:08:20.062002+00:00 | INFO  | --- FILE: 2026_08_24_mlb_moneyline.csv  market=moneyline
-2026-08-28T11:08:20.076238+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_24_mlb_moneyline.csv (10 rows, 0 null probability edges)
-2026-08-28T11:08:20.076268+00:00 | INFO  | --- FILE: 2026_08_24_mlb_run_line.csv  market=run_line
-2026-08-28T11:08:20.085567+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_24_mlb_run_line.csv (10 rows, 0 null probability edges)
-2026-08-28T11:08:20.085595+00:00 | INFO  | --- FILE: 2026_08_24_mlb_total.csv  market=total
-2026-08-28T11:08:20.097866+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_24_mlb_total.csv (10 rows, 0 null probability edges)
-2026-08-28T11:08:20.097893+00:00 | INFO  | --- FILE: 2026_08_25_mlb_moneyline.csv  market=moneyline
-2026-08-28T11:08:20.107368+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_25_mlb_moneyline.csv (15 rows, 0 null probability edges)
-2026-08-28T11:08:20.107396+00:00 | INFO  | --- FILE: 2026_08_25_mlb_run_line.csv  market=run_line
-2026-08-28T11:08:20.116534+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_25_mlb_run_line.csv (15 rows, 0 null probability edges)
-2026-08-28T11:08:20.116562+00:00 | INFO  | --- FILE: 2026_08_25_mlb_total.csv  market=total
-2026-08-28T11:08:20.129133+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_25_mlb_total.csv (15 rows, 0 null probability edges)
-2026-08-28T11:08:20.129162+00:00 | INFO  | --- FILE: 2026_08_26_mlb_moneyline.csv  market=moneyline
-2026-08-28T11:08:20.138267+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_26_mlb_moneyline.csv (12 rows, 0 null probability edges)
-2026-08-28T11:08:20.138294+00:00 | INFO  | --- FILE: 2026_08_26_mlb_run_line.csv  market=run_line
-2026-08-28T11:08:20.147399+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_26_mlb_run_line.csv (12 rows, 0 null probability edges)
-2026-08-28T11:08:20.147426+00:00 | INFO  | --- FILE: 2026_08_26_mlb_total.csv  market=total
-2026-08-28T11:08:20.159676+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_26_mlb_total.csv (12 rows, 0 null probability edges)
-2026-08-28T11:08:20.159702+00:00 | INFO  | --- FILE: 2026_08_27_mlb_moneyline.csv  market=moneyline
-2026-08-28T11:08:20.168758+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_27_mlb_moneyline.csv (7 rows, 0 null probability edges)
-2026-08-28T11:08:20.168786+00:00 | INFO  | --- FILE: 2026_08_27_mlb_run_line.csv  market=run_line
-2026-08-28T11:08:20.178223+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_27_mlb_run_line.csv (7 rows, 0 null probability edges)
-2026-08-28T11:08:20.178250+00:00 | INFO  | --- FILE: 2026_08_27_mlb_total.csv  market=total
-2026-08-28T11:08:20.190247+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_27_mlb_total.csv (7 rows, 0 null probability edges)
-2026-08-28T11:08:20.190274+00:00 | INFO  | --- FILE: 2026_08_28_mlb_moneyline.csv  market=moneyline
-2026-08-28T11:08:20.199687+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_28_mlb_moneyline.csv (15 rows, 0 null probability edges)
-2026-08-28T11:08:20.199713+00:00 | INFO  | --- FILE: 2026_08_28_mlb_run_line.csv  market=run_line
-2026-08-28T11:08:20.209100+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_28_mlb_run_line.csv (15 rows, 0 null probability edges)
-2026-08-28T11:08:20.209127+00:00 | INFO  | --- FILE: 2026_08_28_mlb_total.csv  market=total
-2026-08-28T11:08:20.221824+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_28_mlb_total.csv (15 rows, 0 null probability edges)
+=== compute_edges RUN 2026-08-28T17:01:38.316937+00:00 ===
+2026-08-28T17:01:38.317050+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/02_juice
+2026-08-28T17:01:38.317089+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/03_edges
+2026-08-28T17:01:38.317114+00:00 | INFO  | EDGE DEFINITION: model probability minus sportsbook break-even probability
+2026-08-28T17:01:38.319282+00:00 | INFO  | Files found: 450
+2026-08-28T17:01:38.319845+00:00 | INFO  | --- FILE: 2026_03_26_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.339093+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_26_mlb_moneyline.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:38.339136+00:00 | INFO  | --- FILE: 2026_03_26_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.352621+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_26_mlb_run_line.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:38.352660+00:00 | INFO  | --- FILE: 2026_03_26_mlb_total.csv  market=total
+2026-08-28T17:01:38.371126+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_26_mlb_total.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:38.371164+00:00 | INFO  | --- FILE: 2026_03_27_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.384054+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_27_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:38.384093+00:00 | INFO  | --- FILE: 2026_03_27_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.396772+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_27_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:38.396811+00:00 | INFO  | --- FILE: 2026_03_27_mlb_total.csv  market=total
+2026-08-28T17:01:38.414955+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_27_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:38.414993+00:00 | INFO  | --- FILE: 2026_03_28_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.428525+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_28_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.428564+00:00 | INFO  | --- FILE: 2026_03_28_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.441776+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_28_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.441817+00:00 | INFO  | --- FILE: 2026_03_28_mlb_total.csv  market=total
+2026-08-28T17:01:38.460716+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_28_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.460757+00:00 | INFO  | --- FILE: 2026_03_29_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.473981+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_29_mlb_moneyline.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:38.474021+00:00 | INFO  | --- FILE: 2026_03_29_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.486989+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_29_mlb_run_line.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:38.487037+00:00 | INFO  | --- FILE: 2026_03_29_mlb_total.csv  market=total
+2026-08-28T17:01:38.505194+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_29_mlb_total.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:38.505233+00:00 | INFO  | --- FILE: 2026_03_30_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.518672+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_30_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.518712+00:00 | INFO  | --- FILE: 2026_03_30_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.532044+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_30_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.532084+00:00 | INFO  | --- FILE: 2026_03_30_mlb_total.csv  market=total
+2026-08-28T17:01:38.550818+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_30_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.550858+00:00 | INFO  | --- FILE: 2026_03_31_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.564265+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_31_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:38.564302+00:00 | INFO  | --- FILE: 2026_03_31_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.577437+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_31_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:38.577474+00:00 | INFO  | --- FILE: 2026_03_31_mlb_total.csv  market=total
+2026-08-28T17:01:38.595853+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_03_31_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:38.595890+00:00 | INFO  | --- FILE: 2026_04_01_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.609052+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_01_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.609089+00:00 | INFO  | --- FILE: 2026_04_01_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.621979+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_01_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.622016+00:00 | INFO  | --- FILE: 2026_04_01_mlb_total.csv  market=total
+2026-08-28T17:01:38.640156+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_01_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.640193+00:00 | INFO  | --- FILE: 2026_04_02_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.652514+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_02_mlb_moneyline.csv (3 rows, 0 null probability edges)
+2026-08-28T17:01:38.652552+00:00 | INFO  | --- FILE: 2026_04_02_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.664617+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_02_mlb_run_line.csv (3 rows, 0 null probability edges)
+2026-08-28T17:01:38.664655+00:00 | INFO  | --- FILE: 2026_04_02_mlb_total.csv  market=total
+2026-08-28T17:01:38.681843+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_02_mlb_total.csv (3 rows, 0 null probability edges)
+2026-08-28T17:01:38.681881+00:00 | INFO  | --- FILE: 2026_04_03_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.695079+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_03_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:38.695118+00:00 | INFO  | --- FILE: 2026_04_03_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.708063+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_03_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:38.708102+00:00 | INFO  | --- FILE: 2026_04_03_mlb_total.csv  market=total
+2026-08-28T17:01:38.726674+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_03_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:38.726712+00:00 | INFO  | --- FILE: 2026_04_04_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.739909+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_04_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.739947+00:00 | INFO  | --- FILE: 2026_04_04_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.752966+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_04_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.753003+00:00 | INFO  | --- FILE: 2026_04_04_mlb_total.csv  market=total
+2026-08-28T17:01:38.771175+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_04_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.771214+00:00 | INFO  | --- FILE: 2026_04_05_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.784684+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_05_mlb_moneyline.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:38.784723+00:00 | INFO  | --- FILE: 2026_04_05_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.798503+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_05_mlb_run_line.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:38.798542+00:00 | INFO  | --- FILE: 2026_04_05_mlb_total.csv  market=total
+2026-08-28T17:01:38.817067+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_05_mlb_total.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:38.817106+00:00 | INFO  | --- FILE: 2026_04_06_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.830156+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_06_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:38.830193+00:00 | INFO  | --- FILE: 2026_04_06_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.842974+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_06_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:38.843013+00:00 | INFO  | --- FILE: 2026_04_06_mlb_total.csv  market=total
+2026-08-28T17:01:38.861214+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_06_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:38.861253+00:00 | INFO  | --- FILE: 2026_04_07_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.875118+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_07_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.875156+00:00 | INFO  | --- FILE: 2026_04_07_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.888363+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_07_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.888436+00:00 | INFO  | --- FILE: 2026_04_07_mlb_total.csv  market=total
+2026-08-28T17:01:38.906950+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_07_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.906989+00:00 | INFO  | --- FILE: 2026_04_08_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.920489+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_08_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.920526+00:00 | INFO  | --- FILE: 2026_04_08_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.933925+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_08_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.933963+00:00 | INFO  | --- FILE: 2026_04_08_mlb_total.csv  market=total
+2026-08-28T17:01:38.952924+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_08_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:38.952963+00:00 | INFO  | --- FILE: 2026_04_09_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:38.965700+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_09_mlb_moneyline.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:38.965738+00:00 | INFO  | --- FILE: 2026_04_09_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:38.978202+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_09_mlb_run_line.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:38.978240+00:00 | INFO  | --- FILE: 2026_04_09_mlb_total.csv  market=total
+2026-08-28T17:01:38.995846+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_09_mlb_total.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:38.995884+00:00 | INFO  | --- FILE: 2026_04_10_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.008972+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_10_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.009009+00:00 | INFO  | --- FILE: 2026_04_10_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.021985+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_10_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.022023+00:00 | INFO  | --- FILE: 2026_04_10_mlb_total.csv  market=total
+2026-08-28T17:01:39.040320+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_10_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.040359+00:00 | INFO  | --- FILE: 2026_04_11_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.053791+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_11_mlb_moneyline.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:39.053840+00:00 | INFO  | --- FILE: 2026_04_11_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.067683+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_11_mlb_run_line.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:39.067727+00:00 | INFO  | --- FILE: 2026_04_11_mlb_total.csv  market=total
+2026-08-28T17:01:39.086610+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_11_mlb_total.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:39.086648+00:00 | INFO  | --- FILE: 2026_04_12_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.100029+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_12_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.100067+00:00 | INFO  | --- FILE: 2026_04_12_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.113090+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_12_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.113128+00:00 | INFO  | --- FILE: 2026_04_12_mlb_total.csv  market=total
+2026-08-28T17:01:39.131441+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_12_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.131478+00:00 | INFO  | --- FILE: 2026_04_13_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.144324+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_13_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.144362+00:00 | INFO  | --- FILE: 2026_04_13_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.157044+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_13_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.157082+00:00 | INFO  | --- FILE: 2026_04_13_mlb_total.csv  market=total
+2026-08-28T17:01:39.175014+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_13_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.175052+00:00 | INFO  | --- FILE: 2026_04_14_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.188195+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_14_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.188232+00:00 | INFO  | --- FILE: 2026_04_14_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.201313+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_14_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.201352+00:00 | INFO  | --- FILE: 2026_04_14_mlb_total.csv  market=total
+2026-08-28T17:01:39.219534+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_14_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.219572+00:00 | INFO  | --- FILE: 2026_04_15_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.233047+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_15_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.233087+00:00 | INFO  | --- FILE: 2026_04_15_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.246281+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_15_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.246319+00:00 | INFO  | --- FILE: 2026_04_15_mlb_total.csv  market=total
+2026-08-28T17:01:39.264950+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_15_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.264988+00:00 | INFO  | --- FILE: 2026_04_16_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.277763+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_16_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.277801+00:00 | INFO  | --- FILE: 2026_04_16_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.290492+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_16_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.290530+00:00 | INFO  | --- FILE: 2026_04_16_mlb_total.csv  market=total
+2026-08-28T17:01:39.308403+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_16_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.308442+00:00 | INFO  | --- FILE: 2026_04_17_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.321634+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_17_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.321671+00:00 | INFO  | --- FILE: 2026_04_17_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.334815+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_17_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.334854+00:00 | INFO  | --- FILE: 2026_04_17_mlb_total.csv  market=total
+2026-08-28T17:01:39.353347+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_17_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.353407+00:00 | INFO  | --- FILE: 2026_04_18_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.366703+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_18_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.366741+00:00 | INFO  | --- FILE: 2026_04_18_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.379795+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_18_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.379831+00:00 | INFO  | --- FILE: 2026_04_18_mlb_total.csv  market=total
+2026-08-28T17:01:39.398063+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_18_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.398101+00:00 | INFO  | --- FILE: 2026_04_19_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.411499+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_19_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.411537+00:00 | INFO  | --- FILE: 2026_04_19_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.424612+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_19_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.424650+00:00 | INFO  | --- FILE: 2026_04_19_mlb_total.csv  market=total
+2026-08-28T17:01:39.443150+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_19_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.443189+00:00 | INFO  | --- FILE: 2026_04_20_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.456101+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_20_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.456139+00:00 | INFO  | --- FILE: 2026_04_20_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.468829+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_20_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.468867+00:00 | INFO  | --- FILE: 2026_04_20_mlb_total.csv  market=total
+2026-08-28T17:01:39.486817+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_20_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:39.486857+00:00 | INFO  | --- FILE: 2026_04_21_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.500564+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_21_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.500608+00:00 | INFO  | --- FILE: 2026_04_21_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.514047+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_21_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.514086+00:00 | INFO  | --- FILE: 2026_04_21_mlb_total.csv  market=total
+2026-08-28T17:01:39.532703+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_21_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.532740+00:00 | INFO  | --- FILE: 2026_04_22_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.546537+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_22_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.546574+00:00 | INFO  | --- FILE: 2026_04_22_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.560148+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_22_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.560186+00:00 | INFO  | --- FILE: 2026_04_22_mlb_total.csv  market=total
+2026-08-28T17:01:39.578934+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_22_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.578972+00:00 | INFO  | --- FILE: 2026_04_23_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.592124+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_23_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:39.592163+00:00 | INFO  | --- FILE: 2026_04_23_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.605301+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_23_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:39.605339+00:00 | INFO  | --- FILE: 2026_04_23_mlb_total.csv  market=total
+2026-08-28T17:01:39.623996+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_23_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:39.624036+00:00 | INFO  | --- FILE: 2026_04_24_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.637559+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_24_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.637597+00:00 | INFO  | --- FILE: 2026_04_24_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.651056+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_24_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.651100+00:00 | INFO  | --- FILE: 2026_04_24_mlb_total.csv  market=total
+2026-08-28T17:01:39.669900+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_24_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.669938+00:00 | INFO  | --- FILE: 2026_04_25_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.683715+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_25_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.683752+00:00 | INFO  | --- FILE: 2026_04_25_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.697573+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_25_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.697611+00:00 | INFO  | --- FILE: 2026_04_25_mlb_total.csv  market=total
+2026-08-28T17:01:39.716406+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_25_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.716445+00:00 | INFO  | --- FILE: 2026_04_26_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.730436+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_26_mlb_moneyline.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:39.730475+00:00 | INFO  | --- FILE: 2026_04_26_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.744274+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_26_mlb_run_line.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:39.744312+00:00 | INFO  | --- FILE: 2026_04_26_mlb_total.csv  market=total
+2026-08-28T17:01:39.763577+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_26_mlb_total.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:39.763615+00:00 | INFO  | --- FILE: 2026_04_27_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.776849+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_27_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:39.776888+00:00 | INFO  | --- FILE: 2026_04_27_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.789798+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_27_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:39.789836+00:00 | INFO  | --- FILE: 2026_04_27_mlb_total.csv  market=total
+2026-08-28T17:01:39.807795+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_27_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:39.807832+00:00 | INFO  | --- FILE: 2026_04_28_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.821453+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_28_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.821490+00:00 | INFO  | --- FILE: 2026_04_28_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.835105+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_28_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.835143+00:00 | INFO  | --- FILE: 2026_04_28_mlb_total.csv  market=total
+2026-08-28T17:01:39.854023+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_28_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.854061+00:00 | INFO  | --- FILE: 2026_04_29_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.867735+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_29_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.867773+00:00 | INFO  | --- FILE: 2026_04_29_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.881333+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_29_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.881392+00:00 | INFO  | --- FILE: 2026_04_29_mlb_total.csv  market=total
+2026-08-28T17:01:39.900101+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_29_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:39.900140+00:00 | INFO  | --- FILE: 2026_04_30_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.926166+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_30_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:39.926206+00:00 | INFO  | --- FILE: 2026_04_30_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.939446+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_30_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:39.939484+00:00 | INFO  | --- FILE: 2026_04_30_mlb_total.csv  market=total
+2026-08-28T17:01:39.958062+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_04_30_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:39.958101+00:00 | INFO  | --- FILE: 2026_05_01_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:39.972128+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_01_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.972166+00:00 | INFO  | --- FILE: 2026_05_01_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:39.985833+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_01_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:39.985877+00:00 | INFO  | --- FILE: 2026_05_01_mlb_total.csv  market=total
+2026-08-28T17:01:40.004868+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_01_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.004906+00:00 | INFO  | --- FILE: 2026_05_02_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.018582+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_02_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.018619+00:00 | INFO  | --- FILE: 2026_05_02_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.032342+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_02_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.032401+00:00 | INFO  | --- FILE: 2026_05_02_mlb_total.csv  market=total
+2026-08-28T17:01:40.051231+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_02_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.051272+00:00 | INFO  | --- FILE: 2026_05_03_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.065329+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_03_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.065392+00:00 | INFO  | --- FILE: 2026_05_03_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.079770+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_03_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.079810+00:00 | INFO  | --- FILE: 2026_05_03_mlb_total.csv  market=total
+2026-08-28T17:01:40.099238+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_03_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.099276+00:00 | INFO  | --- FILE: 2026_05_04_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.112977+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_04_mlb_moneyline.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:40.113015+00:00 | INFO  | --- FILE: 2026_05_04_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.126426+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_04_mlb_run_line.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:40.126466+00:00 | INFO  | --- FILE: 2026_05_04_mlb_total.csv  market=total
+2026-08-28T17:01:40.145259+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_04_mlb_total.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:40.145302+00:00 | INFO  | --- FILE: 2026_05_05_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.159169+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_05_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.159207+00:00 | INFO  | --- FILE: 2026_05_05_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.173082+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_05_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.173126+00:00 | INFO  | --- FILE: 2026_05_05_mlb_total.csv  market=total
+2026-08-28T17:01:40.192269+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_05_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.192308+00:00 | INFO  | --- FILE: 2026_05_06_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.206023+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_06_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.206061+00:00 | INFO  | --- FILE: 2026_05_06_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.219547+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_06_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.219586+00:00 | INFO  | --- FILE: 2026_05_06_mlb_total.csv  market=total
+2026-08-28T17:01:40.238471+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_06_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.238510+00:00 | INFO  | --- FILE: 2026_05_07_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.251781+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_07_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:40.251820+00:00 | INFO  | --- FILE: 2026_05_07_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.264998+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_07_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:40.265037+00:00 | INFO  | --- FILE: 2026_05_07_mlb_total.csv  market=total
+2026-08-28T17:01:40.283745+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_07_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:40.283787+00:00 | INFO  | --- FILE: 2026_05_08_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.297628+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_08_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.297672+00:00 | INFO  | --- FILE: 2026_05_08_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.311186+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_08_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.311223+00:00 | INFO  | --- FILE: 2026_05_08_mlb_total.csv  market=total
+2026-08-28T17:01:40.330123+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_08_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.330161+00:00 | INFO  | --- FILE: 2026_05_09_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.343611+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_09_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.343648+00:00 | INFO  | --- FILE: 2026_05_09_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.357325+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_09_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.357362+00:00 | INFO  | --- FILE: 2026_05_09_mlb_total.csv  market=total
+2026-08-28T17:01:40.376603+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_09_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.376641+00:00 | INFO  | --- FILE: 2026_05_10_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.390642+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_10_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.390680+00:00 | INFO  | --- FILE: 2026_05_10_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.404174+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_10_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.404211+00:00 | INFO  | --- FILE: 2026_05_10_mlb_total.csv  market=total
+2026-08-28T17:01:40.423140+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_10_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.423177+00:00 | INFO  | --- FILE: 2026_05_11_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.435993+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_11_mlb_moneyline.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:40.436032+00:00 | INFO  | --- FILE: 2026_05_11_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.448844+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_11_mlb_run_line.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:40.448882+00:00 | INFO  | --- FILE: 2026_05_11_mlb_total.csv  market=total
+2026-08-28T17:01:40.466782+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_11_mlb_total.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:40.466820+00:00 | INFO  | --- FILE: 2026_05_12_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.480301+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_12_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.480339+00:00 | INFO  | --- FILE: 2026_05_12_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.493761+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_12_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.493800+00:00 | INFO  | --- FILE: 2026_05_12_mlb_total.csv  market=total
+2026-08-28T17:01:40.512549+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_12_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.512587+00:00 | INFO  | --- FILE: 2026_05_13_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.526259+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_13_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.526299+00:00 | INFO  | --- FILE: 2026_05_13_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.539784+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_13_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.539821+00:00 | INFO  | --- FILE: 2026_05_13_mlb_total.csv  market=total
+2026-08-28T17:01:40.558580+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_13_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.558617+00:00 | INFO  | --- FILE: 2026_05_14_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.572149+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_14_mlb_moneyline.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:40.572186+00:00 | INFO  | --- FILE: 2026_05_14_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.585420+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_14_mlb_run_line.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:40.585459+00:00 | INFO  | --- FILE: 2026_05_14_mlb_total.csv  market=total
+2026-08-28T17:01:40.606126+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_14_mlb_total.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:40.606164+00:00 | INFO  | --- FILE: 2026_05_15_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.620205+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_15_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.620243+00:00 | INFO  | --- FILE: 2026_05_15_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.633830+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_15_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:40.633868+00:00 | INFO  | --- FILE: 2026_05_15_mlb_total.csv  market=total
+2026-08-28T17:01:40.652860+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_15_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.652897+00:00 | INFO  | --- FILE: 2026_05_16_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.666814+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_16_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.666853+00:00 | INFO  | --- FILE: 2026_05_16_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.680670+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_16_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.680708+00:00 | INFO  | --- FILE: 2026_05_16_mlb_total.csv  market=total
+2026-08-28T17:01:40.700657+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_16_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.700695+00:00 | INFO  | --- FILE: 2026_05_17_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.714334+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_17_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.714393+00:00 | INFO  | --- FILE: 2026_05_17_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.728288+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_17_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.728325+00:00 | INFO  | --- FILE: 2026_05_17_mlb_total.csv  market=total
+2026-08-28T17:01:40.746901+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_17_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.746939+00:00 | INFO  | --- FILE: 2026_05_18_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.760896+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_18_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.760940+00:00 | INFO  | --- FILE: 2026_05_18_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.775098+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_18_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.775145+00:00 | INFO  | --- FILE: 2026_05_18_mlb_total.csv  market=total
+2026-08-28T17:01:40.794398+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_18_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:40.794439+00:00 | INFO  | --- FILE: 2026_05_19_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.808549+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_19_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.808587+00:00 | INFO  | --- FILE: 2026_05_19_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.822489+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_19_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.822528+00:00 | INFO  | --- FILE: 2026_05_19_mlb_total.csv  market=total
+2026-08-28T17:01:40.841889+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_19_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.841927+00:00 | INFO  | --- FILE: 2026_05_20_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.856175+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_20_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.856226+00:00 | INFO  | --- FILE: 2026_05_20_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.870415+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_20_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.870454+00:00 | INFO  | --- FILE: 2026_05_20_mlb_total.csv  market=total
+2026-08-28T17:01:40.889758+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_20_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.889797+00:00 | INFO  | --- FILE: 2026_05_21_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.903092+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_21_mlb_moneyline.csv (7 rows, 0 null probability edges)
+2026-08-28T17:01:40.903130+00:00 | INFO  | --- FILE: 2026_05_21_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.916099+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_21_mlb_run_line.csv (7 rows, 0 null probability edges)
+2026-08-28T17:01:40.916137+00:00 | INFO  | --- FILE: 2026_05_21_mlb_total.csv  market=total
+2026-08-28T17:01:40.934435+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_21_mlb_total.csv (7 rows, 0 null probability edges)
+2026-08-28T17:01:40.934472+00:00 | INFO  | --- FILE: 2026_05_22_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.948268+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_22_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.948307+00:00 | INFO  | --- FILE: 2026_05_22_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:40.962300+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_22_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.962341+00:00 | INFO  | --- FILE: 2026_05_22_mlb_total.csv  market=total
+2026-08-28T17:01:40.981348+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_22_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:40.981408+00:00 | INFO  | --- FILE: 2026_05_23_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:40.995074+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_23_mlb_moneyline.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:40.995112+00:00 | INFO  | --- FILE: 2026_05_23_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.008756+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_23_mlb_run_line.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:41.008794+00:00 | INFO  | --- FILE: 2026_05_23_mlb_total.csv  market=total
+2026-08-28T17:01:41.027810+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_23_mlb_total.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:41.027847+00:00 | INFO  | --- FILE: 2026_05_24_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.041783+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_24_mlb_moneyline.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:41.041820+00:00 | INFO  | --- FILE: 2026_05_24_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.055633+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_24_mlb_run_line.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:41.055674+00:00 | INFO  | --- FILE: 2026_05_24_mlb_total.csv  market=total
+2026-08-28T17:01:41.075134+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_24_mlb_total.csv (16 rows, 0 null probability edges)
+2026-08-28T17:01:41.075176+00:00 | INFO  | --- FILE: 2026_05_25_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.089091+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_25_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:41.089130+00:00 | INFO  | --- FILE: 2026_05_25_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.102734+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_25_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:41.102773+00:00 | INFO  | --- FILE: 2026_05_25_mlb_total.csv  market=total
+2026-08-28T17:01:41.121569+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_25_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:41.121606+00:00 | INFO  | --- FILE: 2026_05_26_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.135423+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_26_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.135462+00:00 | INFO  | --- FILE: 2026_05_26_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.149204+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_26_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.149243+00:00 | INFO  | --- FILE: 2026_05_26_mlb_total.csv  market=total
+2026-08-28T17:01:41.168290+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_26_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.168329+00:00 | INFO  | --- FILE: 2026_05_27_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.182174+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_27_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.182213+00:00 | INFO  | --- FILE: 2026_05_27_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.196072+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_27_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.196110+00:00 | INFO  | --- FILE: 2026_05_27_mlb_total.csv  market=total
+2026-08-28T17:01:41.214962+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_27_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.215000+00:00 | INFO  | --- FILE: 2026_05_28_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.228025+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_28_mlb_moneyline.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:41.228064+00:00 | INFO  | --- FILE: 2026_05_28_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.241038+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_28_mlb_run_line.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:41.241076+00:00 | INFO  | --- FILE: 2026_05_28_mlb_total.csv  market=total
+2026-08-28T17:01:41.259243+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_28_mlb_total.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:41.259281+00:00 | INFO  | --- FILE: 2026_05_29_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.273273+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_29_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.273320+00:00 | INFO  | --- FILE: 2026_05_29_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.287206+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_29_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.287243+00:00 | INFO  | --- FILE: 2026_05_29_mlb_total.csv  market=total
+2026-08-28T17:01:41.306453+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_29_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.306491+00:00 | INFO  | --- FILE: 2026_05_30_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.320437+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_30_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.320473+00:00 | INFO  | --- FILE: 2026_05_30_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.334495+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_30_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.334533+00:00 | INFO  | --- FILE: 2026_05_30_mlb_total.csv  market=total
+2026-08-28T17:01:41.353794+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_30_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.353832+00:00 | INFO  | --- FILE: 2026_05_31_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.360261+00:00 | ERROR | 2026_05_31_mlb_moneyline.csv SCHEMA FAILED: 2026_05_31_mlb_moneyline.csv moneyline input has missing, non-finite, or invalid decimal odds; bad_rows=1; sample=[{'game_id': 63300183, 'home_dk_decimal_moneyline': nan, 'away_dk_decimal_moneyline': nan}]
+2026-08-28T17:01:41.360309+00:00 | INFO  | --- FILE: 2026_05_31_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.374291+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_31_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:41.374329+00:00 | INFO  | --- FILE: 2026_05_31_mlb_total.csv  market=total
+2026-08-28T17:01:41.393731+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_05_31_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.393771+00:00 | INFO  | --- FILE: 2026_06_01_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.407627+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_01_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.407671+00:00 | INFO  | --- FILE: 2026_06_01_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.421811+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_01_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.421850+00:00 | INFO  | --- FILE: 2026_06_01_mlb_total.csv  market=total
+2026-08-28T17:01:41.441137+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_01_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.441181+00:00 | INFO  | --- FILE: 2026_06_02_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.455672+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_02_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.455709+00:00 | INFO  | --- FILE: 2026_06_02_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.469804+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_02_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.469847+00:00 | INFO  | --- FILE: 2026_06_02_mlb_total.csv  market=total
+2026-08-28T17:01:41.489339+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_02_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.489401+00:00 | INFO  | --- FILE: 2026_06_03_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.503557+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_03_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.503599+00:00 | INFO  | --- FILE: 2026_06_03_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.517603+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_03_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.517641+00:00 | INFO  | --- FILE: 2026_06_03_mlb_total.csv  market=total
+2026-08-28T17:01:41.536852+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_03_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.536890+00:00 | INFO  | --- FILE: 2026_06_04_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.550222+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_04_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.550259+00:00 | INFO  | --- FILE: 2026_06_04_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.563330+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_04_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.563386+00:00 | INFO  | --- FILE: 2026_06_04_mlb_total.csv  market=total
+2026-08-28T17:01:41.581808+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_04_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.581847+00:00 | INFO  | --- FILE: 2026_06_05_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.595589+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_05_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:41.595629+00:00 | INFO  | --- FILE: 2026_06_05_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.609581+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_05_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:41.609625+00:00 | INFO  | --- FILE: 2026_06_05_mlb_total.csv  market=total
+2026-08-28T17:01:41.628505+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_05_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:41.628544+00:00 | INFO  | --- FILE: 2026_06_06_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.642189+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_06_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.642226+00:00 | INFO  | --- FILE: 2026_06_06_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.655800+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_06_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.655838+00:00 | INFO  | --- FILE: 2026_06_06_mlb_total.csv  market=total
+2026-08-28T17:01:41.674813+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_06_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.674855+00:00 | INFO  | --- FILE: 2026_06_07_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.688555+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_07_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.688593+00:00 | INFO  | --- FILE: 2026_06_07_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.702258+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_07_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.702296+00:00 | INFO  | --- FILE: 2026_06_07_mlb_total.csv  market=total
+2026-08-28T17:01:41.721047+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_07_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:41.721086+00:00 | INFO  | --- FILE: 2026_06_08_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.734587+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_08_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.734625+00:00 | INFO  | --- FILE: 2026_06_08_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.748001+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_08_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.748040+00:00 | INFO  | --- FILE: 2026_06_08_mlb_total.csv  market=total
+2026-08-28T17:01:41.766817+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_08_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.766861+00:00 | INFO  | --- FILE: 2026_06_09_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.780177+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_09_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.780216+00:00 | INFO  | --- FILE: 2026_06_09_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.793688+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_09_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.793736+00:00 | INFO  | --- FILE: 2026_06_09_mlb_total.csv  market=total
+2026-08-28T17:01:41.812308+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_09_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.812347+00:00 | INFO  | --- FILE: 2026_06_10_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.825694+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_10_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.825733+00:00 | INFO  | --- FILE: 2026_06_10_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.838959+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_10_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.838997+00:00 | INFO  | --- FILE: 2026_06_10_mlb_total.csv  market=total
+2026-08-28T17:01:41.857424+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_10_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:41.857463+00:00 | INFO  | --- FILE: 2026_06_11_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.870319+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_11_mlb_moneyline.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:41.870358+00:00 | INFO  | --- FILE: 2026_06_11_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.883119+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_11_mlb_run_line.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:41.883158+00:00 | INFO  | --- FILE: 2026_06_11_mlb_total.csv  market=total
+2026-08-28T17:01:41.901219+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_11_mlb_total.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:41.901256+00:00 | INFO  | --- FILE: 2026_06_12_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.914507+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_12_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.914544+00:00 | INFO  | --- FILE: 2026_06_12_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.927637+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_12_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.927679+00:00 | INFO  | --- FILE: 2026_06_12_mlb_total.csv  market=total
+2026-08-28T17:01:41.946062+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_12_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.946101+00:00 | INFO  | --- FILE: 2026_06_13_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:41.974543+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_13_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.974593+00:00 | INFO  | --- FILE: 2026_06_13_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:41.988294+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_13_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:41.988332+00:00 | INFO  | --- FILE: 2026_06_13_mlb_total.csv  market=total
+2026-08-28T17:01:42.006772+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_13_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:42.006810+00:00 | INFO  | --- FILE: 2026_06_14_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.019833+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_14_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:42.019871+00:00 | INFO  | --- FILE: 2026_06_14_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.032849+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_14_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:42.032888+00:00 | INFO  | --- FILE: 2026_06_14_mlb_total.csv  market=total
+2026-08-28T17:01:42.051109+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_14_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:42.051149+00:00 | INFO  | --- FILE: 2026_06_15_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.064993+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_15_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.065035+00:00 | INFO  | --- FILE: 2026_06_15_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.078529+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_15_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.078567+00:00 | INFO  | --- FILE: 2026_06_15_mlb_total.csv  market=total
+2026-08-28T17:01:42.097255+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_15_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.097294+00:00 | INFO  | --- FILE: 2026_06_16_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.111069+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_16_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.111108+00:00 | INFO  | --- FILE: 2026_06_16_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.124570+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_16_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.124608+00:00 | INFO  | --- FILE: 2026_06_16_mlb_total.csv  market=total
+2026-08-28T17:01:42.143320+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_16_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.143359+00:00 | INFO  | --- FILE: 2026_06_17_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.156992+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_17_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.157031+00:00 | INFO  | --- FILE: 2026_06_17_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.170630+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_17_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.170670+00:00 | INFO  | --- FILE: 2026_06_17_mlb_total.csv  market=total
+2026-08-28T17:01:42.189509+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_17_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.189547+00:00 | INFO  | --- FILE: 2026_06_18_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.202942+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_18_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.202986+00:00 | INFO  | --- FILE: 2026_06_18_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.216416+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_18_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.216457+00:00 | INFO  | --- FILE: 2026_06_18_mlb_total.csv  market=total
+2026-08-28T17:01:42.235198+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_18_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.235237+00:00 | INFO  | --- FILE: 2026_06_19_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.248940+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_19_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.248978+00:00 | INFO  | --- FILE: 2026_06_19_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.262516+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_19_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.262554+00:00 | INFO  | --- FILE: 2026_06_19_mlb_total.csv  market=total
+2026-08-28T17:01:42.281338+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_19_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.281397+00:00 | INFO  | --- FILE: 2026_06_20_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.295402+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_20_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.295441+00:00 | INFO  | --- FILE: 2026_06_20_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.309225+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_20_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.309263+00:00 | INFO  | --- FILE: 2026_06_20_mlb_total.csv  market=total
+2026-08-28T17:01:42.328493+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_20_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.328531+00:00 | INFO  | --- FILE: 2026_06_21_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.342523+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_21_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.342561+00:00 | INFO  | --- FILE: 2026_06_21_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.356320+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_21_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.356358+00:00 | INFO  | --- FILE: 2026_06_21_mlb_total.csv  market=total
+2026-08-28T17:01:42.375460+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_21_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.375497+00:00 | INFO  | --- FILE: 2026_06_22_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.389305+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_22_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.389342+00:00 | INFO  | --- FILE: 2026_06_22_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.403129+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_22_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.403168+00:00 | INFO  | --- FILE: 2026_06_22_mlb_total.csv  market=total
+2026-08-28T17:01:42.422701+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_22_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.422740+00:00 | INFO  | --- FILE: 2026_06_23_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.436518+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_23_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.436556+00:00 | INFO  | --- FILE: 2026_06_23_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.450226+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_23_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.450264+00:00 | INFO  | --- FILE: 2026_06_23_mlb_total.csv  market=total
+2026-08-28T17:01:42.469261+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_23_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.469306+00:00 | INFO  | --- FILE: 2026_06_24_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.482979+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_24_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.483017+00:00 | INFO  | --- FILE: 2026_06_24_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.496614+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_24_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.496652+00:00 | INFO  | --- FILE: 2026_06_24_mlb_total.csv  market=total
+2026-08-28T17:01:42.515493+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_24_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.515533+00:00 | INFO  | --- FILE: 2026_06_25_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.529021+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_25_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.529060+00:00 | INFO  | --- FILE: 2026_06_25_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.542459+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_25_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.542497+00:00 | INFO  | --- FILE: 2026_06_25_mlb_total.csv  market=total
+2026-08-28T17:01:42.561140+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_25_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.561178+00:00 | INFO  | --- FILE: 2026_06_26_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.575047+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_26_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.575086+00:00 | INFO  | --- FILE: 2026_06_26_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.588826+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_26_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.588865+00:00 | INFO  | --- FILE: 2026_06_26_mlb_total.csv  market=total
+2026-08-28T17:01:42.607915+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_26_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.607952+00:00 | INFO  | --- FILE: 2026_06_27_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.621614+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_27_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.621652+00:00 | INFO  | --- FILE: 2026_06_27_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.635230+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_27_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.635268+00:00 | INFO  | --- FILE: 2026_06_27_mlb_total.csv  market=total
+2026-08-28T17:01:42.654176+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_27_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.654214+00:00 | INFO  | --- FILE: 2026_06_28_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.667854+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_28_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.667891+00:00 | INFO  | --- FILE: 2026_06_28_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.681421+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_28_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.681460+00:00 | INFO  | --- FILE: 2026_06_28_mlb_total.csv  market=total
+2026-08-28T17:01:42.700421+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_28_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.700459+00:00 | INFO  | --- FILE: 2026_06_29_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.714059+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_29_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.714098+00:00 | INFO  | --- FILE: 2026_06_29_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.727537+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_29_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.727580+00:00 | INFO  | --- FILE: 2026_06_29_mlb_total.csv  market=total
+2026-08-28T17:01:42.746317+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_29_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.746356+00:00 | INFO  | --- FILE: 2026_06_30_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.760045+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_30_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.760085+00:00 | INFO  | --- FILE: 2026_06_30_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.773601+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_30_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.773641+00:00 | INFO  | --- FILE: 2026_06_30_mlb_total.csv  market=total
+2026-08-28T17:01:42.792423+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_06_30_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.792463+00:00 | INFO  | --- FILE: 2026_07_01_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.806280+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_01_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.806318+00:00 | INFO  | --- FILE: 2026_07_01_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.819940+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_01_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.819978+00:00 | INFO  | --- FILE: 2026_07_01_mlb_total.csv  market=total
+2026-08-28T17:01:42.838955+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_01_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.838992+00:00 | INFO  | --- FILE: 2026_07_02_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.852156+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_02_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.852195+00:00 | INFO  | --- FILE: 2026_07_02_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.865167+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_02_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.865204+00:00 | INFO  | --- FILE: 2026_07_02_mlb_total.csv  market=total
+2026-08-28T17:01:42.883404+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_02_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:42.883443+00:00 | INFO  | --- FILE: 2026_07_03_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.897067+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_03_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.897111+00:00 | INFO  | --- FILE: 2026_07_03_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.910442+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_03_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.910480+00:00 | INFO  | --- FILE: 2026_07_03_mlb_total.csv  market=total
+2026-08-28T17:01:42.929224+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_03_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:42.929262+00:00 | INFO  | --- FILE: 2026_07_04_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.942801+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_04_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.942840+00:00 | INFO  | --- FILE: 2026_07_04_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:42.956253+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_04_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.956291+00:00 | INFO  | --- FILE: 2026_07_04_mlb_total.csv  market=total
+2026-08-28T17:01:42.975130+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_04_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:42.975171+00:00 | INFO  | --- FILE: 2026_07_05_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:42.988580+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_05_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:42.988624+00:00 | INFO  | --- FILE: 2026_07_05_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.001932+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_05_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.001969+00:00 | INFO  | --- FILE: 2026_07_05_mlb_total.csv  market=total
+2026-08-28T17:01:43.020722+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_05_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.020762+00:00 | INFO  | --- FILE: 2026_07_06_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.034049+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_06_mlb_moneyline.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:43.034088+00:00 | INFO  | --- FILE: 2026_07_06_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.047102+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_06_mlb_run_line.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:43.047147+00:00 | INFO  | --- FILE: 2026_07_06_mlb_total.csv  market=total
+2026-08-28T17:01:43.065868+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_06_mlb_total.csv (8 rows, 0 null probability edges)
+2026-08-28T17:01:43.065913+00:00 | INFO  | --- FILE: 2026_07_07_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.080307+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_07_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.080348+00:00 | INFO  | --- FILE: 2026_07_07_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.094310+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_07_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.094350+00:00 | INFO  | --- FILE: 2026_07_07_mlb_total.csv  market=total
+2026-08-28T17:01:43.113564+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_07_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.113605+00:00 | INFO  | --- FILE: 2026_07_08_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.127485+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_08_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.127523+00:00 | INFO  | --- FILE: 2026_07_08_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.141565+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_08_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.141603+00:00 | INFO  | --- FILE: 2026_07_08_mlb_total.csv  market=total
+2026-08-28T17:01:43.160489+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_08_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.160527+00:00 | INFO  | --- FILE: 2026_07_09_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.174354+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_09_mlb_moneyline.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:43.174417+00:00 | INFO  | --- FILE: 2026_07_09_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.188107+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_09_mlb_run_line.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:43.188146+00:00 | INFO  | --- FILE: 2026_07_09_mlb_total.csv  market=total
+2026-08-28T17:01:43.207268+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_09_mlb_total.csv (13 rows, 0 null probability edges)
+2026-08-28T17:01:43.207307+00:00 | INFO  | --- FILE: 2026_07_10_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.220955+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_10_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.220992+00:00 | INFO  | --- FILE: 2026_07_10_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.234594+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_10_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.234632+00:00 | INFO  | --- FILE: 2026_07_10_mlb_total.csv  market=total
+2026-08-28T17:01:43.253502+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_10_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.253544+00:00 | INFO  | --- FILE: 2026_07_11_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.267210+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_11_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:43.267249+00:00 | INFO  | --- FILE: 2026_07_11_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.280697+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_11_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:43.280735+00:00 | INFO  | --- FILE: 2026_07_11_mlb_total.csv  market=total
+2026-08-28T17:01:43.299423+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_11_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:43.299462+00:00 | INFO  | --- FILE: 2026_07_12_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.313145+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_12_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.313184+00:00 | INFO  | --- FILE: 2026_07_12_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.326743+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_12_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.326781+00:00 | INFO  | --- FILE: 2026_07_12_mlb_total.csv  market=total
+2026-08-28T17:01:43.345510+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_12_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.345548+00:00 | INFO  | --- FILE: 2026_07_16_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.357882+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_16_mlb_moneyline.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:43.357920+00:00 | INFO  | --- FILE: 2026_07_16_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.370182+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_16_mlb_run_line.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:43.370220+00:00 | INFO  | --- FILE: 2026_07_16_mlb_total.csv  market=total
+2026-08-28T17:01:43.387555+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_16_mlb_total.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:43.387593+00:00 | INFO  | --- FILE: 2026_07_17_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.401212+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_17_mlb_moneyline.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.401250+00:00 | INFO  | --- FILE: 2026_07_17_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.414697+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_17_mlb_run_line.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.414753+00:00 | INFO  | --- FILE: 2026_07_17_mlb_total.csv  market=total
+2026-08-28T17:01:43.433629+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_17_mlb_total.csv (14 rows, 0 null probability edges)
+2026-08-28T17:01:43.433668+00:00 | INFO  | --- FILE: 2026_07_18_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.446864+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_18_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:43.446902+00:00 | INFO  | --- FILE: 2026_07_18_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.460216+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_18_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:43.460256+00:00 | INFO  | --- FILE: 2026_07_18_mlb_total.csv  market=total
+2026-08-28T17:01:43.478483+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_18_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:43.478521+00:00 | INFO  | --- FILE: 2026_07_19_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.492139+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_19_mlb_moneyline.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:43.492177+00:00 | INFO  | --- FILE: 2026_07_19_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.505613+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_19_mlb_run_line.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:43.505655+00:00 | INFO  | --- FILE: 2026_07_19_mlb_total.csv  market=total
+2026-08-28T17:01:43.524418+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_19_mlb_total.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:43.524459+00:00 | INFO  | --- FILE: 2026_07_20_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.537773+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_20_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.537811+00:00 | INFO  | --- FILE: 2026_07_20_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.551074+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_20_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.551112+00:00 | INFO  | --- FILE: 2026_07_20_mlb_total.csv  market=total
+2026-08-28T17:01:43.569710+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_20_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.569748+00:00 | INFO  | --- FILE: 2026_07_21_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.582814+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_21_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:43.582852+00:00 | INFO  | --- FILE: 2026_07_21_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.595919+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_21_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:43.595956+00:00 | INFO  | --- FILE: 2026_07_21_mlb_total.csv  market=total
+2026-08-28T17:01:43.614135+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_21_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:43.614174+00:00 | INFO  | --- FILE: 2026_07_22_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.626782+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_22_mlb_moneyline.csv (3 rows, 0 null probability edges)
+2026-08-28T17:01:43.626821+00:00 | INFO  | --- FILE: 2026_07_22_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.639360+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_22_mlb_run_line.csv (3 rows, 0 null probability edges)
+2026-08-28T17:01:43.639419+00:00 | INFO  | --- FILE: 2026_07_22_mlb_total.csv  market=total
+2026-08-28T17:01:43.657274+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_22_mlb_total.csv (3 rows, 0 null probability edges)
+2026-08-28T17:01:43.657312+00:00 | INFO  | --- FILE: 2026_07_23_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.670162+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_23_mlb_moneyline.csv (5 rows, 0 null probability edges)
+2026-08-28T17:01:43.670200+00:00 | INFO  | --- FILE: 2026_07_23_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.682956+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_23_mlb_run_line.csv (5 rows, 0 null probability edges)
+2026-08-28T17:01:43.682994+00:00 | INFO  | --- FILE: 2026_07_23_mlb_total.csv  market=total
+2026-08-28T17:01:43.701009+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_23_mlb_total.csv (5 rows, 0 null probability edges)
+2026-08-28T17:01:43.701061+00:00 | INFO  | --- FILE: 2026_07_24_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.714944+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_24_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.714981+00:00 | INFO  | --- FILE: 2026_07_24_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.728666+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_24_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.728705+00:00 | INFO  | --- FILE: 2026_07_24_mlb_total.csv  market=total
+2026-08-28T17:01:43.747789+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_24_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.747829+00:00 | INFO  | --- FILE: 2026_07_25_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.761638+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_25_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.761681+00:00 | INFO  | --- FILE: 2026_07_25_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.775416+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_25_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.775455+00:00 | INFO  | --- FILE: 2026_07_25_mlb_total.csv  market=total
+2026-08-28T17:01:43.794395+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_25_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.794436+00:00 | INFO  | --- FILE: 2026_07_26_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.808074+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_26_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.808113+00:00 | INFO  | --- FILE: 2026_07_26_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.821687+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_26_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.821725+00:00 | INFO  | --- FILE: 2026_07_26_mlb_total.csv  market=total
+2026-08-28T17:01:43.840602+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_26_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.840640+00:00 | INFO  | --- FILE: 2026_07_27_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.854052+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_27_mlb_moneyline.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:43.854090+00:00 | INFO  | --- FILE: 2026_07_27_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.867406+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_27_mlb_run_line.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:43.867452+00:00 | INFO  | --- FILE: 2026_07_27_mlb_total.csv  market=total
+2026-08-28T17:01:43.886102+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_27_mlb_total.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:43.886140+00:00 | INFO  | --- FILE: 2026_07_28_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.900255+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_28_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.900294+00:00 | INFO  | --- FILE: 2026_07_28_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.914329+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_28_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.914367+00:00 | INFO  | --- FILE: 2026_07_28_mlb_total.csv  market=total
+2026-08-28T17:01:43.933450+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_28_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.933488+00:00 | INFO  | --- FILE: 2026_07_29_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:43.947540+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_29_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.947579+00:00 | INFO  | --- FILE: 2026_07_29_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:43.961509+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_29_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.961546+00:00 | INFO  | --- FILE: 2026_07_29_mlb_total.csv  market=total
+2026-08-28T17:01:43.980886+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_29_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:43.980927+00:00 | INFO  | --- FILE: 2026_07_30_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.008724+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_30_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:44.008769+00:00 | INFO  | --- FILE: 2026_07_30_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.022721+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_30_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:44.022761+00:00 | INFO  | --- FILE: 2026_07_30_mlb_total.csv  market=total
+2026-08-28T17:01:44.041756+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_30_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:44.041799+00:00 | INFO  | --- FILE: 2026_07_31_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.055788+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_31_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.055827+00:00 | INFO  | --- FILE: 2026_07_31_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.070325+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_31_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.070397+00:00 | INFO  | --- FILE: 2026_07_31_mlb_total.csv  market=total
+2026-08-28T17:01:44.090851+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_07_31_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.090894+00:00 | INFO  | --- FILE: 2026_08_01_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.104962+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_01_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.105002+00:00 | INFO  | --- FILE: 2026_08_01_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.118665+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_01_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.118704+00:00 | INFO  | --- FILE: 2026_08_01_mlb_total.csv  market=total
+2026-08-28T17:01:44.137770+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_01_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.137809+00:00 | INFO  | --- FILE: 2026_08_02_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.151712+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_02_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.151750+00:00 | INFO  | --- FILE: 2026_08_02_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.165463+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_02_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.165501+00:00 | INFO  | --- FILE: 2026_08_02_mlb_total.csv  market=total
+2026-08-28T17:01:44.184610+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_02_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.184648+00:00 | INFO  | --- FILE: 2026_08_03_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.197682+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_03_mlb_moneyline.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:44.197720+00:00 | INFO  | --- FILE: 2026_08_03_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.210626+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_03_mlb_run_line.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:44.210666+00:00 | INFO  | --- FILE: 2026_08_03_mlb_total.csv  market=total
+2026-08-28T17:01:44.228693+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_03_mlb_total.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:44.228734+00:00 | INFO  | --- FILE: 2026_08_04_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.242402+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_04_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.242442+00:00 | INFO  | --- FILE: 2026_08_04_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.255920+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_04_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.255958+00:00 | INFO  | --- FILE: 2026_08_04_mlb_total.csv  market=total
+2026-08-28T17:01:44.275046+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_04_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.275085+00:00 | INFO  | --- FILE: 2026_08_05_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.288444+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_05_mlb_moneyline.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:44.288482+00:00 | INFO  | --- FILE: 2026_08_05_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.301692+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_05_mlb_run_line.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:44.301736+00:00 | INFO  | --- FILE: 2026_08_05_mlb_total.csv  market=total
+2026-08-28T17:01:44.320097+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_05_mlb_total.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:44.320135+00:00 | INFO  | --- FILE: 2026_08_06_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.332572+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_06_mlb_moneyline.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.332611+00:00 | INFO  | --- FILE: 2026_08_06_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.344750+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_06_mlb_run_line.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.344789+00:00 | INFO  | --- FILE: 2026_08_06_mlb_total.csv  market=total
+2026-08-28T17:01:44.361982+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_06_mlb_total.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.362020+00:00 | INFO  | --- FILE: 2026_08_07_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.374902+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_07_mlb_moneyline.csv (4 rows, 0 null probability edges)
+2026-08-28T17:01:44.374942+00:00 | INFO  | --- FILE: 2026_08_07_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.387734+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_07_mlb_run_line.csv (4 rows, 0 null probability edges)
+2026-08-28T17:01:44.387775+00:00 | INFO  | --- FILE: 2026_08_07_mlb_total.csv  market=total
+2026-08-28T17:01:44.405968+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_07_mlb_total.csv (4 rows, 0 null probability edges)
+2026-08-28T17:01:44.406010+00:00 | INFO  | --- FILE: 2026_08_08_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.419046+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_08_mlb_moneyline.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.419085+00:00 | INFO  | --- FILE: 2026_08_08_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.431296+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_08_mlb_run_line.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.431334+00:00 | INFO  | --- FILE: 2026_08_08_mlb_total.csv  market=total
+2026-08-28T17:01:44.449155+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_08_mlb_total.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.449197+00:00 | INFO  | --- FILE: 2026_08_09_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.461817+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_09_mlb_moneyline.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.461857+00:00 | INFO  | --- FILE: 2026_08_09_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.474164+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_09_mlb_run_line.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.474203+00:00 | INFO  | --- FILE: 2026_08_09_mlb_total.csv  market=total
+2026-08-28T17:01:44.491756+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_09_mlb_total.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.491794+00:00 | INFO  | --- FILE: 2026_08_10_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.504809+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_10_mlb_moneyline.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:44.504847+00:00 | INFO  | --- FILE: 2026_08_10_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.517923+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_10_mlb_run_line.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:44.517968+00:00 | INFO  | --- FILE: 2026_08_10_mlb_total.csv  market=total
+2026-08-28T17:01:44.536632+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_10_mlb_total.csv (6 rows, 0 null probability edges)
+2026-08-28T17:01:44.536673+00:00 | INFO  | --- FILE: 2026_08_11_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.550267+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_11_mlb_moneyline.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:44.550310+00:00 | INFO  | --- FILE: 2026_08_11_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.563728+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_11_mlb_run_line.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:44.563767+00:00 | INFO  | --- FILE: 2026_08_11_mlb_total.csv  market=total
+2026-08-28T17:01:44.582294+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_11_mlb_total.csv (11 rows, 0 null probability edges)
+2026-08-28T17:01:44.582332+00:00 | INFO  | --- FILE: 2026_08_12_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.594824+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_12_mlb_moneyline.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.594862+00:00 | INFO  | --- FILE: 2026_08_12_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.607270+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_12_mlb_run_line.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.607308+00:00 | INFO  | --- FILE: 2026_08_12_mlb_total.csv  market=total
+2026-08-28T17:01:44.624922+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_12_mlb_total.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.624960+00:00 | INFO  | --- FILE: 2026_08_13_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.637424+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_13_mlb_moneyline.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.637462+00:00 | INFO  | --- FILE: 2026_08_13_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.649752+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_13_mlb_run_line.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.649790+00:00 | INFO  | --- FILE: 2026_08_13_mlb_total.csv  market=total
+2026-08-28T17:01:44.667203+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_13_mlb_total.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.667241+00:00 | INFO  | --- FILE: 2026_08_14_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.680310+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_14_mlb_moneyline.csv (4 rows, 0 null probability edges)
+2026-08-28T17:01:44.680349+00:00 | INFO  | --- FILE: 2026_08_14_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.693483+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_14_mlb_run_line.csv (4 rows, 0 null probability edges)
+2026-08-28T17:01:44.693520+00:00 | INFO  | --- FILE: 2026_08_14_mlb_total.csv  market=total
+2026-08-28T17:01:44.711728+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_14_mlb_total.csv (4 rows, 0 null probability edges)
+2026-08-28T17:01:44.711767+00:00 | INFO  | --- FILE: 2026_08_15_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.724503+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_15_mlb_moneyline.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.724541+00:00 | INFO  | --- FILE: 2026_08_15_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.737123+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_15_mlb_run_line.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.737161+00:00 | INFO  | --- FILE: 2026_08_15_mlb_total.csv  market=total
+2026-08-28T17:01:44.754837+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_15_mlb_total.csv (2 rows, 0 null probability edges)
+2026-08-28T17:01:44.754875+00:00 | INFO  | --- FILE: 2026_08_16_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.767257+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_16_mlb_moneyline.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.767296+00:00 | INFO  | --- FILE: 2026_08_16_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.779592+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_16_mlb_run_line.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.779630+00:00 | INFO  | --- FILE: 2026_08_16_mlb_total.csv  market=total
+2026-08-28T17:01:44.797228+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_16_mlb_total.csv (1 rows, 0 null probability edges)
+2026-08-28T17:01:44.797269+00:00 | INFO  | --- FILE: 2026_08_17_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.811042+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_17_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:44.811081+00:00 | INFO  | --- FILE: 2026_08_17_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.824720+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_17_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:44.824758+00:00 | INFO  | --- FILE: 2026_08_17_mlb_total.csv  market=total
+2026-08-28T17:01:44.843509+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_17_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:44.843547+00:00 | INFO  | --- FILE: 2026_08_18_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.857713+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_18_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.857752+00:00 | INFO  | --- FILE: 2026_08_18_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.871798+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_18_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.871837+00:00 | INFO  | --- FILE: 2026_08_18_mlb_total.csv  market=total
+2026-08-28T17:01:44.891185+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_18_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.891224+00:00 | INFO  | --- FILE: 2026_08_19_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.905394+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_19_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.905435+00:00 | INFO  | --- FILE: 2026_08_19_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.919670+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_19_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.919708+00:00 | INFO  | --- FILE: 2026_08_19_mlb_total.csv  market=total
+2026-08-28T17:01:44.939029+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_19_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:44.939067+00:00 | INFO  | --- FILE: 2026_08_20_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.952452+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_20_mlb_moneyline.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:44.952490+00:00 | INFO  | --- FILE: 2026_08_20_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:44.965850+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_20_mlb_run_line.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:44.965887+00:00 | INFO  | --- FILE: 2026_08_20_mlb_total.csv  market=total
+2026-08-28T17:01:44.984592+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_20_mlb_total.csv (9 rows, 0 null probability edges)
+2026-08-28T17:01:44.984632+00:00 | INFO  | --- FILE: 2026_08_24_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:44.998193+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_24_mlb_moneyline.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:44.998231+00:00 | INFO  | --- FILE: 2026_08_24_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:45.011478+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_24_mlb_run_line.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:45.011517+00:00 | INFO  | --- FILE: 2026_08_24_mlb_total.csv  market=total
+2026-08-28T17:01:45.030164+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_24_mlb_total.csv (10 rows, 0 null probability edges)
+2026-08-28T17:01:45.030203+00:00 | INFO  | --- FILE: 2026_08_25_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:45.044288+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_25_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:45.044328+00:00 | INFO  | --- FILE: 2026_08_25_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:45.058077+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_25_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:45.058117+00:00 | INFO  | --- FILE: 2026_08_25_mlb_total.csv  market=total
+2026-08-28T17:01:45.077454+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_25_mlb_total.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:45.077495+00:00 | INFO  | --- FILE: 2026_08_26_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:45.091349+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_26_mlb_moneyline.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:45.091411+00:00 | INFO  | --- FILE: 2026_08_26_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:45.105043+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_26_mlb_run_line.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:45.105084+00:00 | INFO  | --- FILE: 2026_08_26_mlb_total.csv  market=total
+2026-08-28T17:01:45.123733+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_26_mlb_total.csv (12 rows, 0 null probability edges)
+2026-08-28T17:01:45.123771+00:00 | INFO  | --- FILE: 2026_08_27_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:45.136948+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_27_mlb_moneyline.csv (7 rows, 0 null probability edges)
+2026-08-28T17:01:45.136987+00:00 | INFO  | --- FILE: 2026_08_27_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:45.149943+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_27_mlb_run_line.csv (7 rows, 0 null probability edges)
+2026-08-28T17:01:45.149982+00:00 | INFO  | --- FILE: 2026_08_27_mlb_total.csv  market=total
+2026-08-28T17:01:45.168247+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_27_mlb_total.csv (7 rows, 0 null probability edges)
+2026-08-28T17:01:45.168285+00:00 | INFO  | --- FILE: 2026_08_28_mlb_moneyline.csv  market=moneyline
+2026-08-28T17:01:45.182230+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_28_mlb_moneyline.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:45.182269+00:00 | INFO  | --- FILE: 2026_08_28_mlb_run_line.csv  market=run_line
+2026-08-28T17:01:45.201278+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_28_mlb_run_line.csv (15 rows, 0 null probability edges)
+2026-08-28T17:01:45.201319+00:00 | INFO  | --- FILE: 2026_08_28_mlb_total.csv  market=total
+2026-08-28T17:01:45.220393+00:00 | INFO  | WROTE: docs/win/baseball/mlb/03_edges/2026_08_28_mlb_total.csv (15 rows, 0 null probability edges)
 
 ============================================================
-SUMMARY  2026-08-28T11:08:20.221842+00:00
+SUMMARY  2026-08-28T17:01:45.220416+00:00
 ============================================================
-  files_processed  : 15
-  rows_processed   : 177
-  moneyline_files  : 5
-  run_line_files   : 5
-  total_files      : 5
+  files_processed  : 449
+  rows_processed   : 5322
+  moneyline_files  : 149
+  run_line_files   : 150
+  total_files      : 150
   skipped          : 0
   null_edges       : 0
-  schema_errors    : 0
+  schema_errors    : 1
   errors           : 0
 
   file                                             market        rows null_edges     status
+  2026_03_26_mlb_moneyline.csv                     moneyline       11          0         ok
+  2026_03_26_mlb_run_line.csv                      run_line        11          0         ok
+  2026_03_26_mlb_total.csv                         total           11          0         ok
+  2026_03_27_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_03_27_mlb_run_line.csv                      run_line         8          0         ok
+  2026_03_27_mlb_total.csv                         total            8          0         ok
+  2026_03_28_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_03_28_mlb_run_line.csv                      run_line        15          0         ok
+  2026_03_28_mlb_total.csv                         total           15          0         ok
+  2026_03_29_mlb_moneyline.csv                     moneyline       12          0         ok
+  2026_03_29_mlb_run_line.csv                      run_line        12          0         ok
+  2026_03_29_mlb_total.csv                         total           12          0         ok
+  2026_03_30_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_03_30_mlb_run_line.csv                      run_line        15          0         ok
+  2026_03_30_mlb_total.csv                         total           15          0         ok
+  2026_03_31_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_03_31_mlb_run_line.csv                      run_line        14          0         ok
+  2026_03_31_mlb_total.csv                         total           14          0         ok
+  2026_04_01_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_01_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_01_mlb_total.csv                         total           15          0         ok
+  2026_04_02_mlb_moneyline.csv                     moneyline        3          0         ok
+  2026_04_02_mlb_run_line.csv                      run_line         3          0         ok
+  2026_04_02_mlb_total.csv                         total            3          0         ok
+  2026_04_03_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_04_03_mlb_run_line.csv                      run_line        14          0         ok
+  2026_04_03_mlb_total.csv                         total           14          0         ok
+  2026_04_04_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_04_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_04_mlb_total.csv                         total           15          0         ok
+  2026_04_05_mlb_moneyline.csv                     moneyline       16          0         ok
+  2026_04_05_mlb_run_line.csv                      run_line        16          0         ok
+  2026_04_05_mlb_total.csv                         total           16          0         ok
+  2026_04_06_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_04_06_mlb_run_line.csv                      run_line        13          0         ok
+  2026_04_06_mlb_total.csv                         total           13          0         ok
+  2026_04_07_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_07_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_07_mlb_total.csv                         total           15          0         ok
+  2026_04_08_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_08_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_08_mlb_total.csv                         total           15          0         ok
+  2026_04_09_mlb_moneyline.csv                     moneyline        6          0         ok
+  2026_04_09_mlb_run_line.csv                      run_line         6          0         ok
+  2026_04_09_mlb_total.csv                         total            6          0         ok
+  2026_04_10_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_10_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_10_mlb_total.csv                         total           15          0         ok
+  2026_04_11_mlb_moneyline.csv                     moneyline       11          0         ok
+  2026_04_11_mlb_run_line.csv                      run_line        11          0         ok
+  2026_04_11_mlb_total.csv                         total           11          0         ok
+  2026_04_12_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_12_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_12_mlb_total.csv                         total           15          0         ok
+  2026_04_13_mlb_moneyline.csv                     moneyline       10          0         ok
+  2026_04_13_mlb_run_line.csv                      run_line        10          0         ok
+  2026_04_13_mlb_total.csv                         total           10          0         ok
+  2026_04_14_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_14_mlb_run_line.csv                      run_line        14          0         ok
+  2026_04_14_mlb_total.csv                         total           14          0         ok
+  2026_04_15_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_15_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_15_mlb_total.csv                         total           15          0         ok
+  2026_04_16_mlb_moneyline.csv                     moneyline       10          0         ok
+  2026_04_16_mlb_run_line.csv                      run_line        10          0         ok
+  2026_04_16_mlb_total.csv                         total           10          0         ok
+  2026_04_17_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_17_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_17_mlb_total.csv                         total           15          0         ok
+  2026_04_18_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_18_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_18_mlb_total.csv                         total           15          0         ok
+  2026_04_19_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_19_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_19_mlb_total.csv                         total           15          0         ok
+  2026_04_20_mlb_moneyline.csv                     moneyline       10          0         ok
+  2026_04_20_mlb_run_line.csv                      run_line        10          0         ok
+  2026_04_20_mlb_total.csv                         total           10          0         ok
+  2026_04_21_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_21_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_21_mlb_total.csv                         total           15          0         ok
+  2026_04_22_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_22_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_22_mlb_total.csv                         total           15          0         ok
+  2026_04_23_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_04_23_mlb_run_line.csv                      run_line         9          0         ok
+  2026_04_23_mlb_total.csv                         total            9          0         ok
+  2026_04_24_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_04_24_mlb_run_line.csv                      run_line        14          0         ok
+  2026_04_24_mlb_total.csv                         total           14          0         ok
+  2026_04_25_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_25_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_25_mlb_total.csv                         total           15          0         ok
+  2026_04_26_mlb_moneyline.csv                     moneyline       16          0         ok
+  2026_04_26_mlb_run_line.csv                      run_line        16          0         ok
+  2026_04_26_mlb_total.csv                         total           16          0         ok
+  2026_04_27_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_04_27_mlb_run_line.csv                      run_line         8          0         ok
+  2026_04_27_mlb_total.csv                         total            8          0         ok
+  2026_04_28_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_28_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_28_mlb_total.csv                         total           15          0         ok
+  2026_04_29_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_04_29_mlb_run_line.csv                      run_line        15          0         ok
+  2026_04_29_mlb_total.csv                         total           15          0         ok
+  2026_04_30_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_04_30_mlb_run_line.csv                      run_line         9          0         ok
+  2026_04_30_mlb_total.csv                         total            9          0         ok
+  2026_05_01_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_05_01_mlb_run_line.csv                      run_line        14          0         ok
+  2026_05_01_mlb_total.csv                         total           14          0         ok
+  2026_05_02_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_02_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_02_mlb_total.csv                         total           15          0         ok
+  2026_05_03_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_03_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_03_mlb_total.csv                         total           15          0         ok
+  2026_05_04_mlb_moneyline.csv                     moneyline       12          0         ok
+  2026_05_04_mlb_run_line.csv                      run_line        12          0         ok
+  2026_05_04_mlb_total.csv                         total           12          0         ok
+  2026_05_05_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_05_mlb_run_line.csv                      run_line        14          0         ok
+  2026_05_05_mlb_total.csv                         total           14          0         ok
+  2026_05_06_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_06_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_06_mlb_total.csv                         total           15          0         ok
+  2026_05_07_mlb_moneyline.csv                     moneyline       10          0         ok
+  2026_05_07_mlb_run_line.csv                      run_line        10          0         ok
+  2026_05_07_mlb_total.csv                         total           10          0         ok
+  2026_05_08_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_05_08_mlb_run_line.csv                      run_line        14          0         ok
+  2026_05_08_mlb_total.csv                         total           14          0         ok
+  2026_05_09_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_09_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_09_mlb_total.csv                         total           15          0         ok
+  2026_05_10_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_10_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_10_mlb_total.csv                         total           15          0         ok
+  2026_05_11_mlb_moneyline.csv                     moneyline        6          0         ok
+  2026_05_11_mlb_run_line.csv                      run_line         6          0         ok
+  2026_05_11_mlb_total.csv                         total            6          0         ok
+  2026_05_12_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_12_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_12_mlb_total.csv                         total           15          0         ok
+  2026_05_13_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_13_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_13_mlb_total.csv                         total           15          0         ok
+  2026_05_14_mlb_moneyline.csv                     moneyline       11          0         ok
+  2026_05_14_mlb_run_line.csv                      run_line        11          0         ok
+  2026_05_14_mlb_total.csv                         total           11          0         ok
+  2026_05_15_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_05_15_mlb_run_line.csv                      run_line        13          0         ok
+  2026_05_15_mlb_total.csv                         total           14          0         ok
+  2026_05_16_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_16_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_16_mlb_total.csv                         total           15          0         ok
+  2026_05_17_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_05_17_mlb_run_line.csv                      run_line        14          0         ok
+  2026_05_17_mlb_total.csv                         total           14          0         ok
+  2026_05_18_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_05_18_mlb_run_line.csv                      run_line        14          0         ok
+  2026_05_18_mlb_total.csv                         total           14          0         ok
+  2026_05_19_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_19_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_19_mlb_total.csv                         total           15          0         ok
+  2026_05_20_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_20_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_20_mlb_total.csv                         total           15          0         ok
+  2026_05_21_mlb_moneyline.csv                     moneyline        7          0         ok
+  2026_05_21_mlb_run_line.csv                      run_line         7          0         ok
+  2026_05_21_mlb_total.csv                         total            7          0         ok
+  2026_05_22_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_22_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_22_mlb_total.csv                         total           15          0         ok
+  2026_05_23_mlb_moneyline.csv                     moneyline       16          0         ok
+  2026_05_23_mlb_run_line.csv                      run_line        16          0         ok
+  2026_05_23_mlb_total.csv                         total           16          0         ok
+  2026_05_24_mlb_moneyline.csv                     moneyline       16          0         ok
+  2026_05_24_mlb_run_line.csv                      run_line        16          0         ok
+  2026_05_24_mlb_total.csv                         total           16          0         ok
+  2026_05_25_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_05_25_mlb_run_line.csv                      run_line        13          0         ok
+  2026_05_25_mlb_total.csv                         total           13          0         ok
+  2026_05_26_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_26_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_26_mlb_total.csv                         total           15          0         ok
+  2026_05_27_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_27_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_27_mlb_total.csv                         total           15          0         ok
+  2026_05_28_mlb_moneyline.csv                     moneyline        6          0         ok
+  2026_05_28_mlb_run_line.csv                      run_line         6          0         ok
+  2026_05_28_mlb_total.csv                         total            6          0         ok
+  2026_05_29_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_29_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_29_mlb_total.csv                         total           15          0         ok
+  2026_05_30_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_05_30_mlb_run_line.csv                      run_line        15          0         ok
+  2026_05_30_mlb_total.csv                         total           15          0         ok
+  2026_05_31_mlb_moneyline.csv                     moneyline        0          0 schema_error
+  2026_05_31_mlb_run_line.csv                      run_line        14          0         ok
+  2026_05_31_mlb_total.csv                         total           15          0         ok
+  2026_06_01_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_01_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_01_mlb_total.csv                         total            9          0         ok
+  2026_06_02_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_02_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_02_mlb_total.csv                         total           15          0         ok
+  2026_06_03_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_03_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_03_mlb_total.csv                         total           15          0         ok
+  2026_06_04_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_04_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_04_mlb_total.csv                         total            9          0         ok
+  2026_06_05_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_05_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_05_mlb_total.csv                         total           14          0         ok
+  2026_06_06_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_06_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_06_mlb_total.csv                         total           15          0         ok
+  2026_06_07_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_07_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_07_mlb_total.csv                         total           15          0         ok
+  2026_06_08_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_06_08_mlb_run_line.csv                      run_line         8          0         ok
+  2026_06_08_mlb_total.csv                         total            8          0         ok
+  2026_06_09_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_09_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_09_mlb_total.csv                         total            9          0         ok
+  2026_06_10_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_10_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_10_mlb_total.csv                         total            9          0         ok
+  2026_06_11_mlb_moneyline.csv                     moneyline        6          0         ok
+  2026_06_11_mlb_run_line.csv                      run_line         6          0         ok
+  2026_06_11_mlb_total.csv                         total            6          0         ok
+  2026_06_12_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_06_12_mlb_run_line.csv                      run_line         8          0         ok
+  2026_06_12_mlb_total.csv                         total            8          0         ok
+  2026_06_13_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_06_13_mlb_run_line.csv                      run_line         8          0         ok
+  2026_06_13_mlb_total.csv                         total            8          0         ok
+  2026_06_14_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_06_14_mlb_run_line.csv                      run_line         8          0         ok
+  2026_06_14_mlb_total.csv                         total            8          0         ok
+  2026_06_15_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_15_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_15_mlb_total.csv                         total            9          0         ok
+  2026_06_16_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_16_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_16_mlb_total.csv                         total           14          0         ok
+  2026_06_17_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_06_17_mlb_run_line.csv                      run_line        13          0         ok
+  2026_06_17_mlb_total.csv                         total           13          0         ok
+  2026_06_18_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_18_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_18_mlb_total.csv                         total            9          0         ok
+  2026_06_19_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_06_19_mlb_run_line.csv                      run_line        13          0         ok
+  2026_06_19_mlb_total.csv                         total           13          0         ok
+  2026_06_20_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_20_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_20_mlb_total.csv                         total           14          0         ok
+  2026_06_21_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_21_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_21_mlb_total.csv                         total           14          0         ok
+  2026_06_22_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_06_22_mlb_run_line.csv                      run_line        13          0         ok
+  2026_06_22_mlb_total.csv                         total           13          0         ok
+  2026_06_23_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_23_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_23_mlb_total.csv                         total           14          0         ok
+  2026_06_24_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_24_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_24_mlb_total.csv                         total           14          0         ok
+  2026_06_25_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_06_25_mlb_run_line.csv                      run_line         9          0         ok
+  2026_06_25_mlb_total.csv                         total            9          0         ok
+  2026_06_26_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_06_26_mlb_run_line.csv                      run_line        14          0         ok
+  2026_06_26_mlb_total.csv                         total           14          0         ok
+  2026_06_27_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_27_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_27_mlb_total.csv                         total           15          0         ok
+  2026_06_28_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_28_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_28_mlb_total.csv                         total           15          0         ok
+  2026_06_29_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_06_29_mlb_run_line.csv                      run_line        13          0         ok
+  2026_06_29_mlb_total.csv                         total           13          0         ok
+  2026_06_30_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_06_30_mlb_run_line.csv                      run_line        15          0         ok
+  2026_06_30_mlb_total.csv                         total           15          0         ok
+  2026_07_01_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_07_01_mlb_run_line.csv                      run_line        14          0         ok
+  2026_07_01_mlb_total.csv                         total           14          0         ok
+  2026_07_02_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_07_02_mlb_run_line.csv                      run_line         9          0         ok
+  2026_07_02_mlb_total.csv                         total            9          0         ok
+  2026_07_03_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_07_03_mlb_run_line.csv                      run_line        13          0         ok
+  2026_07_03_mlb_total.csv                         total           13          0         ok
+  2026_07_04_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_04_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_04_mlb_total.csv                         total           15          0         ok
+  2026_07_05_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_07_05_mlb_run_line.csv                      run_line        14          0         ok
+  2026_07_05_mlb_total.csv                         total           14          0         ok
+  2026_07_06_mlb_moneyline.csv                     moneyline        8          0         ok
+  2026_07_06_mlb_run_line.csv                      run_line         8          0         ok
+  2026_07_06_mlb_total.csv                         total            8          0         ok
+  2026_07_07_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_07_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_07_mlb_total.csv                         total           15          0         ok
+  2026_07_08_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_08_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_08_mlb_total.csv                         total           15          0         ok
+  2026_07_09_mlb_moneyline.csv                     moneyline       13          0         ok
+  2026_07_09_mlb_run_line.csv                      run_line        13          0         ok
+  2026_07_09_mlb_total.csv                         total           13          0         ok
+  2026_07_10_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_10_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_10_mlb_total.csv                         total           15          0         ok
+  2026_07_11_mlb_moneyline.csv                     moneyline       10          0         ok
+  2026_07_11_mlb_run_line.csv                      run_line        10          0         ok
+  2026_07_11_mlb_total.csv                         total           10          0         ok
+  2026_07_12_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_07_12_mlb_run_line.csv                      run_line        14          0         ok
+  2026_07_12_mlb_total.csv                         total           14          0         ok
+  2026_07_16_mlb_moneyline.csv                     moneyline        1          0         ok
+  2026_07_16_mlb_run_line.csv                      run_line         1          0         ok
+  2026_07_16_mlb_total.csv                         total            1          0         ok
+  2026_07_17_mlb_moneyline.csv                     moneyline       14          0         ok
+  2026_07_17_mlb_run_line.csv                      run_line        14          0         ok
+  2026_07_17_mlb_total.csv                         total           14          0         ok
+  2026_07_18_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_07_18_mlb_run_line.csv                      run_line         9          0         ok
+  2026_07_18_mlb_total.csv                         total            9          0         ok
+  2026_07_19_mlb_moneyline.csv                     moneyline       12          0         ok
+  2026_07_19_mlb_run_line.csv                      run_line        12          0         ok
+  2026_07_19_mlb_total.csv                         total           12          0         ok
+  2026_07_20_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_20_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_20_mlb_total.csv                         total           15          0         ok
+  2026_07_21_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_07_21_mlb_run_line.csv                      run_line         9          0         ok
+  2026_07_21_mlb_total.csv                         total            9          0         ok
+  2026_07_22_mlb_moneyline.csv                     moneyline        3          0         ok
+  2026_07_22_mlb_run_line.csv                      run_line         3          0         ok
+  2026_07_22_mlb_total.csv                         total            3          0         ok
+  2026_07_23_mlb_moneyline.csv                     moneyline        5          0         ok
+  2026_07_23_mlb_run_line.csv                      run_line         5          0         ok
+  2026_07_23_mlb_total.csv                         total            5          0         ok
+  2026_07_24_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_24_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_24_mlb_total.csv                         total           15          0         ok
+  2026_07_25_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_25_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_25_mlb_total.csv                         total           15          0         ok
+  2026_07_26_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_26_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_26_mlb_total.csv                         total           15          0         ok
+  2026_07_27_mlb_moneyline.csv                     moneyline       12          0         ok
+  2026_07_27_mlb_run_line.csv                      run_line        12          0         ok
+  2026_07_27_mlb_total.csv                         total           12          0         ok
+  2026_07_28_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_28_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_28_mlb_total.csv                         total           15          0         ok
+  2026_07_29_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_29_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_29_mlb_total.csv                         total           15          0         ok
+  2026_07_30_mlb_moneyline.csv                     moneyline       10          0         ok
+  2026_07_30_mlb_run_line.csv                      run_line        10          0         ok
+  2026_07_30_mlb_total.csv                         total           10          0         ok
+  2026_07_31_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_07_31_mlb_run_line.csv                      run_line        15          0         ok
+  2026_07_31_mlb_total.csv                         total           15          0         ok
+  2026_08_01_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_08_01_mlb_run_line.csv                      run_line        15          0         ok
+  2026_08_01_mlb_total.csv                         total           15          0         ok
+  2026_08_02_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_08_02_mlb_run_line.csv                      run_line        15          0         ok
+  2026_08_02_mlb_total.csv                         total           15          0         ok
+  2026_08_03_mlb_moneyline.csv                     moneyline        6          0         ok
+  2026_08_03_mlb_run_line.csv                      run_line         6          0         ok
+  2026_08_03_mlb_total.csv                         total            6          0         ok
+  2026_08_04_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_08_04_mlb_run_line.csv                      run_line        15          0         ok
+  2026_08_04_mlb_total.csv                         total           15          0         ok
+  2026_08_05_mlb_moneyline.csv                     moneyline       11          0         ok
+  2026_08_05_mlb_run_line.csv                      run_line        11          0         ok
+  2026_08_05_mlb_total.csv                         total           11          0         ok
+  2026_08_06_mlb_moneyline.csv                     moneyline        1          0         ok
+  2026_08_06_mlb_run_line.csv                      run_line         1          0         ok
+  2026_08_06_mlb_total.csv                         total            1          0         ok
+  2026_08_07_mlb_moneyline.csv                     moneyline        4          0         ok
+  2026_08_07_mlb_run_line.csv                      run_line         4          0         ok
+  2026_08_07_mlb_total.csv                         total            4          0         ok
+  2026_08_08_mlb_moneyline.csv                     moneyline        1          0         ok
+  2026_08_08_mlb_run_line.csv                      run_line         1          0         ok
+  2026_08_08_mlb_total.csv                         total            1          0         ok
+  2026_08_09_mlb_moneyline.csv                     moneyline        1          0         ok
+  2026_08_09_mlb_run_line.csv                      run_line         1          0         ok
+  2026_08_09_mlb_total.csv                         total            1          0         ok
+  2026_08_10_mlb_moneyline.csv                     moneyline        6          0         ok
+  2026_08_10_mlb_run_line.csv                      run_line         6          0         ok
+  2026_08_10_mlb_total.csv                         total            6          0         ok
+  2026_08_11_mlb_moneyline.csv                     moneyline       11          0         ok
+  2026_08_11_mlb_run_line.csv                      run_line        11          0         ok
+  2026_08_11_mlb_total.csv                         total           11          0         ok
+  2026_08_12_mlb_moneyline.csv                     moneyline        2          0         ok
+  2026_08_12_mlb_run_line.csv                      run_line         2          0         ok
+  2026_08_12_mlb_total.csv                         total            2          0         ok
+  2026_08_13_mlb_moneyline.csv                     moneyline        2          0         ok
+  2026_08_13_mlb_run_line.csv                      run_line         2          0         ok
+  2026_08_13_mlb_total.csv                         total            2          0         ok
+  2026_08_14_mlb_moneyline.csv                     moneyline        4          0         ok
+  2026_08_14_mlb_run_line.csv                      run_line         4          0         ok
+  2026_08_14_mlb_total.csv                         total            4          0         ok
+  2026_08_15_mlb_moneyline.csv                     moneyline        2          0         ok
+  2026_08_15_mlb_run_line.csv                      run_line         2          0         ok
+  2026_08_15_mlb_total.csv                         total            2          0         ok
+  2026_08_16_mlb_moneyline.csv                     moneyline        1          0         ok
+  2026_08_16_mlb_run_line.csv                      run_line         1          0         ok
+  2026_08_16_mlb_total.csv                         total            1          0         ok
+  2026_08_17_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_08_17_mlb_run_line.csv                      run_line         9          0         ok
+  2026_08_17_mlb_total.csv                         total            9          0         ok
+  2026_08_18_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_08_18_mlb_run_line.csv                      run_line        15          0         ok
+  2026_08_18_mlb_total.csv                         total           15          0         ok
+  2026_08_19_mlb_moneyline.csv                     moneyline       15          0         ok
+  2026_08_19_mlb_run_line.csv                      run_line        15          0         ok
+  2026_08_19_mlb_total.csv                         total           15          0         ok
+  2026_08_20_mlb_moneyline.csv                     moneyline        9          0         ok
+  2026_08_20_mlb_run_line.csv                      run_line         9          0         ok
+  2026_08_20_mlb_total.csv                         total            9          0         ok
   2026_08_24_mlb_moneyline.csv                     moneyline       10          0         ok
   2026_08_24_mlb_run_line.csv                      run_line        10          0         ok
   2026_08_24_mlb_total.csv                         total           10          0         ok
@@ -64,5 +1369,5 @@ SUMMARY  2026-08-28T11:08:20.221842+00:00
   2026_08_28_mlb_run_line.csv                      run_line        15          0         ok
   2026_08_28_mlb_total.csv                         total           15          0         ok
 
-STATUS: SUCCESS
+STATUS: COMPLETED WITH ERRORS
 ============================================================
