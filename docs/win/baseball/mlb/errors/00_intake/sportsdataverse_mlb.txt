@@ -1,11 +1,739 @@
-=== sportsdataverse_mlb RUN 2026-08-28T10:52:58.715471+00:00 ===
-2026-08-28T10:52:58.716422+00:00 | INFO  | dates=['2026_08_28'] lookback_days=30 cache_dir=docs/win/baseball/mlb/00_intake/sportsdataverse/cache
-2026-08-28T10:52:58.724215+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-27 end=2026-08-27
-2026-08-28T10:53:02.132741+00:00 | INFO  | BULLPEN CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_team_statcast.parquet rows=62413 fetched_rows=2018
-2026-08-28T10:53:02.138032+00:00 | INFO  | 2026_08_28 | games=15 pitchers=28 as_of=2026-08-27
-2026-08-28T10:53:02.277880+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-08-27 pitchers=1
-2026-08-28T10:53:22.994625+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-31 end=2026-08-27 pitchers=27
-2026-08-28T10:53:40.399771+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=10096
-2026-08-28T10:53:40.414786+00:00 | INFO  | 2026_08_28 | pregame Statcast pitches=42637
-2026-08-28T10:53:41.140086+00:00 | INFO  | 2026_08_28 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_28_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
-2026-08-28T10:53:41.140751+00:00 | INFO  | SUMMARY files_written=1 rows_written=15 pregame_statcast_pitches=42637 statcast_pitches_fetched=10096 cache_writes=1 team_statcast_pitches_fetched=2018 team_cache_writes=1 errors=0 status=SUCCESS
+=== sportsdataverse_mlb RUN 2026-08-28T12:29:12.698002+00:00 ===
+2026-08-28T12:29:12.698154+00:00 | INFO  | dates=['2026_03_26', '2026_03_27', '2026_03_28', '2026_03_29', '2026_03_30', '2026_03_31', '2026_04_01', '2026_04_02', '2026_04_03', '2026_04_04', '2026_04_05', '2026_04_06', '2026_04_07', '2026_04_08', '2026_04_09', '2026_04_10', '2026_04_11', '2026_04_12', '2026_04_13', '2026_04_14', '2026_04_15', '2026_04_16', '2026_04_17', '2026_04_18', '2026_04_19', '2026_04_20', '2026_04_21', '2026_04_22', '2026_04_23', '2026_04_24', '2026_04_25', '2026_04_26', '2026_04_27', '2026_04_28', '2026_04_29', '2026_04_30', '2026_05_01', '2026_05_02', '2026_05_03', '2026_05_04', '2026_05_05', '2026_05_06', '2026_05_07', '2026_05_08', '2026_05_09', '2026_05_10', '2026_05_11', '2026_05_12', '2026_05_13', '2026_05_14', '2026_05_15', '2026_05_16', '2026_05_17', '2026_05_18', '2026_05_19', '2026_05_20', '2026_05_21', '2026_05_22', '2026_05_23', '2026_05_24', '2026_05_25', '2026_05_26', '2026_05_27', '2026_05_28', '2026_05_29', '2026_05_30', '2026_05_31', '2026_06_01', '2026_06_02', '2026_06_03', '2026_06_04', '2026_06_05', '2026_06_06', '2026_06_07', '2026_06_08', '2026_06_09', '2026_06_10', '2026_06_11', '2026_06_12', '2026_06_13', '2026_06_14', '2026_06_15', '2026_06_16', '2026_06_17', '2026_06_18', '2026_06_19', '2026_06_20', '2026_06_21', '2026_06_22', '2026_06_23', '2026_06_24', '2026_06_25', '2026_06_26', '2026_06_27', '2026_06_28', '2026_06_29', '2026_06_30', '2026_07_01', '2026_07_02', '2026_07_03', '2026_07_04', '2026_07_05', '2026_07_06', '2026_07_07', '2026_07_08', '2026_07_09', '2026_07_10', '2026_07_11', '2026_07_12', '2026_07_16', '2026_07_17', '2026_07_18', '2026_07_19', '2026_07_20', '2026_07_21', '2026_07_22', '2026_07_23', '2026_07_24', '2026_07_25', '2026_07_26', '2026_07_27', '2026_07_28', '2026_07_29', '2026_07_30', '2026_07_31', '2026_08_01', '2026_08_02', '2026_08_03', '2026_08_04', '2026_08_05', '2026_08_06', '2026_08_07', '2026_08_08', '2026_08_09', '2026_08_10', '2026_08_11', '2026_08_12', '2026_08_13', '2026_08_14', '2026_08_15', '2026_08_16', '2026_08_17', '2026_08_18', '2026_08_19', '2026_08_20', '2026_08_24', '2026_08_25', '2026_08_26', '2026_08_27', '2026_08_28'] lookback_days=30 cache_dir=docs/win/baseball/mlb/00_intake/sportsdataverse/cache
+2026-08-28T12:29:12.706596+00:00 | INFO  | Bullpen Statcast fetch start=2026-03-12 end=2026-03-15
+2026-08-28T12:29:13.377887+00:00 | INFO  | Bullpen Statcast fetch start=2026-03-16 end=2026-03-19
+2026-08-28T12:29:14.107859+00:00 | INFO  | Bullpen Statcast fetch start=2026-03-20 end=2026-03-23
+2026-08-28T12:29:14.907728+00:00 | INFO  | Bullpen Statcast fetch start=2026-03-24 end=2026-03-27
+2026-08-28T12:29:23.163957+00:00 | INFO  | Bullpen Statcast fetch start=2026-03-28 end=2026-03-31
+2026-08-28T12:29:48.318185+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-01 end=2026-04-04
+2026-08-28T12:30:06.564120+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-05 end=2026-04-08
+2026-08-28T12:30:29.315296+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-09 end=2026-04-12
+2026-08-28T12:30:48.631593+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-13 end=2026-04-16
+2026-08-28T12:31:07.101995+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-17 end=2026-04-20
+2026-08-28T12:31:26.366118+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-21 end=2026-04-24
+2026-08-28T12:31:47.734438+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-25 end=2026-04-28
+2026-08-28T12:32:08.849749+00:00 | INFO  | Bullpen Statcast fetch start=2026-04-29 end=2026-05-02
+2026-08-28T12:32:31.079935+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-03 end=2026-05-06
+2026-08-28T12:32:50.267375+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-07 end=2026-05-10
+2026-08-28T12:33:11.922959+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-11 end=2026-05-14
+2026-08-28T12:33:29.358463+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-15 end=2026-05-18
+2026-08-28T12:33:51.817524+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-19 end=2026-05-22
+2026-08-28T12:34:10.038463+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-23 end=2026-05-26
+2026-08-28T12:34:31.796625+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-27 end=2026-05-30
+2026-08-28T12:34:51.242067+00:00 | INFO  | Bullpen Statcast fetch start=2026-05-31 end=2026-06-03
+2026-08-28T12:35:12.137891+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-04 end=2026-06-07
+2026-08-28T12:35:33.545183+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-08 end=2026-06-11
+2026-08-28T12:35:50.953707+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-12 end=2026-06-15
+2026-08-28T12:36:11.182654+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-16 end=2026-06-19
+2026-08-28T12:36:30.222964+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-20 end=2026-06-23
+2026-08-28T12:36:51.551104+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-24 end=2026-06-27
+2026-08-28T12:37:12.846971+00:00 | INFO  | Bullpen Statcast fetch start=2026-06-28 end=2026-07-01
+2026-08-28T12:37:32.239475+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-02 end=2026-07-05
+2026-08-28T12:37:52.790572+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-06 end=2026-07-09
+2026-08-28T12:38:13.748265+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-10 end=2026-07-13
+2026-08-28T12:38:30.811120+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-14 end=2026-07-17
+2026-08-28T12:38:38.100175+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-18 end=2026-07-21
+2026-08-28T12:40:22.094027+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-22 end=2026-07-25
+2026-08-28T12:40:43.347848+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-26 end=2026-07-29
+2026-08-28T12:41:05.178954+00:00 | INFO  | Bullpen Statcast fetch start=2026-07-30 end=2026-08-02
+2026-08-28T12:41:26.767550+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-03 end=2026-08-06
+2026-08-28T12:41:51.416941+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-07 end=2026-08-10
+2026-08-28T12:42:14.060321+00:00 | INFO  | Bullpen Statcast fetch start=2026-08-11 end=2026-08-11
+2026-08-28T12:42:19.304423+00:00 | INFO  | BULLPEN CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_team_statcast.parquet rows=593334 fetched_rows=530921
+2026-08-28T12:42:19.308344+00:00 | INFO  | 2026_03_26 | games=11 pitchers=22 as_of=2026-03-25
+2026-08-28T12:42:19.449055+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:19.647034+00:00 | WARN  | 2026_03_26 | zero pregame Statcast rows after cutoff
+2026-08-28T12:42:19.649468+00:00 | INFO  | 2026_03_27 | games=8 pitchers=16 as_of=2026-03-26
+2026-08-28T12:42:19.785951+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:19.959885+00:00 | WARN  | 2026_03_27 | zero pregame Statcast rows after cutoff
+2026-08-28T12:42:19.962350+00:00 | INFO  | 2026_03_28 | games=15 pitchers=30 as_of=2026-03-27
+2026-08-28T12:42:20.095953+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-03-27 pitchers=1
+2026-08-28T12:42:23.068515+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:23.344988+00:00 | WARN  | 2026_03_28 | zero pregame Statcast rows after cutoff
+2026-08-28T12:42:23.348156+00:00 | INFO  | 2026_03_29 | games=12 pitchers=24 as_of=2026-03-28
+2026-08-28T12:42:23.495502+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:23.745366+00:00 | WARN  | 2026_03_29 | zero pregame Statcast rows after cutoff
+2026-08-28T12:42:23.747786+00:00 | INFO  | 2026_03_30 | games=15 pitchers=30 as_of=2026-03-29
+2026-08-28T12:42:23.890045+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-03-29 pitchers=2
+2026-08-28T12:42:29.546900+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:29.849906+00:00 | WARN  | 2026_03_30 | zero pregame Statcast rows after cutoff
+2026-08-28T12:42:29.853304+00:00 | INFO  | 2026_03_31 | games=14 pitchers=28 as_of=2026-03-30
+2026-08-28T12:42:30.013595+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-03-30 pitchers=2
+2026-08-28T12:42:34.786424+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:34.797528+00:00 | INFO  | 2026_03_31 | pregame Statcast pitches=571
+2026-08-28T12:42:35.173434+00:00 | INFO  | 2026_03_31 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_03_31_sportsdataverse.csv rows=14 home_sp_found=2/14 away_sp_found=5/14
+2026-08-28T12:42:35.177218+00:00 | INFO  | 2026_04_01 | games=15 pitchers=30 as_of=2026-03-31
+2026-08-28T12:42:35.320627+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:35.328454+00:00 | INFO  | 2026_04_01 | pregame Statcast pitches=2209
+2026-08-28T12:42:35.740162+00:00 | INFO  | 2026_04_01 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_01_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:42:35.743041+00:00 | INFO  | 2026_04_02 | games=3 pitchers=6 as_of=2026-04-01
+2026-08-28T12:42:35.888692+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:35.896253+00:00 | INFO  | 2026_04_02 | pregame Statcast pitches=507
+2026-08-28T12:42:36.116712+00:00 | INFO  | 2026_04_02 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_02_sportsdataverse.csv rows=3 home_sp_found=3/3 away_sp_found=3/3
+2026-08-28T12:42:36.119304+00:00 | INFO  | 2026_04_03 | games=14 pitchers=28 as_of=2026-04-02
+2026-08-28T12:42:36.260494+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-29 end=2026-04-02 pitchers=1
+2026-08-28T12:42:37.219820+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:37.229998+00:00 | INFO  | 2026_04_03 | pregame Statcast pitches=2296
+2026-08-28T12:42:37.630448+00:00 | INFO  | 2026_04_03 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_03_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:42:37.633317+00:00 | INFO  | 2026_04_04 | games=15 pitchers=30 as_of=2026-04-03
+2026-08-28T12:42:37.771594+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-30 end=2026-04-03 pitchers=1
+2026-08-28T12:42:38.553982+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:38.562426+00:00 | INFO  | 2026_04_04 | pregame Statcast pitches=2167
+2026-08-28T12:42:38.991818+00:00 | INFO  | 2026_04_04 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_04_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=14/15
+2026-08-28T12:42:38.995607+00:00 | INFO  | 2026_04_05 | games=16 pitchers=32 as_of=2026-04-04
+2026-08-28T12:42:39.140768+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-01 end=2026-04-04 pitchers=1
+2026-08-28T12:42:39.890731+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:39.898912+00:00 | INFO  | 2026_04_05 | pregame Statcast pitches=2671
+2026-08-28T12:42:40.345787+00:00 | INFO  | 2026_04_05 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_05_sportsdataverse.csv rows=16 home_sp_found=14/16 away_sp_found=16/16
+2026-08-28T12:42:40.348480+00:00 | INFO  | 2026_04_06 | games=13 pitchers=26 as_of=2026-04-05
+2026-08-28T12:42:40.487490+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:40.495978+00:00 | INFO  | 2026_04_06 | pregame Statcast pitches=2386
+2026-08-28T12:42:40.954448+00:00 | INFO  | 2026_04_06 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_06_sportsdataverse.csv rows=13 home_sp_found=13/13 away_sp_found=12/13
+2026-08-28T12:42:40.957069+00:00 | INFO  | 2026_04_07 | games=15 pitchers=30 as_of=2026-04-06
+2026-08-28T12:42:41.109712+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-02 end=2026-04-06 pitchers=2
+2026-08-28T12:42:44.320176+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=14
+2026-08-28T12:42:44.334152+00:00 | INFO  | 2026_04_07 | pregame Statcast pitches=4568
+2026-08-28T12:42:44.846775+00:00 | INFO  | 2026_04_07 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_07_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:42:44.849314+00:00 | INFO  | 2026_04_08 | games=15 pitchers=30 as_of=2026-04-07
+2026-08-28T12:42:45.001957+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-04 end=2026-04-07 pitchers=1
+2026-08-28T12:42:45.860387+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:45.872008+00:00 | INFO  | 2026_04_08 | pregame Statcast pitches=4775
+2026-08-28T12:42:46.352285+00:00 | INFO  | 2026_04_08 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_08_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:42:46.355081+00:00 | INFO  | 2026_04_09 | games=6 pitchers=12 as_of=2026-04-08
+2026-08-28T12:42:46.492413+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:46.501483+00:00 | INFO  | 2026_04_09 | pregame Statcast pitches=1994
+2026-08-28T12:42:46.836512+00:00 | INFO  | 2026_04_09 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_09_sportsdataverse.csv rows=6 home_sp_found=6/6 away_sp_found=6/6
+2026-08-28T12:42:46.839138+00:00 | INFO  | 2026_04_10 | games=15 pitchers=30 as_of=2026-04-09
+2026-08-28T12:42:47.001130+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-09 end=2026-04-09 pitchers=1
+2026-08-28T12:42:48.578800+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:48.593809+00:00 | INFO  | 2026_04_10 | pregame Statcast pitches=4545
+2026-08-28T12:42:49.078103+00:00 | INFO  | 2026_04_10 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_10_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:42:49.081160+00:00 | INFO  | 2026_04_11 | games=15 pitchers=30 as_of=2026-04-10
+2026-08-28T12:42:49.224410+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:49.233746+00:00 | INFO  | 2026_04_11 | pregame Statcast pitches=5276
+2026-08-28T12:42:49.727288+00:00 | INFO  | 2026_04_11 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_11_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:42:49.729848+00:00 | INFO  | 2026_04_12 | games=15 pitchers=30 as_of=2026-04-11
+2026-08-28T12:42:49.874053+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-08 end=2026-04-11 pitchers=3
+2026-08-28T12:42:51.198876+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=27
+2026-08-28T12:42:51.211403+00:00 | INFO  | 2026_04_12 | pregame Statcast pitches=5903
+2026-08-28T12:42:51.711217+00:00 | INFO  | 2026_04_12 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_12_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:42:51.713631+00:00 | INFO  | 2026_04_13 | games=10 pitchers=20 as_of=2026-04-12
+2026-08-28T12:42:51.851991+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:51.861954+00:00 | INFO  | 2026_04_13 | pregame Statcast pitches=4500
+2026-08-28T12:42:52.278729+00:00 | INFO  | 2026_04_13 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_13_sportsdataverse.csv rows=10 home_sp_found=9/10 away_sp_found=10/10
+2026-08-28T12:42:52.281348+00:00 | INFO  | 2026_04_14 | games=15 pitchers=30 as_of=2026-04-13
+2026-08-28T12:42:52.447240+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-10 end=2026-04-13 pitchers=2
+2026-08-28T12:42:53.803665+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=32
+2026-08-28T12:42:53.816653+00:00 | INFO  | 2026_04_14 | pregame Statcast pitches=6666
+2026-08-28T12:42:54.317627+00:00 | INFO  | 2026_04_14 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_14_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=14/15
+2026-08-28T12:42:54.320106+00:00 | INFO  | 2026_04_15 | games=15 pitchers=30 as_of=2026-04-14
+2026-08-28T12:42:54.467744+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:54.478369+00:00 | INFO  | 2026_04_15 | pregame Statcast pitches=6664
+2026-08-28T12:42:54.986627+00:00 | INFO  | 2026_04_15 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_15_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:42:54.989206+00:00 | INFO  | 2026_04_16 | games=10 pitchers=20 as_of=2026-04-15
+2026-08-28T12:42:55.156119+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-13 end=2026-04-15 pitchers=2
+2026-08-28T12:42:56.527152+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=13
+2026-08-28T12:42:56.541857+00:00 | INFO  | 2026_04_16 | pregame Statcast pitches=4662
+2026-08-28T12:42:56.955144+00:00 | INFO  | 2026_04_16 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_16_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=10/10
+2026-08-28T12:42:56.957571+00:00 | INFO  | 2026_04_17 | games=15 pitchers=30 as_of=2026-04-16
+2026-08-28T12:42:57.123227+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-12 end=2026-04-16 pitchers=1
+2026-08-28T12:42:57.848356+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:57.860489+00:00 | INFO  | 2026_04_17 | pregame Statcast pitches=7381
+2026-08-28T12:42:58.361142+00:00 | INFO  | 2026_04_17 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_17_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=13/15
+2026-08-28T12:42:58.364122+00:00 | INFO  | 2026_04_18 | games=15 pitchers=30 as_of=2026-04-17
+2026-08-28T12:42:58.521052+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:58.533035+00:00 | INFO  | 2026_04_18 | pregame Statcast pitches=8886
+2026-08-28T12:42:59.046720+00:00 | INFO  | 2026_04_18 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_18_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:42:59.049350+00:00 | INFO  | 2026_04_19 | games=15 pitchers=30 as_of=2026-04-18
+2026-08-28T12:42:59.225713+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:59.237581+00:00 | INFO  | 2026_04_19 | pregame Statcast pitches=9057
+2026-08-28T12:42:59.764840+00:00 | INFO  | 2026_04_19 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_19_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:42:59.767572+00:00 | INFO  | 2026_04_20 | games=10 pitchers=20 as_of=2026-04-19
+2026-08-28T12:42:59.908840+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:42:59.920100+00:00 | INFO  | 2026_04_20 | pregame Statcast pitches=6150
+2026-08-28T12:43:00.345721+00:00 | INFO  | 2026_04_20 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_20_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=10/10
+2026-08-28T12:43:00.348393+00:00 | INFO  | 2026_04_21 | games=15 pitchers=30 as_of=2026-04-20
+2026-08-28T12:43:00.489072+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-17 end=2026-04-20 pitchers=2
+2026-08-28T12:43:01.805394+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=20
+2026-08-28T12:43:01.820347+00:00 | INFO  | 2026_04_21 | pregame Statcast pitches=9444
+2026-08-28T12:43:02.342285+00:00 | INFO  | 2026_04_21 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_21_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:43:02.344957+00:00 | INFO  | 2026_04_22 | games=15 pitchers=30 as_of=2026-04-21
+2026-08-28T12:43:02.495662+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-30 end=2026-04-21 pitchers=3
+2026-08-28T12:43:06.598937+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=226
+2026-08-28T12:43:06.615045+00:00 | INFO  | 2026_04_22 | pregame Statcast pitches=9249
+2026-08-28T12:43:07.142233+00:00 | INFO  | 2026_04_22 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_22_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:43:07.144693+00:00 | INFO  | 2026_04_23 | games=9 pitchers=18 as_of=2026-04-22
+2026-08-28T12:43:07.310304+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:07.322509+00:00 | INFO  | 2026_04_23 | pregame Statcast pitches=5453
+2026-08-28T12:43:07.732282+00:00 | INFO  | 2026_04_23 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_23_sportsdataverse.csv rows=9 home_sp_found=7/9 away_sp_found=8/9
+2026-08-28T12:43:07.734856+00:00 | INFO  | 2026_04_24 | games=14 pitchers=28 as_of=2026-04-23
+2026-08-28T12:43:07.870665+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:07.883620+00:00 | INFO  | 2026_04_24 | pregame Statcast pitches=10404
+2026-08-28T12:43:08.404470+00:00 | INFO  | 2026_04_24 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_24_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:43:08.407151+00:00 | INFO  | 2026_04_25 | games=15 pitchers=30 as_of=2026-04-24
+2026-08-28T12:43:08.580837+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-20 end=2026-04-24 pitchers=1
+2026-08-28T12:43:11.753545+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:11.777801+00:00 | INFO  | 2026_04_25 | pregame Statcast pitches=11424
+2026-08-28T12:43:12.305900+00:00 | INFO  | 2026_04_25 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_25_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:43:12.309488+00:00 | INFO  | 2026_04_26 | games=16 pitchers=31 as_of=2026-04-25
+2026-08-28T12:43:12.463670+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-22 end=2026-04-25 pitchers=1
+2026-08-28T12:43:13.314840+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:13.330703+00:00 | INFO  | 2026_04_26 | pregame Statcast pitches=11785
+2026-08-28T12:43:13.876268+00:00 | INFO  | 2026_04_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_26_sportsdataverse.csv rows=16 home_sp_found=16/16 away_sp_found=15/16
+2026-08-28T12:43:13.880200+00:00 | INFO  | 2026_04_27 | games=8 pitchers=16 as_of=2026-04-26
+2026-08-28T12:43:14.056665+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:14.069991+00:00 | INFO  | 2026_04_27 | pregame Statcast pitches=6451
+2026-08-28T12:43:14.472801+00:00 | INFO  | 2026_04_27 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_27_sportsdataverse.csv rows=8 home_sp_found=8/8 away_sp_found=8/8
+2026-08-28T12:43:14.475426+00:00 | INFO  | 2026_04_28 | games=15 pitchers=30 as_of=2026-04-27
+2026-08-28T12:43:14.613705+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:14.626623+00:00 | INFO  | 2026_04_28 | pregame Statcast pitches=11964
+2026-08-28T12:43:15.154784+00:00 | INFO  | 2026_04_28 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_28_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:43:15.157408+00:00 | INFO  | 2026_04_29 | games=15 pitchers=30 as_of=2026-04-28
+2026-08-28T12:43:15.330335+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-23 end=2026-04-28 pitchers=2
+2026-08-28T12:43:16.740406+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=90
+2026-08-28T12:43:16.757658+00:00 | INFO  | 2026_04_29 | pregame Statcast pitches=12987
+2026-08-28T12:43:17.293512+00:00 | INFO  | 2026_04_29 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_29_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:43:17.296002+00:00 | INFO  | 2026_04_30 | games=10 pitchers=20 as_of=2026-04-29
+2026-08-28T12:43:17.465223+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:17.479545+00:00 | INFO  | 2026_04_30 | pregame Statcast pitches=8740
+2026-08-28T12:43:17.915111+00:00 | INFO  | 2026_04_30 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_04_30_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=9/10
+2026-08-28T12:43:17.917693+00:00 | INFO  | 2026_05_01 | games=15 pitchers=30 as_of=2026-04-30
+2026-08-28T12:43:18.081978+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:18.095911+00:00 | INFO  | 2026_05_01 | pregame Statcast pitches=12308
+2026-08-28T12:43:18.626693+00:00 | INFO  | 2026_05_01 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_01_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:43:18.629350+00:00 | INFO  | 2026_05_02 | games=15 pitchers=30 as_of=2026-05-01
+2026-08-28T12:43:18.775324+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-30 end=2026-05-01 pitchers=1
+2026-08-28T12:43:19.569006+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:19.585010+00:00 | INFO  | 2026_05_02 | pregame Statcast pitches=14340
+2026-08-28T12:43:20.127801+00:00 | INFO  | 2026_05_02 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_02_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:43:20.131362+00:00 | INFO  | 2026_05_03 | games=15 pitchers=30 as_of=2026-05-02
+2026-08-28T12:43:20.314032+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-01 end=2026-05-02 pitchers=1
+2026-08-28T12:43:21.014574+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:21.029317+00:00 | INFO  | 2026_05_03 | pregame Statcast pitches=11984
+2026-08-28T12:43:21.561502+00:00 | INFO  | 2026_05_03 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_03_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=13/15
+2026-08-28T12:43:21.564207+00:00 | INFO  | 2026_05_04 | games=12 pitchers=24 as_of=2026-05-03
+2026-08-28T12:43:21.751937+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:21.766810+00:00 | INFO  | 2026_05_04 | pregame Statcast pitches=10443
+2026-08-28T12:43:22.238661+00:00 | INFO  | 2026_05_04 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_04_sportsdataverse.csv rows=12 home_sp_found=11/12 away_sp_found=11/12
+2026-08-28T12:43:22.241375+00:00 | INFO  | 2026_05_05 | games=15 pitchers=30 as_of=2026-05-04
+2026-08-28T12:43:22.387899+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:22.403097+00:00 | INFO  | 2026_05_05 | pregame Statcast pitches=15274
+2026-08-28T12:43:22.941783+00:00 | INFO  | 2026_05_05 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_05_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:43:22.944463+00:00 | INFO  | 2026_05_06 | games=15 pitchers=30 as_of=2026-05-05
+2026-08-28T12:43:23.078793+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-02 end=2026-05-05 pitchers=1
+2026-08-28T12:43:23.940842+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:23.969367+00:00 | INFO  | 2026_05_06 | pregame Statcast pitches=15010
+2026-08-28T12:43:24.499706+00:00 | INFO  | 2026_05_06 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_06_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:43:24.502357+00:00 | INFO  | 2026_05_07 | games=10 pitchers=20 as_of=2026-05-06
+2026-08-28T12:43:24.656057+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-05 end=2026-05-06 pitchers=1
+2026-08-28T12:43:25.772896+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:25.799445+00:00 | INFO  | 2026_05_07 | pregame Statcast pitches=9753
+2026-08-28T12:43:26.239442+00:00 | INFO  | 2026_05_07 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_07_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=10/10
+2026-08-28T12:43:26.242557+00:00 | INFO  | 2026_05_08 | games=14 pitchers=28 as_of=2026-05-07
+2026-08-28T12:43:26.385987+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-05-07 pitchers=1
+2026-08-28T12:43:34.196985+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-03 end=2026-05-07 pitchers=1
+2026-08-28T12:43:34.893647+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:34.922302+00:00 | INFO  | 2026_05_08 | pregame Statcast pitches=14735
+2026-08-28T12:43:35.463900+00:00 | INFO  | 2026_05_08 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_08_sportsdataverse.csv rows=14 home_sp_found=12/14 away_sp_found=14/14
+2026-08-28T12:43:35.466782+00:00 | INFO  | 2026_05_09 | games=15 pitchers=30 as_of=2026-05-08
+2026-08-28T12:43:35.645678+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-07 end=2026-05-08 pitchers=1
+2026-08-28T12:43:36.469264+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:36.493213+00:00 | INFO  | 2026_05_09 | pregame Statcast pitches=15369
+2026-08-28T12:43:37.036242+00:00 | INFO  | 2026_05_09 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_09_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:43:37.039689+00:00 | INFO  | 2026_05_10 | games=15 pitchers=30 as_of=2026-05-09
+2026-08-28T12:43:37.177219+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:37.193105+00:00 | INFO  | 2026_05_10 | pregame Statcast pitches=15445
+2026-08-28T12:43:37.732097+00:00 | INFO  | 2026_05_10 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_10_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:43:37.734718+00:00 | INFO  | 2026_05_11 | games=6 pitchers=12 as_of=2026-05-10
+2026-08-28T12:43:37.921105+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-09 end=2026-05-10 pitchers=2
+2026-08-28T12:43:38.598254+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:38.615502+00:00 | INFO  | 2026_05_11 | pregame Statcast pitches=5917
+2026-08-28T12:43:38.970273+00:00 | INFO  | 2026_05_11 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_11_sportsdataverse.csv rows=6 home_sp_found=6/6 away_sp_found=6/6
+2026-08-28T12:43:38.973111+00:00 | INFO  | 2026_05_12 | games=15 pitchers=30 as_of=2026-05-11
+2026-08-28T12:43:39.118648+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:39.136046+00:00 | INFO  | 2026_05_12 | pregame Statcast pitches=16926
+2026-08-28T12:43:39.681587+00:00 | INFO  | 2026_05_12 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_12_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:43:39.684284+00:00 | INFO  | 2026_05_13 | games=15 pitchers=30 as_of=2026-05-12
+2026-08-28T12:43:39.815757+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-07 end=2026-05-12 pitchers=2
+2026-08-28T12:43:41.341443+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=62
+2026-08-28T12:43:41.361689+00:00 | INFO  | 2026_05_13 | pregame Statcast pitches=17563
+2026-08-28T12:43:41.914199+00:00 | INFO  | 2026_05_13 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_13_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:43:41.916692+00:00 | INFO  | 2026_05_14 | games=11 pitchers=22 as_of=2026-05-13
+2026-08-28T12:43:42.088754+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-09 end=2026-05-13 pitchers=2
+2026-08-28T12:43:43.040630+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:43.070089+00:00 | INFO  | 2026_05_14 | pregame Statcast pitches=12678
+2026-08-28T12:43:43.534030+00:00 | INFO  | 2026_05_14 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_14_sportsdataverse.csv rows=11 home_sp_found=10/11 away_sp_found=10/11
+2026-08-28T12:43:43.536675+00:00 | INFO  | 2026_05_15 | games=14 pitchers=28 as_of=2026-05-14
+2026-08-28T12:43:43.719314+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-12 end=2026-05-14 pitchers=1
+2026-08-28T12:43:44.409977+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:44.430972+00:00 | INFO  | 2026_05_15 | pregame Statcast pitches=17113
+2026-08-28T12:43:44.981314+00:00 | INFO  | 2026_05_15 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_15_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:43:44.984335+00:00 | INFO  | 2026_05_16 | games=15 pitchers=30 as_of=2026-05-15
+2026-08-28T12:43:45.167808+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:45.185822+00:00 | INFO  | 2026_05_16 | pregame Statcast pitches=17947
+2026-08-28T12:43:45.750442+00:00 | INFO  | 2026_05_16 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_16_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:43:45.753244+00:00 | INFO  | 2026_05_17 | games=15 pitchers=30 as_of=2026-05-16
+2026-08-28T12:43:45.889358+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:45.908362+00:00 | INFO  | 2026_05_17 | pregame Statcast pitches=17914
+2026-08-28T12:43:46.461039+00:00 | INFO  | 2026_05_17 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_17_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=13/15
+2026-08-28T12:43:46.463720+00:00 | INFO  | 2026_05_18 | games=14 pitchers=28 as_of=2026-05-17
+2026-08-28T12:43:46.639433+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:46.657070+00:00 | INFO  | 2026_05_18 | pregame Statcast pitches=17474
+2026-08-28T12:43:47.192241+00:00 | INFO  | 2026_05_18 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_18_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:43:47.194934+00:00 | INFO  | 2026_05_19 | games=15 pitchers=30 as_of=2026-05-18
+2026-08-28T12:43:47.344096+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-05-18 pitchers=1
+2026-08-28T12:43:59.148448+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-15 end=2026-05-18 pitchers=1
+2026-08-28T12:43:59.862791+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:43:59.898591+00:00 | INFO  | 2026_05_19 | pregame Statcast pitches=17543
+2026-08-28T12:44:00.449075+00:00 | INFO  | 2026_05_19 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_19_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:44:00.451780+00:00 | INFO  | 2026_05_20 | games=15 pitchers=29 as_of=2026-05-19
+2026-08-28T12:44:00.590106+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:00.608352+00:00 | INFO  | 2026_05_20 | pregame Statcast pitches=21475
+2026-08-28T12:44:01.179586+00:00 | INFO  | 2026_05_20 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_20_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:44:01.182306+00:00 | INFO  | 2026_05_21 | games=7 pitchers=14 as_of=2026-05-20
+2026-08-28T12:44:01.341194+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:01.358618+00:00 | INFO  | 2026_05_21 | pregame Statcast pitches=9567
+2026-08-28T12:44:01.753263+00:00 | INFO  | 2026_05_21 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_21_sportsdataverse.csv rows=7 home_sp_found=7/7 away_sp_found=7/7
+2026-08-28T12:44:01.755931+00:00 | INFO  | 2026_05_22 | games=15 pitchers=30 as_of=2026-05-21
+2026-08-28T12:44:01.898891+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-20 end=2026-05-21 pitchers=1
+2026-08-28T12:44:02.664877+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:02.698194+00:00 | INFO  | 2026_05_22 | pregame Statcast pitches=19384
+2026-08-28T12:44:03.259965+00:00 | INFO  | 2026_05_22 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_22_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:44:03.262651+00:00 | INFO  | 2026_05_23 | games=16 pitchers=32 as_of=2026-05-22
+2026-08-28T12:44:03.403800+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-21 end=2026-05-22 pitchers=1
+2026-08-28T12:44:04.451040+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:04.485364+00:00 | INFO  | 2026_05_23 | pregame Statcast pitches=21202
+2026-08-28T12:44:05.069228+00:00 | INFO  | 2026_05_23 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_23_sportsdataverse.csv rows=16 home_sp_found=16/16 away_sp_found=16/16
+2026-08-28T12:44:05.071920+00:00 | INFO  | 2026_05_24 | games=16 pitchers=32 as_of=2026-05-23
+2026-08-28T12:44:05.223173+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-05-23 pitchers=1
+2026-08-28T12:44:16.253257+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-19 end=2026-05-23 pitchers=2
+2026-08-28T12:44:17.539243+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=34
+2026-08-28T12:44:17.562025+00:00 | INFO  | 2026_05_24 | pregame Statcast pitches=22879
+2026-08-28T12:44:18.151367+00:00 | INFO  | 2026_05_24 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_24_sportsdataverse.csv rows=16 home_sp_found=16/16 away_sp_found=14/16
+2026-08-28T12:44:18.153943+00:00 | INFO  | 2026_05_25 | games=13 pitchers=26 as_of=2026-05-24
+2026-08-28T12:44:18.326904+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:18.345960+00:00 | INFO  | 2026_05_25 | pregame Statcast pitches=18587
+2026-08-28T12:44:18.874241+00:00 | INFO  | 2026_05_25 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_25_sportsdataverse.csv rows=13 home_sp_found=13/13 away_sp_found=13/13
+2026-08-28T12:44:18.877033+00:00 | INFO  | 2026_05_26 | games=15 pitchers=30 as_of=2026-05-25
+2026-08-28T12:44:19.058911+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-20 end=2026-05-25 pitchers=2
+2026-08-28T12:44:19.948974+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:19.984200+00:00 | INFO  | 2026_05_26 | pregame Statcast pitches=21686
+2026-08-28T12:44:20.554369+00:00 | INFO  | 2026_05_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_26_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:44:20.557134+00:00 | INFO  | 2026_05_27 | games=15 pitchers=30 as_of=2026-05-26
+2026-08-28T12:44:20.696775+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-23 end=2026-05-26 pitchers=2
+2026-08-28T12:44:22.257381+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=29
+2026-08-28T12:44:22.282703+00:00 | INFO  | 2026_05_27 | pregame Statcast pitches=22392
+2026-08-28T12:44:22.863534+00:00 | INFO  | 2026_05_27 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_27_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:44:22.866115+00:00 | INFO  | 2026_05_28 | games=6 pitchers=12 as_of=2026-05-27
+2026-08-28T12:44:23.036939+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:23.055647+00:00 | INFO  | 2026_05_28 | pregame Statcast pitches=8687
+2026-08-28T12:44:23.433006+00:00 | INFO  | 2026_05_28 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_28_sportsdataverse.csv rows=6 home_sp_found=6/6 away_sp_found=6/6
+2026-08-28T12:44:23.435642+00:00 | INFO  | 2026_05_29 | games=15 pitchers=30 as_of=2026-05-28
+2026-08-28T12:44:23.574717+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-22 end=2026-05-28 pitchers=5
+2026-08-28T12:44:25.267366+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=144
+2026-08-28T12:44:25.292607+00:00 | INFO  | 2026_05_29 | pregame Statcast pitches=19852
+2026-08-28T12:44:25.857382+00:00 | INFO  | 2026_05_29 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_29_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:44:25.859928+00:00 | INFO  | 2026_05_30 | games=15 pitchers=30 as_of=2026-05-29
+2026-08-28T12:44:26.023410+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:26.043563+00:00 | INFO  | 2026_05_30 | pregame Statcast pitches=24736
+2026-08-28T12:44:26.635103+00:00 | INFO  | 2026_05_30 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_30_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:44:26.637790+00:00 | INFO  | 2026_05_31 | games=15 pitchers=30 as_of=2026-05-30
+2026-08-28T12:44:26.814945+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-27 end=2026-05-30 pitchers=2
+2026-08-28T12:44:28.246140+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=11
+2026-08-28T12:44:28.270036+00:00 | INFO  | 2026_05_31 | pregame Statcast pitches=22375
+2026-08-28T12:44:28.853037+00:00 | INFO  | 2026_05_31 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_05_31_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:44:28.855578+00:00 | INFO  | 2026_06_01 | games=9 pitchers=18 as_of=2026-05-31
+2026-08-28T12:44:29.018488+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-16 end=2026-05-31 pitchers=4
+2026-08-28T12:44:32.590749+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=185
+2026-08-28T12:44:32.614608+00:00 | INFO  | 2026_06_01 | pregame Statcast pitches=12929
+2026-08-28T12:44:33.060207+00:00 | INFO  | 2026_06_01 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_01_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:44:33.062786+00:00 | INFO  | 2026_06_02 | games=15 pitchers=29 as_of=2026-06-01
+2026-08-28T12:44:33.209072+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:33.229735+00:00 | INFO  | 2026_06_02 | pregame Statcast pitches=24774
+2026-08-28T12:44:33.824546+00:00 | INFO  | 2026_06_02 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_02_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:44:33.827287+00:00 | INFO  | 2026_06_03 | games=15 pitchers=30 as_of=2026-06-02
+2026-08-28T12:44:33.980751+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:34.001279+00:00 | INFO  | 2026_06_03 | pregame Statcast pitches=25138
+2026-08-28T12:44:34.589826+00:00 | INFO  | 2026_06_03 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_03_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:44:34.592493+00:00 | INFO  | 2026_06_04 | games=9 pitchers=18 as_of=2026-06-03
+2026-08-28T12:44:34.770743+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-30 end=2026-06-03 pitchers=5
+2026-08-28T12:44:36.096774+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=44
+2026-08-28T12:44:36.119647+00:00 | INFO  | 2026_06_04 | pregame Statcast pitches=12936
+2026-08-28T12:44:36.561349+00:00 | INFO  | 2026_06_04 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_04_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:44:36.563841+00:00 | INFO  | 2026_06_05 | games=15 pitchers=30 as_of=2026-06-04
+2026-08-28T12:44:36.708581+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:36.729841+00:00 | INFO  | 2026_06_05 | pregame Statcast pitches=25798
+2026-08-28T12:44:37.330733+00:00 | INFO  | 2026_06_05 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_05_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:44:37.333605+00:00 | INFO  | 2026_06_06 | games=15 pitchers=30 as_of=2026-06-05
+2026-08-28T12:44:37.513043+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-06-05 pitchers=1
+2026-08-28T12:44:50.079353+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-01 end=2026-06-05 pitchers=2
+2026-08-28T12:44:50.854157+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:44:50.893411+00:00 | INFO  | 2026_06_06 | pregame Statcast pitches=24265
+2026-08-28T12:44:51.472140+00:00 | INFO  | 2026_06_06 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_06_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:44:51.474843+00:00 | INFO  | 2026_06_07 | games=15 pitchers=30 as_of=2026-06-06
+2026-08-28T12:44:51.663207+00:00 | INFO  | Statcast fetch season=2026 start=2026-04-16 end=2026-06-06 pitchers=2
+2026-08-28T12:45:02.837463+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=372
+2026-08-28T12:45:02.864040+00:00 | INFO  | 2026_06_07 | pregame Statcast pitches=26879
+2026-08-28T12:45:03.448475+00:00 | INFO  | 2026_06_07 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_07_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:45:03.451153+00:00 | INFO  | 2026_06_08 | games=8 pitchers=16 as_of=2026-06-07
+2026-08-28T12:45:03.604531+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:03.625096+00:00 | INFO  | 2026_06_08 | pregame Statcast pitches=14636
+2026-08-28T12:45:04.056313+00:00 | INFO  | 2026_06_08 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_08_sportsdataverse.csv rows=8 home_sp_found=8/8 away_sp_found=8/8
+2026-08-28T12:45:04.058976+00:00 | INFO  | 2026_06_09 | games=9 pitchers=18 as_of=2026-06-08
+2026-08-28T12:45:04.193224+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-07 end=2026-06-08 pitchers=1
+2026-08-28T12:45:05.072707+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:05.108898+00:00 | INFO  | 2026_06_09 | pregame Statcast pitches=15263
+2026-08-28T12:45:05.557534+00:00 | INFO  | 2026_06_09 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_09_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:45:05.561527+00:00 | INFO  | 2026_06_10 | games=9 pitchers=18 as_of=2026-06-09
+2026-08-28T12:45:05.748565+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:05.772013+00:00 | INFO  | 2026_06_10 | pregame Statcast pitches=15348
+2026-08-28T12:45:06.223817+00:00 | INFO  | 2026_06_10 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_10_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:45:06.226474+00:00 | INFO  | 2026_06_11 | games=6 pitchers=12 as_of=2026-06-10
+2026-08-28T12:45:06.366514+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:06.387813+00:00 | INFO  | 2026_06_11 | pregame Statcast pitches=10994
+2026-08-28T12:45:06.769498+00:00 | INFO  | 2026_06_11 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_11_sportsdataverse.csv rows=6 home_sp_found=6/6 away_sp_found=6/6
+2026-08-28T12:45:06.772185+00:00 | INFO  | 2026_06_12 | games=8 pitchers=16 as_of=2026-06-11
+2026-08-28T12:45:06.913663+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-07 end=2026-06-11 pitchers=2
+2026-08-28T12:45:07.842762+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:07.881776+00:00 | INFO  | 2026_06_12 | pregame Statcast pitches=14417
+2026-08-28T12:45:08.310232+00:00 | INFO  | 2026_06_12 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_12_sportsdataverse.csv rows=8 home_sp_found=8/8 away_sp_found=7/8
+2026-08-28T12:45:08.313168+00:00 | INFO  | 2026_06_13 | games=8 pitchers=16 as_of=2026-06-12
+2026-08-28T12:45:08.497118+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-06-12 pitchers=1
+2026-08-28T12:45:24.413773+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:24.450995+00:00 | INFO  | 2026_06_13 | pregame Statcast pitches=14651
+2026-08-28T12:45:24.886749+00:00 | INFO  | 2026_06_13 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_13_sportsdataverse.csv rows=8 home_sp_found=7/8 away_sp_found=8/8
+2026-08-28T12:45:24.889490+00:00 | INFO  | 2026_06_14 | games=8 pitchers=16 as_of=2026-06-13
+2026-08-28T12:45:25.025701+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:25.048115+00:00 | INFO  | 2026_06_14 | pregame Statcast pitches=17992
+2026-08-28T12:45:25.494357+00:00 | INFO  | 2026_06_14 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_14_sportsdataverse.csv rows=8 home_sp_found=8/8 away_sp_found=8/8
+2026-08-28T12:45:25.497007+00:00 | INFO  | 2026_06_15 | games=9 pitchers=18 as_of=2026-06-14
+2026-08-28T12:45:25.675313+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-30 end=2026-06-14 pitchers=2
+2026-08-28T12:45:29.641802+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=275
+2026-08-28T12:45:29.667579+00:00 | INFO  | 2026_06_15 | pregame Statcast pitches=15269
+2026-08-28T12:45:30.110665+00:00 | INFO  | 2026_06_15 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_15_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:45:30.113280+00:00 | INFO  | 2026_06_16 | games=14 pitchers=28 as_of=2026-06-15
+2026-08-28T12:45:30.256462+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:30.279346+00:00 | INFO  | 2026_06_16 | pregame Statcast pitches=26464
+2026-08-28T12:45:30.855589+00:00 | INFO  | 2026_06_16 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_16_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:45:30.858340+00:00 | INFO  | 2026_06_17 | games=13 pitchers=25 as_of=2026-06-16
+2026-08-28T12:45:31.031355+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:31.054290+00:00 | INFO  | 2026_06_17 | pregame Statcast pitches=22135
+2026-08-28T12:45:31.599645+00:00 | INFO  | 2026_06_17 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_17_sportsdataverse.csv rows=13 home_sp_found=13/13 away_sp_found=12/13
+2026-08-28T12:45:31.602318+00:00 | INFO  | 2026_06_18 | games=9 pitchers=17 as_of=2026-06-17
+2026-08-28T12:45:31.752368+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-13 end=2026-06-17 pitchers=1
+2026-08-28T12:45:32.641293+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:32.679009+00:00 | INFO  | 2026_06_18 | pregame Statcast pitches=18421
+2026-08-28T12:45:33.137809+00:00 | INFO  | 2026_06_18 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_18_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=8/9
+2026-08-28T12:45:33.140712+00:00 | INFO  | 2026_06_19 | games=13 pitchers=26 as_of=2026-06-18
+2026-08-28T12:45:33.326527+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-14 end=2026-06-18 pitchers=1
+2026-08-28T12:45:34.357060+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:34.401199+00:00 | INFO  | 2026_06_19 | pregame Statcast pitches=27741
+2026-08-28T12:45:34.965500+00:00 | INFO  | 2026_06_19 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_19_sportsdataverse.csv rows=13 home_sp_found=13/13 away_sp_found=13/13
+2026-08-28T12:45:34.968267+00:00 | INFO  | 2026_06_20 | games=14 pitchers=27 as_of=2026-06-19
+2026-08-28T12:45:35.121158+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:35.148786+00:00 | INFO  | 2026_06_20 | pregame Statcast pitches=31506
+2026-08-28T12:45:35.731294+00:00 | INFO  | 2026_06_20 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_20_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=13/14
+2026-08-28T12:45:35.734090+00:00 | INFO  | 2026_06_21 | games=14 pitchers=27 as_of=2026-06-20
+2026-08-28T12:45:35.912265+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:35.936672+00:00 | INFO  | 2026_06_21 | pregame Statcast pitches=26829
+2026-08-28T12:45:36.516235+00:00 | INFO  | 2026_06_21 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_21_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=13/14
+2026-08-28T12:45:36.518993+00:00 | INFO  | 2026_06_22 | games=13 pitchers=23 as_of=2026-06-21
+2026-08-28T12:45:36.660981+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-17 end=2026-06-21 pitchers=1
+2026-08-28T12:45:37.615813+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:37.657856+00:00 | INFO  | 2026_06_22 | pregame Statcast pitches=22931
+2026-08-28T12:45:38.192245+00:00 | INFO  | 2026_06_22 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_22_sportsdataverse.csv rows=13 home_sp_found=12/13 away_sp_found=11/13
+2026-08-28T12:45:38.195006+00:00 | INFO  | 2026_06_23 | games=14 pitchers=28 as_of=2026-06-22
+2026-08-28T12:45:38.377224+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-17 end=2026-06-22 pitchers=2
+2026-08-28T12:45:39.830072+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=82
+2026-08-28T12:45:39.858243+00:00 | INFO  | 2026_06_23 | pregame Statcast pitches=27025
+2026-08-28T12:45:40.440454+00:00 | INFO  | 2026_06_23 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_23_sportsdataverse.csv rows=14 home_sp_found=13/14 away_sp_found=14/14
+2026-08-28T12:45:40.443104+00:00 | INFO  | 2026_06_24 | games=14 pitchers=28 as_of=2026-06-23
+2026-08-28T12:45:40.596979+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:40.622442+00:00 | INFO  | 2026_06_24 | pregame Statcast pitches=28715
+2026-08-28T12:45:41.213128+00:00 | INFO  | 2026_06_24 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_24_sportsdataverse.csv rows=14 home_sp_found=13/14 away_sp_found=13/14
+2026-08-28T12:45:41.216702+00:00 | INFO  | 2026_06_25 | games=9 pitchers=18 as_of=2026-06-24
+2026-08-28T12:45:41.418473+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:41.446054+00:00 | INFO  | 2026_06_25 | pregame Statcast pitches=20975
+2026-08-28T12:45:41.924719+00:00 | INFO  | 2026_06_25 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_25_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:45:41.927576+00:00 | INFO  | 2026_06_26 | games=14 pitchers=25 as_of=2026-06-25
+2026-08-28T12:45:42.080809+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-21 end=2026-06-25 pitchers=1
+2026-08-28T12:45:42.801269+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:42.842273+00:00 | INFO  | 2026_06_26 | pregame Statcast pitches=31089
+2026-08-28T12:45:43.439982+00:00 | INFO  | 2026_06_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_26_sportsdataverse.csv rows=14 home_sp_found=12/14 away_sp_found=13/14
+2026-08-28T12:45:43.443172+00:00 | INFO  | 2026_06_27 | games=15 pitchers=30 as_of=2026-06-26
+2026-08-28T12:45:43.642375+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-22 end=2026-06-26 pitchers=2
+2026-08-28T12:45:45.108106+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=27
+2026-08-28T12:45:45.136421+00:00 | INFO  | 2026_06_27 | pregame Statcast pitches=30045
+2026-08-28T12:45:45.741991+00:00 | INFO  | 2026_06_27 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_27_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:45:45.744648+00:00 | INFO  | 2026_06_28 | games=15 pitchers=30 as_of=2026-06-27
+2026-08-28T12:45:45.895784+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-25 end=2026-06-27 pitchers=2
+2026-08-28T12:45:47.390247+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=21
+2026-08-28T12:45:47.420143+00:00 | INFO  | 2026_06_28 | pregame Statcast pitches=31816
+2026-08-28T12:45:48.043157+00:00 | INFO  | 2026_06_28 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_28_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:45:48.045789+00:00 | INFO  | 2026_06_29 | games=13 pitchers=24 as_of=2026-06-28
+2026-08-28T12:45:48.214010+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:48.239144+00:00 | INFO  | 2026_06_29 | pregame Statcast pitches=26900
+2026-08-28T12:45:48.801860+00:00 | INFO  | 2026_06_29 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_29_sportsdataverse.csv rows=13 home_sp_found=12/13 away_sp_found=12/13
+2026-08-28T12:45:48.804605+00:00 | INFO  | 2026_06_30 | games=15 pitchers=29 as_of=2026-06-29
+2026-08-28T12:45:48.988613+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-25 end=2026-06-29 pitchers=2
+2026-08-28T12:45:50.725097+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=98
+2026-08-28T12:45:50.749654+00:00 | INFO  | 2026_06_30 | pregame Statcast pitches=35520
+2026-08-28T12:45:51.400167+00:00 | INFO  | 2026_06_30 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_06_30_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:45:51.402778+00:00 | INFO  | 2026_07_01 | games=14 pitchers=26 as_of=2026-06-30
+2026-08-28T12:45:51.564383+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:51.590174+00:00 | INFO  | 2026_07_01 | pregame Statcast pitches=31066
+2026-08-28T12:45:52.178785+00:00 | INFO  | 2026_07_01 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_01_sportsdataverse.csv rows=14 home_sp_found=13/14 away_sp_found=13/14
+2026-08-28T12:45:52.181525+00:00 | INFO  | 2026_07_02 | games=9 pitchers=18 as_of=2026-07-01
+2026-08-28T12:45:52.338780+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-22 end=2026-07-01 pitchers=1
+2026-08-28T12:45:54.590889+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:54.634482+00:00 | INFO  | 2026_07_02 | pregame Statcast pitches=18795
+2026-08-28T12:45:55.108857+00:00 | INFO  | 2026_07_02 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_02_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:45:55.111598+00:00 | INFO  | 2026_07_03 | games=13 pitchers=25 as_of=2026-07-02
+2026-08-28T12:45:55.253150+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-28 end=2026-07-02 pitchers=1
+2026-08-28T12:45:56.578181+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:45:56.622696+00:00 | INFO  | 2026_07_03 | pregame Statcast pitches=29152
+2026-08-28T12:45:57.185979+00:00 | INFO  | 2026_07_03 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_03_sportsdataverse.csv rows=13 home_sp_found=13/13 away_sp_found=12/13
+2026-08-28T12:45:57.188699+00:00 | INFO  | 2026_07_04 | games=15 pitchers=30 as_of=2026-07-03
+2026-08-28T12:45:57.352694+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-08 end=2026-07-03 pitchers=4
+2026-08-28T12:46:09.974623+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=1135
+2026-08-28T12:46:10.000667+00:00 | INFO  | 2026_07_04 | pregame Statcast pitches=34772
+2026-08-28T12:46:10.630588+00:00 | INFO  | 2026_07_04 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_04_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:46:10.633434+00:00 | INFO  | 2026_07_05 | games=14 pitchers=28 as_of=2026-07-04
+2026-08-28T12:46:10.812486+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-04 end=2026-07-04 pitchers=1
+2026-08-28T12:46:11.712233+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:11.757174+00:00 | INFO  | 2026_07_05 | pregame Statcast pitches=32505
+2026-08-28T12:46:12.351845+00:00 | INFO  | 2026_07_05 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_05_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:46:12.354517+00:00 | INFO  | 2026_07_06 | games=8 pitchers=16 as_of=2026-07-05
+2026-08-28T12:46:12.512715+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-01 end=2026-07-05 pitchers=1
+2026-08-28T12:46:13.262187+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:13.299568+00:00 | INFO  | 2026_07_06 | pregame Statcast pitches=21146
+2026-08-28T12:46:13.754995+00:00 | INFO  | 2026_07_06 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_06_sportsdataverse.csv rows=8 home_sp_found=8/8 away_sp_found=8/8
+2026-08-28T12:46:13.757710+00:00 | INFO  | 2026_07_07 | games=15 pitchers=25 as_of=2026-07-06
+2026-08-28T12:46:13.910984+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-02 end=2026-07-06 pitchers=2
+2026-08-28T12:46:15.858621+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=76
+2026-08-28T12:46:15.883252+00:00 | INFO  | 2026_07_07 | pregame Statcast pitches=31069
+2026-08-28T12:46:16.491529+00:00 | INFO  | 2026_07_07 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_07_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=12/15
+2026-08-28T12:46:16.494266+00:00 | INFO  | 2026_07_08 | games=15 pitchers=29 as_of=2026-07-07
+2026-08-28T12:46:16.664687+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-07 end=2026-07-07 pitchers=1
+2026-08-28T12:46:17.712697+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:17.756591+00:00 | INFO  | 2026_07_08 | pregame Statcast pitches=33140
+2026-08-28T12:46:18.370407+00:00 | INFO  | 2026_07_08 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_08_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:46:18.373237+00:00 | INFO  | 2026_07_09 | games=13 pitchers=24 as_of=2026-07-08
+2026-08-28T12:46:18.518707+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:18.546327+00:00 | INFO  | 2026_07_09 | pregame Statcast pitches=30320
+2026-08-28T12:46:19.124566+00:00 | INFO  | 2026_07_09 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_09_sportsdataverse.csv rows=13 home_sp_found=12/13 away_sp_found=11/13
+2026-08-28T12:46:19.127330+00:00 | INFO  | 2026_07_10 | games=15 pitchers=30 as_of=2026-07-09
+2026-08-28T12:46:19.322300+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-04 end=2026-07-09 pitchers=1
+2026-08-28T12:46:20.355215+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:20.408541+00:00 | INFO  | 2026_07_10 | pregame Statcast pitches=35275
+2026-08-28T12:46:21.034276+00:00 | INFO  | 2026_07_10 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_10_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:46:21.037901+00:00 | INFO  | 2026_07_11 | games=10 pitchers=19 as_of=2026-07-10
+2026-08-28T12:46:21.218257+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:21.245277+00:00 | INFO  | 2026_07_11 | pregame Statcast pitches=23959
+2026-08-28T12:46:21.769319+00:00 | INFO  | 2026_07_11 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_11_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=9/10
+2026-08-28T12:46:21.772052+00:00 | INFO  | 2026_07_12 | games=14 pitchers=28 as_of=2026-07-11
+2026-08-28T12:46:21.906764+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-10 end=2026-07-11 pitchers=1
+2026-08-28T12:46:22.756691+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:22.804046+00:00 | INFO  | 2026_07_12 | pregame Statcast pitches=34665
+2026-08-28T12:46:23.416752+00:00 | INFO  | 2026_07_12 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_12_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=14/14
+2026-08-28T12:46:23.419428+00:00 | INFO  | 2026_07_16 | games=1 pitchers=2 as_of=2026-07-15
+2026-08-28T12:46:23.582078+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:23.609345+00:00 | INFO  | 2026_07_16 | pregame Statcast pitches=2701
+2026-08-28T12:46:23.861718+00:00 | INFO  | 2026_07_16 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_16_sportsdataverse.csv rows=1 home_sp_found=1/1 away_sp_found=1/1
+2026-08-28T12:46:23.864361+00:00 | INFO  | 2026_07_17 | games=14 pitchers=27 as_of=2026-07-16
+2026-08-28T12:46:24.006757+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:24.036057+00:00 | INFO  | 2026_07_17 | pregame Statcast pitches=32232
+2026-08-28T12:46:24.597158+00:00 | INFO  | 2026_07_17 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_17_sportsdataverse.csv rows=14 home_sp_found=14/14 away_sp_found=13/14
+2026-08-28T12:46:24.599861+00:00 | INFO  | 2026_07_18 | games=9 pitchers=18 as_of=2026-07-17
+2026-08-28T12:46:24.771261+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-08 end=2026-07-17 pitchers=2
+2026-08-28T12:46:27.003814+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=47
+2026-08-28T12:46:27.028385+00:00 | INFO  | 2026_07_18 | pregame Statcast pitches=21222
+2026-08-28T12:46:27.462425+00:00 | INFO  | 2026_07_18 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_18_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:46:27.464985+00:00 | INFO  | 2026_07_19 | games=13 pitchers=24 as_of=2026-07-18
+2026-08-28T12:46:27.615064+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-09 end=2026-07-18 pitchers=1
+2026-08-28T12:46:29.559560+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:29.611424+00:00 | INFO  | 2026_07_19 | pregame Statcast pitches=30028
+2026-08-28T12:46:30.156111+00:00 | INFO  | 2026_07_19 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_19_sportsdataverse.csv rows=13 home_sp_found=12/13 away_sp_found=12/13
+2026-08-28T12:46:30.159147+00:00 | INFO  | 2026_07_20 | games=15 pitchers=30 as_of=2026-07-19
+2026-08-28T12:46:30.296049+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-11 end=2026-07-19 pitchers=2
+2026-08-28T12:46:32.900624+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=73
+2026-08-28T12:46:32.928527+00:00 | INFO  | 2026_07_20 | pregame Statcast pitches=42670
+2026-08-28T12:46:33.554808+00:00 | INFO  | 2026_07_20 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_20_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:46:33.557387+00:00 | INFO  | 2026_07_21 | games=9 pitchers=18 as_of=2026-07-20
+2026-08-28T12:46:33.732656+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-19 end=2026-07-20 pitchers=1
+2026-08-28T12:46:34.520926+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:34.555164+00:00 | INFO  | 2026_07_21 | pregame Statcast pitches=24553
+2026-08-28T12:46:35.013962+00:00 | INFO  | 2026_07_21 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_21_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:46:35.016619+00:00 | INFO  | 2026_07_22 | games=3 pitchers=6 as_of=2026-07-21
+2026-08-28T12:46:35.189011+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:35.207919+00:00 | INFO  | 2026_07_22 | pregame Statcast pitches=8420
+2026-08-28T12:46:35.524758+00:00 | INFO  | 2026_07_22 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_22_sportsdataverse.csv rows=3 home_sp_found=3/3 away_sp_found=3/3
+2026-08-28T12:46:35.527686+00:00 | INFO  | 2026_07_23 | games=5 pitchers=10 as_of=2026-07-22
+2026-08-28T12:46:35.659188+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-19 end=2026-07-22 pitchers=1
+2026-08-28T12:46:36.334060+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:36.363924+00:00 | INFO  | 2026_07_23 | pregame Statcast pitches=11667
+2026-08-28T12:46:36.704419+00:00 | INFO  | 2026_07_23 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_23_sportsdataverse.csv rows=5 home_sp_found=5/5 away_sp_found=5/5
+2026-08-28T12:46:36.707161+00:00 | INFO  | 2026_07_24 | games=15 pitchers=28 as_of=2026-07-23
+2026-08-28T12:46:36.851507+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-20 end=2026-07-23 pitchers=3
+2026-08-28T12:46:39.627039+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=36
+2026-08-28T12:46:39.657820+00:00 | INFO  | 2026_07_24 | pregame Statcast pitches=34707
+2026-08-28T12:46:40.255490+00:00 | INFO  | 2026_07_24 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_24_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=15/15
+2026-08-28T12:46:40.258152+00:00 | INFO  | 2026_07_25 | games=15 pitchers=28 as_of=2026-07-24
+2026-08-28T12:46:40.425610+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:40.449536+00:00 | INFO  | 2026_07_25 | pregame Statcast pitches=38755
+2026-08-28T12:46:41.052660+00:00 | INFO  | 2026_07_25 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_25_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=15/15
+2026-08-28T12:46:41.055409+00:00 | INFO  | 2026_07_26 | games=15 pitchers=30 as_of=2026-07-25
+2026-08-28T12:46:41.197228+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:41.220445+00:00 | INFO  | 2026_07_26 | pregame Statcast pitches=44515
+2026-08-28T12:46:41.850538+00:00 | INFO  | 2026_07_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_26_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:46:41.853292+00:00 | INFO  | 2026_07_27 | games=12 pitchers=23 as_of=2026-07-26
+2026-08-28T12:46:42.036202+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-22 end=2026-07-26 pitchers=2
+2026-08-28T12:46:43.608055+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=88
+2026-08-28T12:46:43.635458+00:00 | INFO  | 2026_07_27 | pregame Statcast pitches=30961
+2026-08-28T12:46:44.178047+00:00 | INFO  | 2026_07_27 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_27_sportsdataverse.csv rows=12 home_sp_found=11/12 away_sp_found=12/12
+2026-08-28T12:46:44.180932+00:00 | INFO  | 2026_07_28 | games=16 pitchers=28 as_of=2026-07-27
+2026-08-28T12:46:44.324198+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-23 end=2026-07-27 pitchers=1
+2026-08-28T12:46:45.109138+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:45.147680+00:00 | INFO  | 2026_07_28 | pregame Statcast pitches=41889
+2026-08-28T12:46:45.781780+00:00 | INFO  | 2026_07_28 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_28_sportsdataverse.csv rows=16 home_sp_found=13/16 away_sp_found=15/16
+2026-08-28T12:46:45.784564+00:00 | INFO  | 2026_07_29 | games=16 pitchers=31 as_of=2026-07-28
+2026-08-28T12:46:45.920341+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-24 end=2026-07-28 pitchers=1
+2026-08-28T12:46:46.638189+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:46.674791+00:00 | INFO  | 2026_07_29 | pregame Statcast pitches=39249
+2026-08-28T12:46:47.316149+00:00 | INFO  | 2026_07_29 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_29_sportsdataverse.csv rows=16 home_sp_found=15/16 away_sp_found=14/16
+2026-08-28T12:46:47.318837+00:00 | INFO  | 2026_07_30 | games=10 pitchers=19 as_of=2026-07-29
+2026-08-28T12:46:47.454706+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-26 end=2026-07-29 pitchers=3
+2026-08-28T12:46:49.945458+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=38
+2026-08-28T12:46:49.972243+00:00 | INFO  | 2026_07_30 | pregame Statcast pitches=26007
+2026-08-28T12:46:50.483967+00:00 | INFO  | 2026_07_30 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_30_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=9/10
+2026-08-28T12:46:50.486563+00:00 | INFO  | 2026_07_31 | games=15 pitchers=29 as_of=2026-07-30
+2026-08-28T12:46:50.628068+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-26 end=2026-07-30 pitchers=3
+2026-08-28T12:46:52.101622+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=97
+2026-08-28T12:46:52.131537+00:00 | INFO  | 2026_07_31 | pregame Statcast pitches=40374
+2026-08-28T12:46:52.782914+00:00 | INFO  | 2026_07_31 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_07_31_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:46:52.785605+00:00 | INFO  | 2026_08_01 | games=15 pitchers=30 as_of=2026-07-31
+2026-08-28T12:46:52.937594+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-27 end=2026-07-31 pitchers=3
+2026-08-28T12:46:54.286563+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=41
+2026-08-28T12:46:54.319312+00:00 | INFO  | 2026_08_01 | pregame Statcast pitches=41721
+2026-08-28T12:46:54.981324+00:00 | INFO  | 2026_08_01 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_01_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:46:54.983963+00:00 | INFO  | 2026_08_02 | games=15 pitchers=29 as_of=2026-08-01
+2026-08-28T12:46:55.131319+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-27 end=2026-08-01 pitchers=3
+2026-08-28T12:46:56.875200+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=177
+2026-08-28T12:46:56.904807+00:00 | INFO  | 2026_08_02 | pregame Statcast pitches=47211
+2026-08-28T12:46:57.599845+00:00 | INFO  | 2026_08_02 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_02_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=15/15
+2026-08-28T12:46:57.602811+00:00 | INFO  | 2026_08_03 | games=8 pitchers=16 as_of=2026-08-02
+2026-08-28T12:46:57.765764+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-28 end=2026-08-02 pitchers=1
+2026-08-28T12:46:58.679781+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:46:58.715996+00:00 | INFO  | 2026_08_03 | pregame Statcast pitches=23150
+2026-08-28T12:46:59.190948+00:00 | INFO  | 2026_08_03 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_03_sportsdataverse.csv rows=8 home_sp_found=8/8 away_sp_found=8/8
+2026-08-28T12:46:59.193639+00:00 | INFO  | 2026_08_04 | games=15 pitchers=28 as_of=2026-08-03
+2026-08-28T12:46:59.331071+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-30 end=2026-08-03 pitchers=4
+2026-08-28T12:47:00.800758+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=83
+2026-08-28T12:47:00.831603+00:00 | INFO  | 2026_08_04 | pregame Statcast pitches=37024
+2026-08-28T12:47:01.487640+00:00 | INFO  | 2026_08_04 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_04_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:47:01.490288+00:00 | INFO  | 2026_08_05 | games=15 pitchers=30 as_of=2026-08-04
+2026-08-28T12:47:01.654780+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:47:01.679234+00:00 | INFO  | 2026_08_05 | pregame Statcast pitches=43080
+2026-08-28T12:47:02.342754+00:00 | INFO  | 2026_08_05 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_05_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:47:02.345471+00:00 | INFO  | 2026_08_06 | games=11 pitchers=22 as_of=2026-08-05
+2026-08-28T12:47:02.509135+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-02 end=2026-08-05 pitchers=1
+2026-08-28T12:47:06.523354+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:47:06.565108+00:00 | INFO  | 2026_08_06 | pregame Statcast pitches=35159
+2026-08-28T12:47:07.128360+00:00 | INFO  | 2026_08_06 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_06_sportsdataverse.csv rows=11 home_sp_found=11/11 away_sp_found=11/11
+2026-08-28T12:47:07.131081+00:00 | INFO  | 2026_08_07 | games=15 pitchers=30 as_of=2026-08-06
+2026-08-28T12:47:07.309675+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-30 end=2026-08-06 pitchers=5
+2026-08-28T12:47:09.858569+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=281
+2026-08-28T12:47:09.887243+00:00 | INFO  | 2026_08_07 | pregame Statcast pitches=43344
+2026-08-28T12:47:10.554275+00:00 | INFO  | 2026_08_07 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_07_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:47:10.556847+00:00 | INFO  | 2026_08_08 | games=15 pitchers=30 as_of=2026-08-07
+2026-08-28T12:47:10.714674+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-03 end=2026-08-07 pitchers=1
+2026-08-28T12:47:11.522845+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:47:11.559329+00:00 | INFO  | 2026_08_08 | pregame Statcast pitches=47126
+2026-08-28T12:47:12.233125+00:00 | INFO  | 2026_08_08 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_08_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=14/15
+2026-08-28T12:47:12.235804+00:00 | INFO  | 2026_08_09 | games=15 pitchers=30 as_of=2026-08-08
+2026-08-28T12:47:12.399293+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-05 end=2026-08-08 pitchers=2
+2026-08-28T12:47:13.774446+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=33
+2026-08-28T12:47:13.805742+00:00 | INFO  | 2026_08_09 | pregame Statcast pitches=43802
+2026-08-28T12:47:14.481898+00:00 | INFO  | 2026_08_09 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_09_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:47:14.484472+00:00 | INFO  | 2026_08_10 | games=10 pitchers=20 as_of=2026-08-09
+2026-08-28T12:47:14.653895+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-06 end=2026-08-09 pitchers=1
+2026-08-28T12:47:15.494074+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:47:15.528630+00:00 | INFO  | 2026_08_10 | pregame Statcast pitches=26647
+2026-08-28T12:47:16.050285+00:00 | INFO  | 2026_08_10 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_10_sportsdataverse.csv rows=10 home_sp_found=10/10 away_sp_found=10/10
+2026-08-28T12:47:16.053024+00:00 | INFO  | 2026_08_11 | games=15 pitchers=30 as_of=2026-08-10
+2026-08-28T12:47:16.215286+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-06 end=2026-08-10 pitchers=1
+2026-08-28T12:47:18.116068+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:47:18.156498+00:00 | INFO  | 2026_08_11 | pregame Statcast pitches=43974
+2026-08-28T12:47:18.820095+00:00 | INFO  | 2026_08_11 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_11_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:47:18.822817+00:00 | INFO  | 2026_08_12 | games=15 pitchers=30 as_of=2026-08-11
+2026-08-28T12:47:19.011453+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-08 end=2026-08-11 pitchers=2
+2026-08-28T12:47:22.646876+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=32
+2026-08-28T12:47:22.670971+00:00 | INFO  | 2026_08_12 | pregame Statcast pitches=44951
+2026-08-28T12:47:23.340165+00:00 | INFO  | 2026_08_12 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_12_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=15/15
+2026-08-28T12:47:23.342717+00:00 | INFO  | 2026_08_13 | games=9 pitchers=18 as_of=2026-08-12
+2026-08-28T12:47:23.515189+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-08 end=2026-08-12 pitchers=4
+2026-08-28T12:47:24.961579+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=23
+2026-08-28T12:47:24.985981+00:00 | INFO  | 2026_08_13 | pregame Statcast pitches=33059
+2026-08-28T12:47:25.520459+00:00 | INFO  | 2026_08_13 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_13_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:47:25.523084+00:00 | INFO  | 2026_08_14 | games=14 pitchers=27 as_of=2026-08-13
+2026-08-28T12:47:25.698631+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-09 end=2026-08-13 pitchers=2
+2026-08-28T12:47:27.085724+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=23
+2026-08-28T12:47:27.112142+00:00 | INFO  | 2026_08_14 | pregame Statcast pitches=40726
+2026-08-28T12:47:27.754446+00:00 | INFO  | 2026_08_14 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_14_sportsdataverse.csv rows=14 home_sp_found=13/14 away_sp_found=14/14
+2026-08-28T12:47:27.757131+00:00 | INFO  | 2026_08_15 | games=15 pitchers=30 as_of=2026-08-14
+2026-08-28T12:47:27.927886+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-10 end=2026-08-14 pitchers=6
+2026-08-28T12:47:29.386817+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=44
+2026-08-28T12:47:29.412907+00:00 | INFO  | 2026_08_15 | pregame Statcast pitches=49891
+2026-08-28T12:47:30.109796+00:00 | INFO  | 2026_08_15 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_15_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:47:30.112454+00:00 | INFO  | 2026_08_16 | games=15 pitchers=30 as_of=2026-08-15
+2026-08-28T12:47:30.292976+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-24 end=2026-08-15 pitchers=7
+2026-08-28T12:47:45.751496+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=2919
+2026-08-28T12:47:45.777947+00:00 | INFO  | 2026_08_16 | pregame Statcast pitches=41756
+2026-08-28T12:47:46.431165+00:00 | INFO  | 2026_08_16 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_16_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:47:46.433912+00:00 | INFO  | 2026_08_17 | games=9 pitchers=18 as_of=2026-08-16
+2026-08-28T12:47:46.611535+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-12 end=2026-08-16 pitchers=12
+2026-08-28T12:47:48.648107+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=185
+2026-08-28T12:47:48.671838+00:00 | INFO  | 2026_08_17 | pregame Statcast pitches=28176
+2026-08-28T12:47:49.179361+00:00 | INFO  | 2026_08_17 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_17_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:47:49.181930+00:00 | INFO  | 2026_08_18 | games=15 pitchers=30 as_of=2026-08-17
+2026-08-28T12:47:49.327234+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-29 end=2026-08-17 pitchers=17
+2026-08-28T12:48:12.340002+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=8465
+2026-08-28T12:48:12.366213+00:00 | INFO  | 2026_08_18 | pregame Statcast pitches=42764
+2026-08-28T12:48:13.031520+00:00 | INFO  | 2026_08_18 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_18_sportsdataverse.csv rows=15 home_sp_found=15/15 away_sp_found=15/15
+2026-08-28T12:48:13.034275+00:00 | INFO  | 2026_08_19 | games=15 pitchers=30 as_of=2026-08-18
+2026-08-28T12:48:13.196992+00:00 | INFO  | Statcast fetch season=2026 start=2026-03-01 end=2026-08-18 pitchers=1
+2026-08-28T12:48:36.273793+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-15 end=2026-08-18 pitchers=3
+2026-08-28T12:48:40.739362+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=33
+2026-08-28T12:48:40.765626+00:00 | INFO  | 2026_08_19 | pregame Statcast pitches=47739
+2026-08-28T12:48:41.449614+00:00 | INFO  | 2026_08_19 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_19_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:48:41.452270+00:00 | INFO  | 2026_08_20 | games=9 pitchers=18 as_of=2026-08-19
+2026-08-28T12:48:41.626433+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-15 end=2026-08-19 pitchers=2
+2026-08-28T12:48:42.525267+00:00 | INFO  | CACHE HIT docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740
+2026-08-28T12:48:42.551842+00:00 | INFO  | 2026_08_20 | pregame Statcast pitches=30691
+2026-08-28T12:48:43.112053+00:00 | INFO  | 2026_08_20 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_20_sportsdataverse.csv rows=9 home_sp_found=9/9 away_sp_found=9/9
+2026-08-28T12:48:43.114824+00:00 | INFO  | 2026_08_24 | games=10 pitchers=19 as_of=2026-08-23
+2026-08-28T12:48:43.280200+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-18 end=2026-08-23 pitchers=19
+2026-08-28T12:48:47.343362+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=1608
+2026-08-28T12:48:47.355978+00:00 | INFO  | 2026_08_24 | pregame Statcast pitches=36731
+2026-08-28T12:48:47.922721+00:00 | INFO  | 2026_08_24 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_24_sportsdataverse.csv rows=10 home_sp_found=9/10 away_sp_found=10/10
+2026-08-28T12:48:47.925342+00:00 | INFO  | 2026_08_25 | games=15 pitchers=27 as_of=2026-08-24
+2026-08-28T12:48:48.081389+00:00 | INFO  | Statcast fetch season=2026 start=2026-05-07 end=2026-08-24 pitchers=27
+2026-08-28T12:49:57.399658+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=32227
+2026-08-28T12:49:57.412734+00:00 | INFO  | 2026_08_25 | pregame Statcast pitches=45146
+2026-08-28T12:49:58.085465+00:00 | INFO  | 2026_08_25 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_25_sportsdataverse.csv rows=15 home_sp_found=13/15 away_sp_found=14/15
+2026-08-28T12:49:58.088194+00:00 | INFO  | 2026_08_26 | games=12 pitchers=24 as_of=2026-08-25
+2026-08-28T12:49:58.250562+00:00 | INFO  | Statcast fetch season=2026 start=2026-06-22 end=2026-08-25 pitchers=24
+2026-08-28T12:50:33.982397+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=17020
+2026-08-28T12:50:33.997386+00:00 | INFO  | 2026_08_26 | pregame Statcast pitches=38930
+2026-08-28T12:50:34.592932+00:00 | INFO  | 2026_08_26 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_26_sportsdataverse.csv rows=12 home_sp_found=12/12 away_sp_found=12/12
+2026-08-28T12:50:34.595598+00:00 | INFO  | 2026_08_27 | games=7 pitchers=13 as_of=2026-08-26
+2026-08-28T12:50:34.763418+00:00 | INFO  | Statcast fetch season=2026 start=2026-07-09 end=2026-08-26 pitchers=13
+2026-08-28T12:50:54.024056+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=7044
+2026-08-28T12:50:54.036519+00:00 | INFO  | 2026_08_27 | pregame Statcast pitches=21288
+2026-08-28T12:50:54.487563+00:00 | INFO  | 2026_08_27 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_27_sportsdataverse.csv rows=7 home_sp_found=6/7 away_sp_found=7/7
+2026-08-28T12:50:54.490272+00:00 | INFO  | 2026_08_28 | games=15 pitchers=28 as_of=2026-08-27
+2026-08-28T12:50:54.666849+00:00 | INFO  | Statcast fetch season=2026 start=2026-08-07 end=2026-08-27 pitchers=28
+2026-08-28T12:51:05.991171+00:00 | INFO  | CACHE WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/cache/2026_pitcher_statcast.parquet rows=361740 fetched_rows=7016
+2026-08-28T12:51:06.005942+00:00 | INFO  | 2026_08_28 | pregame Statcast pitches=42637
+2026-08-28T12:51:06.661395+00:00 | INFO  | 2026_08_28 | WROTE docs/win/baseball/mlb/00_intake/sportsdataverse/2026_08_28_sportsdataverse.csv rows=15 home_sp_found=14/15 away_sp_found=14/15
+2026-08-28T12:51:06.662073+00:00 | INFO  | SUMMARY files_written=150 rows_written=1912 pregame_statcast_pitches=3182231 statcast_pitches_fetched=80650 cache_writes=46 team_statcast_pitches_fetched=530921 team_cache_writes=1 errors=0 status=SUCCESS
