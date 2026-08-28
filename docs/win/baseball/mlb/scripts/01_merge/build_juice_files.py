@@ -373,6 +373,14 @@ def _prepare(file_path, required_columns, numeric_cols):
     return df
 
 
+def _log_row_skip(summary, market, file_path, idx, row, error):
+    game_id = row.get("game_id", "")
+    log(
+        f"ROW SKIP {market} {file_path} idx={idx} game_id={game_id}: {error}"
+    )
+    summary["row_issues"] += 1
+
+
 def process_moneyline(file_path, summary):
     df = _prepare(
         file_path,
@@ -383,17 +391,30 @@ def process_moneyline(file_path, summary):
             "away_dk_moneyline_decimal", "home_dk_moneyline_decimal",
         ],
     )
+
+    valid_indices = []
     home_probs, away_probs, ties = [], [], []
+
     for i, r in df.iterrows():
         try:
-            hp, ap, tp = moneyline_probabilities(r["model_home_runs"], r["model_away_runs"])
+            hp, ap, tp = moneyline_probabilities(
+                r["model_home_runs"],
+                r["model_away_runs"],
+            )
         except Exception as e:
-            raise ValueError(f"{file_path} idx={i} moneyline probability failure: {e}") from e
+            _log_row_skip(summary, "moneyline", file_path, i, r, e)
+            continue
+
+        valid_indices.append(i)
         home_probs.append(hp)
         away_probs.append(ap)
         ties.append(tp)
 
-    ml = df.copy()
+    if not valid_indices:
+        log(f"SKIPPED moneyline {file_path}: no valid rows")
+        return
+
+    ml = df.loc[valid_indices].copy()
     ml["away_dk_decimal_moneyline"] = ml["away_dk_moneyline_american"].apply(american_to_decimal)
     ml["home_dk_decimal_moneyline"] = ml["home_dk_moneyline_american"].apply(american_to_decimal)
     ml["home_model_prob_moneyline"] = home_probs
@@ -405,6 +426,7 @@ def process_moneyline(file_path, summary):
     slate_date, market = parse_slate_date_and_market(file_path)
     if not slate_date or market != "moneyline":
         raise ValueError(f"FILENAME ERROR: {file_path}")
+
     out = OUTPUT_DIR / f"{slate_date}_mlb_moneyline.csv"
     write_csv_checked(ml, out, market)
     log(f"WROTE {out} ({len(ml)} rows)")
@@ -422,7 +444,10 @@ def process_run_line(file_path, summary):
             "away_dk_run_line_decimal", "home_dk_run_line_decimal",
         ],
     )
+
+    valid_indices = []
     home_probs, away_probs = [], []
+
     for i, r in df.iterrows():
         try:
             raw_hp, raw_ap = run_line_probabilities(
@@ -433,11 +458,18 @@ def process_run_line(file_path, summary):
             )
             hp, ap = calibrate_run_line_probabilities(raw_hp, raw_ap)
         except Exception as e:
-            raise ValueError(f"{file_path} idx={i} run-line probability failure: {e}") from e
+            _log_row_skip(summary, "run_line", file_path, i, r, e)
+            continue
+
+        valid_indices.append(i)
         home_probs.append(hp)
         away_probs.append(ap)
 
-    rl = df.copy()
+    if not valid_indices:
+        log(f"SKIPPED run_line {file_path}: no valid rows")
+        return
+
+    rl = df.loc[valid_indices].copy()
     rl["home_dk_run_line_decimal"] = rl["home_dk_run_line_american"].apply(american_to_decimal)
     rl["away_dk_run_line_decimal"] = rl["away_dk_run_line_american"].apply(american_to_decimal)
     rl["home_model_prob_run_line"] = home_probs
@@ -448,6 +480,7 @@ def process_run_line(file_path, summary):
     slate_date, market = parse_slate_date_and_market(file_path)
     if not slate_date or market != "run_line":
         raise ValueError(f"FILENAME ERROR: {file_path}")
+
     out = OUTPUT_DIR / f"{slate_date}_mlb_run_line.csv"
     write_csv_checked(rl, out, market)
     log(f"WROTE {out} ({len(rl)} rows)")
@@ -465,21 +498,33 @@ def process_total(file_path, summary):
             "dk_total_over_decimal", "dk_total_under_decimal",
         ],
     )
+
+    valid_indices = []
     over_win, over_loss, under_win, under_loss, pushes = [], [], [], [], []
+
     for i, r in df.iterrows():
         try:
             p_over, p_under, p_push = totals_probabilities(
-                r["model_home_runs"], r["model_away_runs"], r["total"]
+                r["model_home_runs"],
+                r["model_away_runs"],
+                r["total"],
             )
         except Exception as e:
-            raise ValueError(f"{file_path} idx={i} total probability failure: {e}") from e
+            _log_row_skip(summary, "total", file_path, i, r, e)
+            continue
+
+        valid_indices.append(i)
         over_win.append(p_over)
         over_loss.append(p_under)
         under_win.append(p_under)
         under_loss.append(p_over)
         pushes.append(p_push)
 
-    tot = df.copy()
+    if not valid_indices:
+        log(f"SKIPPED total {file_path}: no valid rows")
+        return
+
+    tot = df.loc[valid_indices].copy()
     tot["dk_total_over_decimal"] = tot["dk_total_over_american"].apply(american_to_decimal)
     tot["dk_total_under_decimal"] = tot["dk_total_under_american"].apply(american_to_decimal)
     tot["over_model_prob_total_win"] = over_win
@@ -502,6 +547,7 @@ def process_total(file_path, summary):
     slate_date, market = parse_slate_date_and_market(file_path)
     if not slate_date or market != "total":
         raise ValueError(f"FILENAME ERROR: {file_path}")
+
     out = OUTPUT_DIR / f"{slate_date}_mlb_total.csv"
     write_csv_checked(tot, out, market)
     log(f"WROTE {out} ({len(tot)} rows)")
@@ -560,8 +606,8 @@ def main():
 
         print(
             f"build_juice_files complete. files_written={summary['files_written']} "
-            f"rows_written={summary['rows_written']} schema_errors={summary['schema_errors']} "
-            f"errors={summary['errors']}"
+            f"rows_written={summary['rows_written']} row_issues={summary['row_issues']} "
+            f"schema_errors={summary['schema_errors']} errors={summary['errors']}"
         )
     except Exception as e:
         log(f"FATAL ERROR: {e}\n{traceback.format_exc()}")
