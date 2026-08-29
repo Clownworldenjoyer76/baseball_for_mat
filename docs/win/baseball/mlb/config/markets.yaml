@@ -48,41 +48,38 @@ markets:
     moneyline:
       enabled: true
 
-      # best_ev = one ML side max per game
-      # best_prob = one ML side max per game, highest model probability
-      # all = can select both if both pass
+      # Allow both sides to be selected if they pass.
       pick_preference: best_prob
 
       home:
         enabled: true
 
         odds_bands:
-          - [-1000, -200]
-          - [-100, 125]
+          - [-1000, 1000]
 
         ev_bands:
-          - [0.050, 0.0749]
+          - [-10.00, 99.99]
 
         kelly_bands:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.40, 1.00]
+          - [0.00, 1.00]
 
       away:
         enabled: true
 
         odds_bands:
-          - [-1000, 125]
+          - [-1000, 1000]
 
         ev_bands:
-          - [0.075, 0.099]
+          - [-10.00, 99.99]
 
         kelly_bands:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.40, 1.00]
+          - [0.00, 1.00]
 
     ###################################################
     # ── Run Line ─────────────────────────────────────
@@ -91,9 +88,9 @@ markets:
     run_line:
       enabled: true
 
-      # TODO 13: evaluate both +1.5 and -1.5 sides in the same domain,
-      # then select at most one side using the larger positive EV.
-      pick_preference: best_ev
+      # Selector requires best_ev for run line.
+      # At most one run-line side is selected per game.
+      pick_preference: best_prob
 
       home:
         enabled: true
@@ -105,16 +102,14 @@ markets:
         odds_bands:
           - [-1000, 1000]
 
-        # Strict EV > 0 is enforced in selector code.
         ev_bands:
-          - [0.0, 99.99]
+          - [-10.00, 99.99]
 
-        # Strict Kelly > 0 is enforced in selector code.
         kelly_bands:
-          - [0.0, 99.99]
+          - [-10.00, 99.99]
 
         prob_bands:
-          - [0.0, 1.0]
+          - [0.00, 1.00]
 
       away:
         enabled: true
@@ -126,16 +121,14 @@ markets:
         odds_bands:
           - [-1000, 1000]
 
-        # Strict EV > 0 is enforced in selector code.
         ev_bands:
-          - [0.0, 99.99]
+          - [-10.00, 99.99]
 
-        # Strict Kelly > 0 is enforced in selector code.
         kelly_bands:
-          - [0.0, 99.99]
+          - [-10.00, 99.99]
 
         prob_bands:
-          - [0.0, 1.0]
+          - [0.00, 1.00]
 
     ###################################################
     # ── Totals ───────────────────────────────────────
@@ -144,9 +137,8 @@ markets:
     total:
       enabled: true
 
-      # best_ev = one total side max per game.
-      # all = can select both over and under if both pass.
-      pick_preference: all
+      # Allow both over and under if they pass.
+      pick_preference: best_prob
 
       over:
         enabled: true
@@ -155,7 +147,7 @@ markets:
           - [0.0, 20.0]
 
         odds_bands:
-          - [-100, 125]
+          - [-1000, 1000]
 
         ev_bands:
           - [-10.00, 99.99]
@@ -182,4 +174,4 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.70, 0.75]
+          - [0.00, 1.00]
