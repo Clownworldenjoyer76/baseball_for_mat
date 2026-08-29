@@ -436,9 +436,9 @@ def validate_config() -> None:
                 raise ValueError(f"context_data_filters.{key} must be 0 or 1")
 
     run_line_preference = CONFIG.get("run_line", {}).get("pick_preference", "best_ev")
-    if run_line_preference != "best_ev":
+    if run_line_preference not in {"best_ev", "best_prob"}:
         raise ValueError(
-            "run_line.pick_preference must be best_ev for side-neutral value-based selection."
+            "run_line.pick_preference must be best_ev or best_prob."
         )
 
     for market in ["moneyline", "run_line", "total"]:
@@ -646,11 +646,13 @@ def select_candidate(candidates, preference, market_name=None, game_id=None):
         return []
 
     if market_name == "run_line":
-        if preference != "best_ev":
-            raise ValueError(
-                f"{game_id} run_line pick_preference must be best_ev, got {preference}"
-            )
-        return [max(candidates, key=lambda x: x["ev"] if x["ev"] is not None else float("-inf"))]
+        if preference == "best_prob":
+            return [max(candidates, key=lambda x: x["model_prob"] if x["model_prob"] is not None else float("-inf"))]
+        if preference == "best_ev":
+            return [max(candidates, key=lambda x: x["ev"] if x["ev"] is not None else float("-inf"))]
+        raise ValueError(
+            f"{game_id} run_line pick_preference must be best_ev or best_prob, got {preference}"
+        )
 
     if preference == "all":
         return candidates
