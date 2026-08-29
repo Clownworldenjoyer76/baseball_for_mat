@@ -1,0 +1,117 @@
+name: MLB Select + Grade Only
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  MLB_Select_Grade:
+    runs-on: ubuntu-latest
+
+    env:
+      TZ: America/New_York
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: MLB Select Bets
+        run: python docs/win/baseball/mlb/scripts/04_select/baseball_select_bets.py
+
+      - name: MLB Select Morning Bets
+        run: python docs/win/baseball/mlb/scripts/04_select/baseball_select_bets_AM.py
+
+      - name: Check for selected bet files
+        id: selected_bets
+        shell: bash
+        run: |
+          if find docs/win/baseball/mlb/04_select \
+            -maxdepth 1 \
+            -type f \
+            ! -name ".gitkeep" \
+            | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Selected-bet files found."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No selected-bet files found. Skipping final-score steps."
+          fi
+
+      - name: Check for morning selected bet files
+        id: morning_selected_bets
+        shell: bash
+        run: |
+          if find docs/win/baseball/mlb/04_select/morning \
+            -maxdepth 1 \
+            -type f \
+            ! -name ".gitkeep" \
+            | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Morning selected-bet files found."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No morning selected-bet files found. Skipping morning grading steps."
+          fi
+
+      - name: MLB Build Final Scores
+        if: steps.selected_bets.outputs.found == 'true'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py
+
+      - name: MLB Normalize Final Score Names
+        if: steps.selected_bets.outputs.found == 'true'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_final_score_mlb_names.py
+
+      - name: MLB Normalize Results
+        if: steps.selected_bets.outputs.found == 'true'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_mlb_results.py
+
+      - name: MLB Grade Results
+        id: grade_results
+        if: steps.selected_bets.outputs.found == 'true'
+        continue-on-error: true
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/01_mlb_results_grade.py
+
+      - name: MLB Analyze Results
+        if: steps.selected_bets.outputs.found == 'true' && steps.grade_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/02_mlb_results_analyze.py
+
+      - name: MLB Build Results Reports
+        if: steps.selected_bets.outputs.found == 'true' && steps.grade_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports.py
+
+      - name: MLB Grade Morning Results
+        id: grade_morning_results
+        if: steps.selected_bets.outputs.found == 'true' && steps.morning_selected_bets.outputs.found == 'true'
+        continue-on-error: true
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/01_mlb_results_grade_AM.py
+
+      - name: MLB Analyze Morning Results
+        if: steps.selected_bets.outputs.found == 'true' && steps.morning_selected_bets.outputs.found == 'true' && steps.grade_morning_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/02_mlb_results_analyze_AM.py
+
+      - name: MLB Build Morning Results Reports
+        if: steps.selected_bets.outputs.found == 'true' && steps.morning_selected_bets.outputs.found == 'true' && steps.grade_morning_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports_AM.py
+
+      - name: Commit MLB outputs
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/win/baseball/mlb/
+          git restore --staged docs/win/baseball/mlb/audit/leakage_audit.csv 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "chore: update MLB select and grading outputs"
+          git push
