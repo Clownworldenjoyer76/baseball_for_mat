@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build production MLB run projections from trained home/away run models.
+"""Build MLB run projections with leakage-safe walk-forward history.
 
 Inputs per date:
     docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/{date}_MLB.csv
@@ -7,25 +7,30 @@ Inputs per date:
     docs/win/baseball/mlb/00_intake/sportsdataverse/{date}_sportsdataverse.csv
     docs/win/baseball/mlb/00_intake/mlb_raw/{date}_game_context.csv
 
-Models loaded once per run:
+Production models:
     docs/win/baseball/mlb/models/run_projection/home_runs_model.joblib
     docs/win/baseball/mlb/models/run_projection/away_runs_model.joblib
     docs/win/baseball/mlb/models/run_projection/home_runs_model_metadata.json
     docs/win/baseball/mlb/models/run_projection/away_runs_model_metadata.json
 
+Historical training rows are rebuilt in memory from the same leakage-safe
+training-data builder used by the model-training workflow. Historical target
+dates are projected with walk-forward models trained only on games strictly
+before the target date. Dates later than the latest finalized training-history
+date use the committed production models.
+
 Output:
     docs/win/baseball/mlb/00_intake/predictions/model_projection/{date}_MLB.csv
 
 When no dates are supplied, every *_MLB.csv file in pred_with_game_id is rebuilt.
-
-The exact ordered feature list comes from model metadata. This script does not
-silently infer, add, drop, reorder, fill, or clip model features/predictions.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import sys
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,6 +38,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 
 BASE_DIR = Path("docs/win/baseball/mlb")
@@ -47,6 +53,9 @@ HOME_MODEL_FILE = MODEL_DIR / "home_runs_model.joblib"
 AWAY_MODEL_FILE = MODEL_DIR / "away_runs_model.joblib"
 HOME_METADATA_FILE = MODEL_DIR / "home_runs_model_metadata.json"
 AWAY_METADATA_FILE = MODEL_DIR / "away_runs_model_metadata.json"
+
+TRAINING_BUILDER_FILE = BASE_DIR / "scripts/modeling/build_run_training_set.py"
+TRAINER_FILE = BASE_DIR / "scripts/modeling/train_run_model.py"
 
 OUTPUT_DIR = BASE_DIR / "00_intake/predictions/model_projection"
 ERROR_DIR = BASE_DIR / "errors/00_intake"
@@ -181,6 +190,13 @@ SAFE_CONTEXT_FEATURES = {
     "day_night",
 }
 
+TARGET_COLUMNS = [
+    "target_home_runs",
+    "target_away_runs",
+]
+
+MIN_PRIOR_UNIQUE_DATES = 3
+
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
@@ -196,6 +212,13 @@ def fail(message: str) -> None:
     raise RuntimeError(message)
 
 
+def _row_issue(date_str: str, message: str) -> None:
+    _log(
+        f"ROW ISSUE SKIPPED date={date_str} | {message}",
+        "WARN",
+    )
+
+
 def duplicate_columns(columns) -> list[str]:
     seen = set()
     dupes = []
@@ -203,6 +226,7 @@ def duplicate_columns(columns) -> list[str]:
     for col in columns:
         if col in seen and col not in dupes:
             dupes.append(col)
+
         seen.add(col)
 
     return dupes
@@ -214,7 +238,9 @@ def read_csv_checked(
     label: str,
 ) -> pd.DataFrame:
     if not path.exists():
-        fail(f"{label} missing required file: {path}")
+        fail(
+            f"{label} missing required file: {path}"
+        )
 
     df = pd.read_csv(
         path,
@@ -222,10 +248,14 @@ def read_csv_checked(
         encoding="utf-8-sig",
     )
 
-    dupes = duplicate_columns(list(df.columns))
+    dupes = duplicate_columns(
+        list(df.columns)
+    )
 
     if dupes:
-        fail(f"{label} duplicate columns: {dupes}")
+        fail(
+            f"{label} duplicate columns: {dupes}"
+        )
 
     missing = [
         col
@@ -234,20 +264,38 @@ def read_csv_checked(
     ]
 
     if missing:
-        fail(f"{label} missing required columns: {missing}")
+        fail(
+            f"{label} missing required columns: {missing}"
+        )
 
     return df
 
 
-def normalize_game_id(series: pd.Series) -> pd.Series:
-    return series.astype("string").str.strip()
+def normalize_game_id(
+    series: pd.Series,
+) -> pd.Series:
+    return (
+        series
+        .astype("string")
+        .str.strip()
+    )
 
 
-def normalize_gamepk(series: pd.Series) -> pd.Series:
-    raw = series.astype("string").str.strip()
-    numeric = pd.to_numeric(raw, errors="coerce")
+def normalize_gamepk(
+    series: pd.Series,
+) -> pd.Series:
+    raw = (
+        series
+        .astype("string")
+        .str.strip()
+    )
+
+    numeric = pd.to_numeric(
+        raw,
+        errors="coerce",
+    )
+
     out = raw.copy()
-
     valid = numeric.notna()
 
     out.loc[valid] = (
@@ -268,7 +316,11 @@ def assert_unique_nonblank_key(
     if key not in df.columns:
         return
 
-    values = df[key].astype("string").str.strip()
+    values = (
+        df[key]
+        .astype("string")
+        .str.strip()
+    )
 
     nonblank = (
         values.notna()
@@ -277,7 +329,9 @@ def assert_unique_nonblank_key(
 
     duplicated = (
         nonblank
-        & values.duplicated(keep=False)
+        & values.duplicated(
+            keep=False
+        )
     )
 
     if duplicated.any():
@@ -330,7 +384,9 @@ def load_metadata(
     label: str,
 ) -> dict:
     if not path.exists():
-        fail(f"{label} metadata missing: {path}")
+        fail(
+            f"{label} metadata missing: {path}"
+        )
 
     with path.open(
         "r",
@@ -343,7 +399,10 @@ def load_metadata(
     )
 
     if (
-        not isinstance(feature_columns, list)
+        not isinstance(
+            feature_columns,
+            list,
+        )
         or not feature_columns
         or any(
             not isinstance(col, str)
@@ -372,9 +431,13 @@ def load_model(
     label: str,
 ):
     if not path.exists():
-        fail(f"{label} model missing: {path}")
+        fail(
+            f"{label} model missing: {path}"
+        )
 
-    return joblib.load(path)
+    return joblib.load(
+        path
+    )
 
 
 def model_version(
@@ -382,13 +445,20 @@ def model_version(
     label: str,
 ) -> str:
     created_at = str(
-        metadata.get("created_at") or ""
+        metadata.get(
+            "created_at"
+        )
+        or ""
     ).strip()
 
     if created_at:
-        return f"{label}:{created_at}"
+        return (
+            f"{label}:{created_at}"
+        )
 
-    return f"{label}:unknown"
+    return (
+        f"{label}:unknown"
+    )
 
 
 def assert_metadata_feature_contract(
@@ -396,14 +466,21 @@ def assert_metadata_feature_contract(
     away_metadata: dict,
 ) -> list[str]:
     home_features = list(
-        home_metadata["feature_columns"]
+        home_metadata[
+            "feature_columns"
+        ]
     )
 
     away_features = list(
-        away_metadata["feature_columns"]
+        away_metadata[
+            "feature_columns"
+        ]
     )
 
-    if home_features != away_features:
+    if (
+        home_features
+        != away_features
+    ):
         fail(
             "Home and away model metadata "
             "feature order differs; "
@@ -437,7 +514,10 @@ def assert_model_feature_order(
         for x in model_names.tolist()
     ]
 
-    if model_features != metadata_features:
+    if (
+        model_features
+        != metadata_features
+    ):
         fail(
             f"{label} model feature order "
             "differs from metadata; "
@@ -497,26 +577,76 @@ def assert_secondary_game_id_match(
         )
 
 
+def _load_python_module(
+    path: Path,
+    module_name: str,
+):
+    if not path.exists():
+        fail(
+            f"Required modeling script missing: {path}"
+        )
+
+    spec = (
+        importlib.util
+        .spec_from_file_location(
+            module_name,
+            path,
+        )
+    )
+
+    if (
+        spec is None
+        or spec.loader is None
+    ):
+        fail(
+            f"Unable to load modeling script: {path}"
+        )
+
+    module = (
+        importlib.util
+        .module_from_spec(spec)
+    )
+
+    sys.modules[
+        module_name
+    ] = module
+
+    spec.loader.exec_module(
+        module
+    )
+
+    return module
+
+
 def build_feature_frame(
+    date_str: str,
     pred: pd.DataFrame,
     games: pd.DataFrame,
     sdv: pd.DataFrame,
     context: pd.DataFrame,
     feature_columns: list[str],
-) -> tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+]:
     pred = pred.copy()
 
-    pred["game_id"] = normalize_game_id(
-        pred["game_id"]
+    pred["game_id"] = (
+        normalize_game_id(
+            pred["game_id"]
+        )
     )
 
     blank_game_id = (
         pred["game_id"].isna()
-        | (pred["game_id"] == "")
+        | (
+            pred["game_id"]
+            == ""
+        )
     )
 
     if blank_game_id.any():
-        sample = (
+        bad_rows = (
             pred.loc[
                 blank_game_id,
                 [
@@ -526,14 +656,30 @@ def build_feature_frame(
                     "away_team",
                 ],
             ]
-            .head(10)
+            .head(20)
             .to_dict("records")
         )
 
-        fail(
-            "Blank prediction game_id; "
-            f"bad_rows={int(blank_game_id.sum())}; "
-            f"sample={sample}"
+        for row in bad_rows:
+            _row_issue(
+                date_str,
+                "blank prediction "
+                f"game_id row={row}",
+            )
+
+        pred = (
+            pred.loc[
+                ~blank_game_id
+            ]
+            .copy()
+        )
+
+    if pred.empty:
+        return (
+            pred.copy(),
+            pd.DataFrame(
+                columns=feature_columns
+            ),
         )
 
     pred = prepare_keys(
@@ -556,15 +702,21 @@ def build_feature_frame(
         "game_context",
     )
 
-    base = pred.rename(
-        columns=DRATINGS_RENAME
-    ).copy()
+    base = (
+        pred.rename(
+            columns=DRATINGS_RENAME
+        )
+        .copy()
+    )
 
-    for (
-        source_col,
-        dratings_col,
-    ) in DRATINGS_RENAME.items():
-        base[source_col] = pred[source_col]
+    for source_col in (
+        DRATINGS_RENAME
+    ):
+        base[
+            source_col
+        ] = pred[
+            source_col
+        ]
 
     games_keep = [
         col
@@ -581,17 +733,28 @@ def build_feature_frame(
     ]
 
     joined = base.merge(
-        games[games_keep],
+        games[
+            games_keep
+        ],
         on="game_id",
         how="left",
-        suffixes=("", "_games"),
+        suffixes=(
+            "",
+            "_games",
+        ),
         validate="one_to_one",
     )
 
-    if joined["gamePk"].isna().any():
-        sample = (
+    missing_gamepk = (
+        joined[
+            "gamePk"
+        ].isna()
+    )
+
+    if missing_gamepk.any():
+        bad_rows = (
             joined.loc[
-                joined["gamePk"].isna(),
+                missing_gamepk,
                 [
                     "game_id",
                     "game_date",
@@ -599,15 +762,30 @@ def build_feature_frame(
                     "away_team",
                 ],
             ]
-            .head(10)
+            .head(20)
             .to_dict("records")
         )
 
-        fail(
-            "Prediction rows missing "
-            "games.gamePk; "
-            f"bad_rows={int(joined['gamePk'].isna().sum())}; "
-            f"sample={sample}"
+        for row in bad_rows:
+            _row_issue(
+                date_str,
+                "prediction missing "
+                f"games.gamePk row={row}",
+            )
+
+        joined = (
+            joined.loc[
+                ~missing_gamepk
+            ]
+            .copy()
+        )
+
+    if joined.empty:
+        return (
+            joined,
+            pd.DataFrame(
+                columns=feature_columns
+            ),
         )
 
     sdv_keep = [
@@ -629,9 +807,12 @@ def build_feature_frame(
     ]
 
     joined = joined.merge(
-        sdv[sdv_keep].rename(
+        sdv[
+            sdv_keep
+        ].rename(
             columns={
-                "game_id": "game_id_sdv"
+                "game_id":
+                    "game_id_sdv"
             }
         ),
         on="gamePk",
@@ -654,8 +835,10 @@ def build_feature_frame(
         col
         for col in feature_columns
         if (
-            col in SAFE_CONTEXT_FEATURES
-            and col in context.columns
+            col
+            in SAFE_CONTEXT_FEATURES
+            and col
+            in context.columns
         )
     ]
 
@@ -666,11 +849,16 @@ def build_feature_frame(
         )
 
         joined = joined.merge(
-            context[context_keep],
+            context[
+                context_keep
+            ],
             on="gamePk",
             how="left",
             validate="one_to_one",
-            suffixes=("", "_context"),
+            suffixes=(
+                "",
+                "_context",
+            ),
         )
 
     missing_feature_columns = [
@@ -682,17 +870,22 @@ def build_feature_frame(
     if missing_feature_columns:
         fail(
             "Required model feature columns "
-            "unavailable for production "
-            "projection: "
+            "unavailable for production projection: "
             f"{missing_feature_columns}"
         )
 
-    X = joined.loc[
-        :,
-        feature_columns,
-    ].copy()
+    X = (
+        joined.loc[
+            :,
+            feature_columns,
+        ]
+        .copy()
+    )
 
-    if list(X.columns) != feature_columns:
+    if (
+        list(X.columns)
+        != feature_columns
+    ):
         fail(
             "Constructed model feature order "
             "differs from metadata; "
@@ -701,38 +894,77 @@ def build_feature_frame(
         )
 
     for col in X.columns:
-        X[col] = pd.to_numeric(
-            X[col],
-            errors="coerce",
+        raw = (
+            X[col]
+            .copy()
+        )
+
+        numeric = (
+            pd.to_numeric(
+                raw,
+                errors="coerce",
+            )
+        )
+
+        raw_text = (
+            raw
+            .astype("string")
+            .str.strip()
+        )
+
+        nonblank_raw = (
+            raw_text.notna()
+            & (
+                raw_text
+                != ""
+            )
+        )
+
+        coercion_failed = (
+            nonblank_raw
+            & numeric.isna()
+        )
+
+        nonfinite = (
+            numeric.notna()
+            & ~np.isfinite(
+                numeric
+            )
         )
 
         bad = (
-            X[col].notna()
-            & ~np.isfinite(X[col])
+            coercion_failed
+            | nonfinite
         )
 
         if bad.any():
-            sample = (
-                joined.loc[
-                    bad,
-                    [
-                        "game_id",
-                        "gamePk",
-                        col,
-                    ],
-                ]
-                .head(10)
-                .to_dict("records")
+            bad_indices = (
+                X.index[
+                    bad
+                ][:20]
             )
 
-            fail(
-                "Non-finite non-missing "
-                f"feature values in {col}; "
-                f"bad_rows={int(bad.sum())}; "
-                f"sample={sample}"
-            )
+            for idx in bad_indices:
+                _row_issue(
+                    date_str,
+                    f"feature={col} "
+                    f"invalid value={raw.loc[idx]!r} "
+                    "game_id="
+                    f"{joined.loc[idx, 'game_id']}",
+                )
 
-    return joined, X
+            numeric.loc[
+                bad
+            ] = np.nan
+
+        X[
+            col
+        ] = numeric
+
+    return (
+        joined,
+        X,
+    )
 
 
 def build_feature_status(
@@ -760,42 +992,61 @@ def build_feature_status(
             col
             for col in X.columns
             if pd.isna(
-                X.loc[idx, col]
+                X.loc[
+                    idx,
+                    col,
+                ]
             )
         ]
 
         home_ok = (
-            idx in home_found.index
+            idx
+            in home_found.index
             and pd.notna(
                 home_found.loc[idx]
             )
             and float(
                 home_found.loc[idx]
-            ) == 1.0
+            )
+            == 1.0
         )
 
         away_ok = (
-            idx in away_found.index
+            idx
+            in away_found.index
             and pd.notna(
                 away_found.loc[idx]
             )
             and float(
                 away_found.loc[idx]
-            ) == 1.0
+            )
+            == 1.0
         )
 
-        if home_ok and away_ok:
+        if (
+            home_ok
+            and away_ok
+        ):
             starter_status = (
                 "both_starters_sdv_found"
             )
-        elif home_ok and not away_ok:
+
+        elif (
+            home_ok
+            and not away_ok
+        ):
             starter_status = (
                 "away_starter_sdv_missing"
             )
-        elif away_ok and not home_ok:
+
+        elif (
+            away_ok
+            and not home_ok
+        ):
             starter_status = (
                 "home_starter_sdv_missing"
             )
+
         else:
             starter_status = (
                 "both_starters_sdv_missing"
@@ -809,13 +1060,16 @@ def build_feature_status(
                     missing_features
                 )
             )
+
         else:
             status = (
                 f"{starter_status};"
                 "missing_features=none"
             )
 
-        statuses.append(status)
+        statuses.append(
+            status
+        )
 
     return pd.Series(
         statuses,
@@ -827,60 +1081,684 @@ def build_feature_status(
 def validate_predictions(
     values,
     label: str,
+    date_str: str,
+    joined: pd.DataFrame,
 ) -> np.ndarray:
     values = np.asarray(
         values,
         dtype=float,
     )
 
-    if np.any(
-        ~np.isfinite(values)
-    ):
-        bad_idx = (
+    bad = (
+        ~np.isfinite(
+            values
+        )
+        | (
+            values
+            < 0
+        )
+    )
+
+    if bad.any():
+        bad_positions = (
             np.where(
-                ~np.isfinite(values)
-            )[0][:10]
-            .tolist()
+                bad
+            )[0][:20]
         )
 
-        fail(
-            f"{label} produced non-finite "
-            "run predictions; "
-            f"sample_indices={bad_idx}"
+        for pos in bad_positions:
+            if (
+                pos
+                < len(joined)
+            ):
+                game_id = (
+                    joined
+                    .iloc[pos][
+                        "game_id"
+                    ]
+                )
+
+            else:
+                game_id = (
+                    "unknown"
+                )
+
+            _row_issue(
+                date_str,
+                f"{label} invalid "
+                f"prediction={values[pos]!r} "
+                f"game_id={game_id}",
+            )
+
+        values = (
+            values.copy()
         )
 
-    if np.any(values < 0):
-        bad_idx = (
-            np.where(
-                values < 0
-            )[0][:10]
-            .tolist()
-        )
-
-        bad_values = (
-            values[
-                values < 0
-            ][:10]
-            .tolist()
-        )
-
-        fail(
-            f"{label} produced negative "
-            "run predictions; "
-            f"sample_indices={bad_idx}; "
-            f"sample_values={bad_values}"
-        )
+        values[
+            bad
+        ] = np.nan
 
     return values
 
 
+def _training_summary_template() -> dict:
+    return {
+        "rows_loaded": 0,
+        "rows_joined": 0,
+        "missing_sdv": 0,
+        "missing_final_score": 0,
+        "duplicate_game_id": 0,
+        "duplicate_gamePk": 0,
+        "leakage_rejections": 0,
+        "rows_written": 0,
+    }
+
+
+def build_training_history_in_memory(
+    training_builder,
+    feature_columns: list[str],
+) -> pd.DataFrame:
+    dates = (
+        training_builder
+        ._discover_dates()
+    )
+
+    if not dates:
+        fail(
+            "No finalized historical dates "
+            "available for walk-forward training"
+        )
+
+    summary = (
+        _training_summary_template()
+    )
+
+    frames: list[
+        pd.DataFrame
+    ] = []
+
+    _log(
+        "Building leakage-safe "
+        "walk-forward training history "
+        "in memory; "
+        f"dates={len(dates)} "
+        f"first={dates[0]} "
+        f"last={dates[-1]}"
+    )
+
+    for date_str in dates:
+        frame = (
+            training_builder
+            .build_date_training_rows(
+                date_str,
+                summary,
+            )
+        )
+
+        if not frame.empty:
+            frames.append(
+                frame
+            )
+
+    if not frames:
+        fail(
+            "Walk-forward training "
+            "history is empty"
+        )
+
+    training = pd.concat(
+        frames,
+        ignore_index=True,
+        sort=False,
+    )
+
+    training_builder.validate_final_output(
+        training
+    )
+
+    missing = [
+        col
+        for col in (
+            feature_columns
+            + TARGET_COLUMNS
+        )
+        if col not in training.columns
+    ]
+
+    if missing:
+        fail(
+            "Walk-forward training history "
+            "missing production model columns: "
+            f"{missing}"
+        )
+
+    training[
+        "_game_date_dt"
+    ] = (
+        pd.to_datetime(
+            training[
+                "game_date"
+            ]
+            .astype("string")
+            .str.replace(
+                "_",
+                "-",
+                regex=False,
+            ),
+            errors="coerce",
+        )
+        .dt.normalize()
+    )
+
+    bad_dates = (
+        training[
+            "_game_date_dt"
+        ].isna()
+    )
+
+    if bad_dates.any():
+        bad_rows = (
+            training.loc[
+                bad_dates,
+                [
+                    "game_id",
+                    "game_date",
+                ],
+            ]
+            .head(20)
+            .to_dict("records")
+        )
+
+        for row in bad_rows:
+            _log(
+                "TRAINING ROW SKIPPED "
+                "invalid game_date "
+                f"row={row}",
+                "WARN",
+            )
+
+        training = (
+            training.loc[
+                ~bad_dates
+            ]
+            .copy()
+        )
+
+    for col in (
+        feature_columns
+        + TARGET_COLUMNS
+    ):
+        raw = (
+            training[
+                col
+            ]
+            .copy()
+        )
+
+        numeric = pd.to_numeric(
+            raw,
+            errors="coerce",
+        )
+
+        if (
+            col
+            in TARGET_COLUMNS
+        ):
+            bad = (
+                numeric.isna()
+                | ~np.isfinite(
+                    numeric
+                )
+                | (
+                    numeric
+                    < 0
+                )
+            )
+
+            if bad.any():
+                bad_rows = (
+                    training.loc[
+                        bad,
+                        [
+                            "game_id",
+                            "game_date",
+                            col,
+                        ],
+                    ]
+                    .head(20)
+                    .to_dict(
+                        "records"
+                    )
+                )
+
+                for row in bad_rows:
+                    _log(
+                        "TRAINING ROW SKIPPED "
+                        f"invalid target={col} "
+                        f"row={row}",
+                        "WARN",
+                    )
+
+                training = (
+                    training.loc[
+                        ~bad
+                    ]
+                    .copy()
+                )
+
+                numeric = (
+                    pd.to_numeric(
+                        training[
+                            col
+                        ],
+                        errors="coerce",
+                    )
+                )
+
+            training[
+                col
+            ] = numeric
+
+            continue
+
+        bad_feature = (
+            numeric.notna()
+            & ~np.isfinite(
+                numeric
+            )
+        )
+
+        if bad_feature.any():
+            bad_rows = (
+                training.loc[
+                    bad_feature,
+                    [
+                        "game_id",
+                        "game_date",
+                        col,
+                    ],
+                ]
+                .head(20)
+                .to_dict(
+                    "records"
+                )
+            )
+
+            for row in bad_rows:
+                _log(
+                    "TRAINING FEATURE "
+                    "SET TO MISSING "
+                    f"feature={col} "
+                    f"row={row}",
+                    "WARN",
+                )
+
+            numeric.loc[
+                bad_feature
+            ] = np.nan
+
+        training[
+            col
+        ] = numeric
+
+    if training.empty:
+        fail(
+            "Walk-forward training history "
+            "has no valid rows"
+        )
+
+    training = (
+        training.sort_values(
+            [
+                "_game_date_dt",
+                "game_id",
+            ],
+            kind="stable",
+        )
+        .reset_index(
+            drop=True
+        )
+    )
+
+    _log(
+        "Walk-forward training "
+        "history ready; "
+        f"rows={len(training)} "
+        "first="
+        f"{training['_game_date_dt'].min().date()} "
+        "last="
+        f"{training['_game_date_dt'].max().date()}"
+    )
+
+    return training
+
+
+def _fit_full_prior_model(
+    prior: pd.DataFrame,
+    feature_columns: list[str],
+    target_column: str,
+    params: dict,
+    random_state: int,
+) -> HistGradientBoostingRegressor:
+    model = (
+        HistGradientBoostingRegressor(
+            loss="poisson",
+            learning_rate=params[
+                "learning_rate"
+            ],
+            max_leaf_nodes=params[
+                "max_leaf_nodes"
+            ],
+            min_samples_leaf=params[
+                "min_samples_leaf"
+            ],
+            l2_regularization=params[
+                "l2_regularization"
+            ],
+            random_state=(
+                random_state
+            ),
+        )
+    )
+
+    model.fit(
+        prior.loc[
+            :,
+            feature_columns,
+        ],
+        prior[
+            target_column
+        ],
+    )
+
+    return model
+
+
+def fit_walk_forward_models(
+    target_date: pd.Timestamp,
+    training_history: pd.DataFrame,
+    feature_columns: list[str],
+    trainer,
+):
+    prior = (
+        training_history.loc[
+            training_history[
+                "_game_date_dt"
+            ]
+            < target_date
+        ]
+        .copy()
+    )
+
+    prior_dates = sorted(
+        prior[
+            "_game_date_dt"
+        ]
+        .dropna()
+        .drop_duplicates()
+        .tolist()
+    )
+
+    if (
+        len(prior_dates)
+        < MIN_PRIOR_UNIQUE_DATES
+    ):
+        return None
+
+    splits = (
+        trainer
+        .chronological_date_split(
+            prior
+        )
+    )
+
+    (
+        home_params,
+        home_validation_score,
+    ) = (
+        trainer
+        .select_hyperparameters(
+            splits[
+                "train"
+            ],
+            splits[
+                "validation"
+            ],
+            feature_columns,
+            "target_home_runs",
+            (
+                "walk_forward_home_"
+                f"{target_date.date()}"
+            ),
+        )
+    )
+
+    (
+        away_params,
+        away_validation_score,
+    ) = (
+        trainer
+        .select_hyperparameters(
+            splits[
+                "train"
+            ],
+            splits[
+                "validation"
+            ],
+            feature_columns,
+            "target_away_runs",
+            (
+                "walk_forward_away_"
+                f"{target_date.date()}"
+            ),
+        )
+    )
+
+    home_model = (
+        _fit_full_prior_model(
+            prior,
+            feature_columns,
+            "target_home_runs",
+            home_params,
+            trainer.RANDOM_STATE,
+        )
+    )
+
+    away_model = (
+        _fit_full_prior_model(
+            prior,
+            feature_columns,
+            "target_away_runs",
+            away_params,
+            trainer.RANDOM_STATE,
+        )
+    )
+
+    assert_model_feature_order(
+        home_model,
+        feature_columns,
+        (
+            "walk_forward_home_"
+            f"{target_date.date()}"
+        ),
+    )
+
+    assert_model_feature_order(
+        away_model,
+        feature_columns,
+        (
+            "walk_forward_away_"
+            f"{target_date.date()}"
+        ),
+    )
+
+    train_end = (
+        prior[
+            "_game_date_dt"
+        ]
+        .max()
+        .date()
+        .isoformat()
+    )
+
+    version = (
+        "walk_forward"
+        f";target={target_date.date().isoformat()}"
+        f";train_end={train_end}"
+        f";rows={len(prior)}"
+        ";home_params="
+        + json.dumps(
+            home_params,
+            sort_keys=True,
+            separators=(
+                ",",
+                ":",
+            ),
+        )
+        + ";away_params="
+        + json.dumps(
+            away_params,
+            sort_keys=True,
+            separators=(
+                ",",
+                ":",
+            ),
+        )
+    )
+
+    audit = {
+        "projection_mode":
+            "walk_forward",
+        "training_rows":
+            len(prior),
+        "training_unique_dates":
+            len(prior_dates),
+        "training_end_date":
+            train_end,
+        "home_validation_score":
+            float(
+                home_validation_score
+            ),
+        "away_validation_score":
+            float(
+                away_validation_score
+            ),
+        "version":
+            version,
+    }
+
+    return (
+        home_model,
+        away_model,
+        audit,
+    )
+
+
+def _target_timestamp(
+    date_str: str,
+) -> pd.Timestamp:
+    parsed = pd.to_datetime(
+        str(
+            date_str
+        ).replace(
+            "_",
+            "-",
+        ),
+        errors="coerce",
+    )
+
+    if pd.isna(
+        parsed
+    ):
+        fail(
+            f"Invalid projection date: {date_str}"
+        )
+
+    return (
+        pd.Timestamp(
+            parsed
+        )
+        .normalize()
+    )
+
+
+def _write_unavailable_historical_result(
+    date_str: str,
+    output_path: Path,
+    joined: pd.DataFrame,
+    X: pd.DataFrame,
+    reason: str,
+) -> Path:
+    result = (
+        joined.copy()
+    )
+
+    result[
+        "model_home_runs"
+    ] = np.nan
+
+    result[
+        "model_away_runs"
+    ] = np.nan
+
+    result[
+        "model_total_runs"
+    ] = np.nan
+
+    result[
+        "run_model_version"
+    ] = (
+        "walk_forward_unavailable"
+        f";date={date_str}"
+        f";reason={reason}"
+    )
+
+    status = (
+        build_feature_status(
+            result,
+            X,
+        )
+    )
+
+    result[
+        "run_model_feature_status"
+    ] = (
+        status.astype(
+            "string"
+        )
+        + (
+            ";projection_mode="
+            "walk_forward_unavailable"
+        )
+        + f";reason={reason}"
+    )
+
+    result.to_csv(
+        output_path,
+        index=False,
+    )
+
+    _log(
+        f"WROTE {output_path} "
+        f"rows={len(result)} "
+        "projection_mode="
+        "walk_forward_unavailable "
+        f"reason={reason}",
+        "WARN",
+    )
+
+    return output_path
+
+
 def process_date(
     date_str: str,
-    home_model,
-    away_model,
+    production_home_model,
+    production_away_model,
     home_metadata: dict,
     away_metadata: dict,
     feature_columns: list[str],
+    training_history: pd.DataFrame,
+    trainer,
 ) -> Path:
     pred_path = (
         PRED_DIR
@@ -931,70 +1809,17 @@ def process_date(
         f"game_context {date_str}",
     )
 
-    joined, X = build_feature_frame(
+    (
+        joined,
+        X,
+    ) = build_feature_frame(
+        date_str,
         pred,
         games,
         sdv,
         context,
         feature_columns,
     )
-
-    home_runs = validate_predictions(
-        home_model.predict(X),
-        "home_runs_model",
-    )
-
-    away_runs = validate_predictions(
-        away_model.predict(X),
-        "away_runs_model",
-    )
-
-    result = joined.copy()
-
-    result["model_home_runs"] = (
-        home_runs
-    )
-
-    result["model_away_runs"] = (
-        away_runs
-    )
-
-    result["model_total_runs"] = (
-        result["model_home_runs"]
-        + result["model_away_runs"]
-    )
-
-    result["run_model_version"] = (
-        model_version(
-            home_metadata,
-            "home",
-        )
-        + "|"
-        + model_version(
-            away_metadata,
-            "away",
-        )
-    )
-
-    result[
-        "run_model_feature_status"
-    ] = build_feature_status(
-        result,
-        X,
-    )
-
-    for col in [
-        "dratings_home_prob",
-        "dratings_away_prob",
-        "dratings_home_projected_runs",
-        "dratings_away_projected_runs",
-        "dratings_total_projected_runs",
-    ]:
-        if col not in result.columns:
-            fail(
-                "Missing required preserved "
-                f"DRatings column: {col}"
-            )
 
     if (
         output_path.resolve()
@@ -1004,6 +1829,304 @@ def process_date(
             "Refusing to overwrite "
             "pred_with_game_id source file"
         )
+
+    if joined.empty:
+        result = (
+            joined.copy()
+        )
+
+        result[
+            "model_home_runs"
+        ] = pd.Series(
+            dtype=float
+        )
+
+        result[
+            "model_away_runs"
+        ] = pd.Series(
+            dtype=float
+        )
+
+        result[
+            "model_total_runs"
+        ] = pd.Series(
+            dtype=float
+        )
+
+        result[
+            "run_model_version"
+        ] = pd.Series(
+            dtype="string"
+        )
+
+        result[
+            "run_model_feature_status"
+        ] = pd.Series(
+            dtype="string"
+        )
+
+        result.to_csv(
+            output_path,
+            index=False,
+        )
+
+        _log(
+            f"WROTE {output_path} "
+            "rows=0"
+        )
+
+        return output_path
+
+    target_date = (
+        _target_timestamp(
+            date_str
+        )
+    )
+
+    history_max_date = (
+        training_history[
+            "_game_date_dt"
+        ]
+        .max()
+    )
+
+    if (
+        target_date
+        <= history_max_date
+    ):
+        prior = (
+            training_history.loc[
+                training_history[
+                    "_game_date_dt"
+                ]
+                < target_date
+            ]
+        )
+
+        prior_unique_dates = int(
+            prior[
+                "_game_date_dt"
+            ].nunique()
+        )
+
+        if (
+            prior_unique_dates
+            < MIN_PRIOR_UNIQUE_DATES
+        ):
+            return (
+                _write_unavailable_historical_result(
+                    date_str,
+                    output_path,
+                    joined,
+                    X,
+                    (
+                        "insufficient_prior_dates_"
+                        f"{prior_unique_dates}"
+                        "_need_"
+                        f"{MIN_PRIOR_UNIQUE_DATES}"
+                    ),
+                )
+            )
+
+        try:
+            fitted = (
+                fit_walk_forward_models(
+                    target_date,
+                    training_history,
+                    feature_columns,
+                    trainer,
+                )
+            )
+
+            if fitted is None:
+                return (
+                    _write_unavailable_historical_result(
+                        date_str,
+                        output_path,
+                        joined,
+                        X,
+                        "walk_forward_fit_unavailable",
+                    )
+                )
+
+            (
+                home_model,
+                away_model,
+                audit,
+            ) = fitted
+
+            home_runs = (
+                validate_predictions(
+                    home_model.predict(
+                        X
+                    ),
+                    "walk_forward_home_runs_model",
+                    date_str,
+                    joined,
+                )
+            )
+
+            away_runs = (
+                validate_predictions(
+                    away_model.predict(
+                        X
+                    ),
+                    "walk_forward_away_runs_model",
+                    date_str,
+                    joined,
+                )
+            )
+
+            run_model_version = (
+                audit[
+                    "version"
+                ]
+            )
+
+            projection_status_suffix = (
+                ";projection_mode=walk_forward"
+                ";training_end_date="
+                f"{audit['training_end_date']}"
+                ";training_rows="
+                f"{audit['training_rows']}"
+            )
+
+            _log(
+                "WALK_FORWARD "
+                f"date={date_str} "
+                "training_rows="
+                f"{audit['training_rows']} "
+                "training_unique_dates="
+                f"{audit['training_unique_dates']} "
+                "training_end="
+                f"{audit['training_end_date']} "
+                "home_validation_score="
+                f"{audit['home_validation_score']:.12f} "
+                "away_validation_score="
+                f"{audit['away_validation_score']:.12f}"
+            )
+
+        except Exception as exc:
+            _log(
+                "WALK_FORWARD DATE FAILED "
+                f"date={date_str}: {exc}\n"
+                f"{traceback.format_exc()}",
+                "ERROR",
+            )
+
+            return (
+                _write_unavailable_historical_result(
+                    date_str,
+                    output_path,
+                    joined,
+                    X,
+                    "walk_forward_fit_failed",
+                )
+            )
+
+    else:
+        home_runs = (
+            validate_predictions(
+                production_home_model.predict(
+                    X
+                ),
+                "production_home_runs_model",
+                date_str,
+                joined,
+            )
+        )
+
+        away_runs = (
+            validate_predictions(
+                production_away_model.predict(
+                    X
+                ),
+                "production_away_runs_model",
+                date_str,
+                joined,
+            )
+        )
+
+        run_model_version = (
+            model_version(
+                home_metadata,
+                "home",
+            )
+            + "|"
+            + model_version(
+                away_metadata,
+                "away",
+            )
+        )
+
+        projection_status_suffix = (
+            ";projection_mode=production"
+            ";historical_training_max="
+            f"{history_max_date.date().isoformat()}"
+        )
+
+        _log(
+            "PRODUCTION_MODEL "
+            f"date={date_str} "
+            "historical_training_max="
+            f"{history_max_date.date().isoformat()}"
+        )
+
+    result = (
+        joined.copy()
+    )
+
+    result[
+        "model_home_runs"
+    ] = home_runs
+
+    result[
+        "model_away_runs"
+    ] = away_runs
+
+    result[
+        "model_total_runs"
+    ] = (
+        result[
+            "model_home_runs"
+        ]
+        + result[
+            "model_away_runs"
+        ]
+    )
+
+    result[
+        "run_model_version"
+    ] = (
+        run_model_version
+    )
+
+    result[
+        "run_model_feature_status"
+    ] = (
+        build_feature_status(
+            result,
+            X,
+        )
+        .astype("string")
+        + projection_status_suffix
+    )
+
+    for col in [
+        "dratings_home_prob",
+        "dratings_away_prob",
+        "dratings_home_projected_runs",
+        "dratings_away_projected_runs",
+        "dratings_total_projected_runs",
+    ]:
+        if (
+            col
+            not in result.columns
+        ):
+            fail(
+                "Missing required preserved "
+                f"DRatings column: {col}"
+            )
 
     result.to_csv(
         output_path,
@@ -1020,7 +2143,9 @@ def process_date(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+    parser = (
+        argparse.ArgumentParser()
+    )
 
     parser.add_argument(
         "dates",
@@ -1042,13 +2167,18 @@ def normalize_date_arg(
     return (
         str(value)
         .strip()
-        .replace("-", "_")
+        .replace(
+            "-",
+            "_",
+        )
     )
 
 
 def discover_all_dates() -> list[str]:
     files = sorted(
-        PRED_DIR.glob("*_MLB.csv")
+        PRED_DIR.glob(
+            "*_MLB.csv"
+        )
     )
 
     if not files:
@@ -1057,28 +2187,32 @@ def discover_all_dates() -> list[str]:
             f"in {PRED_DIR}"
         )
 
-    dates = [
-        path.stem[:-4]
+    return [
+        path.stem[
+            :-4
+        ]
         for path in files
     ]
-
-    return dates
 
 
 def load_runtime_models():
     _log(
-        "Loading model metadata once "
-        "for entire run"
+        "Loading production "
+        "model metadata"
     )
 
-    home_metadata = load_metadata(
-        HOME_METADATA_FILE,
-        "home_runs",
+    home_metadata = (
+        load_metadata(
+            HOME_METADATA_FILE,
+            "home_runs",
+        )
     )
 
-    away_metadata = load_metadata(
-        AWAY_METADATA_FILE,
-        "away_runs",
+    away_metadata = (
+        load_metadata(
+            AWAY_METADATA_FILE,
+            "away_runs",
+        )
     )
 
     feature_columns = (
@@ -1089,18 +2223,22 @@ def load_runtime_models():
     )
 
     _log(
-        "Loading trained models once "
-        "for entire run"
+        "Loading committed "
+        "production models"
     )
 
-    home_model = load_model(
-        HOME_MODEL_FILE,
-        "home_runs",
+    home_model = (
+        load_model(
+            HOME_MODEL_FILE,
+            "home_runs",
+        )
     )
 
-    away_model = load_model(
-        AWAY_MODEL_FILE,
-        "away_runs",
+    away_model = (
+        load_model(
+            AWAY_MODEL_FILE,
+            "away_runs",
+        )
     )
 
     assert_model_feature_order(
@@ -1116,7 +2254,8 @@ def load_runtime_models():
     )
 
     _log(
-        "Model loading complete; "
+        "Production model loading "
+        "complete; "
         f"features={len(feature_columns)}"
     )
 
@@ -1143,13 +2282,25 @@ def main() -> None:
 
     try:
         dates = [
-            normalize_date_arg(value)
+            normalize_date_arg(
+                value
+            )
             for value in args.dates
-            if str(value).strip()
+            if str(
+                value
+            ).strip()
         ]
 
         if not dates:
-            dates = discover_all_dates()
+            dates = (
+                discover_all_dates()
+            )
+
+        dates = sorted(
+            dict.fromkeys(
+                dates
+            )
+        )
 
         _log(
             "Dates to rebuild: "
@@ -1159,22 +2310,71 @@ def main() -> None:
         )
 
         (
-            home_model,
-            away_model,
+            production_home_model,
+            production_away_model,
             home_metadata,
             away_metadata,
             feature_columns,
-        ) = load_runtime_models()
+        ) = (
+            load_runtime_models()
+        )
+
+        training_builder = (
+            _load_python_module(
+                TRAINING_BUILDER_FILE,
+                (
+                    "_mlb_build_run_"
+                    "training_set_for_projection"
+                ),
+            )
+        )
+
+        trainer = (
+            _load_python_module(
+                TRAINER_FILE,
+                (
+                    "_mlb_train_run_"
+                    "model_for_projection"
+                ),
+            )
+        )
+
+        training_history = (
+            build_training_history_in_memory(
+                training_builder,
+                feature_columns,
+            )
+        )
+
+        dates_processed = 0
 
         for date_str in dates:
-            output_path = process_date(
-                date_str=date_str,
-                home_model=home_model,
-                away_model=away_model,
-                home_metadata=home_metadata,
-                away_metadata=away_metadata,
-                feature_columns=feature_columns,
+            output_path = (
+                process_date(
+                    date_str=date_str,
+                    production_home_model=(
+                        production_home_model
+                    ),
+                    production_away_model=(
+                        production_away_model
+                    ),
+                    home_metadata=(
+                        home_metadata
+                    ),
+                    away_metadata=(
+                        away_metadata
+                    ),
+                    feature_columns=(
+                        feature_columns
+                    ),
+                    training_history=(
+                        training_history
+                    ),
+                    trainer=trainer,
+                )
             )
+
+            dates_processed += 1
 
             print(
                 f"WROTE {output_path}"
@@ -1182,7 +2382,7 @@ def main() -> None:
 
         _log(
             "SUCCESS "
-            f"dates_processed={len(dates)}"
+            f"dates_processed={dates_processed}"
         )
 
     except Exception as exc:
