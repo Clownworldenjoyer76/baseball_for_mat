@@ -39,6 +39,12 @@ markets:
       away_batters_found_min: 0
       home_sp_found_required: 0
       away_sp_found_required: 0
+
+###################################################
+## pick_preference supports:
+##   best_ev — select the qualifying side with the highest EV.
+##   best_prob — select the qualifying side with the highest model probability.
+##   all — select every qualifying side. [only moneyline and totals]
     ###################################################
     # ── Moneyline ────────────────────────────────────
     ###################################################
@@ -47,7 +53,7 @@ markets:
       enabled: true
 
       # Allow both sides to be selected if they pass.
-      pick_preference: all
+      pick_preference: best_prob
 
       home:
         enabled: true
@@ -62,7 +68,7 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.00, 1.00]
+          - [0.40, 0.99]
 
       away:
         enabled: true
@@ -77,7 +83,7 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.00, 1.00]
+          - [0.60, 0.749]
 
     ###################################################
     # ── Run Line ─────────────────────────────────────
@@ -88,7 +94,7 @@ markets:
 
       # Selector requires best_ev for run line.
       # At most one run-line side is selected per game.
-      pick_preference: best_ev
+      pick_preference: best_prob
 
       home:
         enabled: true
@@ -107,7 +113,7 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.00, 1.00]
+          - [0.60, 0.799]
 
       away:
         enabled: true
@@ -126,7 +132,7 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.00, 1.00]
+          - [0.55, 1.00]
 
     ###################################################
     # ── Totals ───────────────────────────────────────
@@ -136,7 +142,7 @@ markets:
       enabled: true
 
       # Allow both over and under if they pass.
-      pick_preference: all
+      pick_preference: best_prob
 
       over:
         enabled: true
@@ -154,7 +160,7 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.00, 1.00]
+          - [0.55, 0.749]
 
       under:
         enabled: true
@@ -172,4 +178,4 @@ markets:
           - [-10.00, 99.99]
 
         prob_bands:
-          - [0.00, 1.00]
+          - [0.50, 1.00]
