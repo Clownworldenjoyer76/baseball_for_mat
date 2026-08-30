@@ -33,6 +33,10 @@ with open(LOG_FILE, "w", encoding="utf-8") as f:
     f.write(f"=== build_mlb_final_scores RUN {RUN_TS} ===\n")
 
 
+class FinalScoreConflictError(RuntimeError):
+    """Fatal contradiction between records that identify the same game."""
+
+
 def log(msg: str) -> None:
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"{datetime.now(UTC).isoformat()} | {msg}\n")
@@ -41,6 +45,32 @@ def log(msg: str) -> None:
 def fail(msg: str) -> None:
     log(f"FATAL: {msg}")
     raise RuntimeError(msg)
+
+
+def fail_conflict(msg: str) -> None:
+    log(f"FATAL: {msg}")
+    raise FinalScoreConflictError(msg)
+
+
+def failure_context(
+    *,
+    source_file,
+    game_date,
+    game_time,
+    away_team,
+    home_team,
+    game_id,
+    gamePk,
+):
+    return (
+        f"source_file={source_file} | "
+        f"game_date={game_date} | "
+        f"game_time={game_time} | "
+        f"away_team={away_team} | "
+        f"home_team={home_team} | "
+        f"game_id={game_id} | "
+        f"gamePk={gamePk}"
+    )
 
 
 def parse_datetime(dt_str):
@@ -540,17 +570,21 @@ def make_key_audit_row(
 def add_final_record(
     *,
     record,
+    source_file,
     final_records_by_date,
     seen_by_game_id,
     seen_by_fallback_key,
     key_audit_rows,
     use_game_time_for_fallback,
 ):
-    game_id = str(record.get("game_id", "")).strip()
-    game_date = record.get("game_date", "")
-    game_time = record.get("game_time", "")
-    home_team = record.get("home_team", "")
-    away_team = record.get("away_team", "")
+    game_id = str(record.get("game_id", "") or "").strip()
+    gamePk = str(record.get("gamePk", "") or "").strip()
+    game_date = str(record.get("game_date", "") or "").strip()
+    game_time = str(record.get("game_time", "") or "").strip()
+    home_team = str(record.get("home_team", "") or "").strip()
+    away_team = str(record.get("away_team", "") or "").strip()
+
+    record["_source_file"] = source_file
 
     if game_id:
         existing = seen_by_game_id.get(game_id)
@@ -562,7 +596,7 @@ def add_final_record(
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=record.get("gamePk", ""),
+                gamePk=gamePk,
                 gameNumber=record.get("gameNumber", ""),
                 away_team=away_team,
                 home_team=home_team,
@@ -576,7 +610,7 @@ def add_final_record(
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=record.get("gamePk", ""),
+                gamePk=gamePk,
                 gameNumber=record.get("gameNumber", ""),
                 away_team=away_team,
                 home_team=home_team,
@@ -589,7 +623,7 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id=game_id,
-            gamePk=record.get("gamePk", ""),
+            gamePk=gamePk,
             gameNumber=record.get("gameNumber", ""),
             away_team=away_team,
             home_team=home_team,
@@ -598,9 +632,24 @@ def add_final_record(
             notes="same game_id had conflicting final-score fields",
         ))
 
-        fail(
-            "Conflicting final-score duplicate game_id found: "
-            f"game_id={game_id} date={game_date} away={away_team} home={home_team}"
+        context = failure_context(
+            source_file=source_file,
+            game_date=game_date,
+            game_time=game_time,
+            away_team=away_team,
+            home_team=home_team,
+            game_id=game_id,
+            gamePk=gamePk,
+        )
+
+        existing_source_file = str(
+            existing.get("_source_file", "") or ""
+        ).strip()
+
+        fail_conflict(
+            "Conflicting final-score duplicate game_id found | "
+            f"{context} | "
+            f"existing_source_file={existing_source_file}"
         )
 
     if use_game_time_for_fallback:
@@ -625,7 +674,7 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id="",
-            gamePk=record.get("gamePk", ""),
+            gamePk=gamePk,
             gameNumber=record.get("gameNumber", ""),
             away_team=away_team,
             home_team=home_team,
@@ -639,7 +688,7 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id="",
-            gamePk=record.get("gamePk", ""),
+            gamePk=gamePk,
             gameNumber=record.get("gameNumber", ""),
             away_team=away_team,
             home_team=home_team,
@@ -652,7 +701,7 @@ def add_final_record(
     key_audit_rows.append(make_key_audit_row(
         game_date=game_date,
         game_id="",
-        gamePk=record.get("gamePk", ""),
+        gamePk=gamePk,
         gameNumber=record.get("gameNumber", ""),
         away_team=away_team,
         home_team=home_team,
@@ -661,9 +710,24 @@ def add_final_record(
         notes="blank-game_id duplicate fallback key had conflicting fields",
     ))
 
-    fail(
-        "Conflicting blank-game_id final-score duplicate found: "
-        f"date={game_date} time={game_time} away={away_team} home={home_team}"
+    context = failure_context(
+        source_file=source_file,
+        game_date=game_date,
+        game_time=game_time,
+        away_team=away_team,
+        home_team=home_team,
+        game_id="",
+        gamePk=gamePk,
+    )
+
+    existing_source_file = str(
+        existing_fallback.get("_source_file", "") or ""
+    ).strip()
+
+    fail_conflict(
+        "Conflicting blank-game_id final-score duplicate found | "
+        f"{context} | "
+        f"existing_source_file={existing_source_file}"
     )
 
     return "failed"
@@ -956,13 +1020,14 @@ def process_file(
 
             action = add_final_record(
                 record=record,
+                source_file=file_path.name,
                 final_records_by_date=final_records_by_date,
                 seen_by_game_id=seen_by_game_id,
                 seen_by_fallback_key=seen_by_fallback_key,
                 key_audit_rows=key_audit_rows,
                 use_game_time_for_fallback=(
-                    len(games_candidates) > 1 or
-                    len(pred_candidates) > 1
+                    len(games_candidates) > 1
+                    or len(pred_candidates) > 1
                 ),
             )
 
@@ -995,6 +1060,9 @@ def process_file(
                     else "status inferred as final from completed DRatings row shape"
                 ),
             })
+
+        except FinalScoreConflictError:
+            raise
 
         except Exception as exc:
             parse_errors += 1
@@ -1205,6 +1273,24 @@ def main():
                 blank_game_id_rows=blank_game_id_rows,
             )
 
+        total_parse_errors = len(parse_error_rows)
+
+        if total_parse_errors > 0:
+            log("--- SUMMARY ---")
+            log(f"Raw files processed before failure: {len(raw_files)}")
+            log(f"Parse errors encountered: {total_parse_errors}")
+
+            log_review_rows(
+                parse_error_rows,
+                blank_game_id_rows,
+            )
+
+            fail(
+                "Final-score build aborted because parse_errors="
+                f"{total_parse_errors}. "
+                "Final-score outputs were not written."
+            )
+
         for date in sorted(final_records_by_date):
             records = final_records_by_date[date]
             out = FINAL_DIR / f"{date}_final_scores_MLB.csv"
@@ -1280,9 +1366,9 @@ def main():
         log(f"Key audit: {KEY_AUDIT_FILE}")
 
         if total_parse_errors:
-            log(
-                "WARNING: Parse errors were encountered. "
-                "See PARSE ERROR ROWS FOR REVIEW below."
+            fail(
+                "Final-score build cannot report success because "
+                f"parse_errors={total_parse_errors}"
             )
         else:
             log("Parse-error review: no parse errors encountered.")
