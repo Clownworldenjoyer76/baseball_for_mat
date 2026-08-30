@@ -1,10 +1,10 @@
 {
   "training_start_date": "2026-03-26",
-  "training_end_date": "2026-07-07",
-  "validation_start_date": "2026-07-08",
-  "validation_end_date": "2026-08-01",
-  "test_start_date": "2026-08-02",
-  "test_end_date": "2026-08-28",
+  "training_end_date": "2026-07-08",
+  "validation_start_date": "2026-07-09",
+  "validation_end_date": "2026-08-02",
+  "test_start_date": "2026-08-03",
+  "test_end_date": "2026-08-29",
   "feature_columns": [
     "dratings_home_prob",
     "dratings_away_prob",
@@ -64,30 +64,30 @@
     "learning_rate": 0.03,
     "max_leaf_nodes": 7,
     "min_samples_leaf": 10,
-    "l2_regularization": 1
+    "l2_regularization": 0
   },
-  "training_row_count": 1112,
+  "training_row_count": 1125,
   "validation_row_count": 219,
-  "test_row_count": 138,
+  "test_row_count": 127,
   "baseline_metrics": {
-    "mae": 2.4602898550724634,
-    "mean_poisson_deviance": 2.4385973411603303,
-    "mean_predicted_runs": 4.1673913043478255,
-    "mean_actual_runs": 3.8333333333333335
+    "mae": 2.4293700787401575,
+    "mean_poisson_deviance": 2.3745079680446914,
+    "mean_predicted_runs": 4.175984251968504,
+    "mean_actual_runs": 3.8661417322834644
   },
   "model_metrics": {
-    "mae": 2.5598625670290813,
-    "mean_poisson_deviance": 2.5727599218788537,
-    "mean_predicted_runs": 4.418252566114471,
-    "mean_actual_runs": 3.8333333333333335
+    "mae": 2.498517175378032,
+    "mean_poisson_deviance": 2.4570371068370385,
+    "mean_predicted_runs": 4.3688076992976175,
+    "mean_actual_runs": 3.8661417322834644
   },
-  "created_at": "2026-08-30T12:56:33.763608+00:00",
-  "validation_mean_poisson_deviance": 2.1146409607920003,
+  "created_at": "2026-08-30T15:46:56.386801+00:00",
+  "validation_mean_poisson_deviance": 2.0724078704958186,
   "target_column": "target_away_runs",
   "baseline_column": "dratings_away_projected_runs",
   "model_class": "HistGradientBoostingRegressor",
   "loss": "poisson",
   "random_state": 42,
-  "final_fit_row_count": 1331,
+  "final_fit_row_count": 1344,
   "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection"
 }

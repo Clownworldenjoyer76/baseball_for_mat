@@ -1,22 +1,309 @@
-=== build_run_projection RUN 2026-08-30T13:50:50.274176+00:00 ===
-2026-08-30T13:50:50.274291+00:00 | INFO  | Dates to rebuild: 7 first=2026_08_24 last=2026_08_30
-2026-08-30T13:50:50.274339+00:00 | INFO  | Loading production model metadata
-2026-08-30T13:50:50.274626+00:00 | INFO  | Loading committed production models
-2026-08-30T13:50:50.301352+00:00 | INFO  | Production model loading complete; features=53
-2026-08-30T13:50:50.313096+00:00 | INFO  | Building leakage-safe walk-forward training history in memory; dates=150 first=2026_03_26 last=2026_08_29
-2026-08-30T13:51:02.018983+00:00 | INFO  | Walk-forward training history ready; rows=1471 first=2026-03-26 last=2026-08-29
-2026-08-30T13:51:41.999905+00:00 | INFO  | WALK_FORWARD date=2026_08_24 training_rows=1428 training_unique_dates=143 training_end=2026-08-19 home_validation_score=2.552513267346 away_validation_score=2.256771338976
-2026-08-30T13:51:42.024060+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_24_MLB.csv rows=10 features=53
-2026-08-30T13:52:22.143569+00:00 | INFO  | WALK_FORWARD date=2026_08_25 training_rows=1437 training_unique_dates=144 training_end=2026-08-24 home_validation_score=2.652180398006 away_validation_score=2.238608552232
-2026-08-30T13:52:22.174670+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_25_MLB.csv rows=15 features=53
-2026-08-30T13:53:02.327483+00:00 | INFO  | WALK_FORWARD date=2026_08_26 training_rows=1450 training_unique_dates=145 training_end=2026-08-25 home_validation_score=2.694197259636 away_validation_score=2.211061495468
-2026-08-30T13:53:02.352342+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_26_MLB.csv rows=12 features=53
-2026-08-30T13:53:42.651366+00:00 | INFO  | WALK_FORWARD date=2026_08_27 training_rows=1460 training_unique_dates=146 training_end=2026-08-26 home_validation_score=2.553624350477 away_validation_score=2.163371941279
-2026-08-30T13:53:42.670777+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_27_MLB.csv rows=7 features=53
-2026-08-30T13:54:23.093757+00:00 | INFO  | WALK_FORWARD date=2026_08_28 training_rows=1466 training_unique_dates=147 training_end=2026-08-27 home_validation_score=2.553624350477 away_validation_score=2.163371941279
-2026-08-30T13:54:23.122964+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_28_MLB.csv rows=15 features=53
-2026-08-30T13:55:03.433336+00:00 | INFO  | WALK_FORWARD date=2026_08_29 training_rows=1469 training_unique_dates=148 training_end=2026-08-28 home_validation_score=2.584544220864 away_validation_score=2.114640960792
-2026-08-30T13:55:03.446248+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_29_MLB.csv rows=3 features=53
-2026-08-30T13:55:03.546270+00:00 | INFO  | PRODUCTION_MODEL date=2026_08_30 historical_training_max=2026-08-29
-2026-08-30T13:55:03.572631+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_30_MLB.csv rows=14 features=53
-2026-08-30T13:55:03.573035+00:00 | INFO  | SUCCESS dates_processed=7
+=== build_run_projection RUN 2026-08-30T15:48:08.122511+00:00 ===
+2026-08-30T15:48:08.123641+00:00 | INFO  | Dates to rebuild: 152 first=2026_03_26 last=2026_08_30
+2026-08-30T15:48:08.123686+00:00 | INFO  | Loading production model metadata
+2026-08-30T15:48:08.123872+00:00 | INFO  | Loading committed production models
+2026-08-30T15:48:08.154038+00:00 | INFO  | Production model loading complete; features=53
+2026-08-30T15:48:08.166547+00:00 | INFO  | Building leakage-safe walk-forward training history in memory; dates=150 first=2026_03_26 last=2026_08_29
+2026-08-30T15:48:21.553464+00:00 | INFO  | Walk-forward training history ready; rows=1471 first=2026-03-26 last=2026-08-29
+2026-08-30T15:48:21.710056+00:00 | WARN  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_03_26_MLB.csv rows=11 projection_mode=walk_forward_unavailable reason=insufficient_prior_dates_0_need_3
+2026-08-30T15:48:21.840551+00:00 | WARN  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_03_27_MLB.csv rows=8 projection_mode=walk_forward_unavailable reason=insufficient_prior_dates_1_need_3
+2026-08-30T15:48:21.981793+00:00 | WARN  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_03_28_MLB.csv rows=15 projection_mode=walk_forward_unavailable reason=insufficient_prior_dates_2_need_3
+2026-08-30T15:48:24.731108+00:00 | INFO  | WALK_FORWARD date=2026_03_29 training_rows=30 training_unique_dates=3 training_end=2026-03-28 home_validation_score=2.456052842720 away_validation_score=2.587775072142
+2026-08-30T15:48:24.759155+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_03_29_MLB.csv rows=12 features=53
+2026-08-30T15:48:27.484666+00:00 | INFO  | WALK_FORWARD date=2026_03_30 training_rows=40 training_unique_dates=4 training_end=2026-03-29 home_validation_score=1.785632451758 away_validation_score=1.691725441955
+2026-08-30T15:48:27.516634+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_03_30_MLB.csv rows=15 features=53
+2026-08-30T15:48:30.855857+00:00 | INFO  | WALK_FORWARD date=2026_03_31 training_rows=53 training_unique_dates=5 training_end=2026-03-30 home_validation_score=1.033475882341 away_validation_score=1.969626794744
+2026-08-30T15:48:30.887770+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_03_31_MLB.csv rows=14 features=53
+2026-08-30T15:48:34.817598+00:00 | INFO  | WALK_FORWARD date=2026_04_01 training_rows=65 training_unique_dates=6 training_end=2026-03-31 home_validation_score=1.582727820971 away_validation_score=4.108694012058
+2026-08-30T15:48:34.850154+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_01_MLB.csv rows=15 features=53
+2026-08-30T15:48:38.760926+00:00 | INFO  | WALK_FORWARD date=2026_04_02 training_rows=78 training_unique_dates=7 training_end=2026-04-01 home_validation_score=1.582727820971 away_validation_score=4.108694012058
+2026-08-30T15:48:38.774684+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_02_MLB.csv rows=3 features=53
+2026-08-30T15:48:43.162821+00:00 | INFO  | WALK_FORWARD date=2026_04_03 training_rows=80 training_unique_dates=8 training_end=2026-04-02 home_validation_score=2.371655081108 away_validation_score=1.993813224124
+2026-08-30T15:48:43.192329+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_03_MLB.csv rows=14 features=53
+2026-08-30T15:48:48.194683+00:00 | INFO  | WALK_FORWARD date=2026_04_04 training_rows=92 training_unique_dates=9 training_end=2026-04-03 home_validation_score=2.077574297140 away_validation_score=1.830595579100
+2026-08-30T15:48:48.228155+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_04_MLB.csv rows=15 features=53
+2026-08-30T15:48:53.872349+00:00 | INFO  | WALK_FORWARD date=2026_04_05 training_rows=106 training_unique_dates=10 training_end=2026-04-04 home_validation_score=0.704209664878 away_validation_score=10.056600820129
+2026-08-30T15:48:53.945014+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_05_MLB.csv rows=16 features=53
+2026-08-30T15:48:59.621022+00:00 | INFO  | WALK_FORWARD date=2026_04_06 training_rows=120 training_unique_dates=11 training_end=2026-04-05 home_validation_score=1.617507925586 away_validation_score=3.901445536576
+2026-08-30T15:48:59.650500+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_06_MLB.csv rows=13 features=53
+2026-08-30T15:49:05.751500+00:00 | INFO  | WALK_FORWARD date=2026_04_07 training_rows=132 training_unique_dates=12 training_end=2026-04-06 home_validation_score=2.280172401157 away_validation_score=2.685202871517
+2026-08-30T15:49:05.784080+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_07_MLB.csv rows=15 features=53
+2026-08-30T15:49:12.470141+00:00 | INFO  | WALK_FORWARD date=2026_04_08 training_rows=145 training_unique_dates=13 training_end=2026-04-07 home_validation_score=2.517964212565 away_validation_score=2.615920118488
+2026-08-30T15:49:12.503219+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_08_MLB.csv rows=15 features=53
+2026-08-30T15:49:19.168155+00:00 | INFO  | WALK_FORWARD date=2026_04_09 training_rows=158 training_unique_dates=14 training_end=2026-04-08 home_validation_score=2.517964212565 away_validation_score=2.615920118488
+2026-08-30T15:49:19.186439+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_09_MLB.csv rows=6 features=53
+2026-08-30T15:49:26.568091+00:00 | INFO  | WALK_FORWARD date=2026_04_10 training_rows=163 training_unique_dates=15 training_end=2026-04-09 home_validation_score=2.592404734800 away_validation_score=2.205208325086
+2026-08-30T15:49:26.600566+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_10_MLB.csv rows=15 features=53
+2026-08-30T15:49:34.572339+00:00 | INFO  | WALK_FORWARD date=2026_04_11 training_rows=175 training_unique_dates=16 training_end=2026-04-10 home_validation_score=2.048898922426 away_validation_score=2.063664284239
+2026-08-30T15:49:34.597850+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_11_MLB.csv rows=11 features=53
+2026-08-30T15:49:42.612132+00:00 | INFO  | WALK_FORWARD date=2026_04_12 training_rows=184 training_unique_dates=17 training_end=2026-04-11 home_validation_score=1.869771759040 away_validation_score=2.409191212827
+2026-08-30T15:49:42.644590+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_12_MLB.csv rows=15 features=53
+2026-08-30T15:49:51.448679+00:00 | INFO  | WALK_FORWARD date=2026_04_13 training_rows=197 training_unique_dates=18 training_end=2026-04-12 home_validation_score=1.408007488302 away_validation_score=2.634743757276
+2026-08-30T15:49:51.473861+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_13_MLB.csv rows=10 features=53
+2026-08-30T15:50:00.917977+00:00 | INFO  | WALK_FORWARD date=2026_04_14 training_rows=205 training_unique_dates=19 training_end=2026-04-13 home_validation_score=2.237388306937 away_validation_score=2.789570658158
+2026-08-30T15:50:00.950390+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_14_MLB.csv rows=15 features=53
+2026-08-30T15:50:10.990765+00:00 | INFO  | WALK_FORWARD date=2026_04_15 training_rows=218 training_unique_dates=20 training_end=2026-04-14 home_validation_score=2.742819901980 away_validation_score=2.093410796105
+2026-08-30T15:50:11.022414+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_15_MLB.csv rows=15 features=53
+2026-08-30T15:50:21.001292+00:00 | INFO  | WALK_FORWARD date=2026_04_16 training_rows=231 training_unique_dates=21 training_end=2026-04-15 home_validation_score=2.742819901980 away_validation_score=2.093410796105
+2026-08-30T15:50:21.024029+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_16_MLB.csv rows=10 features=53
+2026-08-30T15:50:31.245119+00:00 | INFO  | WALK_FORWARD date=2026_04_17 training_rows=240 training_unique_dates=22 training_end=2026-04-16 home_validation_score=2.152809726804 away_validation_score=1.926710253207
+2026-08-30T15:50:31.277051+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_17_MLB.csv rows=15 features=53
+2026-08-30T15:50:42.173992+00:00 | INFO  | WALK_FORWARD date=2026_04_18 training_rows=253 training_unique_dates=23 training_end=2026-04-17 home_validation_score=3.297346303875 away_validation_score=2.082132345860
+2026-08-30T15:50:42.205013+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_18_MLB.csv rows=15 features=53
+2026-08-30T15:50:53.118500+00:00 | INFO  | WALK_FORWARD date=2026_04_19 training_rows=266 training_unique_dates=24 training_end=2026-04-18 home_validation_score=2.603676925061 away_validation_score=2.310552412897
+2026-08-30T15:50:53.148684+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_19_MLB.csv rows=15 features=53
+2026-08-30T15:51:04.653751+00:00 | INFO  | WALK_FORWARD date=2026_04_20 training_rows=279 training_unique_dates=25 training_end=2026-04-19 home_validation_score=2.178447536306 away_validation_score=2.810047991134
+2026-08-30T15:51:04.677806+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_20_MLB.csv rows=10 features=53
+2026-08-30T15:51:16.804848+00:00 | INFO  | WALK_FORWARD date=2026_04_21 training_rows=287 training_unique_dates=26 training_end=2026-04-20 home_validation_score=2.237070937478 away_validation_score=2.913358115673
+2026-08-30T15:51:16.834501+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_21_MLB.csv rows=15 features=53
+2026-08-30T15:51:29.046132+00:00 | INFO  | WALK_FORWARD date=2026_04_22 training_rows=300 training_unique_dates=27 training_end=2026-04-21 home_validation_score=2.237070937478 away_validation_score=2.913358115673
+2026-08-30T15:51:29.077608+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_22_MLB.csv rows=15 features=53
+2026-08-30T15:51:41.608570+00:00 | INFO  | WALK_FORWARD date=2026_04_23 training_rows=313 training_unique_dates=28 training_end=2026-04-22 home_validation_score=2.153587893617 away_validation_score=2.887488702192
+2026-08-30T15:51:41.631963+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_23_MLB.csv rows=9 features=53
+2026-08-30T15:51:54.796104+00:00 | INFO  | WALK_FORWARD date=2026_04_24 training_rows=322 training_unique_dates=29 training_end=2026-04-23 home_validation_score=2.388857070962 away_validation_score=2.131939359982
+2026-08-30T15:51:54.823909+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_24_MLB.csv rows=14 features=53
+2026-08-30T15:52:08.766100+00:00 | INFO  | WALK_FORWARD date=2026_04_25 training_rows=334 training_unique_dates=30 training_end=2026-04-24 home_validation_score=2.158795927373 away_validation_score=2.073422863915
+2026-08-30T15:52:08.797918+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_25_MLB.csv rows=15 features=53
+2026-08-30T15:52:22.734049+00:00 | INFO  | WALK_FORWARD date=2026_04_26 training_rows=348 training_unique_dates=31 training_end=2026-04-25 home_validation_score=2.086128602461 away_validation_score=2.177123969781
+2026-08-30T15:52:22.767115+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_26_MLB.csv rows=16 features=53
+2026-08-30T15:52:37.192361+00:00 | INFO  | WALK_FORWARD date=2026_04_27 training_rows=362 training_unique_dates=32 training_end=2026-04-26 home_validation_score=1.974718526406 away_validation_score=2.280651599175
+2026-08-30T15:52:37.212490+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_27_MLB.csv rows=8 features=53
+2026-08-30T15:52:52.103069+00:00 | INFO  | WALK_FORWARD date=2026_04_28 training_rows=369 training_unique_dates=33 training_end=2026-04-27 home_validation_score=1.734417325702 away_validation_score=2.063798886997
+2026-08-30T15:52:52.134439+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_28_MLB.csv rows=15 features=53
+2026-08-30T15:53:07.017284+00:00 | INFO  | WALK_FORWARD date=2026_04_29 training_rows=382 training_unique_dates=34 training_end=2026-04-28 home_validation_score=1.734417325702 away_validation_score=2.063798886997
+2026-08-30T15:53:07.048525+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_29_MLB.csv rows=15 features=53
+2026-08-30T15:53:22.826411+00:00 | INFO  | WALK_FORWARD date=2026_04_30 training_rows=393 training_unique_dates=35 training_end=2026-04-29 home_validation_score=1.874632697017 away_validation_score=2.286504981798
+2026-08-30T15:53:22.849369+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_04_30_MLB.csv rows=9 features=53
+2026-08-30T15:53:39.361183+00:00 | INFO  | WALK_FORWARD date=2026_05_01 training_rows=400 training_unique_dates=36 training_end=2026-04-30 home_validation_score=2.126301158020 away_validation_score=2.115145036645
+2026-08-30T15:53:39.392246+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_01_MLB.csv rows=14 features=53
+2026-08-30T15:53:56.113065+00:00 | INFO  | WALK_FORWARD date=2026_05_02 training_rows=412 training_unique_dates=37 training_end=2026-05-01 home_validation_score=2.190440297461 away_validation_score=2.297009829111
+2026-08-30T15:53:56.144607+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_02_MLB.csv rows=15 features=53
+2026-08-30T15:54:13.378556+00:00 | INFO  | WALK_FORWARD date=2026_05_03 training_rows=425 training_unique_dates=38 training_end=2026-05-02 home_validation_score=2.473923672328 away_validation_score=2.289642445841
+2026-08-30T15:54:13.411760+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_03_MLB.csv rows=15 features=53
+2026-08-30T15:54:31.460655+00:00 | INFO  | WALK_FORWARD date=2026_05_04 training_rows=438 training_unique_dates=39 training_end=2026-05-03 home_validation_score=2.734490763579 away_validation_score=1.979944033281
+2026-08-30T15:54:31.488718+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_04_MLB.csv rows=12 features=53
+2026-08-30T15:54:50.334639+00:00 | INFO  | WALK_FORWARD date=2026_05_05 training_rows=449 training_unique_dates=40 training_end=2026-05-04 home_validation_score=2.841792606522 away_validation_score=2.243425039784
+2026-08-30T15:54:50.366771+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_05_MLB.csv rows=15 features=53
+2026-08-30T15:55:09.131547+00:00 | INFO  | WALK_FORWARD date=2026_05_06 training_rows=461 training_unique_dates=41 training_end=2026-05-05 home_validation_score=2.841792606522 away_validation_score=2.243425039784
+2026-08-30T15:55:09.161931+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_06_MLB.csv rows=15 features=53
+2026-08-30T15:55:28.775944+00:00 | INFO  | WALK_FORWARD date=2026_05_07 training_rows=474 training_unique_dates=42 training_end=2026-05-06 home_validation_score=2.627104836999 away_validation_score=2.565400706223
+2026-08-30T15:55:28.799440+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_07_MLB.csv rows=10 features=53
+2026-08-30T15:55:48.402536+00:00 | INFO  | WALK_FORWARD date=2026_05_08 training_rows=474 training_unique_dates=42 training_end=2026-05-06 home_validation_score=2.627104836999 away_validation_score=2.565400706223
+2026-08-30T15:55:48.432637+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_08_MLB.csv rows=14 features=53
+2026-08-30T15:56:09.932861+00:00 | INFO  | WALK_FORWARD date=2026_05_09 training_rows=486 training_unique_dates=43 training_end=2026-05-08 home_validation_score=2.642304633493 away_validation_score=2.611499734638
+2026-08-30T15:56:09.964251+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_09_MLB.csv rows=15 features=53
+2026-08-30T15:56:31.091696+00:00 | INFO  | WALK_FORWARD date=2026_05_10 training_rows=498 training_unique_dates=44 training_end=2026-05-09 home_validation_score=2.394361076806 away_validation_score=2.616016951705
+2026-08-30T15:56:31.123553+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_10_MLB.csv rows=15 features=53
+2026-08-30T15:56:53.250429+00:00 | INFO  | WALK_FORWARD date=2026_05_11 training_rows=511 training_unique_dates=45 training_end=2026-05-10 home_validation_score=2.426417680457 away_validation_score=2.542151048887
+2026-08-30T15:56:53.267589+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_11_MLB.csv rows=6 features=53
+2026-08-30T15:57:15.839128+00:00 | INFO  | WALK_FORWARD date=2026_05_12 training_rows=517 training_unique_dates=46 training_end=2026-05-11 home_validation_score=2.443067153345 away_validation_score=2.557141705555
+2026-08-30T15:57:15.871024+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_12_MLB.csv rows=15 features=53
+2026-08-30T15:57:38.342006+00:00 | INFO  | WALK_FORWARD date=2026_05_13 training_rows=518 training_unique_dates=47 training_end=2026-05-12 home_validation_score=2.443067153345 away_validation_score=2.557141705555
+2026-08-30T15:57:38.374227+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_13_MLB.csv rows=15 features=53
+2026-08-30T15:58:01.473841+00:00 | INFO  | WALK_FORWARD date=2026_05_14 training_rows=532 training_unique_dates=48 training_end=2026-05-13 home_validation_score=2.319628307101 away_validation_score=2.612629984859
+2026-08-30T15:58:01.500944+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_14_MLB.csv rows=11 features=53
+2026-08-30T15:58:25.292143+00:00 | INFO  | WALK_FORWARD date=2026_05_15 training_rows=533 training_unique_dates=49 training_end=2026-05-14 home_validation_score=2.021053842013 away_validation_score=2.556634725514
+2026-08-30T15:58:25.320610+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_15_MLB.csv rows=14 features=53
+2026-08-30T15:58:49.298221+00:00 | INFO  | WALK_FORWARD date=2026_05_16 training_rows=545 training_unique_dates=50 training_end=2026-05-15 home_validation_score=2.278181569051 away_validation_score=2.290202510717
+2026-08-30T15:58:49.328522+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_16_MLB.csv rows=15 features=53
+2026-08-30T15:59:13.324726+00:00 | INFO  | WALK_FORWARD date=2026_05_17 training_rows=558 training_unique_dates=51 training_end=2026-05-16 home_validation_score=2.292826782551 away_validation_score=2.546455133780
+2026-08-30T15:59:13.356241+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_17_MLB.csv rows=14 features=53
+2026-08-30T15:59:37.499549+00:00 | INFO  | WALK_FORWARD date=2026_05_18 training_rows=570 training_unique_dates=52 training_end=2026-05-17 home_validation_score=2.223423187617 away_validation_score=2.768919010624
+2026-08-30T15:59:37.528514+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_18_MLB.csv rows=14 features=53
+2026-08-30T16:00:02.562723+00:00 | INFO  | WALK_FORWARD date=2026_05_19 training_rows=583 training_unique_dates=53 training_end=2026-05-18 home_validation_score=2.108123677100 away_validation_score=2.859085222762
+2026-08-30T16:00:02.594251+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_19_MLB.csv rows=15 features=53
+2026-08-30T16:00:27.691084+00:00 | INFO  | WALK_FORWARD date=2026_05_20 training_rows=596 training_unique_dates=54 training_end=2026-05-19 home_validation_score=2.108123677100 away_validation_score=2.859085222762
+2026-08-30T16:00:27.724546+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_20_MLB.csv rows=15 features=53
+2026-08-30T16:00:52.841663+00:00 | INFO  | WALK_FORWARD date=2026_05_21 training_rows=609 training_unique_dates=55 training_end=2026-05-20 home_validation_score=2.188022807306 away_validation_score=2.865934280967
+2026-08-30T16:00:52.860032+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_21_MLB.csv rows=7 features=53
+2026-08-30T16:01:18.505530+00:00 | INFO  | WALK_FORWARD date=2026_05_22 training_rows=614 training_unique_dates=56 training_end=2026-05-21 home_validation_score=2.082006032214 away_validation_score=2.967253274231
+2026-08-30T16:01:18.536208+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_22_MLB.csv rows=15 features=53
+2026-08-30T16:01:44.320720+00:00 | INFO  | WALK_FORWARD date=2026_05_23 training_rows=627 training_unique_dates=57 training_end=2026-05-22 home_validation_score=1.897946147964 away_validation_score=3.001485541991
+2026-08-30T16:01:44.352362+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_23_MLB.csv rows=16 features=53
+2026-08-30T16:02:10.353930+00:00 | INFO  | WALK_FORWARD date=2026_05_24 training_rows=638 training_unique_dates=58 training_end=2026-05-23 home_validation_score=1.887841388523 away_validation_score=3.131586006574
+2026-08-30T16:02:10.386444+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_24_MLB.csv rows=16 features=53
+2026-08-30T16:02:36.879518+00:00 | INFO  | WALK_FORWARD date=2026_05_25 training_rows=652 training_unique_dates=59 training_end=2026-05-24 home_validation_score=2.033283379768 away_validation_score=3.134499372212
+2026-08-30T16:02:36.907106+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_25_MLB.csv rows=13 features=53
+2026-08-30T16:03:03.725019+00:00 | INFO  | WALK_FORWARD date=2026_05_26 training_rows=663 training_unique_dates=60 training_end=2026-05-25 home_validation_score=1.892059198186 away_validation_score=3.196195482330
+2026-08-30T16:03:03.757206+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_26_MLB.csv rows=15 features=53
+2026-08-30T16:03:30.599511+00:00 | INFO  | WALK_FORWARD date=2026_05_27 training_rows=676 training_unique_dates=61 training_end=2026-05-26 home_validation_score=1.892059198186 away_validation_score=3.196195482330
+2026-08-30T16:03:30.630750+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_27_MLB.csv rows=15 features=53
+2026-08-30T16:03:57.889129+00:00 | INFO  | WALK_FORWARD date=2026_05_28 training_rows=689 training_unique_dates=62 training_end=2026-05-27 home_validation_score=2.040949888354 away_validation_score=2.779066420224
+2026-08-30T16:03:57.906896+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_28_MLB.csv rows=6 features=53
+2026-08-30T16:04:26.004778+00:00 | INFO  | WALK_FORWARD date=2026_05_29 training_rows=695 training_unique_dates=63 training_end=2026-05-28 home_validation_score=2.313165884902 away_validation_score=2.692584519674
+2026-08-30T16:04:26.036531+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_29_MLB.csv rows=15 features=53
+2026-08-30T16:04:54.124997+00:00 | INFO  | WALK_FORWARD date=2026_05_30 training_rows=708 training_unique_dates=64 training_end=2026-05-29 home_validation_score=2.398029977488 away_validation_score=2.495622141137
+2026-08-30T16:04:54.155656+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_30_MLB.csv rows=15 features=53
+2026-08-30T16:05:22.743802+00:00 | INFO  | WALK_FORWARD date=2026_05_31 training_rows=721 training_unique_dates=65 training_end=2026-05-30 home_validation_score=2.524657481754 away_validation_score=2.279949383042
+2026-08-30T16:05:22.773684+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_05_31_MLB.csv rows=15 features=53
+2026-08-30T16:05:51.587570+00:00 | INFO  | WALK_FORWARD date=2026_06_01 training_rows=734 training_unique_dates=66 training_end=2026-05-31 home_validation_score=2.561575783318 away_validation_score=2.313762076465
+2026-08-30T16:05:51.609621+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_01_MLB.csv rows=9 features=53
+2026-08-30T16:06:20.633206+00:00 | INFO  | WALK_FORWARD date=2026_06_02 training_rows=742 training_unique_dates=67 training_end=2026-06-01 home_validation_score=2.561575783318 away_validation_score=2.313762076465
+2026-08-30T16:06:20.664602+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_02_MLB.csv rows=15 features=53
+2026-08-30T16:06:49.743251+00:00 | INFO  | WALK_FORWARD date=2026_06_03 training_rows=755 training_unique_dates=68 training_end=2026-06-02 home_validation_score=2.496155919721 away_validation_score=2.267865547954
+2026-08-30T16:06:49.773376+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_03_MLB.csv rows=15 features=53
+2026-08-30T16:07:19.189210+00:00 | INFO  | WALK_FORWARD date=2026_06_04 training_rows=768 training_unique_dates=69 training_end=2026-06-03 home_validation_score=2.754993079849 away_validation_score=2.245254164980
+2026-08-30T16:07:19.211894+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_04_MLB.csv rows=9 features=53
+2026-08-30T16:07:48.704013+00:00 | INFO  | WALK_FORWARD date=2026_06_05 training_rows=776 training_unique_dates=70 training_end=2026-06-04 home_validation_score=2.656604664178 away_validation_score=2.310907735986
+2026-08-30T16:07:48.733525+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_05_MLB.csv rows=14 features=53
+2026-08-30T16:08:18.790209+00:00 | INFO  | WALK_FORWARD date=2026_06_06 training_rows=788 training_unique_dates=71 training_end=2026-06-05 home_validation_score=2.646794966292 away_validation_score=2.351284620445
+2026-08-30T16:08:18.822361+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_06_MLB.csv rows=15 features=53
+2026-08-30T16:08:48.936183+00:00 | INFO  | WALK_FORWARD date=2026_06_07 training_rows=800 training_unique_dates=72 training_end=2026-06-06 home_validation_score=2.785764915681 away_validation_score=2.302638861627
+2026-08-30T16:08:48.968855+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_07_MLB.csv rows=15 features=53
+2026-08-30T16:09:20.169639+00:00 | INFO  | WALK_FORWARD date=2026_06_08 training_rows=813 training_unique_dates=73 training_end=2026-06-07 home_validation_score=2.869145952188 away_validation_score=2.210772765228
+2026-08-30T16:09:20.189947+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_08_MLB.csv rows=8 features=53
+2026-08-30T16:09:51.043562+00:00 | INFO  | WALK_FORWARD date=2026_06_09 training_rows=820 training_unique_dates=74 training_end=2026-06-08 home_validation_score=2.869145952188 away_validation_score=2.210772765228
+2026-08-30T16:09:51.064729+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_09_MLB.csv rows=9 features=53
+2026-08-30T16:10:22.369920+00:00 | INFO  | WALK_FORWARD date=2026_06_10 training_rows=828 training_unique_dates=75 training_end=2026-06-09 home_validation_score=2.789458171340 away_validation_score=2.250696981544
+2026-08-30T16:10:22.392475+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_10_MLB.csv rows=9 features=53
+2026-08-30T16:10:54.395442+00:00 | INFO  | WALK_FORWARD date=2026_06_11 training_rows=836 training_unique_dates=76 training_end=2026-06-10 home_validation_score=2.606628545532 away_validation_score=2.126588074069
+2026-08-30T16:10:54.416590+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_11_MLB.csv rows=6 features=53
+2026-08-30T16:11:26.670439+00:00 | INFO  | WALK_FORWARD date=2026_06_12 training_rows=841 training_unique_dates=77 training_end=2026-06-11 home_validation_score=2.578852117346 away_validation_score=2.228432897659
+2026-08-30T16:11:26.692664+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_12_MLB.csv rows=8 features=53
+2026-08-30T16:11:58.793470+00:00 | INFO  | WALK_FORWARD date=2026_06_13 training_rows=848 training_unique_dates=78 training_end=2026-06-12 home_validation_score=2.430736813094 away_validation_score=2.312693751475
+2026-08-30T16:11:58.816239+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_13_MLB.csv rows=8 features=53
+2026-08-30T16:12:31.197287+00:00 | INFO  | WALK_FORWARD date=2026_06_14 training_rows=855 training_unique_dates=79 training_end=2026-06-13 home_validation_score=2.621002568120 away_validation_score=2.503212935643
+2026-08-30T16:12:31.217332+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_14_MLB.csv rows=8 features=53
+2026-08-30T16:13:04.252010+00:00 | INFO  | WALK_FORWARD date=2026_06_15 training_rows=861 training_unique_dates=80 training_end=2026-06-14 home_validation_score=2.501261565402 away_validation_score=2.463500289145
+2026-08-30T16:13:04.273564+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_15_MLB.csv rows=9 features=53
+2026-08-30T16:13:36.950519+00:00 | INFO  | WALK_FORWARD date=2026_06_16 training_rows=868 training_unique_dates=81 training_end=2026-06-15 home_validation_score=2.501261565402 away_validation_score=2.463500289145
+2026-08-30T16:13:36.980859+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_16_MLB.csv rows=14 features=53
+2026-08-30T16:14:09.895430+00:00 | INFO  | WALK_FORWARD date=2026_06_17 training_rows=879 training_unique_dates=82 training_end=2026-06-16 home_validation_score=2.686414286759 away_validation_score=2.455941605159
+2026-08-30T16:14:09.924892+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_17_MLB.csv rows=13 features=53
+2026-08-30T16:14:43.180973+00:00 | INFO  | WALK_FORWARD date=2026_06_18 training_rows=890 training_unique_dates=83 training_end=2026-06-17 home_validation_score=2.672282836425 away_validation_score=2.460085089201
+2026-08-30T16:14:43.203960+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_18_MLB.csv rows=9 features=53
+2026-08-30T16:15:16.214041+00:00 | INFO  | WALK_FORWARD date=2026_06_19 training_rows=896 training_unique_dates=84 training_end=2026-06-18 home_validation_score=2.643181919507 away_validation_score=2.523319730637
+2026-08-30T16:15:16.240790+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_19_MLB.csv rows=13 features=53
+2026-08-30T16:15:50.053261+00:00 | INFO  | WALK_FORWARD date=2026_06_20 training_rows=907 training_unique_dates=85 training_end=2026-06-19 home_validation_score=2.694739650112 away_validation_score=2.434474963230
+2026-08-30T16:15:50.084388+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_20_MLB.csv rows=14 features=53
+2026-08-30T16:16:24.428130+00:00 | INFO  | WALK_FORWARD date=2026_06_21 training_rows=920 training_unique_dates=86 training_end=2026-06-20 home_validation_score=2.596513020330 away_validation_score=2.414680920825
+2026-08-30T16:16:24.458348+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_21_MLB.csv rows=14 features=53
+2026-08-30T16:16:58.809985+00:00 | INFO  | WALK_FORWARD date=2026_06_22 training_rows=931 training_unique_dates=87 training_end=2026-06-21 home_validation_score=2.596513020330 away_validation_score=2.414680920825
+2026-08-30T16:16:58.839746+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_22_MLB.csv rows=13 features=53
+2026-08-30T16:17:33.676966+00:00 | INFO  | WALK_FORWARD date=2026_06_23 training_rows=942 training_unique_dates=88 training_end=2026-06-22 home_validation_score=2.359788547194 away_validation_score=2.197134181819
+2026-08-30T16:17:33.710049+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_23_MLB.csv rows=14 features=53
+2026-08-30T16:18:09.369157+00:00 | INFO  | WALK_FORWARD date=2026_06_24 training_rows=954 training_unique_dates=89 training_end=2026-06-23 home_validation_score=2.296720207486 away_validation_score=2.162243769020
+2026-08-30T16:18:09.400043+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_24_MLB.csv rows=14 features=53
+2026-08-30T16:18:44.986787+00:00 | INFO  | WALK_FORWARD date=2026_06_25 training_rows=966 training_unique_dates=90 training_end=2026-06-24 home_validation_score=2.266572396601 away_validation_score=2.220125960009
+2026-08-30T16:18:45.011473+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_25_MLB.csv rows=9 features=53
+2026-08-30T16:19:20.849678+00:00 | INFO  | WALK_FORWARD date=2026_06_26 training_rows=973 training_unique_dates=91 training_end=2026-06-25 home_validation_score=2.231766524707 away_validation_score=2.302459826130
+2026-08-30T16:19:20.880747+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_26_MLB.csv rows=14 features=53
+2026-08-30T16:19:56.673910+00:00 | INFO  | WALK_FORWARD date=2026_06_27 training_rows=985 training_unique_dates=92 training_end=2026-06-26 home_validation_score=2.175122920686 away_validation_score=2.437400843115
+2026-08-30T16:19:56.703803+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_27_MLB.csv rows=15 features=53
+2026-08-30T16:20:33.202918+00:00 | INFO  | WALK_FORWARD date=2026_06_28 training_rows=998 training_unique_dates=93 training_end=2026-06-27 home_validation_score=2.124058136847 away_validation_score=2.311625153443
+2026-08-30T16:20:33.234123+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_28_MLB.csv rows=15 features=53
+2026-08-30T16:21:09.768552+00:00 | INFO  | WALK_FORWARD date=2026_06_29 training_rows=1011 training_unique_dates=94 training_end=2026-06-28 home_validation_score=2.124058136847 away_validation_score=2.311625153443
+2026-08-30T16:21:09.843942+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_29_MLB.csv rows=13 features=53
+2026-08-30T16:21:46.918071+00:00 | INFO  | WALK_FORWARD date=2026_06_30 training_rows=1023 training_unique_dates=95 training_end=2026-06-29 home_validation_score=2.120193392812 away_validation_score=2.300676650639
+2026-08-30T16:21:46.949148+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_06_30_MLB.csv rows=15 features=53
+2026-08-30T16:22:24.609671+00:00 | INFO  | WALK_FORWARD date=2026_07_01 training_rows=1036 training_unique_dates=96 training_end=2026-06-30 home_validation_score=1.954038760992 away_validation_score=2.263768395530
+2026-08-30T16:22:24.641165+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_01_MLB.csv rows=14 features=53
+2026-08-30T16:23:01.763161+00:00 | INFO  | WALK_FORWARD date=2026_07_02 training_rows=1048 training_unique_dates=97 training_end=2026-07-01 home_validation_score=2.069238446838 away_validation_score=2.310373145894
+2026-08-30T16:23:01.785069+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_02_MLB.csv rows=9 features=53
+2026-08-30T16:23:39.422076+00:00 | INFO  | WALK_FORWARD date=2026_07_03 training_rows=1056 training_unique_dates=98 training_end=2026-07-02 home_validation_score=2.097969311782 away_validation_score=2.314414249124
+2026-08-30T16:23:39.450796+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_03_MLB.csv rows=13 features=53
+2026-08-30T16:24:17.472284+00:00 | INFO  | WALK_FORWARD date=2026_07_04 training_rows=1067 training_unique_dates=99 training_end=2026-07-03 home_validation_score=1.879163211446 away_validation_score=2.409579440097
+2026-08-30T16:24:17.503921+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_04_MLB.csv rows=15 features=53
+2026-08-30T16:24:55.960923+00:00 | INFO  | WALK_FORWARD date=2026_07_05 training_rows=1080 training_unique_dates=100 training_end=2026-07-04 home_validation_score=1.949450890321 away_validation_score=2.312677718331
+2026-08-30T16:24:55.989668+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_05_MLB.csv rows=14 features=53
+2026-08-30T16:25:34.803921+00:00 | INFO  | WALK_FORWARD date=2026_07_06 training_rows=1092 training_unique_dates=101 training_end=2026-07-05 home_validation_score=1.949450890321 away_validation_score=2.312677718331
+2026-08-30T16:25:34.824661+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_06_MLB.csv rows=8 features=53
+2026-08-30T16:26:14.282024+00:00 | INFO  | WALK_FORWARD date=2026_07_07 training_rows=1099 training_unique_dates=102 training_end=2026-07-06 home_validation_score=1.901340443848 away_validation_score=2.335987114123
+2026-08-30T16:26:14.315505+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_07_MLB.csv rows=15 features=53
+2026-08-30T16:26:54.143884+00:00 | INFO  | WALK_FORWARD date=2026_07_08 training_rows=1112 training_unique_dates=103 training_end=2026-07-07 home_validation_score=1.868779518386 away_validation_score=2.415861004643
+2026-08-30T16:26:54.175521+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_08_MLB.csv rows=15 features=53
+2026-08-30T16:27:34.107991+00:00 | INFO  | WALK_FORWARD date=2026_07_09 training_rows=1125 training_unique_dates=104 training_end=2026-07-08 home_validation_score=1.821421754469 away_validation_score=2.387765785062
+2026-08-30T16:27:34.139586+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_09_MLB.csv rows=13 features=53
+2026-08-30T16:28:13.752664+00:00 | INFO  | WALK_FORWARD date=2026_07_10 training_rows=1136 training_unique_dates=105 training_end=2026-07-09 home_validation_score=1.857933132624 away_validation_score=2.548874305885
+2026-08-30T16:28:13.783986+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_10_MLB.csv rows=15 features=53
+2026-08-30T16:28:54.629678+00:00 | INFO  | WALK_FORWARD date=2026_07_11 training_rows=1148 training_unique_dates=106 training_end=2026-07-10 home_validation_score=1.935635128494 away_validation_score=2.420530476022
+2026-08-30T16:28:54.655588+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_11_MLB.csv rows=10 features=53
+2026-08-30T16:29:35.478907+00:00 | INFO  | WALK_FORWARD date=2026_07_12 training_rows=1157 training_unique_dates=107 training_end=2026-07-11 home_validation_score=1.935635128494 away_validation_score=2.420530476022
+2026-08-30T16:29:35.509232+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_12_MLB.csv rows=14 features=53
+2026-08-30T16:30:16.291025+00:00 | INFO  | WALK_FORWARD date=2026_07_16 training_rows=1169 training_unique_dates=108 training_end=2026-07-12 home_validation_score=1.953363793785 away_validation_score=2.409274736851
+2026-08-30T16:30:16.301531+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_16_MLB.csv rows=1 features=53
+2026-08-30T16:30:57.598592+00:00 | INFO  | WALK_FORWARD date=2026_07_17 training_rows=1170 training_unique_dates=109 training_end=2026-07-16 home_validation_score=2.149276552851 away_validation_score=2.435110119347
+2026-08-30T16:30:57.630622+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_17_MLB.csv rows=14 features=53
+2026-08-30T16:31:38.881787+00:00 | INFO  | WALK_FORWARD date=2026_07_18 training_rows=1181 training_unique_dates=110 training_end=2026-07-17 home_validation_score=1.995012439423 away_validation_score=2.490526883387
+2026-08-30T16:31:38.904904+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_18_MLB.csv rows=9 features=53
+2026-08-30T16:32:20.236815+00:00 | INFO  | WALK_FORWARD date=2026_07_19 training_rows=1188 training_unique_dates=111 training_end=2026-07-18 home_validation_score=1.888715385309 away_validation_score=2.344721676044
+2026-08-30T16:32:20.266263+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_19_MLB.csv rows=12 features=53
+2026-08-30T16:33:01.397770+00:00 | INFO  | WALK_FORWARD date=2026_07_20 training_rows=1199 training_unique_dates=112 training_end=2026-07-19 home_validation_score=1.819339819945 away_validation_score=2.295249373817
+2026-08-30T16:33:01.430020+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_20_MLB.csv rows=15 features=53
+2026-08-30T16:33:43.122264+00:00 | INFO  | WALK_FORWARD date=2026_07_21 training_rows=1212 training_unique_dates=113 training_end=2026-07-20 home_validation_score=1.855776680135 away_validation_score=2.335539676571
+2026-08-30T16:33:43.144936+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_21_MLB.csv rows=9 features=53
+2026-08-30T16:34:24.566278+00:00 | INFO  | WALK_FORWARD date=2026_07_22 training_rows=1218 training_unique_dates=114 training_end=2026-07-21 home_validation_score=1.855776680135 away_validation_score=2.335539676571
+2026-08-30T16:34:24.578898+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_22_MLB.csv rows=3 features=53
+2026-08-30T16:35:06.101419+00:00 | INFO  | WALK_FORWARD date=2026_07_23 training_rows=1220 training_unique_dates=115 training_end=2026-07-22 home_validation_score=2.084456942578 away_validation_score=2.290492185217
+2026-08-30T16:35:06.117441+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_23_MLB.csv rows=5 features=53
+2026-08-30T16:35:47.860501+00:00 | INFO  | WALK_FORWARD date=2026_07_24 training_rows=1224 training_unique_dates=116 training_end=2026-07-23 home_validation_score=2.181804766497 away_validation_score=2.257569753146
+2026-08-30T16:35:47.895114+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_24_MLB.csv rows=15 features=53
+2026-08-30T16:36:29.771032+00:00 | INFO  | WALK_FORWARD date=2026_07_25 training_rows=1237 training_unique_dates=117 training_end=2026-07-24 home_validation_score=2.255686677292 away_validation_score=2.171139550068
+2026-08-30T16:36:29.805365+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_25_MLB.csv rows=15 features=53
+2026-08-30T16:37:12.147076+00:00 | INFO  | WALK_FORWARD date=2026_07_26 training_rows=1250 training_unique_dates=118 training_end=2026-07-25 home_validation_score=2.353790215430 away_validation_score=2.189658774799
+2026-08-30T16:37:12.177780+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_26_MLB.csv rows=15 features=53
+2026-08-30T16:37:54.808970+00:00 | INFO  | WALK_FORWARD date=2026_07_27 training_rows=1263 training_unique_dates=119 training_end=2026-07-26 home_validation_score=2.264833982888 away_validation_score=2.085856523400
+2026-08-30T16:37:54.838069+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_27_MLB.csv rows=12 features=53
+2026-08-30T16:38:37.170460+00:00 | INFO  | WALK_FORWARD date=2026_07_28 training_rows=1272 training_unique_dates=120 training_end=2026-07-27 home_validation_score=2.486218939892 away_validation_score=2.189880440861
+2026-08-30T16:38:37.203124+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_28_MLB.csv rows=15 features=53
+2026-08-30T16:39:19.461271+00:00 | INFO  | WALK_FORWARD date=2026_07_29 training_rows=1284 training_unique_dates=121 training_end=2026-07-28 home_validation_score=2.486218939892 away_validation_score=2.189880440861
+2026-08-30T16:39:19.494142+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_29_MLB.csv rows=15 features=53
+2026-08-30T16:40:02.043858+00:00 | INFO  | WALK_FORWARD date=2026_07_30 training_rows=1297 training_unique_dates=122 training_end=2026-07-29 home_validation_score=2.412034668929 away_validation_score=2.272459716475
+2026-08-30T16:40:02.068523+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_30_MLB.csv rows=10 features=53
+2026-08-30T16:40:45.177750+00:00 | INFO  | WALK_FORWARD date=2026_07_31 training_rows=1305 training_unique_dates=123 training_end=2026-07-30 home_validation_score=2.517368900099 away_validation_score=2.327847709437
+2026-08-30T16:40:45.210075+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_07_31_MLB.csv rows=15 features=53
+2026-08-30T16:41:28.313356+00:00 | INFO  | WALK_FORWARD date=2026_08_01 training_rows=1318 training_unique_dates=124 training_end=2026-07-31 home_validation_score=2.521017889667 away_validation_score=2.349702756569
+2026-08-30T16:41:28.344970+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_01_MLB.csv rows=15 features=53
+2026-08-30T16:42:11.520037+00:00 | INFO  | WALK_FORWARD date=2026_08_02 training_rows=1331 training_unique_dates=125 training_end=2026-08-01 home_validation_score=2.500678584950 away_validation_score=2.298229738811
+2026-08-30T16:42:11.551865+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_02_MLB.csv rows=15 features=53
+2026-08-30T16:42:55.631181+00:00 | INFO  | WALK_FORWARD date=2026_08_03 training_rows=1344 training_unique_dates=126 training_end=2026-08-02 home_validation_score=2.560017305710 away_validation_score=2.278100941590
+2026-08-30T16:42:55.648940+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_03_MLB.csv rows=6 features=53
+2026-08-30T16:43:40.107198+00:00 | INFO  | WALK_FORWARD date=2026_08_04 training_rows=1350 training_unique_dates=127 training_end=2026-08-03 home_validation_score=2.560017305710 away_validation_score=2.278100941590
+2026-08-30T16:43:40.140418+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_04_MLB.csv rows=15 features=53
+2026-08-30T16:44:23.961906+00:00 | INFO  | WALK_FORWARD date=2026_08_05 training_rows=1363 training_unique_dates=128 training_end=2026-08-04 home_validation_score=2.608207653005 away_validation_score=2.064648525548
+2026-08-30T16:44:23.987705+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_05_MLB.csv rows=11 features=53
+2026-08-30T16:45:08.507550+00:00 | INFO  | WALK_FORWARD date=2026_08_06 training_rows=1370 training_unique_dates=129 training_end=2026-08-05 home_validation_score=2.678388047365 away_validation_score=2.155173378087
+2026-08-30T16:45:08.517664+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_06_MLB.csv rows=1 features=53
+2026-08-30T16:45:53.194739+00:00 | INFO  | WALK_FORWARD date=2026_08_07 training_rows=1371 training_unique_dates=130 training_end=2026-08-06 home_validation_score=2.699218535256 away_validation_score=2.129762486282
+2026-08-30T16:45:53.210453+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_07_MLB.csv rows=4 features=53
+2026-08-30T16:46:37.870453+00:00 | INFO  | WALK_FORWARD date=2026_08_08 training_rows=1375 training_unique_dates=131 training_end=2026-08-07 home_validation_score=2.681618899247 away_validation_score=2.134418591079
+2026-08-30T16:46:37.880121+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_08_MLB.csv rows=1 features=53
+2026-08-30T16:47:23.480019+00:00 | INFO  | WALK_FORWARD date=2026_08_09 training_rows=1376 training_unique_dates=132 training_end=2026-08-08 home_validation_score=2.629937862206 away_validation_score=2.237759528406
+2026-08-30T16:47:23.489972+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_09_MLB.csv rows=1 features=53
+2026-08-30T16:48:09.463684+00:00 | INFO  | WALK_FORWARD date=2026_08_10 training_rows=1377 training_unique_dates=133 training_end=2026-08-09 home_validation_score=2.667475672705 away_validation_score=2.102269086162
+2026-08-30T16:48:09.482180+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_10_MLB.csv rows=6 features=53
+2026-08-30T16:48:55.694630+00:00 | INFO  | WALK_FORWARD date=2026_08_11 training_rows=1382 training_unique_dates=134 training_end=2026-08-10 home_validation_score=2.667475672705 away_validation_score=2.102269086162
+2026-08-30T16:48:55.720719+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_11_MLB.csv rows=11 features=53
+2026-08-30T16:49:41.988035+00:00 | INFO  | WALK_FORWARD date=2026_08_12 training_rows=1389 training_unique_dates=135 training_end=2026-08-11 home_validation_score=2.785450257114 away_validation_score=2.186555057496
+2026-08-30T16:49:42.000850+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_12_MLB.csv rows=2 features=53
+2026-08-30T16:50:27.954244+00:00 | INFO  | WALK_FORWARD date=2026_08_13 training_rows=1391 training_unique_dates=136 training_end=2026-08-12 home_validation_score=2.898236125314 away_validation_score=2.225100695637
+2026-08-30T16:50:27.966235+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_13_MLB.csv rows=2 features=53
+2026-08-30T16:51:13.468787+00:00 | INFO  | WALK_FORWARD date=2026_08_14 training_rows=1393 training_unique_dates=137 training_end=2026-08-13 home_validation_score=2.866482440538 away_validation_score=2.201185131062
+2026-08-30T16:51:13.484795+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_14_MLB.csv rows=4 features=53
+2026-08-30T16:51:55.847553+00:00 | INFO  | WALK_FORWARD date=2026_08_15 training_rows=1396 training_unique_dates=138 training_end=2026-08-14 home_validation_score=2.860230708183 away_validation_score=2.091026805979
+2026-08-30T16:51:55.858862+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_15_MLB.csv rows=2 features=53
+2026-08-30T16:52:38.052912+00:00 | INFO  | WALK_FORWARD date=2026_08_16 training_rows=1397 training_unique_dates=139 training_end=2026-08-15 home_validation_score=2.704812487953 away_validation_score=2.122972793428
+2026-08-30T16:52:38.064054+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_16_MLB.csv rows=1 features=53
+2026-08-30T16:53:20.054878+00:00 | INFO  | WALK_FORWARD date=2026_08_17 training_rows=1398 training_unique_dates=140 training_end=2026-08-16 home_validation_score=2.707417309608 away_validation_score=2.097626803209
+2026-08-30T16:53:20.076865+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_17_MLB.csv rows=9 features=53
+2026-08-30T16:54:02.229648+00:00 | INFO  | WALK_FORWARD date=2026_08_18 training_rows=1406 training_unique_dates=141 training_end=2026-08-17 home_validation_score=2.707417309608 away_validation_score=2.097626803209
+2026-08-30T16:54:02.260955+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_18_MLB.csv rows=15 features=53
+2026-08-30T16:54:44.939600+00:00 | INFO  | WALK_FORWARD date=2026_08_19 training_rows=1415 training_unique_dates=142 training_end=2026-08-18 home_validation_score=2.606554137255 away_validation_score=2.226101186932
+2026-08-30T16:54:44.971699+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_19_MLB.csv rows=15 features=53
+2026-08-30T16:55:27.254833+00:00 | INFO  | WALK_FORWARD date=2026_08_20 training_rows=1428 training_unique_dates=143 training_end=2026-08-19 home_validation_score=2.552513267346 away_validation_score=2.256771338976
+2026-08-30T16:55:27.278115+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_20_MLB.csv rows=9 features=53
+2026-08-30T16:56:09.610036+00:00 | INFO  | WALK_FORWARD date=2026_08_24 training_rows=1428 training_unique_dates=143 training_end=2026-08-19 home_validation_score=2.552513267346 away_validation_score=2.256771338976
+2026-08-30T16:56:09.633876+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_24_MLB.csv rows=10 features=53
+2026-08-30T16:56:51.841120+00:00 | INFO  | WALK_FORWARD date=2026_08_25 training_rows=1437 training_unique_dates=144 training_end=2026-08-24 home_validation_score=2.652180398006 away_validation_score=2.238608552232
+2026-08-30T16:56:51.873954+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_25_MLB.csv rows=15 features=53
+2026-08-30T16:57:35.774209+00:00 | INFO  | WALK_FORWARD date=2026_08_26 training_rows=1450 training_unique_dates=145 training_end=2026-08-25 home_validation_score=2.694197259636 away_validation_score=2.211061495468
+2026-08-30T16:57:35.804440+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_26_MLB.csv rows=12 features=53
+2026-08-30T16:58:21.049999+00:00 | INFO  | WALK_FORWARD date=2026_08_27 training_rows=1460 training_unique_dates=146 training_end=2026-08-26 home_validation_score=2.553624350477 away_validation_score=2.163371941279
+2026-08-30T16:58:21.072978+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_27_MLB.csv rows=7 features=53
+2026-08-30T16:59:06.125958+00:00 | INFO  | WALK_FORWARD date=2026_08_28 training_rows=1466 training_unique_dates=147 training_end=2026-08-27 home_validation_score=2.553624350477 away_validation_score=2.163371941279
+2026-08-30T16:59:06.161186+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_28_MLB.csv rows=15 features=53
+2026-08-30T16:59:51.537787+00:00 | INFO  | WALK_FORWARD date=2026_08_29 training_rows=1469 training_unique_dates=148 training_end=2026-08-28 home_validation_score=2.584544220864 away_validation_score=2.114640960792
+2026-08-30T16:59:51.554834+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_29_MLB.csv rows=3 features=53
+2026-08-30T16:59:51.682445+00:00 | INFO  | PRODUCTION_MODEL date=2026_08_30 historical_training_max=2026-08-29
+2026-08-30T16:59:51.718123+00:00 | INFO  | WROTE docs/win/baseball/mlb/00_intake/predictions/model_projection/2026_08_30_MLB.csv rows=14 features=53
+2026-08-30T16:59:51.720837+00:00 | INFO  | SUCCESS dates_processed=152
