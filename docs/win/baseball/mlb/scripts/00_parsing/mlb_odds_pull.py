@@ -1,56 +1,61 @@
 #!/usr/bin/env python3
-# docs/win/baseball/scripts/00_parsing/mlb_odds_pull.py
+# docs/win/baseball/mlb/scripts/00_parsing/mlb_odds_pull.py
 
-import requests
-import os
 import json
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
-
-API_KEY = os.getenv("API_ODDS")
-
-if not API_KEY:
-    raise RuntimeError("API_ODDS environment variable is not set")
+import requests
 
 
-BASE_URL = "https://api.odds-api.io/v3"
-
-SPORT = "baseball"
-LEAGUE = "usa-mlb"
-
-PRIMARY_BOOKMAKER = "DraftKings"
-FALLBACK_BOOKMAKER = "FanDuel"
-BOOKMAKERS = [PRIMARY_BOOKMAKER, FALLBACK_BOOKMAKER]
-
-EVENT_STATUS = "pending"
+ESPN_BASE = "https://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb"
+DRAFTKINGS_PROVIDER_ID = "100"
+DRAFTKINGS_PROVIDER_NAME = "DraftKings"
 
 ET = ZoneInfo("America/New_York")
 
 NOW_UTC = datetime.now(timezone.utc)
 NOW_ET = NOW_UTC.astimezone(ET)
-
 TARGET_ET_DATE = NOW_ET.date()
 today = TARGET_ET_DATE.strftime("%Y_%m_%d")
 
 PRIMARY_OUTPUT_PATH = Path(f"docs/win/baseball/mlb/odds/{today}.json")
 OUTPUT_PATHS = [PRIMARY_OUTPUT_PATH]
 
+SESSION = requests.Session()
+SESSION.headers.update(
+    {
+        "User-Agent": "Mozilla/5.0 (compatible; baseball_for_mat/1.0)",
+        "Accept": "application/json",
+    }
+)
 
-def get_json(endpoint, params):
-    response = requests.get(
-        f"{BASE_URL}{endpoint}",
-        params=params,
-        timeout=30,
-    )
+
+def get_json(url, params=None):
+    response = SESSION.get(url, params=params, timeout=30)
 
     if response.status_code != 200:
-        print(f"{endpoint} error: {response.status_code}")
+        print(f"GET error: {response.status_code} {response.url}")
         print(response.text)
         raise SystemExit(1)
 
-    return response.json()
+    try:
+        return response.json()
+    except ValueError:
+        print(f"Invalid JSON response: {response.url}")
+        print(response.text[:2000])
+        raise SystemExit(1)
+
+
+def https_ref(value):
+    if not value:
+        return None
+
+    value = str(value)
+    if value.startswith("http://"):
+        return "https://" + value[len("http://") :]
+    return value
 
 
 def parse_event_utc_datetime(value):
@@ -59,10 +64,8 @@ def parse_event_utc_datetime(value):
 
     try:
         dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-
         return dt.astimezone(timezone.utc)
     except Exception:
         return None
@@ -70,10 +73,8 @@ def parse_event_utc_datetime(value):
 
 def parse_event_et_date(value):
     dt = parse_event_utc_datetime(value)
-
     if dt is None:
         return None
-
     return dt.astimezone(ET).date()
 
 
@@ -82,552 +83,290 @@ def event_commence_value(event):
 
 
 def is_target_et_date(event):
-    event_date = parse_event_et_date(event_commence_value(event))
-    return event_date == TARGET_ET_DATE
+    return parse_event_et_date(event_commence_value(event)) == TARGET_ET_DATE
 
 
 def has_started(event):
     dt = parse_event_utc_datetime(event_commence_value(event))
-
     if dt is None:
         return False
-
     return dt <= NOW_UTC
-
-
-def fetch_events_for_bookmaker(bookmaker):
-    events = []
-    skip = 0
-    limit = 100
-
-    while True:
-        batch = get_json(
-            "/events",
-            {
-                "apiKey": API_KEY,
-                "sport": SPORT,
-                "league": LEAGUE,
-                "status": EVENT_STATUS,
-                "bookmaker": bookmaker,
-                "limit": limit,
-                "skip": skip,
-            },
-        )
-
-        if not isinstance(batch, list):
-            print(f"Unexpected /events response for {bookmaker}:")
-            print(json.dumps(batch, indent=2))
-            raise SystemExit(1)
-
-        events.extend(batch)
-
-        if len(batch) < limit:
-            break
-
-        skip += limit
-
-    return events
-
-
-def fetch_events():
-    by_id = {}
-    counts = {}
-    skipped_non_target = {}
-    skipped_started = {}
-
-    for bookmaker in BOOKMAKERS:
-        events = fetch_events_for_bookmaker(bookmaker)
-        counts[bookmaker] = len(events)
-        skipped_non_target[bookmaker] = 0
-        skipped_started[bookmaker] = 0
-
-        for event in events:
-            if not is_target_et_date(event):
-                skipped_non_target[bookmaker] += 1
-                continue
-
-            if has_started(event):
-                skipped_started[bookmaker] += 1
-                continue
-
-            event_id = event.get("id")
-            if event_id is None:
-                continue
-
-            event_id = str(event_id)
-
-            if event_id not in by_id:
-                by_id[event_id] = event
-
-            if bookmaker == PRIMARY_BOOKMAKER:
-                by_id[event_id] = event
-
-    return list(by_id.values()), counts, skipped_non_target, skipped_started
-
-
-def chunks(items, size):
-    for i in range(0, len(items), size):
-        yield items[i:i + size]
-
-
-def fetch_odds_for_bookmaker(event_ids, bookmaker):
-    odds = []
-
-    for batch_ids in chunks(event_ids, 10):
-        batch = get_json(
-            "/odds/multi",
-            {
-                "apiKey": API_KEY,
-                "eventIds": ",".join(str(event_id) for event_id in batch_ids),
-                "bookmakers": bookmaker,
-            },
-        )
-
-        if not isinstance(batch, list):
-            print(f"Unexpected /odds/multi response for {bookmaker}:")
-            print(json.dumps(batch, indent=2))
-            raise SystemExit(1)
-
-        odds.extend(batch)
-
-    return odds
-
-
-def fetch_odds(event_ids):
-    by_id = {}
-
-    for bookmaker in BOOKMAKERS:
-        bookmaker_odds = fetch_odds_for_bookmaker(event_ids, bookmaker)
-
-        for event in bookmaker_odds:
-            if not is_target_et_date(event):
-                continue
-
-            if has_started(event):
-                continue
-
-            event_id = event.get("id")
-            if event_id is None:
-                continue
-
-            event_id = str(event_id)
-
-            if event_id not in by_id:
-                by_id[event_id] = {}
-
-            by_id[event_id][bookmaker] = event
-
-    return by_id
 
 
 def to_float(value):
     if value is None:
         return None
-
     try:
         return float(value)
     except (TypeError, ValueError):
         return None
 
 
-def market_key(name):
-    normalized = str(name or "").strip().lower()
+def american_to_decimal(value):
+    american = to_float(value)
+    if american is None or american == 0:
+        return None
+    if american > 0:
+        return round(1.0 + american / 100.0, 2)
+    return round(1.0 + 100.0 / abs(american), 2)
 
-    if normalized == "ml":
-        return "h2h"
 
-    if normalized in {"spread", "spreads", "asian handicap", "handicap"}:
-        return "spreads"
+def odds_decimal(value):
+    if isinstance(value, dict):
+        decimal_value = to_float(value.get("decimal"))
+        if decimal_value is not None:
+            return decimal_value
 
-    if normalized in {"totals", "total", "over/under", "over under"}:
-        return "totals"
+        american_value = value.get("american")
+        if american_value is None:
+            american_value = value.get("alternateDisplayValue")
+        return american_to_decimal(american_value)
+
+    return american_to_decimal(value)
+
+
+def line_value(value):
+    if isinstance(value, dict):
+        for key in ("american", "alternateDisplayValue", "value"):
+            parsed = to_float(value.get(key))
+            if parsed is not None:
+                return parsed
+        return None
+
+    return to_float(value)
+
+
+def current_value(container, key):
+    current = container.get("current") or {}
+    if key in current and current.get(key) is not None:
+        return current.get(key)
+    return container.get(key)
+
+
+def team_name(competitor, team_cache):
+    team = competitor.get("team") or {}
+
+    for key in ("displayName", "shortDisplayName", "name"):
+        value = team.get(key)
+        if value:
+            return str(value)
+
+    ref = https_ref(team.get("$ref"))
+    if not ref:
+        return None
+
+    if ref not in team_cache:
+        team_cache[ref] = get_json(ref)
+
+    team_data = team_cache[ref]
+    for key in ("displayName", "shortDisplayName", "name"):
+        value = team_data.get(key)
+        if value:
+            return str(value)
 
     return None
 
 
-def get_bookmaker_markets(event, bookmaker):
-    bookmakers = event.get("bookmakers") or {}
+def competition_sides(competition, team_cache):
+    home_team = None
+    away_team = None
 
-    if isinstance(bookmakers, dict):
-        return bookmakers.get(bookmaker, []) or []
+    for competitor in competition.get("competitors") or []:
+        name = team_name(competitor, team_cache)
+        side = str(competitor.get("homeAway") or "").lower()
 
-    if isinstance(bookmakers, list):
-        for item in bookmakers:
-            title = str(item.get("title") or item.get("key") or "").strip().lower()
-            if title == bookmaker.lower():
-                return item.get("markets") or []
+        if side == "home":
+            home_team = name
+        elif side == "away":
+            away_team = name
 
-    return []
-
-
-def price_normal_score(*prices):
-    valid = [p for p in prices if p is not None]
-
-    if not valid:
-        return 999999.0
-
-    return sum(abs(p - 2.0) for p in valid)
+    return home_team, away_team
 
 
-def select_main_spread_row(odds_rows):
-    candidates = []
+def draftkings_odds_item(payload):
+    items = payload.get("items") if isinstance(payload, dict) else None
 
-    for row in odds_rows:
-        point = to_float(row.get("hdp"))
-        home_price = to_float(row.get("home"))
-        away_price = to_float(row.get("away"))
-
-        if point is None:
-            continue
-
-        if home_price is None and away_price is None:
-            continue
-
-        candidates.append(
-            (
-                abs(abs(point) - 1.5),
-                price_normal_score(home_price, away_price),
-                abs(point),
-                row,
-            )
-        )
-
-    if not candidates:
+    if isinstance(items, dict):
+        items = [items]
+    if not isinstance(items, list):
         return None
 
-    return min(candidates, key=lambda x: (x[0], x[1], x[2]))[3]
+    for item in items:
+        provider = item.get("provider") or {}
+        provider_id = str(provider.get("id") or "")
+        provider_name = str(provider.get("name") or provider.get("displayName") or "")
+
+        if provider_id == DRAFTKINGS_PROVIDER_ID or provider_name.lower().replace(" ", "") == "draftkings":
+            return item
+
+    return None
 
 
-def select_main_total_row(odds_rows):
-    candidates = []
+def build_markets(odds, home_team, away_team, pulled_at):
+    markets = []
 
-    for row in odds_rows:
-        point = to_float(row.get("hdp"))
-        over_price = to_float(row.get("over"))
-        under_price = to_float(row.get("under"))
+    away = odds.get("awayTeamOdds") or {}
+    home = odds.get("homeTeamOdds") or {}
 
-        if point is None:
-            continue
+    away_ml = odds_decimal(current_value(away, "moneyLine"))
+    home_ml = odds_decimal(current_value(home, "moneyLine"))
 
-        if over_price is None or under_price is None:
-            continue
-
-        candidates.append(
-            (
-                price_normal_score(over_price, under_price),
-                abs(point - 8.5),
-                point,
-                row,
-            )
+    if away_ml is not None and home_ml is not None:
+        markets.append(
+            {
+                "key": "h2h",
+                "last_update": pulled_at,
+                "outcomes": [
+                    {"name": home_team, "price": home_ml},
+                    {"name": away_team, "price": away_ml},
+                ],
+            }
         )
 
-    if not candidates:
-        return None
+    away_rl = line_value(current_value(away, "pointSpread"))
+    home_rl = line_value(current_value(home, "pointSpread"))
+    away_rl_price = odds_decimal(current_value(away, "spread"))
+    home_rl_price = odds_decimal(current_value(home, "spread"))
 
-    return min(candidates, key=lambda x: (x[0], x[1], x[2]))[3]
-
-
-def select_main_spread_outcomes(outcomes):
-    by_abs_point = {}
-
-    for outcome in outcomes:
-        point = to_float(outcome.get("point"))
-        price = to_float(outcome.get("price"))
-
-        if point is None or price is None:
-            continue
-
-        key = abs(point)
-
-        if key not in by_abs_point:
-            by_abs_point[key] = []
-
-        by_abs_point[key].append(outcome)
-
-    candidates = []
-
-    for abs_point, rows in by_abs_point.items():
-        if len(rows) < 2:
-            continue
-
-        prices = [to_float(row.get("price")) for row in rows]
-        candidates.append(
-            (
-                abs(abs_point - 1.5),
-                price_normal_score(*prices),
-                abs_point,
-                rows[:2],
-            )
+    if (
+        away_rl is not None
+        and home_rl is not None
+        and away_rl_price is not None
+        and home_rl_price is not None
+    ):
+        markets.append(
+            {
+                "key": "spreads",
+                "last_update": pulled_at,
+                "outcomes": [
+                    {"name": home_team, "price": home_rl_price, "point": home_rl},
+                    {"name": away_team, "price": away_rl_price, "point": away_rl},
+                ],
+            }
         )
 
-    if not candidates:
-        return []
+    total = line_value(current_value(odds, "total"))
+    over_price = odds_decimal(current_value(odds, "over"))
+    under_price = odds_decimal(current_value(odds, "under"))
 
-    return min(candidates, key=lambda x: (x[0], x[1], x[2]))[3]
+    if total is None:
+        total = to_float(odds.get("overUnder"))
+    if over_price is None:
+        over_price = american_to_decimal(odds.get("overOdds"))
+    if under_price is None:
+        under_price = american_to_decimal(odds.get("underOdds"))
 
-
-def select_main_total_outcomes(outcomes):
-    by_point = {}
-
-    for outcome in outcomes:
-        point = to_float(outcome.get("point"))
-        price = to_float(outcome.get("price"))
-
-        if point is None or price is None:
-            continue
-
-        if point not in by_point:
-            by_point[point] = []
-
-        by_point[point].append(outcome)
-
-    candidates = []
-
-    for point, rows in by_point.items():
-        over_rows = [
-            row
-            for row in rows
-            if str(row.get("name", "")).strip().lower() == "over"
-        ]
-        under_rows = [
-            row
-            for row in rows
-            if str(row.get("name", "")).strip().lower() == "under"
-        ]
-
-        if not over_rows or not under_rows:
-            continue
-
-        over = over_rows[0]
-        under = under_rows[0]
-
-        over_price = to_float(over.get("price"))
-        under_price = to_float(under.get("price"))
-
-        candidates.append(
-            (
-                price_normal_score(over_price, under_price),
-                abs(point - 8.5),
-                point,
-                [over, under],
-            )
+    if total is not None and over_price is not None and under_price is not None:
+        markets.append(
+            {
+                "key": "totals",
+                "last_update": pulled_at,
+                "outcomes": [
+                    {"name": "Over", "price": over_price, "point": total},
+                    {"name": "Under", "price": under_price, "point": total},
+                ],
+            }
         )
 
-    if not candidates:
-        return []
-
-    return min(candidates, key=lambda x: (x[0], x[1], x[2]))[3]
+    return markets
 
 
-def convert_market(event, market):
-    key = market_key(market.get("name") or market.get("key"))
+def fetch_espn_events():
+    target_compact = TARGET_ET_DATE.strftime("%Y%m%d")
+    payload = get_json(
+        f"{ESPN_BASE}/events",
+        params={"dates": target_compact, "limit": 100},
+    )
 
-    if key not in {"h2h", "spreads", "totals"}:
-        return None
+    refs = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(refs, list):
+        print("Unexpected ESPN events response: missing items list")
+        print(json.dumps(payload, indent=2)[:5000])
+        raise SystemExit(1)
 
-    converted = {
-        "key": key,
-        "last_update": market.get("updatedAt") or market.get("last_update"),
-        "outcomes": [],
-    }
+    team_cache = {}
+    converted = []
+    skipped_non_target = 0
+    skipped_started = 0
+    skipped_no_odds = 0
+    skipped_incomplete = 0
+    pulled_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-    odds_rows = market.get("odds") or []
+    for entry in refs:
+        event_ref = https_ref((entry or {}).get("$ref"))
+        if not event_ref:
+            skipped_incomplete += 1
+            continue
 
-    if odds_rows:
-        if key == "h2h":
-            for row in odds_rows:
-                home_price = to_float(row.get("home"))
-                away_price = to_float(row.get("away"))
+        event = get_json(event_ref)
+        competitions = event.get("competitions") or []
+        if not competitions:
+            skipped_incomplete += 1
+            continue
 
-                if home_price is not None:
-                    converted["outcomes"].append(
-                        {
-                            "name": event.get("home"),
-                            "price": home_price,
-                        }
-                    )
+        competition = competitions[0]
+        commence_time = event.get("date") or competition.get("date")
+        event_for_time = {"commence_time": commence_time}
 
-                if away_price is not None:
-                    converted["outcomes"].append(
-                        {
-                            "name": event.get("away"),
-                            "price": away_price,
-                        }
-                    )
+        if not is_target_et_date(event_for_time):
+            skipped_non_target += 1
+            continue
 
-                break
+        if has_started(event_for_time):
+            skipped_started += 1
+            continue
 
-        elif key == "spreads":
-            row = select_main_spread_row(odds_rows)
+        event_id = str(event.get("id") or competition.get("id") or "").strip()
+        competition_id = str(competition.get("id") or event_id).strip()
+        if not event_id or not competition_id:
+            skipped_incomplete += 1
+            continue
 
-            if row:
-                point = to_float(row.get("hdp"))
-                home_price = to_float(row.get("home"))
-                away_price = to_float(row.get("away"))
+        home_team, away_team = competition_sides(competition, team_cache)
+        if not home_team or not away_team:
+            skipped_incomplete += 1
+            continue
 
-                if home_price is not None:
-                    converted["outcomes"].append(
-                        {
-                            "name": event.get("home"),
-                            "price": home_price,
-                            "point": point,
-                        }
-                    )
+        odds_payload = get_json(
+            f"{ESPN_BASE}/events/{event_id}/competitions/{competition_id}/odds"
+        )
+        odds = draftkings_odds_item(odds_payload)
+        if not odds:
+            skipped_no_odds += 1
+            continue
 
-                if away_price is not None:
-                    converted["outcomes"].append(
-                        {
-                            "name": event.get("away"),
-                            "price": away_price,
-                            "point": -point if point is not None else None,
-                        }
-                    )
+        markets = build_markets(odds, home_team, away_team, pulled_at)
+        if not markets:
+            skipped_no_odds += 1
+            continue
 
-        elif key == "totals":
-            row = select_main_total_row(odds_rows)
-
-            if row:
-                point = to_float(row.get("hdp"))
-                over_price = to_float(row.get("over"))
-                under_price = to_float(row.get("under"))
-
-                if over_price is not None:
-                    converted["outcomes"].append(
-                        {
-                            "name": "Over",
-                            "price": over_price,
-                            "point": point,
-                        }
-                    )
-
-                if under_price is not None:
-                    converted["outcomes"].append(
-                        {
-                            "name": "Under",
-                            "price": under_price,
-                            "point": point,
-                        }
-                    )
-
-    else:
-        outcomes = market.get("outcomes") or []
-
-        if key == "h2h":
-            for outcome in outcomes:
-                name = outcome.get("name")
-                price = to_float(outcome.get("price"))
-
-                if price is None:
-                    continue
-
-                converted["outcomes"].append(
+        converted.append(
+            {
+                "id": event_id,
+                "sport_key": "baseball_mlb",
+                "sport_title": "MLB",
+                "commence_time": commence_time,
+                "home_team": home_team,
+                "away_team": away_team,
+                "bookmakers": [
                     {
-                        "name": name,
-                        "price": price,
+                        "key": "draftkings",
+                        "title": DRAFTKINGS_PROVIDER_NAME,
+                        "last_update": pulled_at,
+                        "markets": markets,
                     }
-                )
+                ],
+            }
+        )
 
-        elif key == "spreads":
-            selected = select_main_spread_outcomes(outcomes)
-
-            for outcome in selected:
-                name = outcome.get("name")
-                price = to_float(outcome.get("price"))
-                point = to_float(outcome.get("point"))
-
-                if price is None:
-                    continue
-
-                converted["outcomes"].append(
-                    {
-                        "name": name,
-                        "price": price,
-                        "point": point,
-                    }
-                )
-
-        elif key == "totals":
-            selected = select_main_total_outcomes(outcomes)
-
-            for outcome in selected:
-                name = outcome.get("name")
-                price = to_float(outcome.get("price"))
-                point = to_float(outcome.get("point"))
-
-                if price is None:
-                    continue
-
-                converted["outcomes"].append(
-                    {
-                        "name": name,
-                        "price": price,
-                        "point": point,
-                    }
-                )
-
-    if not converted["outcomes"]:
-        return None
-
-    return converted
-
-
-def converted_markets_for_bookmaker(event, bookmaker):
-    bookmaker_markets = get_bookmaker_markets(event, bookmaker)
-    converted_markets = []
-
-    for market in bookmaker_markets:
-        converted_market = convert_market(event, market)
-
-        if converted_market:
-            converted_markets.append(converted_market)
-
-    return converted_markets
-
-
-def convert_event(event_by_bookmaker, event_fallback):
-    selected_bookmaker = None
-    selected_event = None
-    converted_markets = []
-
-    for bookmaker in BOOKMAKERS:
-        candidate_event = event_by_bookmaker.get(bookmaker)
-
-        if not candidate_event:
-            continue
-
-        candidate_markets = converted_markets_for_bookmaker(candidate_event, bookmaker)
-
-        if candidate_markets:
-            selected_bookmaker = bookmaker
-            selected_event = candidate_event
-            converted_markets = candidate_markets
-            break
-
-    if not selected_event or not converted_markets:
-        return None, None
-
-    last_update_values = [
-        market.get("last_update")
-        for market in converted_markets
-        if market.get("last_update")
-    ]
-
-    bookmaker = {
-        "key": "draftkings",
-        "title": PRIMARY_BOOKMAKER,
-        "last_update": max(last_update_values) if last_update_values else None,
-        "markets": converted_markets,
-    }
-
-    return {
-        "id": str(selected_event.get("id") or event_fallback.get("id")),
-        "sport_key": "baseball_mlb",
-        "sport_title": "MLB",
-        "commence_time": selected_event.get("date") or event_fallback.get("date"),
-        "home_team": selected_event.get("home") or event_fallback.get("home"),
-        "away_team": selected_event.get("away") or event_fallback.get("away"),
-        "bookmakers": [bookmaker],
-    }, selected_bookmaker
+    return (
+        converted,
+        len(refs),
+        skipped_non_target,
+        skipped_started,
+        skipped_no_odds,
+        skipped_incomplete,
+    )
 
 
 def read_json_list(input_path):
@@ -650,26 +389,26 @@ def read_json_list(input_path):
 
 def event_id(event):
     value = event.get("id")
-
     if value is None:
         return None
-
     value = str(value).strip()
+    return value or None
 
-    if not value:
-        return None
 
-    return value
+def event_identity(event):
+    home = str(event.get("home_team") or "").strip().lower()
+    away = str(event.get("away_team") or "").strip().lower()
+    dt = parse_event_utc_datetime(event.get("commence_time"))
+    when = dt.strftime("%Y-%m-%dT%H:%M") if dt else str(event.get("commence_time") or "")
+    return home, away, when
 
 
 def filter_target_date_events(events):
-    filtered = []
-
-    for event in events:
-        if isinstance(event, dict) and is_target_et_date(event):
-            filtered.append(event)
-
-    return filtered
+    return [
+        event
+        for event in events
+        if isinstance(event, dict) and is_target_et_date(event)
+    ]
 
 
 def sort_events(events):
@@ -685,49 +424,40 @@ def sort_events(events):
 
 
 def merge_with_existing(existing_events, pulled_events):
-    existing_by_id = {}
-    order = []
-
-    for event in filter_target_date_events(existing_events):
-        eid = event_id(event)
-
-        if eid is None:
-            continue
-
-        if eid not in existing_by_id:
-            order.append(eid)
-
-        existing_by_id[eid] = event
-
-    added = 0
+    merged = filter_target_date_events(existing_events)
     updated = 0
+    added = 0
     preserved_started = 0
 
-    for event in pulled_events:
-        eid = event_id(event)
+    for pulled in pulled_events:
+        pulled_id = event_id(pulled)
+        pulled_identity = event_identity(pulled)
+        match_index = None
 
-        if eid is None:
+        for index, existing in enumerate(merged):
+            same_id = pulled_id is not None and event_id(existing) == pulled_id
+            same_game = event_identity(existing) == pulled_identity
+            if same_id or same_game:
+                match_index = index
+                break
+
+        if match_index is None:
+            merged.append(pulled)
+            added += 1
             continue
 
-        if eid in existing_by_id and has_started(existing_by_id[eid]):
+        if has_started(merged[match_index]):
             preserved_started += 1
             continue
 
-        if eid in existing_by_id:
-            updated += 1
-        else:
-            order.append(eid)
-            added += 1
+        merged[match_index] = pulled
+        updated += 1
 
-        existing_by_id[eid] = event
-
-    merged = [existing_by_id[eid] for eid in order]
     return sort_events(merged), updated, added, preserved_started
 
 
 def write_json(output_path, data):
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
     temp_path = output_path.with_suffix(output_path.suffix + ".tmp")
 
     with open(temp_path, "w", encoding="utf-8") as f:
@@ -736,70 +466,45 @@ def write_json(output_path, data):
     temp_path.replace(output_path)
 
 
-events, event_counts, skipped_non_target_counts, skipped_started_counts = fetch_events()
+def main():
+    (
+        data,
+        espn_events_found,
+        skipped_non_target,
+        skipped_started,
+        skipped_no_odds,
+        skipped_incomplete,
+    ) = fetch_espn_events()
 
-if not events:
-    print("No pending MLB events found with DraftKings or FanDuel odds.")
-    data = []
-    source_counts = {
-        PRIMARY_BOOKMAKER: 0,
-        FALLBACK_BOOKMAKER: 0,
-    }
-else:
-    events_by_id = {
-        str(event["id"]): event
-        for event in events
-        if event.get("id") is not None
-    }
+    data = sort_events(data)
+    existing_data = read_json_list(PRIMARY_OUTPUT_PATH)
+    output_data, updated_existing, added_new, preserved_started_existing = merge_with_existing(
+        existing_data,
+        data,
+    )
 
-    event_ids = sorted(events_by_id.keys())
-    raw_odds_by_id = fetch_odds(event_ids)
+    for output_path in OUTPUT_PATHS:
+        write_json(output_path, output_data)
+        print(f"Saved {output_path}")
 
-    data = []
-    source_counts = {
-        PRIMARY_BOOKMAKER: 0,
-        FALLBACK_BOOKMAKER: 0,
-    }
+    print(f"Target ET date: {TARGET_ET_DATE.isoformat()}")
+    print(f"Target date string: {today}")
+    print(f"Current UTC time: {NOW_UTC.isoformat()}")
+    print(f"Current ET time: {NOW_ET.isoformat()}")
+    print("Odds source: ESPN Core API")
+    print(f"Sportsbook provider: {DRAFTKINGS_PROVIDER_NAME}")
+    print(f"ESPN target-date event refs found: {espn_events_found}")
+    print(f"Non-target ET date events skipped: {skipped_non_target}")
+    print(f"Started events skipped: {skipped_started}")
+    print(f"Events skipped with no DraftKings odds: {skipped_no_odds}")
+    print(f"Incomplete ESPN events skipped: {skipped_incomplete}")
+    print(f"Events with converted odds this pull: {len(data)}")
+    print(f"Existing output seed count: {len(existing_data)}")
+    print(f"Updated existing not-started events: {updated_existing}")
+    print(f"Added new pending events: {added_new}")
+    print(f"Preserved existing started events from overwrite: {preserved_started_existing}")
+    print(f"Final output event count: {len(output_data)}")
 
-    for event_id_value in event_ids:
-        converted, source_bookmaker = convert_event(
-            raw_odds_by_id.get(event_id_value, {}),
-            events_by_id[event_id_value],
-        )
 
-        if converted:
-            data.append(converted)
-            source_counts[source_bookmaker] = source_counts.get(source_bookmaker, 0) + 1
-
-data = sort_events(data)
-
-existing_data = read_json_list(PRIMARY_OUTPUT_PATH)
-output_data, updated_existing, added_new, preserved_started_existing = merge_with_existing(
-    existing_data,
-    data,
-)
-
-for output_path in OUTPUT_PATHS:
-    write_json(output_path, output_data)
-    print(f"Saved {output_path}")
-
-print(f"Target ET date: {TARGET_ET_DATE.isoformat()}")
-print(f"Target date string: {today}")
-print(f"Current UTC time: {NOW_UTC.isoformat()}")
-print(f"Current ET time: {NOW_ET.isoformat()}")
-print(f"API event status: {EVENT_STATUS}")
-print(f"{PRIMARY_BOOKMAKER} events found: {event_counts.get(PRIMARY_BOOKMAKER, 0)}")
-print(f"{FALLBACK_BOOKMAKER} events found: {event_counts.get(FALLBACK_BOOKMAKER, 0)}")
-print(f"{PRIMARY_BOOKMAKER} non-target ET date events skipped: {skipped_non_target_counts.get(PRIMARY_BOOKMAKER, 0)}")
-print(f"{FALLBACK_BOOKMAKER} non-target ET date events skipped: {skipped_non_target_counts.get(FALLBACK_BOOKMAKER, 0)}")
-print(f"{PRIMARY_BOOKMAKER} started events skipped: {skipped_started_counts.get(PRIMARY_BOOKMAKER, 0)}")
-print(f"{FALLBACK_BOOKMAKER} started events skipped: {skipped_started_counts.get(FALLBACK_BOOKMAKER, 0)}")
-print(f"Unique pending target-date events found: {len(events)}")
-print(f"Events with converted odds this pull: {len(data)}")
-print(f"Events using {PRIMARY_BOOKMAKER}: {source_counts.get(PRIMARY_BOOKMAKER, 0)}")
-print(f"Events using {FALLBACK_BOOKMAKER}: {source_counts.get(FALLBACK_BOOKMAKER, 0)}")
-print(f"Existing output seed count: {len(existing_data)}")
-print(f"Updated existing not-started events: {updated_existing}")
-print(f"Added new pending events: {added_new}")
-print(f"Preserved existing started events from overwrite: {preserved_started_existing}")
-print(f"Final output event count: {len(output_data)}")
+if __name__ == "__main__":
+    main()
