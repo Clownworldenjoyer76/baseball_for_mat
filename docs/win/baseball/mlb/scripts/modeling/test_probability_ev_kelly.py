@@ -279,83 +279,53 @@ def test_run_line_complement_and_home_away_swap() -> None:
         )
 
 
-def test_run_line_calibration_contract_and_ranking() -> None:
-    _assert_close(
-        PROBS.RUN_LINE_CALIBRATION_INTERCEPT,
-        0.0,
-    )
-
-    _assert_close(
-        PROBS.RUN_LINE_CALIBRATION_SLOPE,
-        0.281791,
-    )
-
-    raw_grid = [
-        0.05,
-        0.15,
-        0.25,
-        0.40,
-        0.50,
-        0.60,
-        0.75,
-        0.90,
-        0.95,
+def test_run_line_probability_contract_and_ranking() -> None:
+    cases = [
+        (2.5, 6.0),
+        (3.0, 5.5),
+        (3.5, 5.0),
+        (4.0, 4.5),
+        (4.5, 4.0),
+        (5.0, 3.5),
+        (5.5, 3.0),
+        (6.0, 2.5),
     ]
 
-    calibrated_grid = []
+    home_cover_probs = []
 
-    for raw_home in raw_grid:
-        raw_away = 1.0 - raw_home
-
+    for home_runs, away_runs in cases:
         (
-            calibrated_home,
-            calibrated_away,
-        ) = PROBS.calibrate_run_line_probabilities(
-            raw_home,
-            raw_away,
+            home_cover,
+            away_cover,
+        ) = PROBS.run_line_probabilities(
+            home_runs,
+            away_runs,
+            -1.5,
+            1.5,
         )
 
         _assert_close(
-            calibrated_home + calibrated_away,
+            home_cover + away_cover,
             1.0,
         )
 
-        expected_logit = math.log(
-            raw_home / (1.0 - raw_home)
-        )
+        assert 0.0 <= home_cover <= 1.0
+        assert 0.0 <= away_cover <= 1.0
 
-        expected_home = 1.0 / (
-            1.0
-            + math.exp(
-                -(
-                    0.0
-                    + 0.281791
-                    * expected_logit
-                )
-            )
-        )
-
-        _assert_close(
-            calibrated_home,
-            expected_home,
-        )
-
-        assert abs(calibrated_home - 0.5) <= abs(raw_home - 0.5) + ABS_TOL
-
-        calibrated_grid.append(
-            calibrated_home
+        home_cover_probs.append(
+            home_cover
         )
 
     assert all(
         right > left
         for left, right in zip(
-            calibrated_grid,
-            calibrated_grid[1:],
+            home_cover_probs,
+            home_cover_probs[1:],
         )
     )
 
 
-def test_calibrated_run_line_probability_home_away_swap() -> None:
+def test_run_line_probability_home_away_swap() -> None:
     cases = [
         (4.9, 3.6),
         (3.2, 5.0),
@@ -367,7 +337,7 @@ def test_calibrated_run_line_probability_home_away_swap() -> None:
         (
             home_cover,
             away_cover,
-        ) = PROBS.calibrated_run_line_probabilities(
+        ) = PROBS.run_line_probabilities(
             home_runs,
             away_runs,
             -1.5,
@@ -382,7 +352,7 @@ def test_calibrated_run_line_probability_home_away_swap() -> None:
         (
             swapped_home_cover,
             swapped_away_cover,
-        ) = PROBS.calibrated_run_line_probabilities(
+        ) = PROBS.run_line_probabilities(
             away_runs,
             home_runs,
             1.5,
@@ -400,7 +370,7 @@ def test_calibrated_run_line_probability_home_away_swap() -> None:
         )
 
 
-def test_calibrated_run_line_ev_kelly_contract() -> None:
+def test_run_line_ev_kelly_contract() -> None:
     cases = [
         (4.9, 3.6, -1.5, 1.5, 1.95, 1.87),
         (3.2, 5.0, 1.5, -1.5, 1.80, 2.05),
@@ -419,7 +389,7 @@ def test_calibrated_run_line_ev_kelly_contract() -> None:
         (
             home_prob,
             away_prob,
-        ) = PROBS.calibrated_run_line_probabilities(
+        ) = PROBS.run_line_probabilities(
             home_runs,
             away_runs,
             home_line,
@@ -451,7 +421,7 @@ def test_calibrated_run_line_ev_kelly_contract() -> None:
             )
 
             assert _sign(raw_kelly) == _sign(ev), (
-                f"Calibrated run-line Kelly/EV sign mismatch: "
+                f"Run-line Kelly/EV sign mismatch: "
                 f"p={probability} "
                 f"decimal={decimal_odds} "
                 f"ev={ev} "
@@ -570,14 +540,14 @@ def test_model_probabilities_are_price_independent() -> None:
         "away": 1.70,
     }
 
-    probs_a = PROBS.calibrated_run_line_probabilities(
+    probs_a = PROBS.run_line_probabilities(
         model_home_runs,
         model_away_runs,
         home_line,
         away_line,
     )
 
-    probs_b = PROBS.calibrated_run_line_probabilities(
+    probs_b = PROBS.run_line_probabilities(
         model_home_runs,
         model_away_runs,
         home_line,
