@@ -6,6 +6,7 @@ import json
 import traceback
 from datetime import datetime, UTC
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/05_final_scores")
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
@@ -26,6 +27,7 @@ KEY_AUDIT_FILE = AUDIT_DIR / "final_score_key_audit.csv"
 
 RUN_TS = datetime.now(UTC).isoformat()
 DOUBLEHEADER_TIME_TOLERANCE_MINUTES = 90
+ET = ZoneInfo("America/New_York")
 
 with open(LOG_FILE, "w", encoding="utf-8") as f:
     f.write(f"=== build_mlb_final_scores RUN {RUN_TS} ===\n")
@@ -126,68 +128,147 @@ def is_completed_game(row):
     return status_norm == "final" and isinstance(row, list) and len(row) == 8
 
 
-def closest_time_match(candidates, target_game_time, value_field):
-    if not candidates:
+def raw_snapshot_date_from_path(path):
+    suffix = "_mlb_raw.json"
+    name = Path(path).name
+
+    if not name.endswith(suffix):
         return ""
 
-    if len(candidates) == 1:
-        return candidates[0].get(value_field, "")
+    return name[:-len(suffix)]
 
+
+def et_utc_offset_minutes_for_date(game_date):
+    try:
+        local_dt = datetime.strptime(game_date, "%Y_%m_%d").replace(
+            hour=12,
+            tzinfo=ET,
+        )
+    except ValueError:
+        return 0
+
+    offset = local_dt.utcoffset()
+    if offset is None:
+        return 0
+
+    return int(abs(offset.total_seconds()) // 60)
+
+
+def time_match_targets(
+    target_game_time,
+    *,
+    correction_minutes=0,
+    prefer_correction=False,
+):
     target_minutes = parse_time_minutes(target_game_time)
+
     if target_minutes is None:
-        return ""
+        return []
 
-    best_candidate = None
-    best_diff = None
+    correction_minutes = int(correction_minutes or 0)
 
-    for candidate in candidates:
-        candidate_minutes = parse_time_minutes(candidate.get("game_time", ""))
-        if candidate_minutes is None:
-            continue
+    if correction_minutes <= 0:
+        return [(target_minutes, 0)]
 
-        diff = abs(candidate_minutes - target_minutes)
-        if best_diff is None or diff < best_diff:
-            best_diff = diff
-            best_candidate = candidate
+    corrected_minutes = (target_minutes + correction_minutes) % (24 * 60)
 
-    if best_candidate is None or best_diff > DOUBLEHEADER_TIME_TOLERANCE_MINUTES:
-        return ""
+    if corrected_minutes == target_minutes:
+        return [(target_minutes, 0)]
 
-    return best_candidate.get(value_field, "")
+    if prefer_correction:
+        return [
+            (corrected_minutes, 0),
+            (target_minutes, 1),
+        ]
+
+    return [
+        (target_minutes, 0),
+        (corrected_minutes, 1),
+    ]
 
 
-def closest_time_record_match(candidates, target_game_time):
+def closest_time_record_match(
+    candidates,
+    target_game_time,
+    *,
+    correction_minutes=0,
+    prefer_correction=False,
+):
     if not candidates:
         return {}
 
     if len(candidates) == 1:
         return candidates[0]
 
-    target_minutes = parse_time_minutes(target_game_time)
-    if target_minutes is None:
+    targets = time_match_targets(
+        target_game_time,
+        correction_minutes=correction_minutes,
+        prefer_correction=prefer_correction,
+    )
+
+    if not targets:
         return {}
 
     best_candidate = None
-    best_diff = None
+    best_score = None
 
-    for candidate in candidates:
+    for candidate_index, candidate in enumerate(candidates):
         candidate_minutes = parse_time_minutes(candidate.get("game_time", ""))
         if candidate_minutes is None:
             continue
 
-        diff = abs(candidate_minutes - target_minutes)
-        if best_diff is None or diff < best_diff:
-            best_diff = diff
-            best_candidate = candidate
+        for target_minutes, target_priority in targets:
+            diff = abs(candidate_minutes - target_minutes)
+            score = (diff, target_priority, candidate_index)
 
-    if best_candidate is None or best_diff > DOUBLEHEADER_TIME_TOLERANCE_MINUTES:
+            if best_score is None or score < best_score:
+                best_score = score
+                best_candidate = candidate
+
+    if (
+        best_candidate is None
+        or best_score is None
+        or best_score[0] > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
+    ):
         return {}
 
     return best_candidate
 
 
-def closest_time_book_match(candidates, target_game_time):
-    return closest_time_record_match(candidates, target_game_time)
+def closest_time_match(
+    candidates,
+    target_game_time,
+    value_field,
+    *,
+    correction_minutes=0,
+    prefer_correction=False,
+):
+    match = closest_time_record_match(
+        candidates,
+        target_game_time,
+        correction_minutes=correction_minutes,
+        prefer_correction=prefer_correction,
+    )
+
+    if not match:
+        return ""
+
+    return match.get(value_field, "")
+
+
+def closest_time_book_match(
+    candidates,
+    target_game_time,
+    *,
+    correction_minutes=0,
+    prefer_correction=False,
+):
+    return closest_time_record_match(
+        candidates,
+        target_game_time,
+        correction_minutes=correction_minutes,
+        prefer_correction=prefer_correction,
+    )
 
 
 def load_games_lookup(date):
@@ -606,6 +687,7 @@ def process_file(
     games_lookup_cache = {}
     predictions_lookup_cache = {}
     sportsbook_lookup_cache = {}
+    source_snapshot_date = raw_snapshot_date_from_path(file_path)
 
     parse_errors = 0
     skipped_summary = 0
@@ -786,18 +868,36 @@ def process_file(
             pred_lookup = predictions_lookup_cache[game_date]
             book_lookup = sportsbook_lookup_cache[game_date]
 
+            historical_snapshot_row = bool(
+                source_snapshot_date
+                and source_snapshot_date > game_date
+            )
+            correction_minutes = (
+                et_utc_offset_minutes_for_date(game_date)
+                if historical_snapshot_row
+                else 0
+            )
+
             games_candidates = games_lookup.get(key, [])
             games_match = closest_time_record_match(
                 games_candidates,
                 game_time,
+                correction_minutes=correction_minutes,
+                prefer_correction=historical_snapshot_row,
             )
 
             pred_candidates = pred_lookup.get(key, [])
-            pred_game_id = closest_time_match(
-                pred_candidates,
-                game_time,
-                "game_id",
-            )
+
+            if len(games_candidates) > 1 and not games_match:
+                pred_game_id = ""
+            else:
+                pred_game_id = closest_time_match(
+                    pred_candidates,
+                    game_time,
+                    "game_id",
+                    correction_minutes=correction_minutes,
+                    prefer_correction=historical_snapshot_row,
+                )
 
             game_id = str(
                 games_match.get("game_id", "") or pred_game_id or ""
@@ -815,6 +915,8 @@ def process_file(
             book = closest_time_book_match(
                 book_candidates,
                 game_time,
+                correction_minutes=correction_minutes,
+                prefer_correction=historical_snapshot_row,
             )
 
             record = {
