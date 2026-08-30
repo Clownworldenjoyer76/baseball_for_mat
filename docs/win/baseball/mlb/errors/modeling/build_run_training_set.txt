@@ -1,736 +1,464 @@
-=== build_run_training_set RUN 2026-08-30T10:50:54.107757+00:00 ===
-2026-08-30T10:50:54.109572+00:00 | INFO  | Skipping prediction dates with no matching final-score file: 2026_08_20, 2026_08_29, 2026_08_30
-2026-08-30T10:50:54.109623+00:00 | INFO  | dates_to_process=149
-2026-08-30T10:50:54.109649+00:00 | INFO  | processing date=2026_03_26
-2026-08-30T10:50:54.158804+00:00 | WARN  | final_scores 2026_03_26 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:54.177268+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_26_weather.csv
-2026-08-30T10:50:54.187979+00:00 | INFO  | processing date=2026_03_27
-2026-08-30T10:50:54.226212+00:00 | WARN  | final_scores 2026_03_27 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:54.242605+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_27_weather.csv
-2026-08-30T10:50:54.252871+00:00 | INFO  | processing date=2026_03_28
-2026-08-30T10:50:54.292258+00:00 | WARN  | final_scores 2026_03_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.308679+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_28_weather.csv
-2026-08-30T10:50:54.317740+00:00 | INFO  | processing date=2026_03_29
-2026-08-30T10:50:54.356905+00:00 | WARN  | final_scores 2026_03_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.374028+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_29_weather.csv
-2026-08-30T10:50:54.383249+00:00 | INFO  | processing date=2026_03_30
-2026-08-30T10:50:54.422766+00:00 | WARN  | final_scores 2026_03_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.439471+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_30_weather.csv
-2026-08-30T10:50:54.448738+00:00 | INFO  | processing date=2026_03_31
-2026-08-30T10:50:54.488678+00:00 | WARN  | final_scores 2026_03_31 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.505467+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_31_weather.csv
-2026-08-30T10:50:54.515146+00:00 | INFO  | processing date=2026_04_01
-2026-08-30T10:50:54.553852+00:00 | WARN  | final_scores 2026_04_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.571008+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_01_weather.csv
-2026-08-30T10:50:54.580810+00:00 | INFO  | processing date=2026_04_02
-2026-08-30T10:50:54.634485+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_02_weather.csv
-2026-08-30T10:50:54.643062+00:00 | INFO  | processing date=2026_04_03
-2026-08-30T10:50:54.685097+00:00 | WARN  | final_scores 2026_04_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.702453+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_03_weather.csv
-2026-08-30T10:50:54.710396+00:00 | INFO  | processing date=2026_04_04
-2026-08-30T10:50:54.766490+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_04_weather.csv
-2026-08-30T10:50:54.776059+00:00 | INFO  | processing date=2026_04_05
-2026-08-30T10:50:54.815327+00:00 | WARN  | final_scores 2026_04_05 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.832465+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_05_weather.csv
-2026-08-30T10:50:54.841407+00:00 | INFO  | processing date=2026_04_06
-2026-08-30T10:50:54.881402+00:00 | WARN  | final_scores 2026_04_06 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:54.897838+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_06_weather.csv
-2026-08-30T10:50:54.906560+00:00 | INFO  | processing date=2026_04_07
-2026-08-30T10:50:54.945631+00:00 | WARN  | final_scores 2026_04_07 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:54.978039+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_07_weather.csv
-2026-08-30T10:50:54.986972+00:00 | INFO  | processing date=2026_04_08
-2026-08-30T10:50:55.026153+00:00 | WARN  | final_scores 2026_04_08 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.042794+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_08_weather.csv
-2026-08-30T10:50:55.051925+00:00 | INFO  | processing date=2026_04_09
-2026-08-30T10:50:55.090460+00:00 | WARN  | final_scores 2026_04_09 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:55.107035+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_09_weather.csv
-2026-08-30T10:50:55.114566+00:00 | INFO  | processing date=2026_04_10
-2026-08-30T10:50:55.154625+00:00 | WARN  | final_scores 2026_04_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.171197+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_10_weather.csv
-2026-08-30T10:50:55.181009+00:00 | INFO  | processing date=2026_04_11
-2026-08-30T10:50:55.220812+00:00 | WARN  | final_scores 2026_04_11 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.237655+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_11_weather.csv
-2026-08-30T10:50:55.245564+00:00 | INFO  | processing date=2026_04_12
-2026-08-30T10:50:55.285384+00:00 | WARN  | final_scores 2026_04_12 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.302041+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_12_weather.csv
-2026-08-30T10:50:55.309562+00:00 | INFO  | processing date=2026_04_13
-2026-08-30T10:50:55.348959+00:00 | WARN  | final_scores 2026_04_13 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.365428+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_13_weather.csv
-2026-08-30T10:50:55.374118+00:00 | INFO  | processing date=2026_04_14
-2026-08-30T10:50:55.413675+00:00 | WARN  | final_scores 2026_04_14 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.430253+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_14_weather.csv
-2026-08-30T10:50:55.440289+00:00 | INFO  | processing date=2026_04_15
-2026-08-30T10:50:55.479772+00:00 | WARN  | final_scores 2026_04_15 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.496597+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_15_weather.csv
-2026-08-30T10:50:55.505357+00:00 | INFO  | processing date=2026_04_16
-2026-08-30T10:50:55.543131+00:00 | WARN  | final_scores 2026_04_16 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:55.559854+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_16_weather.csv
-2026-08-30T10:50:55.567310+00:00 | INFO  | processing date=2026_04_17
-2026-08-30T10:50:55.606680+00:00 | WARN  | final_scores 2026_04_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.623220+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_17_weather.csv
-2026-08-30T10:50:55.632322+00:00 | INFO  | processing date=2026_04_18
-2026-08-30T10:50:55.671785+00:00 | WARN  | final_scores 2026_04_18 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.688438+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_18_weather.csv
-2026-08-30T10:50:55.696018+00:00 | INFO  | processing date=2026_04_19
-2026-08-30T10:50:55.736515+00:00 | WARN  | final_scores 2026_04_19 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.753317+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_19_weather.csv
-2026-08-30T10:50:55.761036+00:00 | INFO  | processing date=2026_04_20
-2026-08-30T10:50:55.799528+00:00 | WARN  | final_scores 2026_04_20 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.815919+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_20_weather.csv
-2026-08-30T10:50:55.823708+00:00 | INFO  | processing date=2026_04_21
-2026-08-30T10:50:55.863336+00:00 | WARN  | final_scores 2026_04_21 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.879984+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_21_weather.csv
-2026-08-30T10:50:55.887696+00:00 | INFO  | processing date=2026_04_22
-2026-08-30T10:50:55.927592+00:00 | WARN  | final_scores 2026_04_22 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:55.944194+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_22_weather.csv
-2026-08-30T10:50:55.952993+00:00 | INFO  | processing date=2026_04_23
-2026-08-30T10:50:56.005225+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_23_weather.csv
-2026-08-30T10:50:56.015105+00:00 | INFO  | processing date=2026_04_24
-2026-08-30T10:50:56.073204+00:00 | WARN  | final_scores 2026_04_24 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.089896+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_24_weather.csv
-2026-08-30T10:50:56.097613+00:00 | INFO  | processing date=2026_04_25
-2026-08-30T10:50:56.153615+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_25_weather.csv
-2026-08-30T10:50:56.162474+00:00 | INFO  | processing date=2026_04_26
-2026-08-30T10:50:56.202356+00:00 | WARN  | final_scores 2026_04_26 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.219586+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_26_weather.csv
-2026-08-30T10:50:56.228838+00:00 | INFO  | processing date=2026_04_27
-2026-08-30T10:50:56.268786+00:00 | WARN  | final_scores 2026_04_27 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:56.285782+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_27_weather.csv
-2026-08-30T10:50:56.293269+00:00 | INFO  | processing date=2026_04_28
-2026-08-30T10:50:56.333732+00:00 | WARN  | final_scores 2026_04_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.351080+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_28_weather.csv
-2026-08-30T10:50:56.359909+00:00 | INFO  | processing date=2026_04_29
-2026-08-30T10:50:56.404851+00:00 | WARN  | final_scores 2026_04_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.423495+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_29_weather.csv
-2026-08-30T10:50:56.434078+00:00 | INFO  | processing date=2026_04_30
-2026-08-30T10:50:56.480562+00:00 | WARN  | final_scores 2026_04_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.497354+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_30_weather.csv
-2026-08-30T10:50:56.504918+00:00 | INFO  | processing date=2026_05_01
-2026-08-30T10:50:56.544830+00:00 | WARN  | final_scores 2026_05_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.561719+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_01_weather.csv
-2026-08-30T10:50:56.570616+00:00 | INFO  | processing date=2026_05_02
-2026-08-30T10:50:56.610486+00:00 | WARN  | final_scores 2026_05_02 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.628530+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_02_weather.csv
-2026-08-30T10:50:56.636597+00:00 | INFO  | processing date=2026_05_03
-2026-08-30T10:50:56.676856+00:00 | WARN  | final_scores 2026_05_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.693878+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_03_weather.csv
-2026-08-30T10:50:56.703811+00:00 | INFO  | processing date=2026_05_04
-2026-08-30T10:50:56.743794+00:00 | WARN  | final_scores 2026_05_04 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:56.760620+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_04_weather.csv
-2026-08-30T10:50:56.770305+00:00 | INFO  | processing date=2026_05_05
-2026-08-30T10:50:56.809805+00:00 | WARN  | final_scores 2026_05_05 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:56.826683+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_05_weather.csv
-2026-08-30T10:50:56.835493+00:00 | INFO  | processing date=2026_05_06
-2026-08-30T10:50:56.873360+00:00 | WARN  | final_scores 2026_05_06 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:56.890124+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_06_weather.csv
-2026-08-30T10:50:56.898054+00:00 | INFO  | processing date=2026_05_07
-2026-08-30T10:50:56.936227+00:00 | WARN  | final_scores 2026_05_07 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:56.952089+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_07_weather.csv
-2026-08-30T10:50:56.958841+00:00 | INFO  | processing date=2026_05_08
-2026-08-30T10:50:56.998680+00:00 | WARN  | final_scores 2026_05_08 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:57.015596+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_08_weather.csv
-2026-08-30T10:50:57.024497+00:00 | INFO  | processing date=2026_05_09
-2026-08-30T10:50:57.064119+00:00 | WARN  | final_scores 2026_05_09 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.080731+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_09_weather.csv
-2026-08-30T10:50:57.089521+00:00 | INFO  | processing date=2026_05_10
-2026-08-30T10:50:57.153365+00:00 | WARN  | final_scores 2026_05_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.170277+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_10_weather.csv
-2026-08-30T10:50:57.179286+00:00 | INFO  | processing date=2026_05_11
-2026-08-30T10:50:57.231917+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_11_weather.csv
-2026-08-30T10:50:57.239396+00:00 | INFO  | processing date=2026_05_12
-2026-08-30T10:50:57.294843+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_12_weather.csv
-2026-08-30T10:50:57.302593+00:00 | INFO  | processing date=2026_05_13
-2026-08-30T10:50:57.342663+00:00 | WARN  | final_scores 2026_05_13 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:57.359378+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_13_weather.csv
-2026-08-30T10:50:57.368286+00:00 | INFO  | processing date=2026_05_14
-2026-08-30T10:50:57.423860+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_14_weather.csv
-2026-08-30T10:50:57.431211+00:00 | INFO  | processing date=2026_05_15
-2026-08-30T10:50:57.471366+00:00 | WARN  | final_scores 2026_05_15 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:57.488254+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_15_weather.csv
-2026-08-30T10:50:57.496312+00:00 | INFO  | processing date=2026_05_16
-2026-08-30T10:50:57.536221+00:00 | WARN  | final_scores 2026_05_16 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.552997+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_16_weather.csv
-2026-08-30T10:50:57.560770+00:00 | INFO  | processing date=2026_05_17
-2026-08-30T10:50:57.600974+00:00 | WARN  | final_scores 2026_05_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.617876+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_17_weather.csv
-2026-08-30T10:50:57.627603+00:00 | INFO  | processing date=2026_05_18
-2026-08-30T10:50:57.667453+00:00 | WARN  | final_scores 2026_05_18 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:57.684479+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_18_weather.csv
-2026-08-30T10:50:57.692379+00:00 | INFO  | processing date=2026_05_19
-2026-08-30T10:50:57.732199+00:00 | WARN  | final_scores 2026_05_19 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.749106+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_19_weather.csv
-2026-08-30T10:50:57.757894+00:00 | INFO  | processing date=2026_05_20
-2026-08-30T10:50:57.798156+00:00 | WARN  | final_scores 2026_05_20 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.814890+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_20_weather.csv
-2026-08-30T10:50:57.824681+00:00 | INFO  | processing date=2026_05_21
-2026-08-30T10:50:57.862360+00:00 | WARN  | final_scores 2026_05_21 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:57.879014+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_21_weather.csv
-2026-08-30T10:50:57.886749+00:00 | INFO  | processing date=2026_05_22
-2026-08-30T10:50:57.926813+00:00 | WARN  | final_scores 2026_05_22 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:57.943800+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_22_weather.csv
-2026-08-30T10:50:57.952680+00:00 | INFO  | processing date=2026_05_23
-2026-08-30T10:50:57.993129+00:00 | WARN  | final_scores 2026_05_23 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.009895+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_23_weather.csv
-2026-08-30T10:50:58.017712+00:00 | INFO  | processing date=2026_05_24
-2026-08-30T10:50:58.058594+00:00 | WARN  | final_scores 2026_05_24 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:58.075754+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_24_weather.csv
-2026-08-30T10:50:58.085129+00:00 | INFO  | processing date=2026_05_25
-2026-08-30T10:50:58.125413+00:00 | WARN  | final_scores 2026_05_25 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.142068+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_25_weather.csv
-2026-08-30T10:50:58.149692+00:00 | INFO  | processing date=2026_05_26
-2026-08-30T10:50:58.211544+00:00 | WARN  | final_scores 2026_05_26 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.228642+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_26_weather.csv
-2026-08-30T10:50:58.237694+00:00 | INFO  | processing date=2026_05_27
-2026-08-30T10:50:58.277655+00:00 | WARN  | final_scores 2026_05_27 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.294795+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_27_weather.csv
-2026-08-30T10:50:58.303732+00:00 | INFO  | processing date=2026_05_28
-2026-08-30T10:50:58.355964+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_28_weather.csv
-2026-08-30T10:50:58.363444+00:00 | INFO  | processing date=2026_05_29
-2026-08-30T10:50:58.403530+00:00 | WARN  | final_scores 2026_05_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.420313+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_29_weather.csv
-2026-08-30T10:50:58.429181+00:00 | INFO  | processing date=2026_05_30
-2026-08-30T10:50:58.469792+00:00 | WARN  | final_scores 2026_05_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.486818+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_30_weather.csv
-2026-08-30T10:50:58.496670+00:00 | INFO  | processing date=2026_05_31
-2026-08-30T10:50:58.544404+00:00 | WARN  | final_scores 2026_05_31 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.561363+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_31_weather.csv
-2026-08-30T10:50:58.569453+00:00 | INFO  | processing date=2026_06_01
-2026-08-30T10:50:58.607481+00:00 | WARN  | final_scores 2026_06_01 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:58.624884+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_01_weather.csv
-2026-08-30T10:50:58.632907+00:00 | INFO  | processing date=2026_06_02
-2026-08-30T10:50:58.674370+00:00 | WARN  | final_scores 2026_06_02 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.691712+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_02_weather.csv
-2026-08-30T10:50:58.700743+00:00 | INFO  | processing date=2026_06_03
-2026-08-30T10:50:58.738831+00:00 | WARN  | final_scores 2026_06_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.755631+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_03_weather.csv
-2026-08-30T10:50:58.763436+00:00 | INFO  | processing date=2026_06_04
-2026-08-30T10:50:58.801221+00:00 | WARN  | final_scores 2026_06_04 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:58.817810+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_04_weather.csv
-2026-08-30T10:50:58.825372+00:00 | INFO  | processing date=2026_06_05
-2026-08-30T10:50:58.865192+00:00 | WARN  | final_scores 2026_06_05 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.882218+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_05_weather.csv
-2026-08-30T10:50:58.889812+00:00 | INFO  | processing date=2026_06_06
-2026-08-30T10:50:58.929778+00:00 | WARN  | final_scores 2026_06_06 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:58.946524+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_06_weather.csv
-2026-08-30T10:50:58.954151+00:00 | INFO  | processing date=2026_06_07
-2026-08-30T10:50:58.994279+00:00 | WARN  | final_scores 2026_06_07 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:59.011019+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_07_weather.csv
-2026-08-30T10:50:59.019334+00:00 | INFO  | processing date=2026_06_08
-2026-08-30T10:50:59.058767+00:00 | WARN  | final_scores 2026_06_08 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:59.075730+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_08_weather.csv
-2026-08-30T10:50:59.083275+00:00 | INFO  | processing date=2026_06_09
-2026-08-30T10:50:59.122819+00:00 | WARN  | final_scores 2026_06_09 join dropped rows with blank gamePk: 7
-2026-08-30T10:50:59.139530+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_09_weather.csv
-2026-08-30T10:50:59.147206+00:00 | INFO  | processing date=2026_06_10
-2026-08-30T10:50:59.186958+00:00 | WARN  | final_scores 2026_06_10 join dropped rows with blank gamePk: 7
-2026-08-30T10:50:59.204115+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_10_weather.csv
-2026-08-30T10:50:59.212012+00:00 | INFO  | processing date=2026_06_11
-2026-08-30T10:50:59.253755+00:00 | WARN  | final_scores 2026_06_11 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:59.297046+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_11_weather.csv
-2026-08-30T10:50:59.304762+00:00 | INFO  | processing date=2026_06_12
-2026-08-30T10:50:59.354484+00:00 | WARN  | final_scores 2026_06_12 join dropped rows with blank gamePk: 8
-2026-08-30T10:50:59.371476+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_12_weather.csv
-2026-08-30T10:50:59.379138+00:00 | INFO  | processing date=2026_06_13
-2026-08-30T10:50:59.419233+00:00 | WARN  | final_scores 2026_06_13 join dropped rows with blank gamePk: 8
-2026-08-30T10:50:59.435971+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_13_weather.csv
-2026-08-30T10:50:59.444226+00:00 | INFO  | processing date=2026_06_14
-2026-08-30T10:50:59.484041+00:00 | WARN  | final_scores 2026_06_14 join dropped rows with blank gamePk: 8
-2026-08-30T10:50:59.500857+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_14_weather.csv
-2026-08-30T10:50:59.508456+00:00 | INFO  | processing date=2026_06_15
-2026-08-30T10:50:59.546439+00:00 | WARN  | final_scores 2026_06_15 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:59.563291+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_15_weather.csv
-2026-08-30T10:50:59.571095+00:00 | INFO  | processing date=2026_06_16
-2026-08-30T10:50:59.613013+00:00 | WARN  | final_scores 2026_06_16 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:59.631506+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_16_weather.csv
-2026-08-30T10:50:59.640137+00:00 | INFO  | processing date=2026_06_17
-2026-08-30T10:50:59.680590+00:00 | WARN  | final_scores 2026_06_17 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:59.697273+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_17_weather.csv
-2026-08-30T10:50:59.706387+00:00 | INFO  | processing date=2026_06_18
-2026-08-30T10:50:59.744227+00:00 | WARN  | final_scores 2026_06_18 join dropped rows with blank gamePk: 2
-2026-08-30T10:50:59.760792+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_18_weather.csv
-2026-08-30T10:50:59.768601+00:00 | INFO  | processing date=2026_06_19
-2026-08-30T10:50:59.807621+00:00 | WARN  | final_scores 2026_06_19 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:59.824851+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_19_weather.csv
-2026-08-30T10:50:59.832743+00:00 | INFO  | processing date=2026_06_20
-2026-08-30T10:50:59.873595+00:00 | WARN  | final_scores 2026_06_20 join dropped rows with blank gamePk: 1
-2026-08-30T10:50:59.890224+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_20_weather.csv
-2026-08-30T10:50:59.899152+00:00 | INFO  | processing date=2026_06_21
-2026-08-30T10:50:59.939479+00:00 | WARN  | final_scores 2026_06_21 join dropped rows with blank gamePk: 3
-2026-08-30T10:50:59.956100+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_21_weather.csv
-2026-08-30T10:50:59.965822+00:00 | INFO  | processing date=2026_06_22
-2026-08-30T10:51:00.005532+00:00 | WARN  | final_scores 2026_06_22 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:00.022190+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_22_weather.csv
-2026-08-30T10:51:00.031919+00:00 | INFO  | processing date=2026_06_23
-2026-08-30T10:51:00.072213+00:00 | WARN  | final_scores 2026_06_23 join dropped rows with blank gamePk: 3
-2026-08-30T10:51:00.088899+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_23_weather.csv
-2026-08-30T10:51:00.097791+00:00 | INFO  | processing date=2026_06_24
-2026-08-30T10:51:00.137430+00:00 | WARN  | final_scores 2026_06_24 join dropped rows with blank gamePk: 3
-2026-08-30T10:51:00.154076+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_24_weather.csv
-2026-08-30T10:51:00.163299+00:00 | INFO  | processing date=2026_06_25
-2026-08-30T10:51:00.202692+00:00 | WARN  | final_scores 2026_06_25 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:00.219238+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_25_weather.csv
-2026-08-30T10:51:00.227375+00:00 | INFO  | processing date=2026_06_26
-2026-08-30T10:51:00.267830+00:00 | WARN  | final_scores 2026_06_26 join dropped rows with blank gamePk: 3
-2026-08-30T10:51:00.284450+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_26_weather.csv
-2026-08-30T10:51:00.294067+00:00 | INFO  | processing date=2026_06_27
-2026-08-30T10:51:00.333965+00:00 | WARN  | final_scores 2026_06_27 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:00.350659+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_27_weather.csv
-2026-08-30T10:51:00.358651+00:00 | INFO  | processing date=2026_06_28
-2026-08-30T10:51:00.430897+00:00 | WARN  | final_scores 2026_06_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:00.447888+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_28_weather.csv
-2026-08-30T10:51:00.455678+00:00 | INFO  | processing date=2026_06_29
-2026-08-30T10:51:00.496080+00:00 | WARN  | final_scores 2026_06_29 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:00.512978+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_29_weather.csv
-2026-08-30T10:51:00.522729+00:00 | INFO  | processing date=2026_06_30
-2026-08-30T10:51:00.563032+00:00 | WARN  | final_scores 2026_06_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:00.580188+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_30_weather.csv
-2026-08-30T10:51:00.589093+00:00 | INFO  | processing date=2026_07_01
-2026-08-30T10:51:00.628939+00:00 | WARN  | final_scores 2026_07_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:00.645653+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_01_weather.csv
-2026-08-30T10:51:00.654862+00:00 | INFO  | processing date=2026_07_02
-2026-08-30T10:51:00.692993+00:00 | WARN  | final_scores 2026_07_02 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:00.709489+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_02_weather.csv
-2026-08-30T10:51:00.717026+00:00 | INFO  | processing date=2026_07_03
-2026-08-30T10:51:00.756689+00:00 | WARN  | final_scores 2026_07_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:00.773691+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_03_weather.csv
-2026-08-30T10:51:00.782392+00:00 | INFO  | processing date=2026_07_04
-2026-08-30T10:51:00.822220+00:00 | WARN  | final_scores 2026_07_04 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:00.838770+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_04_weather.csv
-2026-08-30T10:51:00.847566+00:00 | INFO  | processing date=2026_07_05
-2026-08-30T10:51:00.887562+00:00 | WARN  | final_scores 2026_07_05 join dropped rows with blank gamePk: 3
-2026-08-30T10:51:00.904396+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_05_weather.csv
-2026-08-30T10:51:00.911997+00:00 | INFO  | processing date=2026_07_06
-2026-08-30T10:51:00.966043+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_06_weather.csv
-2026-08-30T10:51:00.973595+00:00 | INFO  | processing date=2026_07_07
-2026-08-30T10:51:01.014223+00:00 | WARN  | final_scores 2026_07_07 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.031251+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_07_weather.csv
-2026-08-30T10:51:01.041203+00:00 | INFO  | processing date=2026_07_08
-2026-08-30T10:51:01.081796+00:00 | WARN  | final_scores 2026_07_08 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.098679+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_08_weather.csv
-2026-08-30T10:51:01.107683+00:00 | INFO  | processing date=2026_07_09
-2026-08-30T10:51:01.147904+00:00 | WARN  | final_scores 2026_07_09 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.164926+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_09_weather.csv
-2026-08-30T10:51:01.174671+00:00 | INFO  | processing date=2026_07_10
-2026-08-30T10:51:01.214717+00:00 | WARN  | final_scores 2026_07_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.231532+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_10_weather.csv
-2026-08-30T10:51:01.239474+00:00 | INFO  | processing date=2026_07_11
-2026-08-30T10:51:01.279827+00:00 | WARN  | final_scores 2026_07_11 join dropped rows with blank gamePk: 6
-2026-08-30T10:51:01.296652+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_11_weather.csv
-2026-08-30T10:51:01.305488+00:00 | INFO  | processing date=2026_07_12
-2026-08-30T10:51:01.345449+00:00 | WARN  | final_scores 2026_07_12 join dropped rows with blank gamePk: 3
-2026-08-30T10:51:01.362533+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_12_weather.csv
-2026-08-30T10:51:01.370119+00:00 | INFO  | processing date=2026_07_16
-2026-08-30T10:51:01.421484+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_16_weather.csv
-2026-08-30T10:51:01.428799+00:00 | INFO  | processing date=2026_07_17
-2026-08-30T10:51:01.497560+00:00 | WARN  | final_scores 2026_07_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.514484+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_17_weather.csv
-2026-08-30T10:51:01.522204+00:00 | INFO  | processing date=2026_07_18
-2026-08-30T10:51:01.562945+00:00 | WARN  | final_scores 2026_07_18 join dropped rows with blank gamePk: 7
-2026-08-30T10:51:01.579957+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_18_weather.csv
-2026-08-30T10:51:01.587786+00:00 | INFO  | processing date=2026_07_19
-2026-08-30T10:51:01.629900+00:00 | WARN  | final_scores 2026_07_19 join dropped rows with blank gamePk: 4
-2026-08-30T10:51:01.647135+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_19_weather.csv
-2026-08-30T10:51:01.657451+00:00 | INFO  | processing date=2026_07_20
-2026-08-30T10:51:01.697907+00:00 | WARN  | final_scores 2026_07_20 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.714764+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_20_weather.csv
-2026-08-30T10:51:01.723731+00:00 | INFO  | processing date=2026_07_21
-2026-08-30T10:51:01.763849+00:00 | WARN  | final_scores 2026_07_21 join dropped rows with blank gamePk: 7
-2026-08-30T10:51:01.780547+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_21_weather.csv
-2026-08-30T10:51:01.788096+00:00 | INFO  | processing date=2026_07_22
-2026-08-30T10:51:01.826297+00:00 | WARN  | final_scores 2026_07_22 join dropped rows with blank gamePk: 13
-2026-08-30T10:51:01.842823+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_22_weather.csv
-2026-08-30T10:51:01.850622+00:00 | INFO  | processing date=2026_07_23
-2026-08-30T10:51:01.888267+00:00 | WARN  | final_scores 2026_07_23 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:01.904895+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_23_weather.csv
-2026-08-30T10:51:01.912442+00:00 | INFO  | processing date=2026_07_24
-2026-08-30T10:51:01.952643+00:00 | WARN  | final_scores 2026_07_24 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:01.969516+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_24_weather.csv
-2026-08-30T10:51:01.978530+00:00 | INFO  | processing date=2026_07_25
-2026-08-30T10:51:02.018556+00:00 | WARN  | final_scores 2026_07_25 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.035258+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_25_weather.csv
-2026-08-30T10:51:02.044516+00:00 | INFO  | processing date=2026_07_26
-2026-08-30T10:51:02.084625+00:00 | WARN  | final_scores 2026_07_26 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.101239+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_26_weather.csv
-2026-08-30T10:51:02.108937+00:00 | INFO  | processing date=2026_07_27
-2026-08-30T10:51:02.149281+00:00 | WARN  | final_scores 2026_07_27 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.166366+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_27_weather.csv
-2026-08-30T10:51:02.175225+00:00 | INFO  | processing date=2026_07_28
-2026-08-30T10:51:02.217329+00:00 | WARN  | final_scores 2026_07_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.234762+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_28_weather.csv
-2026-08-30T10:51:02.245155+00:00 | INFO  | processing date=2026_07_29
-2026-08-30T10:51:02.285528+00:00 | WARN  | final_scores 2026_07_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.302338+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_29_weather.csv
-2026-08-30T10:51:02.312281+00:00 | INFO  | processing date=2026_07_30
-2026-08-30T10:51:02.352253+00:00 | WARN  | final_scores 2026_07_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.369043+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_30_weather.csv
-2026-08-30T10:51:02.377873+00:00 | INFO  | processing date=2026_07_31
-2026-08-30T10:51:02.418215+00:00 | WARN  | final_scores 2026_07_31 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.434963+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_31_weather.csv
-2026-08-30T10:51:02.444396+00:00 | INFO  | processing date=2026_08_01
-2026-08-30T10:51:02.484618+00:00 | WARN  | final_scores 2026_08_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.501525+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_01_weather.csv
-2026-08-30T10:51:02.509097+00:00 | INFO  | processing date=2026_08_02
-2026-08-30T10:51:02.581631+00:00 | WARN  | final_scores 2026_08_02 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.598578+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_02_weather.csv
-2026-08-30T10:51:02.607731+00:00 | INFO  | processing date=2026_08_03
-2026-08-30T10:51:02.647459+00:00 | WARN  | final_scores 2026_08_03 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:02.662855+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_03_weather.csv
-2026-08-30T10:51:02.670384+00:00 | INFO  | processing date=2026_08_04
-2026-08-30T10:51:02.710531+00:00 | WARN  | final_scores 2026_08_04 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.728204+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_04_weather.csv
-2026-08-30T10:51:02.739261+00:00 | INFO  | processing date=2026_08_05
-2026-08-30T10:51:02.780895+00:00 | WARN  | final_scores 2026_08_05 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:02.798039+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_05_weather.csv
-2026-08-30T10:51:02.805700+00:00 | INFO  | processing date=2026_08_06
-2026-08-30T10:51:02.845511+00:00 | WARN  | final_scores 2026_08_06 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:02.860880+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_06_weather.csv
-2026-08-30T10:51:02.868150+00:00 | INFO  | processing date=2026_08_07
-2026-08-30T10:51:02.908136+00:00 | WARN  | final_scores 2026_08_07 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:02.923139+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_07_weather.csv
-2026-08-30T10:51:02.930464+00:00 | INFO  | processing date=2026_08_08
-2026-08-30T10:51:02.971344+00:00 | WARN  | final_scores 2026_08_08 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:02.986620+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_08_weather.csv
-2026-08-30T10:51:02.993956+00:00 | INFO  | processing date=2026_08_09
-2026-08-30T10:51:03.033879+00:00 | WARN  | final_scores 2026_08_09 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.049357+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_09_weather.csv
-2026-08-30T10:51:03.056768+00:00 | INFO  | processing date=2026_08_10
-2026-08-30T10:51:03.096480+00:00 | WARN  | final_scores 2026_08_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.113219+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_10_weather.csv
-2026-08-30T10:51:03.121411+00:00 | INFO  | processing date=2026_08_11
-2026-08-30T10:51:03.161783+00:00 | WARN  | final_scores 2026_08_11 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.178595+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_11_weather.csv
-2026-08-30T10:51:03.187295+00:00 | INFO  | processing date=2026_08_12
-2026-08-30T10:51:03.227333+00:00 | WARN  | final_scores 2026_08_12 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.243008+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_12_weather.csv
-2026-08-30T10:51:03.250395+00:00 | INFO  | processing date=2026_08_13
-2026-08-30T10:51:03.304246+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_13_weather.csv
-2026-08-30T10:51:03.311672+00:00 | INFO  | processing date=2026_08_14
-2026-08-30T10:51:03.351973+00:00 | WARN  | final_scores 2026_08_14 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.368805+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_14_weather.csv
-2026-08-30T10:51:03.376311+00:00 | INFO  | processing date=2026_08_15
-2026-08-30T10:51:03.416452+00:00 | WARN  | final_scores 2026_08_15 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.433515+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_15_weather.csv
-2026-08-30T10:51:03.440849+00:00 | INFO  | processing date=2026_08_16
-2026-08-30T10:51:03.481151+00:00 | WARN  | final_scores 2026_08_16 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.496411+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_16_weather.csv
-2026-08-30T10:51:03.503821+00:00 | INFO  | processing date=2026_08_17
-2026-08-30T10:51:03.543757+00:00 | WARN  | final_scores 2026_08_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.560634+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_17_weather.csv
-2026-08-30T10:51:03.569546+00:00 | INFO  | processing date=2026_08_18
-2026-08-30T10:51:03.609558+00:00 | WARN  | final_scores 2026_08_18 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:03.660868+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_18_weather.csv
-2026-08-30T10:51:03.668766+00:00 | INFO  | processing date=2026_08_19
-2026-08-30T10:51:03.709156+00:00 | WARN  | final_scores 2026_08_19 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.726003+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_19_weather.csv
-2026-08-30T10:51:03.735908+00:00 | INFO  | processing date=2026_08_24
-2026-08-30T10:51:03.781043+00:00 | WARN  | final_scores 2026_08_24 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:03.797714+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_24_weather.csv
-2026-08-30T10:51:03.806582+00:00 | INFO  | processing date=2026_08_25
-2026-08-30T10:51:03.846881+00:00 | WARN  | final_scores 2026_08_25 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:03.863546+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_25_weather.csv
-2026-08-30T10:51:03.873291+00:00 | INFO  | processing date=2026_08_26
-2026-08-30T10:51:03.911144+00:00 | WARN  | final_scores 2026_08_26 join dropped rows with blank gamePk: 5
-2026-08-30T10:51:03.927725+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_26_weather.csv
-2026-08-30T10:51:03.936301+00:00 | INFO  | processing date=2026_08_27
-2026-08-30T10:51:03.973844+00:00 | WARN  | final_scores 2026_08_27 join dropped rows with blank gamePk: 1
-2026-08-30T10:51:03.990356+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_27_weather.csv
-2026-08-30T10:51:03.998380+00:00 | INFO  | processing date=2026_08_28
-2026-08-30T10:51:04.036506+00:00 | WARN  | final_scores 2026_08_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:51:04.053031+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_28_weather.csv
-2026-08-30T10:51:04.187387+00:00 | INFO  | rows_loaded=1772
-2026-08-30T10:51:04.187438+00:00 | INFO  | rows_joined=1772
-2026-08-30T10:51:04.187464+00:00 | INFO  | missing_sdv=0
-2026-08-30T10:51:04.187487+00:00 | INFO  | missing_final_score=293
-2026-08-30T10:51:04.187509+00:00 | INFO  | duplicate_game_id=0
-2026-08-30T10:51:04.187530+00:00 | INFO  | duplicate_gamePk=0
-2026-08-30T10:51:04.187550+00:00 | INFO  | leakage_rejections=0
-2026-08-30T10:51:04.187571+00:00 | INFO  | rows_written=1479
-2026-08-30T10:51:04.187594+00:00 | INFO  | WROTE docs/win/baseball/mlb/modeling/data/mlb_run_training_set.csv
-2026-08-30T10:52:56.578555+00:00 | INFO  | Skipping prediction dates with no matching final-score file: 2026_08_20, 2026_08_29, 2026_08_30
-2026-08-30T10:52:56.626401+00:00 | WARN  | final_scores 2026_03_26 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:56.645005+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_26_weather.csv
-2026-08-30T10:52:56.693491+00:00 | WARN  | final_scores 2026_03_27 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:56.710154+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_27_weather.csv
-2026-08-30T10:52:56.761328+00:00 | WARN  | final_scores 2026_03_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:56.777954+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_28_weather.csv
-2026-08-30T10:52:56.826383+00:00 | WARN  | final_scores 2026_03_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:56.842845+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_29_weather.csv
-2026-08-30T10:52:56.890953+00:00 | WARN  | final_scores 2026_03_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:56.907786+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_30_weather.csv
-2026-08-30T10:52:56.956279+00:00 | WARN  | final_scores 2026_03_31 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:56.972721+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_31_weather.csv
-2026-08-30T10:52:57.020079+00:00 | WARN  | final_scores 2026_04_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.036604+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_01_weather.csv
-2026-08-30T10:52:57.098807+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_02_weather.csv
-2026-08-30T10:52:57.145626+00:00 | WARN  | final_scores 2026_04_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.161960+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_03_weather.csv
-2026-08-30T10:52:57.224942+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_04_weather.csv
-2026-08-30T10:52:57.274390+00:00 | WARN  | final_scores 2026_04_05 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.291024+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_05_weather.csv
-2026-08-30T10:52:57.371002+00:00 | WARN  | final_scores 2026_04_06 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:57.387515+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_06_weather.csv
-2026-08-30T10:52:57.436012+00:00 | WARN  | final_scores 2026_04_07 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.452627+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_07_weather.csv
-2026-08-30T10:52:57.500818+00:00 | WARN  | final_scores 2026_04_08 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.517659+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_08_weather.csv
-2026-08-30T10:52:57.563934+00:00 | WARN  | final_scores 2026_04_09 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:57.580418+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_09_weather.csv
-2026-08-30T10:52:57.627494+00:00 | WARN  | final_scores 2026_04_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.644005+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_10_weather.csv
-2026-08-30T10:52:57.692980+00:00 | WARN  | final_scores 2026_04_11 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.709768+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_11_weather.csv
-2026-08-30T10:52:57.756779+00:00 | WARN  | final_scores 2026_04_12 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.773355+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_12_weather.csv
-2026-08-30T10:52:57.820501+00:00 | WARN  | final_scores 2026_04_13 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.836900+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_13_weather.csv
-2026-08-30T10:52:57.885019+00:00 | WARN  | final_scores 2026_04_14 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.901757+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_14_weather.csv
-2026-08-30T10:52:57.951394+00:00 | WARN  | final_scores 2026_04_15 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:57.968339+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_15_weather.csv
-2026-08-30T10:52:58.015095+00:00 | WARN  | final_scores 2026_04_16 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:58.031607+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_16_weather.csv
-2026-08-30T10:52:58.078487+00:00 | WARN  | final_scores 2026_04_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.095121+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_17_weather.csv
-2026-08-30T10:52:58.143358+00:00 | WARN  | final_scores 2026_04_18 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.159759+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_18_weather.csv
-2026-08-30T10:52:58.206821+00:00 | WARN  | final_scores 2026_04_19 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.223499+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_19_weather.csv
-2026-08-30T10:52:58.268603+00:00 | WARN  | final_scores 2026_04_20 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.285371+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_20_weather.csv
-2026-08-30T10:52:58.332297+00:00 | WARN  | final_scores 2026_04_21 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.348886+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_21_weather.csv
-2026-08-30T10:52:58.428827+00:00 | WARN  | final_scores 2026_04_22 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.445869+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_22_weather.csv
-2026-08-30T10:52:58.507336+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_23_weather.csv
-2026-08-30T10:52:58.556425+00:00 | WARN  | final_scores 2026_04_24 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.573207+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_24_weather.csv
-2026-08-30T10:52:58.637021+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_25_weather.csv
-2026-08-30T10:52:58.685914+00:00 | WARN  | final_scores 2026_04_26 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.702581+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_26_weather.csv
-2026-08-30T10:52:58.750823+00:00 | WARN  | final_scores 2026_04_27 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:58.767366+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_27_weather.csv
-2026-08-30T10:52:58.814842+00:00 | WARN  | final_scores 2026_04_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.831714+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_28_weather.csv
-2026-08-30T10:52:58.880146+00:00 | WARN  | final_scores 2026_04_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.896655+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_29_weather.csv
-2026-08-30T10:52:58.944454+00:00 | WARN  | final_scores 2026_04_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:58.960995+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_30_weather.csv
-2026-08-30T10:52:59.008403+00:00 | WARN  | final_scores 2026_05_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:59.025201+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_01_weather.csv
-2026-08-30T10:52:59.073916+00:00 | WARN  | final_scores 2026_05_02 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:59.090479+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_02_weather.csv
-2026-08-30T10:52:59.137458+00:00 | WARN  | final_scores 2026_05_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:59.154025+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_03_weather.csv
-2026-08-30T10:52:59.203346+00:00 | WARN  | final_scores 2026_05_04 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:59.219994+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_04_weather.csv
-2026-08-30T10:52:59.269899+00:00 | WARN  | final_scores 2026_05_05 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:59.286515+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_05_weather.csv
-2026-08-30T10:52:59.333351+00:00 | WARN  | final_scores 2026_05_06 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:59.349980+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_06_weather.csv
-2026-08-30T10:52:59.395436+00:00 | WARN  | final_scores 2026_05_07 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:59.411271+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_07_weather.csv
-2026-08-30T10:52:59.495964+00:00 | WARN  | final_scores 2026_05_08 join dropped rows with blank gamePk: 3
-2026-08-30T10:52:59.513071+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_08_weather.csv
-2026-08-30T10:52:59.561699+00:00 | WARN  | final_scores 2026_05_09 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:59.578702+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_09_weather.csv
-2026-08-30T10:52:59.627021+00:00 | WARN  | final_scores 2026_05_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:52:59.643683+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_10_weather.csv
-2026-08-30T10:52:59.703994+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_11_weather.csv
-2026-08-30T10:52:59.767650+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_12_weather.csv
-2026-08-30T10:52:59.814778+00:00 | WARN  | final_scores 2026_05_13 join dropped rows with blank gamePk: 1
-2026-08-30T10:52:59.831458+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_13_weather.csv
-2026-08-30T10:52:59.895759+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_14_weather.csv
-2026-08-30T10:52:59.942811+00:00 | WARN  | final_scores 2026_05_15 join dropped rows with blank gamePk: 3
-2026-08-30T10:52:59.959510+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_15_weather.csv
-2026-08-30T10:53:00.006613+00:00 | WARN  | final_scores 2026_05_16 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.023258+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_16_weather.csv
-2026-08-30T10:53:00.070954+00:00 | WARN  | final_scores 2026_05_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.087592+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_17_weather.csv
-2026-08-30T10:53:00.136906+00:00 | WARN  | final_scores 2026_05_18 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:00.153886+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_18_weather.csv
-2026-08-30T10:53:00.201278+00:00 | WARN  | final_scores 2026_05_19 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.218134+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_19_weather.csv
-2026-08-30T10:53:00.267231+00:00 | WARN  | final_scores 2026_05_20 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.283859+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_20_weather.csv
-2026-08-30T10:53:00.331134+00:00 | WARN  | final_scores 2026_05_21 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.348267+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_21_weather.csv
-2026-08-30T10:53:00.395296+00:00 | WARN  | final_scores 2026_05_22 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:00.411880+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_22_weather.csv
-2026-08-30T10:53:00.460639+00:00 | WARN  | final_scores 2026_05_23 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.477381+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_23_weather.csv
-2026-08-30T10:53:00.524769+00:00 | WARN  | final_scores 2026_05_24 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:00.583990+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_24_weather.csv
-2026-08-30T10:53:00.634094+00:00 | WARN  | final_scores 2026_05_25 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.650927+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_25_weather.csv
-2026-08-30T10:53:00.699145+00:00 | WARN  | final_scores 2026_05_26 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.715826+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_26_weather.csv
-2026-08-30T10:53:00.764982+00:00 | WARN  | final_scores 2026_05_27 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.781592+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_27_weather.csv
-2026-08-30T10:53:00.842267+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_28_weather.csv
-2026-08-30T10:53:00.889655+00:00 | WARN  | final_scores 2026_05_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.906435+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_29_weather.csv
-2026-08-30T10:53:00.955059+00:00 | WARN  | final_scores 2026_05_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:00.971595+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_30_weather.csv
-2026-08-30T10:53:01.019468+00:00 | WARN  | final_scores 2026_05_31 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.036189+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_31_weather.csv
-2026-08-30T10:53:01.082210+00:00 | WARN  | final_scores 2026_06_01 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:01.098656+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_01_weather.csv
-2026-08-30T10:53:01.146237+00:00 | WARN  | final_scores 2026_06_02 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.162891+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_02_weather.csv
-2026-08-30T10:53:01.209925+00:00 | WARN  | final_scores 2026_06_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.226733+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_03_weather.csv
-2026-08-30T10:53:01.272778+00:00 | WARN  | final_scores 2026_06_04 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:01.289273+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_04_weather.csv
-2026-08-30T10:53:01.336752+00:00 | WARN  | final_scores 2026_06_05 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.353766+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_05_weather.csv
-2026-08-30T10:53:01.401092+00:00 | WARN  | final_scores 2026_06_06 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.417743+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_06_weather.csv
-2026-08-30T10:53:01.465452+00:00 | WARN  | final_scores 2026_06_07 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.482233+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_07_weather.csv
-2026-08-30T10:53:01.530277+00:00 | WARN  | final_scores 2026_06_08 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:01.546794+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_08_weather.csv
-2026-08-30T10:53:01.594127+00:00 | WARN  | final_scores 2026_06_09 join dropped rows with blank gamePk: 7
-2026-08-30T10:53:01.610640+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_09_weather.csv
-2026-08-30T10:53:01.701672+00:00 | WARN  | final_scores 2026_06_10 join dropped rows with blank gamePk: 7
-2026-08-30T10:53:01.718606+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_10_weather.csv
-2026-08-30T10:53:01.766260+00:00 | WARN  | final_scores 2026_06_11 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:01.782899+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_11_weather.csv
-2026-08-30T10:53:01.830489+00:00 | WARN  | final_scores 2026_06_12 join dropped rows with blank gamePk: 8
-2026-08-30T10:53:01.847674+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_12_weather.csv
-2026-08-30T10:53:01.894905+00:00 | WARN  | final_scores 2026_06_13 join dropped rows with blank gamePk: 8
-2026-08-30T10:53:01.911808+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_13_weather.csv
-2026-08-30T10:53:01.959911+00:00 | WARN  | final_scores 2026_06_14 join dropped rows with blank gamePk: 8
-2026-08-30T10:53:01.976484+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_14_weather.csv
-2026-08-30T10:53:02.022232+00:00 | WARN  | final_scores 2026_06_15 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.039204+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_15_weather.csv
-2026-08-30T10:53:02.087243+00:00 | WARN  | final_scores 2026_06_16 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.104050+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_16_weather.csv
-2026-08-30T10:53:02.152408+00:00 | WARN  | final_scores 2026_06_17 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.169038+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_17_weather.csv
-2026-08-30T10:53:02.215554+00:00 | WARN  | final_scores 2026_06_18 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:02.232544+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_18_weather.csv
-2026-08-30T10:53:02.278077+00:00 | WARN  | final_scores 2026_06_19 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.294644+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_19_weather.csv
-2026-08-30T10:53:02.342150+00:00 | WARN  | final_scores 2026_06_20 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:02.359010+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_20_weather.csv
-2026-08-30T10:53:02.407433+00:00 | WARN  | final_scores 2026_06_21 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.424438+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_21_weather.csv
-2026-08-30T10:53:02.473422+00:00 | WARN  | final_scores 2026_06_22 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:02.490156+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_22_weather.csv
-2026-08-30T10:53:02.539994+00:00 | WARN  | final_scores 2026_06_23 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.556862+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_23_weather.csv
-2026-08-30T10:53:02.605726+00:00 | WARN  | final_scores 2026_06_24 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.622713+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_24_weather.csv
-2026-08-30T10:53:02.671063+00:00 | WARN  | final_scores 2026_06_25 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:02.687766+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_25_weather.csv
-2026-08-30T10:53:02.736142+00:00 | WARN  | final_scores 2026_06_26 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:02.753052+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_26_weather.csv
-2026-08-30T10:53:02.802794+00:00 | WARN  | final_scores 2026_06_27 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:02.867101+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_27_weather.csv
-2026-08-30T10:53:02.915271+00:00 | WARN  | final_scores 2026_06_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:02.932048+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_28_weather.csv
-2026-08-30T10:53:02.979804+00:00 | WARN  | final_scores 2026_06_29 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:02.996787+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_29_weather.csv
-2026-08-30T10:53:03.046597+00:00 | WARN  | final_scores 2026_06_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.068712+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_30_weather.csv
-2026-08-30T10:53:03.120883+00:00 | WARN  | final_scores 2026_07_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.137723+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_01_weather.csv
-2026-08-30T10:53:03.186429+00:00 | WARN  | final_scores 2026_07_02 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:03.202904+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_02_weather.csv
-2026-08-30T10:53:03.251971+00:00 | WARN  | final_scores 2026_07_03 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.270270+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_03_weather.csv
-2026-08-30T10:53:03.318654+00:00 | WARN  | final_scores 2026_07_04 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.335568+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_04_weather.csv
-2026-08-30T10:53:03.385806+00:00 | WARN  | final_scores 2026_07_05 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:03.402450+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_05_weather.csv
-2026-08-30T10:53:03.464992+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_06_weather.csv
-2026-08-30T10:53:03.512854+00:00 | WARN  | final_scores 2026_07_07 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.529705+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_07_weather.csv
-2026-08-30T10:53:03.580428+00:00 | WARN  | final_scores 2026_07_08 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.597100+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_08_weather.csv
-2026-08-30T10:53:03.646752+00:00 | WARN  | final_scores 2026_07_09 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.663454+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_09_weather.csv
-2026-08-30T10:53:03.713409+00:00 | WARN  | final_scores 2026_07_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:03.730943+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_10_weather.csv
-2026-08-30T10:53:03.779104+00:00 | WARN  | final_scores 2026_07_11 join dropped rows with blank gamePk: 6
-2026-08-30T10:53:03.795823+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_11_weather.csv
-2026-08-30T10:53:03.845653+00:00 | WARN  | final_scores 2026_07_12 join dropped rows with blank gamePk: 3
-2026-08-30T10:53:03.862919+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_12_weather.csv
-2026-08-30T10:53:03.922348+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_16_weather.csv
-2026-08-30T10:53:04.023215+00:00 | WARN  | final_scores 2026_07_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.040111+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_17_weather.csv
-2026-08-30T10:53:04.088196+00:00 | WARN  | final_scores 2026_07_18 join dropped rows with blank gamePk: 7
-2026-08-30T10:53:04.104845+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_18_weather.csv
-2026-08-30T10:53:04.152364+00:00 | WARN  | final_scores 2026_07_19 join dropped rows with blank gamePk: 4
-2026-08-30T10:53:04.169325+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_19_weather.csv
-2026-08-30T10:53:04.219664+00:00 | WARN  | final_scores 2026_07_20 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.238148+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_20_weather.csv
-2026-08-30T10:53:04.293028+00:00 | WARN  | final_scores 2026_07_21 join dropped rows with blank gamePk: 7
-2026-08-30T10:53:04.309968+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_21_weather.csv
-2026-08-30T10:53:04.356281+00:00 | WARN  | final_scores 2026_07_22 join dropped rows with blank gamePk: 13
-2026-08-30T10:53:04.373559+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_22_weather.csv
-2026-08-30T10:53:04.418960+00:00 | WARN  | final_scores 2026_07_23 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:04.435639+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_23_weather.csv
-2026-08-30T10:53:04.483405+00:00 | WARN  | final_scores 2026_07_24 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.500094+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_24_weather.csv
-2026-08-30T10:53:04.549036+00:00 | WARN  | final_scores 2026_07_25 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.566063+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_25_weather.csv
-2026-08-30T10:53:04.614807+00:00 | WARN  | final_scores 2026_07_26 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.631488+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_26_weather.csv
-2026-08-30T10:53:04.679339+00:00 | WARN  | final_scores 2026_07_27 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.695988+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_27_weather.csv
-2026-08-30T10:53:04.744405+00:00 | WARN  | final_scores 2026_07_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.761491+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_28_weather.csv
-2026-08-30T10:53:04.810927+00:00 | WARN  | final_scores 2026_07_29 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.827553+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_29_weather.csv
-2026-08-30T10:53:04.877252+00:00 | WARN  | final_scores 2026_07_30 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.894116+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_30_weather.csv
-2026-08-30T10:53:04.942880+00:00 | WARN  | final_scores 2026_07_31 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:04.959923+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_31_weather.csv
-2026-08-30T10:53:05.008699+00:00 | WARN  | final_scores 2026_08_01 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.025519+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_01_weather.csv
-2026-08-30T10:53:05.073595+00:00 | WARN  | final_scores 2026_08_02 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.090370+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_02_weather.csv
-2026-08-30T10:53:05.139034+00:00 | WARN  | final_scores 2026_08_03 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:05.154491+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_03_weather.csv
-2026-08-30T10:53:05.202399+00:00 | WARN  | final_scores 2026_08_04 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.219076+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_04_weather.csv
-2026-08-30T10:53:05.326113+00:00 | WARN  | final_scores 2026_08_05 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.343420+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_05_weather.csv
-2026-08-30T10:53:05.391542+00:00 | WARN  | final_scores 2026_08_06 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:05.406660+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_06_weather.csv
-2026-08-30T10:53:05.454366+00:00 | WARN  | final_scores 2026_08_07 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:05.469532+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_07_weather.csv
-2026-08-30T10:53:05.517319+00:00 | WARN  | final_scores 2026_08_08 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:05.532490+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_08_weather.csv
-2026-08-30T10:53:05.580094+00:00 | WARN  | final_scores 2026_08_09 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.595108+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_09_weather.csv
-2026-08-30T10:53:05.641999+00:00 | WARN  | final_scores 2026_08_10 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.658746+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_10_weather.csv
-2026-08-30T10:53:05.707128+00:00 | WARN  | final_scores 2026_08_11 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.723729+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_11_weather.csv
-2026-08-30T10:53:05.772797+00:00 | WARN  | final_scores 2026_08_12 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.787831+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_12_weather.csv
-2026-08-30T10:53:05.849053+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_13_weather.csv
-2026-08-30T10:53:05.896609+00:00 | WARN  | final_scores 2026_08_14 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.913275+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_14_weather.csv
-2026-08-30T10:53:05.960856+00:00 | WARN  | final_scores 2026_08_15 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:05.977462+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_15_weather.csv
-2026-08-30T10:53:06.024959+00:00 | WARN  | final_scores 2026_08_16 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:06.040036+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_16_weather.csv
-2026-08-30T10:53:06.087317+00:00 | WARN  | final_scores 2026_08_17 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:06.104019+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_17_weather.csv
-2026-08-30T10:53:06.151681+00:00 | WARN  | final_scores 2026_08_18 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:06.168341+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_18_weather.csv
-2026-08-30T10:53:06.216033+00:00 | WARN  | final_scores 2026_08_19 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:06.232897+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_19_weather.csv
-2026-08-30T10:53:06.283281+00:00 | WARN  | final_scores 2026_08_24 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:06.299974+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_24_weather.csv
-2026-08-30T10:53:06.351083+00:00 | WARN  | final_scores 2026_08_25 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:06.367849+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_25_weather.csv
-2026-08-30T10:53:06.415912+00:00 | WARN  | final_scores 2026_08_26 join dropped rows with blank gamePk: 5
-2026-08-30T10:53:06.432515+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_26_weather.csv
-2026-08-30T10:53:06.541680+00:00 | WARN  | final_scores 2026_08_27 join dropped rows with blank gamePk: 1
-2026-08-30T10:53:06.558531+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_27_weather.csv
-2026-08-30T10:53:06.605555+00:00 | WARN  | final_scores 2026_08_28 join dropped rows with blank gamePk: 2
-2026-08-30T10:53:06.622477+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_28_weather.csv
+=== build_run_training_set RUN 2026-08-30T12:34:40.362701+00:00 ===
+2026-08-30T12:34:40.364525+00:00 | INFO  | Skipping prediction dates with no matching final-score file: 2026_08_20, 2026_08_30
+2026-08-30T12:34:40.364573+00:00 | INFO  | dates_to_process=150
+2026-08-30T12:34:40.364603+00:00 | INFO  | processing date=2026_03_26
+2026-08-30T12:34:40.418770+00:00 | WARN  | final_scores 2026_03_26 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:40.439456+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_26_weather.csv
+2026-08-30T12:34:40.452284+00:00 | INFO  | processing date=2026_03_27
+2026-08-30T12:34:40.494847+00:00 | WARN  | final_scores 2026_03_27 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:40.513878+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_27_weather.csv
+2026-08-30T12:34:40.526727+00:00 | INFO  | processing date=2026_03_28
+2026-08-30T12:34:40.571784+00:00 | WARN  | final_scores 2026_03_28 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:40.590942+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_28_weather.csv
+2026-08-30T12:34:40.602256+00:00 | INFO  | processing date=2026_03_29
+2026-08-30T12:34:40.647161+00:00 | WARN  | final_scores 2026_03_29 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:40.666528+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_29_weather.csv
+2026-08-30T12:34:40.677682+00:00 | INFO  | processing date=2026_03_30
+2026-08-30T12:34:40.722596+00:00 | WARN  | final_scores 2026_03_30 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:40.741700+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_30_weather.csv
+2026-08-30T12:34:40.753051+00:00 | INFO  | processing date=2026_03_31
+2026-08-30T12:34:40.798179+00:00 | WARN  | final_scores 2026_03_31 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:40.817293+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_03_31_weather.csv
+2026-08-30T12:34:40.829254+00:00 | INFO  | processing date=2026_04_01
+2026-08-30T12:34:40.879764+00:00 | WARN  | final_scores 2026_04_01 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:40.899263+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_01_weather.csv
+2026-08-30T12:34:40.911157+00:00 | INFO  | processing date=2026_04_02
+2026-08-30T12:34:40.989415+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_02_weather.csv
+2026-08-30T12:34:41.005361+00:00 | INFO  | processing date=2026_04_03
+2026-08-30T12:34:41.059217+00:00 | WARN  | final_scores 2026_04_03 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.078416+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_03_weather.csv
+2026-08-30T12:34:41.088102+00:00 | INFO  | processing date=2026_04_04
+2026-08-30T12:34:41.152126+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_04_weather.csv
+2026-08-30T12:34:41.163876+00:00 | INFO  | processing date=2026_04_05
+2026-08-30T12:34:41.208978+00:00 | WARN  | final_scores 2026_04_05 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.228189+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_05_weather.csv
+2026-08-30T12:34:41.238975+00:00 | INFO  | processing date=2026_04_06
+2026-08-30T12:34:41.284111+00:00 | WARN  | final_scores 2026_04_06 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:41.303228+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_06_weather.csv
+2026-08-30T12:34:41.314145+00:00 | INFO  | processing date=2026_04_07
+2026-08-30T12:34:41.359277+00:00 | WARN  | final_scores 2026_04_07 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.391595+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_07_weather.csv
+2026-08-30T12:34:41.403179+00:00 | INFO  | processing date=2026_04_08
+2026-08-30T12:34:41.448403+00:00 | WARN  | final_scores 2026_04_08 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.467532+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_08_weather.csv
+2026-08-30T12:34:41.478331+00:00 | INFO  | processing date=2026_04_09
+2026-08-30T12:34:41.522511+00:00 | WARN  | final_scores 2026_04_09 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:41.541559+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_09_weather.csv
+2026-08-30T12:34:41.551053+00:00 | INFO  | processing date=2026_04_10
+2026-08-30T12:34:41.596446+00:00 | WARN  | final_scores 2026_04_10 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.615639+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_10_weather.csv
+2026-08-30T12:34:41.627599+00:00 | INFO  | processing date=2026_04_11
+2026-08-30T12:34:41.672860+00:00 | WARN  | final_scores 2026_04_11 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.691976+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_11_weather.csv
+2026-08-30T12:34:41.701873+00:00 | INFO  | processing date=2026_04_12
+2026-08-30T12:34:41.747191+00:00 | WARN  | final_scores 2026_04_12 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.766279+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_12_weather.csv
+2026-08-30T12:34:41.775897+00:00 | INFO  | processing date=2026_04_13
+2026-08-30T12:34:41.821174+00:00 | WARN  | final_scores 2026_04_13 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.840226+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_13_weather.csv
+2026-08-30T12:34:41.850890+00:00 | INFO  | processing date=2026_04_14
+2026-08-30T12:34:41.896360+00:00 | WARN  | final_scores 2026_04_14 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.915530+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_14_weather.csv
+2026-08-30T12:34:41.927675+00:00 | INFO  | processing date=2026_04_15
+2026-08-30T12:34:41.972759+00:00 | WARN  | final_scores 2026_04_15 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:41.991867+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_15_weather.csv
+2026-08-30T12:34:42.002661+00:00 | INFO  | processing date=2026_04_16
+2026-08-30T12:34:42.045175+00:00 | WARN  | final_scores 2026_04_16 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:42.064228+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_16_weather.csv
+2026-08-30T12:34:42.073742+00:00 | INFO  | processing date=2026_04_17
+2026-08-30T12:34:42.119098+00:00 | WARN  | final_scores 2026_04_17 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.138348+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_17_weather.csv
+2026-08-30T12:34:42.149343+00:00 | INFO  | processing date=2026_04_18
+2026-08-30T12:34:42.194552+00:00 | WARN  | final_scores 2026_04_18 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.213760+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_18_weather.csv
+2026-08-30T12:34:42.223476+00:00 | INFO  | processing date=2026_04_19
+2026-08-30T12:34:42.268890+00:00 | WARN  | final_scores 2026_04_19 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.288093+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_19_weather.csv
+2026-08-30T12:34:42.297772+00:00 | INFO  | processing date=2026_04_20
+2026-08-30T12:34:42.340167+00:00 | WARN  | final_scores 2026_04_20 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.359146+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_20_weather.csv
+2026-08-30T12:34:42.369053+00:00 | INFO  | processing date=2026_04_21
+2026-08-30T12:34:42.414456+00:00 | WARN  | final_scores 2026_04_21 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.433698+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_21_weather.csv
+2026-08-30T12:34:42.443362+00:00 | INFO  | processing date=2026_04_22
+2026-08-30T12:34:42.488968+00:00 | WARN  | final_scores 2026_04_22 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.508231+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_22_weather.csv
+2026-08-30T12:34:42.519062+00:00 | INFO  | processing date=2026_04_23
+2026-08-30T12:34:42.577368+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_23_weather.csv
+2026-08-30T12:34:42.589375+00:00 | INFO  | processing date=2026_04_24
+2026-08-30T12:34:42.648735+00:00 | WARN  | final_scores 2026_04_24 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.667978+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_24_weather.csv
+2026-08-30T12:34:42.677651+00:00 | INFO  | processing date=2026_04_25
+2026-08-30T12:34:42.741652+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_25_weather.csv
+2026-08-30T12:34:42.752439+00:00 | INFO  | processing date=2026_04_26
+2026-08-30T12:34:42.797821+00:00 | WARN  | final_scores 2026_04_26 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.817578+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_26_weather.csv
+2026-08-30T12:34:42.828454+00:00 | INFO  | processing date=2026_04_27
+2026-08-30T12:34:42.873484+00:00 | WARN  | final_scores 2026_04_27 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:42.892514+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_27_weather.csv
+2026-08-30T12:34:42.902201+00:00 | INFO  | processing date=2026_04_28
+2026-08-30T12:34:42.947679+00:00 | WARN  | final_scores 2026_04_28 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:42.967113+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_28_weather.csv
+2026-08-30T12:34:42.977966+00:00 | INFO  | processing date=2026_04_29
+2026-08-30T12:34:43.023159+00:00 | WARN  | final_scores 2026_04_29 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.042536+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_29_weather.csv
+2026-08-30T12:34:43.053400+00:00 | INFO  | processing date=2026_04_30
+2026-08-30T12:34:43.098110+00:00 | WARN  | final_scores 2026_04_30 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.117394+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_04_30_weather.csv
+2026-08-30T12:34:43.127246+00:00 | INFO  | processing date=2026_05_01
+2026-08-30T12:34:43.172606+00:00 | WARN  | final_scores 2026_05_01 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.191764+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_01_weather.csv
+2026-08-30T12:34:43.202531+00:00 | INFO  | processing date=2026_05_02
+2026-08-30T12:34:43.247515+00:00 | WARN  | final_scores 2026_05_02 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.266897+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_02_weather.csv
+2026-08-30T12:34:43.276467+00:00 | INFO  | processing date=2026_05_03
+2026-08-30T12:34:43.321766+00:00 | WARN  | final_scores 2026_05_03 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.340937+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_03_weather.csv
+2026-08-30T12:34:43.352854+00:00 | INFO  | processing date=2026_05_04
+2026-08-30T12:34:43.398251+00:00 | WARN  | final_scores 2026_05_04 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:43.417660+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_04_weather.csv
+2026-08-30T12:34:43.429499+00:00 | INFO  | processing date=2026_05_05
+2026-08-30T12:34:43.478792+00:00 | WARN  | final_scores 2026_05_05 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:43.498281+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_05_weather.csv
+2026-08-30T12:34:43.509098+00:00 | INFO  | processing date=2026_05_06
+2026-08-30T12:34:43.551579+00:00 | WARN  | final_scores 2026_05_06 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.570506+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_06_weather.csv
+2026-08-30T12:34:43.580106+00:00 | INFO  | processing date=2026_05_07
+2026-08-30T12:34:43.621740+00:00 | WARN  | final_scores 2026_05_07 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:43.639857+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_07_weather.csv
+2026-08-30T12:34:43.648612+00:00 | INFO  | processing date=2026_05_08
+2026-08-30T12:34:43.693602+00:00 | WARN  | final_scores 2026_05_08 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:43.712941+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_08_weather.csv
+2026-08-30T12:34:43.723897+00:00 | INFO  | processing date=2026_05_09
+2026-08-30T12:34:43.768785+00:00 | WARN  | final_scores 2026_05_09 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.787846+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_09_weather.csv
+2026-08-30T12:34:43.798572+00:00 | INFO  | processing date=2026_05_10
+2026-08-30T12:34:43.861526+00:00 | WARN  | final_scores 2026_05_10 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:43.880539+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_10_weather.csv
+2026-08-30T12:34:43.891339+00:00 | INFO  | processing date=2026_05_11
+2026-08-30T12:34:43.948823+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_11_weather.csv
+2026-08-30T12:34:43.958279+00:00 | INFO  | processing date=2026_05_12
+2026-08-30T12:34:44.021029+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_12_weather.csv
+2026-08-30T12:34:44.030534+00:00 | INFO  | processing date=2026_05_13
+2026-08-30T12:34:44.075358+00:00 | WARN  | final_scores 2026_05_13 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:44.094588+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_13_weather.csv
+2026-08-30T12:34:44.105343+00:00 | INFO  | processing date=2026_05_14
+2026-08-30T12:34:44.168534+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_14_weather.csv
+2026-08-30T12:34:44.177852+00:00 | INFO  | processing date=2026_05_15
+2026-08-30T12:34:44.222724+00:00 | WARN  | final_scores 2026_05_15 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:44.241848+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_15_weather.csv
+2026-08-30T12:34:44.251739+00:00 | INFO  | processing date=2026_05_16
+2026-08-30T12:34:44.296599+00:00 | WARN  | final_scores 2026_05_16 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.315729+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_16_weather.csv
+2026-08-30T12:34:44.325305+00:00 | INFO  | processing date=2026_05_17
+2026-08-30T12:34:44.370447+00:00 | WARN  | final_scores 2026_05_17 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.389699+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_17_weather.csv
+2026-08-30T12:34:44.401473+00:00 | INFO  | processing date=2026_05_18
+2026-08-30T12:34:44.446561+00:00 | WARN  | final_scores 2026_05_18 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:44.465648+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_18_weather.csv
+2026-08-30T12:34:44.475588+00:00 | INFO  | processing date=2026_05_19
+2026-08-30T12:34:44.520515+00:00 | WARN  | final_scores 2026_05_19 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.539696+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_19_weather.csv
+2026-08-30T12:34:44.550533+00:00 | INFO  | processing date=2026_05_20
+2026-08-30T12:34:44.595791+00:00 | WARN  | final_scores 2026_05_20 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.614862+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_20_weather.csv
+2026-08-30T12:34:44.626637+00:00 | INFO  | processing date=2026_05_21
+2026-08-30T12:34:44.668512+00:00 | WARN  | final_scores 2026_05_21 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.687471+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_21_weather.csv
+2026-08-30T12:34:44.697231+00:00 | INFO  | processing date=2026_05_22
+2026-08-30T12:34:44.742352+00:00 | WARN  | final_scores 2026_05_22 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:44.761407+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_22_weather.csv
+2026-08-30T12:34:44.772140+00:00 | INFO  | processing date=2026_05_23
+2026-08-30T12:34:44.817602+00:00 | WARN  | final_scores 2026_05_23 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.836863+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_23_weather.csv
+2026-08-30T12:34:44.846420+00:00 | INFO  | processing date=2026_05_24
+2026-08-30T12:34:44.891526+00:00 | WARN  | final_scores 2026_05_24 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:44.910790+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_24_weather.csv
+2026-08-30T12:34:44.921831+00:00 | INFO  | processing date=2026_05_25
+2026-08-30T12:34:44.966734+00:00 | WARN  | final_scores 2026_05_25 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:44.985962+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_25_weather.csv
+2026-08-30T12:34:44.995569+00:00 | INFO  | processing date=2026_05_26
+2026-08-30T12:34:45.055771+00:00 | WARN  | final_scores 2026_05_26 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.075173+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_26_weather.csv
+2026-08-30T12:34:45.086116+00:00 | INFO  | processing date=2026_05_27
+2026-08-30T12:34:45.131530+00:00 | WARN  | final_scores 2026_05_27 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.150813+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_27_weather.csv
+2026-08-30T12:34:45.161595+00:00 | INFO  | processing date=2026_05_28
+2026-08-30T12:34:45.219301+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_28_weather.csv
+2026-08-30T12:34:45.228724+00:00 | INFO  | processing date=2026_05_29
+2026-08-30T12:34:45.274039+00:00 | WARN  | final_scores 2026_05_29 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.293205+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_29_weather.csv
+2026-08-30T12:34:45.303995+00:00 | INFO  | processing date=2026_05_30
+2026-08-30T12:34:45.349457+00:00 | WARN  | final_scores 2026_05_30 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.368783+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_30_weather.csv
+2026-08-30T12:34:45.378951+00:00 | INFO  | processing date=2026_05_31
+2026-08-30T12:34:45.424152+00:00 | WARN  | final_scores 2026_05_31 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.443227+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_05_31_weather.csv
+2026-08-30T12:34:45.452792+00:00 | INFO  | processing date=2026_06_01
+2026-08-30T12:34:45.494938+00:00 | WARN  | final_scores 2026_06_01 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:45.514160+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_01_weather.csv
+2026-08-30T12:34:45.523934+00:00 | INFO  | processing date=2026_06_02
+2026-08-30T12:34:45.569055+00:00 | WARN  | final_scores 2026_06_02 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.588451+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_02_weather.csv
+2026-08-30T12:34:45.600220+00:00 | INFO  | processing date=2026_06_03
+2026-08-30T12:34:45.648004+00:00 | WARN  | final_scores 2026_06_03 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.669546+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_03_weather.csv
+2026-08-30T12:34:45.679374+00:00 | INFO  | processing date=2026_06_04
+2026-08-30T12:34:45.721789+00:00 | WARN  | final_scores 2026_06_04 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:45.740759+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_04_weather.csv
+2026-08-30T12:34:45.750262+00:00 | INFO  | processing date=2026_06_05
+2026-08-30T12:34:45.795237+00:00 | WARN  | final_scores 2026_06_05 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.814831+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_05_weather.csv
+2026-08-30T12:34:45.824846+00:00 | INFO  | processing date=2026_06_06
+2026-08-30T12:34:45.870000+00:00 | WARN  | final_scores 2026_06_06 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.889047+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_06_weather.csv
+2026-08-30T12:34:45.898737+00:00 | INFO  | processing date=2026_06_07
+2026-08-30T12:34:45.943885+00:00 | WARN  | final_scores 2026_06_07 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:45.963006+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_07_weather.csv
+2026-08-30T12:34:45.973138+00:00 | INFO  | processing date=2026_06_08
+2026-08-30T12:34:46.017619+00:00 | WARN  | final_scores 2026_06_08 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:46.037086+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_08_weather.csv
+2026-08-30T12:34:46.046656+00:00 | INFO  | processing date=2026_06_09
+2026-08-30T12:34:46.091557+00:00 | WARN  | final_scores 2026_06_09 join dropped rows with blank gamePk: 7
+2026-08-30T12:34:46.110641+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_09_weather.csv
+2026-08-30T12:34:46.120238+00:00 | INFO  | processing date=2026_06_10
+2026-08-30T12:34:46.165312+00:00 | WARN  | final_scores 2026_06_10 join dropped rows with blank gamePk: 7
+2026-08-30T12:34:46.184442+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_10_weather.csv
+2026-08-30T12:34:46.194024+00:00 | INFO  | processing date=2026_06_11
+2026-08-30T12:34:46.238570+00:00 | WARN  | final_scores 2026_06_11 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:46.275199+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_11_weather.csv
+2026-08-30T12:34:46.284867+00:00 | INFO  | processing date=2026_06_12
+2026-08-30T12:34:46.329868+00:00 | WARN  | final_scores 2026_06_12 join dropped rows with blank gamePk: 8
+2026-08-30T12:34:46.348892+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_12_weather.csv
+2026-08-30T12:34:46.358334+00:00 | INFO  | processing date=2026_06_13
+2026-08-30T12:34:46.403273+00:00 | WARN  | final_scores 2026_06_13 join dropped rows with blank gamePk: 8
+2026-08-30T12:34:46.422551+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_13_weather.csv
+2026-08-30T12:34:46.432621+00:00 | INFO  | processing date=2026_06_14
+2026-08-30T12:34:46.477596+00:00 | WARN  | final_scores 2026_06_14 join dropped rows with blank gamePk: 8
+2026-08-30T12:34:46.496682+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_14_weather.csv
+2026-08-30T12:34:46.506211+00:00 | INFO  | processing date=2026_06_15
+2026-08-30T12:34:46.548647+00:00 | WARN  | final_scores 2026_06_15 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:46.567739+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_15_weather.csv
+2026-08-30T12:34:46.577543+00:00 | INFO  | processing date=2026_06_16
+2026-08-30T12:34:46.622934+00:00 | WARN  | final_scores 2026_06_16 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:46.641985+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_16_weather.csv
+2026-08-30T12:34:46.652541+00:00 | INFO  | processing date=2026_06_17
+2026-08-30T12:34:46.697923+00:00 | WARN  | final_scores 2026_06_17 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:46.717303+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_17_weather.csv
+2026-08-30T12:34:46.728070+00:00 | INFO  | processing date=2026_06_18
+2026-08-30T12:34:46.770324+00:00 | WARN  | final_scores 2026_06_18 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:46.789490+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_18_weather.csv
+2026-08-30T12:34:46.799222+00:00 | INFO  | processing date=2026_06_19
+2026-08-30T12:34:46.841829+00:00 | WARN  | final_scores 2026_06_19 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:46.860992+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_19_weather.csv
+2026-08-30T12:34:46.870548+00:00 | INFO  | processing date=2026_06_20
+2026-08-30T12:34:46.915842+00:00 | WARN  | final_scores 2026_06_20 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:46.934878+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_20_weather.csv
+2026-08-30T12:34:46.945582+00:00 | INFO  | processing date=2026_06_21
+2026-08-30T12:34:46.991178+00:00 | WARN  | final_scores 2026_06_21 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:47.010305+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_21_weather.csv
+2026-08-30T12:34:47.021803+00:00 | INFO  | processing date=2026_06_22
+2026-08-30T12:34:47.067074+00:00 | WARN  | final_scores 2026_06_22 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:47.086209+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_22_weather.csv
+2026-08-30T12:34:47.098027+00:00 | INFO  | processing date=2026_06_23
+2026-08-30T12:34:47.143524+00:00 | WARN  | final_scores 2026_06_23 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:47.162775+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_23_weather.csv
+2026-08-30T12:34:47.173513+00:00 | INFO  | processing date=2026_06_24
+2026-08-30T12:34:47.218685+00:00 | WARN  | final_scores 2026_06_24 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:47.237815+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_24_weather.csv
+2026-08-30T12:34:47.248774+00:00 | INFO  | processing date=2026_06_25
+2026-08-30T12:34:47.293471+00:00 | WARN  | final_scores 2026_06_25 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:47.312663+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_25_weather.csv
+2026-08-30T12:34:47.322675+00:00 | INFO  | processing date=2026_06_26
+2026-08-30T12:34:47.367994+00:00 | WARN  | final_scores 2026_06_26 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:47.387257+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_26_weather.csv
+2026-08-30T12:34:47.399056+00:00 | INFO  | processing date=2026_06_27
+2026-08-30T12:34:47.444391+00:00 | WARN  | final_scores 2026_06_27 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:47.463413+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_27_weather.csv
+2026-08-30T12:34:47.473335+00:00 | INFO  | processing date=2026_06_28
+2026-08-30T12:34:47.535722+00:00 | WARN  | final_scores 2026_06_28 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:47.554997+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_28_weather.csv
+2026-08-30T12:34:47.564596+00:00 | INFO  | processing date=2026_06_29
+2026-08-30T12:34:47.609747+00:00 | WARN  | final_scores 2026_06_29 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:47.628984+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_29_weather.csv
+2026-08-30T12:34:47.640685+00:00 | INFO  | processing date=2026_06_30
+2026-08-30T12:34:47.686032+00:00 | WARN  | final_scores 2026_06_30 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:47.705388+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_06_30_weather.csv
+2026-08-30T12:34:47.716212+00:00 | INFO  | processing date=2026_07_01
+2026-08-30T12:34:47.761526+00:00 | WARN  | final_scores 2026_07_01 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:47.780765+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_01_weather.csv
+2026-08-30T12:34:47.791980+00:00 | INFO  | processing date=2026_07_02
+2026-08-30T12:34:47.834245+00:00 | WARN  | final_scores 2026_07_02 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:47.853265+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_02_weather.csv
+2026-08-30T12:34:47.862774+00:00 | INFO  | processing date=2026_07_03
+2026-08-30T12:34:47.907790+00:00 | WARN  | final_scores 2026_07_03 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:47.927045+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_03_weather.csv
+2026-08-30T12:34:47.937769+00:00 | INFO  | processing date=2026_07_04
+2026-08-30T12:34:47.982845+00:00 | WARN  | final_scores 2026_07_04 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.001891+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_04_weather.csv
+2026-08-30T12:34:48.012649+00:00 | INFO  | processing date=2026_07_05
+2026-08-30T12:34:48.057866+00:00 | WARN  | final_scores 2026_07_05 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:48.076980+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_05_weather.csv
+2026-08-30T12:34:48.086500+00:00 | INFO  | processing date=2026_07_06
+2026-08-30T12:34:48.147157+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_06_weather.csv
+2026-08-30T12:34:48.156576+00:00 | INFO  | processing date=2026_07_07
+2026-08-30T12:34:48.201689+00:00 | WARN  | final_scores 2026_07_07 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.221035+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_07_weather.csv
+2026-08-30T12:34:48.232767+00:00 | INFO  | processing date=2026_07_08
+2026-08-30T12:34:48.278288+00:00 | WARN  | final_scores 2026_07_08 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.297601+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_08_weather.csv
+2026-08-30T12:34:48.308486+00:00 | INFO  | processing date=2026_07_09
+2026-08-30T12:34:48.353705+00:00 | WARN  | final_scores 2026_07_09 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.373162+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_09_weather.csv
+2026-08-30T12:34:48.385080+00:00 | INFO  | processing date=2026_07_10
+2026-08-30T12:34:48.430677+00:00 | WARN  | final_scores 2026_07_10 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.449876+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_10_weather.csv
+2026-08-30T12:34:48.459578+00:00 | INFO  | processing date=2026_07_11
+2026-08-30T12:34:48.504670+00:00 | WARN  | final_scores 2026_07_11 join dropped rows with blank gamePk: 6
+2026-08-30T12:34:48.524020+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_11_weather.csv
+2026-08-30T12:34:48.534723+00:00 | INFO  | processing date=2026_07_12
+2026-08-30T12:34:48.580105+00:00 | WARN  | final_scores 2026_07_12 join dropped rows with blank gamePk: 3
+2026-08-30T12:34:48.599531+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_12_weather.csv
+2026-08-30T12:34:48.609163+00:00 | INFO  | processing date=2026_07_16
+2026-08-30T12:34:48.665694+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_16_weather.csv
+2026-08-30T12:34:48.675047+00:00 | INFO  | processing date=2026_07_17
+2026-08-30T12:34:48.739772+00:00 | WARN  | final_scores 2026_07_17 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.759067+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_17_weather.csv
+2026-08-30T12:34:48.768701+00:00 | INFO  | processing date=2026_07_18
+2026-08-30T12:34:48.814022+00:00 | WARN  | final_scores 2026_07_18 join dropped rows with blank gamePk: 7
+2026-08-30T12:34:48.833165+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_18_weather.csv
+2026-08-30T12:34:48.842611+00:00 | INFO  | processing date=2026_07_19
+2026-08-30T12:34:48.887848+00:00 | WARN  | final_scores 2026_07_19 join dropped rows with blank gamePk: 4
+2026-08-30T12:34:48.906975+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_19_weather.csv
+2026-08-30T12:34:48.919022+00:00 | INFO  | processing date=2026_07_20
+2026-08-30T12:34:48.964279+00:00 | WARN  | final_scores 2026_07_20 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:48.983419+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_20_weather.csv
+2026-08-30T12:34:48.994189+00:00 | INFO  | processing date=2026_07_21
+2026-08-30T12:34:49.039140+00:00 | WARN  | final_scores 2026_07_21 join dropped rows with blank gamePk: 7
+2026-08-30T12:34:49.058267+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_21_weather.csv
+2026-08-30T12:34:49.067659+00:00 | INFO  | processing date=2026_07_22
+2026-08-30T12:34:49.109428+00:00 | WARN  | final_scores 2026_07_22 join dropped rows with blank gamePk: 13
+2026-08-30T12:34:49.128484+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_22_weather.csv
+2026-08-30T12:34:49.138056+00:00 | INFO  | processing date=2026_07_23
+2026-08-30T12:34:49.179782+00:00 | WARN  | final_scores 2026_07_23 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:49.198739+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_23_weather.csv
+2026-08-30T12:34:49.208195+00:00 | INFO  | processing date=2026_07_24
+2026-08-30T12:34:49.253696+00:00 | WARN  | final_scores 2026_07_24 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.272772+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_24_weather.csv
+2026-08-30T12:34:49.283548+00:00 | INFO  | processing date=2026_07_25
+2026-08-30T12:34:49.328553+00:00 | WARN  | final_scores 2026_07_25 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.347680+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_25_weather.csv
+2026-08-30T12:34:49.358779+00:00 | INFO  | processing date=2026_07_26
+2026-08-30T12:34:49.403991+00:00 | WARN  | final_scores 2026_07_26 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.423344+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_26_weather.csv
+2026-08-30T12:34:49.432994+00:00 | INFO  | processing date=2026_07_27
+2026-08-30T12:34:49.478341+00:00 | WARN  | final_scores 2026_07_27 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.497491+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_27_weather.csv
+2026-08-30T12:34:49.507542+00:00 | INFO  | processing date=2026_07_28
+2026-08-30T12:34:49.552811+00:00 | WARN  | final_scores 2026_07_28 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.572050+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_28_weather.csv
+2026-08-30T12:34:49.584130+00:00 | INFO  | processing date=2026_07_29
+2026-08-30T12:34:49.629227+00:00 | WARN  | final_scores 2026_07_29 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.648281+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_29_weather.csv
+2026-08-30T12:34:49.660124+00:00 | INFO  | processing date=2026_07_30
+2026-08-30T12:34:49.705142+00:00 | WARN  | final_scores 2026_07_30 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.724544+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_30_weather.csv
+2026-08-30T12:34:49.735337+00:00 | INFO  | processing date=2026_07_31
+2026-08-30T12:34:49.780318+00:00 | WARN  | final_scores 2026_07_31 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.799522+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_07_31_weather.csv
+2026-08-30T12:34:49.810623+00:00 | INFO  | processing date=2026_08_01
+2026-08-30T12:34:49.855550+00:00 | WARN  | final_scores 2026_08_01 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.874681+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_01_weather.csv
+2026-08-30T12:34:49.884201+00:00 | INFO  | processing date=2026_08_02
+2026-08-30T12:34:49.950010+00:00 | WARN  | final_scores 2026_08_02 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:49.969419+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_02_weather.csv
+2026-08-30T12:34:49.980424+00:00 | INFO  | processing date=2026_08_03
+2026-08-30T12:34:50.025248+00:00 | WARN  | final_scores 2026_08_03 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:50.042045+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_03_weather.csv
+2026-08-30T12:34:50.051547+00:00 | INFO  | processing date=2026_08_04
+2026-08-30T12:34:50.096850+00:00 | WARN  | final_scores 2026_08_04 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.115994+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_04_weather.csv
+2026-08-30T12:34:50.127946+00:00 | INFO  | processing date=2026_08_05
+2026-08-30T12:34:50.173195+00:00 | WARN  | final_scores 2026_08_05 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.192293+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_05_weather.csv
+2026-08-30T12:34:50.201758+00:00 | INFO  | processing date=2026_08_06
+2026-08-30T12:34:50.246934+00:00 | WARN  | final_scores 2026_08_06 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:50.263530+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_06_weather.csv
+2026-08-30T12:34:50.272812+00:00 | INFO  | processing date=2026_08_07
+2026-08-30T12:34:50.318161+00:00 | WARN  | final_scores 2026_08_07 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:50.334526+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_07_weather.csv
+2026-08-30T12:34:50.343854+00:00 | INFO  | processing date=2026_08_08
+2026-08-30T12:34:50.389084+00:00 | WARN  | final_scores 2026_08_08 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:50.405494+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_08_weather.csv
+2026-08-30T12:34:50.415036+00:00 | INFO  | processing date=2026_08_09
+2026-08-30T12:34:50.460243+00:00 | WARN  | final_scores 2026_08_09 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.477089+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_09_weather.csv
+2026-08-30T12:34:50.486403+00:00 | INFO  | processing date=2026_08_10
+2026-08-30T12:34:50.531335+00:00 | WARN  | final_scores 2026_08_10 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.550373+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_10_weather.csv
+2026-08-30T12:34:50.560369+00:00 | INFO  | processing date=2026_08_11
+2026-08-30T12:34:50.605520+00:00 | WARN  | final_scores 2026_08_11 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.624687+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_11_weather.csv
+2026-08-30T12:34:50.635208+00:00 | INFO  | processing date=2026_08_12
+2026-08-30T12:34:50.680221+00:00 | WARN  | final_scores 2026_08_12 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.696812+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_12_weather.csv
+2026-08-30T12:34:50.706162+00:00 | INFO  | processing date=2026_08_13
+2026-08-30T12:34:50.766949+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_13_weather.csv
+2026-08-30T12:34:50.776254+00:00 | INFO  | processing date=2026_08_14
+2026-08-30T12:34:50.821549+00:00 | WARN  | final_scores 2026_08_14 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.840583+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_14_weather.csv
+2026-08-30T12:34:50.850054+00:00 | INFO  | processing date=2026_08_15
+2026-08-30T12:34:50.895141+00:00 | WARN  | final_scores 2026_08_15 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.914669+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_15_weather.csv
+2026-08-30T12:34:50.924016+00:00 | INFO  | processing date=2026_08_16
+2026-08-30T12:34:50.969269+00:00 | WARN  | final_scores 2026_08_16 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:50.985713+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_16_weather.csv
+2026-08-30T12:34:50.995029+00:00 | INFO  | processing date=2026_08_17
+2026-08-30T12:34:51.040084+00:00 | WARN  | final_scores 2026_08_17 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:51.059203+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_17_weather.csv
+2026-08-30T12:34:51.068687+00:00 | INFO  | processing date=2026_08_18
+2026-08-30T12:34:51.113732+00:00 | WARN  | final_scores 2026_08_18 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:51.155275+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_18_weather.csv
+2026-08-30T12:34:51.165068+00:00 | INFO  | processing date=2026_08_19
+2026-08-30T12:34:51.210573+00:00 | WARN  | final_scores 2026_08_19 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:51.230049+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_19_weather.csv
+2026-08-30T12:34:51.241975+00:00 | INFO  | processing date=2026_08_24
+2026-08-30T12:34:51.287176+00:00 | WARN  | final_scores 2026_08_24 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:51.306394+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_24_weather.csv
+2026-08-30T12:34:51.317292+00:00 | INFO  | processing date=2026_08_25
+2026-08-30T12:34:51.363137+00:00 | WARN  | final_scores 2026_08_25 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:51.382331+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_25_weather.csv
+2026-08-30T12:34:51.394253+00:00 | INFO  | processing date=2026_08_26
+2026-08-30T12:34:51.437183+00:00 | WARN  | final_scores 2026_08_26 join dropped rows with blank gamePk: 5
+2026-08-30T12:34:51.456390+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_26_weather.csv
+2026-08-30T12:34:51.466824+00:00 | INFO  | processing date=2026_08_27
+2026-08-30T12:34:51.508942+00:00 | WARN  | final_scores 2026_08_27 join dropped rows with blank gamePk: 1
+2026-08-30T12:34:51.528027+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_27_weather.csv
+2026-08-30T12:34:51.538104+00:00 | INFO  | processing date=2026_08_28
+2026-08-30T12:34:51.580682+00:00 | WARN  | final_scores 2026_08_28 join dropped rows with blank gamePk: 2
+2026-08-30T12:34:51.599614+00:00 | WARN  | weather ignored because no pregame-generation provenance timestamp exists: 2026_08_28_weather.csv
+2026-08-30T12:34:51.609063+00:00 | INFO  | processing date=2026_08_29
+2026-08-30T12:34:51.626785+00:00 | ERROR | final_scores 2026_08_29 contains duplicate game_id; duplicate_rows=2; sample=['71962506', '71962506']
+2026-08-30T12:34:51.627320+00:00 | ERROR | FATAL: final_scores 2026_08_29 contains duplicate game_id; duplicate_rows=2; sample=['71962506', '71962506']
+Traceback (most recent call last):
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py", line 1633, in main
+    frame = build_date_training_rows(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py", line 1088, in build_date_training_rows
+    final = _prepare_source_keys(
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py", line 489, in _prepare_source_keys
+    _assert_unique_key(
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py", line 408, in _assert_unique_key
+    fail(
+  File "/home/runner/work/baseball_for_mat/baseball_for_mat/docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py", line 262, in fail
+    raise RuntimeError(message)
+RuntimeError: final_scores 2026_08_29 contains duplicate game_id; duplicate_rows=2; sample=['71962506', '71962506']
+2026-08-30T12:34:51.627359+00:00 | INFO  | rows_loaded=1772
+2026-08-30T12:34:51.627387+00:00 | INFO  | rows_joined=1772
+2026-08-30T12:34:51.627412+00:00 | INFO  | missing_sdv=0
+2026-08-30T12:34:51.627437+00:00 | INFO  | missing_final_score=303
+2026-08-30T12:34:51.627459+00:00 | INFO  | duplicate_game_id=2
+2026-08-30T12:34:51.627482+00:00 | INFO  | duplicate_gamePk=0
+2026-08-30T12:34:51.627505+00:00 | INFO  | leakage_rejections=0
+2026-08-30T12:34:51.627527+00:00 | INFO  | rows_written=0
