@@ -1,10 +1,10 @@
 {
   "training_start_date": "2026-03-26",
-  "training_end_date": "2026-07-05",
-  "validation_start_date": "2026-07-06",
-  "validation_end_date": "2026-07-30",
-  "test_start_date": "2026-07-31",
-  "test_end_date": "2026-08-25",
+  "training_end_date": "2026-07-07",
+  "validation_start_date": "2026-07-08",
+  "validation_end_date": "2026-08-01",
+  "test_start_date": "2026-08-02",
+  "test_end_date": "2026-08-28",
   "feature_columns": [
     "dratings_home_prob",
     "dratings_away_prob",
@@ -62,32 +62,32 @@
   ],
   "selected_hyperparameters": {
     "learning_rate": 0.03,
-    "max_leaf_nodes": 7,
-    "min_samples_leaf": 20,
-    "l2_regularization": 1
+    "max_leaf_nodes": 15,
+    "min_samples_leaf": 40,
+    "l2_regularization": 0
   },
-  "training_row_count": 1092,
-  "validation_row_count": 213,
-  "test_row_count": 145,
+  "training_row_count": 1112,
+  "validation_row_count": 219,
+  "test_row_count": 148,
   "baseline_metrics": {
-    "mae": 2.4346206896551723,
-    "mean_poisson_deviance": 2.4028110921718047,
-    "mean_predicted_runs": 4.426620689655172,
-    "mean_actual_runs": 4.462068965517242
+    "mae": 2.4012162162162163,
+    "mean_poisson_deviance": 2.355752491114058,
+    "mean_predicted_runs": 4.355540540540541,
+    "mean_actual_runs": 4.452702702702703
   },
   "model_metrics": {
-    "mae": 2.4252981263370836,
-    "mean_poisson_deviance": 2.3400386655060244,
-    "mean_predicted_runs": 4.686781744545044,
-    "mean_actual_runs": 4.462068965517242
+    "mae": 2.4733054713030556,
+    "mean_poisson_deviance": 2.4114906931708857,
+    "mean_predicted_runs": 4.551366025405733,
+    "mean_actual_runs": 4.452702702702703
   },
-  "created_at": "2026-08-26T18:37:34.270011+00:00",
-  "validation_mean_poisson_deviance": 2.6941972596356267,
+  "created_at": "2026-08-30T10:27:01.042951+00:00",
+  "validation_mean_poisson_deviance": 2.5775805849380435,
   "target_column": "target_home_runs",
   "baseline_column": "dratings_home_projected_runs",
   "model_class": "HistGradientBoostingRegressor",
   "loss": "poisson",
   "random_state": 42,
-  "final_fit_row_count": 1305,
+  "final_fit_row_count": 1331,
   "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection"
 }
