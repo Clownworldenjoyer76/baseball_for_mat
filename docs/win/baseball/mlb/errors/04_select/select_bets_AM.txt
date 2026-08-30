@@ -1,474 +1,474 @@
-=== MLB select_bets RUN 2026-08-30T12:03:07.956930+00:00 ===
-2026-08-30T12:03:07.961533+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges/ev_kelly
-2026-08-30T12:03:07.961578+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/04_select/morning
-2026-08-30T12:03:07.961611+00:00 | INFO  | Rain filter: will_it_rain=False symbol_code=False symbol_terms=['rain', 'heavyrain', 'lightrain', 'sleet', 'snow', 'thunder'] | SP sample exclude totals: False | Lineup low sample warn: 4
-2026-08-30T12:03:07.961636+00:00 | INFO  | Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.
-2026-08-30T12:03:07.961660+00:00 | INFO  | Selection matches market rows by game_id only. Team/date fallback matching is disabled.
-2026-08-30T12:03:07.963767+00:00 | INFO  | Files found: 447
-2026-08-30T12:03:07.963959+00:00 | INFO  | Selected run mode: rebuild_all
-2026-08-30T12:03:07.963998+00:00 | INFO  | Slate keys to process: ['2026_03_29', '2026_03_30', '2026_03_31', '2026_04_01', '2026_04_02', '2026_04_03', '2026_04_04', '2026_04_05', '2026_04_06', '2026_04_07', '2026_04_08', '2026_04_09', '2026_04_10', '2026_04_11', '2026_04_12', '2026_04_13', '2026_04_14', '2026_04_15', '2026_04_16', '2026_04_17', '2026_04_18', '2026_04_19', '2026_04_20', '2026_04_21', '2026_04_22', '2026_04_23', '2026_04_24', '2026_04_25', '2026_04_26', '2026_04_27', '2026_04_28', '2026_04_29', '2026_04_30', '2026_05_01', '2026_05_02', '2026_05_03', '2026_05_04', '2026_05_05', '2026_05_06', '2026_05_07', '2026_05_08', '2026_05_09', '2026_05_10', '2026_05_11', '2026_05_12', '2026_05_13', '2026_05_14', '2026_05_15', '2026_05_16', '2026_05_17', '2026_05_18', '2026_05_19', '2026_05_20', '2026_05_21', '2026_05_22', '2026_05_23', '2026_05_24', '2026_05_25', '2026_05_26', '2026_05_27', '2026_05_28', '2026_05_29', '2026_05_30', '2026_05_31', '2026_06_01', '2026_06_02', '2026_06_03', '2026_06_04', '2026_06_05', '2026_06_06', '2026_06_07', '2026_06_08', '2026_06_09', '2026_06_10', '2026_06_11', '2026_06_12', '2026_06_13', '2026_06_14', '2026_06_15', '2026_06_16', '2026_06_17', '2026_06_18', '2026_06_19', '2026_06_20', '2026_06_21', '2026_06_22', '2026_06_23', '2026_06_24', '2026_06_25', '2026_06_26', '2026_06_27', '2026_06_28', '2026_06_29', '2026_06_30', '2026_07_01', '2026_07_02', '2026_07_03', '2026_07_04', '2026_07_05', '2026_07_06', '2026_07_07', '2026_07_08', '2026_07_09', '2026_07_10', '2026_07_11', '2026_07_12', '2026_07_16', '2026_07_17', '2026_07_18', '2026_07_19', '2026_07_20', '2026_07_21', '2026_07_22', '2026_07_23', '2026_07_24', '2026_07_25', '2026_07_26', '2026_07_27', '2026_07_28', '2026_07_29', '2026_07_30', '2026_07_31', '2026_08_01', '2026_08_02', '2026_08_03', '2026_08_04', '2026_08_05', '2026_08_06', '2026_08_07', '2026_08_08', '2026_08_09', '2026_08_10', '2026_08_11', '2026_08_12', '2026_08_13', '2026_08_14', '2026_08_15', '2026_08_16', '2026_08_17', '2026_08_18', '2026_08_19', '2026_08_20', '2026_08_24', '2026_08_25', '2026_08_26', '2026_08_27', '2026_08_28', '2026_08_29', '2026_08_30']
-2026-08-30T12:03:07.964028+00:00 | INFO  | --- SLATE: 2026_03_29
-2026-08-30T12:03:07.987691+00:00 | INFO  | 2026_03_29 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
-2026-08-30T12:03:08.090849+00:00 | INFO  | WROTE: 2026_03_29_MLB.csv (8 bets | ml=1 rl=5 tot=2)
-2026-08-30T12:03:08.090892+00:00 | INFO  | --- SLATE: 2026_03_30
-2026-08-30T12:03:08.108350+00:00 | INFO  | 2026_03_30 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:08.232533+00:00 | INFO  | WROTE: 2026_03_30_MLB.csv (3 bets | ml=0 rl=1 tot=2)
-2026-08-30T12:03:08.232575+00:00 | INFO  | --- SLATE: 2026_03_31
-2026-08-30T12:03:08.250516+00:00 | INFO  | 2026_03_31 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:08.383153+00:00 | INFO  | WROTE: 2026_03_31_MLB.csv (11 bets | ml=2 rl=8 tot=1)
-2026-08-30T12:03:08.383214+00:00 | INFO  | --- SLATE: 2026_04_01
-2026-08-30T12:03:08.399882+00:00 | INFO  | 2026_04_01 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:08.523039+00:00 | INFO  | WROTE: 2026_04_01_MLB.csv (13 bets | ml=5 rl=7 tot=1)
-2026-08-30T12:03:08.523079+00:00 | INFO  | --- SLATE: 2026_04_02
-2026-08-30T12:03:08.538631+00:00 | INFO  | 2026_04_02 market row-count check OK: {'moneyline': 3, 'run_line': 3, 'total': 3}
-2026-08-30T12:03:08.570929+00:00 | INFO  | WROTE: 2026_04_02_MLB.csv (4 bets | ml=2 rl=2 tot=0)
-2026-08-30T12:03:08.570966+00:00 | INFO  | --- SLATE: 2026_04_03
-2026-08-30T12:03:08.587624+00:00 | INFO  | 2026_04_03 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:08.718986+00:00 | INFO  | WROTE: 2026_04_03_MLB.csv (15 bets | ml=5 rl=8 tot=2)
-2026-08-30T12:03:08.719029+00:00 | INFO  | --- SLATE: 2026_04_04
-2026-08-30T12:03:08.735783+00:00 | INFO  | 2026_04_04 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:08.859040+00:00 | INFO  | WROTE: 2026_04_04_MLB.csv (7 bets | ml=0 rl=6 tot=1)
-2026-08-30T12:03:08.859082+00:00 | INFO  | --- SLATE: 2026_04_05
-2026-08-30T12:03:08.876065+00:00 | INFO  | 2026_04_05 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
-2026-08-30T12:03:09.006900+00:00 | INFO  | WROTE: 2026_04_05_MLB.csv (13 bets | ml=1 rl=9 tot=3)
-2026-08-30T12:03:09.006942+00:00 | INFO  | --- SLATE: 2026_04_06
-2026-08-30T12:03:09.023371+00:00 | INFO  | 2026_04_06 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:09.153813+00:00 | INFO  | WROTE: 2026_04_06_MLB.csv (10 bets | ml=4 rl=4 tot=2)
-2026-08-30T12:03:09.153857+00:00 | INFO  | --- SLATE: 2026_04_07
-2026-08-30T12:03:09.170797+00:00 | INFO  | 2026_04_07 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:09.294625+00:00 | INFO  | WROTE: 2026_04_07_MLB.csv (13 bets | ml=2 rl=7 tot=4)
-2026-08-30T12:03:09.294667+00:00 | INFO  | --- SLATE: 2026_04_08
-2026-08-30T12:03:09.311407+00:00 | INFO  | 2026_04_08 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:09.435356+00:00 | INFO  | WROTE: 2026_04_08_MLB.csv (11 bets | ml=5 rl=6 tot=0)
-2026-08-30T12:03:09.435398+00:00 | INFO  | --- SLATE: 2026_04_09
-2026-08-30T12:03:09.451422+00:00 | INFO  | 2026_04_09 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
-2026-08-30T12:03:09.524047+00:00 | INFO  | WROTE: 2026_04_09_MLB.csv (3 bets | ml=0 rl=2 tot=1)
-2026-08-30T12:03:09.524088+00:00 | INFO  | --- SLATE: 2026_04_10
-2026-08-30T12:03:09.540727+00:00 | INFO  | 2026_04_10 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:09.664338+00:00 | INFO  | WROTE: 2026_04_10_MLB.csv (8 bets | ml=1 rl=5 tot=2)
-2026-08-30T12:03:09.664379+00:00 | INFO  | --- SLATE: 2026_04_11
-2026-08-30T12:03:09.680607+00:00 | INFO  | 2026_04_11 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
-2026-08-30T12:03:09.773797+00:00 | INFO  | WROTE: 2026_04_11_MLB.csv (2 bets | ml=0 rl=1 tot=1)
-2026-08-30T12:03:09.773839+00:00 | INFO  | --- SLATE: 2026_04_12
-2026-08-30T12:03:09.790771+00:00 | INFO  | 2026_04_12 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:09.931536+00:00 | INFO  | WROTE: 2026_04_12_MLB.csv (6 bets | ml=1 rl=3 tot=2)
-2026-08-30T12:03:09.931578+00:00 | INFO  | --- SLATE: 2026_04_13
-2026-08-30T12:03:09.947867+00:00 | INFO  | 2026_04_13 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:10.033345+00:00 | INFO  | WROTE: 2026_04_13_MLB.csv (5 bets | ml=1 rl=3 tot=1)
-2026-08-30T12:03:10.033385+00:00 | INFO  | --- SLATE: 2026_04_14
-2026-08-30T12:03:10.050027+00:00 | WARN  | 2026_04_14 market row-count mismatch before selection: {'moneyline': 15, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:10.171609+00:00 | INFO  | WROTE: 2026_04_14_MLB.csv (6 bets | ml=2 rl=3 tot=1)
-2026-08-30T12:03:10.171651+00:00 | INFO  | --- SLATE: 2026_04_15
-2026-08-30T12:03:10.188380+00:00 | INFO  | 2026_04_15 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:10.328342+00:00 | INFO  | WROTE: 2026_04_15_MLB.csv (10 bets | ml=2 rl=7 tot=1)
-2026-08-30T12:03:10.328383+00:00 | INFO  | --- SLATE: 2026_04_16
-2026-08-30T12:03:10.344505+00:00 | INFO  | 2026_04_16 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:10.429784+00:00 | INFO  | WROTE: 2026_04_16_MLB.csv (8 bets | ml=3 rl=4 tot=1)
-2026-08-30T12:03:10.429822+00:00 | INFO  | --- SLATE: 2026_04_17
-2026-08-30T12:03:10.446604+00:00 | INFO  | 2026_04_17 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:10.569103+00:00 | INFO  | WROTE: 2026_04_17_MLB.csv (3 bets | ml=0 rl=3 tot=0)
-2026-08-30T12:03:10.569146+00:00 | INFO  | --- SLATE: 2026_04_18
-2026-08-30T12:03:10.585855+00:00 | INFO  | 2026_04_18 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:10.724117+00:00 | INFO  | WROTE: 2026_04_18_MLB.csv (9 bets | ml=3 rl=4 tot=2)
-2026-08-30T12:03:10.724159+00:00 | INFO  | --- SLATE: 2026_04_19
-2026-08-30T12:03:10.741088+00:00 | INFO  | 2026_04_19 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:10.864993+00:00 | INFO  | WROTE: 2026_04_19_MLB.csv (13 bets | ml=1 rl=8 tot=4)
-2026-08-30T12:03:10.865034+00:00 | INFO  | --- SLATE: 2026_04_20
-2026-08-30T12:03:10.881018+00:00 | INFO  | 2026_04_20 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:10.967153+00:00 | INFO  | WROTE: 2026_04_20_MLB.csv (10 bets | ml=2 rl=6 tot=2)
-2026-08-30T12:03:10.967212+00:00 | INFO  | --- SLATE: 2026_04_21
-2026-08-30T12:03:10.984096+00:00 | INFO  | 2026_04_21 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:11.127883+00:00 | INFO  | WROTE: 2026_04_21_MLB.csv (9 bets | ml=3 rl=5 tot=1)
-2026-08-30T12:03:11.127924+00:00 | INFO  | --- SLATE: 2026_04_22
-2026-08-30T12:03:11.144827+00:00 | INFO  | 2026_04_22 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:11.272077+00:00 | INFO  | WROTE: 2026_04_22_MLB.csv (10 bets | ml=1 rl=4 tot=5)
-2026-08-30T12:03:11.272118+00:00 | INFO  | --- SLATE: 2026_04_23
-2026-08-30T12:03:11.288545+00:00 | INFO  | 2026_04_23 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:11.369748+00:00 | INFO  | WROTE: 2026_04_23_MLB.csv (7 bets | ml=2 rl=3 tot=2)
-2026-08-30T12:03:11.369789+00:00 | INFO  | --- SLATE: 2026_04_24
-2026-08-30T12:03:11.386455+00:00 | INFO  | 2026_04_24 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:11.505903+00:00 | INFO  | WROTE: 2026_04_24_MLB.csv (7 bets | ml=3 rl=2 tot=2)
-2026-08-30T12:03:11.505946+00:00 | INFO  | --- SLATE: 2026_04_25
-2026-08-30T12:03:11.539462+00:00 | INFO  | 2026_04_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:11.665301+00:00 | INFO  | WROTE: 2026_04_25_MLB.csv (6 bets | ml=1 rl=5 tot=0)
-2026-08-30T12:03:11.665344+00:00 | INFO  | --- SLATE: 2026_04_26
-2026-08-30T12:03:11.682243+00:00 | INFO  | 2026_04_26 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
-2026-08-30T12:03:11.816981+00:00 | INFO  | WROTE: 2026_04_26_MLB.csv (6 bets | ml=1 rl=3 tot=2)
-2026-08-30T12:03:11.817025+00:00 | INFO  | --- SLATE: 2026_04_27
-2026-08-30T12:03:11.833538+00:00 | INFO  | 2026_04_27 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
-2026-08-30T12:03:11.906321+00:00 | INFO  | WROTE: 2026_04_27_MLB.csv (3 bets | ml=1 rl=2 tot=0)
-2026-08-30T12:03:11.906362+00:00 | INFO  | --- SLATE: 2026_04_28
-2026-08-30T12:03:11.923305+00:00 | INFO  | 2026_04_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:12.067593+00:00 | INFO  | WROTE: 2026_04_28_MLB.csv (10 bets | ml=1 rl=5 tot=4)
-2026-08-30T12:03:12.067635+00:00 | INFO  | --- SLATE: 2026_04_29
-2026-08-30T12:03:12.084771+00:00 | INFO  | 2026_04_29 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:12.211250+00:00 | INFO  | WROTE: 2026_04_29_MLB.csv (9 bets | ml=3 rl=5 tot=1)
-2026-08-30T12:03:12.211300+00:00 | INFO  | --- SLATE: 2026_04_30
-2026-08-30T12:03:12.228018+00:00 | INFO  | 2026_04_30 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:12.308102+00:00 | INFO  | WROTE: 2026_04_30_MLB.csv (2 bets | ml=0 rl=2 tot=0)
-2026-08-30T12:03:12.308143+00:00 | INFO  | --- SLATE: 2026_05_01
-2026-08-30T12:03:12.325052+00:00 | INFO  | 2026_05_01 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:12.462736+00:00 | INFO  | WROTE: 2026_05_01_MLB.csv (8 bets | ml=3 rl=5 tot=0)
-2026-08-30T12:03:12.462780+00:00 | INFO  | --- SLATE: 2026_05_02
-2026-08-30T12:03:12.479853+00:00 | INFO  | 2026_05_02 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:12.606662+00:00 | INFO  | WROTE: 2026_05_02_MLB.csv (7 bets | ml=1 rl=5 tot=1)
-2026-08-30T12:03:12.606703+00:00 | INFO  | --- SLATE: 2026_05_03
-2026-08-30T12:03:12.623725+00:00 | INFO  | 2026_05_03 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:12.753126+00:00 | INFO  | WROTE: 2026_05_03_MLB.csv (9 bets | ml=3 rl=6 tot=0)
-2026-08-30T12:03:12.753192+00:00 | INFO  | --- SLATE: 2026_05_04
-2026-08-30T12:03:12.769851+00:00 | INFO  | 2026_05_04 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
-2026-08-30T12:03:12.890875+00:00 | INFO  | WROTE: 2026_05_04_MLB.csv (6 bets | ml=2 rl=2 tot=2)
-2026-08-30T12:03:12.890917+00:00 | INFO  | --- SLATE: 2026_05_05
-2026-08-30T12:03:12.907649+00:00 | WARN  | 2026_05_05 market row-count mismatch before selection: {'moneyline': 15, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:13.034146+00:00 | INFO  | WROTE: 2026_05_05_MLB.csv (7 bets | ml=2 rl=3 tot=2)
-2026-08-30T12:03:13.034216+00:00 | INFO  | --- SLATE: 2026_05_06
-2026-08-30T12:03:13.051188+00:00 | INFO  | 2026_05_06 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:13.178811+00:00 | INFO  | WROTE: 2026_05_06_MLB.csv (5 bets | ml=2 rl=2 tot=1)
-2026-08-30T12:03:13.178855+00:00 | INFO  | --- SLATE: 2026_05_07
-2026-08-30T12:03:13.195692+00:00 | INFO  | 2026_05_07 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:13.304098+00:00 | INFO  | WROTE: 2026_05_07_MLB.csv (4 bets | ml=1 rl=2 tot=1)
-2026-08-30T12:03:13.304142+00:00 | INFO  | --- SLATE: 2026_05_08
-2026-08-30T12:03:13.321023+00:00 | INFO  | 2026_05_08 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:13.440818+00:00 | INFO  | WROTE: 2026_05_08_MLB.csv (11 bets | ml=3 rl=6 tot=2)
-2026-08-30T12:03:13.440859+00:00 | INFO  | --- SLATE: 2026_05_09
-2026-08-30T12:03:13.457762+00:00 | INFO  | 2026_05_09 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:13.585701+00:00 | INFO  | WROTE: 2026_05_09_MLB.csv (9 bets | ml=1 rl=8 tot=0)
-2026-08-30T12:03:13.585742+00:00 | INFO  | --- SLATE: 2026_05_10
-2026-08-30T12:03:13.602721+00:00 | INFO  | 2026_05_10 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:13.749725+00:00 | INFO  | WROTE: 2026_05_10_MLB.csv (9 bets | ml=1 rl=4 tot=4)
-2026-08-30T12:03:13.749768+00:00 | INFO  | --- SLATE: 2026_05_11
-2026-08-30T12:03:13.766199+00:00 | INFO  | 2026_05_11 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
-2026-08-30T12:03:13.824559+00:00 | INFO  | WROTE: 2026_05_11_MLB.csv (5 bets | ml=1 rl=3 tot=1)
-2026-08-30T12:03:13.824598+00:00 | INFO  | --- SLATE: 2026_05_12
-2026-08-30T12:03:13.841456+00:00 | INFO  | 2026_05_12 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:13.968150+00:00 | INFO  | WROTE: 2026_05_12_MLB.csv (3 bets | ml=1 rl=2 tot=0)
-2026-08-30T12:03:13.968231+00:00 | INFO  | --- SLATE: 2026_05_13
-2026-08-30T12:03:13.985094+00:00 | INFO  | 2026_05_13 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:14.130348+00:00 | INFO  | WROTE: 2026_05_13_MLB.csv (9 bets | ml=2 rl=5 tot=2)
-2026-08-30T12:03:14.130397+00:00 | INFO  | --- SLATE: 2026_05_14
-2026-08-30T12:03:14.147122+00:00 | INFO  | 2026_05_14 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
-2026-08-30T12:03:14.242970+00:00 | INFO  | WROTE: 2026_05_14_MLB.csv (7 bets | ml=1 rl=3 tot=3)
-2026-08-30T12:03:14.243013+00:00 | INFO  | --- SLATE: 2026_05_15
-2026-08-30T12:03:14.260412+00:00 | WARN  | 2026_05_15 market row-count mismatch before selection: {'moneyline': 14, 'run_line': 13, 'total': 14}
-2026-08-30T12:03:14.378512+00:00 | INFO  | WROTE: 2026_05_15_MLB.csv (8 bets | ml=1 rl=5 tot=2)
-2026-08-30T12:03:14.378555+00:00 | INFO  | --- SLATE: 2026_05_16
-2026-08-30T12:03:14.395583+00:00 | INFO  | 2026_05_16 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:14.539308+00:00 | INFO  | WROTE: 2026_05_16_MLB.csv (11 bets | ml=4 rl=6 tot=1)
-2026-08-30T12:03:14.539351+00:00 | INFO  | --- SLATE: 2026_05_17
-2026-08-30T12:03:14.556446+00:00 | INFO  | 2026_05_17 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:14.676514+00:00 | INFO  | WROTE: 2026_05_17_MLB.csv (10 bets | ml=3 rl=7 tot=0)
-2026-08-30T12:03:14.676559+00:00 | INFO  | --- SLATE: 2026_05_18
-2026-08-30T12:03:14.693746+00:00 | INFO  | 2026_05_18 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:14.815391+00:00 | INFO  | WROTE: 2026_05_18_MLB.csv (9 bets | ml=3 rl=5 tot=1)
-2026-08-30T12:03:14.815433+00:00 | INFO  | --- SLATE: 2026_05_19
-2026-08-30T12:03:14.832593+00:00 | INFO  | 2026_05_19 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:14.978521+00:00 | INFO  | WROTE: 2026_05_19_MLB.csv (8 bets | ml=1 rl=4 tot=3)
-2026-08-30T12:03:14.978565+00:00 | INFO  | --- SLATE: 2026_05_20
-2026-08-30T12:03:14.995614+00:00 | INFO  | 2026_05_20 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:15.125444+00:00 | INFO  | WROTE: 2026_05_20_MLB.csv (9 bets | ml=1 rl=5 tot=3)
-2026-08-30T12:03:15.125490+00:00 | INFO  | --- SLATE: 2026_05_21
-2026-08-30T12:03:15.142323+00:00 | INFO  | 2026_05_21 market row-count check OK: {'moneyline': 7, 'run_line': 7, 'total': 7}
-2026-08-30T12:03:15.208134+00:00 | INFO  | WROTE: 2026_05_21_MLB.csv (1 bets | ml=0 rl=1 tot=0)
-2026-08-30T12:03:15.208206+00:00 | INFO  | --- SLATE: 2026_05_22
-2026-08-30T12:03:15.225618+00:00 | INFO  | 2026_05_22 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:15.373275+00:00 | INFO  | WROTE: 2026_05_22_MLB.csv (8 bets | ml=2 rl=4 tot=2)
-2026-08-30T12:03:15.373323+00:00 | INFO  | --- SLATE: 2026_05_23
-2026-08-30T12:03:15.390740+00:00 | INFO  | 2026_05_23 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
-2026-08-30T12:03:15.527743+00:00 | INFO  | WROTE: 2026_05_23_MLB.csv (14 bets | ml=4 rl=8 tot=2)
-2026-08-30T12:03:15.527787+00:00 | INFO  | --- SLATE: 2026_05_24
-2026-08-30T12:03:15.545043+00:00 | INFO  | 2026_05_24 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
-2026-08-30T12:03:15.682209+00:00 | INFO  | WROTE: 2026_05_24_MLB.csv (8 bets | ml=2 rl=4 tot=2)
-2026-08-30T12:03:15.682261+00:00 | INFO  | --- SLATE: 2026_05_25
-2026-08-30T12:03:15.699376+00:00 | INFO  | 2026_05_25 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:15.830033+00:00 | INFO  | WROTE: 2026_05_25_MLB.csv (6 bets | ml=3 rl=2 tot=1)
-2026-08-30T12:03:15.830077+00:00 | INFO  | --- SLATE: 2026_05_26
-2026-08-30T12:03:15.847209+00:00 | INFO  | 2026_05_26 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:15.975812+00:00 | INFO  | WROTE: 2026_05_26_MLB.csv (10 bets | ml=0 rl=6 tot=4)
-2026-08-30T12:03:15.975854+00:00 | INFO  | --- SLATE: 2026_05_27
-2026-08-30T12:03:15.993059+00:00 | INFO  | 2026_05_27 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:16.121321+00:00 | INFO  | WROTE: 2026_05_27_MLB.csv (12 bets | ml=4 rl=4 tot=4)
-2026-08-30T12:03:16.121362+00:00 | INFO  | --- SLATE: 2026_05_28
-2026-08-30T12:03:16.137857+00:00 | INFO  | 2026_05_28 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
-2026-08-30T12:03:16.212258+00:00 | INFO  | WROTE: 2026_05_28_MLB.csv (1 bets | ml=1 rl=0 tot=0)
-2026-08-30T12:03:16.212314+00:00 | INFO  | --- SLATE: 2026_05_29
-2026-08-30T12:03:16.229331+00:00 | INFO  | 2026_05_29 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:16.358419+00:00 | INFO  | WROTE: 2026_05_29_MLB.csv (10 bets | ml=2 rl=7 tot=1)
-2026-08-30T12:03:16.358463+00:00 | INFO  | --- SLATE: 2026_05_30
-2026-08-30T12:03:16.375682+00:00 | INFO  | 2026_05_30 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:16.502203+00:00 | INFO  | WROTE: 2026_05_30_MLB.csv (9 bets | ml=4 rl=3 tot=2)
-2026-08-30T12:03:16.502246+00:00 | INFO  | --- SLATE: 2026_05_31
-2026-08-30T12:03:16.519504+00:00 | WARN  | 2026_05_31 market row-count mismatch before selection: {'moneyline': 14, 'run_line': 14, 'total': 15}
-2026-08-30T12:03:16.661651+00:00 | INFO  | WROTE: 2026_05_31_MLB.csv (6 bets | ml=2 rl=3 tot=1)
-2026-08-30T12:03:16.661694+00:00 | INFO  | --- SLATE: 2026_06_01
-2026-08-30T12:03:16.678475+00:00 | INFO  | 2026_06_01 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:16.758835+00:00 | INFO  | WROTE: 2026_06_01_MLB.csv (3 bets | ml=0 rl=2 tot=1)
-2026-08-30T12:03:16.758877+00:00 | INFO  | --- SLATE: 2026_06_02
-2026-08-30T12:03:16.776059+00:00 | INFO  | 2026_06_02 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:16.903792+00:00 | INFO  | WROTE: 2026_06_02_MLB.csv (9 bets | ml=1 rl=5 tot=3)
-2026-08-30T12:03:16.903835+00:00 | INFO  | --- SLATE: 2026_06_03
-2026-08-30T12:03:16.920998+00:00 | INFO  | 2026_06_03 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:17.063147+00:00 | INFO  | WROTE: 2026_06_03_MLB.csv (4 bets | ml=1 rl=3 tot=0)
-2026-08-30T12:03:17.063218+00:00 | INFO  | --- SLATE: 2026_06_04
-2026-08-30T12:03:17.080197+00:00 | INFO  | 2026_06_04 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:17.160645+00:00 | INFO  | WROTE: 2026_06_04_MLB.csv (4 bets | ml=0 rl=4 tot=0)
-2026-08-30T12:03:17.160686+00:00 | INFO  | --- SLATE: 2026_06_05
-2026-08-30T12:03:17.177819+00:00 | INFO  | 2026_06_05 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:17.297339+00:00 | INFO  | WROTE: 2026_06_05_MLB.csv (5 bets | ml=1 rl=4 tot=0)
-2026-08-30T12:03:17.297383+00:00 | INFO  | --- SLATE: 2026_06_06
-2026-08-30T12:03:17.314742+00:00 | INFO  | 2026_06_06 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:17.459476+00:00 | INFO  | WROTE: 2026_06_06_MLB.csv (8 bets | ml=2 rl=6 tot=0)
-2026-08-30T12:03:17.459519+00:00 | INFO  | --- SLATE: 2026_06_07
-2026-08-30T12:03:17.476791+00:00 | INFO  | 2026_06_07 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:17.603917+00:00 | INFO  | WROTE: 2026_06_07_MLB.csv (6 bets | ml=1 rl=5 tot=0)
-2026-08-30T12:03:17.603960+00:00 | INFO  | --- SLATE: 2026_06_08
-2026-08-30T12:03:17.620815+00:00 | INFO  | 2026_06_08 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
-2026-08-30T12:03:17.693592+00:00 | INFO  | WROTE: 2026_06_08_MLB.csv (7 bets | ml=0 rl=5 tot=2)
-2026-08-30T12:03:17.693631+00:00 | INFO  | --- SLATE: 2026_06_09
-2026-08-30T12:03:17.710536+00:00 | INFO  | 2026_06_09 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:17.791615+00:00 | INFO  | WROTE: 2026_06_09_MLB.csv (4 bets | ml=2 rl=1 tot=1)
-2026-08-30T12:03:17.791656+00:00 | INFO  | --- SLATE: 2026_06_10
-2026-08-30T12:03:17.808657+00:00 | INFO  | 2026_06_10 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:17.906486+00:00 | INFO  | WROTE: 2026_06_10_MLB.csv (5 bets | ml=2 rl=2 tot=1)
-2026-08-30T12:03:17.906529+00:00 | INFO  | --- SLATE: 2026_06_11
-2026-08-30T12:03:17.923214+00:00 | INFO  | 2026_06_11 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
-2026-08-30T12:03:17.980498+00:00 | INFO  | WROTE: 2026_06_11_MLB.csv (2 bets | ml=1 rl=1 tot=0)
-2026-08-30T12:03:17.980537+00:00 | INFO  | --- SLATE: 2026_06_12
-2026-08-30T12:03:17.997143+00:00 | INFO  | 2026_06_12 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
-2026-08-30T12:03:18.069666+00:00 | INFO  | WROTE: 2026_06_12_MLB.csv (7 bets | ml=3 rl=2 tot=2)
-2026-08-30T12:03:18.069707+00:00 | INFO  | --- SLATE: 2026_06_13
-2026-08-30T12:03:18.086438+00:00 | INFO  | 2026_06_13 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
-2026-08-30T12:03:18.158559+00:00 | INFO  | WROTE: 2026_06_13_MLB.csv (5 bets | ml=2 rl=2 tot=1)
-2026-08-30T12:03:18.158600+00:00 | INFO  | --- SLATE: 2026_06_14
-2026-08-30T12:03:18.174813+00:00 | INFO  | 2026_06_14 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
-2026-08-30T12:03:18.247125+00:00 | INFO  | WROTE: 2026_06_14_MLB.csv (9 bets | ml=0 rl=6 tot=3)
-2026-08-30T12:03:18.247189+00:00 | INFO  | --- SLATE: 2026_06_15
-2026-08-30T12:03:18.263625+00:00 | INFO  | 2026_06_15 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:18.361814+00:00 | INFO  | WROTE: 2026_06_15_MLB.csv (1 bets | ml=0 rl=1 tot=0)
-2026-08-30T12:03:18.361857+00:00 | INFO  | --- SLATE: 2026_06_16
-2026-08-30T12:03:18.379155+00:00 | INFO  | 2026_06_16 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:18.497921+00:00 | INFO  | WROTE: 2026_06_16_MLB.csv (2 bets | ml=0 rl=2 tot=0)
-2026-08-30T12:03:18.497964+00:00 | INFO  | --- SLATE: 2026_06_17
-2026-08-30T12:03:18.515246+00:00 | INFO  | 2026_06_17 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:18.626093+00:00 | INFO  | WROTE: 2026_06_17_MLB.csv (6 bets | ml=0 rl=6 tot=0)
-2026-08-30T12:03:18.626136+00:00 | INFO  | --- SLATE: 2026_06_18
-2026-08-30T12:03:18.642830+00:00 | INFO  | 2026_06_18 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:18.739850+00:00 | INFO  | WROTE: 2026_06_18_MLB.csv (4 bets | ml=0 rl=3 tot=1)
-2026-08-30T12:03:18.739889+00:00 | INFO  | --- SLATE: 2026_06_19
-2026-08-30T12:03:18.756696+00:00 | INFO  | 2026_06_19 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:18.868425+00:00 | INFO  | WROTE: 2026_06_19_MLB.csv (5 bets | ml=0 rl=5 tot=0)
-2026-08-30T12:03:18.868468+00:00 | INFO  | --- SLATE: 2026_06_20
-2026-08-30T12:03:18.885284+00:00 | INFO  | 2026_06_20 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:19.003941+00:00 | INFO  | WROTE: 2026_06_20_MLB.csv (3 bets | ml=0 rl=2 tot=1)
-2026-08-30T12:03:19.003980+00:00 | INFO  | --- SLATE: 2026_06_21
-2026-08-30T12:03:19.020581+00:00 | INFO  | 2026_06_21 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:19.156886+00:00 | INFO  | WROTE: 2026_06_21_MLB.csv (10 bets | ml=2 rl=7 tot=1)
-2026-08-30T12:03:19.156929+00:00 | INFO  | --- SLATE: 2026_06_22
-2026-08-30T12:03:19.173455+00:00 | INFO  | 2026_06_22 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:19.286674+00:00 | INFO  | WROTE: 2026_06_22_MLB.csv (7 bets | ml=3 rl=4 tot=0)
-2026-08-30T12:03:19.286716+00:00 | INFO  | --- SLATE: 2026_06_23
-2026-08-30T12:03:19.303251+00:00 | INFO  | 2026_06_23 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:19.425302+00:00 | INFO  | WROTE: 2026_06_23_MLB.csv (8 bets | ml=3 rl=4 tot=1)
-2026-08-30T12:03:19.425343+00:00 | INFO  | --- SLATE: 2026_06_24
-2026-08-30T12:03:19.442008+00:00 | INFO  | 2026_06_24 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:19.578114+00:00 | INFO  | WROTE: 2026_06_24_MLB.csv (11 bets | ml=3 rl=6 tot=2)
-2026-08-30T12:03:19.578155+00:00 | INFO  | --- SLATE: 2026_06_25
-2026-08-30T12:03:19.594499+00:00 | INFO  | 2026_06_25 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:19.678094+00:00 | INFO  | WROTE: 2026_06_25_MLB.csv (3 bets | ml=2 rl=1 tot=0)
-2026-08-30T12:03:19.678133+00:00 | INFO  | --- SLATE: 2026_06_26
-2026-08-30T12:03:19.694686+00:00 | INFO  | 2026_06_26 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:19.814876+00:00 | INFO  | WROTE: 2026_06_26_MLB.csv (7 bets | ml=2 rl=3 tot=2)
-2026-08-30T12:03:19.814916+00:00 | INFO  | --- SLATE: 2026_06_27
-2026-08-30T12:03:19.831555+00:00 | INFO  | 2026_06_27 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:19.975643+00:00 | INFO  | WROTE: 2026_06_27_MLB.csv (7 bets | ml=2 rl=3 tot=2)
-2026-08-30T12:03:19.975685+00:00 | INFO  | --- SLATE: 2026_06_28
-2026-08-30T12:03:19.992488+00:00 | INFO  | 2026_06_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:20.120843+00:00 | INFO  | WROTE: 2026_06_28_MLB.csv (8 bets | ml=1 rl=6 tot=1)
-2026-08-30T12:03:20.120887+00:00 | INFO  | --- SLATE: 2026_06_29
-2026-08-30T12:03:20.137890+00:00 | INFO  | 2026_06_29 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:20.249258+00:00 | INFO  | WROTE: 2026_06_29_MLB.csv (5 bets | ml=2 rl=3 tot=0)
-2026-08-30T12:03:20.249301+00:00 | INFO  | --- SLATE: 2026_06_30
-2026-08-30T12:03:20.266355+00:00 | INFO  | 2026_06_30 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:20.411971+00:00 | INFO  | WROTE: 2026_06_30_MLB.csv (10 bets | ml=6 rl=4 tot=0)
-2026-08-30T12:03:20.412014+00:00 | INFO  | --- SLATE: 2026_07_01
-2026-08-30T12:03:20.428967+00:00 | INFO  | 2026_07_01 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:20.547958+00:00 | INFO  | WROTE: 2026_07_01_MLB.csv (5 bets | ml=2 rl=3 tot=0)
-2026-08-30T12:03:20.548001+00:00 | INFO  | --- SLATE: 2026_07_02
-2026-08-30T12:03:20.564624+00:00 | INFO  | 2026_07_02 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:20.645824+00:00 | INFO  | WROTE: 2026_07_02_MLB.csv (4 bets | ml=2 rl=1 tot=1)
-2026-08-30T12:03:20.645867+00:00 | INFO  | --- SLATE: 2026_07_03
-2026-08-30T12:03:20.662811+00:00 | INFO  | 2026_07_03 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:20.792681+00:00 | INFO  | WROTE: 2026_07_03_MLB.csv (10 bets | ml=3 rl=7 tot=0)
-2026-08-30T12:03:20.792725+00:00 | INFO  | --- SLATE: 2026_07_04
-2026-08-30T12:03:20.809929+00:00 | INFO  | 2026_07_04 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:20.937258+00:00 | INFO  | WROTE: 2026_07_04_MLB.csv (6 bets | ml=2 rl=4 tot=0)
-2026-08-30T12:03:20.937303+00:00 | INFO  | --- SLATE: 2026_07_05
-2026-08-30T12:03:20.954315+00:00 | INFO  | 2026_07_05 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:21.073342+00:00 | INFO  | WROTE: 2026_07_05_MLB.csv (6 bets | ml=3 rl=2 tot=1)
-2026-08-30T12:03:21.073384+00:00 | INFO  | --- SLATE: 2026_07_06
-2026-08-30T12:03:21.090071+00:00 | INFO  | 2026_07_06 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
-2026-08-30T12:03:21.163491+00:00 | INFO  | WROTE: 2026_07_06_MLB.csv (4 bets | ml=0 rl=3 tot=1)
-2026-08-30T12:03:21.163535+00:00 | INFO  | --- SLATE: 2026_07_07
-2026-08-30T12:03:21.180547+00:00 | INFO  | 2026_07_07 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:21.327260+00:00 | INFO  | WROTE: 2026_07_07_MLB.csv (9 bets | ml=2 rl=7 tot=0)
-2026-08-30T12:03:21.327313+00:00 | INFO  | --- SLATE: 2026_07_08
-2026-08-30T12:03:21.344437+00:00 | INFO  | 2026_07_08 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:21.473573+00:00 | INFO  | WROTE: 2026_07_08_MLB.csv (10 bets | ml=2 rl=6 tot=2)
-2026-08-30T12:03:21.473616+00:00 | INFO  | --- SLATE: 2026_07_09
-2026-08-30T12:03:21.490611+00:00 | INFO  | 2026_07_09 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
-2026-08-30T12:03:21.603154+00:00 | INFO  | WROTE: 2026_07_09_MLB.csv (8 bets | ml=1 rl=7 tot=0)
-2026-08-30T12:03:21.603243+00:00 | INFO  | --- SLATE: 2026_07_10
-2026-08-30T12:03:21.620353+00:00 | INFO  | 2026_07_10 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:21.765007+00:00 | INFO  | WROTE: 2026_07_10_MLB.csv (6 bets | ml=0 rl=5 tot=1)
-2026-08-30T12:03:21.765051+00:00 | INFO  | --- SLATE: 2026_07_11
-2026-08-30T12:03:21.782045+00:00 | INFO  | 2026_07_11 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:21.871691+00:00 | INFO  | WROTE: 2026_07_11_MLB.csv (6 bets | ml=2 rl=3 tot=1)
-2026-08-30T12:03:21.871733+00:00 | INFO  | --- SLATE: 2026_07_12
-2026-08-30T12:03:21.888777+00:00 | INFO  | 2026_07_12 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:22.008826+00:00 | INFO  | WROTE: 2026_07_12_MLB.csv (6 bets | ml=0 rl=6 tot=0)
-2026-08-30T12:03:22.008870+00:00 | INFO  | --- SLATE: 2026_07_16
-2026-08-30T12:03:22.024854+00:00 | INFO  | 2026_07_16 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
-2026-08-30T12:03:22.034426+00:00 | WARN  | 2026_07_16 no bets passed filters
-2026-08-30T12:03:22.034470+00:00 | INFO  | --- SLATE: 2026_07_17
-2026-08-30T12:03:22.050994+00:00 | INFO  | 2026_07_17 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:22.189223+00:00 | INFO  | WROTE: 2026_07_17_MLB.csv (6 bets | ml=2 rl=3 tot=1)
-2026-08-30T12:03:22.189276+00:00 | INFO  | --- SLATE: 2026_07_18
-2026-08-30T12:03:22.206141+00:00 | INFO  | 2026_07_18 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:22.286803+00:00 | INFO  | WROTE: 2026_07_18_MLB.csv (4 bets | ml=1 rl=3 tot=0)
-2026-08-30T12:03:22.286846+00:00 | INFO  | --- SLATE: 2026_07_19
-2026-08-30T12:03:22.303823+00:00 | INFO  | 2026_07_19 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
-2026-08-30T12:03:22.406858+00:00 | INFO  | WROTE: 2026_07_19_MLB.csv (6 bets | ml=3 rl=2 tot=1)
-2026-08-30T12:03:22.406902+00:00 | INFO  | --- SLATE: 2026_07_20
-2026-08-30T12:03:22.423980+00:00 | INFO  | 2026_07_20 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:22.570981+00:00 | INFO  | WROTE: 2026_07_20_MLB.csv (5 bets | ml=0 rl=3 tot=2)
-2026-08-30T12:03:22.571023+00:00 | INFO  | --- SLATE: 2026_07_21
-2026-08-30T12:03:22.587902+00:00 | INFO  | 2026_07_21 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:22.670817+00:00 | INFO  | WROTE: 2026_07_21_MLB.csv (6 bets | ml=2 rl=4 tot=0)
-2026-08-30T12:03:22.670859+00:00 | INFO  | --- SLATE: 2026_07_22
-2026-08-30T12:03:22.687036+00:00 | INFO  | 2026_07_22 market row-count check OK: {'moneyline': 3, 'run_line': 3, 'total': 3}
-2026-08-30T12:03:22.720573+00:00 | INFO  | WROTE: 2026_07_22_MLB.csv (3 bets | ml=1 rl=2 tot=0)
-2026-08-30T12:03:22.720610+00:00 | INFO  | --- SLATE: 2026_07_23
-2026-08-30T12:03:22.736449+00:00 | INFO  | 2026_07_23 market row-count check OK: {'moneyline': 5, 'run_line': 5, 'total': 5}
-2026-08-30T12:03:22.785867+00:00 | INFO  | WROTE: 2026_07_23_MLB.csv (1 bets | ml=0 rl=1 tot=0)
-2026-08-30T12:03:22.785904+00:00 | INFO  | --- SLATE: 2026_07_24
-2026-08-30T12:03:22.802799+00:00 | INFO  | 2026_07_24 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:22.948063+00:00 | INFO  | WROTE: 2026_07_24_MLB.csv (8 bets | ml=2 rl=4 tot=2)
-2026-08-30T12:03:22.948105+00:00 | INFO  | --- SLATE: 2026_07_25
-2026-08-30T12:03:22.965255+00:00 | INFO  | 2026_07_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:23.093634+00:00 | INFO  | WROTE: 2026_07_25_MLB.csv (8 bets | ml=1 rl=6 tot=1)
-2026-08-30T12:03:23.093675+00:00 | INFO  | --- SLATE: 2026_07_26
-2026-08-30T12:03:23.110804+00:00 | INFO  | 2026_07_26 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:23.238998+00:00 | INFO  | WROTE: 2026_07_26_MLB.csv (8 bets | ml=0 rl=7 tot=1)
-2026-08-30T12:03:23.239046+00:00 | INFO  | --- SLATE: 2026_07_27
-2026-08-30T12:03:23.256275+00:00 | INFO  | 2026_07_27 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
-2026-08-30T12:03:23.376437+00:00 | INFO  | WROTE: 2026_07_27_MLB.csv (7 bets | ml=2 rl=5 tot=0)
-2026-08-30T12:03:23.376480+00:00 | INFO  | --- SLATE: 2026_07_28
-2026-08-30T12:03:23.393649+00:00 | INFO  | 2026_07_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:23.520160+00:00 | INFO  | WROTE: 2026_07_28_MLB.csv (7 bets | ml=2 rl=4 tot=1)
-2026-08-30T12:03:23.520244+00:00 | INFO  | --- SLATE: 2026_07_29
-2026-08-30T12:03:23.537583+00:00 | INFO  | 2026_07_29 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:23.666895+00:00 | INFO  | WROTE: 2026_07_29_MLB.csv (12 bets | ml=2 rl=8 tot=2)
-2026-08-30T12:03:23.666940+00:00 | INFO  | --- SLATE: 2026_07_30
-2026-08-30T12:03:23.683892+00:00 | INFO  | 2026_07_30 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:23.787997+00:00 | INFO  | WROTE: 2026_07_30_MLB.csv (4 bets | ml=1 rl=3 tot=0)
-2026-08-30T12:03:23.788038+00:00 | INFO  | --- SLATE: 2026_07_31
-2026-08-30T12:03:23.805157+00:00 | INFO  | 2026_07_31 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:23.932923+00:00 | INFO  | WROTE: 2026_07_31_MLB.csv (6 bets | ml=4 rl=2 tot=0)
-2026-08-30T12:03:23.932965+00:00 | INFO  | --- SLATE: 2026_08_01
-2026-08-30T12:03:23.950290+00:00 | INFO  | 2026_08_01 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:24.077329+00:00 | INFO  | WROTE: 2026_08_01_MLB.csv (8 bets | ml=2 rl=5 tot=1)
-2026-08-30T12:03:24.077371+00:00 | INFO  | --- SLATE: 2026_08_02
-2026-08-30T12:03:24.094467+00:00 | INFO  | 2026_08_02 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:24.237975+00:00 | INFO  | WROTE: 2026_08_02_MLB.csv (6 bets | ml=1 rl=4 tot=1)
-2026-08-30T12:03:24.238016+00:00 | INFO  | --- SLATE: 2026_08_03
-2026-08-30T12:03:24.254601+00:00 | INFO  | 2026_08_03 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
-2026-08-30T12:03:24.311951+00:00 | INFO  | WROTE: 2026_08_03_MLB.csv (3 bets | ml=0 rl=2 tot=1)
-2026-08-30T12:03:24.311991+00:00 | INFO  | --- SLATE: 2026_08_04
-2026-08-30T12:03:24.328665+00:00 | INFO  | 2026_08_04 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:24.456666+00:00 | INFO  | WROTE: 2026_08_04_MLB.csv (3 bets | ml=0 rl=3 tot=0)
-2026-08-30T12:03:24.456710+00:00 | INFO  | --- SLATE: 2026_08_05
-2026-08-30T12:03:24.473838+00:00 | INFO  | 2026_08_05 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
-2026-08-30T12:03:24.570097+00:00 | INFO  | WROTE: 2026_08_05_MLB.csv (4 bets | ml=0 rl=4 tot=0)
-2026-08-30T12:03:24.570140+00:00 | INFO  | --- SLATE: 2026_08_06
-2026-08-30T12:03:24.604423+00:00 | INFO  | 2026_08_06 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
-2026-08-30T12:03:24.617713+00:00 | INFO  | WROTE: 2026_08_06_MLB.csv (1 bets | ml=0 rl=1 tot=0)
-2026-08-30T12:03:24.617749+00:00 | INFO  | --- SLATE: 2026_08_07
-2026-08-30T12:03:24.633544+00:00 | INFO  | 2026_08_07 market row-count check OK: {'moneyline': 4, 'run_line': 4, 'total': 4}
-2026-08-30T12:03:24.674861+00:00 | INFO  | WROTE: 2026_08_07_MLB.csv (2 bets | ml=1 rl=1 tot=0)
-2026-08-30T12:03:24.674901+00:00 | INFO  | --- SLATE: 2026_08_08
-2026-08-30T12:03:24.690555+00:00 | INFO  | 2026_08_08 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
-2026-08-30T12:03:24.700262+00:00 | WARN  | 2026_08_08 no bets passed filters
-2026-08-30T12:03:24.700305+00:00 | INFO  | --- SLATE: 2026_08_09
-2026-08-30T12:03:24.716220+00:00 | INFO  | 2026_08_09 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
-2026-08-30T12:03:24.725733+00:00 | WARN  | 2026_08_09 no bets passed filters
-2026-08-30T12:03:24.725777+00:00 | INFO  | --- SLATE: 2026_08_10
-2026-08-30T12:03:24.741641+00:00 | INFO  | 2026_08_10 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
-2026-08-30T12:03:24.798944+00:00 | INFO  | WROTE: 2026_08_10_MLB.csv (2 bets | ml=1 rl=1 tot=0)
-2026-08-30T12:03:24.798983+00:00 | INFO  | --- SLATE: 2026_08_11
-2026-08-30T12:03:24.815668+00:00 | INFO  | 2026_08_11 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
-2026-08-30T12:03:24.910598+00:00 | INFO  | WROTE: 2026_08_11_MLB.csv (1 bets | ml=0 rl=0 tot=1)
-2026-08-30T12:03:24.910639+00:00 | INFO  | --- SLATE: 2026_08_12
-2026-08-30T12:03:24.926584+00:00 | INFO  | 2026_08_12 market row-count check OK: {'moneyline': 2, 'run_line': 2, 'total': 2}
-2026-08-30T12:03:24.951966+00:00 | INFO  | WROTE: 2026_08_12_MLB.csv (1 bets | ml=1 rl=0 tot=0)
-2026-08-30T12:03:24.952004+00:00 | INFO  | --- SLATE: 2026_08_13
-2026-08-30T12:03:24.968091+00:00 | INFO  | 2026_08_13 market row-count check OK: {'moneyline': 2, 'run_line': 2, 'total': 2}
-2026-08-30T12:03:24.993024+00:00 | INFO  | WROTE: 2026_08_13_MLB.csv (2 bets | ml=0 rl=1 tot=1)
-2026-08-30T12:03:24.993060+00:00 | INFO  | --- SLATE: 2026_08_14
-2026-08-30T12:03:25.008991+00:00 | INFO  | 2026_08_14 market row-count check OK: {'moneyline': 4, 'run_line': 4, 'total': 4}
-2026-08-30T12:03:25.049791+00:00 | INFO  | WROTE: 2026_08_14_MLB.csv (2 bets | ml=0 rl=2 tot=0)
-2026-08-30T12:03:25.049828+00:00 | INFO  | --- SLATE: 2026_08_15
-2026-08-30T12:03:25.065767+00:00 | INFO  | 2026_08_15 market row-count check OK: {'moneyline': 2, 'run_line': 2, 'total': 2}
-2026-08-30T12:03:25.090798+00:00 | INFO  | WROTE: 2026_08_15_MLB.csv (1 bets | ml=0 rl=1 tot=0)
-2026-08-30T12:03:25.090837+00:00 | INFO  | --- SLATE: 2026_08_16
-2026-08-30T12:03:25.106469+00:00 | INFO  | 2026_08_16 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
-2026-08-30T12:03:25.116052+00:00 | WARN  | 2026_08_16 no bets passed filters
-2026-08-30T12:03:25.116096+00:00 | INFO  | --- SLATE: 2026_08_17
-2026-08-30T12:03:25.150494+00:00 | INFO  | 2026_08_17 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:25.230679+00:00 | INFO  | WROTE: 2026_08_17_MLB.csv (2 bets | ml=0 rl=2 tot=0)
-2026-08-30T12:03:25.230719+00:00 | INFO  | --- SLATE: 2026_08_18
-2026-08-30T12:03:25.247740+00:00 | INFO  | 2026_08_18 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:25.376359+00:00 | INFO  | WROTE: 2026_08_18_MLB.csv (5 bets | ml=0 rl=5 tot=0)
-2026-08-30T12:03:25.376401+00:00 | INFO  | --- SLATE: 2026_08_19
-2026-08-30T12:03:25.393352+00:00 | INFO  | 2026_08_19 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:25.520386+00:00 | INFO  | WROTE: 2026_08_19_MLB.csv (4 bets | ml=1 rl=2 tot=1)
-2026-08-30T12:03:25.520430+00:00 | INFO  | --- SLATE: 2026_08_20
-2026-08-30T12:03:25.536832+00:00 | INFO  | 2026_08_20 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
-2026-08-30T12:03:25.633602+00:00 | INFO  | WROTE: 2026_08_20_MLB.csv (5 bets | ml=1 rl=2 tot=2)
-2026-08-30T12:03:25.633643+00:00 | INFO  | --- SLATE: 2026_08_24
-2026-08-30T12:03:25.652220+00:00 | INFO  | 2026_08_24 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
-2026-08-30T12:03:25.739962+00:00 | INFO  | WROTE: 2026_08_24_MLB.csv (8 bets | ml=4 rl=4 tot=0)
-2026-08-30T12:03:25.740003+00:00 | INFO  | --- SLATE: 2026_08_25
-2026-08-30T12:03:25.756936+00:00 | INFO  | 2026_08_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:25.883522+00:00 | INFO  | WROTE: 2026_08_25_MLB.csv (12 bets | ml=3 rl=8 tot=1)
-2026-08-30T12:03:25.883566+00:00 | INFO  | --- SLATE: 2026_08_26
-2026-08-30T12:03:25.900381+00:00 | INFO  | 2026_08_26 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
-2026-08-30T12:03:26.020334+00:00 | INFO  | WROTE: 2026_08_26_MLB.csv (4 bets | ml=0 rl=4 tot=0)
-2026-08-30T12:03:26.020376+00:00 | INFO  | --- SLATE: 2026_08_27
-2026-08-30T12:03:26.036846+00:00 | INFO  | 2026_08_27 market row-count check OK: {'moneyline': 7, 'run_line': 7, 'total': 7}
-2026-08-30T12:03:26.102479+00:00 | INFO  | WROTE: 2026_08_27_MLB.csv (3 bets | ml=0 rl=3 tot=0)
-2026-08-30T12:03:26.102519+00:00 | INFO  | --- SLATE: 2026_08_28
-2026-08-30T12:03:26.119386+00:00 | INFO  | 2026_08_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
-2026-08-30T12:03:26.245983+00:00 | INFO  | WROTE: 2026_08_28_MLB.csv (12 bets | ml=1 rl=8 tot=3)
-2026-08-30T12:03:26.246025+00:00 | INFO  | --- SLATE: 2026_08_29
-2026-08-30T12:03:26.262295+00:00 | INFO  | 2026_08_29 market row-count check OK: {'moneyline': 3, 'run_line': 3, 'total': 3}
-2026-08-30T12:03:26.295668+00:00 | INFO  | WROTE: 2026_08_29_MLB.csv (2 bets | ml=1 rl=1 tot=0)
-2026-08-30T12:03:26.295706+00:00 | INFO  | --- SLATE: 2026_08_30
-2026-08-30T12:03:26.312829+00:00 | INFO  | 2026_08_30 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
-2026-08-30T12:03:26.451258+00:00 | INFO  | WROTE: 2026_08_30_MLB.csv (8 bets | ml=4 rl=2 tot=2)
-2026-08-30T12:03:26.658361+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selection_rejection_audit.csv rows=9624
-2026-08-30T12:03:26.658409+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selected_bet_audit.csv rows=946
-2026-08-30T12:03:26.658434+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/run_line_selection_audit.csv rows=3520
+=== MLB select_bets RUN 2026-08-30T13:46:39.464921+00:00 ===
+2026-08-30T13:46:39.466899+00:00 | INFO  | INPUT_DIR : docs/win/baseball/mlb/03_edges/ev_kelly
+2026-08-30T13:46:39.466929+00:00 | INFO  | OUTPUT_DIR: docs/win/baseball/mlb/04_select/morning
+2026-08-30T13:46:39.466946+00:00 | INFO  | Rain filter: will_it_rain=False symbol_code=False symbol_terms=['rain', 'heavyrain', 'lightrain', 'sleet', 'snow', 'thunder'] | SP sample exclude totals: False | Lineup low sample warn: 4
+2026-08-30T13:46:39.466957+00:00 | INFO  | Selection requires EV > 0 and Kelly > 0 for run-line candidates; EV/Kelly/selection must share the canonical probability basis.
+2026-08-30T13:46:39.466967+00:00 | INFO  | Selection matches market rows by game_id only. Team/date fallback matching is disabled.
+2026-08-30T13:46:39.468411+00:00 | INFO  | Files found: 447
+2026-08-30T13:46:39.468544+00:00 | INFO  | Selected run mode: rebuild_all
+2026-08-30T13:46:39.468564+00:00 | INFO  | Slate keys to process: ['2026_03_29', '2026_03_30', '2026_03_31', '2026_04_01', '2026_04_02', '2026_04_03', '2026_04_04', '2026_04_05', '2026_04_06', '2026_04_07', '2026_04_08', '2026_04_09', '2026_04_10', '2026_04_11', '2026_04_12', '2026_04_13', '2026_04_14', '2026_04_15', '2026_04_16', '2026_04_17', '2026_04_18', '2026_04_19', '2026_04_20', '2026_04_21', '2026_04_22', '2026_04_23', '2026_04_24', '2026_04_25', '2026_04_26', '2026_04_27', '2026_04_28', '2026_04_29', '2026_04_30', '2026_05_01', '2026_05_02', '2026_05_03', '2026_05_04', '2026_05_05', '2026_05_06', '2026_05_07', '2026_05_08', '2026_05_09', '2026_05_10', '2026_05_11', '2026_05_12', '2026_05_13', '2026_05_14', '2026_05_15', '2026_05_16', '2026_05_17', '2026_05_18', '2026_05_19', '2026_05_20', '2026_05_21', '2026_05_22', '2026_05_23', '2026_05_24', '2026_05_25', '2026_05_26', '2026_05_27', '2026_05_28', '2026_05_29', '2026_05_30', '2026_05_31', '2026_06_01', '2026_06_02', '2026_06_03', '2026_06_04', '2026_06_05', '2026_06_06', '2026_06_07', '2026_06_08', '2026_06_09', '2026_06_10', '2026_06_11', '2026_06_12', '2026_06_13', '2026_06_14', '2026_06_15', '2026_06_16', '2026_06_17', '2026_06_18', '2026_06_19', '2026_06_20', '2026_06_21', '2026_06_22', '2026_06_23', '2026_06_24', '2026_06_25', '2026_06_26', '2026_06_27', '2026_06_28', '2026_06_29', '2026_06_30', '2026_07_01', '2026_07_02', '2026_07_03', '2026_07_04', '2026_07_05', '2026_07_06', '2026_07_07', '2026_07_08', '2026_07_09', '2026_07_10', '2026_07_11', '2026_07_12', '2026_07_16', '2026_07_17', '2026_07_18', '2026_07_19', '2026_07_20', '2026_07_21', '2026_07_22', '2026_07_23', '2026_07_24', '2026_07_25', '2026_07_26', '2026_07_27', '2026_07_28', '2026_07_29', '2026_07_30', '2026_07_31', '2026_08_01', '2026_08_02', '2026_08_03', '2026_08_04', '2026_08_05', '2026_08_06', '2026_08_07', '2026_08_08', '2026_08_09', '2026_08_10', '2026_08_11', '2026_08_12', '2026_08_13', '2026_08_14', '2026_08_15', '2026_08_16', '2026_08_17', '2026_08_18', '2026_08_19', '2026_08_20', '2026_08_24', '2026_08_25', '2026_08_26', '2026_08_27', '2026_08_28', '2026_08_29', '2026_08_30']
+2026-08-30T13:46:39.468580+00:00 | INFO  | --- SLATE: 2026_03_29
+2026-08-30T13:46:39.486144+00:00 | INFO  | 2026_03_29 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
+2026-08-30T13:46:39.559650+00:00 | INFO  | WROTE: 2026_03_29_MLB.csv (8 bets | ml=1 rl=5 tot=2)
+2026-08-30T13:46:39.559672+00:00 | INFO  | --- SLATE: 2026_03_30
+2026-08-30T13:46:39.572458+00:00 | INFO  | 2026_03_30 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:39.657809+00:00 | INFO  | WROTE: 2026_03_30_MLB.csv (3 bets | ml=0 rl=1 tot=2)
+2026-08-30T13:46:39.657831+00:00 | INFO  | --- SLATE: 2026_03_31
+2026-08-30T13:46:39.669731+00:00 | INFO  | 2026_03_31 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:39.767404+00:00 | INFO  | WROTE: 2026_03_31_MLB.csv (11 bets | ml=2 rl=8 tot=1)
+2026-08-30T13:46:39.767431+00:00 | INFO  | --- SLATE: 2026_04_01
+2026-08-30T13:46:39.779570+00:00 | INFO  | 2026_04_01 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:39.865490+00:00 | INFO  | WROTE: 2026_04_01_MLB.csv (13 bets | ml=5 rl=7 tot=1)
+2026-08-30T13:46:39.865513+00:00 | INFO  | --- SLATE: 2026_04_02
+2026-08-30T13:46:39.876555+00:00 | INFO  | 2026_04_02 market row-count check OK: {'moneyline': 3, 'run_line': 3, 'total': 3}
+2026-08-30T13:46:39.898790+00:00 | INFO  | WROTE: 2026_04_02_MLB.csv (4 bets | ml=2 rl=2 tot=0)
+2026-08-30T13:46:39.898810+00:00 | INFO  | --- SLATE: 2026_04_03
+2026-08-30T13:46:39.910516+00:00 | INFO  | 2026_04_03 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:40.004244+00:00 | INFO  | WROTE: 2026_04_03_MLB.csv (15 bets | ml=5 rl=8 tot=2)
+2026-08-30T13:46:40.004271+00:00 | INFO  | --- SLATE: 2026_04_04
+2026-08-30T13:46:40.016203+00:00 | INFO  | 2026_04_04 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:40.101433+00:00 | INFO  | WROTE: 2026_04_04_MLB.csv (7 bets | ml=0 rl=6 tot=1)
+2026-08-30T13:46:40.101464+00:00 | INFO  | --- SLATE: 2026_04_05
+2026-08-30T13:46:40.114205+00:00 | INFO  | 2026_04_05 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
+2026-08-30T13:46:40.207014+00:00 | INFO  | WROTE: 2026_04_05_MLB.csv (13 bets | ml=1 rl=9 tot=3)
+2026-08-30T13:46:40.207039+00:00 | INFO  | --- SLATE: 2026_04_06
+2026-08-30T13:46:40.219118+00:00 | INFO  | 2026_04_06 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:40.312302+00:00 | INFO  | WROTE: 2026_04_06_MLB.csv (10 bets | ml=4 rl=4 tot=2)
+2026-08-30T13:46:40.312326+00:00 | INFO  | --- SLATE: 2026_04_07
+2026-08-30T13:46:40.324330+00:00 | INFO  | 2026_04_07 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:40.413460+00:00 | INFO  | WROTE: 2026_04_07_MLB.csv (13 bets | ml=2 rl=7 tot=4)
+2026-08-30T13:46:40.413484+00:00 | INFO  | --- SLATE: 2026_04_08
+2026-08-30T13:46:40.425766+00:00 | INFO  | 2026_04_08 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:40.514444+00:00 | INFO  | WROTE: 2026_04_08_MLB.csv (11 bets | ml=5 rl=6 tot=0)
+2026-08-30T13:46:40.514470+00:00 | INFO  | --- SLATE: 2026_04_09
+2026-08-30T13:46:40.526288+00:00 | INFO  | 2026_04_09 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
+2026-08-30T13:46:40.580523+00:00 | INFO  | WROTE: 2026_04_09_MLB.csv (3 bets | ml=0 rl=2 tot=1)
+2026-08-30T13:46:40.580545+00:00 | INFO  | --- SLATE: 2026_04_10
+2026-08-30T13:46:40.592052+00:00 | INFO  | 2026_04_10 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:40.677016+00:00 | INFO  | WROTE: 2026_04_10_MLB.csv (8 bets | ml=1 rl=5 tot=2)
+2026-08-30T13:46:40.677039+00:00 | INFO  | --- SLATE: 2026_04_11
+2026-08-30T13:46:40.688617+00:00 | INFO  | 2026_04_11 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
+2026-08-30T13:46:40.752733+00:00 | INFO  | WROTE: 2026_04_11_MLB.csv (2 bets | ml=0 rl=1 tot=1)
+2026-08-30T13:46:40.752755+00:00 | INFO  | --- SLATE: 2026_04_12
+2026-08-30T13:46:40.764609+00:00 | INFO  | 2026_04_12 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:40.868069+00:00 | INFO  | WROTE: 2026_04_12_MLB.csv (6 bets | ml=1 rl=3 tot=2)
+2026-08-30T13:46:40.868095+00:00 | INFO  | --- SLATE: 2026_04_13
+2026-08-30T13:46:40.880435+00:00 | INFO  | 2026_04_13 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:40.944482+00:00 | INFO  | WROTE: 2026_04_13_MLB.csv (5 bets | ml=1 rl=3 tot=1)
+2026-08-30T13:46:40.944504+00:00 | INFO  | --- SLATE: 2026_04_14
+2026-08-30T13:46:40.956887+00:00 | WARN  | 2026_04_14 market row-count mismatch before selection: {'moneyline': 15, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:41.045401+00:00 | INFO  | WROTE: 2026_04_14_MLB.csv (6 bets | ml=2 rl=3 tot=1)
+2026-08-30T13:46:41.045426+00:00 | INFO  | --- SLATE: 2026_04_15
+2026-08-30T13:46:41.057847+00:00 | INFO  | 2026_04_15 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:41.162759+00:00 | INFO  | WROTE: 2026_04_15_MLB.csv (10 bets | ml=2 rl=7 tot=1)
+2026-08-30T13:46:41.162782+00:00 | INFO  | --- SLATE: 2026_04_16
+2026-08-30T13:46:41.174985+00:00 | INFO  | 2026_04_16 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:41.236847+00:00 | INFO  | WROTE: 2026_04_16_MLB.csv (8 bets | ml=3 rl=4 tot=1)
+2026-08-30T13:46:41.236870+00:00 | INFO  | --- SLATE: 2026_04_17
+2026-08-30T13:46:41.249182+00:00 | INFO  | 2026_04_17 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:41.337780+00:00 | INFO  | WROTE: 2026_04_17_MLB.csv (3 bets | ml=0 rl=3 tot=0)
+2026-08-30T13:46:41.337808+00:00 | INFO  | --- SLATE: 2026_04_18
+2026-08-30T13:46:41.350254+00:00 | INFO  | 2026_04_18 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:41.452921+00:00 | INFO  | WROTE: 2026_04_18_MLB.csv (9 bets | ml=3 rl=4 tot=2)
+2026-08-30T13:46:41.452949+00:00 | INFO  | --- SLATE: 2026_04_19
+2026-08-30T13:46:41.464911+00:00 | INFO  | 2026_04_19 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:41.550515+00:00 | INFO  | WROTE: 2026_04_19_MLB.csv (13 bets | ml=1 rl=8 tot=4)
+2026-08-30T13:46:41.550544+00:00 | INFO  | --- SLATE: 2026_04_20
+2026-08-30T13:46:41.562283+00:00 | INFO  | 2026_04_20 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:41.623780+00:00 | INFO  | WROTE: 2026_04_20_MLB.csv (10 bets | ml=2 rl=6 tot=2)
+2026-08-30T13:46:41.623803+00:00 | INFO  | --- SLATE: 2026_04_21
+2026-08-30T13:46:41.636473+00:00 | INFO  | 2026_04_21 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:41.744799+00:00 | INFO  | WROTE: 2026_04_21_MLB.csv (9 bets | ml=3 rl=5 tot=1)
+2026-08-30T13:46:41.744826+00:00 | INFO  | --- SLATE: 2026_04_22
+2026-08-30T13:46:41.757169+00:00 | INFO  | 2026_04_22 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:41.847937+00:00 | INFO  | WROTE: 2026_04_22_MLB.csv (10 bets | ml=1 rl=4 tot=5)
+2026-08-30T13:46:41.847960+00:00 | INFO  | --- SLATE: 2026_04_23
+2026-08-30T13:46:41.859806+00:00 | INFO  | 2026_04_23 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:41.915965+00:00 | INFO  | WROTE: 2026_04_23_MLB.csv (7 bets | ml=2 rl=3 tot=2)
+2026-08-30T13:46:41.915986+00:00 | INFO  | --- SLATE: 2026_04_24
+2026-08-30T13:46:41.927791+00:00 | INFO  | 2026_04_24 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:42.012303+00:00 | INFO  | WROTE: 2026_04_24_MLB.csv (7 bets | ml=3 rl=2 tot=2)
+2026-08-30T13:46:42.012329+00:00 | INFO  | --- SLATE: 2026_04_25
+2026-08-30T13:46:42.039187+00:00 | INFO  | 2026_04_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:42.128874+00:00 | INFO  | WROTE: 2026_04_25_MLB.csv (6 bets | ml=1 rl=5 tot=0)
+2026-08-30T13:46:42.128897+00:00 | INFO  | --- SLATE: 2026_04_26
+2026-08-30T13:46:42.141379+00:00 | INFO  | 2026_04_26 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
+2026-08-30T13:46:42.235268+00:00 | INFO  | WROTE: 2026_04_26_MLB.csv (6 bets | ml=1 rl=3 tot=2)
+2026-08-30T13:46:42.235291+00:00 | INFO  | --- SLATE: 2026_04_27
+2026-08-30T13:46:42.246861+00:00 | INFO  | 2026_04_27 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
+2026-08-30T13:46:42.297057+00:00 | INFO  | WROTE: 2026_04_27_MLB.csv (3 bets | ml=1 rl=2 tot=0)
+2026-08-30T13:46:42.297078+00:00 | INFO  | --- SLATE: 2026_04_28
+2026-08-30T13:46:42.308947+00:00 | INFO  | 2026_04_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:42.410671+00:00 | INFO  | WROTE: 2026_04_28_MLB.csv (12 bets | ml=1 rl=8 tot=3)
+2026-08-30T13:46:42.410694+00:00 | INFO  | --- SLATE: 2026_04_29
+2026-08-30T13:46:42.422720+00:00 | INFO  | 2026_04_29 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:42.510815+00:00 | INFO  | WROTE: 2026_04_29_MLB.csv (9 bets | ml=3 rl=5 tot=1)
+2026-08-30T13:46:42.510842+00:00 | INFO  | --- SLATE: 2026_04_30
+2026-08-30T13:46:42.523009+00:00 | INFO  | 2026_04_30 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:42.578568+00:00 | INFO  | WROTE: 2026_04_30_MLB.csv (2 bets | ml=0 rl=2 tot=0)
+2026-08-30T13:46:42.578589+00:00 | INFO  | --- SLATE: 2026_05_01
+2026-08-30T13:46:42.590454+00:00 | INFO  | 2026_05_01 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:42.687321+00:00 | INFO  | WROTE: 2026_05_01_MLB.csv (8 bets | ml=3 rl=5 tot=0)
+2026-08-30T13:46:42.687376+00:00 | INFO  | --- SLATE: 2026_05_02
+2026-08-30T13:46:42.699692+00:00 | INFO  | 2026_05_02 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:42.787190+00:00 | INFO  | WROTE: 2026_05_02_MLB.csv (7 bets | ml=1 rl=5 tot=1)
+2026-08-30T13:46:42.787216+00:00 | INFO  | --- SLATE: 2026_05_03
+2026-08-30T13:46:42.799099+00:00 | INFO  | 2026_05_03 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:42.884904+00:00 | INFO  | WROTE: 2026_05_03_MLB.csv (9 bets | ml=3 rl=6 tot=0)
+2026-08-30T13:46:42.884930+00:00 | INFO  | --- SLATE: 2026_05_04
+2026-08-30T13:46:42.896798+00:00 | INFO  | 2026_05_04 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
+2026-08-30T13:46:42.982538+00:00 | INFO  | WROTE: 2026_05_04_MLB.csv (6 bets | ml=2 rl=2 tot=2)
+2026-08-30T13:46:42.982563+00:00 | INFO  | --- SLATE: 2026_05_05
+2026-08-30T13:46:42.994301+00:00 | WARN  | 2026_05_05 market row-count mismatch before selection: {'moneyline': 15, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:43.079182+00:00 | INFO  | WROTE: 2026_05_05_MLB.csv (7 bets | ml=2 rl=3 tot=2)
+2026-08-30T13:46:43.079206+00:00 | INFO  | --- SLATE: 2026_05_06
+2026-08-30T13:46:43.090910+00:00 | INFO  | 2026_05_06 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:43.176886+00:00 | INFO  | WROTE: 2026_05_06_MLB.csv (5 bets | ml=2 rl=2 tot=1)
+2026-08-30T13:46:43.176911+00:00 | INFO  | --- SLATE: 2026_05_07
+2026-08-30T13:46:43.188794+00:00 | INFO  | 2026_05_07 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:43.266060+00:00 | INFO  | WROTE: 2026_05_07_MLB.csv (4 bets | ml=1 rl=2 tot=1)
+2026-08-30T13:46:43.266085+00:00 | INFO  | --- SLATE: 2026_05_08
+2026-08-30T13:46:43.278226+00:00 | INFO  | 2026_05_08 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:43.364195+00:00 | INFO  | WROTE: 2026_05_08_MLB.csv (11 bets | ml=4 rl=6 tot=1)
+2026-08-30T13:46:43.364220+00:00 | INFO  | --- SLATE: 2026_05_09
+2026-08-30T13:46:43.376703+00:00 | INFO  | 2026_05_09 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:43.469750+00:00 | INFO  | WROTE: 2026_05_09_MLB.csv (10 bets | ml=2 rl=8 tot=0)
+2026-08-30T13:46:43.469775+00:00 | INFO  | --- SLATE: 2026_05_10
+2026-08-30T13:46:43.481851+00:00 | INFO  | 2026_05_10 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:43.586365+00:00 | INFO  | WROTE: 2026_05_10_MLB.csv (9 bets | ml=2 rl=5 tot=2)
+2026-08-30T13:46:43.586393+00:00 | INFO  | --- SLATE: 2026_05_11
+2026-08-30T13:46:43.598112+00:00 | INFO  | 2026_05_11 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
+2026-08-30T13:46:43.639062+00:00 | INFO  | WROTE: 2026_05_11_MLB.csv (5 bets | ml=1 rl=3 tot=1)
+2026-08-30T13:46:43.639086+00:00 | INFO  | --- SLATE: 2026_05_12
+2026-08-30T13:46:43.651030+00:00 | INFO  | 2026_05_12 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:43.740056+00:00 | INFO  | WROTE: 2026_05_12_MLB.csv (3 bets | ml=1 rl=2 tot=0)
+2026-08-30T13:46:43.740081+00:00 | INFO  | --- SLATE: 2026_05_13
+2026-08-30T13:46:43.752119+00:00 | INFO  | 2026_05_13 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:43.857572+00:00 | INFO  | WROTE: 2026_05_13_MLB.csv (9 bets | ml=2 rl=5 tot=2)
+2026-08-30T13:46:43.857602+00:00 | INFO  | --- SLATE: 2026_05_14
+2026-08-30T13:46:43.869356+00:00 | INFO  | 2026_05_14 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
+2026-08-30T13:46:43.936331+00:00 | INFO  | WROTE: 2026_05_14_MLB.csv (7 bets | ml=1 rl=3 tot=3)
+2026-08-30T13:46:43.936391+00:00 | INFO  | --- SLATE: 2026_05_15
+2026-08-30T13:46:43.948730+00:00 | WARN  | 2026_05_15 market row-count mismatch before selection: {'moneyline': 14, 'run_line': 13, 'total': 14}
+2026-08-30T13:46:44.031199+00:00 | INFO  | WROTE: 2026_05_15_MLB.csv (8 bets | ml=1 rl=5 tot=2)
+2026-08-30T13:46:44.031226+00:00 | INFO  | --- SLATE: 2026_05_16
+2026-08-30T13:46:44.043682+00:00 | INFO  | 2026_05_16 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:44.148694+00:00 | INFO  | WROTE: 2026_05_16_MLB.csv (11 bets | ml=4 rl=6 tot=1)
+2026-08-30T13:46:44.148718+00:00 | INFO  | --- SLATE: 2026_05_17
+2026-08-30T13:46:44.160696+00:00 | INFO  | 2026_05_17 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:44.244091+00:00 | INFO  | WROTE: 2026_05_17_MLB.csv (10 bets | ml=3 rl=7 tot=0)
+2026-08-30T13:46:44.244116+00:00 | INFO  | --- SLATE: 2026_05_18
+2026-08-30T13:46:44.256629+00:00 | INFO  | 2026_05_18 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:44.343439+00:00 | INFO  | WROTE: 2026_05_18_MLB.csv (9 bets | ml=3 rl=5 tot=1)
+2026-08-30T13:46:44.343468+00:00 | INFO  | --- SLATE: 2026_05_19
+2026-08-30T13:46:44.355800+00:00 | INFO  | 2026_05_19 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:44.460419+00:00 | INFO  | WROTE: 2026_05_19_MLB.csv (8 bets | ml=1 rl=4 tot=3)
+2026-08-30T13:46:44.460447+00:00 | INFO  | --- SLATE: 2026_05_20
+2026-08-30T13:46:44.472844+00:00 | INFO  | 2026_05_20 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:44.562294+00:00 | INFO  | WROTE: 2026_05_20_MLB.csv (10 bets | ml=2 rl=4 tot=4)
+2026-08-30T13:46:44.562321+00:00 | INFO  | --- SLATE: 2026_05_21
+2026-08-30T13:46:44.574192+00:00 | INFO  | 2026_05_21 market row-count check OK: {'moneyline': 7, 'run_line': 7, 'total': 7}
+2026-08-30T13:46:44.619440+00:00 | INFO  | WROTE: 2026_05_21_MLB.csv (1 bets | ml=0 rl=1 tot=0)
+2026-08-30T13:46:44.619462+00:00 | INFO  | --- SLATE: 2026_05_22
+2026-08-30T13:46:44.631600+00:00 | INFO  | 2026_05_22 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:44.736396+00:00 | INFO  | WROTE: 2026_05_22_MLB.csv (8 bets | ml=2 rl=4 tot=2)
+2026-08-30T13:46:44.736424+00:00 | INFO  | --- SLATE: 2026_05_23
+2026-08-30T13:46:44.748813+00:00 | INFO  | 2026_05_23 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
+2026-08-30T13:46:44.844379+00:00 | INFO  | WROTE: 2026_05_23_MLB.csv (14 bets | ml=4 rl=8 tot=2)
+2026-08-30T13:46:44.844406+00:00 | INFO  | --- SLATE: 2026_05_24
+2026-08-30T13:46:44.856776+00:00 | INFO  | 2026_05_24 market row-count check OK: {'moneyline': 16, 'run_line': 16, 'total': 16}
+2026-08-30T13:46:44.950902+00:00 | INFO  | WROTE: 2026_05_24_MLB.csv (7 bets | ml=1 rl=4 tot=2)
+2026-08-30T13:46:44.950935+00:00 | INFO  | --- SLATE: 2026_05_25
+2026-08-30T13:46:44.963042+00:00 | INFO  | 2026_05_25 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:45.056491+00:00 | INFO  | WROTE: 2026_05_25_MLB.csv (6 bets | ml=3 rl=2 tot=1)
+2026-08-30T13:46:45.056517+00:00 | INFO  | --- SLATE: 2026_05_26
+2026-08-30T13:46:45.068706+00:00 | INFO  | 2026_05_26 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:45.160832+00:00 | INFO  | WROTE: 2026_05_26_MLB.csv (10 bets | ml=0 rl=6 tot=4)
+2026-08-30T13:46:45.160858+00:00 | INFO  | --- SLATE: 2026_05_27
+2026-08-30T13:46:45.173506+00:00 | INFO  | 2026_05_27 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:45.267369+00:00 | INFO  | WROTE: 2026_05_27_MLB.csv (12 bets | ml=4 rl=4 tot=4)
+2026-08-30T13:46:45.267395+00:00 | INFO  | --- SLATE: 2026_05_28
+2026-08-30T13:46:45.279429+00:00 | INFO  | 2026_05_28 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
+2026-08-30T13:46:45.335478+00:00 | INFO  | WROTE: 2026_05_28_MLB.csv (1 bets | ml=1 rl=0 tot=0)
+2026-08-30T13:46:45.335500+00:00 | INFO  | --- SLATE: 2026_05_29
+2026-08-30T13:46:45.347493+00:00 | INFO  | 2026_05_29 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:45.438368+00:00 | INFO  | WROTE: 2026_05_29_MLB.csv (10 bets | ml=2 rl=7 tot=1)
+2026-08-30T13:46:45.438396+00:00 | INFO  | --- SLATE: 2026_05_30
+2026-08-30T13:46:45.450573+00:00 | INFO  | 2026_05_30 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:45.538448+00:00 | INFO  | WROTE: 2026_05_30_MLB.csv (9 bets | ml=4 rl=3 tot=2)
+2026-08-30T13:46:45.538473+00:00 | INFO  | --- SLATE: 2026_05_31
+2026-08-30T13:46:45.550644+00:00 | WARN  | 2026_05_31 market row-count mismatch before selection: {'moneyline': 14, 'run_line': 14, 'total': 15}
+2026-08-30T13:46:45.652666+00:00 | INFO  | WROTE: 2026_05_31_MLB.csv (6 bets | ml=2 rl=3 tot=1)
+2026-08-30T13:46:45.652692+00:00 | INFO  | --- SLATE: 2026_06_01
+2026-08-30T13:46:45.664730+00:00 | INFO  | 2026_06_01 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:45.720969+00:00 | INFO  | WROTE: 2026_06_01_MLB.csv (3 bets | ml=0 rl=2 tot=1)
+2026-08-30T13:46:45.720995+00:00 | INFO  | --- SLATE: 2026_06_02
+2026-08-30T13:46:45.733015+00:00 | INFO  | 2026_06_02 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:45.821874+00:00 | INFO  | WROTE: 2026_06_02_MLB.csv (9 bets | ml=1 rl=5 tot=3)
+2026-08-30T13:46:45.821899+00:00 | INFO  | --- SLATE: 2026_06_03
+2026-08-30T13:46:45.834322+00:00 | INFO  | 2026_06_03 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:45.939250+00:00 | INFO  | WROTE: 2026_06_03_MLB.csv (4 bets | ml=1 rl=3 tot=0)
+2026-08-30T13:46:45.939275+00:00 | INFO  | --- SLATE: 2026_06_04
+2026-08-30T13:46:45.951076+00:00 | INFO  | 2026_06_04 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:46.006872+00:00 | INFO  | WROTE: 2026_06_04_MLB.csv (2 bets | ml=0 rl=2 tot=0)
+2026-08-30T13:46:46.006897+00:00 | INFO  | --- SLATE: 2026_06_05
+2026-08-30T13:46:46.019093+00:00 | INFO  | 2026_06_05 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:46.106630+00:00 | INFO  | WROTE: 2026_06_05_MLB.csv (4 bets | ml=1 rl=3 tot=0)
+2026-08-30T13:46:46.106662+00:00 | INFO  | --- SLATE: 2026_06_06
+2026-08-30T13:46:46.119136+00:00 | INFO  | 2026_06_06 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:46.225627+00:00 | INFO  | WROTE: 2026_06_06_MLB.csv (10 bets | ml=2 rl=7 tot=1)
+2026-08-30T13:46:46.225652+00:00 | INFO  | --- SLATE: 2026_06_07
+2026-08-30T13:46:46.237882+00:00 | INFO  | 2026_06_07 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:46.326127+00:00 | INFO  | WROTE: 2026_06_07_MLB.csv (6 bets | ml=1 rl=5 tot=0)
+2026-08-30T13:46:46.326149+00:00 | INFO  | --- SLATE: 2026_06_08
+2026-08-30T13:46:46.338246+00:00 | INFO  | 2026_06_08 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
+2026-08-30T13:46:46.388714+00:00 | INFO  | WROTE: 2026_06_08_MLB.csv (7 bets | ml=0 rl=5 tot=2)
+2026-08-30T13:46:46.388738+00:00 | INFO  | --- SLATE: 2026_06_09
+2026-08-30T13:46:46.400648+00:00 | INFO  | 2026_06_09 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:46.456610+00:00 | INFO  | WROTE: 2026_06_09_MLB.csv (4 bets | ml=2 rl=1 tot=1)
+2026-08-30T13:46:46.456635+00:00 | INFO  | --- SLATE: 2026_06_10
+2026-08-30T13:46:46.468453+00:00 | INFO  | 2026_06_10 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:46.540899+00:00 | INFO  | WROTE: 2026_06_10_MLB.csv (5 bets | ml=2 rl=2 tot=1)
+2026-08-30T13:46:46.540926+00:00 | INFO  | --- SLATE: 2026_06_11
+2026-08-30T13:46:46.552921+00:00 | INFO  | 2026_06_11 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
+2026-08-30T13:46:46.593298+00:00 | INFO  | WROTE: 2026_06_11_MLB.csv (2 bets | ml=1 rl=1 tot=0)
+2026-08-30T13:46:46.593327+00:00 | INFO  | --- SLATE: 2026_06_12
+2026-08-30T13:46:46.605638+00:00 | INFO  | 2026_06_12 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
+2026-08-30T13:46:46.658046+00:00 | INFO  | WROTE: 2026_06_12_MLB.csv (7 bets | ml=3 rl=2 tot=2)
+2026-08-30T13:46:46.658069+00:00 | INFO  | --- SLATE: 2026_06_13
+2026-08-30T13:46:46.670189+00:00 | INFO  | 2026_06_13 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
+2026-08-30T13:46:46.722985+00:00 | INFO  | WROTE: 2026_06_13_MLB.csv (5 bets | ml=2 rl=2 tot=1)
+2026-08-30T13:46:46.723010+00:00 | INFO  | --- SLATE: 2026_06_14
+2026-08-30T13:46:46.735445+00:00 | INFO  | 2026_06_14 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
+2026-08-30T13:46:46.788453+00:00 | INFO  | WROTE: 2026_06_14_MLB.csv (9 bets | ml=0 rl=6 tot=3)
+2026-08-30T13:46:46.788478+00:00 | INFO  | --- SLATE: 2026_06_15
+2026-08-30T13:46:46.800802+00:00 | INFO  | 2026_06_15 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:46.874673+00:00 | INFO  | WROTE: 2026_06_15_MLB.csv (1 bets | ml=0 rl=1 tot=0)
+2026-08-30T13:46:46.874699+00:00 | INFO  | --- SLATE: 2026_06_16
+2026-08-30T13:46:46.887518+00:00 | INFO  | 2026_06_16 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:46.973793+00:00 | INFO  | WROTE: 2026_06_16_MLB.csv (2 bets | ml=0 rl=2 tot=0)
+2026-08-30T13:46:46.973815+00:00 | INFO  | --- SLATE: 2026_06_17
+2026-08-30T13:46:46.985863+00:00 | INFO  | 2026_06_17 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:47.064873+00:00 | INFO  | WROTE: 2026_06_17_MLB.csv (6 bets | ml=0 rl=6 tot=0)
+2026-08-30T13:46:47.064899+00:00 | INFO  | --- SLATE: 2026_06_18
+2026-08-30T13:46:47.077463+00:00 | INFO  | 2026_06_18 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:47.152139+00:00 | INFO  | WROTE: 2026_06_18_MLB.csv (4 bets | ml=0 rl=3 tot=1)
+2026-08-30T13:46:47.152166+00:00 | INFO  | --- SLATE: 2026_06_19
+2026-08-30T13:46:47.164918+00:00 | INFO  | 2026_06_19 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:47.243746+00:00 | INFO  | WROTE: 2026_06_19_MLB.csv (5 bets | ml=0 rl=5 tot=0)
+2026-08-30T13:46:47.243771+00:00 | INFO  | --- SLATE: 2026_06_20
+2026-08-30T13:46:47.256469+00:00 | INFO  | 2026_06_20 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:47.339879+00:00 | INFO  | WROTE: 2026_06_20_MLB.csv (3 bets | ml=0 rl=2 tot=1)
+2026-08-30T13:46:47.339905+00:00 | INFO  | --- SLATE: 2026_06_21
+2026-08-30T13:46:47.351996+00:00 | INFO  | 2026_06_21 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:47.449103+00:00 | INFO  | WROTE: 2026_06_21_MLB.csv (10 bets | ml=2 rl=7 tot=1)
+2026-08-30T13:46:47.449131+00:00 | INFO  | --- SLATE: 2026_06_22
+2026-08-30T13:46:47.461176+00:00 | INFO  | 2026_06_22 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:47.539409+00:00 | INFO  | WROTE: 2026_06_22_MLB.csv (7 bets | ml=3 rl=4 tot=0)
+2026-08-30T13:46:47.539437+00:00 | INFO  | --- SLATE: 2026_06_23
+2026-08-30T13:46:47.551481+00:00 | INFO  | 2026_06_23 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:47.635716+00:00 | INFO  | WROTE: 2026_06_23_MLB.csv (8 bets | ml=3 rl=4 tot=1)
+2026-08-30T13:46:47.635741+00:00 | INFO  | --- SLATE: 2026_06_24
+2026-08-30T13:46:47.647768+00:00 | INFO  | 2026_06_24 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:47.747262+00:00 | INFO  | WROTE: 2026_06_24_MLB.csv (11 bets | ml=3 rl=6 tot=2)
+2026-08-30T13:46:47.747288+00:00 | INFO  | --- SLATE: 2026_06_25
+2026-08-30T13:46:47.759203+00:00 | INFO  | 2026_06_25 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:47.815529+00:00 | INFO  | WROTE: 2026_06_25_MLB.csv (3 bets | ml=2 rl=1 tot=0)
+2026-08-30T13:46:47.815552+00:00 | INFO  | --- SLATE: 2026_06_26
+2026-08-30T13:46:47.827612+00:00 | INFO  | 2026_06_26 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:47.910860+00:00 | INFO  | WROTE: 2026_06_26_MLB.csv (7 bets | ml=2 rl=3 tot=2)
+2026-08-30T13:46:47.910885+00:00 | INFO  | --- SLATE: 2026_06_27
+2026-08-30T13:46:47.922940+00:00 | INFO  | 2026_06_27 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:48.026923+00:00 | INFO  | WROTE: 2026_06_27_MLB.csv (7 bets | ml=2 rl=3 tot=2)
+2026-08-30T13:46:48.026949+00:00 | INFO  | --- SLATE: 2026_06_28
+2026-08-30T13:46:48.039101+00:00 | INFO  | 2026_06_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:48.128576+00:00 | INFO  | WROTE: 2026_06_28_MLB.csv (8 bets | ml=1 rl=6 tot=1)
+2026-08-30T13:46:48.128602+00:00 | INFO  | --- SLATE: 2026_06_29
+2026-08-30T13:46:48.140632+00:00 | INFO  | 2026_06_29 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:48.218023+00:00 | INFO  | WROTE: 2026_06_29_MLB.csv (5 bets | ml=2 rl=3 tot=0)
+2026-08-30T13:46:48.218049+00:00 | INFO  | --- SLATE: 2026_06_30
+2026-08-30T13:46:48.230192+00:00 | INFO  | 2026_06_30 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:48.333965+00:00 | INFO  | WROTE: 2026_06_30_MLB.csv (10 bets | ml=6 rl=4 tot=0)
+2026-08-30T13:46:48.333988+00:00 | INFO  | --- SLATE: 2026_07_01
+2026-08-30T13:46:48.346077+00:00 | INFO  | 2026_07_01 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:48.428913+00:00 | INFO  | WROTE: 2026_07_01_MLB.csv (5 bets | ml=2 rl=3 tot=0)
+2026-08-30T13:46:48.428936+00:00 | INFO  | --- SLATE: 2026_07_02
+2026-08-30T13:46:48.440771+00:00 | INFO  | 2026_07_02 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:48.497043+00:00 | INFO  | WROTE: 2026_07_02_MLB.csv (4 bets | ml=2 rl=1 tot=1)
+2026-08-30T13:46:48.497064+00:00 | INFO  | --- SLATE: 2026_07_03
+2026-08-30T13:46:48.508858+00:00 | INFO  | 2026_07_03 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:48.601233+00:00 | INFO  | WROTE: 2026_07_03_MLB.csv (10 bets | ml=3 rl=7 tot=0)
+2026-08-30T13:46:48.601260+00:00 | INFO  | --- SLATE: 2026_07_04
+2026-08-30T13:46:48.613547+00:00 | INFO  | 2026_07_04 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:48.701590+00:00 | INFO  | WROTE: 2026_07_04_MLB.csv (6 bets | ml=2 rl=4 tot=0)
+2026-08-30T13:46:48.701613+00:00 | INFO  | --- SLATE: 2026_07_05
+2026-08-30T13:46:48.713632+00:00 | INFO  | 2026_07_05 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:48.795849+00:00 | INFO  | WROTE: 2026_07_05_MLB.csv (6 bets | ml=3 rl=2 tot=1)
+2026-08-30T13:46:48.795876+00:00 | INFO  | --- SLATE: 2026_07_06
+2026-08-30T13:46:48.807666+00:00 | INFO  | 2026_07_06 market row-count check OK: {'moneyline': 8, 'run_line': 8, 'total': 8}
+2026-08-30T13:46:48.858395+00:00 | INFO  | WROTE: 2026_07_06_MLB.csv (4 bets | ml=0 rl=3 tot=1)
+2026-08-30T13:46:48.858419+00:00 | INFO  | --- SLATE: 2026_07_07
+2026-08-30T13:46:48.870281+00:00 | INFO  | 2026_07_07 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:48.973635+00:00 | INFO  | WROTE: 2026_07_07_MLB.csv (9 bets | ml=2 rl=7 tot=0)
+2026-08-30T13:46:48.973660+00:00 | INFO  | --- SLATE: 2026_07_08
+2026-08-30T13:46:48.985687+00:00 | INFO  | 2026_07_08 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:49.075189+00:00 | INFO  | WROTE: 2026_07_08_MLB.csv (10 bets | ml=2 rl=6 tot=2)
+2026-08-30T13:46:49.075214+00:00 | INFO  | --- SLATE: 2026_07_09
+2026-08-30T13:46:49.087291+00:00 | INFO  | 2026_07_09 market row-count check OK: {'moneyline': 13, 'run_line': 13, 'total': 13}
+2026-08-30T13:46:49.165141+00:00 | INFO  | WROTE: 2026_07_09_MLB.csv (8 bets | ml=1 rl=7 tot=0)
+2026-08-30T13:46:49.165165+00:00 | INFO  | --- SLATE: 2026_07_10
+2026-08-30T13:46:49.177127+00:00 | INFO  | 2026_07_10 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:49.281207+00:00 | INFO  | WROTE: 2026_07_10_MLB.csv (6 bets | ml=0 rl=5 tot=1)
+2026-08-30T13:46:49.281233+00:00 | INFO  | --- SLATE: 2026_07_11
+2026-08-30T13:46:49.293373+00:00 | INFO  | 2026_07_11 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:49.355284+00:00 | INFO  | WROTE: 2026_07_11_MLB.csv (6 bets | ml=2 rl=3 tot=1)
+2026-08-30T13:46:49.355309+00:00 | INFO  | --- SLATE: 2026_07_12
+2026-08-30T13:46:49.367236+00:00 | INFO  | 2026_07_12 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:49.451017+00:00 | INFO  | WROTE: 2026_07_12_MLB.csv (6 bets | ml=0 rl=6 tot=0)
+2026-08-30T13:46:49.451041+00:00 | INFO  | --- SLATE: 2026_07_16
+2026-08-30T13:46:49.462264+00:00 | INFO  | 2026_07_16 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
+2026-08-30T13:46:49.469059+00:00 | WARN  | 2026_07_16 no bets passed filters
+2026-08-30T13:46:49.469090+00:00 | INFO  | --- SLATE: 2026_07_17
+2026-08-30T13:46:49.480738+00:00 | INFO  | 2026_07_17 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:49.578897+00:00 | INFO  | WROTE: 2026_07_17_MLB.csv (6 bets | ml=2 rl=3 tot=1)
+2026-08-30T13:46:49.578920+00:00 | INFO  | --- SLATE: 2026_07_18
+2026-08-30T13:46:49.590579+00:00 | INFO  | 2026_07_18 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:49.645984+00:00 | INFO  | WROTE: 2026_07_18_MLB.csv (4 bets | ml=1 rl=3 tot=0)
+2026-08-30T13:46:49.646007+00:00 | INFO  | --- SLATE: 2026_07_19
+2026-08-30T13:46:49.657737+00:00 | INFO  | 2026_07_19 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
+2026-08-30T13:46:49.729373+00:00 | INFO  | WROTE: 2026_07_19_MLB.csv (6 bets | ml=3 rl=2 tot=1)
+2026-08-30T13:46:49.729397+00:00 | INFO  | --- SLATE: 2026_07_20
+2026-08-30T13:46:49.741210+00:00 | INFO  | 2026_07_20 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:49.847029+00:00 | INFO  | WROTE: 2026_07_20_MLB.csv (5 bets | ml=0 rl=3 tot=2)
+2026-08-30T13:46:49.847055+00:00 | INFO  | --- SLATE: 2026_07_21
+2026-08-30T13:46:49.858874+00:00 | INFO  | 2026_07_21 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:49.915196+00:00 | INFO  | WROTE: 2026_07_21_MLB.csv (6 bets | ml=2 rl=4 tot=0)
+2026-08-30T13:46:49.915217+00:00 | INFO  | --- SLATE: 2026_07_22
+2026-08-30T13:46:49.926633+00:00 | INFO  | 2026_07_22 market row-count check OK: {'moneyline': 3, 'run_line': 3, 'total': 3}
+2026-08-30T13:46:49.950236+00:00 | INFO  | WROTE: 2026_07_22_MLB.csv (3 bets | ml=1 rl=2 tot=0)
+2026-08-30T13:46:49.950259+00:00 | INFO  | --- SLATE: 2026_07_23
+2026-08-30T13:46:49.961599+00:00 | INFO  | 2026_07_23 market row-count check OK: {'moneyline': 5, 'run_line': 5, 'total': 5}
+2026-08-30T13:46:49.995887+00:00 | INFO  | WROTE: 2026_07_23_MLB.csv (1 bets | ml=0 rl=1 tot=0)
+2026-08-30T13:46:49.995908+00:00 | INFO  | --- SLATE: 2026_07_24
+2026-08-30T13:46:50.007625+00:00 | INFO  | 2026_07_24 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.111730+00:00 | INFO  | WROTE: 2026_07_24_MLB.csv (8 bets | ml=2 rl=4 tot=2)
+2026-08-30T13:46:50.111764+00:00 | INFO  | --- SLATE: 2026_07_25
+2026-08-30T13:46:50.124005+00:00 | INFO  | 2026_07_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.213564+00:00 | INFO  | WROTE: 2026_07_25_MLB.csv (8 bets | ml=1 rl=6 tot=1)
+2026-08-30T13:46:50.213589+00:00 | INFO  | --- SLATE: 2026_07_26
+2026-08-30T13:46:50.225645+00:00 | INFO  | 2026_07_26 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.315248+00:00 | INFO  | WROTE: 2026_07_26_MLB.csv (8 bets | ml=0 rl=7 tot=1)
+2026-08-30T13:46:50.315276+00:00 | INFO  | --- SLATE: 2026_07_27
+2026-08-30T13:46:50.327484+00:00 | INFO  | 2026_07_27 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
+2026-08-30T13:46:50.415062+00:00 | INFO  | WROTE: 2026_07_27_MLB.csv (7 bets | ml=2 rl=5 tot=0)
+2026-08-30T13:46:50.415087+00:00 | INFO  | --- SLATE: 2026_07_28
+2026-08-30T13:46:50.427132+00:00 | INFO  | 2026_07_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.515243+00:00 | INFO  | WROTE: 2026_07_28_MLB.csv (7 bets | ml=2 rl=4 tot=1)
+2026-08-30T13:46:50.515271+00:00 | INFO  | --- SLATE: 2026_07_29
+2026-08-30T13:46:50.527733+00:00 | INFO  | 2026_07_29 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.617089+00:00 | INFO  | WROTE: 2026_07_29_MLB.csv (12 bets | ml=2 rl=8 tot=2)
+2026-08-30T13:46:50.617113+00:00 | INFO  | --- SLATE: 2026_07_30
+2026-08-30T13:46:50.629146+00:00 | INFO  | 2026_07_30 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:50.705475+00:00 | INFO  | WROTE: 2026_07_30_MLB.csv (4 bets | ml=1 rl=3 tot=0)
+2026-08-30T13:46:50.705500+00:00 | INFO  | --- SLATE: 2026_07_31
+2026-08-30T13:46:50.717431+00:00 | INFO  | 2026_07_31 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.805595+00:00 | INFO  | WROTE: 2026_07_31_MLB.csv (6 bets | ml=4 rl=2 tot=0)
+2026-08-30T13:46:50.805622+00:00 | INFO  | --- SLATE: 2026_08_01
+2026-08-30T13:46:50.818036+00:00 | INFO  | 2026_08_01 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:50.906602+00:00 | INFO  | WROTE: 2026_08_01_MLB.csv (8 bets | ml=2 rl=5 tot=1)
+2026-08-30T13:46:50.906628+00:00 | INFO  | --- SLATE: 2026_08_02
+2026-08-30T13:46:50.918920+00:00 | INFO  | 2026_08_02 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:51.023507+00:00 | INFO  | WROTE: 2026_08_02_MLB.csv (6 bets | ml=1 rl=4 tot=1)
+2026-08-30T13:46:51.023534+00:00 | INFO  | --- SLATE: 2026_08_03
+2026-08-30T13:46:51.035387+00:00 | INFO  | 2026_08_03 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
+2026-08-30T13:46:51.075131+00:00 | INFO  | WROTE: 2026_08_03_MLB.csv (2 bets | ml=0 rl=2 tot=0)
+2026-08-30T13:46:51.075152+00:00 | INFO  | --- SLATE: 2026_08_04
+2026-08-30T13:46:51.086981+00:00 | INFO  | 2026_08_04 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:51.180186+00:00 | INFO  | WROTE: 2026_08_04_MLB.csv (4 bets | ml=1 rl=3 tot=0)
+2026-08-30T13:46:51.180234+00:00 | INFO  | --- SLATE: 2026_08_05
+2026-08-30T13:46:51.194189+00:00 | INFO  | 2026_08_05 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
+2026-08-30T13:46:51.267764+00:00 | INFO  | WROTE: 2026_08_05_MLB.csv (4 bets | ml=0 rl=4 tot=0)
+2026-08-30T13:46:51.267790+00:00 | INFO  | --- SLATE: 2026_08_06
+2026-08-30T13:46:51.295027+00:00 | INFO  | 2026_08_06 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
+2026-08-30T13:46:51.305033+00:00 | INFO  | WROTE: 2026_08_06_MLB.csv (1 bets | ml=0 rl=1 tot=0)
+2026-08-30T13:46:51.305055+00:00 | INFO  | --- SLATE: 2026_08_07
+2026-08-30T13:46:51.316702+00:00 | INFO  | 2026_08_07 market row-count check OK: {'moneyline': 4, 'run_line': 4, 'total': 4}
+2026-08-30T13:46:51.346722+00:00 | INFO  | WROTE: 2026_08_07_MLB.csv (2 bets | ml=1 rl=1 tot=0)
+2026-08-30T13:46:51.346743+00:00 | INFO  | --- SLATE: 2026_08_08
+2026-08-30T13:46:51.358094+00:00 | INFO  | 2026_08_08 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
+2026-08-30T13:46:51.365163+00:00 | WARN  | 2026_08_08 no bets passed filters
+2026-08-30T13:46:51.365193+00:00 | INFO  | --- SLATE: 2026_08_09
+2026-08-30T13:46:51.377034+00:00 | INFO  | 2026_08_09 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
+2026-08-30T13:46:51.384022+00:00 | WARN  | 2026_08_09 no bets passed filters
+2026-08-30T13:46:51.384051+00:00 | INFO  | --- SLATE: 2026_08_10
+2026-08-30T13:46:51.395801+00:00 | INFO  | 2026_08_10 market row-count check OK: {'moneyline': 6, 'run_line': 6, 'total': 6}
+2026-08-30T13:46:51.435534+00:00 | INFO  | WROTE: 2026_08_10_MLB.csv (2 bets | ml=1 rl=1 tot=0)
+2026-08-30T13:46:51.435554+00:00 | INFO  | --- SLATE: 2026_08_11
+2026-08-30T13:46:51.447132+00:00 | INFO  | 2026_08_11 market row-count check OK: {'moneyline': 11, 'run_line': 11, 'total': 11}
+2026-08-30T13:46:51.515286+00:00 | INFO  | WROTE: 2026_08_11_MLB.csv (1 bets | ml=0 rl=0 tot=1)
+2026-08-30T13:46:51.515311+00:00 | INFO  | --- SLATE: 2026_08_12
+2026-08-30T13:46:51.527200+00:00 | INFO  | 2026_08_12 market row-count check OK: {'moneyline': 2, 'run_line': 2, 'total': 2}
+2026-08-30T13:46:51.547005+00:00 | INFO  | WROTE: 2026_08_12_MLB.csv (1 bets | ml=1 rl=0 tot=0)
+2026-08-30T13:46:51.547026+00:00 | INFO  | --- SLATE: 2026_08_13
+2026-08-30T13:46:51.559038+00:00 | INFO  | 2026_08_13 market row-count check OK: {'moneyline': 2, 'run_line': 2, 'total': 2}
+2026-08-30T13:46:51.576775+00:00 | INFO  | WROTE: 2026_08_13_MLB.csv (2 bets | ml=0 rl=1 tot=1)
+2026-08-30T13:46:51.576794+00:00 | INFO  | --- SLATE: 2026_08_14
+2026-08-30T13:46:51.588560+00:00 | INFO  | 2026_08_14 market row-count check OK: {'moneyline': 4, 'run_line': 4, 'total': 4}
+2026-08-30T13:46:51.617245+00:00 | INFO  | WROTE: 2026_08_14_MLB.csv (2 bets | ml=0 rl=2 tot=0)
+2026-08-30T13:46:51.617265+00:00 | INFO  | --- SLATE: 2026_08_15
+2026-08-30T13:46:51.628456+00:00 | INFO  | 2026_08_15 market row-count check OK: {'moneyline': 2, 'run_line': 2, 'total': 2}
+2026-08-30T13:46:51.645821+00:00 | INFO  | WROTE: 2026_08_15_MLB.csv (1 bets | ml=0 rl=1 tot=0)
+2026-08-30T13:46:51.645843+00:00 | INFO  | --- SLATE: 2026_08_16
+2026-08-30T13:46:51.657280+00:00 | INFO  | 2026_08_16 market row-count check OK: {'moneyline': 1, 'run_line': 1, 'total': 1}
+2026-08-30T13:46:51.664312+00:00 | WARN  | 2026_08_16 no bets passed filters
+2026-08-30T13:46:51.664367+00:00 | INFO  | --- SLATE: 2026_08_17
+2026-08-30T13:46:51.692011+00:00 | INFO  | 2026_08_17 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:51.747846+00:00 | INFO  | WROTE: 2026_08_17_MLB.csv (2 bets | ml=0 rl=2 tot=0)
+2026-08-30T13:46:51.747867+00:00 | INFO  | --- SLATE: 2026_08_18
+2026-08-30T13:46:51.760112+00:00 | INFO  | 2026_08_18 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:51.848025+00:00 | INFO  | WROTE: 2026_08_18_MLB.csv (5 bets | ml=0 rl=5 tot=0)
+2026-08-30T13:46:51.848049+00:00 | INFO  | --- SLATE: 2026_08_19
+2026-08-30T13:46:51.859990+00:00 | INFO  | 2026_08_19 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:51.947872+00:00 | INFO  | WROTE: 2026_08_19_MLB.csv (4 bets | ml=1 rl=2 tot=1)
+2026-08-30T13:46:51.947897+00:00 | INFO  | --- SLATE: 2026_08_20
+2026-08-30T13:46:51.959550+00:00 | INFO  | 2026_08_20 market row-count check OK: {'moneyline': 9, 'run_line': 9, 'total': 9}
+2026-08-30T13:46:52.032465+00:00 | INFO  | WROTE: 2026_08_20_MLB.csv (5 bets | ml=1 rl=2 tot=2)
+2026-08-30T13:46:52.032491+00:00 | INFO  | --- SLATE: 2026_08_24
+2026-08-30T13:46:52.044366+00:00 | INFO  | 2026_08_24 market row-count check OK: {'moneyline': 10, 'run_line': 10, 'total': 10}
+2026-08-30T13:46:52.105703+00:00 | INFO  | WROTE: 2026_08_24_MLB.csv (9 bets | ml=5 rl=4 tot=0)
+2026-08-30T13:46:52.105728+00:00 | INFO  | --- SLATE: 2026_08_25
+2026-08-30T13:46:52.118356+00:00 | INFO  | 2026_08_25 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:52.207182+00:00 | INFO  | WROTE: 2026_08_25_MLB.csv (12 bets | ml=3 rl=8 tot=1)
+2026-08-30T13:46:52.207207+00:00 | INFO  | --- SLATE: 2026_08_26
+2026-08-30T13:46:52.219247+00:00 | INFO  | 2026_08_26 market row-count check OK: {'moneyline': 12, 'run_line': 12, 'total': 12}
+2026-08-30T13:46:52.306215+00:00 | INFO  | WROTE: 2026_08_26_MLB.csv (4 bets | ml=0 rl=4 tot=0)
+2026-08-30T13:46:52.306241+00:00 | INFO  | --- SLATE: 2026_08_27
+2026-08-30T13:46:52.317991+00:00 | INFO  | 2026_08_27 market row-count check OK: {'moneyline': 7, 'run_line': 7, 'total': 7}
+2026-08-30T13:46:52.363914+00:00 | INFO  | WROTE: 2026_08_27_MLB.csv (3 bets | ml=0 rl=3 tot=0)
+2026-08-30T13:46:52.363938+00:00 | INFO  | --- SLATE: 2026_08_28
+2026-08-30T13:46:52.376079+00:00 | INFO  | 2026_08_28 market row-count check OK: {'moneyline': 15, 'run_line': 15, 'total': 15}
+2026-08-30T13:46:52.465753+00:00 | INFO  | WROTE: 2026_08_28_MLB.csv (12 bets | ml=1 rl=8 tot=3)
+2026-08-30T13:46:52.465783+00:00 | INFO  | --- SLATE: 2026_08_29
+2026-08-30T13:46:52.477572+00:00 | INFO  | 2026_08_29 market row-count check OK: {'moneyline': 3, 'run_line': 3, 'total': 3}
+2026-08-30T13:46:52.501078+00:00 | INFO  | WROTE: 2026_08_29_MLB.csv (2 bets | ml=1 rl=1 tot=0)
+2026-08-30T13:46:52.501100+00:00 | INFO  | --- SLATE: 2026_08_30
+2026-08-30T13:46:52.513053+00:00 | INFO  | 2026_08_30 market row-count check OK: {'moneyline': 14, 'run_line': 14, 'total': 14}
+2026-08-30T13:46:52.612314+00:00 | INFO  | WROTE: 2026_08_30_MLB.csv (11 bets | ml=4 rl=4 tot=3)
+2026-08-30T13:46:52.710951+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selection_rejection_audit.csv rows=9618
+2026-08-30T13:46:52.710984+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/selected_bet_audit.csv rows=952
+2026-08-30T13:46:52.710996+00:00 | INFO  | WROTE AUDIT: docs/win/baseball/mlb/04_select/morning/audit/run_line_selection_audit.csv rows=3520
 
 ============================================================
-SUMMARY  2026-08-30T12:03:26.658446+00:00
+SUMMARY  2026-08-30T13:46:52.711002+00:00
 ============================================================
   run_mode                          : rebuild_all
   slates_found                      : 149
   slates_processed                  : 149
   slates_written                    : 145
-  total_bets                        : 946
-  moneyline_bets                    : 225
-  run_line_bets                     : 563
-  total_mkt_bets                    : 158
+  total_bets                        : 952
+  moneyline_bets                    : 230
+  run_line_bets                     : 566
+  total_mkt_bets                    : 156
   skipped_slates                    : 0
   missing_moneyline                 : 0
   missing_run_line                  : 0
@@ -484,17 +484,17 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   rain_excluded_symbol_code         : 0
   sp_sample_excluded                : 0
   low_confidence                    : 0
-  rejection_audit_rows              : 9624
-  selected_audit_rows               : 946
+  rejection_audit_rows              : 9618
+  selected_audit_rows               : 952
   errors                            : 0
 
 --- Filter Breakdown ---
-  moneyline-home       passed= 101 ev_fail=   0 kelly_fail=1048 odds_fail= 453 line_fail=   0 prob_fail= 161 source_fail=   0 missing=   0 excluded=   0
-  moneyline-away       passed= 124 ev_fail=   0 kelly_fail= 936 odds_fail= 507 line_fail=   0 prob_fail= 196 source_fail=   0 missing=   0 excluded=   0
-  run_line-home       passed= 399 ev_fail= 897 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail= 464 source_fail=   0 missing=   0 excluded=   0
-  run_line-away       passed= 164 ev_fail=1074 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail= 522 source_fail=   0 missing=   0 excluded=   0
-  total-over       passed=  81 ev_fail=   0 kelly_fail= 889 odds_fail= 516 line_fail= 253 prob_fail=  23 source_fail=   0 missing=   0 excluded=   0
-  total-under      passed=  77 ev_fail= 204 kelly_fail=1058 odds_fail=  27 line_fail= 328 prob_fail=  68 source_fail=   0 missing=   0 excluded=   0
+  moneyline-home       passed= 104 ev_fail=   0 kelly_fail=1048 odds_fail= 450 line_fail=   0 prob_fail= 161 source_fail=   0 missing=   0 excluded=   0
+  moneyline-away       passed= 126 ev_fail=   0 kelly_fail= 927 odds_fail= 513 line_fail=   0 prob_fail= 197 source_fail=   0 missing=   0 excluded=   0
+  run_line-home       passed= 396 ev_fail= 900 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail= 464 source_fail=   0 missing=   0 excluded=   0
+  run_line-away       passed= 170 ev_fail=1071 kelly_fail=   0 odds_fail=   0 line_fail=   0 prob_fail= 519 source_fail=   0 missing=   0 excluded=   0
+  total-over       passed=  80 ev_fail=   0 kelly_fail= 899 odds_fail= 510 line_fail= 252 prob_fail=  21 source_fail=   0 missing=   0 excluded=   0
+  total-under      passed=  76 ev_fail= 212 kelly_fail=1052 odds_fail=  27 line_fail= 327 prob_fail=  68 source_fail=   0 missing=   0 excluded=   0
 
   slate                           bets    ml    rl   tot         status
   2026_03_29                         8     1     5     2             ok
@@ -527,7 +527,7 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   2026_04_25                         6     1     5     0             ok
   2026_04_26                         6     1     3     2             ok
   2026_04_27                         3     1     2     0             ok
-  2026_04_28                        10     1     5     4             ok
+  2026_04_28                        12     1     8     3             ok
   2026_04_29                         9     3     5     1             ok
   2026_04_30                         2     0     2     0             ok
   2026_05_01                         8     3     5     0             ok
@@ -537,9 +537,9 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   2026_05_05                         7     2     3     2             ok
   2026_05_06                         5     2     2     1             ok
   2026_05_07                         4     1     2     1             ok
-  2026_05_08                        11     3     6     2             ok
-  2026_05_09                         9     1     8     0             ok
-  2026_05_10                         9     1     4     4             ok
+  2026_05_08                        11     4     6     1             ok
+  2026_05_09                        10     2     8     0             ok
+  2026_05_10                         9     2     5     2             ok
   2026_05_11                         5     1     3     1             ok
   2026_05_12                         3     1     2     0             ok
   2026_05_13                         9     2     5     2             ok
@@ -549,11 +549,11 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   2026_05_17                        10     3     7     0             ok
   2026_05_18                         9     3     5     1             ok
   2026_05_19                         8     1     4     3             ok
-  2026_05_20                         9     1     5     3             ok
+  2026_05_20                        10     2     4     4             ok
   2026_05_21                         1     0     1     0             ok
   2026_05_22                         8     2     4     2             ok
   2026_05_23                        14     4     8     2             ok
-  2026_05_24                         8     2     4     2             ok
+  2026_05_24                         7     1     4     2             ok
   2026_05_25                         6     3     2     1             ok
   2026_05_26                        10     0     6     4             ok
   2026_05_27                        12     4     4     4             ok
@@ -564,9 +564,9 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   2026_06_01                         3     0     2     1             ok
   2026_06_02                         9     1     5     3             ok
   2026_06_03                         4     1     3     0             ok
-  2026_06_04                         4     0     4     0             ok
-  2026_06_05                         5     1     4     0             ok
-  2026_06_06                         8     2     6     0             ok
+  2026_06_04                         2     0     2     0             ok
+  2026_06_05                         4     1     3     0             ok
+  2026_06_06                        10     2     7     1             ok
   2026_06_07                         6     1     5     0             ok
   2026_06_08                         7     0     5     2             ok
   2026_06_09                         4     2     1     1             ok
@@ -621,8 +621,8 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   2026_07_31                         6     4     2     0             ok
   2026_08_01                         8     2     5     1             ok
   2026_08_02                         6     1     4     1             ok
-  2026_08_03                         3     0     2     1             ok
-  2026_08_04                         3     0     3     0             ok
+  2026_08_03                         2     0     2     0             ok
+  2026_08_04                         4     1     3     0             ok
   2026_08_05                         4     0     4     0             ok
   2026_08_06                         1     0     1     0             ok
   2026_08_07                         2     1     1     0             ok
@@ -639,13 +639,13 @@ SUMMARY  2026-08-30T12:03:26.658446+00:00
   2026_08_18                         5     0     5     0             ok
   2026_08_19                         4     1     2     1             ok
   2026_08_20                         5     1     2     2             ok
-  2026_08_24                         8     4     4     0             ok
+  2026_08_24                         9     5     4     0             ok
   2026_08_25                        12     3     8     1             ok
   2026_08_26                         4     0     4     0             ok
   2026_08_27                         3     0     3     0             ok
   2026_08_28                        12     1     8     3             ok
   2026_08_29                         2     1     1     0             ok
-  2026_08_30                         8     4     2     2             ok
+  2026_08_30                        11     4     4     3             ok
 
 STATUS: SUCCESS
 ============================================================
