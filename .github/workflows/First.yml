@@ -1,4 +1,4 @@
-name: MLB 01 first  Pipeline
+name: MLB 01 Model Train + Morning Pipeline
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 jobs:
-  MLB_Morning_Update:
+  MLB_Model_Train_And_Morning:
     runs-on: ubuntu-latest
 
     env:
@@ -32,6 +32,372 @@ jobs:
 
       - name: Install vendored SportsDataverse
         run: python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
+
+      # ============================================================
+      # MODEL TRAINING
+      # ============================================================
+
+      - name: Restore MLB SDV backfill cache
+        uses: actions/cache/restore@v4
+        with:
+          path: docs/win/baseball/mlb/00_intake/sportsdataverse
+          key: mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-
+
+      - name: MLB Determine SDV Backfill Range
+        id: sdv_range
+        shell: bash
+        run: |
+          GAMES_DIR="docs/win/baseball/mlb/00_intake/games"
+
+          mapfile -t GAME_FILES < <(
+            find "${GAMES_DIR}" \
+              -maxdepth 1 \
+              -type f \
+              -name '????_??_??_games.csv' \
+              -printf '%f\n' \
+              | sort
+          )
+
+          if [ "${#GAME_FILES[@]}" -eq 0 ]; then
+            echo "ERROR: No game files found in ${GAMES_DIR}"
+            exit 1
+          fi
+
+          LAST_INDEX=$((${#GAME_FILES[@]} - 1))
+
+          FIRST_FILE="${GAME_FILES[0]}"
+          LAST_FILE="${GAME_FILES[$LAST_INDEX]}"
+
+          FROM_DATE="${FIRST_FILE%_games.csv}"
+          TO_DATE="${LAST_FILE%_games.csv}"
+
+          FROM_DATE="${FROM_DATE//_/-}"
+          TO_DATE="${TO_DATE//_/-}"
+
+          echo "SDV backfill range derived from repository game files:"
+          echo "  first game file: ${FIRST_FILE}"
+          echo "  last game file : ${LAST_FILE}"
+          echo "  from_date      : ${FROM_DATE}"
+          echo "  to_date        : ${TO_DATE}"
+
+          echo "from_date=${FROM_DATE}" >> "${GITHUB_OUTPUT}"
+          echo "to_date=${TO_DATE}" >> "${GITHUB_OUTPUT}"
+
+      - name: MLB Backfill Leakage-Safe SportsDataverse Features
+        run: |
+          python docs/win/baseball/mlb/scripts/00_intake/sportsdataverse_mlb.py \
+            --from-date "${{ steps.sdv_range.outputs.from_date }}" \
+            --to-date "${{ steps.sdv_range.outputs.to_date }}"
+
+      - name: Save MLB SDV backfill cache
+        uses: actions/cache/save@v4
+        with:
+          path: docs/win/baseball/mlb/00_intake/sportsdataverse
+          key: mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: MLB Build Run Training Set
+        run: python docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py
+
+      - name: MLB Train Run Models
+        run: python docs/win/baseball/mlb/scripts/modeling/train_run_model.py
+
+      - name: MLB Probability EV Kelly Tests
+        run: |
+          python -m pytest \
+            docs/win/baseball/mlb/scripts/modeling/test_probability_ev_kelly.py \
+            -q
+
+      - name: MLB Validate Run Models
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          import joblib
+          import numpy as np
+          import pandas as pd
+
+          base = Path("docs/win/baseball/mlb")
+          model_dir = base / "models/run_projection"
+          training_path = base / "modeling/data/mlb_run_training_set.csv"
+          report_dir = base / "modeling/reports"
+          report_path = report_dir / "run_model_validation.json"
+
+          home_model_path = model_dir / "home_runs_model.joblib"
+          away_model_path = model_dir / "away_runs_model.joblib"
+          home_meta_path = model_dir / "home_runs_model_metadata.json"
+          away_meta_path = model_dir / "away_runs_model_metadata.json"
+
+          required_paths = [
+              home_model_path,
+              away_model_path,
+              home_meta_path,
+              away_meta_path,
+              training_path,
+          ]
+
+          missing_paths = [
+              str(path)
+              for path in required_paths
+              if not path.exists()
+          ]
+
+          if missing_paths:
+              raise RuntimeError(
+                  f"Missing required model-training artifacts: {missing_paths}"
+              )
+
+          required_metadata = [
+              "training_start_date",
+              "training_end_date",
+              "validation_start_date",
+              "validation_end_date",
+              "test_start_date",
+              "test_end_date",
+              "feature_columns",
+              "selected_hyperparameters",
+              "training_row_count",
+              "validation_row_count",
+              "test_row_count",
+              "baseline_metrics",
+              "model_metrics",
+              "created_at",
+          ]
+
+          home_meta = json.loads(
+              home_meta_path.read_text(encoding="utf-8")
+          )
+          away_meta = json.loads(
+              away_meta_path.read_text(encoding="utf-8")
+          )
+
+          for label, meta in [
+              ("home", home_meta),
+              ("away", away_meta),
+          ]:
+              missing = [
+                  key
+                  for key in required_metadata
+                  if key not in meta
+              ]
+
+              if missing:
+                  raise RuntimeError(
+                      f"{label} metadata missing required keys: {missing}"
+                  )
+
+              features = meta["feature_columns"]
+
+              if not isinstance(features, list) or not features:
+                  raise RuntimeError(
+                      f"{label} metadata feature_columns is empty or invalid"
+                  )
+
+              if len(features) != len(set(features)):
+                  raise RuntimeError(
+                      f"{label} metadata feature_columns contains duplicates"
+                  )
+
+          home_features = list(
+              home_meta["feature_columns"]
+          )
+          away_features = list(
+              away_meta["feature_columns"]
+          )
+
+          if home_features != away_features:
+              raise RuntimeError(
+                  "Home and away model metadata feature order differs: "
+                  f"home={home_features} away={away_features}"
+              )
+
+          home_model = joblib.load(
+              home_model_path
+          )
+          away_model = joblib.load(
+              away_model_path
+          )
+
+          for label, model, features in [
+              ("home", home_model, home_features),
+              ("away", away_model, away_features),
+          ]:
+              model_features = getattr(
+                  model,
+                  "feature_names_in_",
+                  None,
+              )
+
+              if model_features is None:
+                  raise RuntimeError(
+                      f"{label} model does not expose feature_names_in_; "
+                      "cannot validate production feature order"
+                  )
+
+              model_features = [
+                  str(value)
+                  for value in model_features.tolist()
+              ]
+
+              if model_features != features:
+                  raise RuntimeError(
+                      f"{label} model feature order differs from metadata: "
+                      f"model={model_features} metadata={features}"
+                  )
+
+          training = pd.read_csv(
+              training_path
+          )
+
+          missing_training_features = [
+              col
+              for col in home_features
+              if col not in training.columns
+          ]
+
+          if missing_training_features:
+              raise RuntimeError(
+                  "Training set missing metadata features: "
+                  f"{missing_training_features}"
+              )
+
+          if training.empty:
+              raise RuntimeError(
+                  "Training set is empty"
+              )
+
+          sample = training.loc[
+              :,
+              home_features,
+          ].head(1).copy()
+
+          for col in home_features:
+              sample[col] = pd.to_numeric(
+                  sample[col],
+                  errors="coerce",
+              )
+
+          home_pred = np.asarray(
+              home_model.predict(sample),
+              dtype=float,
+          )
+
+          away_pred = np.asarray(
+              away_model.predict(sample),
+              dtype=float,
+          )
+
+          for label, pred in [
+              ("home", home_pred),
+              ("away", away_pred),
+          ]:
+              if pred.size != 1:
+                  raise RuntimeError(
+                      f"{label} model smoke test returned unexpected shape: "
+                      f"{pred.shape}"
+                  )
+
+              if not np.isfinite(pred).all():
+                  raise RuntimeError(
+                      f"{label} model smoke test produced non-finite prediction: "
+                      f"{pred.tolist()}"
+                  )
+
+              if (pred < 0).any():
+                  raise RuntimeError(
+                      f"{label} model smoke test produced negative prediction: "
+                      f"{pred.tolist()}"
+                  )
+
+          report_dir.mkdir(
+              parents=True,
+              exist_ok=True,
+          )
+
+          report = {
+              "validated_at": datetime.now(
+                  timezone.utc
+              ).isoformat(),
+              "status": "passed",
+              "training_set": str(
+                  training_path
+              ),
+              "training_rows": int(
+                  len(training)
+              ),
+              "feature_columns": home_features,
+              "home_model": {
+                  "artifact": str(
+                      home_model_path
+                  ),
+                  "metadata": str(
+                      home_meta_path
+                  ),
+                  "smoke_prediction": float(
+                      home_pred[0]
+                  ),
+                  "baseline_metrics": home_meta[
+                      "baseline_metrics"
+                  ],
+                  "model_metrics": home_meta[
+                      "model_metrics"
+                  ],
+              },
+              "away_model": {
+                  "artifact": str(
+                      away_model_path
+                  ),
+                  "metadata": str(
+                      away_meta_path
+                  ),
+                  "smoke_prediction": float(
+                      away_pred[0]
+                  ),
+                  "baseline_metrics": away_meta[
+                      "baseline_metrics"
+                  ],
+                  "model_metrics": away_meta[
+                      "model_metrics"
+                  ],
+              },
+          }
+
+          report_path.write_text(
+              json.dumps(
+                  report,
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+
+          print(
+              f"Model validation passed: {report_path}"
+          )
+          PY
+
+      - name: MLB Evaluate Run Model
+        run: |
+          python docs/win/baseball/mlb/scripts/modeling/evaluate_run_model.py
+
+      - name: Upload model training data and reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlb-run-model-training-${{ github.run_id }}
+          path: |
+            docs/win/baseball/mlb/modeling/data/mlb_run_training_set.csv
+            docs/win/baseball/mlb/modeling/reports/
+          if-no-files-found: error
+          retention-days: 30
+
+      # ============================================================
+      # MORNING PIPELINE
+      # ============================================================
 
       - name: Install Playwright Chromium
         run: python -m playwright install --with-deps chromium
@@ -168,12 +534,23 @@ jobs:
         if: steps.selected_bets.outputs.found == 'true' && steps.morning_selected_bets.outputs.found == 'true' && steps.grade_morning_results.outcome == 'success'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports_AM.py
 
-      - name: Commit MLB outputs
+      # ============================================================
+      # COMMIT MODELS + MORNING OUTPUTS
+      # ============================================================
+
+      - name: Commit MLB models and morning outputs
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add docs/win/baseball/mlb/
-          git restore --staged docs/win/baseball/mlb/audit/leakage_audit.csv 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "chore: update MLB morning pipeline outputs"
+
+          git restore --staged \
+            docs/win/baseball/mlb/audit/leakage_audit.csv \
+            2>/dev/null || true
+
+          git diff --cached --quiet || \
+            git commit -m "chore: update MLB models and morning pipeline outputs"
+
           git push
