@@ -1,4 +1,4 @@
-name: NEW Pregame Pipeline
+name: MLB 02 Pregame Pipeline
 
 on:
   workflow_dispatch:
@@ -106,5 +106,5 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/win/baseball/mlb/
           git restore --staged docs/win/baseball/mlb/audit/leakage_audit.csv 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "chore: update MLB morning pipeline outputs"
+          git diff --cached --quiet || git commit -m "chore: update MLB pregame pipeline outputs"
           git push
