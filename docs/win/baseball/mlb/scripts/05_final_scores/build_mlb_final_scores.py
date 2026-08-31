@@ -364,16 +364,6 @@ def select_game_candidate(
     current_gamePk="",
     current_gameNumber="",
 ):
-    """
-    Resolve one same-date/same-team candidate safely.
-
-    Doubleheader precedence:
-      1. exact gamePk when already known
-      2. gameNumber when multiple same-team games exist
-      3. scheduled game time
-
-    A candidate is never chosen arbitrarily when multiple games remain.
-    """
     candidates = list(candidates or [])
 
     current_gamePk = str(current_gamePk or "").strip()
@@ -1114,8 +1104,8 @@ def final_row_signature(record):
         str(record.get("sport", "") or "").strip(),
         str(record.get("league", "") or "").strip(),
         str(record.get("game_date", "") or "").strip(),
-        str(record.get("home_team", "") or "").strip(),
-        str(record.get("away_team", "") or "").strip(),
+        normalize_team_key(record.get("home_team", "")),
+        normalize_team_key(record.get("away_team", "")),
         str(record.get("final_away_score", "") or "").strip(),
         str(record.get("final_home_score", "") or "").strip(),
         str(record.get("final_total", "") or "").strip(),
@@ -2809,13 +2799,6 @@ def verify_final_score_outputs_have_gamepk():
 
 
 def verify_doubleheader_identity_integrity():
-    """
-    Verify same-date/same-team multi-game sets cannot collapse.
-
-    Any final row belonging to a doubleheader/multi-game matchup must
-    map back to exactly one games row using gamePk, gameNumber, and
-    scheduled time.
-    """
     doubleheader_matchups = 0
     verified_final_rows = 0
     bad_rows = []
