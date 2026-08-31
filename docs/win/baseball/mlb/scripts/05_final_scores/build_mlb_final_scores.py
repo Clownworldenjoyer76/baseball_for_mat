@@ -3,6 +3,7 @@
 
 import csv
 import json
+import re
 import traceback
 from datetime import datetime, UTC
 from pathlib import Path
@@ -24,10 +25,18 @@ AUDIT_DIR.mkdir(parents=True, exist_ok=True)
 
 STATUS_AUDIT_FILE = AUDIT_DIR / "final_score_status_audit.csv"
 KEY_AUDIT_FILE = AUDIT_DIR / "final_score_key_audit.csv"
+UNRESOLVED_AUDIT_FILE = AUDIT_DIR / "unresolved_completed_games.csv"
 
 RUN_TS = datetime.now(UTC).isoformat()
 DOUBLEHEADER_TIME_TOLERANCE_MINUTES = 90
 ET = ZoneInfo("America/New_York")
+
+TEAM_KEY_ALIASES = {
+    "oakland athletics": "athletics",
+    "athletics": "athletics",
+    "st louis cardinals": "st louis cardinals",
+    "st. louis cardinals": "st louis cardinals",
+}
 
 with open(LOG_FILE, "w", encoding="utf-8") as f:
     f.write(f"=== build_mlb_final_scores RUN {RUN_TS} ===\n")
@@ -95,6 +104,22 @@ def parse_time_minutes(value):
 
 def clean_team(team_str):
     return str(team_str).split("(")[0].strip()
+
+
+def normalize_team_key(team_str):
+    cleaned = clean_team(team_str)
+    lowered = cleaned.lower().strip()
+    lowered = TEAM_KEY_ALIASES.get(lowered, lowered)
+    lowered = re.sub(r"[^a-z0-9]+", " ", lowered)
+    lowered = re.sub(r"\s+", " ", lowered).strip()
+    return lowered
+
+
+def matchup_key(home_team, away_team):
+    return (
+        normalize_team_key(home_team),
+        normalize_team_key(away_team),
+    )
 
 
 def normalize_status(raw_status):
@@ -227,9 +252,6 @@ def closest_time_record_match(
     if not candidates:
         return {}
 
-    if len(candidates) == 1:
-        return candidates[0]
-
     targets = time_match_targets(
         target_game_time,
         correction_minutes=correction_minutes,
@@ -239,30 +261,44 @@ def closest_time_record_match(
     if not targets:
         return {}
 
-    best_candidate = None
-    best_score = None
+    scored = []
 
     for candidate_index, candidate in enumerate(candidates):
         candidate_minutes = parse_time_minutes(candidate.get("game_time", ""))
         if candidate_minutes is None:
             continue
 
+        candidate_best = None
+
         for target_minutes, target_priority in targets:
             diff = abs(candidate_minutes - target_minutes)
-            score = (diff, target_priority, candidate_index)
+            diff = min(diff, (24 * 60) - diff)
+            score = (diff, target_priority)
 
-            if best_score is None or score < best_score:
-                best_score = score
-                best_candidate = candidate
+            if candidate_best is None or score < candidate_best:
+                candidate_best = score
 
-    if (
-        best_candidate is None
-        or best_score is None
-        or best_score[0] > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
-    ):
+        if candidate_best is not None:
+            scored.append((candidate_best, candidate_index, candidate))
+
+    if not scored:
         return {}
 
-    return best_candidate
+    best_score = min(item[0] for item in scored)
+
+    if best_score[0] > DOUBLEHEADER_TIME_TOLERANCE_MINUTES:
+        return {}
+
+    tied = [
+        item
+        for item in scored
+        if item[0] == best_score
+    ]
+
+    if len(tied) != 1:
+        return {}
+
+    return tied[0][2]
 
 
 def closest_time_match(
@@ -313,18 +349,17 @@ def load_games_lookup(date):
         reader = csv.DictReader(f)
 
         for r in reader:
-            key = (
-                r.get("home_team", "").strip(),
-                r.get("away_team", "").strip(),
-            )
+            home_team = str(r.get("home_team", "") or "").strip()
+            away_team = str(r.get("away_team", "") or "").strip()
+            key = matchup_key(home_team, away_team)
 
             lookup.setdefault(key, []).append({
-                "game_id": r.get("game_id", ""),
-                "gamePk": r.get("gamePk", ""),
-                "gameNumber": r.get("gameNumber", ""),
-                "game_time": r.get("game_time", ""),
-                "home_team": r.get("home_team", ""),
-                "away_team": r.get("away_team", ""),
+                "game_id": str(r.get("game_id", "") or "").strip(),
+                "gamePk": str(r.get("gamePk", "") or "").strip(),
+                "gameNumber": str(r.get("gameNumber", "") or "").strip(),
+                "game_time": str(r.get("game_time", "") or "").strip(),
+                "home_team": home_team,
+                "away_team": away_team,
             })
 
     return lookup
@@ -335,7 +370,7 @@ def load_games_by_game_id(date):
     lookup = {}
 
     if not path.exists():
-        log(f"GAMES FILE MISSING FOR LEGACY FINAL-SCORE BACKFILL: {path}")
+        log(f"GAMES FILE MISSING FOR FINAL-SCORE GAME_ID/GAMEPK LOOKUP: {path}")
         return lookup
 
     with open(path, newline="", encoding="utf-8-sig") as f:
@@ -349,13 +384,51 @@ def load_games_by_game_id(date):
 
             if game_id in lookup:
                 fail(
-                    "Duplicate game_id in games file during legacy final-score backfill: "
+                    "Duplicate game_id in games file during final-score backfill: "
                     f"date={date} game_id={game_id}"
                 )
 
             lookup[game_id] = {
+                "game_id": game_id,
                 "gamePk": str(row.get("gamePk", "") or "").strip(),
                 "gameNumber": str(row.get("gameNumber", "") or "").strip(),
+                "game_time": str(row.get("game_time", "") or "").strip(),
+                "home_team": str(row.get("home_team", "") or "").strip(),
+                "away_team": str(row.get("away_team", "") or "").strip(),
+            }
+
+    return lookup
+
+
+def load_games_by_gamepk(date):
+    path = GAMES_DIR / f"{date}_games.csv"
+    lookup = {}
+
+    if not path.exists():
+        return lookup
+
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            gamePk = str(row.get("gamePk", "") or "").strip()
+
+            if not gamePk:
+                continue
+
+            if gamePk in lookup:
+                fail(
+                    "Duplicate gamePk in games file during final-score backfill: "
+                    f"date={date} gamePk={gamePk}"
+                )
+
+            lookup[gamePk] = {
+                "game_id": str(row.get("game_id", "") or "").strip(),
+                "gamePk": gamePk,
+                "gameNumber": str(row.get("gameNumber", "") or "").strip(),
+                "game_time": str(row.get("game_time", "") or "").strip(),
+                "home_team": str(row.get("home_team", "") or "").strip(),
+                "away_team": str(row.get("away_team", "") or "").strip(),
             }
 
     return lookup
@@ -373,16 +446,17 @@ def load_predictions_lookup(date):
         reader = csv.DictReader(f)
 
         for r in reader:
-            key = (
-                r.get("home_team", "").strip(),
-                r.get("away_team", "").strip(),
-            )
+            home_team = str(r.get("home_team", "") or "").strip()
+            away_team = str(r.get("away_team", "") or "").strip()
+            key = matchup_key(home_team, away_team)
 
             lookup.setdefault(key, []).append({
-                "game_id": r.get("game_id", ""),
-                "game_time": r.get("game_time", ""),
-                "home_team": r.get("home_team", ""),
-                "away_team": r.get("away_team", ""),
+                "game_id": str(r.get("game_id", "") or "").strip(),
+                "gamePk": str(r.get("gamePk", "") or "").strip(),
+                "gameNumber": str(r.get("gameNumber", "") or "").strip(),
+                "game_time": str(r.get("game_time", "") or "").strip(),
+                "home_team": home_team,
+                "away_team": away_team,
             })
 
     return lookup
@@ -400,19 +474,208 @@ def load_sportsbook_lookup(date):
         reader = csv.DictReader(f)
 
         for r in reader:
-            key = (
-                r.get("home_team", "").strip(),
-                r.get("away_team", "").strip(),
-            )
+            home_team = str(r.get("home_team", "") or "").strip()
+            away_team = str(r.get("away_team", "") or "").strip()
+            key = matchup_key(home_team, away_team)
 
             lookup.setdefault(key, []).append({
-                "game_time": r.get("game_time", ""),
+                "game_time": str(r.get("game_time", "") or "").strip(),
                 "away_run_line": r.get("away_run_line"),
                 "home_run_line": r.get("home_run_line"),
                 "total": r.get("total"),
             })
 
     return lookup
+
+
+def candidate_matches_teams(candidate, home_team, away_team):
+    if not candidate:
+        return False
+
+    return matchup_key(
+        candidate.get("home_team", ""),
+        candidate.get("away_team", ""),
+    ) == matchup_key(home_team, away_team)
+
+
+def resolve_completed_game_ids(
+    *,
+    game_date,
+    game_time,
+    home_team,
+    away_team,
+    current_game_id="",
+    current_gamePk="",
+    current_gameNumber="",
+    games_lookup,
+    games_by_game_id,
+    games_by_gamepk,
+    predictions_lookup,
+):
+    key = matchup_key(home_team, away_team)
+    games_candidates = games_lookup.get(key, [])
+    pred_candidates = predictions_lookup.get(key, [])
+
+    current_game_id = str(current_game_id or "").strip()
+    current_gamePk = str(current_gamePk or "").strip()
+    current_gameNumber = str(current_gameNumber or "").strip()
+
+    def result_from_game(candidate, source):
+        return {
+            "resolved": bool(
+                str(candidate.get("game_id", "") or "").strip()
+                and str(candidate.get("gamePk", "") or "").strip()
+            ),
+            "game_id": str(candidate.get("game_id", "") or "").strip(),
+            "gamePk": str(candidate.get("gamePk", "") or "").strip(),
+            "gameNumber": str(candidate.get("gameNumber", "") or "").strip(),
+            "scheduled_game_time": str(
+                candidate.get("game_time", "") or game_time or ""
+            ).strip(),
+            "resolution_source": source,
+            "games_candidate_count": len(games_candidates),
+            "prediction_candidate_count": len(pred_candidates),
+            "reason": "",
+        }
+
+    if current_gamePk:
+        candidate = games_by_gamepk.get(current_gamePk, {})
+        if candidate and candidate_matches_teams(candidate, home_team, away_team):
+            resolved = result_from_game(candidate, "games_by_existing_gamePk")
+            if not resolved["game_id"] and current_game_id:
+                resolved["game_id"] = current_game_id
+                resolved["resolved"] = bool(resolved["gamePk"] and resolved["game_id"])
+            return resolved
+
+    games_match = closest_time_record_match(
+        games_candidates,
+        game_time,
+        correction_minutes=0,
+        prefer_correction=False,
+    )
+
+    if games_match:
+        return result_from_game(games_match, "games_date_teams_time")
+
+    pred_match = closest_time_record_match(
+        pred_candidates,
+        game_time,
+        correction_minutes=0,
+        prefer_correction=False,
+    )
+
+    if pred_match:
+        pred_game_id = str(pred_match.get("game_id", "") or "").strip()
+        pred_gamePk = str(pred_match.get("gamePk", "") or "").strip()
+        pred_gameNumber = str(pred_match.get("gameNumber", "") or "").strip()
+
+        if pred_gamePk:
+            official = games_by_gamepk.get(pred_gamePk, {})
+            if official and candidate_matches_teams(official, home_team, away_team):
+                return result_from_game(
+                    official,
+                    "predictions_date_teams_time_then_games_by_gamePk",
+                )
+
+        if pred_game_id:
+            official = games_by_game_id.get(pred_game_id, {})
+            if official and candidate_matches_teams(official, home_team, away_team):
+                return result_from_game(
+                    official,
+                    "predictions_date_teams_time_then_games_by_game_id",
+                )
+
+        return {
+            "resolved": bool(pred_game_id and pred_gamePk),
+            "game_id": pred_game_id,
+            "gamePk": pred_gamePk,
+            "gameNumber": pred_gameNumber,
+            "scheduled_game_time": str(
+                pred_match.get("game_time", "") or game_time or ""
+            ).strip(),
+            "resolution_source": "predictions_date_teams_time",
+            "games_candidate_count": len(games_candidates),
+            "prediction_candidate_count": len(pred_candidates),
+            "reason": (
+                "prediction matched but corresponding official games row "
+                "could not supply both game_id and gamePk"
+            ),
+        }
+
+    if current_game_id and parse_time_minutes(game_time) is None:
+        candidate = games_by_game_id.get(current_game_id, {})
+        if candidate and candidate_matches_teams(candidate, home_team, away_team):
+            return result_from_game(candidate, "games_by_existing_game_id_no_time")
+
+    reason_parts = []
+
+    if not games_candidates:
+        reason_parts.append("no normalized date/team candidate in games")
+    else:
+        reason_parts.append(
+            "games candidates existed but scheduled time did not resolve uniquely"
+        )
+
+    if not pred_candidates:
+        reason_parts.append("no normalized date/team candidate in predictions")
+    else:
+        reason_parts.append(
+            "prediction candidates existed but scheduled time did not resolve uniquely"
+        )
+
+    if current_game_id:
+        reason_parts.append(
+            "existing game_id was not accepted without a supporting scheduled-time match"
+        )
+
+    return {
+        "resolved": False,
+        "game_id": current_game_id,
+        "gamePk": current_gamePk,
+        "gameNumber": current_gameNumber,
+        "scheduled_game_time": str(game_time or "").strip(),
+        "resolution_source": "unresolved",
+        "games_candidate_count": len(games_candidates),
+        "prediction_candidate_count": len(pred_candidates),
+        "reason": "; ".join(reason_parts),
+    }
+
+
+def make_unresolved_completed_row(
+    *,
+    source_file,
+    row_index,
+    game_date,
+    game_time,
+    away_team,
+    home_team,
+    final_away_score,
+    final_home_score,
+    game_id,
+    gamePk,
+    gameNumber,
+    games_candidate_count,
+    prediction_candidate_count,
+    resolution_reason,
+    raw_row,
+):
+    return {
+        "source_file": source_file,
+        "row_index": row_index,
+        "game_date": game_date,
+        "game_time": game_time,
+        "away_team": away_team,
+        "home_team": home_team,
+        "final_away_score": final_away_score,
+        "final_home_score": final_home_score,
+        "game_id": game_id,
+        "gamePk": gamePk,
+        "gameNumber": gameNumber,
+        "games_candidate_count": games_candidate_count,
+        "prediction_candidate_count": prediction_candidate_count,
+        "resolution_reason": resolution_reason,
+        "raw_row": raw_row,
+    }
 
 
 SUMMARY_ROW_PREFIXES = {"Sportsbooks", "DRatings"}
@@ -484,7 +747,7 @@ def make_parse_error_row(*, source_file, row_index, stage, error, row):
     }
 
 
-def log_review_rows(parse_error_rows, blank_game_id_rows):
+def log_review_rows(parse_error_rows, unresolved_completed_rows):
     log("--- PARSE ERROR ROWS FOR REVIEW ---")
 
     if not parse_error_rows:
@@ -500,14 +763,14 @@ def log_review_rows(parse_error_rows, blank_game_id_rows):
                 f"raw_row={item.get('raw_row', '')}"
             )
 
-    log("--- BLANK GAME_ID ROWS FOR REVIEW ---")
+    log("--- UNRESOLVED COMPLETED GAMES FOR REVIEW ---")
 
-    if not blank_game_id_rows:
+    if not unresolved_completed_rows:
         log("None")
     else:
-        for item in blank_game_id_rows:
+        for item in unresolved_completed_rows:
             log(
-                "BLANK_GAME_ID | "
+                "UNRESOLVED_COMPLETED_GAME | "
                 f"source_file={item.get('source_file', '')} | "
                 f"row_index={item.get('row_index', '')} | "
                 f"game_date={item.get('game_date', '')} | "
@@ -516,30 +779,52 @@ def log_review_rows(parse_error_rows, blank_game_id_rows):
                 f"home_team={item.get('home_team', '')} | "
                 f"final_away_score={item.get('final_away_score', '')} | "
                 f"final_home_score={item.get('final_home_score', '')} | "
+                f"game_id={item.get('game_id', '')} | "
                 f"gamePk={item.get('gamePk', '')} | "
                 f"gameNumber={item.get('gameNumber', '')} | "
+                f"games_candidate_count={item.get('games_candidate_count', '')} | "
+                f"prediction_candidate_count={item.get('prediction_candidate_count', '')} | "
+                f"resolution_reason={item.get('resolution_reason', '')} | "
                 f"raw_row={item.get('raw_row', '')}"
             )
 
 
 def final_row_signature(record):
     return (
-        record.get("sport", ""),
-        record.get("league", ""),
-        record.get("game_id", ""),
-        record.get("gamePk", ""),
-        record.get("gameNumber", ""),
-        record.get("game_date", ""),
-        record.get("home_team", ""),
-        record.get("away_team", ""),
-        record.get("final_away_score", ""),
-        record.get("final_home_score", ""),
-        record.get("final_total", ""),
-        record.get("away_run_line", ""),
-        record.get("home_run_line", ""),
-        record.get("total", ""),
-        record.get("game_status", ""),
+        str(record.get("sport", "") or "").strip(),
+        str(record.get("league", "") or "").strip(),
+        str(record.get("game_date", "") or "").strip(),
+        str(record.get("home_team", "") or "").strip(),
+        str(record.get("away_team", "") or "").strip(),
+        str(record.get("final_away_score", "") or "").strip(),
+        str(record.get("final_home_score", "") or "").strip(),
+        str(record.get("final_total", "") or "").strip(),
+        str(record.get("game_status", "") or "").strip(),
     )
+
+
+def merge_duplicate_metadata(existing, record):
+    existing_gamepk = str(existing.get("gamePk", "") or "").strip()
+    incoming_gamepk = str(record.get("gamePk", "") or "").strip()
+
+    for field in (
+        "gamePk",
+        "gameNumber",
+        "away_run_line",
+        "home_run_line",
+        "total",
+    ):
+        if not str(existing.get(field, "") or "").strip():
+            incoming = record.get(field, "")
+            if str(incoming or "").strip():
+                existing[field] = incoming
+
+    if not existing_gamepk and incoming_gamepk:
+        incoming_time = str(record.get("game_time", "") or "").strip()
+        if incoming_time:
+            existing["game_time"] = incoming_time
+
+    return existing
 
 
 def make_key_audit_row(
@@ -596,7 +881,7 @@ def add_final_record(
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=gamePk,
+                gamePk=record.get("gamePk", ""),
                 gameNumber=record.get("gameNumber", ""),
                 away_team=away_team,
                 home_team=home_team,
@@ -607,10 +892,11 @@ def add_final_record(
             return "accepted"
 
         if final_row_signature(existing) == final_row_signature(record):
+            merge_duplicate_metadata(existing, record)
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=gamePk,
+                gamePk=record.get("gamePk", ""),
                 gameNumber=record.get("gameNumber", ""),
                 away_team=away_team,
                 home_team=home_team,
@@ -623,7 +909,7 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id=game_id,
-            gamePk=gamePk,
+            gamePk=record.get("gamePk", ""),
             gameNumber=record.get("gameNumber", ""),
             away_team=away_team,
             home_team=home_team,
@@ -652,18 +938,11 @@ def add_final_record(
             f"existing_source_file={existing_source_file}"
         )
 
-    if use_game_time_for_fallback:
-        fallback_key = (game_date, home_team, away_team, game_time)
-        fallback_notes = (
-            "game_id missing; fallback date/team/time key used "
-            "for doubleheader identification"
-        )
-    else:
-        fallback_key = (game_date, home_team, away_team)
-        fallback_notes = (
-            "game_id missing; fallback date/team key used "
-            "to avoid exact duplicate raw writes"
-        )
+    fallback_key = (game_date, home_team, away_team, game_time)
+    fallback_notes = (
+        "game_id missing; fallback date/team/time key used "
+        "to distinguish unresolved games and detect true duplicates"
+    )
 
     existing_fallback = seen_by_fallback_key.get(fallback_key)
 
@@ -674,7 +953,7 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id="",
-            gamePk=gamePk,
+            gamePk=record.get("gamePk", ""),
             gameNumber=record.get("gameNumber", ""),
             away_team=away_team,
             home_team=home_team,
@@ -685,10 +964,11 @@ def add_final_record(
         return "accepted_blank_game_id"
 
     if final_row_signature(existing_fallback) == final_row_signature(record):
+        merge_duplicate_metadata(existing_fallback, record)
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id="",
-            gamePk=gamePk,
+            gamePk=record.get("gamePk", ""),
             gameNumber=record.get("gameNumber", ""),
             away_team=away_team,
             home_team=home_team,
@@ -701,7 +981,7 @@ def add_final_record(
     key_audit_rows.append(make_key_audit_row(
         game_date=game_date,
         game_id="",
-        gamePk=gamePk,
+        gamePk=record.get("gamePk", ""),
         gameNumber=record.get("gameNumber", ""),
         away_team=away_team,
         home_team=home_team,
@@ -741,7 +1021,7 @@ def process_file(
     status_audit_rows,
     key_audit_rows,
     parse_error_rows,
-    blank_game_id_rows,
+    unresolved_completed_rows,
 ):
     log(f"Processing {file_path.name}")
 
@@ -749,9 +1029,10 @@ def process_file(
         data = json.load(f)
 
     games_lookup_cache = {}
+    games_by_game_id_cache = {}
+    games_by_gamepk_cache = {}
     predictions_lookup_cache = {}
     sportsbook_lookup_cache = {}
-    source_snapshot_date = raw_snapshot_date_from_path(file_path)
 
     parse_errors = 0
     skipped_summary = 0
@@ -759,7 +1040,7 @@ def process_file(
     skipped_not_completed = 0
     completed_rows_seen = 0
     accepted_rows = 0
-    accepted_blank_game_id_rows = 0
+    unresolved_rows = 0
 
     if not isinstance(data, list):
         parse_errors += 1
@@ -774,7 +1055,7 @@ def process_file(
         log(
             f"  completed_rows_seen={completed_rows_seen}, "
             f"accepted_rows={accepted_rows}, "
-            f"accepted_blank_game_id_rows={accepted_blank_game_id_rows}, "
+            f"unresolved_completed_rows={unresolved_rows}, "
             f"parse_errors={parse_errors}, "
             f"skipped_summary={skipped_summary}, "
             f"skipped_duplicate={skipped_duplicate}, "
@@ -844,7 +1125,7 @@ def process_file(
         completed_rows_seen += 1
 
         try:
-            _dt, game_date, game_time = parse_datetime(row[0])
+            _dt, game_date, raw_game_time = parse_datetime(row[0])
         except Exception as exc:
             parse_errors += 1
             parse_error_rows.append(make_parse_error_row(
@@ -886,7 +1167,7 @@ def process_file(
             ))
             continue
 
-        key = (home_team, away_team)
+        key = matchup_key(home_team, away_team)
 
         try:
             score_value = row[5]
@@ -921,6 +1202,8 @@ def process_file(
         try:
             if game_date not in games_lookup_cache:
                 games_lookup_cache[game_date] = load_games_lookup(game_date)
+                games_by_game_id_cache[game_date] = load_games_by_game_id(game_date)
+                games_by_gamepk_cache[game_date] = load_games_by_gamepk(game_date)
 
             if game_date not in predictions_lookup_cache:
                 predictions_lookup_cache[game_date] = load_predictions_lookup(game_date)
@@ -929,58 +1212,76 @@ def process_file(
                 sportsbook_lookup_cache[game_date] = load_sportsbook_lookup(game_date)
 
             games_lookup = games_lookup_cache[game_date]
+            games_by_game_id = games_by_game_id_cache[game_date]
+            games_by_gamepk = games_by_gamepk_cache[game_date]
             pred_lookup = predictions_lookup_cache[game_date]
             book_lookup = sportsbook_lookup_cache[game_date]
 
-            historical_snapshot_row = bool(
-                source_snapshot_date
-                and source_snapshot_date > game_date
-            )
-            correction_minutes = (
-                et_utc_offset_minutes_for_date(game_date)
-                if historical_snapshot_row
-                else 0
-            )
-
-            games_candidates = games_lookup.get(key, [])
-            games_match = closest_time_record_match(
-                games_candidates,
-                game_time,
-                correction_minutes=correction_minutes,
-                prefer_correction=historical_snapshot_row,
+            resolution = resolve_completed_game_ids(
+                game_date=game_date,
+                game_time=raw_game_time,
+                home_team=home_team,
+                away_team=away_team,
+                games_lookup=games_lookup,
+                games_by_game_id=games_by_game_id,
+                games_by_gamepk=games_by_gamepk,
+                predictions_lookup=pred_lookup,
             )
 
-            pred_candidates = pred_lookup.get(key, [])
-
-            if len(games_candidates) > 1 and not games_match:
-                pred_game_id = ""
-            else:
-                pred_game_id = closest_time_match(
-                    pred_candidates,
-                    game_time,
-                    "game_id",
-                    correction_minutes=correction_minutes,
-                    prefer_correction=historical_snapshot_row,
-                )
-
-            game_id = str(
-                games_match.get("game_id", "") or pred_game_id or ""
+            game_id = str(resolution.get("game_id", "") or "").strip()
+            gamePk = str(resolution.get("gamePk", "") or "").strip()
+            gameNumber = str(resolution.get("gameNumber", "") or "").strip()
+            scheduled_game_time = str(
+                resolution.get("scheduled_game_time", "") or raw_game_time
             ).strip()
 
-            gamePk = str(
-                games_match.get("gamePk", "") or ""
-            ).strip()
+            if not resolution.get("resolved") or not game_id or not gamePk:
+                unresolved_rows += 1
+                unresolved_completed_rows.append(make_unresolved_completed_row(
+                    source_file=file_path.name,
+                    row_index=row_index,
+                    game_date=game_date,
+                    game_time=raw_game_time,
+                    away_team=away_team,
+                    home_team=home_team,
+                    final_away_score=str(away_score),
+                    final_home_score=str(home_score),
+                    game_id=game_id,
+                    gamePk=gamePk,
+                    gameNumber=gameNumber,
+                    games_candidate_count=resolution.get("games_candidate_count", 0),
+                    prediction_candidate_count=resolution.get(
+                        "prediction_candidate_count", 0
+                    ),
+                    resolution_reason=resolution.get("reason", "unresolved"),
+                    raw_row=raw_row_text(row),
+                ))
 
-            gameNumber = str(
-                games_match.get("gameNumber", "") or ""
-            ).strip()
+                status_audit_rows.append({
+                    "game_date": game_date,
+                    "game_id": game_id,
+                    "gamePk": gamePk,
+                    "gameNumber": gameNumber,
+                    "away_team": away_team,
+                    "home_team": home_team,
+                    "final_away_score": str(away_score),
+                    "final_home_score": str(home_score),
+                    "game_status": status_norm,
+                    "status_source": status_source,
+                    "status_available": str(status_available),
+                    "status_notes": (
+                        "completed game unresolved; excluded from final-score output "
+                        "and written to unresolved_completed_games.csv"
+                    ),
+                })
+                continue
 
             book_candidates = book_lookup.get(key, [])
             book = closest_time_book_match(
                 book_candidates,
-                game_time,
-                correction_minutes=correction_minutes,
-                prefer_correction=historical_snapshot_row,
+                raw_game_time,
+                correction_minutes=0,
+                prefer_correction=False,
             )
 
             record = {
@@ -990,7 +1291,7 @@ def process_file(
                 "gamePk": gamePk,
                 "gameNumber": gameNumber,
                 "game_date": game_date,
-                "game_time": game_time,
+                "game_time": scheduled_game_time,
                 "home_team": home_team,
                 "away_team": away_team,
                 "final_away_score": str(away_score),
@@ -1003,21 +1304,6 @@ def process_file(
                 "final_scores_generated_at": RUN_TS,
             }
 
-            if not game_id:
-                blank_game_id_rows.append({
-                    "source_file": file_path.name,
-                    "row_index": row_index,
-                    "game_date": game_date,
-                    "game_time": game_time,
-                    "away_team": away_team,
-                    "home_team": home_team,
-                    "final_away_score": str(away_score),
-                    "final_home_score": str(home_score),
-                    "gamePk": gamePk,
-                    "gameNumber": gameNumber,
-                    "raw_row": raw_row_text(row),
-                })
-
             action = add_final_record(
                 record=record,
                 source_file=file_path.name,
@@ -1025,10 +1311,7 @@ def process_file(
                 seen_by_game_id=seen_by_game_id,
                 seen_by_fallback_key=seen_by_fallback_key,
                 key_audit_rows=key_audit_rows,
-                use_game_time_for_fallback=(
-                    len(games_candidates) > 1
-                    or len(pred_candidates) > 1
-                ),
+                use_game_time_for_fallback=False,
             )
 
             if action in {
@@ -1038,9 +1321,6 @@ def process_file(
                 skipped_duplicate += 1
             else:
                 accepted_rows += 1
-
-                if not game_id:
-                    accepted_blank_game_id_rows += 1
 
             status_audit_rows.append({
                 "game_date": game_date,
@@ -1055,9 +1335,12 @@ def process_file(
                 "status_source": status_source,
                 "status_available": str(status_available),
                 "status_notes": (
-                    "explicit source status available"
-                    if status_available
-                    else "status inferred as final from completed DRatings row shape"
+                    f"resolved_ids={resolution.get('resolution_source', '')}; "
+                    + (
+                        "explicit source status available"
+                        if status_available
+                        else "status inferred as final from completed DRatings row shape"
+                    )
                 ),
             })
 
@@ -1078,7 +1361,7 @@ def process_file(
     log(
         f"  completed_rows_seen={completed_rows_seen}, "
         f"accepted_rows={accepted_rows}, "
-        f"accepted_blank_game_id_rows={accepted_blank_game_id_rows}, "
+        f"unresolved_completed_rows={unresolved_rows}, "
         f"parse_errors={parse_errors}, "
         f"skipped_summary={skipped_summary}, "
         f"skipped_duplicate={skipped_duplicate}, "
@@ -1107,10 +1390,11 @@ def legacy_row_has_final_score(row):
     return away_score >= 0 and home_score >= 0
 
 
-def migrate_legacy_final_score_files(files_written):
+def migrate_legacy_final_score_files(files_written, unresolved_completed_rows):
     migrated_files = 0
     migrated_rows = 0
-    unresolved_gamepk_rows = 0
+    resolved_rows = 0
+    unresolved_rows = 0
 
     for path in sorted(FINAL_DIR.glob("*_final_scores_MLB.csv")):
         with open(path, newline="", encoding="utf-8-sig") as f:
@@ -1121,22 +1405,23 @@ def migrate_legacy_final_score_files(files_written):
         if not fieldnames:
             fail(f"Legacy final-score file has no header: {path}")
 
+        date = legacy_final_date_from_path(path)
+
+        if not date:
+            fail(f"Could not derive date from legacy final-score path: {path}")
+
+        games_lookup = load_games_lookup(date)
+        games_by_game_id = load_games_by_game_id(date)
+        games_by_gamepk = load_games_by_gamepk(date)
+        predictions_lookup = load_predictions_lookup(date)
+
         missing_header_columns = [
             col
             for col in FINAL_HEADER
             if col not in fieldnames
         ]
 
-        if not missing_header_columns:
-            continue
-
-        date = legacy_final_date_from_path(path)
-
-        if not date:
-            fail(f"Could not derive date from legacy final-score path: {path}")
-
-        games_by_game_id = load_games_by_game_id(date)
-
+        changed = bool(missing_header_columns)
         output_rows = []
 
         for row_index, row in enumerate(rows, start=2):
@@ -1149,70 +1434,181 @@ def migrate_legacy_final_score_files(files_written):
             record["league"] = record["league"] or "mlb"
             record["game_date"] = record["game_date"] or date
 
-            game_id = record["game_id"]
-            game_match = games_by_game_id.get(game_id, {}) if game_id else {}
-
-            if not record["gamePk"]:
-                record["gamePk"] = str(
-                    game_match.get("gamePk", "") or ""
-                ).strip()
-
-            if not record["gameNumber"]:
-                record["gameNumber"] = str(
-                    game_match.get("gameNumber", "") or ""
-                ).strip()
-
             if not record["game_status"] and legacy_row_has_final_score(record):
                 record["game_status"] = "final"
+                changed = True
 
             if not record["final_total"] and legacy_row_has_final_score(record):
                 record["final_total"] = str(
                     int(record["final_away_score"])
                     + int(record["final_home_score"])
                 )
+                changed = True
 
             if not record["final_scores_generated_at"]:
                 record["final_scores_generated_at"] = RUN_TS
+                changed = True
 
-            if game_id and not record["gamePk"]:
-                unresolved_gamepk_rows += 1
-                log(
-                    "LEGACY FINAL-SCORE GAMEPK UNRESOLVED | "
-                    f"file={path.name} | row={row_index} | "
-                    f"game_id={game_id}"
+            completed = (
+                record["game_status"].strip().lower() == "final"
+                and legacy_row_has_final_score(record)
+            )
+
+            if completed:
+                before_ids = (
+                    record["game_id"],
+                    record["gamePk"],
+                    record["gameNumber"],
+                    record["game_time"],
                 )
+
+                resolution = resolve_completed_game_ids(
+                    game_date=record["game_date"],
+                    game_time=record["game_time"],
+                    home_team=record["home_team"],
+                    away_team=record["away_team"],
+                    current_game_id=record["game_id"],
+                    current_gamePk=record["gamePk"],
+                    current_gameNumber=record["gameNumber"],
+                    games_lookup=games_lookup,
+                    games_by_game_id=games_by_game_id,
+                    games_by_gamepk=games_by_gamepk,
+                    predictions_lookup=predictions_lookup,
+                )
+
+                record["game_id"] = str(
+                    resolution.get("game_id", "") or ""
+                ).strip()
+                record["gamePk"] = str(
+                    resolution.get("gamePk", "") or ""
+                ).strip()
+                record["gameNumber"] = str(
+                    resolution.get("gameNumber", "") or ""
+                ).strip()
+
+                scheduled_time = str(
+                    resolution.get("scheduled_game_time", "") or ""
+                ).strip()
+
+                if scheduled_time:
+                    record["game_time"] = scheduled_time
+
+                after_ids = (
+                    record["game_id"],
+                    record["gamePk"],
+                    record["gameNumber"],
+                    record["game_time"],
+                )
+
+                if after_ids != before_ids:
+                    changed = True
+                    resolved_rows += 1
+
+                if (
+                    not resolution.get("resolved")
+                    or not record["game_id"]
+                    or not record["gamePk"]
+                ):
+                    unresolved_rows += 1
+                    changed = True
+                    unresolved_completed_rows.append(make_unresolved_completed_row(
+                        source_file=path.name,
+                        row_index=row_index,
+                        game_date=record["game_date"],
+                        game_time=record["game_time"],
+                        away_team=record["away_team"],
+                        home_team=record["home_team"],
+                        final_away_score=record["final_away_score"],
+                        final_home_score=record["final_home_score"],
+                        game_id=record["game_id"],
+                        gamePk=record["gamePk"],
+                        gameNumber=record["gameNumber"],
+                        games_candidate_count=resolution.get(
+                            "games_candidate_count", 0
+                        ),
+                        prediction_candidate_count=resolution.get(
+                            "prediction_candidate_count", 0
+                        ),
+                        resolution_reason=resolution.get(
+                            "reason",
+                            "legacy completed game could not resolve both IDs",
+                        ),
+                        raw_row=raw_row_text(row),
+                    ))
+                    continue
 
             output_rows.append([
                 record.get(col, "")
                 for col in FINAL_HEADER
             ])
 
-        write_csv(
-            path,
-            FINAL_HEADER,
-            output_rows,
-            files_written,
-            "legacy final-score schema backfill",
-        )
+        if changed:
+            write_csv(
+                path,
+                FINAL_HEADER,
+                output_rows,
+                files_written,
+                "historical final-score ID/schema backfill",
+            )
 
-        migrated_files += 1
-        migrated_rows += len(output_rows)
+            migrated_files += 1
+            migrated_rows += len(output_rows)
 
-        log(
-            "MIGRATED LEGACY FINAL-SCORE FILE | "
-            f"file={path.name} | rows={len(output_rows)} | "
-            f"missing_header_columns={missing_header_columns}"
-        )
+            log(
+                "MIGRATED HISTORICAL FINAL-SCORE FILE | "
+                f"file={path.name} | rows={len(output_rows)} | "
+                f"missing_header_columns={missing_header_columns}"
+            )
 
-    log(f"Legacy final-score files migrated: {migrated_files}")
-    log(f"Legacy final-score rows migrated: {migrated_rows}")
-    log(f"Legacy final-score rows with unresolved gamePk: {unresolved_gamepk_rows}")
+    log(f"Historical final-score files updated: {migrated_files}")
+    log(f"Historical final-score rows retained: {migrated_rows}")
+    log(f"Historical completed rows resolved/backfilled: {resolved_rows}")
+    log(f"Historical completed rows moved to unresolved audit: {unresolved_rows}")
 
     return {
         "migrated_files": migrated_files,
         "migrated_rows": migrated_rows,
-        "unresolved_gamepk_rows": unresolved_gamepk_rows,
+        "resolved_rows": resolved_rows,
+        "unresolved_rows": unresolved_rows,
     }
+
+
+def verify_final_score_outputs_have_gamepk():
+    bad_rows = []
+
+    for path in sorted(FINAL_DIR.glob("*_final_scores_MLB.csv")):
+        with open(path, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+
+            for row_index, row in enumerate(reader, start=2):
+                status = str(row.get("game_status", "") or "").strip().lower()
+
+                if status != "final" or not legacy_row_has_final_score(row):
+                    continue
+
+                gamePk = str(row.get("gamePk", "") or "").strip()
+
+                if gamePk:
+                    continue
+
+                bad_rows.append({
+                    "file": path.name,
+                    "row": row_index,
+                    "game_id": str(row.get("game_id", "") or "").strip(),
+                    "game_date": str(row.get("game_date", "") or "").strip(),
+                    "game_time": str(row.get("game_time", "") or "").strip(),
+                    "away_team": str(row.get("away_team", "") or "").strip(),
+                    "home_team": str(row.get("home_team", "") or "").strip(),
+                })
+
+    if bad_rows:
+        sample = bad_rows[:10]
+        fail(
+            "Completed final-score rows with blank gamePk remain after backfill; "
+            f"bad_rows={len(bad_rows)} sample={sample}"
+        )
+
+    log("VERIFY: completed final-score output rows with blank gamePk: 0")
 
 
 def main():
@@ -1223,7 +1619,7 @@ def main():
     status_audit_rows = []
     key_audit_rows = []
     parse_error_rows = []
-    blank_game_id_rows = []
+    unresolved_completed_rows = []
 
     status_audit_header = [
         "game_date",
@@ -1252,6 +1648,24 @@ def main():
         "notes",
     ]
 
+    unresolved_audit_header = [
+        "source_file",
+        "row_index",
+        "game_date",
+        "game_time",
+        "away_team",
+        "home_team",
+        "final_away_score",
+        "final_home_score",
+        "game_id",
+        "gamePk",
+        "gameNumber",
+        "games_candidate_count",
+        "prediction_candidate_count",
+        "resolution_reason",
+        "raw_row",
+    ]
+
     try:
         raw_files = sorted(RAW_DIR.glob("*_mlb_raw.json"))
 
@@ -1270,7 +1684,7 @@ def main():
                 status_audit_rows=status_audit_rows,
                 key_audit_rows=key_audit_rows,
                 parse_error_rows=parse_error_rows,
-                blank_game_id_rows=blank_game_id_rows,
+                unresolved_completed_rows=unresolved_completed_rows,
             )
 
         total_parse_errors = len(parse_error_rows)
@@ -1282,7 +1696,7 @@ def main():
 
             log_review_rows(
                 parse_error_rows,
-                blank_game_id_rows,
+                unresolved_completed_rows,
             )
 
             fail(
@@ -1293,6 +1707,23 @@ def main():
 
         for date in sorted(final_records_by_date):
             records = final_records_by_date[date]
+
+            bad_resolved = [
+                record
+                for record in records
+                if str(record.get("game_status", "") or "").strip().lower() == "final"
+                and (
+                    not str(record.get("game_id", "") or "").strip()
+                    or not str(record.get("gamePk", "") or "").strip()
+                )
+            ]
+
+            if bad_resolved:
+                fail(
+                    "Resolved completed rows cannot be written with blank game_id/gamePk; "
+                    f"date={date} bad_rows={len(bad_resolved)}"
+                )
+
             out = FINAL_DIR / f"{date}_final_scores_MLB.csv"
             rows = [
                 [record.get(col, "") for col in FINAL_HEADER]
@@ -1308,8 +1739,11 @@ def main():
             )
 
         legacy_backfill_summary = migrate_legacy_final_score_files(
-            files_written
+            files_written,
+            unresolved_completed_rows,
         )
+
+        verify_final_score_outputs_have_gamepk()
 
         write_audit_csv(
             STATUS_AUDIT_FILE,
@@ -1325,11 +1759,11 @@ def main():
             "final-score key audit",
         )
 
-        blank_game_id_count = sum(
-            1
-            for row in key_audit_rows
-            if str(row.get("game_id", "")).strip() == ""
-            and str(row.get("status", "")).startswith("blank_game_id")
+        write_audit_csv(
+            UNRESOLVED_AUDIT_FILE,
+            unresolved_audit_header,
+            unresolved_completed_rows,
+            "unresolved completed-game audit",
         )
 
         unknown_status_count = sum(
@@ -1339,31 +1773,35 @@ def main():
         )
 
         total_parse_errors = len(parse_error_rows)
-        blank_game_id_rows_count = len(blank_game_id_rows)
+        unresolved_completed_rows_count = len(unresolved_completed_rows)
 
         log("--- SUMMARY ---")
         log(f"Raw files processed: {len(raw_files)}")
         log(f"Files written: {len(files_written)}")
         log(f"Final-score dates written once: {len(final_records_by_date)}")
         log(f"Final-score game_id primary-key rows: {len(seen_by_game_id)}")
-        log(f"Final-score blank game_id key-audit rows: {blank_game_id_count}")
-        log(f"Completed rows with blank game_id: {blank_game_id_rows_count}")
+        log(f"Unresolved completed rows: {unresolved_completed_rows_count}")
         log(f"Parse errors encountered: {total_parse_errors}")
         log(f"Unknown status audit rows: {unknown_status_count}")
         log(
-            "Legacy final-score files migrated: "
+            "Historical final-score files updated: "
             f"{legacy_backfill_summary['migrated_files']}"
         )
         log(
-            "Legacy final-score rows migrated: "
+            "Historical final-score rows retained: "
             f"{legacy_backfill_summary['migrated_rows']}"
         )
         log(
-            "Legacy final-score rows with unresolved gamePk: "
-            f"{legacy_backfill_summary['unresolved_gamepk_rows']}"
+            "Historical completed rows resolved/backfilled: "
+            f"{legacy_backfill_summary['resolved_rows']}"
+        )
+        log(
+            "Historical completed rows moved to unresolved audit: "
+            f"{legacy_backfill_summary['unresolved_rows']}"
         )
         log(f"Status audit: {STATUS_AUDIT_FILE}")
         log(f"Key audit: {KEY_AUDIT_FILE}")
+        log(f"Unresolved completed-game audit: {UNRESOLVED_AUDIT_FILE}")
 
         if total_parse_errors:
             fail(
@@ -1373,20 +1811,20 @@ def main():
         else:
             log("Parse-error review: no parse errors encountered.")
 
-        if blank_game_id_rows_count:
+        if unresolved_completed_rows_count:
             log(
-                "WARNING: Completed games with blank game_id were written. "
-                "See BLANK GAME_ID ROWS FOR REVIEW below."
+                "WARNING: Genuinely unresolved completed games were excluded "
+                f"from final-score outputs and written to {UNRESOLVED_AUDIT_FILE}."
             )
         else:
-            log("Blank-game_id review: no completed rows had blank game_id.")
+            log("Unresolved completed-game review: none.")
 
         for path, count in files_written:
             log(f"  FILE: {path} ({count} rows)")
 
         log_review_rows(
             parse_error_rows,
-            blank_game_id_rows,
+            unresolved_completed_rows,
         )
 
         log("STATUS: SUCCESS")

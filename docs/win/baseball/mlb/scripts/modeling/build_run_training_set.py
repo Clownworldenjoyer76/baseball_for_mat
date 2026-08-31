@@ -876,7 +876,7 @@ def _safe_weather_frame(
     ].copy()
 
 
-def _discover_dates() -> list[str]:
+def _discover_dates(summary: dict) -> list[str]:
     prediction_dates: list[str] = []
 
     for path in sorted(
@@ -933,6 +933,10 @@ def _discover_dates() -> list[str]:
         for date_str in prediction_dates
         if date_str not in final_dates
     ]
+
+    summary["missing_final_score_file"] += len(
+        missing_final_dates
+    )
 
     if missing_final_dates:
         _log(
@@ -1234,14 +1238,50 @@ def build_date_training_rows(
         "final_away_score",
     ]
 
-    final_join = final[
-        final_keep
+    final_gamepk = _normalize_gamepk(
+        final["gamePk"]
+    )
+
+    unresolved_final_gamepk = (
+        final_gamepk.isna()
+        | (final_gamepk == "")
+    )
+
+    unresolved_gamepk_count = int(
+        unresolved_final_gamepk.sum()
+    )
+
+    summary["unresolved_gamePk"] += (
+        unresolved_gamepk_count
+    )
+
+    unresolved_game_ids = set(
+        _normalize_game_id(
+            final.loc[
+                unresolved_final_gamepk,
+                "game_id",
+            ]
+        )
+        .dropna()
+        .loc[
+            lambda s: s != ""
+        ]
+        .tolist()
+    )
+
+    if unresolved_gamepk_count:
+        _log(
+            f"final_scores {date_str} unresolved gamePk rows: "
+            f"{unresolved_gamepk_count}",
+            "WARN",
+        )
+
+    final_join = final.loc[
+        ~unresolved_final_gamepk,
+        final_keep,
     ].copy()
 
-    final_join = _drop_blank_gamepk_rows(
-        final_join,
-        f"final_scores {date_str} join",
-    )
+    final_join["_final_score_joined"] = "1"
 
     final_join = final_join.rename(
         columns={
@@ -1255,6 +1295,50 @@ def build_date_training_rows(
         how="left",
         validate="one_to_one",
     )
+
+    final_join_missing = (
+        joined["_final_score_joined"]
+        .isna()
+    )
+
+    unresolved_gamepk_join_miss = (
+        final_join_missing
+        & joined["game_id"].isin(
+            unresolved_game_ids
+        )
+    )
+
+    failed_final_score_join = (
+        final_join_missing
+        & ~unresolved_gamepk_join_miss
+    )
+
+    summary["failed_final_score_join"] += int(
+        failed_final_score_join.sum()
+    )
+
+    if failed_final_score_join.any():
+        sample = (
+            joined.loc[
+                failed_final_score_join,
+                [
+                    "game_id",
+                    "gamePk",
+                    "game_date",
+                    "home_team",
+                    "away_team",
+                ],
+            ]
+            .head(10)
+            .to_dict("records")
+        )
+
+        _log(
+            f"{date_str} final-score join misses: "
+            f"{int(failed_final_score_join.sum())}; "
+            f"sample={sample}",
+            "WARN",
+        )
 
     _assert_secondary_game_id_match(
         joined,
@@ -1280,22 +1364,44 @@ def build_date_training_rows(
         .str.lower()
     )
 
-    status_invalid = (
-        final_status.ne("final")
+    invalid_matched_final = (
+        ~final_join_missing
+        & (
+            final_status.ne("final")
+            | final_home.isna()
+            | final_away.isna()
+            | ~np.isfinite(final_home)
+            | ~np.isfinite(final_away)
+            | (final_home < 0)
+            | (final_away < 0)
+        )
     )
+
+    if invalid_matched_final.any():
+        sample = (
+            joined.loc[
+                invalid_matched_final,
+                [
+                    "game_id",
+                    "gamePk",
+                    "game_status",
+                    "final_home_score",
+                    "final_away_score",
+                ],
+            ]
+            .head(10)
+            .to_dict("records")
+        )
+
+        fail(
+            f"{date_str} matched final-score rows are invalid; "
+            f"bad_rows={int(invalid_matched_final.sum())}; "
+            f"sample={sample}"
+        )
 
     invalid_final = (
-        status_invalid
-        | final_home.isna()
-        | final_away.isna()
-        | ~np.isfinite(final_home)
-        | ~np.isfinite(final_away)
-        | (final_home < 0)
-        | (final_away < 0)
-    )
-
-    summary["missing_final_score"] += int(
-        invalid_final.sum()
+        final_join_missing
+        | invalid_matched_final
     )
 
     joined["target_home_runs"] = (
@@ -1595,7 +1701,9 @@ def main() -> None:
         "rows_loaded": 0,
         "rows_joined": 0,
         "missing_sdv": 0,
-        "missing_final_score": 0,
+        "missing_final_score_file": 0,
+        "unresolved_gamePk": 0,
+        "failed_final_score_join": 0,
         "duplicate_game_id": 0,
         "duplicate_gamePk": 0,
         "leakage_rejections": 0,
@@ -1603,7 +1711,7 @@ def main() -> None:
     }
 
     try:
-        dates = _discover_dates()
+        dates = _discover_dates(summary)
 
         dates = _filter_dates(
             dates,
@@ -1687,7 +1795,9 @@ def main() -> None:
             "rows_loaded",
             "rows_joined",
             "missing_sdv",
-            "missing_final_score",
+            "missing_final_score_file",
+            "unresolved_gamePk",
+            "failed_final_score_join",
             "duplicate_game_id",
             "duplicate_gamePk",
             "leakage_rejections",
@@ -1705,7 +1815,9 @@ def main() -> None:
             "build_run_training_set complete. "
             f"rows_written={summary['rows_written']} "
             f"missing_sdv={summary['missing_sdv']} "
-            f"missing_final_score={summary['missing_final_score']} "
+            f"missing_final_score_file={summary['missing_final_score_file']} "
+            f"unresolved_gamePk={summary['unresolved_gamePk']} "
+            f"failed_final_score_join={summary['failed_final_score_join']} "
             f"leakage_rejections={summary['leakage_rejections']}"
         )
 
@@ -1719,7 +1831,9 @@ def main() -> None:
             "rows_loaded",
             "rows_joined",
             "missing_sdv",
-            "missing_final_score",
+            "missing_final_score_file",
+            "unresolved_gamePk",
+            "failed_final_score_join",
             "duplicate_game_id",
             "duplicate_gamePk",
             "leakage_rejections",
