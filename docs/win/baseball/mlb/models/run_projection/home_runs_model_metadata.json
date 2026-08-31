@@ -1,10 +1,10 @@
 {
   "training_start_date": "2026-03-26",
-  "training_end_date": "2026-07-07",
-  "validation_start_date": "2026-07-08",
-  "validation_end_date": "2026-08-01",
-  "test_start_date": "2026-08-02",
-  "test_end_date": "2026-08-28",
+  "training_end_date": "2026-07-08",
+  "validation_start_date": "2026-07-09",
+  "validation_end_date": "2026-08-02",
+  "test_start_date": "2026-08-03",
+  "test_end_date": "2026-08-29",
   "feature_columns": [
     "dratings_home_prob",
     "dratings_away_prob",
@@ -62,32 +62,32 @@
   ],
   "selected_hyperparameters": {
     "learning_rate": 0.05,
-    "max_leaf_nodes": 7,
-    "min_samples_leaf": 10,
+    "max_leaf_nodes": 15,
+    "min_samples_leaf": 40,
     "l2_regularization": 5
   },
-  "training_row_count": 1112,
+  "training_row_count": 1125,
   "validation_row_count": 219,
-  "test_row_count": 138,
+  "test_row_count": 127,
   "baseline_metrics": {
-    "mae": 2.344782608695652,
-    "mean_poisson_deviance": 2.2962564979121938,
-    "mean_predicted_runs": 4.365942028985507,
-    "mean_actual_runs": 4.420289855072464
+    "mae": 2.3116535433070875,
+    "mean_poisson_deviance": 2.2260902763237667,
+    "mean_predicted_runs": 4.341732283464566,
+    "mean_actual_runs": 4.440944881889764
   },
   "model_metrics": {
-    "mae": 2.376807239580489,
-    "mean_poisson_deviance": 2.320935555798699,
-    "mean_predicted_runs": 4.330124793885788,
-    "mean_actual_runs": 4.420289855072464
+    "mae": 2.357171901121857,
+    "mean_poisson_deviance": 2.324772423858424,
+    "mean_predicted_runs": 4.378083643333221,
+    "mean_actual_runs": 4.440944881889764
   },
-  "created_at": "2026-08-30T12:56:19.414501+00:00",
-  "validation_mean_poisson_deviance": 2.584544220864107,
+  "created_at": "2026-08-30T15:46:37.829154+00:00",
+  "validation_mean_poisson_deviance": 2.537465983517508,
   "target_column": "target_home_runs",
   "baseline_column": "dratings_home_projected_runs",
   "model_class": "HistGradientBoostingRegressor",
   "loss": "poisson",
   "random_state": 42,
-  "final_fit_row_count": 1331,
+  "final_fit_row_count": 1344,
   "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection"
 }
