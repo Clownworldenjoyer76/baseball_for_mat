@@ -13,7 +13,6 @@ jobs:
     env:
       TZ: America/New_York
       PYTHONUNBUFFERED: "1"
-      API_ODDS: ${{ secrets.API_ODDS }}
 
     steps:
       - name: Checkout repo
@@ -24,14 +23,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Create isolated MLB Python environment
+        run: |
+          python -m venv .venv-mlb
+          echo "$GITHUB_WORKSPACE/.venv-mlb/bin" >> "$GITHUB_PATH"
+
+      - name: Install MLB dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -r docs/win/baseball/mlb/requirements.txt
           python -m pip install playwright
 
       - name: Install vendored SportsDataverse
         run: python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
+
+      - name: Verify MLB Python dependency consistency
+        run: python -m pip check
 
       # ============================================================
       # MODEL TRAINING
