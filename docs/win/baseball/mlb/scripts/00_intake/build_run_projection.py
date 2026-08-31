@@ -238,9 +238,7 @@ def read_csv_checked(
     label: str,
 ) -> pd.DataFrame:
     if not path.exists():
-        fail(
-            f"{label} missing required file: {path}"
-        )
+        fail(f"{label} missing required file: {path}")
 
     df = pd.read_csv(
         path,
@@ -248,14 +246,10 @@ def read_csv_checked(
         encoding="utf-8-sig",
     )
 
-    dupes = duplicate_columns(
-        list(df.columns)
-    )
+    dupes = duplicate_columns(list(df.columns))
 
     if dupes:
-        fail(
-            f"{label} duplicate columns: {dupes}"
-        )
+        fail(f"{label} duplicate columns: {dupes}")
 
     missing = [
         col
@@ -264,31 +258,17 @@ def read_csv_checked(
     ]
 
     if missing:
-        fail(
-            f"{label} missing required columns: {missing}"
-        )
+        fail(f"{label} missing required columns: {missing}")
 
     return df
 
 
-def normalize_game_id(
-    series: pd.Series,
-) -> pd.Series:
-    return (
-        series
-        .astype("string")
-        .str.strip()
-    )
+def normalize_game_id(series: pd.Series) -> pd.Series:
+    return series.astype("string").str.strip()
 
 
-def normalize_gamepk(
-    series: pd.Series,
-) -> pd.Series:
-    raw = (
-        series
-        .astype("string")
-        .str.strip()
-    )
+def normalize_gamepk(series: pd.Series) -> pd.Series:
+    raw = series.astype("string").str.strip()
 
     numeric = pd.to_numeric(
         raw,
@@ -316,30 +296,14 @@ def assert_unique_nonblank_key(
     if key not in df.columns:
         return
 
-    values = (
-        df[key]
-        .astype("string")
-        .str.strip()
-    )
+    values = df[key].astype("string").str.strip()
 
-    nonblank = (
-        values.notna()
-        & (values != "")
-    )
+    nonblank = values.notna() & (values != "")
 
-    duplicated = (
-        nonblank
-        & values.duplicated(
-            keep=False
-        )
-    )
+    duplicated = nonblank & values.duplicated(keep=False)
 
     if duplicated.any():
-        sample = (
-            values.loc[duplicated]
-            .head(10)
-            .tolist()
-        )
+        sample = values.loc[duplicated].head(10).tolist()
 
         fail(
             f"{label} duplicate {key}; "
@@ -355,9 +319,7 @@ def prepare_keys(
     df = df.copy()
 
     if "game_id" in df.columns:
-        df["game_id"] = normalize_game_id(
-            df["game_id"]
-        )
+        df["game_id"] = normalize_game_id(df["game_id"])
 
         assert_unique_nonblank_key(
             df,
@@ -366,9 +328,7 @@ def prepare_keys(
         )
 
     if "gamePk" in df.columns:
-        df["gamePk"] = normalize_gamepk(
-            df["gamePk"]
-        )
+        df["gamePk"] = normalize_gamepk(df["gamePk"])
 
         assert_unique_nonblank_key(
             df,
@@ -384,40 +344,24 @@ def load_metadata(
     label: str,
 ) -> dict:
     if not path.exists():
-        fail(
-            f"{label} metadata missing: {path}"
-        )
+        fail(f"{label} metadata missing: {path}")
 
-    with path.open(
-        "r",
-        encoding="utf-8",
-    ) as f:
+    with path.open("r", encoding="utf-8") as f:
         metadata = json.load(f)
 
-    feature_columns = metadata.get(
-        "feature_columns"
-    )
+    feature_columns = metadata.get("feature_columns")
 
     if (
-        not isinstance(
-            feature_columns,
-            list,
-        )
+        not isinstance(feature_columns, list)
         or not feature_columns
         or any(
-            not isinstance(col, str)
-            or not col
+            not isinstance(col, str) or not col
             for col in feature_columns
         )
     ):
-        fail(
-            f"{label} metadata has invalid "
-            "feature_columns"
-        )
+        fail(f"{label} metadata has invalid feature_columns")
 
-    if len(feature_columns) != len(
-        set(feature_columns)
-    ):
+    if len(feature_columns) != len(set(feature_columns)):
         fail(
             f"{label} metadata feature_columns "
             "contain duplicates"
@@ -431,13 +375,9 @@ def load_model(
     label: str,
 ):
     if not path.exists():
-        fail(
-            f"{label} model missing: {path}"
-        )
+        fail(f"{label} model missing: {path}")
 
-    return joblib.load(
-        path
-    )
+    return joblib.load(path)
 
 
 def model_version(
@@ -445,42 +385,23 @@ def model_version(
     label: str,
 ) -> str:
     created_at = str(
-        metadata.get(
-            "created_at"
-        )
-        or ""
+        metadata.get("created_at") or ""
     ).strip()
 
     if created_at:
-        return (
-            f"{label}:{created_at}"
-        )
+        return f"{label}:{created_at}"
 
-    return (
-        f"{label}:unknown"
-    )
+    return f"{label}:unknown"
 
 
 def assert_metadata_feature_contract(
     home_metadata: dict,
     away_metadata: dict,
 ) -> list[str]:
-    home_features = list(
-        home_metadata[
-            "feature_columns"
-        ]
-    )
+    home_features = list(home_metadata["feature_columns"])
+    away_features = list(away_metadata["feature_columns"])
 
-    away_features = list(
-        away_metadata[
-            "feature_columns"
-        ]
-    )
-
-    if (
-        home_features
-        != away_features
-    ):
+    if home_features != away_features:
         fail(
             "Home and away model metadata "
             "feature order differs; "
@@ -514,10 +435,7 @@ def assert_model_feature_order(
         for x in model_names.tolist()
     ]
 
-    if (
-        model_features
-        != metadata_features
-    ):
+    if model_features != metadata_features:
         fail(
             f"{label} model feature order "
             "differs from metadata; "
@@ -532,17 +450,8 @@ def assert_secondary_game_id_match(
     right_col: str,
     label: str,
 ) -> None:
-    left = (
-        df[left_col]
-        .astype("string")
-        .str.strip()
-    )
-
-    right = (
-        df[right_col]
-        .astype("string")
-        .str.strip()
-    )
+    left = df[left_col].astype("string").str.strip()
+    right = df[right_col].astype("string").str.strip()
 
     comparable = (
         left.notna()
@@ -551,10 +460,7 @@ def assert_secondary_game_id_match(
         & (right != "")
     )
 
-    mismatch = (
-        comparable
-        & (left != right)
-    )
+    mismatch = comparable & (left != right)
 
     if mismatch.any():
         sample = (
@@ -582,38 +488,19 @@ def _load_python_module(
     module_name: str,
 ):
     if not path.exists():
-        fail(
-            f"Required modeling script missing: {path}"
-        )
+        fail(f"Required modeling script missing: {path}")
 
-    spec = (
-        importlib.util
-        .spec_from_file_location(
-            module_name,
-            path,
-        )
+    spec = importlib.util.spec_from_file_location(
+        module_name,
+        path,
     )
 
-    if (
-        spec is None
-        or spec.loader is None
-    ):
-        fail(
-            f"Unable to load modeling script: {path}"
-        )
+    if spec is None or spec.loader is None:
+        fail(f"Unable to load modeling script: {path}")
 
-    module = (
-        importlib.util
-        .module_from_spec(spec)
-    )
-
-    sys.modules[
-        module_name
-    ] = module
-
-    spec.loader.exec_module(
-        module
-    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
 
     return module
 
@@ -625,24 +512,14 @@ def build_feature_frame(
     sdv: pd.DataFrame,
     context: pd.DataFrame,
     feature_columns: list[str],
-) -> tuple[
-    pd.DataFrame,
-    pd.DataFrame,
-]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     pred = pred.copy()
 
-    pred["game_id"] = (
-        normalize_game_id(
-            pred["game_id"]
-        )
-    )
+    pred["game_id"] = normalize_game_id(pred["game_id"])
 
     blank_game_id = (
         pred["game_id"].isna()
-        | (
-            pred["game_id"]
-            == ""
-        )
+        | (pred["game_id"] == "")
     )
 
     if blank_game_id.any():
@@ -667,56 +544,23 @@ def build_feature_frame(
                 f"game_id row={row}",
             )
 
-        pred = (
-            pred.loc[
-                ~blank_game_id
-            ]
-            .copy()
-        )
+        pred = pred.loc[~blank_game_id].copy()
 
     if pred.empty:
         return (
             pred.copy(),
-            pd.DataFrame(
-                columns=feature_columns
-            ),
+            pd.DataFrame(columns=feature_columns),
         )
 
-    pred = prepare_keys(
-        pred,
-        "predictions",
-    )
+    pred = prepare_keys(pred, "predictions")
+    games = prepare_keys(games, "games")
+    sdv = prepare_keys(sdv, "sportsdataverse")
+    context = prepare_keys(context, "game_context")
 
-    games = prepare_keys(
-        games,
-        "games",
-    )
+    base = pred.rename(columns=DRATINGS_RENAME).copy()
 
-    sdv = prepare_keys(
-        sdv,
-        "sportsdataverse",
-    )
-
-    context = prepare_keys(
-        context,
-        "game_context",
-    )
-
-    base = (
-        pred.rename(
-            columns=DRATINGS_RENAME
-        )
-        .copy()
-    )
-
-    for source_col in (
-        DRATINGS_RENAME
-    ):
-        base[
-            source_col
-        ] = pred[
-            source_col
-        ]
+    for source_col in DRATINGS_RENAME:
+        base[source_col] = pred[source_col]
 
     games_keep = [
         col
@@ -733,23 +577,14 @@ def build_feature_frame(
     ]
 
     joined = base.merge(
-        games[
-            games_keep
-        ],
+        games[games_keep],
         on="game_id",
         how="left",
-        suffixes=(
-            "",
-            "_games",
-        ),
+        suffixes=("", "_games"),
         validate="one_to_one",
     )
 
-    missing_gamepk = (
-        joined[
-            "gamePk"
-        ].isna()
-    )
+    missing_gamepk = joined["gamePk"].isna()
 
     if missing_gamepk.any():
         bad_rows = (
@@ -773,19 +608,12 @@ def build_feature_frame(
                 f"games.gamePk row={row}",
             )
 
-        joined = (
-            joined.loc[
-                ~missing_gamepk
-            ]
-            .copy()
-        )
+        joined = joined.loc[~missing_gamepk].copy()
 
     if joined.empty:
         return (
             joined,
-            pd.DataFrame(
-                columns=feature_columns
-            ),
+            pd.DataFrame(columns=feature_columns),
         )
 
     sdv_keep = [
@@ -799,21 +627,14 @@ def build_feature_frame(
                 "sdv_home_sp_found",
                 "sdv_away_sp_found",
             ]
-            + list(
-                SDV_FEATURE_MAP.keys()
-            )
+            + list(SDV_FEATURE_MAP.keys())
         )
         if col in sdv.columns
     ]
 
     joined = joined.merge(
-        sdv[
-            sdv_keep
-        ].rename(
-            columns={
-                "game_id":
-                    "game_id_sdv"
-            }
+        sdv[sdv_keep].rename(
+            columns={"game_id": "game_id_sdv"}
         ),
         on="gamePk",
         how="left",
@@ -827,38 +648,26 @@ def build_feature_frame(
         "games->sportsdataverse",
     )
 
-    joined = joined.rename(
-        columns=SDV_FEATURE_MAP
-    )
+    joined = joined.rename(columns=SDV_FEATURE_MAP)
 
     context_features_needed = [
         col
         for col in feature_columns
         if (
-            col
-            in SAFE_CONTEXT_FEATURES
-            and col
-            in context.columns
+            col in SAFE_CONTEXT_FEATURES
+            and col in context.columns
         )
     ]
 
     if context_features_needed:
-        context_keep = (
-            ["gamePk"]
-            + context_features_needed
-        )
+        context_keep = ["gamePk"] + context_features_needed
 
         joined = joined.merge(
-            context[
-                context_keep
-            ],
+            context[context_keep],
             on="gamePk",
             how="left",
             validate="one_to_one",
-            suffixes=(
-                "",
-                "_context",
-            ),
+            suffixes=("", "_context"),
         )
 
     missing_feature_columns = [
@@ -874,18 +683,9 @@ def build_feature_frame(
             f"{missing_feature_columns}"
         )
 
-    X = (
-        joined.loc[
-            :,
-            feature_columns,
-        ]
-        .copy()
-    )
+    X = joined.loc[:, feature_columns].copy()
 
-    if (
-        list(X.columns)
-        != feature_columns
-    ):
+    if list(X.columns) != feature_columns:
         fail(
             "Constructed model feature order "
             "differs from metadata; "
@@ -894,30 +694,18 @@ def build_feature_frame(
         )
 
     for col in X.columns:
-        raw = (
-            X[col]
-            .copy()
+        raw = X[col].copy()
+
+        numeric = pd.to_numeric(
+            raw,
+            errors="coerce",
         )
 
-        numeric = (
-            pd.to_numeric(
-                raw,
-                errors="coerce",
-            )
-        )
-
-        raw_text = (
-            raw
-            .astype("string")
-            .str.strip()
-        )
+        raw_text = raw.astype("string").str.strip()
 
         nonblank_raw = (
             raw_text.notna()
-            & (
-                raw_text
-                != ""
-            )
+            & (raw_text != "")
         )
 
         coercion_failed = (
@@ -927,22 +715,13 @@ def build_feature_frame(
 
         nonfinite = (
             numeric.notna()
-            & ~np.isfinite(
-                numeric
-            )
+            & ~np.isfinite(numeric)
         )
 
-        bad = (
-            coercion_failed
-            | nonfinite
-        )
+        bad = coercion_failed | nonfinite
 
         if bad.any():
-            bad_indices = (
-                X.index[
-                    bad
-                ][:20]
-            )
+            bad_indices = X.index[bad][:20]
 
             for idx in bad_indices:
                 _row_issue(
@@ -953,18 +732,11 @@ def build_feature_frame(
                     f"{joined.loc[idx, 'game_id']}",
                 )
 
-            numeric.loc[
-                bad
-            ] = np.nan
+            numeric.loc[bad] = np.nan
 
-        X[
-            col
-        ] = numeric
+        X[col] = numeric
 
-    return (
-        joined,
-        X,
-    )
+    return joined, X
 
 
 def build_feature_status(
@@ -974,16 +746,12 @@ def build_feature_status(
     statuses = []
 
     home_found = pd.to_numeric(
-        joined.get(
-            "sdv_home_sp_found"
-        ),
+        joined.get("sdv_home_sp_found"),
         errors="coerce",
     )
 
     away_found = pd.to_numeric(
-        joined.get(
-            "sdv_away_sp_found"
-        ),
+        joined.get("sdv_away_sp_found"),
         errors="coerce",
     )
 
@@ -991,85 +759,43 @@ def build_feature_status(
         missing_features = [
             col
             for col in X.columns
-            if pd.isna(
-                X.loc[
-                    idx,
-                    col,
-                ]
-            )
+            if pd.isna(X.loc[idx, col])
         ]
 
         home_ok = (
-            idx
-            in home_found.index
-            and pd.notna(
-                home_found.loc[idx]
-            )
-            and float(
-                home_found.loc[idx]
-            )
-            == 1.0
+            idx in home_found.index
+            and pd.notna(home_found.loc[idx])
+            and float(home_found.loc[idx]) == 1.0
         )
 
         away_ok = (
-            idx
-            in away_found.index
-            and pd.notna(
-                away_found.loc[idx]
-            )
-            and float(
-                away_found.loc[idx]
-            )
-            == 1.0
+            idx in away_found.index
+            and pd.notna(away_found.loc[idx])
+            and float(away_found.loc[idx]) == 1.0
         )
 
-        if (
-            home_ok
-            and away_ok
-        ):
-            starter_status = (
-                "both_starters_sdv_found"
-            )
-
-        elif (
-            home_ok
-            and not away_ok
-        ):
-            starter_status = (
-                "away_starter_sdv_missing"
-            )
-
-        elif (
-            away_ok
-            and not home_ok
-        ):
-            starter_status = (
-                "home_starter_sdv_missing"
-            )
-
+        if home_ok and away_ok:
+            starter_status = "both_starters_sdv_found"
+        elif home_ok and not away_ok:
+            starter_status = "away_starter_sdv_missing"
+        elif away_ok and not home_ok:
+            starter_status = "home_starter_sdv_missing"
         else:
-            starter_status = (
-                "both_starters_sdv_missing"
-            )
+            starter_status = "both_starters_sdv_missing"
 
         if missing_features:
             status = (
                 f"{starter_status};"
                 "missing_features="
-                + ",".join(
-                    missing_features
-                )
+                + ",".join(missing_features)
             )
-
         else:
             status = (
                 f"{starter_status};"
                 "missing_features=none"
             )
 
-        statuses.append(
-            status
-        )
+        statuses.append(status)
 
     return pd.Series(
         statuses,
@@ -1084,44 +810,21 @@ def validate_predictions(
     date_str: str,
     joined: pd.DataFrame,
 ) -> np.ndarray:
-    values = np.asarray(
-        values,
-        dtype=float,
-    )
+    values = np.asarray(values, dtype=float)
 
     bad = (
-        ~np.isfinite(
-            values
-        )
-        | (
-            values
-            < 0
-        )
+        ~np.isfinite(values)
+        | (values < 0)
     )
 
     if bad.any():
-        bad_positions = (
-            np.where(
-                bad
-            )[0][:20]
-        )
+        bad_positions = np.where(bad)[0][:20]
 
         for pos in bad_positions:
-            if (
-                pos
-                < len(joined)
-            ):
-                game_id = (
-                    joined
-                    .iloc[pos][
-                        "game_id"
-                    ]
-                )
-
+            if pos < len(joined):
+                game_id = joined.iloc[pos]["game_id"]
             else:
-                game_id = (
-                    "unknown"
-                )
+                game_id = "unknown"
 
             _row_issue(
                 date_str,
@@ -1130,13 +833,8 @@ def validate_predictions(
                 f"game_id={game_id}",
             )
 
-        values = (
-            values.copy()
-        )
-
-        values[
-            bad
-        ] = np.nan
+        values = values.copy()
+        values[bad] = np.nan
 
     return values
 
@@ -1146,7 +844,9 @@ def _training_summary_template() -> dict:
         "rows_loaded": 0,
         "rows_joined": 0,
         "missing_sdv": 0,
-        "missing_final_score": 0,
+        "missing_final_score_file": 0,
+        "unresolved_gamePk": 0,
+        "failed_final_score_join": 0,
         "duplicate_game_id": 0,
         "duplicate_gamePk": 0,
         "leakage_rejections": 0,
@@ -1158,10 +858,9 @@ def build_training_history_in_memory(
     training_builder,
     feature_columns: list[str],
 ) -> pd.DataFrame:
-    dates = (
-        training_builder
-        ._discover_dates()
-    )
+    summary = _training_summary_template()
+
+    dates = training_builder._discover_dates(summary)
 
     if not dates:
         fail(
@@ -1169,13 +868,7 @@ def build_training_history_in_memory(
             "available for walk-forward training"
         )
 
-    summary = (
-        _training_summary_template()
-    )
-
-    frames: list[
-        pd.DataFrame
-    ] = []
+    frames: list[pd.DataFrame] = []
 
     _log(
         "Building leakage-safe "
@@ -1187,18 +880,13 @@ def build_training_history_in_memory(
     )
 
     for date_str in dates:
-        frame = (
-            training_builder
-            .build_date_training_rows(
-                date_str,
-                summary,
-            )
+        frame = training_builder.build_date_training_rows(
+            date_str,
+            summary,
         )
 
         if not frame.empty:
-            frames.append(
-                frame
-            )
+            frames.append(frame)
 
     if not frames:
         fail(
@@ -1212,9 +900,7 @@ def build_training_history_in_memory(
         sort=False,
     )
 
-    training_builder.validate_final_output(
-        training
-    )
+    training_builder.validate_final_output(training)
 
     missing = [
         col
@@ -1232,13 +918,9 @@ def build_training_history_in_memory(
             f"{missing}"
         )
 
-    training[
-        "_game_date_dt"
-    ] = (
+    training["_game_date_dt"] = (
         pd.to_datetime(
-            training[
-                "game_date"
-            ]
+            training["game_date"]
             .astype("string")
             .str.replace(
                 "_",
@@ -1250,11 +932,7 @@ def build_training_history_in_memory(
         .dt.normalize()
     )
 
-    bad_dates = (
-        training[
-            "_game_date_dt"
-        ].isna()
-    )
+    bad_dates = training["_game_date_dt"].isna()
 
     if bad_dates.any():
         bad_rows = (
@@ -1277,42 +955,21 @@ def build_training_history_in_memory(
                 "WARN",
             )
 
-        training = (
-            training.loc[
-                ~bad_dates
-            ]
-            .copy()
-        )
+        training = training.loc[~bad_dates].copy()
 
-    for col in (
-        feature_columns
-        + TARGET_COLUMNS
-    ):
-        raw = (
-            training[
-                col
-            ]
-            .copy()
-        )
+    for col in feature_columns + TARGET_COLUMNS:
+        raw = training[col].copy()
 
         numeric = pd.to_numeric(
             raw,
             errors="coerce",
         )
 
-        if (
-            col
-            in TARGET_COLUMNS
-        ):
+        if col in TARGET_COLUMNS:
             bad = (
                 numeric.isna()
-                | ~np.isfinite(
-                    numeric
-                )
-                | (
-                    numeric
-                    < 0
-                )
+                | ~np.isfinite(numeric)
+                | (numeric < 0)
             )
 
             if bad.any():
@@ -1326,9 +983,7 @@ def build_training_history_in_memory(
                         ],
                     ]
                     .head(20)
-                    .to_dict(
-                        "records"
-                    )
+                    .to_dict("records")
                 )
 
                 for row in bad_rows:
@@ -1339,33 +994,19 @@ def build_training_history_in_memory(
                         "WARN",
                     )
 
-                training = (
-                    training.loc[
-                        ~bad
-                    ]
-                    .copy()
+                training = training.loc[~bad].copy()
+
+                numeric = pd.to_numeric(
+                    training[col],
+                    errors="coerce",
                 )
 
-                numeric = (
-                    pd.to_numeric(
-                        training[
-                            col
-                        ],
-                        errors="coerce",
-                    )
-                )
-
-            training[
-                col
-            ] = numeric
-
+            training[col] = numeric
             continue
 
         bad_feature = (
             numeric.notna()
-            & ~np.isfinite(
-                numeric
-            )
+            & ~np.isfinite(numeric)
         )
 
         if bad_feature.any():
@@ -1379,9 +1020,7 @@ def build_training_history_in_memory(
                     ],
                 ]
                 .head(20)
-                .to_dict(
-                    "records"
-                )
+                .to_dict("records")
             )
 
             for row in bad_rows:
@@ -1393,13 +1032,9 @@ def build_training_history_in_memory(
                     "WARN",
                 )
 
-            numeric.loc[
-                bad_feature
-            ] = np.nan
+            numeric.loc[bad_feature] = np.nan
 
-        training[
-            col
-        ] = numeric
+        training[col] = numeric
 
     if training.empty:
         fail(
@@ -1415,9 +1050,7 @@ def build_training_history_in_memory(
             ],
             kind="stable",
         )
-        .reset_index(
-            drop=True
-        )
+        .reset_index(drop=True)
     )
 
     _log(
@@ -1440,35 +1073,18 @@ def _fit_full_prior_model(
     params: dict,
     random_state: int,
 ) -> HistGradientBoostingRegressor:
-    model = (
-        HistGradientBoostingRegressor(
-            loss="poisson",
-            learning_rate=params[
-                "learning_rate"
-            ],
-            max_leaf_nodes=params[
-                "max_leaf_nodes"
-            ],
-            min_samples_leaf=params[
-                "min_samples_leaf"
-            ],
-            l2_regularization=params[
-                "l2_regularization"
-            ],
-            random_state=(
-                random_state
-            ),
-        )
+    model = HistGradientBoostingRegressor(
+        loss="poisson",
+        learning_rate=params["learning_rate"],
+        max_leaf_nodes=params["max_leaf_nodes"],
+        min_samples_leaf=params["min_samples_leaf"],
+        l2_regularization=params["l2_regularization"],
+        random_state=random_state,
     )
 
     model.fit(
-        prior.loc[
-            :,
-            feature_columns,
-        ],
-        prior[
-            target_column
-        ],
+        prior.loc[:, feature_columns],
+        prior[target_column],
     )
 
     return model
@@ -1480,122 +1096,74 @@ def fit_walk_forward_models(
     feature_columns: list[str],
     trainer,
 ):
-    prior = (
-        training_history.loc[
-            training_history[
-                "_game_date_dt"
-            ]
-            < target_date
-        ]
-        .copy()
-    )
+    prior = training_history.loc[
+        training_history["_game_date_dt"] < target_date
+    ].copy()
 
     prior_dates = sorted(
-        prior[
-            "_game_date_dt"
-        ]
+        prior["_game_date_dt"]
         .dropna()
         .drop_duplicates()
         .tolist()
     )
 
-    if (
-        len(prior_dates)
-        < MIN_PRIOR_UNIQUE_DATES
-    ):
+    if len(prior_dates) < MIN_PRIOR_UNIQUE_DATES:
         return None
 
-    splits = (
-        trainer
-        .chronological_date_split(
-            prior
-        )
-    )
+    splits = trainer.chronological_date_split(prior)
 
     (
         home_params,
         home_validation_score,
-    ) = (
-        trainer
-        .select_hyperparameters(
-            splits[
-                "train"
-            ],
-            splits[
-                "validation"
-            ],
-            feature_columns,
-            "target_home_runs",
-            (
-                "walk_forward_home_"
-                f"{target_date.date()}"
-            ),
-        )
+    ) = trainer.select_hyperparameters(
+        splits["train"],
+        splits["validation"],
+        feature_columns,
+        "target_home_runs",
+        f"walk_forward_home_{target_date.date()}",
     )
 
     (
         away_params,
         away_validation_score,
-    ) = (
-        trainer
-        .select_hyperparameters(
-            splits[
-                "train"
-            ],
-            splits[
-                "validation"
-            ],
-            feature_columns,
-            "target_away_runs",
-            (
-                "walk_forward_away_"
-                f"{target_date.date()}"
-            ),
-        )
+    ) = trainer.select_hyperparameters(
+        splits["train"],
+        splits["validation"],
+        feature_columns,
+        "target_away_runs",
+        f"walk_forward_away_{target_date.date()}",
     )
 
-    home_model = (
-        _fit_full_prior_model(
-            prior,
-            feature_columns,
-            "target_home_runs",
-            home_params,
-            trainer.RANDOM_STATE,
-        )
+    home_model = _fit_full_prior_model(
+        prior,
+        feature_columns,
+        "target_home_runs",
+        home_params,
+        trainer.RANDOM_STATE,
     )
 
-    away_model = (
-        _fit_full_prior_model(
-            prior,
-            feature_columns,
-            "target_away_runs",
-            away_params,
-            trainer.RANDOM_STATE,
-        )
+    away_model = _fit_full_prior_model(
+        prior,
+        feature_columns,
+        "target_away_runs",
+        away_params,
+        trainer.RANDOM_STATE,
     )
 
     assert_model_feature_order(
         home_model,
         feature_columns,
-        (
-            "walk_forward_home_"
-            f"{target_date.date()}"
-        ),
+        f"walk_forward_home_{target_date.date()}",
     )
 
     assert_model_feature_order(
         away_model,
         feature_columns,
-        (
-            "walk_forward_away_"
-            f"{target_date.date()}"
-        ),
+        f"walk_forward_away_{target_date.date()}",
     )
 
     train_end = (
-        prior[
-            "_game_date_dt"
-        ]
+        prior["_game_date_dt"]
         .max()
         .date()
         .isoformat()
@@ -1610,41 +1178,28 @@ def fit_walk_forward_models(
         + json.dumps(
             home_params,
             sort_keys=True,
-            separators=(
-                ",",
-                ":",
-            ),
+            separators=(",", ":"),
         )
         + ";away_params="
         + json.dumps(
             away_params,
             sort_keys=True,
-            separators=(
-                ",",
-                ":",
-            ),
+            separators=(",", ":"),
         )
     )
 
     audit = {
-        "projection_mode":
-            "walk_forward",
-        "training_rows":
-            len(prior),
-        "training_unique_dates":
-            len(prior_dates),
-        "training_end_date":
-            train_end,
-        "home_validation_score":
-            float(
-                home_validation_score
-            ),
-        "away_validation_score":
-            float(
-                away_validation_score
-            ),
-        "version":
-            version,
+        "projection_mode": "walk_forward",
+        "training_rows": len(prior),
+        "training_unique_dates": len(prior_dates),
+        "training_end_date": train_end,
+        "home_validation_score": float(
+            home_validation_score
+        ),
+        "away_validation_score": float(
+            away_validation_score
+        ),
+        "version": version,
     }
 
     return (
@@ -1658,28 +1213,14 @@ def _target_timestamp(
     date_str: str,
 ) -> pd.Timestamp:
     parsed = pd.to_datetime(
-        str(
-            date_str
-        ).replace(
-            "_",
-            "-",
-        ),
+        str(date_str).replace("_", "-"),
         errors="coerce",
     )
 
-    if pd.isna(
-        parsed
-    ):
-        fail(
-            f"Invalid projection date: {date_str}"
-        )
+    if pd.isna(parsed):
+        fail(f"Invalid projection date: {date_str}")
 
-    return (
-        pd.Timestamp(
-            parsed
-        )
-        .normalize()
-    )
+    return pd.Timestamp(parsed).normalize()
 
 
 def _write_unavailable_historical_result(
@@ -1689,47 +1230,26 @@ def _write_unavailable_historical_result(
     X: pd.DataFrame,
     reason: str,
 ) -> Path:
-    result = (
-        joined.copy()
-    )
+    result = joined.copy()
 
-    result[
-        "model_home_runs"
-    ] = np.nan
+    result["model_home_runs"] = np.nan
+    result["model_away_runs"] = np.nan
+    result["model_total_runs"] = np.nan
 
-    result[
-        "model_away_runs"
-    ] = np.nan
-
-    result[
-        "model_total_runs"
-    ] = np.nan
-
-    result[
-        "run_model_version"
-    ] = (
+    result["run_model_version"] = (
         "walk_forward_unavailable"
         f";date={date_str}"
         f";reason={reason}"
     )
 
-    status = (
-        build_feature_status(
-            result,
-            X,
-        )
+    status = build_feature_status(
+        result,
+        X,
     )
 
-    result[
-        "run_model_feature_status"
-    ] = (
-        status.astype(
-            "string"
-        )
-        + (
-            ";projection_mode="
-            "walk_forward_unavailable"
-        )
+    result["run_model_feature_status"] = (
+        status.astype("string")
+        + ";projection_mode=walk_forward_unavailable"
         + f";reason={reason}"
     )
 
@@ -1760,30 +1280,11 @@ def process_date(
     training_history: pd.DataFrame,
     trainer,
 ) -> Path:
-    pred_path = (
-        PRED_DIR
-        / f"{date_str}_MLB.csv"
-    )
-
-    games_path = (
-        GAMES_DIR
-        / f"{date_str}_games.csv"
-    )
-
-    sdv_path = (
-        SDV_DIR
-        / f"{date_str}_sportsdataverse.csv"
-    )
-
-    context_path = (
-        CONTEXT_DIR
-        / f"{date_str}_game_context.csv"
-    )
-
-    output_path = (
-        OUTPUT_DIR
-        / f"{date_str}_MLB.csv"
-    )
+    pred_path = PRED_DIR / f"{date_str}_MLB.csv"
+    games_path = GAMES_DIR / f"{date_str}_games.csv"
+    sdv_path = SDV_DIR / f"{date_str}_sportsdataverse.csv"
+    context_path = CONTEXT_DIR / f"{date_str}_game_context.csv"
+    output_path = OUTPUT_DIR / f"{date_str}_MLB.csv"
 
     pred = read_csv_checked(
         pred_path,
@@ -1809,10 +1310,7 @@ def process_date(
         f"game_context {date_str}",
     )
 
-    (
-        joined,
-        X,
-    ) = build_feature_frame(
+    joined, X = build_feature_frame(
         date_str,
         pred,
         games,
@@ -1821,47 +1319,20 @@ def process_date(
         feature_columns,
     )
 
-    if (
-        output_path.resolve()
-        == pred_path.resolve()
-    ):
+    if output_path.resolve() == pred_path.resolve():
         fail(
             "Refusing to overwrite "
             "pred_with_game_id source file"
         )
 
     if joined.empty:
-        result = (
-            joined.copy()
-        )
+        result = joined.copy()
 
-        result[
-            "model_home_runs"
-        ] = pd.Series(
-            dtype=float
-        )
-
-        result[
-            "model_away_runs"
-        ] = pd.Series(
-            dtype=float
-        )
-
-        result[
-            "model_total_runs"
-        ] = pd.Series(
-            dtype=float
-        )
-
-        result[
-            "run_model_version"
-        ] = pd.Series(
-            dtype="string"
-        )
-
-        result[
-            "run_model_feature_status"
-        ] = pd.Series(
+        result["model_home_runs"] = pd.Series(dtype=float)
+        result["model_away_runs"] = pd.Series(dtype=float)
+        result["model_total_runs"] = pd.Series(dtype=float)
+        result["run_model_version"] = pd.Series(dtype="string")
+        result["run_model_feature_status"] = pd.Series(
             dtype="string"
         )
 
@@ -1877,76 +1348,50 @@ def process_date(
 
         return output_path
 
-    target_date = (
-        _target_timestamp(
-            date_str
-        )
-    )
+    target_date = _target_timestamp(date_str)
 
-    history_max_date = (
-        training_history[
-            "_game_date_dt"
+    history_max_date = training_history[
+        "_game_date_dt"
+    ].max()
+
+    if target_date <= history_max_date:
+        prior = training_history.loc[
+            training_history["_game_date_dt"] < target_date
         ]
-        .max()
-    )
-
-    if (
-        target_date
-        <= history_max_date
-    ):
-        prior = (
-            training_history.loc[
-                training_history[
-                    "_game_date_dt"
-                ]
-                < target_date
-            ]
-        )
 
         prior_unique_dates = int(
-            prior[
-                "_game_date_dt"
-            ].nunique()
+            prior["_game_date_dt"].nunique()
         )
 
-        if (
-            prior_unique_dates
-            < MIN_PRIOR_UNIQUE_DATES
-        ):
-            return (
-                _write_unavailable_historical_result(
+        if prior_unique_dates < MIN_PRIOR_UNIQUE_DATES:
+            return _write_unavailable_historical_result(
+                date_str,
+                output_path,
+                joined,
+                X,
+                (
+                    "insufficient_prior_dates_"
+                    f"{prior_unique_dates}"
+                    "_need_"
+                    f"{MIN_PRIOR_UNIQUE_DATES}"
+                ),
+            )
+
+        try:
+            fitted = fit_walk_forward_models(
+                target_date,
+                training_history,
+                feature_columns,
+                trainer,
+            )
+
+            if fitted is None:
+                return _write_unavailable_historical_result(
                     date_str,
                     output_path,
                     joined,
                     X,
-                    (
-                        "insufficient_prior_dates_"
-                        f"{prior_unique_dates}"
-                        "_need_"
-                        f"{MIN_PRIOR_UNIQUE_DATES}"
-                    ),
-                )
-            )
-
-        try:
-            fitted = (
-                fit_walk_forward_models(
-                    target_date,
-                    training_history,
-                    feature_columns,
-                    trainer,
-                )
-            )
-
-            if fitted is None:
-                return (
-                    _write_unavailable_historical_result(
-                        date_str,
-                        output_path,
-                        joined,
-                        X,
-                        "walk_forward_fit_unavailable",
-                    )
+                    "walk_forward_fit_unavailable",
                 )
 
             (
@@ -1955,33 +1400,21 @@ def process_date(
                 audit,
             ) = fitted
 
-            home_runs = (
-                validate_predictions(
-                    home_model.predict(
-                        X
-                    ),
-                    "walk_forward_home_runs_model",
-                    date_str,
-                    joined,
-                )
+            home_runs = validate_predictions(
+                home_model.predict(X),
+                "walk_forward_home_runs_model",
+                date_str,
+                joined,
             )
 
-            away_runs = (
-                validate_predictions(
-                    away_model.predict(
-                        X
-                    ),
-                    "walk_forward_away_runs_model",
-                    date_str,
-                    joined,
-                )
+            away_runs = validate_predictions(
+                away_model.predict(X),
+                "walk_forward_away_runs_model",
+                date_str,
+                joined,
             )
 
-            run_model_version = (
-                audit[
-                    "version"
-                ]
-            )
+            run_model_version = audit["version"]
 
             projection_status_suffix = (
                 ";projection_mode=walk_forward"
@@ -2014,37 +1447,27 @@ def process_date(
                 "ERROR",
             )
 
-            return (
-                _write_unavailable_historical_result(
-                    date_str,
-                    output_path,
-                    joined,
-                    X,
-                    "walk_forward_fit_failed",
-                )
+            return _write_unavailable_historical_result(
+                date_str,
+                output_path,
+                joined,
+                X,
+                "walk_forward_fit_failed",
             )
 
     else:
-        home_runs = (
-            validate_predictions(
-                production_home_model.predict(
-                    X
-                ),
-                "production_home_runs_model",
-                date_str,
-                joined,
-            )
+        home_runs = validate_predictions(
+            production_home_model.predict(X),
+            "production_home_runs_model",
+            date_str,
+            joined,
         )
 
-        away_runs = (
-            validate_predictions(
-                production_away_model.predict(
-                    X
-                ),
-                "production_away_runs_model",
-                date_str,
-                joined,
-            )
+        away_runs = validate_predictions(
+            production_away_model.predict(X),
+            "production_away_runs_model",
+            date_str,
+            joined,
         )
 
         run_model_version = (
@@ -2072,38 +1495,19 @@ def process_date(
             f"{history_max_date.date().isoformat()}"
         )
 
-    result = (
-        joined.copy()
+    result = joined.copy()
+
+    result["model_home_runs"] = home_runs
+    result["model_away_runs"] = away_runs
+
+    result["model_total_runs"] = (
+        result["model_home_runs"]
+        + result["model_away_runs"]
     )
 
-    result[
-        "model_home_runs"
-    ] = home_runs
+    result["run_model_version"] = run_model_version
 
-    result[
-        "model_away_runs"
-    ] = away_runs
-
-    result[
-        "model_total_runs"
-    ] = (
-        result[
-            "model_home_runs"
-        ]
-        + result[
-            "model_away_runs"
-        ]
-    )
-
-    result[
-        "run_model_version"
-    ] = (
-        run_model_version
-    )
-
-    result[
-        "run_model_feature_status"
-    ] = (
+    result["run_model_feature_status"] = (
         build_feature_status(
             result,
             X,
@@ -2119,10 +1523,7 @@ def process_date(
         "dratings_away_projected_runs",
         "dratings_total_projected_runs",
     ]:
-        if (
-            col
-            not in result.columns
-        ):
+        if col not in result.columns:
             fail(
                 "Missing required preserved "
                 f"DRatings column: {col}"
@@ -2143,9 +1544,7 @@ def process_date(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = (
-        argparse.ArgumentParser()
-    )
+    parser = argparse.ArgumentParser()
 
     parser.add_argument(
         "dates",
@@ -2164,21 +1563,12 @@ def parse_args() -> argparse.Namespace:
 def normalize_date_arg(
     value: str,
 ) -> str:
-    return (
-        str(value)
-        .strip()
-        .replace(
-            "-",
-            "_",
-        )
-    )
+    return str(value).strip().replace("-", "_")
 
 
 def discover_all_dates() -> list[str]:
     files = sorted(
-        PRED_DIR.glob(
-            "*_MLB.csv"
-        )
+        PRED_DIR.glob("*_MLB.csv")
     )
 
     if not files:
@@ -2188,9 +1578,7 @@ def discover_all_dates() -> list[str]:
         )
 
     return [
-        path.stem[
-            :-4
-        ]
+        path.stem[:-4]
         for path in files
     ]
 
@@ -2201,25 +1589,19 @@ def load_runtime_models():
         "model metadata"
     )
 
-    home_metadata = (
-        load_metadata(
-            HOME_METADATA_FILE,
-            "home_runs",
-        )
+    home_metadata = load_metadata(
+        HOME_METADATA_FILE,
+        "home_runs",
     )
 
-    away_metadata = (
-        load_metadata(
-            AWAY_METADATA_FILE,
-            "away_runs",
-        )
+    away_metadata = load_metadata(
+        AWAY_METADATA_FILE,
+        "away_runs",
     )
 
-    feature_columns = (
-        assert_metadata_feature_contract(
-            home_metadata,
-            away_metadata,
-        )
+    feature_columns = assert_metadata_feature_contract(
+        home_metadata,
+        away_metadata,
     )
 
     _log(
@@ -2227,18 +1609,14 @@ def load_runtime_models():
         "production models"
     )
 
-    home_model = (
-        load_model(
-            HOME_MODEL_FILE,
-            "home_runs",
-        )
+    home_model = load_model(
+        HOME_MODEL_FILE,
+        "home_runs",
     )
 
-    away_model = (
-        load_model(
-            AWAY_MODEL_FILE,
-            "away_runs",
-        )
+    away_model = load_model(
+        AWAY_MODEL_FILE,
+        "away_runs",
     )
 
     assert_model_feature_order(
@@ -2282,24 +1660,16 @@ def main() -> None:
 
     try:
         dates = [
-            normalize_date_arg(
-                value
-            )
+            normalize_date_arg(value)
             for value in args.dates
-            if str(
-                value
-            ).strip()
+            if str(value).strip()
         ]
 
         if not dates:
-            dates = (
-                discover_all_dates()
-            )
+            dates = discover_all_dates()
 
         dates = sorted(
-            dict.fromkeys(
-                dates
-            )
+            dict.fromkeys(dates)
         )
 
         _log(
@@ -2315,70 +1685,40 @@ def main() -> None:
             home_metadata,
             away_metadata,
             feature_columns,
-        ) = (
-            load_runtime_models()
+        ) = load_runtime_models()
+
+        training_builder = _load_python_module(
+            TRAINING_BUILDER_FILE,
+            "_mlb_build_run_training_set_for_projection",
         )
 
-        training_builder = (
-            _load_python_module(
-                TRAINING_BUILDER_FILE,
-                (
-                    "_mlb_build_run_"
-                    "training_set_for_projection"
-                ),
-            )
+        trainer = _load_python_module(
+            TRAINER_FILE,
+            "_mlb_train_run_model_for_projection",
         )
 
-        trainer = (
-            _load_python_module(
-                TRAINER_FILE,
-                (
-                    "_mlb_train_run_"
-                    "model_for_projection"
-                ),
-            )
-        )
-
-        training_history = (
-            build_training_history_in_memory(
-                training_builder,
-                feature_columns,
-            )
+        training_history = build_training_history_in_memory(
+            training_builder,
+            feature_columns,
         )
 
         dates_processed = 0
 
         for date_str in dates:
-            output_path = (
-                process_date(
-                    date_str=date_str,
-                    production_home_model=(
-                        production_home_model
-                    ),
-                    production_away_model=(
-                        production_away_model
-                    ),
-                    home_metadata=(
-                        home_metadata
-                    ),
-                    away_metadata=(
-                        away_metadata
-                    ),
-                    feature_columns=(
-                        feature_columns
-                    ),
-                    training_history=(
-                        training_history
-                    ),
-                    trainer=trainer,
-                )
+            output_path = process_date(
+                date_str=date_str,
+                production_home_model=production_home_model,
+                production_away_model=production_away_model,
+                home_metadata=home_metadata,
+                away_metadata=away_metadata,
+                feature_columns=feature_columns,
+                training_history=training_history,
+                trainer=trainer,
             )
 
             dates_processed += 1
 
-            print(
-                f"WROTE {output_path}"
-            )
+            print(f"WROTE {output_path}")
 
         _log(
             "SUCCESS "

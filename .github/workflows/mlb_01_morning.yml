@@ -35,7 +35,7 @@ jobs:
           python -m pip install playwright
 
       - name: Install vendored SportsDataverse
-        run: python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
+        run: python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
 
       - name: Verify MLB Python dependency consistency
         run: python -m pip check

@@ -51,7 +51,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r docs/win/baseball/mlb/requirements.txt
           python -m pip install playwright
-          python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
+          python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
           python -m pip check
 
       - name: Run probability EV Kelly regression tests
