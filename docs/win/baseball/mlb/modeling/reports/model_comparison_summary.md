@@ -1,23 +1,35 @@
 # MLB Run Model Comparison
 
-- Generated: `2026-08-30T15:47:02.863003+00:00`
-- Untouched chronological test period: `2026-08-03` through `2026-08-29`
-- Test games: `127`
+- Generated: `2026-08-31T10:55:03.528298+00:00`
+- Untouched chronological test period: `2026-08-05` through `2026-08-30`
+- Test games: `170`
 - Model fitting/tuning performed by this evaluation script: `NO`
+- Promotion status: `candidate_rejected`
+
+## Production promotion gate
+
+Candidate promotion requires mean Poisson deviance <= the DRatings baseline for BOTH home and away models.
+
+| Side | DRatings baseline Poisson | Candidate Poisson | Candidate <= baseline |
+| --- | --- | --- | --- |
+| home | 2.130627 | 2.198024 | NO |
+| away | 2.422857 | 2.521544 | NO |
+
+- Production artifacts changed: **NO**.
 
 ## Run prediction metrics
 
 | System | Side | Rows | MAE | Mean Poisson deviance | Mean predicted runs | Mean actual runs |
 | --- | --- | --- | --- | --- | --- | --- |
-| dratings | home | 127 | 2.311654 | 2.226090 | 4.341732 | 4.440945 |
-| new_model | home | 127 | 2.357172 | 2.324772 | 4.378084 | 4.440945 |
-| dratings | away | 127 | 2.429370 | 2.374508 | 4.175984 | 3.866142 |
-| new_model | away | 127 | 2.498517 | 2.457037 | 4.368808 | 3.866142 |
+| dratings | home | 170 | 2.270471 | 2.130627 | 4.361176 | 4.435294 |
+| new_model | home | 170 | 2.309973 | 2.198024 | 4.376978 | 4.435294 |
+| dratings | away | 170 | 2.436412 | 2.422857 | 4.164529 | 4.047059 |
+| new_model | away | 170 | 2.537461 | 2.521544 | 4.426298 | 4.047059 |
 
 ### Run-prediction questions
 
-- Does the new model improve home-run prediction error? **NO** (MAE `2.311654` -> `2.357172`; Poisson deviance `2.226090` -> `2.324772`).
-- Does the new model improve away-run prediction error? **NO** (MAE `2.429370` -> `2.498517`; Poisson deviance `2.374508` -> `2.457037`).
+- Does the new model improve home-run prediction error? **NO** (MAE `2.270471` -> `2.309973`; Poisson deviance `2.130627` -> `2.198024`).
+- Does the new model improve away-run prediction error? **NO** (MAE `2.436412` -> `2.537461`; Poisson deviance `2.422857` -> `2.521544`).
 
 ## Probability calibration
 
@@ -25,9 +37,9 @@ Calibration YES/NO uses weighted expected calibration error (ECE) <= `0.05`. Tot
 
 | Market | New-model ECE | Calibrated | Predicted-vs-observed Spearman | Observed rate exactly non-decreasing | Populated bins |
 | --- | --- | --- | --- | --- | --- |
-| moneyline | 0.110369 | NO | -0.018182 | NO | 10 |
-| run_line | 0.117804 | NO | 0.785714 | NO | 8 |
-| total | 0.162102 | NO | 0.000000 | NO | 8 |
+| moneyline | 0.106650 | NO | 0.833333 | NO | 8 |
+| run_line | 0.100794 | NO | 0.668696 | NO | 10 |
+| total | 0.151901 | NO | 0.343918 | NO | 10 |
 
 - Are predicted moneyline probabilities calibrated? **NO**.
 - Are predicted run-line probabilities calibrated? **NO**.
@@ -38,30 +50,30 @@ Calibration YES/NO uses weighted expected calibration error (ECE) <= `0.05`. Tot
 
 | System | Market | Evaluation side | Rows | Log loss |
 | --- | --- | --- | --- | --- |
-| dratings | moneyline | home | 127 | 0.686577 |
-| dratings | run_line | home | 127 | 0.677242 |
-| dratings | total | over_resolved | 125 | 0.729623 |
-| new_model | moneyline | home | 127 | 0.735763 |
-| new_model | run_line | home | 127 | 0.717505 |
-| new_model | total | over_resolved | 125 | 0.735655 |
+| dratings | moneyline | home | 170 | 0.667212 |
+| dratings | run_line | home | 170 | 0.694074 |
+| dratings | total | over_resolved | 168 | 0.714864 |
+| new_model | moneyline | home | 170 | 0.706996 |
+| new_model | run_line | home | 170 | 0.702345 |
+| new_model | total | over_resolved | 168 | 0.742134 |
 
 ## EV, realized return, and Kelly
 
-- New-model priced candidates evaluated: `762`; positive-EV candidates: `334`.
-- New-model all-candidate mean predicted EV vs realized return: `-0.047821` vs `-0.046680`.
-- New-model positive-EV mean predicted EV vs realized return: `0.177373` vs `-0.123353`.
-- Does higher predicted EV correspond to higher realized return? EV/return Spearman = `-0.068679`. A positive value indicates higher EV tended to correspond to higher realized return in this test sample.
+- New-model priced candidates evaluated: `1020`; positive-EV candidates: `438`.
+- New-model all-candidate mean predicted EV vs realized return: `-0.044151` vs `-0.044941`.
+- New-model positive-EV mean predicted EV vs realized return: `0.211308` vs `-0.062900`.
+- Does higher predicted EV correspond to higher realized return? EV/return Spearman = `-0.008853`. A positive value indicates higher EV tended to correspond to higher realized return in this test sample.
 - Is positive EV overstated versus realized return? **YES** (defined here as mean realized return below mean predicted EV among positive-EV candidates).
-- DRatings-run baseline all-candidate mean predicted EV vs realized return: `-0.050241` vs `-0.046680`; EV/return Spearman `-0.125288`.
-- Does Kelly increase monotonically with actual model edge? Edge/Kelly-raw Spearman = `0.993311`; mean raw Kelly across ordered edge bins is non-decreasing: **YES** across `10` populated edge bins.
+- DRatings-run baseline all-candidate mean predicted EV vs realized return: `-0.048445` vs `-0.044941`; EV/return Spearman `-0.093244`.
+- Does Kelly increase monotonically with actual model edge? Edge/Kelly-raw Spearman = `0.994766`; mean raw Kelly across ordered edge bins is non-decreasing: **YES** across `10` populated edge bins.
 
 ## Run-line side preference
 
-- Games with both run-line sides priced/evaluated: `127`.
-- Higher-EV side was `-1.5` in `45` games (`35.43%` of non-ties).
-- Higher-EV side was `+1.5` in `82` games (`64.57%` of non-ties).
+- Games with both run-line sides priced/evaluated: `170`.
+- Higher-EV side was `-1.5` in `57` games (`33.53%` of non-ties).
+- Higher-EV side was `+1.5` in `113` games (`66.47%` of non-ties).
 - Exact EV ties: `0`.
 
 ## Interpretation constraint
 
-This report evaluates the saved model on the untouched test period only. The script does not refit, retune, or select hyperparameters from these results. Do not tune the model on this final test period after reviewing the report.
+This report evaluates the candidate on the untouched test period only. The script does not refit, retune, or select hyperparameters from these results. Do not tune the model on this final test period after reviewing the report.
