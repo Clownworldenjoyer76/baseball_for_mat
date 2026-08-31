@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Train and save separate MLB home-run and away-run projection models.
+"""Train separate MLB home-run and away-run projection candidate models.
 
 Input:
     docs/win/baseball/mlb/modeling/data/mlb_run_training_set.csv
 
-Outputs:
-    docs/win/baseball/mlb/models/run_projection/home_runs_model.joblib
-    docs/win/baseball/mlb/models/run_projection/away_runs_model.joblib
-    docs/win/baseball/mlb/models/run_projection/home_runs_model_metadata.json
-    docs/win/baseball/mlb/models/run_projection/away_runs_model_metadata.json
+Candidate outputs:
+    docs/win/baseball/mlb/models/run_projection/candidates/home_runs_model.joblib
+    docs/win/baseball/mlb/models/run_projection/candidates/away_runs_model.joblib
+    docs/win/baseball/mlb/models/run_projection/candidates/home_runs_model_metadata.json
+    docs/win/baseball/mlb/models/run_projection/candidates/away_runs_model_metadata.json
+
+Production artifacts are never overwritten by this script. Promotion is handled only
+after evaluate_run_model.py compares BOTH candidate models with the DRatings baseline.
 
 The split is chronological by unique game dates:
     first 70% -> training
@@ -16,8 +19,8 @@ The split is chronological by unique game dates:
     final 15% -> untouched test
 
 Hyperparameters are selected using validation mean Poisson deviance only.
-The exact ordered feature list is persisted in metadata and must be enforced
-by the future production prediction script.
+The exact ordered feature list is persisted in candidate metadata and must be enforced
+by production prediction/evaluation code.
 """
 
 from __future__ import annotations
@@ -25,7 +28,6 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
-import sys
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
@@ -38,20 +40,21 @@ from sklearn.metrics import mean_absolute_error, mean_poisson_deviance
 
 
 BASE_DIR = Path("docs/win/baseball/mlb")
-
 DEFAULT_INPUT = BASE_DIR / "modeling/data/mlb_run_training_set.csv"
 
 MODEL_DIR = BASE_DIR / "models/run_projection"
+CANDIDATE_DIR = MODEL_DIR / "candidates"
 ERROR_DIR = BASE_DIR / "errors/modeling"
 LOG_FILE = ERROR_DIR / "train_run_model.txt"
 
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
+CANDIDATE_DIR.mkdir(parents=True, exist_ok=True)
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 
-HOME_MODEL_FILE = MODEL_DIR / "home_runs_model.joblib"
-AWAY_MODEL_FILE = MODEL_DIR / "away_runs_model.joblib"
-HOME_METADATA_FILE = MODEL_DIR / "home_runs_model_metadata.json"
-AWAY_METADATA_FILE = MODEL_DIR / "away_runs_model_metadata.json"
+HOME_MODEL_FILE = CANDIDATE_DIR / "home_runs_model.joblib"
+AWAY_MODEL_FILE = CANDIDATE_DIR / "away_runs_model.joblib"
+HOME_METADATA_FILE = CANDIDATE_DIR / "home_runs_model_metadata.json"
+AWAY_METADATA_FILE = CANDIDATE_DIR / "away_runs_model_metadata.json"
 
 AUDIT_COLUMNS = [
     "game_date",
@@ -245,8 +248,6 @@ def coerce_and_validate_training_data(
                 f"bad_rows={int(bad.sum())}; sample={sample}"
             )
 
-    # HistGradientBoostingRegressor accepts missing numeric feature values.
-    # Non-missing feature values still must be finite.
     for col in feature_columns:
         values = df[col]
         bad = values.notna() & ~np.isfinite(values)
@@ -282,7 +283,6 @@ def chronological_date_split(
     train_end = int(np.floor(n_dates * 0.70))
     validation_end = int(np.floor(n_dates * 0.85))
 
-    # Keep all three partitions non-empty while preserving chronology.
     train_end = max(1, min(train_end, n_dates - 2))
     validation_end = max(
         train_end + 1,
@@ -449,8 +449,6 @@ def fit_final_model(
     target_column: str,
     selected_hyperparameters: dict,
 ) -> HistGradientBoostingRegressor:
-    # Parameters were selected using training + validation only.
-    # After selection, refit on those two partitions before touching test.
     fit_frame = pd.concat(
         [train, validation],
         ignore_index=True,
@@ -570,6 +568,7 @@ def train_one_side(
     )
 
     metadata = {
+        "artifact_stage": "candidate",
         "training_start_date": training_start_date,
         "training_end_date": training_end_date,
         "validation_start_date": validation_start_date,
@@ -627,6 +626,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
+    parser.add_argument(
+        "--candidate-dir",
+        type=Path,
+        default=CANDIDATE_DIR,
+        help=(
+            "Directory for candidate run-model artifacts "
+            f"(default: {CANDIDATE_DIR})"
+        ),
+    )
+
     return parser.parse_args()
 
 
@@ -637,6 +646,13 @@ def main() -> None:
         f.write(f"=== train_run_model RUN {_now()} ===\n")
 
     try:
+        args.candidate_dir.mkdir(parents=True, exist_ok=True)
+
+        home_model_file = args.candidate_dir / "home_runs_model.joblib"
+        away_model_file = args.candidate_dir / "away_runs_model.joblib"
+        home_metadata_file = args.candidate_dir / "home_runs_model_metadata.json"
+        away_metadata_file = args.candidate_dir / "away_runs_model_metadata.json"
+
         training_df = load_training_set(
             args.input
         )
@@ -691,43 +707,44 @@ def main() -> None:
 
         joblib.dump(
             home_model,
-            HOME_MODEL_FILE,
+            home_model_file,
         )
         joblib.dump(
             away_model,
-            AWAY_MODEL_FILE,
+            away_model_file,
         )
 
         write_metadata(
-            HOME_METADATA_FILE,
+            home_metadata_file,
             home_metadata,
         )
         write_metadata(
-            AWAY_METADATA_FILE,
+            away_metadata_file,
             away_metadata,
         )
 
-        _log(f"WROTE {HOME_MODEL_FILE}")
-        _log(f"WROTE {AWAY_MODEL_FILE}")
-        _log(f"WROTE {HOME_METADATA_FILE}")
-        _log(f"WROTE {AWAY_METADATA_FILE}")
+        _log(f"WROTE CANDIDATE {home_model_file}")
+        _log(f"WROTE CANDIDATE {away_model_file}")
+        _log(f"WROTE CANDIDATE {home_metadata_file}")
+        _log(f"WROTE CANDIDATE {away_metadata_file}")
+        _log("PRODUCTION ARTIFACTS NOT MODIFIED BY TRAINING")
 
         _log(
-            "home_test_report "
+            "home_candidate_test_report "
             f"baseline_metrics={home_metadata['baseline_metrics']} "
             f"model_metrics={home_metadata['model_metrics']}"
         )
 
         _log(
-            "away_test_report "
+            "away_candidate_test_report "
             f"baseline_metrics={away_metadata['baseline_metrics']} "
             f"model_metrics={away_metadata['model_metrics']}"
         )
 
-        print("train_run_model complete.")
+        print("train_run_model complete. candidate artifacts written only.")
 
         print(
-            "home test | "
+            "home candidate test | "
             f"model_mae={home_metadata['model_metrics']['mae']:.6f} "
             f"baseline_mae={home_metadata['baseline_metrics']['mae']:.6f} "
             f"model_poisson="
@@ -737,7 +754,7 @@ def main() -> None:
         )
 
         print(
-            "away test | "
+            "away candidate test | "
             f"model_mae={away_metadata['model_metrics']['mae']:.6f} "
             f"baseline_mae={away_metadata['baseline_metrics']['mae']:.6f} "
             f"model_poisson="

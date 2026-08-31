@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Evaluate the rebuilt MLB run model on the untouched chronological test set.
+"""Evaluate an MLB run-model candidate and gate production promotion.
 
 Inputs
 ------
 docs/win/baseball/mlb/modeling/data/mlb_run_training_set.csv
-docs/win/baseball/mlb/models/run_projection/home_runs_model.joblib
-docs/win/baseball/mlb/models/run_projection/away_runs_model.joblib
-docs/win/baseball/mlb/models/run_projection/home_runs_model_metadata.json
-docs/win/baseball/mlb/models/run_projection/away_runs_model_metadata.json
+docs/win/baseball/mlb/models/run_projection/candidates/home_runs_model.joblib
+docs/win/baseball/mlb/models/run_projection/candidates/away_runs_model.joblib
+docs/win/baseball/mlb/models/run_projection/candidates/home_runs_model_metadata.json
+docs/win/baseball/mlb/models/run_projection/candidates/away_runs_model_metadata.json
 docs/win/baseball/mlb/00_intake/sportsbook/{date}_MLB.csv
 
 Outputs
@@ -18,10 +18,16 @@ docs/win/baseball/mlb/modeling/reports/run_line_calibration.csv
 docs/win/baseball/mlb/modeling/reports/total_calibration.csv
 docs/win/baseball/mlb/modeling/reports/probability_log_loss.csv
 docs/win/baseball/mlb/modeling/reports/model_comparison_summary.md
+docs/win/baseball/mlb/modeling/reports/run_model_promotion.json
 
-This script is evaluation-only. It reads the test-period boundaries and exact feature
-order from saved model metadata, scores only that untouched period, and never fits or
-tunes a model.
+Promotion rule
+--------------
+The candidate is promoted only when candidate mean Poisson deviance is less than
+or equal to the DRatings baseline mean Poisson deviance for BOTH home and away
+run models on the untouched chronological test set. If either side fails, the
+existing production model and metadata files remain unchanged.
+
+This script never fits or tunes a model.
 """
 
 from __future__ import annotations
@@ -30,6 +36,7 @@ import argparse
 import importlib.util
 import json
 import math
+import shutil
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
@@ -43,7 +50,8 @@ from sklearn.metrics import mean_absolute_error, mean_poisson_deviance
 
 BASE_DIR = Path("docs/win/baseball/mlb")
 DEFAULT_TRAINING_DATA = BASE_DIR / "modeling/data/mlb_run_training_set.csv"
-DEFAULT_MODEL_DIR = BASE_DIR / "models/run_projection"
+DEFAULT_PRODUCTION_MODEL_DIR = BASE_DIR / "models/run_projection"
+DEFAULT_CANDIDATE_DIR = DEFAULT_PRODUCTION_MODEL_DIR / "candidates"
 DEFAULT_SPORTSBOOK_DIR = BASE_DIR / "00_intake/sportsbook"
 DEFAULT_REPORT_DIR = BASE_DIR / "modeling/reports"
 
@@ -62,6 +70,7 @@ REPORT_FILES = {
     "total_calibration": "total_calibration.csv",
     "log_loss": "probability_log_loss.csv",
     "summary": "model_comparison_summary.md",
+    "promotion": "run_model_promotion.json",
 }
 
 PROBABILITY_BINS = np.linspace(0.0, 1.0, 11)
@@ -682,6 +691,235 @@ def build_run_metrics(scored: pd.DataFrame) -> pd.DataFrame:
         )
 
     return pd.DataFrame(rows)
+
+
+def build_promotion_decision(
+    run_metrics: pd.DataFrame,
+    *,
+    test_start: str,
+    test_end: str,
+) -> dict:
+    lookup = {
+        (str(row.system), str(row.side)): row
+        for row in run_metrics.itertuples(index=False)
+    }
+
+    required = [
+        ("dratings", "home"),
+        ("new_model", "home"),
+        ("dratings", "away"),
+        ("new_model", "away"),
+    ]
+    missing = [key for key in required if key not in lookup]
+    if missing:
+        fail(f"Promotion gate missing required run metrics: {missing}")
+
+    comparison = {}
+    all_passed = True
+
+    for side in ["home", "away"]:
+        baseline = float(
+            lookup[("dratings", side)].mean_poisson_deviance
+        )
+        candidate = float(
+            lookup[("new_model", side)].mean_poisson_deviance
+        )
+
+        if not np.isfinite(baseline) or not np.isfinite(candidate):
+            fail(
+                f"Promotion gate received non-finite {side} Poisson deviance: "
+                f"baseline={baseline} candidate={candidate}"
+            )
+
+        passed = bool(candidate <= baseline)
+        all_passed = all_passed and passed
+
+        comparison[side] = {
+            "baseline_system": "dratings",
+            "metric": "mean_poisson_deviance",
+            "baseline_value": baseline,
+            "candidate_value": candidate,
+            "candidate_lte_baseline": passed,
+            "difference_candidate_minus_baseline": candidate - baseline,
+        }
+
+    return {
+        "status": (
+            "candidate_promoted"
+            if all_passed
+            else "candidate_rejected"
+        ),
+        "gate_passed": bool(all_passed),
+        "gate_rule": (
+            "candidate mean_poisson_deviance <= DRatings baseline "
+            "for BOTH home and away models"
+        ),
+        "test_start_date": str(test_start),
+        "test_end_date": str(test_end),
+        "comparison": comparison,
+    }
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, sort_keys=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _restore_production_backups(
+    backups: dict[Path, bytes | None],
+) -> None:
+    for path, original in backups.items():
+        if original is None:
+            if path.exists():
+                path.unlink()
+        else:
+            path.write_bytes(original)
+
+
+def apply_promotion_decision(
+    *,
+    decision: dict,
+    candidate_dir: Path,
+    production_model_dir: Path,
+    home_candidate_metadata: dict,
+    away_candidate_metadata: dict,
+    report_path: Path,
+) -> dict:
+    evaluated_at = _now()
+    result = {
+        **decision,
+        "evaluated_at": evaluated_at,
+        "candidate_dir": str(candidate_dir),
+        "production_model_dir": str(production_model_dir),
+        "production_artifacts_changed": False,
+    }
+
+    if not decision["gate_passed"]:
+        result["notes"] = (
+            "At least one candidate side exceeded the DRatings baseline "
+            "Poisson deviance. Existing production model and metadata "
+            "artifacts were left unchanged."
+        )
+        _write_json(report_path, result)
+        _log(
+            "PROMOTION candidate_rejected "
+            f"comparison={decision['comparison']}"
+        )
+        return result
+
+    production_model_dir.mkdir(parents=True, exist_ok=True)
+
+    candidate_paths = {
+        "home_model": candidate_dir / HOME_MODEL_NAME,
+        "away_model": candidate_dir / AWAY_MODEL_NAME,
+        "home_metadata": candidate_dir / HOME_METADATA_NAME,
+        "away_metadata": candidate_dir / AWAY_METADATA_NAME,
+    }
+
+    missing = [
+        str(path)
+        for path in candidate_paths.values()
+        if not path.exists()
+    ]
+    if missing:
+        fail(
+            "Promotion gate passed but candidate artifacts are missing: "
+            f"{missing}"
+        )
+
+    production_paths = {
+        "home_model": production_model_dir / HOME_MODEL_NAME,
+        "away_model": production_model_dir / AWAY_MODEL_NAME,
+        "home_metadata": production_model_dir / HOME_METADATA_NAME,
+        "away_metadata": production_model_dir / AWAY_METADATA_NAME,
+    }
+
+    promotion_metadata = {
+        "status": "candidate_promoted",
+        "promoted_at": evaluated_at,
+        "gate_rule": decision["gate_rule"],
+        "test_start_date": decision["test_start_date"],
+        "test_end_date": decision["test_end_date"],
+        "comparison": decision["comparison"],
+    }
+
+    home_production_metadata = dict(home_candidate_metadata)
+    away_production_metadata = dict(away_candidate_metadata)
+
+    home_production_metadata["artifact_stage"] = "production"
+    away_production_metadata["artifact_stage"] = "production"
+    home_production_metadata["promotion_status"] = "candidate_promoted"
+    away_production_metadata["promotion_status"] = "candidate_promoted"
+    home_production_metadata["promotion_baseline_comparison"] = (
+        promotion_metadata
+    )
+    away_production_metadata["promotion_baseline_comparison"] = (
+        promotion_metadata
+    )
+
+    staged_paths = {
+        key: path.with_name(path.name + ".candidate_tmp")
+        for key, path in production_paths.items()
+    }
+
+    backups = {
+        path: path.read_bytes() if path.exists() else None
+        for path in production_paths.values()
+    }
+
+    try:
+        shutil.copy2(
+            candidate_paths["home_model"],
+            staged_paths["home_model"],
+        )
+        shutil.copy2(
+            candidate_paths["away_model"],
+            staged_paths["away_model"],
+        )
+        _write_json(
+            staged_paths["home_metadata"],
+            home_production_metadata,
+        )
+        _write_json(
+            staged_paths["away_metadata"],
+            away_production_metadata,
+        )
+
+        for key in [
+            "home_model",
+            "away_model",
+            "home_metadata",
+            "away_metadata",
+        ]:
+            staged_paths[key].replace(production_paths[key])
+
+    except Exception:
+        for staged in staged_paths.values():
+            if staged.exists():
+                staged.unlink()
+        _restore_production_backups(backups)
+        raise
+
+    result["production_artifacts_changed"] = True
+    result["production_artifacts"] = {
+        key: str(path)
+        for key, path in production_paths.items()
+    }
+    result["notes"] = (
+        "Both candidate run models met or beat the DRatings baseline "
+        "Poisson deviance and were promoted together."
+    )
+
+    _write_json(report_path, result)
+    _log(
+        "PROMOTION candidate_promoted "
+        f"comparison={decision['comparison']}"
+    )
+
+    return result
 
 
 def sportsbook_path_for_date(
@@ -2070,6 +2308,7 @@ def write_summary(
     calibrations: dict[str, pd.DataFrame],
     log_loss: pd.DataFrame,
     values: pd.DataFrame,
+    promotion: dict,
 ) -> None:
     metric_lookup = {
         (row.system, row.side): row
@@ -2206,6 +2445,9 @@ def write_summary(
         minus_pct = float("nan")
         plus_pct = float("nan")
 
+    home_gate = promotion["comparison"]["home"]
+    away_gate = promotion["comparison"]["away"]
+
     summary_lines = [
         "# MLB Run Model Comparison",
         "",
@@ -2213,6 +2455,42 @@ def write_summary(
         f"- Untouched chronological test period: `{test_start}` through `{test_end}`",
         f"- Test games: `{len(scored)}`",
         "- Model fitting/tuning performed by this evaluation script: `NO`",
+        f"- Promotion status: `{promotion['status']}`",
+        "",
+        "## Production promotion gate",
+        "",
+        (
+            "Candidate promotion requires mean Poisson deviance <= the "
+            "DRatings baseline for BOTH home and away models."
+        ),
+        "",
+        markdown_table(
+            [
+                "Side",
+                "DRatings baseline Poisson",
+                "Candidate Poisson",
+                "Candidate <= baseline",
+            ],
+            [
+                [
+                    "home",
+                    _fmt_float(home_gate["baseline_value"]),
+                    _fmt_float(home_gate["candidate_value"]),
+                    _yes_no(home_gate["candidate_lte_baseline"]),
+                ],
+                [
+                    "away",
+                    _fmt_float(away_gate["baseline_value"]),
+                    _fmt_float(away_gate["candidate_value"]),
+                    _yes_no(away_gate["candidate_lte_baseline"]),
+                ],
+            ],
+        ),
+        "",
+        (
+            "- Production artifacts changed: "
+            f"**{_yes_no(promotion['production_artifacts_changed'])}**."
+        ),
         "",
         "## Run prediction metrics",
         "",
@@ -2366,7 +2644,7 @@ def write_summary(
         "## Interpretation constraint",
         "",
         (
-            "This report evaluates the saved model on the untouched test "
+            "This report evaluates the candidate on the untouched test "
             "period only. The script does not refit, retune, or select "
             "hyperparameters from these results. Do not tune the model on "
             "this final test period after reviewing the report."
@@ -2393,12 +2671,24 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--candidate-dir",
         "--model-dir",
+        dest="candidate_dir",
         type=Path,
-        default=DEFAULT_MODEL_DIR,
+        default=DEFAULT_CANDIDATE_DIR,
         help=(
-            "Directory containing saved run-model artifacts/metadata "
-            f"(default: {DEFAULT_MODEL_DIR})"
+            "Directory containing candidate run-model artifacts/metadata. "
+            "--model-dir is retained as a compatibility alias. "
+            f"(default: {DEFAULT_CANDIDATE_DIR})"
+        ),
+    )
+    parser.add_argument(
+        "--production-model-dir",
+        type=Path,
+        default=DEFAULT_PRODUCTION_MODEL_DIR,
+        help=(
+            "Production run-model directory used only after the promotion gate "
+            f"passes (default: {DEFAULT_PRODUCTION_MODEL_DIR})"
         ),
     )
     parser.add_argument(
@@ -2435,12 +2725,12 @@ def main() -> None:
         probs_module, evk_module = _load_production_math()
 
         home_metadata = load_json(
-            args.model_dir / HOME_METADATA_NAME,
-            "home model metadata",
+            args.candidate_dir / HOME_METADATA_NAME,
+            "home candidate metadata",
         )
         away_metadata = load_json(
-            args.model_dir / AWAY_METADATA_NAME,
-            "away model metadata",
+            args.candidate_dir / AWAY_METADATA_NAME,
+            "away candidate metadata",
         )
 
         (
@@ -2464,11 +2754,17 @@ def main() -> None:
         scored = score_models(
             test,
             feature_columns,
-            args.model_dir,
+            args.candidate_dir,
         )
 
         run_metrics = build_run_metrics(
             scored
+        )
+
+        promotion_decision = build_promotion_decision(
+            run_metrics,
+            test_start=test_start,
+            test_end=test_end,
         )
 
         sportsbook = load_sportsbook_test_period(
@@ -2531,6 +2827,18 @@ def main() -> None:
             index=False,
         )
 
+        promotion = apply_promotion_decision(
+            decision=promotion_decision,
+            candidate_dir=args.candidate_dir,
+            production_model_dir=args.production_model_dir,
+            home_candidate_metadata=home_metadata,
+            away_candidate_metadata=away_metadata,
+            report_path=(
+                args.report_dir
+                / REPORT_FILES["promotion"]
+            ),
+        )
+
         write_summary(
             path=(
                 args.report_dir
@@ -2543,6 +2851,7 @@ def main() -> None:
             calibrations=calibrations,
             log_loss=log_loss,
             values=values,
+            promotion=promotion,
         )
 
         written = [
@@ -2564,6 +2873,7 @@ def main() -> None:
 
         _log(
             "SUCCESS "
+            f"promotion_status={promotion['status']} "
             f"test_rows={len(scored)} "
             f"test_start={test_start} "
             f"test_end={test_end} "
@@ -2573,7 +2883,8 @@ def main() -> None:
 
         print(
             "MLB run-model comparison complete: "
-            f"{args.report_dir}"
+            f"{args.report_dir} | "
+            f"promotion_status={promotion['status']}"
         )
 
     except Exception:

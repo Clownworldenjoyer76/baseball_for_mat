@@ -1,0 +1,291 @@
+name: MLB Commit Validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/mlb_*.yml"
+      - "docs/win/baseball/mlb/scripts/**"
+      - "docs/win/baseball/mlb/models/**"
+      - "requirements.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-mlb-commit:
+    name: Validate MLB commit
+    runs-on: ubuntu-latest
+
+    env:
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Confirm exact commit SHA
+        shell: bash
+        run: |
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          echo "github.sha=${GITHUB_SHA}"
+          echo "checked_out_sha=${ACTUAL_SHA}"
+          test "${ACTUAL_SHA}" = "${GITHUB_SHA}"
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install validation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse
+          python -m pip check
+
+      - name: Run probability EV Kelly regression tests
+        run: |
+          python -m pytest \
+            docs/win/baseball/mlb/scripts/modeling/test_probability_ev_kelly.py \
+            -q
+
+      - name: Syntax-check all MLB Python scripts
+        run: |
+          python - <<'PY'
+          import py_compile
+          from pathlib import Path
+
+          root = Path("docs/win/baseball/mlb/scripts")
+          files = sorted(root.rglob("*.py"))
+
+          if not files:
+              raise RuntimeError(f"No MLB Python scripts found under {root}")
+
+          failures = []
+          for path in files:
+              try:
+                  py_compile.compile(str(path), doraise=True)
+              except Exception as exc:
+                  failures.append(f"{path}: {exc}")
+
+          if failures:
+              raise RuntimeError(
+                  "MLB Python syntax validation failed:\n"
+                  + "\n".join(failures)
+              )
+
+          print(f"Syntax-check passed for {len(files)} MLB Python scripts.")
+          PY
+
+      - name: Resolve top-level imports for all MLB Python scripts
+        run: |
+          python - <<'PY'
+          import ast
+          import importlib.util
+          import sys
+          from pathlib import Path
+
+          root = Path("docs/win/baseball/mlb/scripts").resolve()
+          files = sorted(root.rglob("*.py"))
+
+          if not files:
+              raise RuntimeError(f"No MLB Python scripts found under {root}")
+
+          # Make repository-local script modules discoverable without executing them.
+          sys.path.insert(0, str(Path.cwd().resolve()))
+          for parent in sorted({str(path.parent.resolve()) for path in files}):
+              if parent not in sys.path:
+                  sys.path.insert(0, parent)
+
+          missing = []
+
+          for path in files:
+              tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+
+              # Check direct module-level imports only. Imports nested in try/except
+              # or functions may be intentionally optional/runtime-specific.
+              imports = []
+              for node in tree.body:
+                  if isinstance(node, ast.Import):
+                      imports.extend(alias.name.split(".")[0] for alias in node.names)
+                  elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                      imports.append(node.module.split(".")[0])
+
+              for module_name in sorted(set(imports)):
+                  if module_name == "__future__":
+                      continue
+                  try:
+                      spec = importlib.util.find_spec(module_name)
+                  except (ImportError, AttributeError, ValueError) as exc:
+                      missing.append(f"{path}: {module_name} ({exc})")
+                      continue
+
+                  if spec is None:
+                      missing.append(f"{path}: {module_name}")
+
+          if missing:
+              raise RuntimeError(
+                  "Unresolvable top-level MLB script imports:\n"
+                  + "\n".join(missing)
+              )
+
+          print(f"Top-level import resolution passed for {len(files)} MLB Python scripts.")
+          PY
+
+      - name: Import-check critical MLB modeling modules
+        run: |
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+
+          paths = [
+              Path("docs/win/baseball/mlb/scripts/modeling/train_run_model.py"),
+              Path("docs/win/baseball/mlb/scripts/modeling/evaluate_run_model.py"),
+              Path("docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py"),
+              Path("docs/win/baseball/mlb/scripts/modeling/test_probability_ev_kelly.py"),
+          ]
+
+          for index, path in enumerate(paths):
+              if not path.exists():
+                  raise RuntimeError(f"Required modeling script missing: {path}")
+
+              spec = importlib.util.spec_from_file_location(
+                  f"mlb_validation_module_{index}",
+                  path,
+              )
+              if spec is None or spec.loader is None:
+                  raise RuntimeError(f"Could not create import spec for {path}")
+
+              module = importlib.util.module_from_spec(spec)
+              spec.loader.exec_module(module)
+              print(f"Import-check passed: {path}")
+          PY
+
+      - name: Validate committed run-model artifacts and smoke predictions
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          import joblib
+          import numpy as np
+          import pandas as pd
+
+          base = Path("docs/win/baseball/mlb")
+          model_dir = base / "models/run_projection"
+          training_path = base / "modeling/data/mlb_run_training_set.csv"
+
+          home_model_path = model_dir / "home_runs_model.joblib"
+          away_model_path = model_dir / "away_runs_model.joblib"
+          home_meta_path = model_dir / "home_runs_model_metadata.json"
+          away_meta_path = model_dir / "away_runs_model_metadata.json"
+
+          required_paths = [
+              home_model_path,
+              away_model_path,
+              home_meta_path,
+              away_meta_path,
+              training_path,
+          ]
+
+          missing = [str(path) for path in required_paths if not path.exists()]
+          if missing:
+              raise RuntimeError(f"Missing committed validation artifact(s): {missing}")
+
+          def load_metadata(path):
+              payload = json.loads(path.read_text(encoding="utf-8"))
+              if not isinstance(payload, dict):
+                  raise RuntimeError(f"Metadata must be a JSON object: {path}")
+              return payload
+
+          home_meta = load_metadata(home_meta_path)
+          away_meta = load_metadata(away_meta_path)
+
+          for label, meta in [("home", home_meta), ("away", away_meta)]:
+              features = meta.get("feature_columns")
+              if not isinstance(features, list) or not features:
+                  raise RuntimeError(
+                      f"{label} metadata feature_columns is missing or empty"
+                  )
+              if len(features) != len(set(features)):
+                  raise RuntimeError(
+                      f"{label} metadata feature_columns contains duplicates"
+                  )
+
+          home_features = [str(value) for value in home_meta["feature_columns"]]
+          away_features = [str(value) for value in away_meta["feature_columns"]]
+
+          if home_features != away_features:
+              raise RuntimeError(
+                  "Home/away metadata feature order mismatch: "
+                  f"home={home_features} away={away_features}"
+              )
+
+          home_model = joblib.load(home_model_path)
+          away_model = joblib.load(away_model_path)
+
+          for label, model, expected_features in [
+              ("home", home_model, home_features),
+              ("away", away_model, away_features),
+          ]:
+              feature_names = getattr(model, "feature_names_in_", None)
+              if feature_names is None:
+                  raise RuntimeError(
+                      f"{label} model does not expose feature_names_in_"
+                  )
+
+              actual_features = [str(value) for value in feature_names.tolist()]
+              if actual_features != expected_features:
+                  raise RuntimeError(
+                      f"{label} model feature order mismatch: "
+                      f"model={actual_features} metadata={expected_features}"
+                  )
+
+          training = pd.read_csv(training_path, encoding="utf-8-sig")
+          if training.empty:
+              raise RuntimeError(f"Committed training data is empty: {training_path}")
+
+          missing_features = [
+              column for column in home_features if column not in training.columns
+          ]
+          if missing_features:
+              raise RuntimeError(
+                  f"Committed training data missing model features: {missing_features}"
+              )
+
+          sample = training.loc[:, home_features].head(1).copy()
+          if sample.empty:
+              raise RuntimeError("Could not obtain one committed training row for smoke test")
+
+          for column in home_features:
+              sample[column] = pd.to_numeric(sample[column], errors="coerce")
+
+          for label, model in [("home", home_model), ("away", away_model)]:
+              prediction = np.asarray(model.predict(sample), dtype=float)
+
+              if prediction.shape != (1,):
+                  raise RuntimeError(
+                      f"{label} smoke prediction returned unexpected shape: "
+                      f"{prediction.shape}"
+                  )
+              if not np.isfinite(prediction).all():
+                  raise RuntimeError(
+                      f"{label} smoke prediction is non-finite: {prediction.tolist()}"
+                  )
+              if (prediction < 0).any():
+                  raise RuntimeError(
+                      f"{label} smoke prediction is negative: {prediction.tolist()}"
+                  )
+
+              print(f"{label} smoke prediction={float(prediction[0]):.6f}")
+
+          print(
+              "MLB model artifact validation passed for commit "
+              f"{os.environ.get('GITHUB_SHA', 'unknown')}"
+          )
+          PY

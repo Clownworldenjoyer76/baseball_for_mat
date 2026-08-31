@@ -97,10 +97,52 @@ jobs:
           path: docs/win/baseball/mlb/00_intake/sportsdataverse
           key: mlb-sdv-${{ runner.os }}-${{ github.ref_name }}-${{ github.run_id }}
 
+      # Final scores must exist before the run-model training set is built.
+      # These steps intentionally have no selected-bet dependency.
+      - name: MLB Build Final Scores
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py
+
+      - name: MLB Normalize Final Score Names
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_final_score_mlb_names.py
+
+      - name: Verify yesterday final-score CSV exists before training
+        shell: bash
+        run: |
+          YESTERDAY="$(date -d 'yesterday' +'%Y_%m_%d')"
+          FINAL_FILE="docs/win/baseball/mlb/05_final_scores/results/final_scores/${YESTERDAY}_final_scores_MLB.csv"
+
+          echo "Verifying yesterday final-score file before run-model training: ${FINAL_FILE}"
+
+          if [ ! -s "${FINAL_FILE}" ]; then
+            echo "ERROR: Yesterday final-score CSV is missing or empty before build_run_training_set.py: ${FINAL_FILE}"
+            exit 1
+          fi
+
+          echo "Verified: ${FINAL_FILE}"
+
       - name: MLB Build Run Training Set
         run: python docs/win/baseball/mlb/scripts/modeling/build_run_training_set.py
 
-      - name: MLB Train Run Models
+      - name: Verify yesterday was not skipped for late final scores
+        shell: bash
+        run: |
+          YESTERDAY="$(date -d 'yesterday' +'%Y_%m_%d')"
+          TRAIN_LOG="docs/win/baseball/mlb/errors/modeling/build_run_training_set.txt"
+
+          if [ ! -f "${TRAIN_LOG}" ]; then
+            echo "ERROR: Training log not found: ${TRAIN_LOG}"
+            exit 1
+          fi
+
+          if grep -F "Skipping prediction dates with no matching final-score file:" "${TRAIN_LOG}" \
+            | grep -Fq "${YESTERDAY}"; then
+            echo "ERROR: ${YESTERDAY} was still skipped because its final-score file was unavailable at training time."
+            exit 1
+          fi
+
+          echo "Verified: ${YESTERDAY} was not skipped for a late/missing final-score file."
+
+      - name: MLB Train Run Model Candidates
         run: python docs/win/baseball/mlb/scripts/modeling/train_run_model.py
 
       - name: MLB Probability EV Kelly Tests
@@ -109,7 +151,17 @@ jobs:
             docs/win/baseball/mlb/scripts/modeling/test_probability_ev_kelly.py \
             -q
 
-      - name: MLB Validate Run Models
+      # evaluate_run_model.py evaluates candidates against the DRatings baseline.
+      # It promotes both models together only if BOTH candidate Poisson deviances
+      # are <= their corresponding DRatings baselines. Rejection is not an error;
+      # existing production artifacts remain unchanged.
+      - name: MLB Evaluate Run Model Candidates + Promotion Gate
+        run: |
+          python docs/win/baseball/mlb/scripts/modeling/evaluate_run_model.py
+
+      # Validate production AFTER the promotion decision. On rejection this checks
+      # the pre-existing production artifacts; on promotion it checks the new pair.
+      - name: MLB Validate Production Run Models
         shell: bash
         run: |
           python - <<'PY'
@@ -126,6 +178,7 @@ jobs:
           training_path = base / "modeling/data/mlb_run_training_set.csv"
           report_dir = base / "modeling/reports"
           report_path = report_dir / "run_model_validation.json"
+          promotion_path = report_dir / "run_model_promotion.json"
 
           home_model_path = model_dir / "home_runs_model.joblib"
           away_model_path = model_dir / "away_runs_model.joblib"
@@ -138,6 +191,7 @@ jobs:
               home_meta_path,
               away_meta_path,
               training_path,
+              promotion_path,
           ]
 
           missing_paths = [
@@ -174,6 +228,19 @@ jobs:
           away_meta = json.loads(
               away_meta_path.read_text(encoding="utf-8")
           )
+          promotion = json.loads(
+              promotion_path.read_text(encoding="utf-8")
+          )
+
+          promotion_status = promotion.get("status")
+          if promotion_status not in {
+              "candidate_rejected",
+              "candidate_promoted",
+          }:
+              raise RuntimeError(
+                  "Invalid run-model promotion status: "
+                  f"{promotion_status!r}"
+              )
 
           for label, meta in [
               ("home", home_meta),
@@ -201,6 +268,27 @@ jobs:
                   raise RuntimeError(
                       f"{label} metadata feature_columns contains duplicates"
                   )
+
+          if promotion_status == "candidate_promoted":
+              for label, meta in [
+                  ("home", home_meta),
+                  ("away", away_meta),
+              ]:
+                  if meta.get("promotion_status") != "candidate_promoted":
+                      raise RuntimeError(
+                          f"{label} production metadata does not record candidate_promoted"
+                      )
+
+                  comparison = meta.get("promotion_baseline_comparison")
+                  if not isinstance(comparison, dict):
+                      raise RuntimeError(
+                          f"{label} production metadata missing promotion_baseline_comparison"
+                      )
+
+                  if comparison.get("comparison") != promotion.get("comparison"):
+                      raise RuntimeError(
+                          f"{label} production metadata promotion comparison differs from evaluation output"
+                      )
 
           home_features = list(
               home_meta["feature_columns"]
@@ -323,6 +411,8 @@ jobs:
                   timezone.utc
               ).isoformat(),
               "status": "passed",
+              "promotion_status": promotion_status,
+              "promotion_comparison": promotion.get("comparison"),
               "training_set": str(
                   training_path
               ),
@@ -377,21 +467,19 @@ jobs:
           )
 
           print(
-              f"Model validation passed: {report_path}"
+              "Production model validation passed: "
+              f"{report_path} | promotion_status={promotion_status}"
           )
           PY
 
-      - name: MLB Evaluate Run Model
-        run: |
-          python docs/win/baseball/mlb/scripts/modeling/evaluate_run_model.py
-
-      - name: Upload model training data and reports
+      - name: Upload model training data, candidates, and reports
         uses: actions/upload-artifact@v4
         with:
           name: mlb-run-model-training-${{ github.run_id }}
           path: |
             docs/win/baseball/mlb/modeling/data/mlb_run_training_set.csv
             docs/win/baseball/mlb/modeling/reports/
+            docs/win/baseball/mlb/models/run_projection/candidates/
           if-no-files-found: error
           retention-days: 30
 
@@ -475,7 +563,7 @@ jobs:
             echo "Selected-bet files found."
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No selected-bet files found. Skipping final-score steps."
+            echo "No selected-bet files found. Skipping selected-bet result/grading steps."
           fi
 
       - name: Check for morning selected bet files
@@ -493,14 +581,6 @@ jobs:
             echo "found=false" >> "$GITHUB_OUTPUT"
             echo "No morning selected-bet files found. Skipping morning grading steps."
           fi
-
-      - name: MLB Build Final Scores
-        if: steps.selected_bets.outputs.found == 'true'
-        run: python docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py
-
-      - name: MLB Normalize Final Score Names
-        if: steps.selected_bets.outputs.found == 'true'
-        run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_final_score_mlb_names.py
 
       - name: MLB Normalize Results
         if: steps.selected_bets.outputs.found == 'true'
@@ -548,6 +628,7 @@ jobs:
 
           git restore --staged \
             docs/win/baseball/mlb/audit/leakage_audit.csv \
+            docs/win/baseball/mlb/models/run_projection/candidates/ \
             2>/dev/null || true
 
           git diff --cached --quiet || \
