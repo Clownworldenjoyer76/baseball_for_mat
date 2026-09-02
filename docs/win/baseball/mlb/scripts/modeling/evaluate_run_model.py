@@ -137,21 +137,27 @@ def _find_repo_root() -> Path:
     here = Path(__file__).resolve()
 
     for parent in here.parents:
-        if (
-            (parent / "requirements.txt").exists()
-            and (parent / "docs/win/baseball/mlb").exists()
-        ):
+        mlb_requirements = (
+            parent
+            / "docs/win/baseball/mlb/requirements.txt"
+        )
+
+        if mlb_requirements.is_file():
             return parent
 
     cwd = Path.cwd().resolve()
-    if (
-        (cwd / "requirements.txt").exists()
-        and (cwd / "docs/win/baseball/mlb").exists()
-    ):
+    mlb_requirements = (
+        cwd
+        / "docs/win/baseball/mlb/requirements.txt"
+    )
+
+    if mlb_requirements.is_file():
         return cwd
 
     raise RuntimeError(
-        f"Could not resolve repository root from script={here} cwd={cwd}"
+        "Could not resolve repository root containing "
+        "docs/win/baseball/mlb/requirements.txt "
+        f"from script={here} cwd={cwd}"
     )
 
 

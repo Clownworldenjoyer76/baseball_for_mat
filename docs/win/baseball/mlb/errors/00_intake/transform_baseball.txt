@@ -1,815 +1,863 @@
-=== transform_baseball RUN 2026-08-31T15:46:12.930987 ===
-2026-08-31T15:46:12.931881 | Raw files found: 150
-2026-08-31T15:46:12.931914 | Step 6 mode: intake writes predictions only; final-score generation is post-game only
-2026-08-31T15:46:12.931939 | Processing 2026_03_26_mlb_raw.json
-2026-08-31T15:46:12.934701 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_26_MLB.csv (11 rows)
-2026-08-31T15:46:12.934742 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=1, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.934776 | Processing 2026_03_27_mlb_raw.json
-2026-08-31T15:46:12.935306 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_27_MLB.csv (8 rows)
-2026-08-31T15:46:12.935337 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=11, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.935367 | Processing 2026_03_28_mlb_raw.json
-2026-08-31T15:46:12.936103 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_28_MLB.csv (15 rows)
-2026-08-31T15:46:12.936132 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.936162 | Processing 2026_03_29_mlb_raw.json
-2026-08-31T15:46:12.936809 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_29_MLB.csv (12 rows)
-2026-08-31T15:46:12.936837 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.936867 | Processing 2026_03_30_mlb_raw.json
-2026-08-31T15:46:12.937554 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_30_MLB.csv (15 rows)
-2026-08-31T15:46:12.937584 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.937614 | Processing 2026_03_31_mlb_raw.json
-2026-08-31T15:46:12.938257 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_31_MLB.csv (14 rows)
-2026-08-31T15:46:12.938286 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.938315 | Processing 2026_04_01_mlb_raw.json
-2026-08-31T15:46:12.939003 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_01_MLB.csv (15 rows)
-2026-08-31T15:46:12.939032 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.939063 | Processing 2026_04_02_mlb_raw.json
-2026-08-31T15:46:12.939540 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_02_MLB.csv (3 rows)
-2026-08-31T15:46:12.939570 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.939597 | Processing 2026_04_04_mlb_raw.json
-2026-08-31T15:46:12.940271 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_04_MLB.csv (15 rows)
-2026-08-31T15:46:12.940310 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.940339 | Processing 2026_04_06_mlb_raw.json
-2026-08-31T15:46:12.940990 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_06_MLB.csv (13 rows)
-2026-08-31T15:46:12.941018 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.941047 | Processing 2026_04_07_mlb_raw.json
-2026-08-31T15:46:12.941725 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_07_MLB.csv (15 rows)
-2026-08-31T15:46:12.941754 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.941783 | Processing 2026_04_08_mlb_raw.json
-2026-08-31T15:46:12.942430 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_08_MLB.csv (15 rows)
-2026-08-31T15:46:12.942458 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.942507 | Processing 2026_04_09_mlb_raw.json
-2026-08-31T15:46:12.943007 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_09_MLB.csv (6 rows)
-2026-08-31T15:46:12.943041 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.943067 | Processing 2026_04_10_mlb_raw.json
-2026-08-31T15:46:12.943749 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_10_MLB.csv (15 rows)
-2026-08-31T15:46:12.943776 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.943803 | Processing 2026_04_11_mlb_raw.json
-2026-08-31T15:46:12.943937 |   SKIPPED unknown row (10 cells): 04/11/2026 02:20 PM | Pittsburgh Pirates
+=== transform_baseball RUN 2026-09-02T13:41:53.129684 ===
+2026-09-02T13:41:53.130609 | Raw files found: 152
+2026-09-02T13:41:53.130641 | Step 6 mode: intake writes predictions only; final-score generation is post-game only
+2026-09-02T13:41:53.130665 | Processing 2026_03_26_mlb_raw.json
+2026-09-02T13:41:53.133410 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_26_MLB.csv (11 rows)
+2026-09-02T13:41:53.133452 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=1, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.133486 | Processing 2026_03_27_mlb_raw.json
+2026-09-02T13:41:53.134082 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_27_MLB.csv (8 rows)
+2026-09-02T13:41:53.134115 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=11, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.134146 | Processing 2026_03_28_mlb_raw.json
+2026-09-02T13:41:53.134900 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.134931 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.135001 | Processing 2026_03_29_mlb_raw.json
+2026-09-02T13:41:53.135638 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_29_MLB.csv (12 rows)
+2026-09-02T13:41:53.135667 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.135696 | Processing 2026_03_30_mlb_raw.json
+2026-09-02T13:41:53.136434 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_30_MLB.csv (15 rows)
+2026-09-02T13:41:53.136464 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.136511 | Processing 2026_03_31_mlb_raw.json
+2026-09-02T13:41:53.137223 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_03_31_MLB.csv (14 rows)
+2026-09-02T13:41:53.137253 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.137282 | Processing 2026_04_01_mlb_raw.json
+2026-09-02T13:41:53.138017 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_01_MLB.csv (15 rows)
+2026-09-02T13:41:53.138047 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.138081 | Processing 2026_04_02_mlb_raw.json
+2026-09-02T13:41:53.138589 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_02_MLB.csv (3 rows)
+2026-09-02T13:41:53.138619 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.138647 | Processing 2026_04_04_mlb_raw.json
+2026-09-02T13:41:53.139405 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_04_MLB.csv (15 rows)
+2026-09-02T13:41:53.139437 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.139480 | Processing 2026_04_06_mlb_raw.json
+2026-09-02T13:41:53.140180 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_06_MLB.csv (13 rows)
+2026-09-02T13:41:53.140210 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.140239 | Processing 2026_04_07_mlb_raw.json
+2026-09-02T13:41:53.140941 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_07_MLB.csv (15 rows)
+2026-09-02T13:41:53.141000 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.141030 | Processing 2026_04_08_mlb_raw.json
+2026-09-02T13:41:53.141728 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_08_MLB.csv (15 rows)
+2026-09-02T13:41:53.141757 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.141787 | Processing 2026_04_09_mlb_raw.json
+2026-09-02T13:41:53.142352 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_09_MLB.csv (6 rows)
+2026-09-02T13:41:53.142387 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.142417 | Processing 2026_04_10_mlb_raw.json
+2026-09-02T13:41:53.143160 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.143187 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.143215 | Processing 2026_04_11_mlb_raw.json
+2026-09-02T13:41:53.143393 |   SKIPPED unknown row (10 cells): 04/11/2026 02:20 PM | Pittsburgh Pirates
 Chicago Cubs
-2026-08-31T15:46:12.943984 |   SKIPPED unknown row (10 cells): 04/11/2026 03:07 PM | Minnesota Twins
+2026-09-02T13:41:53.143443 |   SKIPPED unknown row (10 cells): 04/11/2026 03:07 PM | Minnesota Twins
 Toronto Blue Jays
-2026-08-31T15:46:12.944026 |   SKIPPED unknown row (10 cells): 04/11/2026 04:35 PM | Chicago White Sox
+2026-09-02T13:41:53.143486 |   SKIPPED unknown row (10 cells): 04/11/2026 04:35 PM | Chicago White Sox
 Kansas City Royals
-2026-08-31T15:46:12.944553 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_11_MLB.csv (11 rows)
-2026-08-31T15:46:12.944580 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=3, predictions_dates=1
-2026-08-31T15:46:12.944607 | Processing 2026_04_12_mlb_raw.json
-2026-08-31T15:46:12.945263 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_12_MLB.csv (15 rows)
-2026-08-31T15:46:12.945290 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.945318 | Processing 2026_04_13_mlb_raw.json
-2026-08-31T15:46:12.945912 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_13_MLB.csv (10 rows)
-2026-08-31T15:46:12.945939 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.945965 | Processing 2026_04_14_mlb_raw.json
-2026-08-31T15:46:12.946626 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_14_MLB.csv (15 rows)
-2026-08-31T15:46:12.946652 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.946681 | Processing 2026_04_15_mlb_raw.json
-2026-08-31T15:46:12.947350 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_15_MLB.csv (15 rows)
-2026-08-31T15:46:12.947376 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.947404 | Processing 2026_04_16_mlb_raw.json
-2026-08-31T15:46:12.947995 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_16_MLB.csv (10 rows)
-2026-08-31T15:46:12.948022 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.948049 | Processing 2026_04_17_mlb_raw.json
-2026-08-31T15:46:12.948744 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_17_MLB.csv (15 rows)
-2026-08-31T15:46:12.948771 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.948799 | Processing 2026_04_18_mlb_raw.json
-2026-08-31T15:46:12.949448 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_18_MLB.csv (15 rows)
-2026-08-31T15:46:12.949474 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.949525 | Processing 2026_04_19_mlb_raw.json
-2026-08-31T15:46:12.950171 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_19_MLB.csv (15 rows)
-2026-08-31T15:46:12.950198 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.950225 | Processing 2026_04_20_mlb_raw.json
-2026-08-31T15:46:12.950806 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_20_MLB.csv (10 rows)
-2026-08-31T15:46:12.950832 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.950858 | Processing 2026_04_21_mlb_raw.json
-2026-08-31T15:46:12.951526 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_21_MLB.csv (15 rows)
-2026-08-31T15:46:12.951554 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.951582 | Processing 2026_04_22_mlb_raw.json
-2026-08-31T15:46:12.952234 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_22_MLB.csv (15 rows)
-2026-08-31T15:46:12.952260 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.952288 | Processing 2026_04_23_mlb_raw.json
-2026-08-31T15:46:12.952857 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_23_MLB.csv (9 rows)
-2026-08-31T15:46:12.952885 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.952912 | Processing 2026_04_24_mlb_raw.json
-2026-08-31T15:46:12.953559 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_24_MLB.csv (14 rows)
-2026-08-31T15:46:12.953587 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.953614 | Processing 2026_04_25_mlb_raw.json
-2026-08-31T15:46:12.954267 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_25_MLB.csv (15 rows)
-2026-08-31T15:46:12.954294 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.954322 | Processing 2026_04_27_mlb_raw.json
-2026-08-31T15:46:12.954872 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_27_MLB.csv (8 rows)
-2026-08-31T15:46:12.954899 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.954925 | Processing 2026_04_28_mlb_raw.json
-2026-08-31T15:46:12.955589 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_28_MLB.csv (15 rows)
-2026-08-31T15:46:12.955615 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.955642 | Processing 2026_04_29_mlb_raw.json
-2026-08-31T15:46:12.956284 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_29_MLB.csv (15 rows)
-2026-08-31T15:46:12.956310 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.956338 | Processing 2026_04_30_mlb_raw.json
-2026-08-31T15:46:12.956908 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_30_MLB.csv (9 rows)
-2026-08-31T15:46:12.956935 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.956962 | Processing 2026_05_01_mlb_raw.json
-2026-08-31T15:46:12.957617 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_01_MLB.csv (14 rows)
-2026-08-31T15:46:12.957644 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.957671 | Processing 2026_05_02_mlb_raw.json
-2026-08-31T15:46:12.958316 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_02_MLB.csv (15 rows)
-2026-08-31T15:46:12.958342 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.958369 | Processing 2026_05_03_mlb_raw.json
-2026-08-31T15:46:12.959048 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_03_MLB.csv (15 rows)
-2026-08-31T15:46:12.959075 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.959103 | Processing 2026_05_04_mlb_raw.json
-2026-08-31T15:46:12.959730 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_04_MLB.csv (12 rows)
-2026-08-31T15:46:12.959757 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.959784 | Processing 2026_05_05_mlb_raw.json
-2026-08-31T15:46:12.960431 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_05_MLB.csv (15 rows)
-2026-08-31T15:46:12.960457 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.960504 | Processing 2026_05_06_mlb_raw.json
-2026-08-31T15:46:12.961159 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_06_MLB.csv (15 rows)
-2026-08-31T15:46:12.961188 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.961217 | Processing 2026_05_07_mlb_raw.json
-2026-08-31T15:46:12.961804 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_07_MLB.csv (10 rows)
-2026-08-31T15:46:12.961831 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.961858 | Processing 2026_05_09_mlb_raw.json
-2026-08-31T15:46:12.962530 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_09_MLB.csv (15 rows)
-2026-08-31T15:46:12.962558 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.962586 | Processing 2026_05_10_mlb_raw.json
-2026-08-31T15:46:12.963233 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_10_MLB.csv (15 rows)
-2026-08-31T15:46:12.963260 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.963288 | Processing 2026_05_11_mlb_raw.json
-2026-08-31T15:46:12.963804 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_11_MLB.csv (6 rows)
-2026-08-31T15:46:12.963831 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.963856 | Processing 2026_05_12_mlb_raw.json
-2026-08-31T15:46:12.964530 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_12_MLB.csv (15 rows)
-2026-08-31T15:46:12.964558 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.964586 | Processing 2026_05_14_mlb_raw.json
-2026-08-31T15:46:12.965168 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_14_MLB.csv (11 rows)
-2026-08-31T15:46:12.965195 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.965222 | Processing 2026_05_16_mlb_raw.json
-2026-08-31T15:46:12.965909 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_16_MLB.csv (15 rows)
-2026-08-31T15:46:12.965937 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.965964 | Processing 2026_05_17_mlb_raw.json
-2026-08-31T15:46:12.966296 |   SKIPPED unknown row (9 cells): 05/17/2026 12:15 PM | Miami Marlins (21-25)
+2026-09-02T13:41:53.144023 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_11_MLB.csv (11 rows)
+2026-09-02T13:41:53.144051 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=3, predictions_dates=1
+2026-09-02T13:41:53.144078 | Processing 2026_04_12_mlb_raw.json
+2026-09-02T13:41:53.144737 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.144764 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.144792 | Processing 2026_04_13_mlb_raw.json
+2026-09-02T13:41:53.145394 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_13_MLB.csv (10 rows)
+2026-09-02T13:41:53.145421 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.145448 | Processing 2026_04_14_mlb_raw.json
+2026-09-02T13:41:53.146114 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_14_MLB.csv (15 rows)
+2026-09-02T13:41:53.146141 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.146168 | Processing 2026_04_15_mlb_raw.json
+2026-09-02T13:41:53.146901 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_15_MLB.csv (15 rows)
+2026-09-02T13:41:53.146934 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.146992 | Processing 2026_04_16_mlb_raw.json
+2026-09-02T13:41:53.147606 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_16_MLB.csv (10 rows)
+2026-09-02T13:41:53.147633 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.147661 | Processing 2026_04_17_mlb_raw.json
+2026-09-02T13:41:53.148399 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.148427 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.148456 | Processing 2026_04_18_mlb_raw.json
+2026-09-02T13:41:53.149187 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_18_MLB.csv (15 rows)
+2026-09-02T13:41:53.149214 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.149243 | Processing 2026_04_19_mlb_raw.json
+2026-09-02T13:41:53.149941 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.149991 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.150021 | Processing 2026_04_20_mlb_raw.json
+2026-09-02T13:41:53.150628 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_20_MLB.csv (10 rows)
+2026-09-02T13:41:53.150655 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.150682 | Processing 2026_04_21_mlb_raw.json
+2026-09-02T13:41:53.151409 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_21_MLB.csv (15 rows)
+2026-09-02T13:41:53.151436 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.151464 | Processing 2026_04_22_mlb_raw.json
+2026-09-02T13:41:53.152189 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_22_MLB.csv (15 rows)
+2026-09-02T13:41:53.152216 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.152244 | Processing 2026_04_23_mlb_raw.json
+2026-09-02T13:41:53.152839 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_23_MLB.csv (9 rows)
+2026-09-02T13:41:53.152865 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.152892 | Processing 2026_04_24_mlb_raw.json
+2026-09-02T13:41:53.153582 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_24_MLB.csv (14 rows)
+2026-09-02T13:41:53.153610 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.153638 | Processing 2026_04_25_mlb_raw.json
+2026-09-02T13:41:53.154348 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_25_MLB.csv (15 rows)
+2026-09-02T13:41:53.154376 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.154404 | Processing 2026_04_27_mlb_raw.json
+2026-09-02T13:41:53.154995 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_27_MLB.csv (8 rows)
+2026-09-02T13:41:53.155024 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.155050 | Processing 2026_04_28_mlb_raw.json
+2026-09-02T13:41:53.155740 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.155768 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.155796 | Processing 2026_04_29_mlb_raw.json
+2026-09-02T13:41:53.156515 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_29_MLB.csv (15 rows)
+2026-09-02T13:41:53.156542 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.156569 | Processing 2026_04_30_mlb_raw.json
+2026-09-02T13:41:53.157183 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_04_30_MLB.csv (9 rows)
+2026-09-02T13:41:53.157210 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.157236 | Processing 2026_05_01_mlb_raw.json
+2026-09-02T13:41:53.157915 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_01_MLB.csv (14 rows)
+2026-09-02T13:41:53.157942 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.158000 | Processing 2026_05_02_mlb_raw.json
+2026-09-02T13:41:53.158681 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.158708 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.158736 | Processing 2026_05_03_mlb_raw.json
+2026-09-02T13:41:53.159449 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_03_MLB.csv (15 rows)
+2026-09-02T13:41:53.159476 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.159505 | Processing 2026_05_04_mlb_raw.json
+2026-09-02T13:41:53.160188 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_04_MLB.csv (12 rows)
+2026-09-02T13:41:53.160215 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.160243 | Processing 2026_05_05_mlb_raw.json
+2026-09-02T13:41:53.160941 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_05_MLB.csv (15 rows)
+2026-09-02T13:41:53.160994 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.161024 | Processing 2026_05_06_mlb_raw.json
+2026-09-02T13:41:53.161733 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_06_MLB.csv (15 rows)
+2026-09-02T13:41:53.161762 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.161790 | Processing 2026_05_07_mlb_raw.json
+2026-09-02T13:41:53.162421 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_07_MLB.csv (10 rows)
+2026-09-02T13:41:53.162448 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.162475 | Processing 2026_05_09_mlb_raw.json
+2026-09-02T13:41:53.163218 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_09_MLB.csv (15 rows)
+2026-09-02T13:41:53.163245 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.163273 | Processing 2026_05_10_mlb_raw.json
+2026-09-02T13:41:53.163987 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.164015 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.164044 | Processing 2026_05_11_mlb_raw.json
+2026-09-02T13:41:53.164572 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_11_MLB.csv (6 rows)
+2026-09-02T13:41:53.164599 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.164626 | Processing 2026_05_12_mlb_raw.json
+2026-09-02T13:41:53.165344 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.165372 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.165401 | Processing 2026_05_14_mlb_raw.json
+2026-09-02T13:41:53.166045 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_14_MLB.csv (11 rows)
+2026-09-02T13:41:53.166073 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.166100 | Processing 2026_05_16_mlb_raw.json
+2026-09-02T13:41:53.166793 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_16_MLB.csv (15 rows)
+2026-09-02T13:41:53.166820 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.166855 | Processing 2026_05_17_mlb_raw.json
+2026-09-02T13:41:53.167246 |   SKIPPED unknown row (9 cells): 05/17/2026 12:15 PM | Miami Marlins (21-25)
 Tampa Bay Rays (29-15)
-2026-08-31T15:46:12.966665 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_17_MLB.csv (14 rows)
-2026-08-31T15:46:12.966691 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
-2026-08-31T15:46:12.966718 | Processing 2026_05_18_mlb_raw.json
-2026-08-31T15:46:12.967337 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_18_MLB.csv (14 rows)
-2026-08-31T15:46:12.967364 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.967391 | Processing 2026_05_19_mlb_raw.json
-2026-08-31T15:46:12.968052 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_19_MLB.csv (15 rows)
-2026-08-31T15:46:12.968078 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.968106 | Processing 2026_05_20_mlb_raw.json
-2026-08-31T15:46:12.968778 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_20_MLB.csv (15 rows)
-2026-08-31T15:46:12.968804 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.968837 | Processing 2026_05_21_mlb_raw.json
-2026-08-31T15:46:12.969340 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_21_MLB.csv (7 rows)
-2026-08-31T15:46:12.969366 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.969392 | Processing 2026_05_22_mlb_raw.json
-2026-08-31T15:46:12.970059 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_22_MLB.csv (15 rows)
-2026-08-31T15:46:12.970086 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.970114 | Processing 2026_05_23_mlb_raw.json
-2026-08-31T15:46:12.970802 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_23_MLB.csv (16 rows)
-2026-08-31T15:46:12.970829 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.970857 | Processing 2026_05_24_mlb_raw.json
-2026-08-31T15:46:12.971538 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_24_MLB.csv (16 rows)
-2026-08-31T15:46:12.971565 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.971594 | Processing 2026_05_25_mlb_raw.json
-2026-08-31T15:46:12.972206 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_25_MLB.csv (13 rows)
-2026-08-31T15:46:12.972232 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.972260 | Processing 2026_05_26_mlb_raw.json
-2026-08-31T15:46:12.972940 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_26_MLB.csv (15 rows)
-2026-08-31T15:46:12.972966 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.972994 | Processing 2026_05_27_mlb_raw.json
-2026-08-31T15:46:12.973670 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_27_MLB.csv (15 rows)
-2026-08-31T15:46:12.973696 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.973724 | Processing 2026_05_28_mlb_raw.json
-2026-08-31T15:46:12.974216 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_28_MLB.csv (6 rows)
-2026-08-31T15:46:12.974243 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.974269 | Processing 2026_05_29_mlb_raw.json
-2026-08-31T15:46:12.974952 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_29_MLB.csv (15 rows)
-2026-08-31T15:46:12.974979 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.975009 | Processing 2026_05_30_mlb_raw.json
-2026-08-31T15:46:12.975687 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_30_MLB.csv (15 rows)
-2026-08-31T15:46:12.975714 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.975742 | Processing 2026_05_31_mlb_raw.json
-2026-08-31T15:46:12.976387 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_31_MLB.csv (15 rows)
-2026-08-31T15:46:12.976414 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.976441 | Processing 2026_06_01_mlb_raw.json
-2026-08-31T15:46:12.977002 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_01_MLB.csv (9 rows)
-2026-08-31T15:46:12.977029 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.977056 | Processing 2026_06_02_mlb_raw.json
-2026-08-31T15:46:12.977732 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_02_MLB.csv (15 rows)
-2026-08-31T15:46:12.977758 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.977792 | Processing 2026_06_03_mlb_raw.json
-2026-08-31T15:46:12.978439 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_03_MLB.csv (15 rows)
-2026-08-31T15:46:12.978466 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.978516 | Processing 2026_06_04_mlb_raw.json
-2026-08-31T15:46:12.979067 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_04_MLB.csv (9 rows)
-2026-08-31T15:46:12.979094 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.979122 | Processing 2026_06_05_mlb_raw.json
-2026-08-31T15:46:12.979792 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_05_MLB.csv (14 rows)
-2026-08-31T15:46:12.979819 |   parse_errors=1, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.979848 | Processing 2026_06_06_mlb_raw.json
-2026-08-31T15:46:12.980513 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_06_MLB.csv (15 rows)
-2026-08-31T15:46:12.980541 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.980571 | Processing 2026_06_07_mlb_raw.json
-2026-08-31T15:46:12.981227 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_07_MLB.csv (15 rows)
-2026-08-31T15:46:12.981253 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.981281 | Processing 2026_06_08_mlb_raw.json
-2026-08-31T15:46:12.981836 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_08_MLB.csv (8 rows)
-2026-08-31T15:46:12.981862 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.981889 | Processing 2026_06_09_mlb_raw.json
-2026-08-31T15:46:12.982562 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_09_MLB.csv (15 rows)
-2026-08-31T15:46:12.982590 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.982618 | Processing 2026_06_10_mlb_raw.json
-2026-08-31T15:46:12.983278 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_10_MLB.csv (15 rows)
-2026-08-31T15:46:12.983306 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.983335 | Processing 2026_06_11_mlb_raw.json
-2026-08-31T15:46:12.983891 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_11_MLB.csv (8 rows)
-2026-08-31T15:46:12.983919 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.983945 | Processing 2026_06_12_mlb_raw.json
-2026-08-31T15:46:12.984617 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_12_MLB.csv (15 rows)
-2026-08-31T15:46:12.984644 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.984672 | Processing 2026_06_13_mlb_raw.json
-2026-08-31T15:46:12.985328 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_13_MLB.csv (15 rows)
-2026-08-31T15:46:12.985355 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.985384 | Processing 2026_06_14_mlb_raw.json
-2026-08-31T15:46:12.986062 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_14_MLB.csv (15 rows)
-2026-08-31T15:46:12.986088 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.986117 | Processing 2026_06_15_mlb_raw.json
-2026-08-31T15:46:12.986708 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_15_MLB.csv (10 rows)
-2026-08-31T15:46:12.986739 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.986767 | Processing 2026_06_16_mlb_raw.json
-2026-08-31T15:46:12.987431 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_16_MLB.csv (15 rows)
-2026-08-31T15:46:12.987458 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.987506 | Processing 2026_06_17_mlb_raw.json
-2026-08-31T15:46:12.988157 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_17_MLB.csv (14 rows)
-2026-08-31T15:46:12.988184 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.988212 | Processing 2026_06_18_mlb_raw.json
-2026-08-31T15:46:12.988864 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_19_MLB.csv (14 rows)
-2026-08-31T15:46:12.988890 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.988918 | Processing 2026_06_19_mlb_raw.json
-2026-08-31T15:46:12.989563 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_20_MLB.csv (14 rows)
-2026-08-31T15:46:12.989590 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.989616 | Processing 2026_06_20_mlb_raw.json
-2026-08-31T15:46:12.990260 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_21_MLB.csv (15 rows)
-2026-08-31T15:46:12.990287 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.990314 | Processing 2026_06_21_mlb_raw.json
-2026-08-31T15:46:12.990950 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_22_MLB.csv (13 rows)
-2026-08-31T15:46:12.990979 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.991017 | Processing 2026_06_22_mlb_raw.json
-2026-08-31T15:46:12.991675 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_23_MLB.csv (15 rows)
-2026-08-31T15:46:12.991702 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.991729 | Processing 2026_06_23_mlb_raw.json
-2026-08-31T15:46:12.992383 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_24_MLB.csv (16 rows)
-2026-08-31T15:46:12.992410 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.992437 | Processing 2026_06_24_mlb_raw.json
-2026-08-31T15:46:12.992735 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=0
-2026-08-31T15:46:12.992764 | Processing 2026_06_25_mlb_raw.json
-2026-08-31T15:46:12.993397 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_26_MLB.csv (15 rows)
-2026-08-31T15:46:12.993425 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.993455 | Processing 2026_06_26_mlb_raw.json
-2026-08-31T15:46:12.994132 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_27_MLB.csv (15 rows)
-2026-08-31T15:46:12.994158 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.994186 | Processing 2026_06_27_mlb_raw.json
-2026-08-31T15:46:12.994856 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_28_MLB.csv (15 rows)
-2026-08-31T15:46:12.994883 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.994910 | Processing 2026_06_28_mlb_raw.json
-2026-08-31T15:46:12.995534 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_29_MLB.csv (13 rows)
-2026-08-31T15:46:12.995562 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.995595 | Processing 2026_06_29_mlb_raw.json
-2026-08-31T15:46:12.996239 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_30_MLB.csv (15 rows)
-2026-08-31T15:46:12.996266 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.996295 | Processing 2026_06_30_mlb_raw.json
-2026-08-31T15:46:12.996948 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_01_MLB.csv (14 rows)
-2026-08-31T15:46:12.996974 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.997002 | Processing 2026_07_01_mlb_raw.json
-2026-08-31T15:46:12.997569 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_02_MLB.csv (9 rows)
-2026-08-31T15:46:12.997597 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.997623 | Processing 2026_07_02_mlb_raw.json
-2026-08-31T15:46:12.998226 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_03_MLB.csv (13 rows)
-2026-08-31T15:46:12.998252 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.998279 | Processing 2026_07_03_mlb_raw.json
-2026-08-31T15:46:12.998944 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_04_MLB.csv (15 rows)
-2026-08-31T15:46:12.998971 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.998999 | Processing 2026_07_04_mlb_raw.json
-2026-08-31T15:46:12.999663 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_05_MLB.csv (15 rows)
-2026-08-31T15:46:12.999690 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:12.999718 | Processing 2026_07_05_mlb_raw.json
-2026-08-31T15:46:13.000236 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_06_MLB.csv (8 rows)
-2026-08-31T15:46:13.000263 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.000289 | Processing 2026_07_06_mlb_raw.json
-2026-08-31T15:46:13.000976 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_07_MLB.csv (16 rows)
-2026-08-31T15:46:13.001002 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.001030 | Processing 2026_07_07_mlb_raw.json
-2026-08-31T15:46:13.001679 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_08_MLB.csv (15 rows)
-2026-08-31T15:46:13.001706 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=15, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.001733 | Processing 2026_07_08_mlb_raw.json
-2026-08-31T15:46:13.002322 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_09_MLB.csv (13 rows)
-2026-08-31T15:46:13.002348 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=15, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.002375 | Processing 2026_07_09_mlb_raw.json
-2026-08-31T15:46:13.003038 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_10_MLB.csv (15 rows)
-2026-08-31T15:46:13.003065 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.003093 | Processing 2026_07_10_mlb_raw.json
-2026-08-31T15:46:13.003759 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_11_MLB.csv (15 rows)
-2026-08-31T15:46:13.003786 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.003813 | Processing 2026_07_11_mlb_raw.json
-2026-08-31T15:46:13.004456 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_12_MLB.csv (15 rows)
-2026-08-31T15:46:13.004502 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.004540 | Processing 2026_07_12_mlb_raw.json
-2026-08-31T15:46:13.004817 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=0
-2026-08-31T15:46:13.004845 | Processing 2026_07_13_mlb_raw.json
-2026-08-31T15:46:13.005472 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.005520 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.005549 | Processing 2026_07_14_mlb_raw.json
-2026-08-31T15:46:13.006186 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.006213 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.006240 | Processing 2026_07_15_mlb_raw.json
-2026-08-31T15:46:13.006901 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.006928 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.006955 | Processing 2026_07_16_mlb_raw.json
-2026-08-31T15:46:13.007608 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.007634 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.007661 | Processing 2026_07_17_mlb_raw.json
-2026-08-31T15:46:13.008289 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_18_MLB.csv (15 rows)
-2026-08-31T15:46:13.008316 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.008343 | Processing 2026_07_18_mlb_raw.json
-2026-08-31T15:46:13.009001 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_19_MLB.csv (15 rows)
-2026-08-31T15:46:13.009028 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.009055 | Processing 2026_07_19_mlb_raw.json
-2026-08-31T15:46:13.009721 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_20_MLB.csv (15 rows)
-2026-08-31T15:46:13.009747 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.009774 | Processing 2026_07_20_mlb_raw.json
-2026-08-31T15:46:13.010410 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_21_MLB.csv (15 rows)
-2026-08-31T15:46:13.010436 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.010463 | Processing 2026_07_21_mlb_raw.json
-2026-08-31T15:46:13.011122 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_22_MLB.csv (15 rows)
-2026-08-31T15:46:13.011149 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.011176 | Processing 2026_07_22_mlb_raw.json
-2026-08-31T15:46:13.011672 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_23_MLB.csv (5 rows)
-2026-08-31T15:46:13.011699 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.011725 | Processing 2026_07_23_mlb_raw.json
-2026-08-31T15:46:13.012367 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_24_MLB.csv (15 rows)
-2026-08-31T15:46:13.012393 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.012421 | Processing 2026_07_24_mlb_raw.json
-2026-08-31T15:46:13.013079 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_25_MLB.csv (15 rows)
-2026-08-31T15:46:13.013106 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.013133 | Processing 2026_07_25_mlb_raw.json
-2026-08-31T15:46:13.013791 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_26_MLB.csv (15 rows)
-2026-08-31T15:46:13.013824 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.013852 | Processing 2026_07_26_mlb_raw.json
-2026-08-31T15:46:13.014448 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_27_MLB.csv (12 rows)
-2026-08-31T15:46:13.014475 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.014526 | Processing 2026_07_27_mlb_raw.json
-2026-08-31T15:46:13.015169 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.015195 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.015223 | Processing 2026_07_28_mlb_raw.json
-2026-08-31T15:46:13.015889 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_29_MLB.csv (15 rows)
-2026-08-31T15:46:13.015916 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.015943 | Processing 2026_07_29_mlb_raw.json
-2026-08-31T15:46:13.016513 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_30_MLB.csv (10 rows)
-2026-08-31T15:46:13.016542 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.016570 | Processing 2026_07_30_mlb_raw.json
-2026-08-31T15:46:13.017222 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_31_MLB.csv (15 rows)
-2026-08-31T15:46:13.017250 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.017279 | Processing 2026_07_31_mlb_raw.json
-2026-08-31T15:46:13.017952 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_01_MLB.csv (15 rows)
-2026-08-31T15:46:13.017979 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.018007 | Processing 2026_08_01_mlb_raw.json
-2026-08-31T15:46:13.018669 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_02_MLB.csv (15 rows)
-2026-08-31T15:46:13.018696 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.018724 | Processing 2026_08_02_mlb_raw.json
-2026-08-31T15:46:13.019243 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (8 rows)
-2026-08-31T15:46:13.019270 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.019298 | Processing 2026_08_03_mlb_raw.json
-2026-08-31T15:46:13.019533 |   SKIPPED unknown row (9 cells): 08/03/2026 06:40 PM | Washington Nationals (55-58)
+2026-09-02T13:41:53.167606 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_17_MLB.csv (14 rows)
+2026-09-02T13:41:53.167635 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
+2026-09-02T13:41:53.167664 | Processing 2026_05_18_mlb_raw.json
+2026-09-02T13:41:53.168373 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_18_MLB.csv (14 rows)
+2026-09-02T13:41:53.168401 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.168428 | Processing 2026_05_19_mlb_raw.json
+2026-09-02T13:41:53.169189 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.169217 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.169245 | Processing 2026_05_20_mlb_raw.json
+2026-09-02T13:41:53.170063 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_20_MLB.csv (15 rows)
+2026-09-02T13:41:53.170093 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.170129 | Processing 2026_05_21_mlb_raw.json
+2026-09-02T13:41:53.170716 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_21_MLB.csv (7 rows)
+2026-09-02T13:41:53.170744 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.170771 | Processing 2026_05_22_mlb_raw.json
+2026-09-02T13:41:53.171511 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_22_MLB.csv (15 rows)
+2026-09-02T13:41:53.171539 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.171567 | Processing 2026_05_23_mlb_raw.json
+2026-09-02T13:41:53.172304 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_23_MLB.csv (16 rows)
+2026-09-02T13:41:53.172331 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.172360 | Processing 2026_05_24_mlb_raw.json
+2026-09-02T13:41:53.173107 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_24_MLB.csv (16 rows)
+2026-09-02T13:41:53.173140 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.173169 | Processing 2026_05_25_mlb_raw.json
+2026-09-02T13:41:53.173826 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_25_MLB.csv (13 rows)
+2026-09-02T13:41:53.173853 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.173882 | Processing 2026_05_26_mlb_raw.json
+2026-09-02T13:41:53.174587 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_26_MLB.csv (15 rows)
+2026-09-02T13:41:53.174613 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.174641 | Processing 2026_05_27_mlb_raw.json
+2026-09-02T13:41:53.175414 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_27_MLB.csv (15 rows)
+2026-09-02T13:41:53.175444 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.175473 | Processing 2026_05_28_mlb_raw.json
+2026-09-02T13:41:53.176027 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_28_MLB.csv (6 rows)
+2026-09-02T13:41:53.176055 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.176081 | Processing 2026_05_29_mlb_raw.json
+2026-09-02T13:41:53.176769 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_29_MLB.csv (15 rows)
+2026-09-02T13:41:53.176802 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.176830 | Processing 2026_05_30_mlb_raw.json
+2026-09-02T13:41:53.177553 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_30_MLB.csv (15 rows)
+2026-09-02T13:41:53.177580 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.177609 | Processing 2026_05_31_mlb_raw.json
+2026-09-02T13:41:53.178330 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_05_31_MLB.csv (15 rows)
+2026-09-02T13:41:53.178357 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.178385 | Processing 2026_06_01_mlb_raw.json
+2026-09-02T13:41:53.178992 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_01_MLB.csv (9 rows)
+2026-09-02T13:41:53.179020 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.179047 | Processing 2026_06_02_mlb_raw.json
+2026-09-02T13:41:53.179734 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.179761 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.179794 | Processing 2026_06_03_mlb_raw.json
+2026-09-02T13:41:53.180511 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_03_MLB.csv (15 rows)
+2026-09-02T13:41:53.180539 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.180567 | Processing 2026_06_04_mlb_raw.json
+2026-09-02T13:41:53.181173 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_04_MLB.csv (9 rows)
+2026-09-02T13:41:53.181200 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.181228 | Processing 2026_06_05_mlb_raw.json
+2026-09-02T13:41:53.181907 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_05_MLB.csv (14 rows)
+2026-09-02T13:41:53.181935 |   parse_errors=1, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.181996 | Processing 2026_06_06_mlb_raw.json
+2026-09-02T13:41:53.182681 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_06_MLB.csv (15 rows)
+2026-09-02T13:41:53.182708 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.182736 | Processing 2026_06_07_mlb_raw.json
+2026-09-02T13:41:53.183445 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_07_MLB.csv (15 rows)
+2026-09-02T13:41:53.183471 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.183499 | Processing 2026_06_08_mlb_raw.json
+2026-09-02T13:41:53.184087 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_08_MLB.csv (8 rows)
+2026-09-02T13:41:53.184114 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.184141 | Processing 2026_06_09_mlb_raw.json
+2026-09-02T13:41:53.184824 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_09_MLB.csv (15 rows)
+2026-09-02T13:41:53.184851 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.184879 | Processing 2026_06_10_mlb_raw.json
+2026-09-02T13:41:53.185583 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.185610 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.185639 | Processing 2026_06_11_mlb_raw.json
+2026-09-02T13:41:53.186238 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_11_MLB.csv (8 rows)
+2026-09-02T13:41:53.186266 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.186293 | Processing 2026_06_12_mlb_raw.json
+2026-09-02T13:41:53.187014 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.187042 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.187070 | Processing 2026_06_13_mlb_raw.json
+2026-09-02T13:41:53.187841 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_13_MLB.csv (15 rows)
+2026-09-02T13:41:53.187882 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.187925 | Processing 2026_06_14_mlb_raw.json
+2026-09-02T13:41:53.189274 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_14_MLB.csv (15 rows)
+2026-09-02T13:41:53.189317 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.189367 | Processing 2026_06_15_mlb_raw.json
+2026-09-02T13:41:53.190501 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_15_MLB.csv (10 rows)
+2026-09-02T13:41:53.190555 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.190608 | Processing 2026_06_16_mlb_raw.json
+2026-09-02T13:41:53.191933 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_16_MLB.csv (15 rows)
+2026-09-02T13:41:53.192004 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.192055 | Processing 2026_06_17_mlb_raw.json
+2026-09-02T13:41:53.193292 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_17_MLB.csv (14 rows)
+2026-09-02T13:41:53.193342 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.193394 | Processing 2026_06_18_mlb_raw.json
+2026-09-02T13:41:53.194734 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_19_MLB.csv (14 rows)
+2026-09-02T13:41:53.194784 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.194838 | Processing 2026_06_19_mlb_raw.json
+2026-09-02T13:41:53.196165 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_20_MLB.csv (14 rows)
+2026-09-02T13:41:53.196210 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.196256 | Processing 2026_06_20_mlb_raw.json
+2026-09-02T13:41:53.197613 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_21_MLB.csv (15 rows)
+2026-09-02T13:41:53.197654 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.197702 | Processing 2026_06_21_mlb_raw.json
+2026-09-02T13:41:53.198905 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_22_MLB.csv (13 rows)
+2026-09-02T13:41:53.198982 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.199043 | Processing 2026_06_22_mlb_raw.json
+2026-09-02T13:41:53.200340 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_23_MLB.csv (15 rows)
+2026-09-02T13:41:53.200372 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.200404 | Processing 2026_06_23_mlb_raw.json
+2026-09-02T13:41:53.201215 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_24_MLB.csv (16 rows)
+2026-09-02T13:41:53.201244 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.201274 | Processing 2026_06_24_mlb_raw.json
+2026-09-02T13:41:53.201613 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=0
+2026-09-02T13:41:53.201645 | Processing 2026_06_25_mlb_raw.json
+2026-09-02T13:41:53.202332 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_26_MLB.csv (15 rows)
+2026-09-02T13:41:53.202360 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.202389 | Processing 2026_06_26_mlb_raw.json
+2026-09-02T13:41:53.203101 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_27_MLB.csv (15 rows)
+2026-09-02T13:41:53.203129 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.203158 | Processing 2026_06_27_mlb_raw.json
+2026-09-02T13:41:53.203846 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.203874 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.203903 | Processing 2026_06_28_mlb_raw.json
+2026-09-02T13:41:53.204588 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_29_MLB.csv (13 rows)
+2026-09-02T13:41:53.204616 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.204649 | Processing 2026_06_29_mlb_raw.json
+2026-09-02T13:41:53.205372 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_06_30_MLB.csv (15 rows)
+2026-09-02T13:41:53.205400 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.205428 | Processing 2026_06_30_mlb_raw.json
+2026-09-02T13:41:53.206122 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_01_MLB.csv (14 rows)
+2026-09-02T13:41:53.206150 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.206178 | Processing 2026_07_01_mlb_raw.json
+2026-09-02T13:41:53.206764 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_02_MLB.csv (9 rows)
+2026-09-02T13:41:53.206790 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.206817 | Processing 2026_07_02_mlb_raw.json
+2026-09-02T13:41:53.207489 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_03_MLB.csv (13 rows)
+2026-09-02T13:41:53.207516 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.207544 | Processing 2026_07_03_mlb_raw.json
+2026-09-02T13:41:53.208261 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_04_MLB.csv (15 rows)
+2026-09-02T13:41:53.208288 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.208316 | Processing 2026_07_04_mlb_raw.json
+2026-09-02T13:41:53.209017 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_05_MLB.csv (15 rows)
+2026-09-02T13:41:53.209044 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.209071 | Processing 2026_07_05_mlb_raw.json
+2026-09-02T13:41:53.209625 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_06_MLB.csv (8 rows)
+2026-09-02T13:41:53.209652 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.209679 | Processing 2026_07_06_mlb_raw.json
+2026-09-02T13:41:53.210395 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_07_MLB.csv (16 rows)
+2026-09-02T13:41:53.210422 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.210450 | Processing 2026_07_07_mlb_raw.json
+2026-09-02T13:41:53.211135 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_08_MLB.csv (15 rows)
+2026-09-02T13:41:53.211162 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=15, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.211190 | Processing 2026_07_08_mlb_raw.json
+2026-09-02T13:41:53.211814 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_09_MLB.csv (13 rows)
+2026-09-02T13:41:53.211840 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=15, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.211867 | Processing 2026_07_09_mlb_raw.json
+2026-09-02T13:41:53.212573 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.212611 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.212639 | Processing 2026_07_10_mlb_raw.json
+2026-09-02T13:41:53.213335 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_11_MLB.csv (15 rows)
+2026-09-02T13:41:53.213362 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.213390 | Processing 2026_07_11_mlb_raw.json
+2026-09-02T13:41:53.214087 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.214114 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.214147 | Processing 2026_07_12_mlb_raw.json
+2026-09-02T13:41:53.214462 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=0
+2026-09-02T13:41:53.214511 | Processing 2026_07_13_mlb_raw.json
+2026-09-02T13:41:53.215183 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.215210 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.215238 | Processing 2026_07_14_mlb_raw.json
+2026-09-02T13:41:53.215925 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.215972 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.216003 | Processing 2026_07_15_mlb_raw.json
+2026-09-02T13:41:53.216688 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.216715 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.216743 | Processing 2026_07_16_mlb_raw.json
+2026-09-02T13:41:53.217439 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.217465 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.217493 | Processing 2026_07_17_mlb_raw.json
+2026-09-02T13:41:53.218190 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_18_MLB.csv (15 rows)
+2026-09-02T13:41:53.218216 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.218244 | Processing 2026_07_18_mlb_raw.json
+2026-09-02T13:41:53.218912 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.218939 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.218988 | Processing 2026_07_19_mlb_raw.json
+2026-09-02T13:41:53.219670 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_20_MLB.csv (15 rows)
+2026-09-02T13:41:53.219697 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.219724 | Processing 2026_07_20_mlb_raw.json
+2026-09-02T13:41:53.220431 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_21_MLB.csv (15 rows)
+2026-09-02T13:41:53.220458 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.220485 | Processing 2026_07_21_mlb_raw.json
+2026-09-02T13:41:53.221193 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_22_MLB.csv (15 rows)
+2026-09-02T13:41:53.221220 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.221248 | Processing 2026_07_22_mlb_raw.json
+2026-09-02T13:41:53.221752 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_23_MLB.csv (5 rows)
+2026-09-02T13:41:53.221780 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.221806 | Processing 2026_07_23_mlb_raw.json
+2026-09-02T13:41:53.222512 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_24_MLB.csv (15 rows)
+2026-09-02T13:41:53.222540 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.222568 | Processing 2026_07_24_mlb_raw.json
+2026-09-02T13:41:53.223271 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_25_MLB.csv (15 rows)
+2026-09-02T13:41:53.223298 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.223325 | Processing 2026_07_25_mlb_raw.json
+2026-09-02T13:41:53.224018 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_26_MLB.csv (15 rows)
+2026-09-02T13:41:53.224051 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.224079 | Processing 2026_07_26_mlb_raw.json
+2026-09-02T13:41:53.224709 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_27_MLB.csv (12 rows)
+2026-09-02T13:41:53.224736 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.224763 | Processing 2026_07_27_mlb_raw.json
+2026-09-02T13:41:53.225462 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.225489 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.225516 | Processing 2026_07_28_mlb_raw.json
+2026-09-02T13:41:53.226224 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_29_MLB.csv (15 rows)
+2026-09-02T13:41:53.226251 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.226279 | Processing 2026_07_29_mlb_raw.json
+2026-09-02T13:41:53.226869 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_30_MLB.csv (10 rows)
+2026-09-02T13:41:53.226897 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.226924 | Processing 2026_07_30_mlb_raw.json
+2026-09-02T13:41:53.227623 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_07_31_MLB.csv (15 rows)
+2026-09-02T13:41:53.227650 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.227677 | Processing 2026_07_31_mlb_raw.json
+2026-09-02T13:41:53.228402 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_01_MLB.csv (15 rows)
+2026-09-02T13:41:53.228429 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.228458 | Processing 2026_08_01_mlb_raw.json
+2026-09-02T13:41:53.229163 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.229190 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.229218 | Processing 2026_08_02_mlb_raw.json
+2026-09-02T13:41:53.229774 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (8 rows)
+2026-09-02T13:41:53.229801 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.229828 | Processing 2026_08_03_mlb_raw.json
+2026-09-02T13:41:53.230088 |   SKIPPED unknown row (9 cells): 08/03/2026 06:40 PM | Washington Nationals (55-58)
 Philadelphia Phillies (59-53)
-2026-08-31T15:46:13.019580 |   SKIPPED unknown row (9 cells): 08/03/2026 07:05 PM | St. Louis Cardinals (55-57)
+2026-09-02T13:41:53.230138 |   SKIPPED unknown row (9 cells): 08/03/2026 07:05 PM | St. Louis Cardinals (55-57)
 New York Yankees (63-49)
-2026-08-31T15:46:13.019957 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (6 rows)
-2026-08-31T15:46:13.019985 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=2, predictions_dates=1
-2026-08-31T15:46:13.020013 | Processing 2026_08_04_mlb_raw.json
-2026-08-31T15:46:13.020714 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_04_MLB.csv (15 rows)
-2026-08-31T15:46:13.020742 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.020771 | Processing 2026_08_05_mlb_raw.json
-2026-08-31T15:46:13.021071 |   SKIPPED unknown row (9 cells): 08/05/2026 02:10 PM | Toronto Blue Jays (53-61)
+2026-09-02T13:41:53.230482 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (6 rows)
+2026-09-02T13:41:53.230508 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=2, predictions_dates=1
+2026-09-02T13:41:53.230535 | Processing 2026_08_04_mlb_raw.json
+2026-09-02T13:41:53.231263 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_04_MLB.csv (15 rows)
+2026-09-02T13:41:53.231290 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.231318 | Processing 2026_08_05_mlb_raw.json
+2026-09-02T13:41:53.231646 |   SKIPPED unknown row (9 cells): 08/05/2026 02:10 PM | Toronto Blue Jays (53-61)
 Houston Astros (59-56)
-2026-08-31T15:46:13.021119 |   SKIPPED unknown row (9 cells): 08/05/2026 02:20 PM | Los Angeles Dodgers (69-45)
+2026-09-02T13:41:53.231694 |   SKIPPED unknown row (9 cells): 08/05/2026 02:20 PM | Los Angeles Dodgers (69-45)
 Chicago Cubs (65-49)
-2026-08-31T15:46:13.021162 |   SKIPPED unknown row (9 cells): 08/05/2026 02:35 PM | San Francisco Giants (48-66)
+2026-09-02T13:41:53.231737 |   SKIPPED unknown row (9 cells): 08/05/2026 02:35 PM | San Francisco Giants (48-66)
 Texas Rangers (56-58)
-2026-08-31T15:46:13.021211 |   SKIPPED unknown row (9 cells): 08/05/2026 03:10 PM | Tampa Bay Rays (67-46)
+2026-09-02T13:41:53.231786 |   SKIPPED unknown row (9 cells): 08/05/2026 03:10 PM | Tampa Bay Rays (67-46)
 Colorado Rockies (45-69)
-2026-08-31T15:46:13.021578 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_05_MLB.csv (11 rows)
-2026-08-31T15:46:13.021604 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=4, predictions_dates=1
-2026-08-31T15:46:13.021631 | Processing 2026_08_06_mlb_raw.json
-2026-08-31T15:46:13.021765 |   SKIPPED unknown row (9 cells): 08/06/2026 07:10 PM | Chicago White Sox (59-54)
+2026-09-02T13:41:53.232163 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_05_MLB.csv (11 rows)
+2026-09-02T13:41:53.232190 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=4, predictions_dates=1
+2026-09-02T13:41:53.232218 | Processing 2026_08_06_mlb_raw.json
+2026-09-02T13:41:53.232386 |   SKIPPED unknown row (9 cells): 08/06/2026 07:10 PM | Chicago White Sox (59-54)
 Boston Red Sox (62-51)
-2026-08-31T15:46:13.021812 |   SKIPPED unknown row (9 cells): 08/06/2026 07:40 PM | Minnesota Twins (56-59)
+2026-09-02T13:41:53.232436 |   SKIPPED unknown row (9 cells): 08/06/2026 07:40 PM | Minnesota Twins (56-59)
 Kansas City Royals (48-67)
-2026-08-31T15:46:13.022143 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_06_MLB.csv (1 rows)
-2026-08-31T15:46:13.022168 |   parse_errors=1, skipped_summary=3, completed_rows_ignored=16, unknown_rows=2, predictions_dates=1
-2026-08-31T15:46:13.022194 | Processing 2026_08_07_mlb_raw.json
-2026-08-31T15:46:13.022380 |   SKIPPED unknown row (9 cells): 08/07/2026 06:40 PM | New York Mets (50-66)
+2026-09-02T13:41:53.232768 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_06_MLB.csv (1 rows)
+2026-09-02T13:41:53.232794 |   parse_errors=1, skipped_summary=3, completed_rows_ignored=16, unknown_rows=2, predictions_dates=1
+2026-09-02T13:41:53.232820 | Processing 2026_08_07_mlb_raw.json
+2026-09-02T13:41:53.233064 |   SKIPPED unknown row (9 cells): 08/07/2026 06:40 PM | New York Mets (50-66)
 Pittsburgh Pirates (57-60)
-2026-08-31T15:46:13.022425 |   SKIPPED unknown row (9 cells): 08/07/2026 07:10 PM | Oakland Athletics (45-70)
+2026-09-02T13:41:53.233115 |   SKIPPED unknown row (9 cells): 08/07/2026 07:10 PM | Oakland Athletics (45-70)
 Boston Red Sox (63-51)
-2026-08-31T15:46:13.022467 |   SKIPPED unknown row (9 cells): 08/07/2026 07:10 PM | Los Angeles Angels (44-71)
+2026-09-02T13:41:53.233168 |   SKIPPED unknown row (9 cells): 08/07/2026 07:10 PM | Los Angeles Angels (44-71)
 Miami Marlins (58-58)
-2026-08-31T15:46:13.022535 |   SKIPPED unknown row (9 cells): 08/07/2026 07:40 PM | Cleveland Guardians (57-59)
+2026-09-02T13:41:53.233211 |   SKIPPED unknown row (9 cells): 08/07/2026 07:40 PM | Cleveland Guardians (57-59)
 Chicago White Sox (59-55)
-2026-08-31T15:46:13.022578 |   SKIPPED unknown row (9 cells): 08/07/2026 07:40 PM | Minnesota Twins (57-59)
+2026-09-02T13:41:53.233253 |   SKIPPED unknown row (9 cells): 08/07/2026 07:40 PM | Minnesota Twins (57-59)
 Milwaukee Brewers (72-43)
-2026-08-31T15:46:13.022619 |   SKIPPED unknown row (9 cells): 08/07/2026 07:45 PM | Cincinnati Reds (56-58)
+2026-09-02T13:41:53.233296 |   SKIPPED unknown row (9 cells): 08/07/2026 07:45 PM | Cincinnati Reds (56-58)
 Washington Nationals (56-61)
-2026-08-31T15:46:13.022660 |   SKIPPED unknown row (9 cells): 08/07/2026 08:10 PM | Chicago Cubs (67-49)
+2026-09-02T13:41:53.233337 |   SKIPPED unknown row (9 cells): 08/07/2026 08:10 PM | Chicago Cubs (67-49)
 Kansas City Royals (48-68)
-2026-08-31T15:46:13.022701 |   SKIPPED unknown row (9 cells): 08/07/2026 08:15 PM | Colorado Rockies (45-70)
+2026-09-02T13:41:53.233377 |   SKIPPED unknown row (9 cells): 08/07/2026 08:15 PM | Colorado Rockies (45-70)
 St. Louis Cardinals (57-58)
-2026-08-31T15:46:13.022753 |   SKIPPED unknown row (9 cells): 08/07/2026 08:15 PM | Baltimore Orioles (56-59)
+2026-09-02T13:41:53.233418 |   SKIPPED unknown row (9 cells): 08/07/2026 08:15 PM | Baltimore Orioles (56-59)
 Texas Rangers (57-58)
-2026-08-31T15:46:13.022795 |   SKIPPED unknown row (9 cells): 08/07/2026 08:35 PM | Toronto Blue Jays (54-62)
+2026-09-02T13:41:53.233460 |   SKIPPED unknown row (9 cells): 08/07/2026 08:35 PM | Toronto Blue Jays (54-62)
 Philadelphia Phillies (62-54)
-2026-08-31T15:46:13.022835 |   SKIPPED unknown row (9 cells): 08/07/2026 09:00 PM | Atlanta Braves (70-45)
+2026-09-02T13:41:53.233500 |   SKIPPED unknown row (9 cells): 08/07/2026 09:00 PM | Atlanta Braves (70-45)
 New York Yankees (64-51)
-2026-08-31T15:46:13.023179 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_07_MLB.csv (4 rows)
-2026-08-31T15:46:13.023206 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=11, predictions_dates=1
-2026-08-31T15:46:13.023232 | Processing 2026_08_08_mlb_raw.json
-2026-08-31T15:46:13.023365 |   SKIPPED unknown row (9 cells): 08/08/2026 06:05 PM | Toronto Blue Jays (55-62)
+2026-09-02T13:41:53.233833 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_07_MLB.csv (4 rows)
+2026-09-02T13:41:53.233859 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=11, predictions_dates=1
+2026-09-02T13:41:53.233887 | Processing 2026_08_08_mlb_raw.json
+2026-09-02T13:41:53.234070 |   SKIPPED unknown row (9 cells): 08/08/2026 06:05 PM | Toronto Blue Jays (55-62)
 Philadelphia Phillies (62-55)
-2026-08-31T15:46:13.023411 |   SKIPPED unknown row (9 cells): 08/08/2026 06:40 PM | New York Mets (51-66)
+2026-09-02T13:41:53.234118 |   SKIPPED unknown row (9 cells): 08/08/2026 06:40 PM | New York Mets (51-66)
 Pittsburgh Pirates (57-61)
-2026-08-31T15:46:13.023453 |   SKIPPED unknown row (9 cells): 08/08/2026 06:45 PM | Cincinnati Reds (56-59)
+2026-09-02T13:41:53.234161 |   SKIPPED unknown row (9 cells): 08/08/2026 06:45 PM | Cincinnati Reds (56-59)
 Washington Nationals (57-61)
-2026-08-31T15:46:13.023518 |   SKIPPED unknown row (9 cells): 08/08/2026 07:10 PM | Chicago Cubs (68-49)
+2026-09-02T13:41:53.234202 |   SKIPPED unknown row (9 cells): 08/08/2026 07:10 PM | Chicago Cubs (68-49)
 Kansas City Royals (48-69)
-2026-08-31T15:46:13.023564 |   SKIPPED unknown row (9 cells): 08/08/2026 07:10 PM | Minnesota Twins (58-59)
+2026-09-02T13:41:53.234243 |   SKIPPED unknown row (9 cells): 08/08/2026 07:10 PM | Minnesota Twins (58-59)
 Milwaukee Brewers (72-44)
-2026-08-31T15:46:13.023607 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Colorado Rockies (45-71)
+2026-09-02T13:41:53.234282 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Colorado Rockies (45-71)
 St. Louis Cardinals (58-58)
-2026-08-31T15:46:13.023648 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Cleveland Guardians (58-59)
+2026-09-02T13:41:53.234322 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Cleveland Guardians (58-59)
 Chicago White Sox (59-56)
-2026-08-31T15:46:13.023688 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Baltimore Orioles (56-60)
+2026-09-02T13:41:53.234361 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Baltimore Orioles (56-60)
 Texas Rangers (58-58)
-2026-08-31T15:46:13.023727 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Houston Astros (60-57)
+2026-09-02T13:41:53.234399 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Houston Astros (60-57)
 San Diego Padres (60-57)
-2026-08-31T15:46:13.023768 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Detroit Tigers (56-60)
+2026-09-02T13:41:53.234437 |   SKIPPED unknown row (9 cells): 08/08/2026 07:15 PM | Detroit Tigers (56-60)
 San Francisco Giants (49-67)
-2026-08-31T15:46:13.023815 |   SKIPPED unknown row (9 cells): 08/08/2026 08:10 PM | Los Angeles Dodgers (69-47)
+2026-09-02T13:41:53.234484 |   SKIPPED unknown row (9 cells): 08/08/2026 08:10 PM | Los Angeles Dodgers (69-47)
 Arizona Diamondbacks (62-55)
-2026-08-31T15:46:13.024141 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_08_MLB.csv (1 rows)
-2026-08-31T15:46:13.024167 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=11, predictions_dates=1
-2026-08-31T15:46:13.024193 | Processing 2026_08_09_mlb_raw.json
-2026-08-31T15:46:13.024466 |   SKIPPED unknown row (9 cells): 08/09/2026 08:20 PM | Houston Astros (60-58)
+2026-09-02T13:41:53.234808 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_08_MLB.csv (1 rows)
+2026-09-02T13:41:53.234834 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=11, predictions_dates=1
+2026-09-02T13:41:53.234860 | Processing 2026_08_09_mlb_raw.json
+2026-09-02T13:41:53.235182 |   SKIPPED unknown row (9 cells): 08/09/2026 08:20 PM | Houston Astros (60-58)
 San Diego Padres (61-57)
-2026-08-31T15:46:13.024838 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (10 rows)
-2026-08-31T15:46:13.024864 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
-2026-08-31T15:46:13.024892 | Processing 2026_08_10_mlb_raw.json
-2026-08-31T15:46:13.025102 |   SKIPPED unknown row (9 cells): 08/10/2026 07:07 PM | Boston Red Sox (64-53)
+2026-09-02T13:41:53.235542 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (10 rows)
+2026-09-02T13:41:53.235572 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
+2026-09-02T13:41:53.235604 | Processing 2026_08_10_mlb_raw.json
+2026-09-02T13:41:53.235859 |   SKIPPED unknown row (9 cells): 08/10/2026 07:07 PM | Boston Red Sox (64-53)
 Toronto Blue Jays (56-63)
-2026-08-31T15:46:13.025147 |   SKIPPED unknown row (9 cells): 08/10/2026 07:15 PM | New York Mets (52-67)
+2026-09-02T13:41:53.235907 |   SKIPPED unknown row (9 cells): 08/10/2026 07:15 PM | New York Mets (52-67)
 Atlanta Braves (71-47)
-2026-08-31T15:46:13.025190 |   SKIPPED unknown row (9 cells): 08/10/2026 07:40 PM | Baltimore Orioles (57-61)
+2026-09-02T13:41:53.235968 |   SKIPPED unknown row (9 cells): 08/10/2026 07:40 PM | Baltimore Orioles (57-61)
 Minnesota Twins (58-61)
-2026-08-31T15:46:13.025231 |   SKIPPED unknown row (9 cells): 08/10/2026 07:45 PM | Philadelphia Phillies (63-56)
+2026-09-02T13:41:53.236018 |   SKIPPED unknown row (9 cells): 08/10/2026 07:45 PM | Philadelphia Phillies (63-56)
 St. Louis Cardinals (59-59)
-2026-08-31T15:46:13.025578 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (6 rows)
-2026-08-31T15:46:13.025604 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=4, predictions_dates=1
-2026-08-31T15:46:13.025630 | Processing 2026_08_11_mlb_raw.json
-2026-08-31T15:46:13.025931 |   SKIPPED unknown row (9 cells): 08/11/2026 06:40 PM | Pittsburgh Pirates (58-62)
+2026-09-02T13:41:53.236365 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (6 rows)
+2026-09-02T13:41:53.236392 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=4, predictions_dates=1
+2026-09-02T13:41:53.236419 | Processing 2026_08_11_mlb_raw.json
+2026-09-02T13:41:53.236763 |   SKIPPED unknown row (9 cells): 08/11/2026 06:40 PM | Pittsburgh Pirates (58-62)
 Miami Marlins (60-59)
-2026-08-31T15:46:13.025977 |   SKIPPED unknown row (9 cells): 08/11/2026 06:40 PM | Cleveland Guardians (58-61)
+2026-09-02T13:41:53.236811 |   SKIPPED unknown row (9 cells): 08/11/2026 06:40 PM | Cleveland Guardians (58-61)
 Detroit Tigers (58-60)
-2026-08-31T15:46:13.026019 |   SKIPPED unknown row (9 cells): 08/11/2026 06:45 PM | Chicago Cubs (69-50)
+2026-09-02T13:41:53.236855 |   SKIPPED unknown row (9 cells): 08/11/2026 06:45 PM | Chicago Cubs (69-50)
 Washington Nationals (59-61)
-2026-08-31T15:46:13.026357 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_11_MLB.csv (11 rows)
-2026-08-31T15:46:13.026384 |   parse_errors=1, skipped_summary=3, completed_rows_ignored=16, unknown_rows=3, predictions_dates=1
-2026-08-31T15:46:13.026411 | Processing 2026_08_12_mlb_raw.json
-2026-08-31T15:46:13.026580 |   SKIPPED unknown row (9 cells): 08/12/2026 06:40 PM | Pittsburgh Pirates (58-63)
+2026-09-02T13:41:53.237237 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_11_MLB.csv (11 rows)
+2026-09-02T13:41:53.237264 |   parse_errors=1, skipped_summary=3, completed_rows_ignored=16, unknown_rows=3, predictions_dates=1
+2026-09-02T13:41:53.237291 | Processing 2026_08_12_mlb_raw.json
+2026-09-02T13:41:53.237473 |   SKIPPED unknown row (9 cells): 08/12/2026 06:40 PM | Pittsburgh Pirates (58-63)
 Miami Marlins (61-59)
-2026-08-31T15:46:13.026626 |   SKIPPED unknown row (9 cells): 08/12/2026 06:40 PM | Cleveland Guardians (58-62)
+2026-09-02T13:41:53.237520 |   SKIPPED unknown row (9 cells): 08/12/2026 06:40 PM | Cleveland Guardians (58-62)
 Detroit Tigers (59-60)
-2026-08-31T15:46:13.026669 |   SKIPPED unknown row (9 cells): 08/12/2026 06:45 PM | Chicago Cubs (70-50)
+2026-09-02T13:41:53.237564 |   SKIPPED unknown row (9 cells): 08/12/2026 06:45 PM | Chicago Cubs (70-50)
 Washington Nationals (59-62)
-2026-08-31T15:46:13.026712 |   SKIPPED unknown row (9 cells): 08/12/2026 07:05 PM | Seattle Mariners (56-64)
+2026-09-02T13:41:53.237605 |   SKIPPED unknown row (9 cells): 08/12/2026 07:05 PM | Seattle Mariners (56-64)
 New York Yankees (67-52)
-2026-08-31T15:46:13.026753 |   SKIPPED unknown row (9 cells): 08/12/2026 07:07 PM | Boston Red Sox (64-55)
+2026-09-02T13:41:53.237646 |   SKIPPED unknown row (9 cells): 08/12/2026 07:07 PM | Boston Red Sox (64-55)
 Toronto Blue Jays (58-63)
-2026-08-31T15:46:13.026795 |   SKIPPED unknown row (9 cells): 08/12/2026 07:15 PM | New York Mets (53-68)
+2026-09-02T13:41:53.237686 |   SKIPPED unknown row (9 cells): 08/12/2026 07:15 PM | New York Mets (53-68)
 Atlanta Braves (72-48)
-2026-08-31T15:46:13.026837 |   SKIPPED unknown row (9 cells): 08/12/2026 07:40 PM | Cincinnati Reds (57-61)
+2026-09-02T13:41:53.237728 |   SKIPPED unknown row (9 cells): 08/12/2026 07:40 PM | Cincinnati Reds (57-61)
 Chicago White Sox (61-57)
-2026-08-31T15:46:13.027166 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_12_MLB.csv (2 rows)
-2026-08-31T15:46:13.027193 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=7, predictions_dates=1
-2026-08-31T15:46:13.027219 | Processing 2026_08_13_mlb_raw.json
-2026-08-31T15:46:13.027360 |   SKIPPED unknown row (9 cells): 08/13/2026 07:30 PM | Philadelphia Phillies (64-58)
+2026-09-02T13:41:53.238082 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_12_MLB.csv (2 rows)
+2026-09-02T13:41:53.238119 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=7, predictions_dates=1
+2026-09-02T13:41:53.238147 | Processing 2026_08_13_mlb_raw.json
+2026-09-02T13:41:53.238296 |   SKIPPED unknown row (9 cells): 08/13/2026 07:30 PM | Philadelphia Phillies (64-58)
 Minnesota Twins (60-62)
-2026-08-31T15:46:13.027720 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_13_MLB.csv (2 rows)
-2026-08-31T15:46:13.027752 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
-2026-08-31T15:46:13.027777 | Processing 2026_08_14_mlb_raw.json
-2026-08-31T15:46:13.027958 |   SKIPPED unknown row (9 cells): 08/14/2026 06:40 PM | Chicago White Sox (62-58)
+2026-09-02T13:41:53.238671 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_13_MLB.csv (2 rows)
+2026-09-02T13:41:53.238703 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
+2026-09-02T13:41:53.238729 | Processing 2026_08_14_mlb_raw.json
+2026-09-02T13:41:53.238974 |   SKIPPED unknown row (9 cells): 08/14/2026 06:40 PM | Chicago White Sox (62-58)
 Detroit Tigers (60-61)
-2026-08-31T15:46:13.028003 |   SKIPPED unknown row (9 cells): 08/14/2026 06:40 PM | Boston Red Sox (65-56)
+2026-09-02T13:41:53.239026 |   SKIPPED unknown row (9 cells): 08/14/2026 06:40 PM | Boston Red Sox (65-56)
 Pittsburgh Pirates (59-64)
-2026-08-31T15:46:13.028044 |   SKIPPED unknown row (9 cells): 08/14/2026 07:07 PM | New York Yankees (68-53)
+2026-09-02T13:41:53.239068 |   SKIPPED unknown row (9 cells): 08/14/2026 07:07 PM | New York Yankees (68-53)
 Toronto Blue Jays (59-64)
-2026-08-31T15:46:13.028085 |   SKIPPED unknown row (9 cells): 08/14/2026 07:10 PM | Washington Nationals (60-63)
+2026-09-02T13:41:53.239110 |   SKIPPED unknown row (9 cells): 08/14/2026 07:10 PM | Washington Nationals (60-63)
 New York Mets (53-69)
-2026-08-31T15:46:13.028125 |   SKIPPED unknown row (9 cells): 08/14/2026 07:10 PM | Baltimore Orioles (58-63)
+2026-09-02T13:41:53.239153 |   SKIPPED unknown row (9 cells): 08/14/2026 07:10 PM | Baltimore Orioles (58-63)
 Tampa Bay Rays (74-46)
-2026-08-31T15:46:13.028165 |   SKIPPED unknown row (9 cells): 08/14/2026 07:10 PM | San Diego Padres (65-57)
+2026-09-02T13:41:53.239195 |   SKIPPED unknown row (9 cells): 08/14/2026 07:10 PM | San Diego Padres (65-57)
 Cleveland Guardians (59-63)
-2026-08-31T15:46:13.028205 |   SKIPPED unknown row (9 cells): 08/14/2026 07:15 PM | Arizona Diamondbacks (64-58)
+2026-09-02T13:41:53.239237 |   SKIPPED unknown row (9 cells): 08/14/2026 07:15 PM | Arizona Diamondbacks (64-58)
 Atlanta Braves (73-48)
-2026-08-31T15:46:13.028244 |   SKIPPED unknown row (9 cells): 08/14/2026 08:10 PM | Seattle Mariners (57-65)
+2026-09-02T13:41:53.239277 |   SKIPPED unknown row (9 cells): 08/14/2026 08:10 PM | Seattle Mariners (57-65)
 Houston Astros (62-60)
-2026-08-31T15:46:13.028604 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_14_MLB.csv (4 rows)
-2026-08-31T15:46:13.028631 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=8, predictions_dates=1
-2026-08-31T15:46:13.028657 | Processing 2026_08_15_mlb_raw.json
-2026-08-31T15:46:13.028807 |   SKIPPED unknown row (9 cells): 08/15/2026 06:10 PM | Baltimore Orioles (59-63)
+2026-09-02T13:41:53.239610 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_14_MLB.csv (4 rows)
+2026-09-02T13:41:53.239637 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=8, predictions_dates=1
+2026-09-02T13:41:53.239664 | Processing 2026_08_15_mlb_raw.json
+2026-09-02T13:41:53.239850 |   SKIPPED unknown row (9 cells): 08/15/2026 06:10 PM | Baltimore Orioles (59-63)
 Tampa Bay Rays (74-47)
-2026-08-31T15:46:13.028852 |   SKIPPED unknown row (9 cells): 08/15/2026 06:40 PM | Miami Marlins (62-61)
+2026-09-02T13:41:53.239899 |   SKIPPED unknown row (9 cells): 08/15/2026 06:40 PM | Miami Marlins (62-61)
 Cincinnati Reds (59-62)
-2026-08-31T15:46:13.028894 |   SKIPPED unknown row (9 cells): 08/15/2026 07:10 PM | Seattle Mariners (57-66)
+2026-09-02T13:41:53.239943 |   SKIPPED unknown row (9 cells): 08/15/2026 07:10 PM | Seattle Mariners (57-66)
 Houston Astros (63-60)
-2026-08-31T15:46:13.028935 |   SKIPPED unknown row (9 cells): 08/15/2026 07:10 PM | San Diego Padres (66-57)
+2026-09-02T13:41:53.240016 |   SKIPPED unknown row (9 cells): 08/15/2026 07:10 PM | San Diego Padres (66-57)
 Cleveland Guardians (59-64)
-2026-08-31T15:46:13.028975 |   SKIPPED unknown row (9 cells): 08/15/2026 07:10 PM | Philadelphia Phillies (65-58)
+2026-09-02T13:41:53.240065 |   SKIPPED unknown row (9 cells): 08/15/2026 07:10 PM | Philadelphia Phillies (65-58)
 Minnesota Twins (60-63)
-2026-08-31T15:46:13.029015 |   SKIPPED unknown row (9 cells): 08/15/2026 07:15 PM | Arizona Diamondbacks (65-58)
+2026-09-02T13:41:53.240113 |   SKIPPED unknown row (9 cells): 08/15/2026 07:15 PM | Arizona Diamondbacks (65-58)
 Atlanta Braves (73-49)
-2026-08-31T15:46:13.029054 |   SKIPPED unknown row (9 cells): 08/15/2026 07:15 PM | Milwaukee Brewers (75-48)
+2026-09-02T13:41:53.240155 |   SKIPPED unknown row (9 cells): 08/15/2026 07:15 PM | Milwaukee Brewers (75-48)
 Los Angeles Dodgers (74-49)
-2026-08-31T15:46:13.029094 |   SKIPPED unknown row (9 cells): 08/15/2026 07:15 PM | Boston Red Sox (65-57)
+2026-09-02T13:41:53.240196 |   SKIPPED unknown row (9 cells): 08/15/2026 07:15 PM | Boston Red Sox (65-57)
 Pittsburgh Pirates (60-64)
-2026-08-31T15:46:13.029411 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_15_MLB.csv (2 rows)
-2026-08-31T15:46:13.029436 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=8, predictions_dates=1
-2026-08-31T15:46:13.029462 | Processing 2026_08_16_mlb_raw.json
-2026-08-31T15:46:13.029773 |   SKIPPED unknown row (9 cells): 08/16/2026 07:20 PM | Seattle Mariners (58-66)
+2026-09-02T13:41:53.240518 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_15_MLB.csv (2 rows)
+2026-09-02T13:41:53.240545 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=8, predictions_dates=1
+2026-09-02T13:41:53.240571 | Processing 2026_08_16_mlb_raw.json
+2026-09-02T13:41:53.240908 |   SKIPPED unknown row (9 cells): 08/16/2026 07:20 PM | Seattle Mariners (58-66)
 Houston Astros (63-61)
-2026-08-31T15:46:13.030118 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_17_MLB.csv (11 rows)
-2026-08-31T15:46:13.030145 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
-2026-08-31T15:46:13.030172 | Processing 2026_08_17_mlb_raw.json
-2026-08-31T15:46:13.030562 |   SKIPPED unknown row (9 cells): 08/17/2026 06:05 PM | Baltimore Orioles (61-63)
+2026-09-02T13:41:53.241299 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_17_MLB.csv (11 rows)
+2026-09-02T13:41:53.241328 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=1, predictions_dates=1
+2026-09-02T13:41:53.241356 | Processing 2026_08_17_mlb_raw.json
+2026-09-02T13:41:53.241763 |   SKIPPED unknown row (9 cells): 08/17/2026 06:05 PM | Baltimore Orioles (61-63)
 Tampa Bay Rays (74-49)
-2026-08-31T15:46:13.030609 |   SKIPPED unknown row (9 cells): 08/17/2026 06:40 PM | St. Louis Cardinals (63-61)
+2026-09-02T13:41:53.241812 |   SKIPPED unknown row (9 cells): 08/17/2026 06:40 PM | St. Louis Cardinals (63-61)
 Cincinnati Reds (59-64)
-2026-08-31T15:46:13.030651 |   SKIPPED unknown row (9 cells): 08/17/2026 06:40 PM | Miami Marlins (64-61)
+2026-09-02T13:41:53.241855 |   SKIPPED unknown row (9 cells): 08/17/2026 06:40 PM | Miami Marlins (64-61)
 Philadelphia Phillies (67-58)
-2026-08-31T15:46:13.030692 |   SKIPPED unknown row (9 cells): 08/17/2026 07:05 PM | Detroit Tigers (60-64)
+2026-09-02T13:41:53.241897 |   SKIPPED unknown row (9 cells): 08/17/2026 07:05 PM | Detroit Tigers (60-64)
 Pittsburgh Pirates (61-65)
-2026-08-31T15:46:13.030733 |   SKIPPED unknown row (9 cells): 08/17/2026 07:10 PM | San Diego Padres (67-58)
+2026-09-02T13:41:53.241938 |   SKIPPED unknown row (9 cells): 08/17/2026 07:10 PM | San Diego Padres (67-58)
 New York Mets (56-69)
-2026-08-31T15:46:13.030780 |   SKIPPED unknown row (9 cells): 08/17/2026 07:10 PM | Arizona Diamondbacks (66-59)
+2026-09-02T13:41:53.242075 |   SKIPPED unknown row (9 cells): 08/17/2026 07:10 PM | Arizona Diamondbacks (66-59)
 Boston Red Sox (66-58)
-2026-08-31T15:46:13.030821 |   SKIPPED unknown row (9 cells): 08/17/2026 07:40 PM | Oakland Athletics (49-75)
+2026-09-02T13:41:53.242126 |   SKIPPED unknown row (9 cells): 08/17/2026 07:40 PM | Oakland Athletics (49-75)
 Kansas City Royals (51-74)
-2026-08-31T15:46:13.030860 |   SKIPPED unknown row (9 cells): 08/17/2026 07:40 PM | Chicago White Sox (65-58)
+2026-09-02T13:41:53.242169 |   SKIPPED unknown row (9 cells): 08/17/2026 07:40 PM | Chicago White Sox (65-58)
 Chicago Cubs (72-53)
-2026-08-31T15:46:13.030900 |   SKIPPED unknown row (9 cells): 08/17/2026 08:30 PM | Atlanta Braves (74-50)
+2026-09-02T13:41:53.242211 |   SKIPPED unknown row (9 cells): 08/17/2026 08:30 PM | Atlanta Braves (74-50)
 Minnesota Twins (60-65)
-2026-08-31T15:46:13.030940 |   SKIPPED unknown row (9 cells): 08/17/2026 08:40 PM | Los Angeles Dodgers (74-51)
+2026-09-02T13:41:53.242258 |   SKIPPED unknown row (9 cells): 08/17/2026 08:40 PM | Los Angeles Dodgers (74-51)
 Colorado Rockies (50-74)
-2026-08-31T15:46:13.031290 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_18_MLB.csv (15 rows)
-2026-08-31T15:46:13.031317 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=10, predictions_dates=1
-2026-08-31T15:46:13.031346 | Processing 2026_08_18_mlb_raw.json
-2026-08-31T15:46:13.031738 |   SKIPPED unknown row (9 cells): 08/18/2026 06:35 PM | New York Yankees (69-55)
+2026-09-02T13:41:53.242624 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_18_MLB.csv (15 rows)
+2026-09-02T13:41:53.242652 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=10, predictions_dates=1
+2026-09-02T13:41:53.242682 | Processing 2026_08_18_mlb_raw.json
+2026-09-02T13:41:53.243104 |   SKIPPED unknown row (9 cells): 08/18/2026 06:35 PM | New York Yankees (69-55)
 Baltimore Orioles (61-64)
-2026-08-31T15:46:13.031785 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | St. Louis Cardinals (64-62)
+2026-09-02T13:41:53.243152 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | St. Louis Cardinals (64-62)
 Cincinnati Reds (60-65)
-2026-08-31T15:46:13.031828 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | Miami Marlins (64-62)
+2026-09-02T13:41:53.243194 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | Miami Marlins (64-62)
 Philadelphia Phillies (68-58)
-2026-08-31T15:46:13.031868 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | Toronto Blue Jays (61-65)
+2026-09-02T13:41:53.243236 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | Toronto Blue Jays (61-65)
 Tampa Bay Rays (75-49)
-2026-08-31T15:46:13.031909 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | Detroit Tigers (61-64)
+2026-09-02T13:41:53.243276 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | Detroit Tigers (61-64)
 Pittsburgh Pirates (61-66)
-2026-08-31T15:46:13.031949 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | San Francisco Giants (51-73)
+2026-09-02T13:41:53.243316 |   SKIPPED unknown row (9 cells): 08/18/2026 06:40 PM | San Francisco Giants (51-73)
 Cleveland Guardians (60-65)
-2026-08-31T15:46:13.031989 |   SKIPPED unknown row (9 cells): 08/18/2026 07:10 PM | San Diego Padres (67-59)
+2026-09-02T13:41:53.243357 |   SKIPPED unknown row (9 cells): 08/18/2026 07:10 PM | San Diego Padres (67-59)
 New York Mets (57-69)
-2026-08-31T15:46:13.032030 |   SKIPPED unknown row (9 cells): 08/18/2026 07:10 PM | Arizona Diamondbacks (66-60)
+2026-09-02T13:41:53.243397 |   SKIPPED unknown row (9 cells): 08/18/2026 07:10 PM | Arizona Diamondbacks (66-60)
 Boston Red Sox (67-58)
-2026-08-31T15:46:13.032071 |   SKIPPED unknown row (9 cells): 08/18/2026 07:40 PM | Oakland Athletics (49-76)
+2026-09-02T13:41:53.243437 |   SKIPPED unknown row (9 cells): 08/18/2026 07:40 PM | Oakland Athletics (49-76)
 Kansas City Royals (52-74)
-2026-08-31T15:46:13.032112 |   SKIPPED unknown row (9 cells): 08/18/2026 07:40 PM | Seattle Mariners (59-66)
+2026-09-02T13:41:53.243477 |   SKIPPED unknown row (9 cells): 08/18/2026 07:40 PM | Seattle Mariners (59-66)
 Milwaukee Brewers (77-48)
-2026-08-31T15:46:13.032152 |   SKIPPED unknown row (9 cells): 08/18/2026 07:40 PM | Atlanta Braves (74-51)
+2026-09-02T13:41:53.243518 |   SKIPPED unknown row (9 cells): 08/18/2026 07:40 PM | Atlanta Braves (74-51)
 Minnesota Twins (61-65)
-2026-08-31T15:46:13.032192 |   SKIPPED unknown row (9 cells): 08/18/2026 08:05 PM | Washington Nationals (60-66)
+2026-09-02T13:41:53.243557 |   SKIPPED unknown row (9 cells): 08/18/2026 08:05 PM | Washington Nationals (60-66)
 Texas Rangers (61-64)
-2026-08-31T15:46:13.032231 |   SKIPPED unknown row (9 cells): 08/18/2026 08:08 PM | Chicago White Sox (65-59)
+2026-09-02T13:41:53.243597 |   SKIPPED unknown row (9 cells): 08/18/2026 08:08 PM | Chicago White Sox (65-59)
 Chicago Cubs (73-53)
-2026-08-31T15:46:13.032270 |   SKIPPED unknown row (9 cells): 08/18/2026 08:10 PM | Los Angeles Angels (49-76)
+2026-09-02T13:41:53.243636 |   SKIPPED unknown row (9 cells): 08/18/2026 08:10 PM | Los Angeles Angels (49-76)
 Houston Astros (63-62)
-2026-08-31T15:46:13.032311 |   SKIPPED unknown row (9 cells): 08/18/2026 08:40 PM | Los Angeles Dodgers (75-51)
+2026-09-02T13:41:53.243676 |   SKIPPED unknown row (9 cells): 08/18/2026 08:40 PM | Los Angeles Dodgers (75-51)
 Colorado Rockies (50-75)
-2026-08-31T15:46:13.032689 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_19_MLB.csv (15 rows)
-2026-08-31T15:46:13.032717 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=15, predictions_dates=1
-2026-08-31T15:46:13.032747 | Processing 2026_08_19_mlb_raw.json
-2026-08-31T15:46:13.033013 |   SKIPPED unknown row (9 cells): 08/19/2026 06:35 PM | New York Yankees (70-55)
+2026-09-02T13:41:53.244247 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.244278 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=15, predictions_dates=1
+2026-09-02T13:41:53.244308 | Processing 2026_08_19_mlb_raw.json
+2026-09-02T13:41:53.244581 |   SKIPPED unknown row (9 cells): 08/19/2026 06:35 PM | New York Yankees (70-55)
 Baltimore Orioles (61-65)
-2026-08-31T15:46:13.033059 |   SKIPPED unknown row (9 cells): 08/19/2026 06:40 PM | St. Louis Cardinals (65-62)
+2026-09-02T13:41:53.244628 |   SKIPPED unknown row (9 cells): 08/19/2026 06:40 PM | St. Louis Cardinals (65-62)
 Cincinnati Reds (60-66)
-2026-08-31T15:46:13.033101 |   SKIPPED unknown row (9 cells): 08/19/2026 06:40 PM | Toronto Blue Jays (62-65)
+2026-09-02T13:41:53.244671 |   SKIPPED unknown row (9 cells): 08/19/2026 06:40 PM | Toronto Blue Jays (62-65)
 Tampa Bay Rays (75-50)
-2026-08-31T15:46:13.033144 |   SKIPPED unknown row (9 cells): 08/19/2026 06:40 PM | San Francisco Giants (51-74)
+2026-09-02T13:41:53.244713 |   SKIPPED unknown row (9 cells): 08/19/2026 06:40 PM | San Francisco Giants (51-74)
 Cleveland Guardians (61-65)
-2026-08-31T15:46:13.033184 |   SKIPPED unknown row (9 cells): 08/19/2026 07:40 PM | Oakland Athletics (49-77)
+2026-09-02T13:41:53.244754 |   SKIPPED unknown row (9 cells): 08/19/2026 07:40 PM | Oakland Athletics (49-77)
 Kansas City Royals (53-74)
-2026-08-31T15:46:13.033224 |   SKIPPED unknown row (9 cells): 08/19/2026 07:40 PM | Seattle Mariners (59-67)
+2026-09-02T13:41:53.244794 |   SKIPPED unknown row (9 cells): 08/19/2026 07:40 PM | Seattle Mariners (59-67)
 Milwaukee Brewers (78-48)
-2026-08-31T15:46:13.033272 |   SKIPPED unknown row (9 cells): 08/19/2026 08:05 PM | Washington Nationals (60-67)
+2026-09-02T13:41:53.244842 |   SKIPPED unknown row (9 cells): 08/19/2026 08:05 PM | Washington Nationals (60-67)
 Texas Rangers (62-64)
-2026-08-31T15:46:13.033312 |   SKIPPED unknown row (9 cells): 08/19/2026 08:10 PM | Los Angeles Angels (50-76)
+2026-09-02T13:41:53.244883 |   SKIPPED unknown row (9 cells): 08/19/2026 08:10 PM | Los Angeles Angels (50-76)
 Houston Astros (63-63)
-2026-08-31T15:46:13.033352 |   SKIPPED unknown row (9 cells): 08/19/2026 08:40 PM | Los Angeles Dodgers (76-51)
+2026-09-02T13:41:53.244922 |   SKIPPED unknown row (9 cells): 08/19/2026 08:40 PM | Los Angeles Dodgers (76-51)
 Colorado Rockies (50-76)
-2026-08-31T15:46:13.033822 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
-2026-08-31T15:46:13.033859 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=9, predictions_dates=1
-2026-08-31T15:46:13.033900 | Processing 2026_08_20_mlb_raw.json
-2026-08-31T15:46:13.034755 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
-2026-08-31T15:46:13.034783 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.034810 | Processing 2026_08_24_mlb_raw.json
-2026-08-31T15:46:13.035380 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_24_MLB.csv (10 rows)
-2026-08-31T15:46:13.035407 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.035434 | Processing 2026_08_25_mlb_raw.json
-2026-08-31T15:46:13.036122 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_25_MLB.csv (15 rows)
-2026-08-31T15:46:13.036149 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.036178 | Processing 2026_08_26_mlb_raw.json
-2026-08-31T15:46:13.036514 |   SKIPPED unknown row (9 cells): 08/26/2026 11:40 AM | Chicago Cubs (76-57)
+2026-09-02T13:41:53.245293 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
+2026-09-02T13:41:53.245320 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=9, predictions_dates=1
+2026-09-02T13:41:53.245348 | Processing 2026_08_20_mlb_raw.json
+2026-09-02T13:41:53.245905 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
+2026-09-02T13:41:53.245933 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.245985 | Processing 2026_08_24_mlb_raw.json
+2026-09-02T13:41:53.246572 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_24_MLB.csv (10 rows)
+2026-09-02T13:41:53.246598 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.246627 | Processing 2026_08_25_mlb_raw.json
+2026-09-02T13:41:53.247327 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_25_MLB.csv (15 rows)
+2026-09-02T13:41:53.247355 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.247385 | Processing 2026_08_26_mlb_raw.json
+2026-09-02T13:41:53.247704 |   SKIPPED unknown row (9 cells): 08/26/2026 11:40 AM | Chicago Cubs (76-57)
 Arizona Diamondbacks (70-63)
-2026-08-31T15:46:13.036566 |   SKIPPED unknown row (9 cells): 08/26/2026 11:45 AM | Cincinnati Reds (62-71)
+2026-09-02T13:41:53.247761 |   SKIPPED unknown row (9 cells): 08/26/2026 11:45 AM | Cincinnati Reds (62-71)
 San Francisco Giants (54-78)
-2026-08-31T15:46:13.036914 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_26_MLB.csv (12 rows)
-2026-08-31T15:46:13.036940 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=2, predictions_dates=1
-2026-08-31T15:46:13.036969 | Processing 2026_08_27_mlb_raw.json
-2026-08-31T15:46:13.037475 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_27_MLB.csv (7 rows)
-2026-08-31T15:46:13.037523 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.037550 | Processing 2026_08_28_mlb_raw.json
-2026-08-31T15:46:13.038201 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.038227 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.038256 | Processing 2026_08_29_mlb_raw.json
-2026-08-31T15:46:13.038415 |   SKIPPED unknown row (9 cells): 08/29/2026 04:25 PM | Colorado Rockies (52-83)
+2026-09-02T13:41:53.248149 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_26_MLB.csv (12 rows)
+2026-09-02T13:41:53.248176 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=2, predictions_dates=1
+2026-09-02T13:41:53.248205 | Processing 2026_08_27_mlb_raw.json
+2026-09-02T13:41:53.248764 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_27_MLB.csv (7 rows)
+2026-09-02T13:41:53.248791 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.248818 | Processing 2026_08_28_mlb_raw.json
+2026-09-02T13:41:53.249515 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.249551 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.249587 | Processing 2026_08_29_mlb_raw.json
+2026-09-02T13:41:53.249765 |   SKIPPED unknown row (9 cells): 08/29/2026 04:25 PM | Colorado Rockies (52-83)
 Atlanta Braves (80-55)
-2026-08-31T15:46:13.038461 |   SKIPPED unknown row (9 cells): 08/29/2026 07:15 PM | Boston Red Sox (73-61)
+2026-09-02T13:41:53.249813 |   SKIPPED unknown row (9 cells): 08/29/2026 07:15 PM | Boston Red Sox (73-61)
 New York Yankees (76-58)
-2026-08-31T15:46:13.038528 |   SKIPPED unknown row (9 cells): 08/29/2026 07:15 PM | Texas Rangers (66-69)
+2026-09-02T13:41:53.249858 |   SKIPPED unknown row (9 cells): 08/29/2026 07:15 PM | Texas Rangers (66-69)
 Milwaukee Brewers (84-51)
-2026-08-31T15:46:13.038863 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_29_MLB.csv (3 rows)
-2026-08-31T15:46:13.038890 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=3, predictions_dates=1
-2026-08-31T15:46:13.038917 | Processing 2026_08_30_mlb_raw.json
-2026-08-31T15:46:13.039582 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_30_MLB.csv (14 rows)
-2026-08-31T15:46:13.039609 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.039637 | Processing 2026_08_31_mlb_raw.json
-2026-08-31T15:46:13.040238 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_31_MLB.csv (12 rows)
-2026-08-31T15:46:13.040271 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
-2026-08-31T15:46:13.040298 | --- SUMMARY ---
-2026-08-31T15:46:13.040318 | Raw files processed: 150
-2026-08-31T15:46:13.040336 | Files written: 148
-2026-08-31T15:46:13.040355 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_26_MLB.csv (11 rows)
-2026-08-31T15:46:13.040373 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_27_MLB.csv (8 rows)
-2026-08-31T15:46:13.040390 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.040408 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_29_MLB.csv (12 rows)
-2026-08-31T15:46:13.040425 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_30_MLB.csv (15 rows)
-2026-08-31T15:46:13.040442 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_31_MLB.csv (14 rows)
-2026-08-31T15:46:13.040459 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_01_MLB.csv (15 rows)
-2026-08-31T15:46:13.040476 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_02_MLB.csv (3 rows)
-2026-08-31T15:46:13.040517 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_04_MLB.csv (15 rows)
-2026-08-31T15:46:13.040536 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_06_MLB.csv (13 rows)
-2026-08-31T15:46:13.040553 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_07_MLB.csv (15 rows)
-2026-08-31T15:46:13.040570 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_08_MLB.csv (15 rows)
-2026-08-31T15:46:13.040587 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_09_MLB.csv (6 rows)
-2026-08-31T15:46:13.040604 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_10_MLB.csv (15 rows)
-2026-08-31T15:46:13.040621 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_11_MLB.csv (11 rows)
-2026-08-31T15:46:13.040638 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_12_MLB.csv (15 rows)
-2026-08-31T15:46:13.040654 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_13_MLB.csv (10 rows)
-2026-08-31T15:46:13.040671 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_14_MLB.csv (15 rows)
-2026-08-31T15:46:13.040688 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_15_MLB.csv (15 rows)
-2026-08-31T15:46:13.040705 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_16_MLB.csv (10 rows)
-2026-08-31T15:46:13.040721 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.040738 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_18_MLB.csv (15 rows)
-2026-08-31T15:46:13.040755 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_19_MLB.csv (15 rows)
-2026-08-31T15:46:13.040772 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_20_MLB.csv (10 rows)
-2026-08-31T15:46:13.040788 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_21_MLB.csv (15 rows)
-2026-08-31T15:46:13.040805 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_22_MLB.csv (15 rows)
-2026-08-31T15:46:13.040822 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_23_MLB.csv (9 rows)
-2026-08-31T15:46:13.040838 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_24_MLB.csv (14 rows)
-2026-08-31T15:46:13.040855 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_25_MLB.csv (15 rows)
-2026-08-31T15:46:13.040872 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_27_MLB.csv (8 rows)
-2026-08-31T15:46:13.040889 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.040906 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_29_MLB.csv (15 rows)
-2026-08-31T15:46:13.040923 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_30_MLB.csv (9 rows)
-2026-08-31T15:46:13.040939 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_01_MLB.csv (14 rows)
-2026-08-31T15:46:13.040956 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_02_MLB.csv (15 rows)
-2026-08-31T15:46:13.040978 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_03_MLB.csv (15 rows)
-2026-08-31T15:46:13.040996 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_04_MLB.csv (12 rows)
-2026-08-31T15:46:13.041013 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_05_MLB.csv (15 rows)
-2026-08-31T15:46:13.041030 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_06_MLB.csv (15 rows)
-2026-08-31T15:46:13.041046 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_07_MLB.csv (10 rows)
-2026-08-31T15:46:13.041063 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_09_MLB.csv (15 rows)
-2026-08-31T15:46:13.041080 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_10_MLB.csv (15 rows)
-2026-08-31T15:46:13.041097 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_11_MLB.csv (6 rows)
-2026-08-31T15:46:13.041114 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_12_MLB.csv (15 rows)
-2026-08-31T15:46:13.041131 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_14_MLB.csv (11 rows)
-2026-08-31T15:46:13.041148 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_16_MLB.csv (15 rows)
-2026-08-31T15:46:13.041165 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_17_MLB.csv (14 rows)
-2026-08-31T15:46:13.041181 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_18_MLB.csv (14 rows)
-2026-08-31T15:46:13.041198 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_19_MLB.csv (15 rows)
-2026-08-31T15:46:13.041215 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_20_MLB.csv (15 rows)
-2026-08-31T15:46:13.041231 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_21_MLB.csv (7 rows)
-2026-08-31T15:46:13.041248 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_22_MLB.csv (15 rows)
-2026-08-31T15:46:13.041265 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_23_MLB.csv (16 rows)
-2026-08-31T15:46:13.041282 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_24_MLB.csv (16 rows)
-2026-08-31T15:46:13.041299 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_25_MLB.csv (13 rows)
-2026-08-31T15:46:13.041316 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_26_MLB.csv (15 rows)
-2026-08-31T15:46:13.041332 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_27_MLB.csv (15 rows)
-2026-08-31T15:46:13.041349 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_28_MLB.csv (6 rows)
-2026-08-31T15:46:13.041366 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_29_MLB.csv (15 rows)
-2026-08-31T15:46:13.041383 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_30_MLB.csv (15 rows)
-2026-08-31T15:46:13.041400 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_31_MLB.csv (15 rows)
-2026-08-31T15:46:13.041417 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_01_MLB.csv (9 rows)
-2026-08-31T15:46:13.041434 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_02_MLB.csv (15 rows)
-2026-08-31T15:46:13.041451 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_03_MLB.csv (15 rows)
-2026-08-31T15:46:13.041468 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_04_MLB.csv (9 rows)
-2026-08-31T15:46:13.041504 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_05_MLB.csv (14 rows)
-2026-08-31T15:46:13.041524 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_06_MLB.csv (15 rows)
-2026-08-31T15:46:13.041542 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_07_MLB.csv (15 rows)
-2026-08-31T15:46:13.041559 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_08_MLB.csv (8 rows)
-2026-08-31T15:46:13.041576 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_09_MLB.csv (15 rows)
-2026-08-31T15:46:13.041593 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_10_MLB.csv (15 rows)
-2026-08-31T15:46:13.041610 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_11_MLB.csv (8 rows)
-2026-08-31T15:46:13.041627 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_12_MLB.csv (15 rows)
-2026-08-31T15:46:13.041649 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_13_MLB.csv (15 rows)
-2026-08-31T15:46:13.041667 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_14_MLB.csv (15 rows)
-2026-08-31T15:46:13.041684 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_15_MLB.csv (10 rows)
-2026-08-31T15:46:13.041700 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_16_MLB.csv (15 rows)
-2026-08-31T15:46:13.041717 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_17_MLB.csv (14 rows)
-2026-08-31T15:46:13.041734 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_19_MLB.csv (14 rows)
-2026-08-31T15:46:13.041751 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_20_MLB.csv (14 rows)
-2026-08-31T15:46:13.041768 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_21_MLB.csv (15 rows)
-2026-08-31T15:46:13.041785 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_22_MLB.csv (13 rows)
-2026-08-31T15:46:13.041802 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_23_MLB.csv (15 rows)
-2026-08-31T15:46:13.041819 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_24_MLB.csv (16 rows)
-2026-08-31T15:46:13.041836 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_26_MLB.csv (15 rows)
-2026-08-31T15:46:13.041853 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_27_MLB.csv (15 rows)
-2026-08-31T15:46:13.041870 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.041887 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_29_MLB.csv (13 rows)
-2026-08-31T15:46:13.041904 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_30_MLB.csv (15 rows)
-2026-08-31T15:46:13.041921 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_01_MLB.csv (14 rows)
-2026-08-31T15:46:13.041938 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_02_MLB.csv (9 rows)
-2026-08-31T15:46:13.041955 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_03_MLB.csv (13 rows)
-2026-08-31T15:46:13.041972 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_04_MLB.csv (15 rows)
-2026-08-31T15:46:13.041988 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_05_MLB.csv (15 rows)
-2026-08-31T15:46:13.042005 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_06_MLB.csv (8 rows)
-2026-08-31T15:46:13.042022 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_07_MLB.csv (16 rows)
-2026-08-31T15:46:13.042038 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_08_MLB.csv (15 rows)
-2026-08-31T15:46:13.042055 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_09_MLB.csv (13 rows)
-2026-08-31T15:46:13.042072 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_10_MLB.csv (15 rows)
-2026-08-31T15:46:13.042088 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_11_MLB.csv (15 rows)
-2026-08-31T15:46:13.042105 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_12_MLB.csv (15 rows)
-2026-08-31T15:46:13.042122 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.042138 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.042155 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.042172 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
-2026-08-31T15:46:13.042188 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_18_MLB.csv (15 rows)
-2026-08-31T15:46:13.042205 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_19_MLB.csv (15 rows)
-2026-08-31T15:46:13.042221 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_20_MLB.csv (15 rows)
-2026-08-31T15:46:13.042238 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_21_MLB.csv (15 rows)
-2026-08-31T15:46:13.042254 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_22_MLB.csv (15 rows)
-2026-08-31T15:46:13.042276 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_23_MLB.csv (5 rows)
-2026-08-31T15:46:13.042293 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_24_MLB.csv (15 rows)
-2026-08-31T15:46:13.042310 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_25_MLB.csv (15 rows)
-2026-08-31T15:46:13.042326 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_26_MLB.csv (15 rows)
-2026-08-31T15:46:13.042343 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_27_MLB.csv (12 rows)
-2026-08-31T15:46:13.042359 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.042376 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_29_MLB.csv (15 rows)
-2026-08-31T15:46:13.042392 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_30_MLB.csv (10 rows)
-2026-08-31T15:46:13.042409 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_31_MLB.csv (15 rows)
-2026-08-31T15:46:13.042425 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_01_MLB.csv (15 rows)
-2026-08-31T15:46:13.042442 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_02_MLB.csv (15 rows)
-2026-08-31T15:46:13.042459 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (8 rows)
-2026-08-31T15:46:13.042475 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (6 rows)
-2026-08-31T15:46:13.042513 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_04_MLB.csv (15 rows)
-2026-08-31T15:46:13.042531 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_05_MLB.csv (11 rows)
-2026-08-31T15:46:13.042547 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_06_MLB.csv (1 rows)
-2026-08-31T15:46:13.042564 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_07_MLB.csv (4 rows)
-2026-08-31T15:46:13.042581 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_08_MLB.csv (1 rows)
-2026-08-31T15:46:13.042598 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (10 rows)
-2026-08-31T15:46:13.042615 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (6 rows)
-2026-08-31T15:46:13.042631 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_11_MLB.csv (11 rows)
-2026-08-31T15:46:13.042648 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_12_MLB.csv (2 rows)
-2026-08-31T15:46:13.042665 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_13_MLB.csv (2 rows)
-2026-08-31T15:46:13.042681 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_14_MLB.csv (4 rows)
-2026-08-31T15:46:13.042698 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_15_MLB.csv (2 rows)
-2026-08-31T15:46:13.042714 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_17_MLB.csv (11 rows)
-2026-08-31T15:46:13.042731 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_18_MLB.csv (15 rows)
-2026-08-31T15:46:13.042747 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_19_MLB.csv (15 rows)
-2026-08-31T15:46:13.042764 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
-2026-08-31T15:46:13.042781 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
-2026-08-31T15:46:13.042797 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_24_MLB.csv (10 rows)
-2026-08-31T15:46:13.042813 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_25_MLB.csv (15 rows)
-2026-08-31T15:46:13.042830 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_26_MLB.csv (12 rows)
-2026-08-31T15:46:13.042846 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_27_MLB.csv (7 rows)
-2026-08-31T15:46:13.042863 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_28_MLB.csv (15 rows)
-2026-08-31T15:46:13.042879 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_29_MLB.csv (3 rows)
-2026-08-31T15:46:13.042896 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_30_MLB.csv (14 rows)
-2026-08-31T15:46:13.042918 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_31_MLB.csv (12 rows)
-2026-08-31T15:46:13.042935 | STATUS: SUCCESS
+2026-09-02T13:41:53.250220 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_29_MLB.csv (3 rows)
+2026-09-02T13:41:53.250247 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=3, predictions_dates=1
+2026-09-02T13:41:53.250274 | Processing 2026_08_30_mlb_raw.json
+2026-09-02T13:41:53.250936 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_30_MLB.csv (14 rows)
+2026-09-02T13:41:53.250984 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.251015 | Processing 2026_08_31_mlb_raw.json
+2026-09-02T13:41:53.251198 |   SKIPPED unknown row (9 cells): 08/31/2026 06:40 PM | San Diego Padres (72-65)
+Cincinnati Reds (65-72)
+2026-09-02T13:41:53.251253 |   SKIPPED unknown row (9 cells): 08/31/2026 06:40 PM | New York Mets (61-76)
+Tampa Bay Rays (82-54)
+2026-09-02T13:41:53.251302 |   SKIPPED unknown row (9 cells): 08/31/2026 06:45 PM | Miami Marlins (69-68)
+Washington Nationals (65-74)
+2026-09-02T13:41:53.251352 |   SKIPPED unknown row (9 cells): 08/31/2026 06:45 PM | Seattle Mariners (64-73)
+Boston Red Sox (74-63)
+2026-09-02T13:41:53.251397 |   SKIPPED unknown row (9 cells): 08/31/2026 07:40 PM | Milwaukee Brewers (85-52)
+Chicago Cubs (77-60)
+2026-09-02T13:41:53.251442 |   SKIPPED unknown row (9 cells): 08/31/2026 07:40 PM | Detroit Tigers (63-73)
+Minnesota Twins (65-72)
+2026-09-02T13:41:53.251483 |   SKIPPED unknown row (9 cells): 08/31/2026 08:05 PM | Oakland Athletics (53-84)
+Texas Rangers (67-70)
+2026-09-02T13:41:53.251524 |   SKIPPED unknown row (9 cells): 08/31/2026 08:10 PM | Chicago White Sox (72-64)
+Houston Astros (69-68)
+2026-09-02T13:41:53.251565 |   SKIPPED unknown row (9 cells): 08/31/2026 08:40 PM | Baltimore Orioles (68-69)
+Colorado Rockies (52-85)
+2026-09-02T13:41:53.251893 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_08_31_MLB.csv (2 rows)
+2026-09-02T13:41:53.251919 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=9, predictions_dates=1
+2026-09-02T13:41:53.251946 | Processing 2026_09_01_mlb_raw.json
+2026-09-02T13:41:53.252174 |   SKIPPED unknown row (9 cells): 09/01/2026 06:40 PM | San Diego Padres (73-65)
+Cincinnati Reds (65-73)
+2026-09-02T13:41:53.252222 |   SKIPPED unknown row (9 cells): 09/01/2026 06:40 PM | San Francisco Giants (57-81)
+Pittsburgh Pirates (67-71)
+2026-09-02T13:41:53.252266 |   SKIPPED unknown row (9 cells): 09/01/2026 06:40 PM | Toronto Blue Jays (68-70)
+Cleveland Guardians (69-68)
+2026-09-02T13:41:53.252310 |   SKIPPED unknown row (9 cells): 09/01/2026 06:40 PM | New York Mets (62-76)
+Tampa Bay Rays (82-55)
+2026-09-02T13:41:53.252358 |   SKIPPED unknown row (9 cells): 09/01/2026 06:45 PM | Atlanta Braves (82-56)
+Washington Nationals (66-74)
+2026-09-02T13:41:53.252400 |   SKIPPED unknown row (9 cells): 09/01/2026 06:45 PM | Seattle Mariners (64-74)
+Boston Red Sox (75-63)
+2026-09-02T13:41:53.252442 |   SKIPPED unknown row (9 cells): 09/01/2026 07:40 PM | Milwaukee Brewers (85-53)
+Chicago Cubs (78-60)
+2026-09-02T13:41:53.252483 |   SKIPPED unknown row (9 cells): 09/01/2026 07:40 PM | Detroit Tigers (63-74)
+Minnesota Twins (66-72)
+2026-09-02T13:41:53.252523 |   SKIPPED unknown row (9 cells): 09/01/2026 07:40 PM | Miami Marlins (69-69)
+Kansas City Royals (62-76)
+2026-09-02T13:41:53.252565 |   SKIPPED unknown row (9 cells): 09/01/2026 08:05 PM | Oakland Athletics (53-85)
+Texas Rangers (68-70)
+2026-09-02T13:41:53.252605 |   SKIPPED unknown row (9 cells): 09/01/2026 08:10 PM | Chicago White Sox (72-65)
+Houston Astros (70-68)
+2026-09-02T13:41:53.252946 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_09_01_MLB.csv (4 rows)
+2026-09-02T13:41:53.252996 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=11, predictions_dates=1
+2026-09-02T13:41:53.253025 | Processing 2026_09_02_mlb_raw.json
+2026-09-02T13:41:53.253700 | WROTE predictions -> docs/win/baseball/mlb/00_intake/predictions/2026_09_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.253727 |   parse_errors=0, skipped_summary=3, completed_rows_ignored=16, unknown_rows=0, predictions_dates=1
+2026-09-02T13:41:53.253756 | --- SUMMARY ---
+2026-09-02T13:41:53.253775 | Raw files processed: 152
+2026-09-02T13:41:53.253794 | Files written: 150
+2026-09-02T13:41:53.253812 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_26_MLB.csv (11 rows)
+2026-09-02T13:41:53.253829 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_27_MLB.csv (8 rows)
+2026-09-02T13:41:53.253847 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.253864 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_29_MLB.csv (12 rows)
+2026-09-02T13:41:53.253880 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_30_MLB.csv (15 rows)
+2026-09-02T13:41:53.253903 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_03_31_MLB.csv (14 rows)
+2026-09-02T13:41:53.253921 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_01_MLB.csv (15 rows)
+2026-09-02T13:41:53.253938 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_02_MLB.csv (3 rows)
+2026-09-02T13:41:53.253976 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_04_MLB.csv (15 rows)
+2026-09-02T13:41:53.253999 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_06_MLB.csv (13 rows)
+2026-09-02T13:41:53.254017 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_07_MLB.csv (15 rows)
+2026-09-02T13:41:53.254034 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_08_MLB.csv (15 rows)
+2026-09-02T13:41:53.254051 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_09_MLB.csv (6 rows)
+2026-09-02T13:41:53.254068 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.254086 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_11_MLB.csv (11 rows)
+2026-09-02T13:41:53.254103 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.254119 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_13_MLB.csv (10 rows)
+2026-09-02T13:41:53.254136 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_14_MLB.csv (15 rows)
+2026-09-02T13:41:53.254153 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_15_MLB.csv (15 rows)
+2026-09-02T13:41:53.254170 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_16_MLB.csv (10 rows)
+2026-09-02T13:41:53.254187 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.254204 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_18_MLB.csv (15 rows)
+2026-09-02T13:41:53.254221 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.254237 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_20_MLB.csv (10 rows)
+2026-09-02T13:41:53.254254 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_21_MLB.csv (15 rows)
+2026-09-02T13:41:53.254271 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_22_MLB.csv (15 rows)
+2026-09-02T13:41:53.254287 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_23_MLB.csv (9 rows)
+2026-09-02T13:41:53.254304 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_24_MLB.csv (14 rows)
+2026-09-02T13:41:53.254320 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_25_MLB.csv (15 rows)
+2026-09-02T13:41:53.254337 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_27_MLB.csv (8 rows)
+2026-09-02T13:41:53.254354 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.254370 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_29_MLB.csv (15 rows)
+2026-09-02T13:41:53.254387 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_04_30_MLB.csv (9 rows)
+2026-09-02T13:41:53.254403 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_01_MLB.csv (14 rows)
+2026-09-02T13:41:53.254420 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.254437 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_03_MLB.csv (15 rows)
+2026-09-02T13:41:53.254453 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_04_MLB.csv (12 rows)
+2026-09-02T13:41:53.254470 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_05_MLB.csv (15 rows)
+2026-09-02T13:41:53.254487 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_06_MLB.csv (15 rows)
+2026-09-02T13:41:53.254503 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_07_MLB.csv (10 rows)
+2026-09-02T13:41:53.254520 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_09_MLB.csv (15 rows)
+2026-09-02T13:41:53.254537 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.254554 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_11_MLB.csv (6 rows)
+2026-09-02T13:41:53.254576 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.254593 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_14_MLB.csv (11 rows)
+2026-09-02T13:41:53.254610 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_16_MLB.csv (15 rows)
+2026-09-02T13:41:53.254626 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_17_MLB.csv (14 rows)
+2026-09-02T13:41:53.254643 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_18_MLB.csv (14 rows)
+2026-09-02T13:41:53.254660 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.254677 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_20_MLB.csv (15 rows)
+2026-09-02T13:41:53.254693 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_21_MLB.csv (7 rows)
+2026-09-02T13:41:53.254710 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_22_MLB.csv (15 rows)
+2026-09-02T13:41:53.254727 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_23_MLB.csv (16 rows)
+2026-09-02T13:41:53.254744 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_24_MLB.csv (16 rows)
+2026-09-02T13:41:53.254760 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_25_MLB.csv (13 rows)
+2026-09-02T13:41:53.254777 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_26_MLB.csv (15 rows)
+2026-09-02T13:41:53.254793 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_27_MLB.csv (15 rows)
+2026-09-02T13:41:53.254810 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_28_MLB.csv (6 rows)
+2026-09-02T13:41:53.254827 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_29_MLB.csv (15 rows)
+2026-09-02T13:41:53.254844 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_30_MLB.csv (15 rows)
+2026-09-02T13:41:53.254860 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_05_31_MLB.csv (15 rows)
+2026-09-02T13:41:53.254877 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_01_MLB.csv (9 rows)
+2026-09-02T13:41:53.254894 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.254910 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_03_MLB.csv (15 rows)
+2026-09-02T13:41:53.254927 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_04_MLB.csv (9 rows)
+2026-09-02T13:41:53.254944 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_05_MLB.csv (14 rows)
+2026-09-02T13:41:53.254992 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_06_MLB.csv (15 rows)
+2026-09-02T13:41:53.255014 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_07_MLB.csv (15 rows)
+2026-09-02T13:41:53.255047 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_08_MLB.csv (8 rows)
+2026-09-02T13:41:53.255083 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_09_MLB.csv (15 rows)
+2026-09-02T13:41:53.255105 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.255123 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_11_MLB.csv (8 rows)
+2026-09-02T13:41:53.255140 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.255157 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_13_MLB.csv (15 rows)
+2026-09-02T13:41:53.255174 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_14_MLB.csv (15 rows)
+2026-09-02T13:41:53.255190 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_15_MLB.csv (10 rows)
+2026-09-02T13:41:53.255206 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_16_MLB.csv (15 rows)
+2026-09-02T13:41:53.255223 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_17_MLB.csv (14 rows)
+2026-09-02T13:41:53.255239 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_19_MLB.csv (14 rows)
+2026-09-02T13:41:53.255256 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_20_MLB.csv (14 rows)
+2026-09-02T13:41:53.255278 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_21_MLB.csv (15 rows)
+2026-09-02T13:41:53.255295 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_22_MLB.csv (13 rows)
+2026-09-02T13:41:53.255312 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_23_MLB.csv (15 rows)
+2026-09-02T13:41:53.255329 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_24_MLB.csv (16 rows)
+2026-09-02T13:41:53.255346 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_26_MLB.csv (15 rows)
+2026-09-02T13:41:53.255362 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_27_MLB.csv (15 rows)
+2026-09-02T13:41:53.255379 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.255395 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_29_MLB.csv (13 rows)
+2026-09-02T13:41:53.255412 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_06_30_MLB.csv (15 rows)
+2026-09-02T13:41:53.255428 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_01_MLB.csv (14 rows)
+2026-09-02T13:41:53.255445 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_02_MLB.csv (9 rows)
+2026-09-02T13:41:53.255461 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_03_MLB.csv (13 rows)
+2026-09-02T13:41:53.255478 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_04_MLB.csv (15 rows)
+2026-09-02T13:41:53.255495 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_05_MLB.csv (15 rows)
+2026-09-02T13:41:53.255511 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_06_MLB.csv (8 rows)
+2026-09-02T13:41:53.255528 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_07_MLB.csv (16 rows)
+2026-09-02T13:41:53.255545 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_08_MLB.csv (15 rows)
+2026-09-02T13:41:53.255561 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_09_MLB.csv (13 rows)
+2026-09-02T13:41:53.255578 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_10_MLB.csv (15 rows)
+2026-09-02T13:41:53.255594 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_11_MLB.csv (15 rows)
+2026-09-02T13:41:53.255611 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_12_MLB.csv (15 rows)
+2026-09-02T13:41:53.255627 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.255644 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.255661 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.255678 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_17_MLB.csv (15 rows)
+2026-09-02T13:41:53.255694 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_18_MLB.csv (15 rows)
+2026-09-02T13:41:53.255711 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.255727 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_20_MLB.csv (15 rows)
+2026-09-02T13:41:53.255744 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_21_MLB.csv (15 rows)
+2026-09-02T13:41:53.255760 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_22_MLB.csv (15 rows)
+2026-09-02T13:41:53.255777 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_23_MLB.csv (5 rows)
+2026-09-02T13:41:53.255794 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_24_MLB.csv (15 rows)
+2026-09-02T13:41:53.255810 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_25_MLB.csv (15 rows)
+2026-09-02T13:41:53.255827 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_26_MLB.csv (15 rows)
+2026-09-02T13:41:53.255843 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_27_MLB.csv (12 rows)
+2026-09-02T13:41:53.255860 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.255877 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_29_MLB.csv (15 rows)
+2026-09-02T13:41:53.255898 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_30_MLB.csv (10 rows)
+2026-09-02T13:41:53.255915 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_07_31_MLB.csv (15 rows)
+2026-09-02T13:41:53.255932 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_01_MLB.csv (15 rows)
+2026-09-02T13:41:53.255967 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.255989 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (8 rows)
+2026-09-02T13:41:53.256007 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_03_MLB.csv (6 rows)
+2026-09-02T13:41:53.256024 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_04_MLB.csv (15 rows)
+2026-09-02T13:41:53.256040 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_05_MLB.csv (11 rows)
+2026-09-02T13:41:53.256057 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_06_MLB.csv (1 rows)
+2026-09-02T13:41:53.256073 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_07_MLB.csv (4 rows)
+2026-09-02T13:41:53.256090 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_08_MLB.csv (1 rows)
+2026-09-02T13:41:53.256107 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (10 rows)
+2026-09-02T13:41:53.256123 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_10_MLB.csv (6 rows)
+2026-09-02T13:41:53.256139 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_11_MLB.csv (11 rows)
+2026-09-02T13:41:53.256156 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_12_MLB.csv (2 rows)
+2026-09-02T13:41:53.256172 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_13_MLB.csv (2 rows)
+2026-09-02T13:41:53.256189 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_14_MLB.csv (4 rows)
+2026-09-02T13:41:53.256205 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_15_MLB.csv (2 rows)
+2026-09-02T13:41:53.256222 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_17_MLB.csv (11 rows)
+2026-09-02T13:41:53.256238 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_18_MLB.csv (15 rows)
+2026-09-02T13:41:53.256254 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_19_MLB.csv (15 rows)
+2026-09-02T13:41:53.256271 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
+2026-09-02T13:41:53.256287 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_20_MLB.csv (9 rows)
+2026-09-02T13:41:53.256304 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_24_MLB.csv (10 rows)
+2026-09-02T13:41:53.256320 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_25_MLB.csv (15 rows)
+2026-09-02T13:41:53.256337 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_26_MLB.csv (12 rows)
+2026-09-02T13:41:53.256353 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_27_MLB.csv (7 rows)
+2026-09-02T13:41:53.256370 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_28_MLB.csv (15 rows)
+2026-09-02T13:41:53.256387 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_29_MLB.csv (3 rows)
+2026-09-02T13:41:53.256403 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_30_MLB.csv (14 rows)
+2026-09-02T13:41:53.256420 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_08_31_MLB.csv (2 rows)
+2026-09-02T13:41:53.256436 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_09_01_MLB.csv (4 rows)
+2026-09-02T13:41:53.256453 |   FILE: docs/win/baseball/mlb/00_intake/predictions/2026_09_02_MLB.csv (15 rows)
+2026-09-02T13:41:53.256469 | STATUS: SUCCESS
