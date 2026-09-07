@@ -1017,6 +1017,10 @@ def load_sportsbook_test_period(
         sportsbook[col] = numeric_series(
             sportsbook,
             col,
+            allow_missing=col in {
+                "away_run_line",
+                "home_run_line",
+            },
         )
 
     price_columns = [
@@ -1125,12 +1129,41 @@ def join_sportsbook(
         ]
     )
 
-    unsupported_run_line = (
-        (market["home_run_line"] + market["away_run_line"]).abs()
-        > 1e-6
-    ) | ~(
-        market["home_run_line"].round(6).isin([-1.5, 1.5])
-        & market["away_run_line"].round(6).isin([-1.5, 1.5])
+    run_line_available = (
+        market["home_run_line"].notna()
+        & market["away_run_line"].notna()
+    )
+    partial_run_line = (
+        market["home_run_line"].notna()
+        ^ market["away_run_line"].notna()
+    )
+
+    if partial_run_line.any():
+        sample = market.loc[
+            partial_run_line,
+            [
+                "game_id",
+                "home_run_line",
+                "away_run_line",
+            ],
+        ].head(10).to_dict("records")
+        fail(
+            "Untouched test period contains incomplete run-line markets; "
+            f"sample={sample}"
+        )
+
+    unsupported_run_line = run_line_available & (
+        (
+            (
+                market["home_run_line"]
+                + market["away_run_line"]
+            ).abs()
+            > 1e-6
+        )
+        | ~(
+            market["home_run_line"].round(6).isin([-1.5, 1.5])
+            & market["away_run_line"].round(6).isin([-1.5, 1.5])
+        )
     )
 
     if unsupported_run_line.any():
@@ -1224,14 +1257,21 @@ def derive_market_probabilities(
                     away_runs,
                 )
             )
-            p_home_rl, p_away_rl = (
-                probs_module.run_line_probabilities(
-                    home_runs,
-                    away_runs,
-                    float(row.home_run_line),
-                    float(row.away_run_line),
+            if (
+                pd.notna(row.home_run_line)
+                and pd.notna(row.away_run_line)
+            ):
+                p_home_rl, p_away_rl = (
+                    probs_module.run_line_probabilities(
+                        home_runs,
+                        away_runs,
+                        float(row.home_run_line),
+                        float(row.away_run_line),
+                    )
                 )
-            )
+            else:
+                p_home_rl = np.nan
+                p_away_rl = np.nan
             p_over, p_under, p_push = _probability_triplet(
                 probs_module,
                 home_runs,
@@ -1292,14 +1332,32 @@ def derive_market_probabilities(
         )
     ]
 
+    run_line_available = (
+        out["home_run_line"].notna()
+        & out["away_run_line"].notna()
+    )
+
     for col in probability_cols:
         values = pd.to_numeric(out[col], errors="coerce")
-        bad = (
-            values.isna()
-            | ~np.isfinite(values)
-            | (values < -PROB_TOLERANCE)
-            | (values > 1.0 + PROB_TOLERANCE)
-        )
+        if col.endswith("_rl_prob"):
+            bad = (
+                (run_line_available & values.isna())
+                | (
+                    values.notna()
+                    & (
+                        ~np.isfinite(values)
+                        | (values < -PROB_TOLERANCE)
+                        | (values > 1.0 + PROB_TOLERANCE)
+                    )
+                )
+            )
+        else:
+            bad = (
+                values.isna()
+                | ~np.isfinite(values)
+                | (values < -PROB_TOLERANCE)
+                | (values > 1.0 + PROB_TOLERANCE)
+            )
         if bad.any():
             sample = out.loc[
                 bad,
@@ -1354,23 +1412,35 @@ def add_observed_outcomes(market: pd.DataFrame) -> pd.DataFrame:
         + out["away_run_line"].to_numpy(dtype=float)
     )
 
-    out["observed_home_rl_win"] = (
-        home_adjusted > away_runs
-    ).astype(int)
-    out["observed_away_rl_win"] = (
-        away_adjusted > home_runs
-    ).astype(int)
+    run_line_available = (
+        out["home_run_line"].notna()
+        & out["away_run_line"].notna()
+    ).to_numpy(dtype=bool)
 
-    rl_push = np.isclose(
-        home_adjusted,
-        away_runs,
-        atol=PROB_TOLERANCE,
-        rtol=0.0,
-    ) | np.isclose(
-        away_adjusted,
-        home_runs,
-        atol=PROB_TOLERANCE,
-        rtol=0.0,
+    out["observed_home_rl_win"] = np.where(
+        run_line_available,
+        (home_adjusted > away_runs).astype(float),
+        np.nan,
+    )
+    out["observed_away_rl_win"] = np.where(
+        run_line_available,
+        (away_adjusted > home_runs).astype(float),
+        np.nan,
+    )
+
+    rl_push = run_line_available & (
+        np.isclose(
+            home_adjusted,
+            away_runs,
+            atol=PROB_TOLERANCE,
+            rtol=0.0,
+        )
+        | np.isclose(
+            away_adjusted,
+            home_runs,
+            atol=PROB_TOLERANCE,
+            rtol=0.0,
+        )
     )
 
     if rl_push.any():
@@ -1537,6 +1607,10 @@ def build_calibration_reports(
                 for probability, observed in zip(
                     market[f"{system}_{side}_rl_prob"],
                     market[f"observed_{side}_rl_win"],
+                )
+                if (
+                    pd.notna(probability)
+                    and pd.notna(observed)
                 )
             )
 
@@ -1786,18 +1860,18 @@ def build_value_records(
                 (
                     "run_line",
                     "home",
-                    float(getattr(row, f"{system}_home_rl_prob")),
+                    getattr(row, f"{system}_home_rl_prob"),
                     getattr(row, "home_dk_run_line_decimal"),
-                    int(getattr(row, "observed_home_rl_win")),
-                    float(getattr(row, "home_run_line")),
+                    getattr(row, "observed_home_rl_win"),
+                    getattr(row, "home_run_line"),
                 ),
                 (
                     "run_line",
                     "away",
-                    float(getattr(row, f"{system}_away_rl_prob")),
+                    getattr(row, f"{system}_away_rl_prob"),
                     getattr(row, "away_dk_run_line_decimal"),
-                    int(getattr(row, "observed_away_rl_win")),
-                    float(getattr(row, "away_run_line")),
+                    getattr(row, "observed_away_rl_win"),
+                    getattr(row, "away_run_line"),
                 ),
             ]
 
@@ -1811,6 +1885,24 @@ def build_value_records(
             ) in binary_candidates:
                 if pd.isna(price):
                     continue
+
+                if (
+                    market_name == "run_line"
+                    and (
+                        pd.isna(probability)
+                        or pd.isna(observed)
+                        or pd.isna(line)
+                    )
+                ):
+                    continue
+
+                probability = float(probability)
+                observed = int(observed)
+                line = (
+                    float(line)
+                    if not pd.isna(line)
+                    else np.nan
+                )
 
                 decimal_odds = float(price)
                 break_even = 1.0 / decimal_odds
