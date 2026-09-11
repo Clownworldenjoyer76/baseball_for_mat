@@ -12,11 +12,13 @@ OUTPUT_DIR = Path("docs/win/baseball/mlb/04_select")
 CONFIG_PATH = Path("docs/win/baseball/mlb/config/markets.yaml")
 
 AUDIT_DIR = OUTPUT_DIR / "audit"
+LOCKED_DIR = OUTPUT_DIR / "locked"
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/04_select")
 LOG_FILE = ERROR_DIR / "select_bets.txt"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 AUDIT_DIR.mkdir(parents=True, exist_ok=True)
+LOCKED_DIR.mkdir(parents=True, exist_ok=True)
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 
 LEAGUE_CODE = "MLB"
@@ -1236,6 +1238,8 @@ def choose_slates(slates: dict) -> tuple[list, str]:
 # =========================
 
 def main():
+    run_timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         f.write(f"=== MLB select_bets RUN {_now()} ===\n")
 
@@ -1575,9 +1579,9 @@ def main():
                                 "kelly": None,
                                 "odds": None,
                                 "line": fv(tt_row.get("total")),
-                                        "ev_probability_source": None,
+                                "ev_probability_source": None,
                                 "kelly_probability_source": None,
-                                })
+                            })
                         else:
                             for r in process_total(tt_row, global_counters, rejection_rows):
                                 k = f"{game_id}_{r['market_type']}_{r['bet_side']}_{r['line']}"
@@ -1610,8 +1614,11 @@ def main():
 
                 if final:
                     out = OUTPUT_DIR / f"{slate}_MLB.csv"
+                    locked_out = LOCKED_DIR / f"{slate}_MLB_{run_timestamp}.csv"
+
                     out_df = pd.DataFrame(final)
                     validation_counts = write_output_csv(out_df, out, f"{slate} selected output")
+                    out_df.to_csv(locked_out, index=False)
 
                     for key, value in validation_counts.items():
                         summary[key] += value
@@ -1626,6 +1633,7 @@ def main():
                         f"WROTE: {out.name} "
                         f"({len(final)} bets | ml={ps['ml']} rl={ps['rl']} tot={ps['tot']})"
                     )
+                    _log(f"WROTE LOCKED: {locked_out}")
                 else:
                     _log(f"{slate} no bets passed filters", "WARN")
                     ps["status"] = "no_bets"
