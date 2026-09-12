@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Create isolated MLB Python environment
         run: |
@@ -35,6 +35,34 @@ jobs:
 
       - name: Verify MLB Python dependency consistency
         run: python -m pip check
+
+      - name: Verify MLB model runtime versions
+        run: |
+          python - <<'PY'
+          import lightgbm
+          import sklearn
+
+          expected = {
+              "scikit-learn": "1.9.1",
+              "lightgbm": "4.7.0",
+          }
+          actual = {
+              "scikit-learn": sklearn.__version__,
+              "lightgbm": lightgbm.__version__,
+          }
+
+          print(f"MLB model runtime versions: {actual}")
+
+          mismatches = {
+              name: {"expected": expected[name], "actual": actual[name]}
+              for name in expected
+              if actual[name] != expected[name]
+          }
+          if mismatches:
+              raise RuntimeError(
+                  f"MLB model runtime version mismatch: {mismatches}"
+              )
+          PY
 
       - name: Install Playwright Chromium
         run: python -m playwright install --with-deps chromium

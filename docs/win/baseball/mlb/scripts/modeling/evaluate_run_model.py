@@ -22,10 +22,15 @@ docs/win/baseball/mlb/modeling/reports/run_model_promotion.json
 
 Promotion rule
 --------------
-The candidate is promoted only when candidate mean Poisson deviance is less than
-or equal to the DRatings baseline mean Poisson deviance for BOTH home and away
-run models on the untouched chronological test set. If either side fails, the
-existing production model and metadata files remain unchanged.
+The candidate pair is promoted only when:
+1. the mean of home/away candidate Poisson deviances is <= the corresponding
+   DRatings pair mean on the untouched chronological test set; and
+2. candidate log loss is <= DRatings log loss for moneyline, run line, and
+   total probabilities on that same test period.
+
+Home and away run-model metrics remain visible individually, but promotion is
+coupled because downstream betting probabilities use both run means together.
+If any required gate component fails, production artifacts remain unchanged.
 
 This script never fits or tunes a model.
 """
@@ -335,11 +340,10 @@ def load_json(path: Path, label: str) -> dict:
 def validate_metadata(
     home_metadata: dict,
     away_metadata: dict,
-) -> tuple[list[str], str, str, int]:
+) -> tuple[list[str], list[str], list[str], str, str, int | None]:
     required = [
         "test_start_date",
         "test_end_date",
-        "test_row_count",
         "feature_columns",
     ]
 
@@ -358,21 +362,32 @@ def validate_metadata(
         if len(features) != len(set(features)):
             fail(f"{label} feature_columns contains duplicates")
 
+        family = str(metadata.get("family") or "").strip()
+        if family:
+            params = metadata.get("params")
+            if not isinstance(params, dict):
+                fail(
+                    f"{label} family={family!r} requires dict metadata params"
+                )
+        else:
+            model_class = str(metadata.get("model_class") or "").strip()
+            selected = metadata.get("selected_hyperparameters")
+            if (
+                model_class == "HistGradientBoostingRegressor"
+                and isinstance(selected, dict)
+            ):
+                pass
+            elif model_class:
+                fail(
+                    f"{label} legacy model_class={model_class!r} is unsupported "
+                    "without a family/params model specification"
+                )
+
     home_features = list(home_metadata["feature_columns"])
     away_features = list(away_metadata["feature_columns"])
+    all_features = list(dict.fromkeys(home_features + away_features))
 
-    if home_features != away_features:
-        fail(
-            "Home and away metadata feature order differs: "
-            f"home={home_features} away={away_features}"
-        )
-
-    keys_that_must_match = [
-        "test_start_date",
-        "test_end_date",
-        "test_row_count",
-    ]
-    for key in keys_that_must_match:
+    for key in ["test_start_date", "test_end_date"]:
         if home_metadata[key] != away_metadata[key]:
             fail(
                 f"Home/away metadata mismatch for {key}: "
@@ -397,18 +412,47 @@ def validate_metadata(
             f"{test_start} > {test_end}"
         )
 
-    try:
-        test_row_count = int(home_metadata["test_row_count"])
-    except (TypeError, ValueError):
+    home_count = home_metadata.get("test_row_count")
+    away_count = away_metadata.get("test_row_count")
+
+    if home_count is None and away_count is None:
+        expected_test_rows = None
+    elif home_count is None or away_count is None:
         fail(
-            "Metadata test_row_count is not an integer: "
-            f"{home_metadata['test_row_count']}"
+            "test_row_count must be present in both home/away metadata or neither"
         )
+    else:
+        try:
+            home_count = int(home_count)
+            away_count = int(away_count)
+        except (TypeError, ValueError):
+            fail(
+                "Metadata test_row_count is not an integer: "
+                f"home={home_count!r} away={away_count!r}"
+            )
 
-    if test_row_count <= 0:
-        fail(f"Metadata test_row_count must be positive: {test_row_count}")
+        if home_count <= 0 or away_count <= 0:
+            fail(
+                "Metadata test_row_count must be positive: "
+                f"home={home_count} away={away_count}"
+            )
 
-    return home_features, test_start, test_end, test_row_count
+        if home_count != away_count:
+            fail(
+                "Home/away metadata mismatch for test_row_count: "
+                f"home={home_count} away={away_count}"
+            )
+
+        expected_test_rows = home_count
+
+    return (
+        home_features,
+        away_features,
+        all_features,
+        test_start,
+        test_end,
+        expected_test_rows,
+    )
 
 
 def load_test_period(
@@ -416,7 +460,7 @@ def load_test_period(
     feature_columns: list[str],
     test_start: str,
     test_end: str,
-    expected_rows: int,
+    expected_rows: int | None,
 ) -> pd.DataFrame:
     if not training_path.exists():
         fail(f"Training set not found: {training_path}")
@@ -476,7 +520,7 @@ def load_test_period(
             f"{test_start} through {test_end}"
         )
 
-    if len(test) != expected_rows:
+    if expected_rows is not None and len(test) != expected_rows:
         fail(
             "Test-period row count does not match saved model metadata: "
             f"metadata={expected_rows} reconstructed={len(test)}"
@@ -559,7 +603,8 @@ def validate_model_feature_order(
 
 def score_models(
     test: pd.DataFrame,
-    feature_columns: list[str],
+    home_feature_columns: list[str],
+    away_feature_columns: list[str],
     model_dir: Path,
 ) -> pd.DataFrame:
     home_path = model_dir / HOME_MODEL_NAME
@@ -574,23 +619,24 @@ def score_models(
 
     validate_model_feature_order(
         home_model,
-        feature_columns,
+        home_feature_columns,
         "home",
     )
     validate_model_feature_order(
         away_model,
-        feature_columns,
+        away_feature_columns,
         "away",
     )
 
-    X = test[feature_columns]
+    X_home = test.loc[:, home_feature_columns]
+    X_away = test.loc[:, away_feature_columns]
 
     home_predictions = np.asarray(
-        home_model.predict(X),
+        home_model.predict(X_home),
         dtype=float,
     )
     away_predictions = np.asarray(
-        away_model.predict(X),
+        away_model.predict(X_away),
         dtype=float,
     )
 
@@ -701,34 +747,36 @@ def build_run_metrics(scored: pd.DataFrame) -> pd.DataFrame:
 
 def build_promotion_decision(
     run_metrics: pd.DataFrame,
+    log_loss: pd.DataFrame,
     *,
     test_start: str,
     test_end: str,
 ) -> dict:
-    lookup = {
+    run_lookup = {
         (str(row.system), str(row.side)): row
         for row in run_metrics.itertuples(index=False)
     }
 
-    required = [
+    required_run = [
         ("dratings", "home"),
         ("new_model", "home"),
         ("dratings", "away"),
         ("new_model", "away"),
     ]
-    missing = [key for key in required if key not in lookup]
-    if missing:
-        fail(f"Promotion gate missing required run metrics: {missing}")
+    missing_run = [key for key in required_run if key not in run_lookup]
+    if missing_run:
+        fail(f"Promotion gate missing required run metrics: {missing_run}")
 
-    comparison = {}
-    all_passed = True
+    comparison: dict[str, object] = {}
+    baseline_poisson_values: list[float] = []
+    candidate_poisson_values: list[float] = []
 
     for side in ["home", "away"]:
         baseline = float(
-            lookup[("dratings", side)].mean_poisson_deviance
+            run_lookup[("dratings", side)].mean_poisson_deviance
         )
         candidate = float(
-            lookup[("new_model", side)].mean_poisson_deviance
+            run_lookup[("new_model", side)].mean_poisson_deviance
         )
 
         if not np.isfinite(baseline) or not np.isfinite(candidate):
@@ -737,17 +785,88 @@ def build_promotion_decision(
                 f"baseline={baseline} candidate={candidate}"
             )
 
-        passed = bool(candidate <= baseline)
-        all_passed = all_passed and passed
+        side_improved = bool(candidate <= baseline)
+        baseline_poisson_values.append(baseline)
+        candidate_poisson_values.append(candidate)
 
         comparison[side] = {
             "baseline_system": "dratings",
             "metric": "mean_poisson_deviance",
             "baseline_value": baseline,
             "candidate_value": candidate,
+            "candidate_lte_baseline": side_improved,
+            "difference_candidate_minus_baseline": candidate - baseline,
+            "gating_component": False,
+        }
+
+    baseline_pair_poisson = float(np.mean(baseline_poisson_values))
+    candidate_pair_poisson = float(np.mean(candidate_poisson_values))
+    run_pair_passed = bool(
+        candidate_pair_poisson <= baseline_pair_poisson
+    )
+
+    comparison["run_pair"] = {
+        "baseline_system": "dratings",
+        "metric": "mean_home_away_poisson_deviance",
+        "baseline_value": baseline_pair_poisson,
+        "candidate_value": candidate_pair_poisson,
+        "candidate_lte_baseline": run_pair_passed,
+        "difference_candidate_minus_baseline": (
+            candidate_pair_poisson - baseline_pair_poisson
+        ),
+        "gating_component": True,
+    }
+
+    log_lookup = {
+        (str(row.system), str(row.market)): row
+        for row in log_loss.itertuples(index=False)
+    }
+
+    market_comparison: dict[str, dict] = {}
+    market_passed = True
+
+    for market_name in ["moneyline", "run_line", "total"]:
+        baseline_key = ("dratings", market_name)
+        candidate_key = ("new_model", market_name)
+
+        if baseline_key not in log_lookup or candidate_key not in log_lookup:
+            fail(
+                "Promotion gate missing required probability log loss: "
+                f"market={market_name}"
+            )
+
+        baseline = float(log_lookup[baseline_key].log_loss)
+        candidate = float(log_lookup[candidate_key].log_loss)
+
+        if not np.isfinite(baseline) or not np.isfinite(candidate):
+            fail(
+                "Promotion gate received non-finite probability log loss: "
+                f"market={market_name} baseline={baseline} candidate={candidate}"
+            )
+
+        passed = bool(candidate <= baseline)
+        market_passed = market_passed and passed
+
+        market_comparison[market_name] = {
+            "baseline_system": "dratings",
+            "metric": "log_loss",
+            "baseline_value": baseline,
+            "candidate_value": candidate,
             "candidate_lte_baseline": passed,
             "difference_candidate_minus_baseline": candidate - baseline,
+            "gating_component": True,
         }
+
+    comparison["markets"] = market_comparison
+
+    all_passed = bool(run_pair_passed and market_passed)
+
+    failed_components: list[str] = []
+    if not run_pair_passed:
+        failed_components.append("run_pair_poisson")
+    for market_name, values in market_comparison.items():
+        if not values["candidate_lte_baseline"]:
+            failed_components.append(f"{market_name}_log_loss")
 
     return {
         "status": (
@@ -755,14 +874,16 @@ def build_promotion_decision(
             if all_passed
             else "candidate_rejected"
         ),
-        "gate_passed": bool(all_passed),
+        "gate_passed": all_passed,
         "gate_rule": (
-            "candidate mean_poisson_deviance <= DRatings baseline "
-            "for BOTH home and away models"
+            "coupled candidate mean(home,away) Poisson deviance <= DRatings "
+            "coupled mean AND candidate log_loss <= DRatings for moneyline, "
+            "run_line, and total probabilities"
         ),
         "test_start_date": str(test_start),
         "test_end_date": str(test_end),
         "comparison": comparison,
+        "failed_components": failed_components,
     }
 
 
@@ -804,10 +925,11 @@ def apply_promotion_decision(
     }
 
     if not decision["gate_passed"]:
+        failed = decision.get("failed_components") or []
         result["notes"] = (
-            "At least one candidate side exceeded the DRatings baseline "
-            "Poisson deviance. Existing production model and metadata "
-            "artifacts were left unchanged."
+            "Coupled promotion gate failed"
+            + (f": {', '.join(str(x) for x in failed)}" if failed else "")
+            + ". Existing production model and metadata artifacts were left unchanged."
         )
         _write_json(report_path, result)
         _log(
@@ -857,6 +979,10 @@ def apply_promotion_decision(
 
     home_production_metadata["artifact_stage"] = "production"
     away_production_metadata["artifact_stage"] = "production"
+    home_production_metadata["production_modified"] = True
+    away_production_metadata["production_modified"] = True
+    home_production_metadata.pop("integration_warning", None)
+    away_production_metadata.pop("integration_warning", None)
     home_production_metadata["promotion_status"] = "candidate_promoted"
     away_production_metadata["promotion_status"] = "candidate_promoted"
     home_production_metadata["promotion_baseline_comparison"] = (
@@ -915,8 +1041,9 @@ def apply_promotion_decision(
         for key, path in production_paths.items()
     }
     result["notes"] = (
-        "Both candidate run models met or beat the DRatings baseline "
-        "Poisson deviance and were promoted together."
+        "Coupled run-model pair passed the production gate: pair-level mean "
+        "Poisson deviance and moneyline/run-line/total probability log loss "
+        "all met or beat DRatings. The two models were promoted together."
     )
 
     _write_json(report_path, result)
@@ -2545,6 +2672,20 @@ def write_summary(
 
     home_gate = promotion["comparison"]["home"]
     away_gate = promotion["comparison"]["away"]
+    pair_gate = promotion["comparison"]["run_pair"]
+    market_gate = promotion["comparison"]["markets"]
+
+    gate_market_rows = []
+    for market_name in ["moneyline", "run_line", "total"]:
+        values = market_gate[market_name]
+        gate_market_rows.append(
+            [
+                market_name,
+                _fmt_float(values["baseline_value"]),
+                _fmt_float(values["candidate_value"]),
+                _yes_no(values["candidate_lte_baseline"]),
+            ]
+        )
 
     summary_lines = [
         "# MLB Run Model Comparison",
@@ -2558,31 +2699,48 @@ def write_summary(
         "## Production promotion gate",
         "",
         (
-            "Candidate promotion requires mean Poisson deviance <= the "
-            "DRatings baseline for BOTH home and away models."
+            "Candidate promotion requires the coupled mean home/away Poisson "
+            "deviance to meet or beat DRatings AND moneyline, run-line, and "
+            "total probability log loss to each meet or beat DRatings."
         ),
         "",
         markdown_table(
             [
-                "Side",
-                "DRatings baseline Poisson",
-                "Candidate Poisson",
+                "Run metric",
+                "DRatings",
+                "Candidate",
                 "Candidate <= baseline",
             ],
             [
                 [
-                    "home",
+                    "home Poisson (diagnostic)",
                     _fmt_float(home_gate["baseline_value"]),
                     _fmt_float(home_gate["candidate_value"]),
                     _yes_no(home_gate["candidate_lte_baseline"]),
                 ],
                 [
-                    "away",
+                    "away Poisson (diagnostic)",
                     _fmt_float(away_gate["baseline_value"]),
                     _fmt_float(away_gate["candidate_value"]),
                     _yes_no(away_gate["candidate_lte_baseline"]),
                 ],
+                [
+                    "coupled mean Poisson (GATE)",
+                    _fmt_float(pair_gate["baseline_value"]),
+                    _fmt_float(pair_gate["candidate_value"]),
+                    _yes_no(pair_gate["candidate_lte_baseline"]),
+                ],
             ],
+        ),
+        "",
+        markdown_table(
+            [
+                "Probability market gate",
+                "DRatings log loss",
+                "Candidate log loss",
+                "Candidate <= baseline",
+            ],
+            gate_market_rows,
         ),
         "",
         (
@@ -2832,7 +2990,9 @@ def main() -> None:
         )
 
         (
-            feature_columns,
+            home_feature_columns,
+            away_feature_columns,
+            all_feature_columns,
             test_start,
             test_end,
             expected_test_rows,
@@ -2843,7 +3003,7 @@ def main() -> None:
 
         test = load_test_period(
             args.training_data,
-            feature_columns,
+            all_feature_columns,
             test_start,
             test_end,
             expected_test_rows,
@@ -2851,18 +3011,13 @@ def main() -> None:
 
         scored = score_models(
             test,
-            feature_columns,
+            home_feature_columns,
+            away_feature_columns,
             args.candidate_dir,
         )
 
         run_metrics = build_run_metrics(
             scored
-        )
-
-        promotion_decision = build_promotion_decision(
-            run_metrics,
-            test_start=test_start,
-            test_end=test_end,
         )
 
         sportsbook = load_sportsbook_test_period(
@@ -2890,6 +3045,13 @@ def main() -> None:
 
         log_loss = build_probability_log_loss(
             market
+        )
+
+        promotion_decision = build_promotion_decision(
+            run_metrics,
+            log_loss,
+            test_start=test_start,
+            test_end=test_end,
         )
 
         values = build_value_records(

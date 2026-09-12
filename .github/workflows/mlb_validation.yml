@@ -39,7 +39,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Create isolated MLB Python environment
         run: |
@@ -53,6 +53,34 @@ jobs:
           python -m pip install playwright
           python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
           python -m pip check
+
+      - name: Verify MLB model runtime versions
+        run: |
+          python - <<'PY'
+          import lightgbm
+          import sklearn
+
+          expected = {
+              "scikit-learn": "1.9.1",
+              "lightgbm": "4.7.0",
+          }
+          actual = {
+              "scikit-learn": sklearn.__version__,
+              "lightgbm": lightgbm.__version__,
+          }
+
+          print(f"MLB model runtime versions: {actual}")
+
+          mismatches = {
+              name: {"expected": expected[name], "actual": actual[name]}
+              for name in expected
+              if actual[name] != expected[name]
+          }
+          if mismatches:
+              raise RuntimeError(
+                  f"MLB model runtime version mismatch: {mismatches}"
+              )
+          PY
 
       - name: Run probability EV Kelly regression tests
         run: |
@@ -202,18 +230,19 @@ jobs:
 
           missing = [str(path) for path in required_paths if not path.exists()]
           if missing:
-              raise RuntimeError(f"Missing committed validation artifact(s): {missing}")
+              raise RuntimeError(
+                  f"Missing committed validation artifact(s): {missing}"
+              )
 
           def load_metadata(path):
               payload = json.loads(path.read_text(encoding="utf-8"))
               if not isinstance(payload, dict):
-                  raise RuntimeError(f"Metadata must be a JSON object: {path}")
+                  raise RuntimeError(
+                      f"Metadata must be a JSON object: {path}"
+                  )
               return payload
 
-          home_meta = load_metadata(home_meta_path)
-          away_meta = load_metadata(away_meta_path)
-
-          for label, meta in [("home", home_meta), ("away", away_meta)]:
+          def validate_metadata(label, meta):
               features = meta.get("feature_columns")
               if not isinstance(features, list) or not features:
                   raise RuntimeError(
@@ -224,14 +253,36 @@ jobs:
                       f"{label} metadata feature_columns contains duplicates"
                   )
 
+              family = str(meta.get("family") or "").strip()
+              if family:
+                  if not isinstance(meta.get("params"), dict):
+                      raise RuntimeError(
+                          f"{label} metadata family={family!r} requires params"
+                      )
+                  return family
+
+              model_class = str(meta.get("model_class") or "").strip()
+              if (
+                  model_class == "HistGradientBoostingRegressor"
+                  and isinstance(
+                      meta.get("selected_hyperparameters"),
+                      dict,
+                  )
+              ):
+                  return "hist_gradient_boosting"
+
+              raise RuntimeError(
+                  f"{label} metadata does not contain a supported model spec"
+              )
+
+          home_meta = load_metadata(home_meta_path)
+          away_meta = load_metadata(away_meta_path)
+
+          home_family = validate_metadata("home", home_meta)
+          away_family = validate_metadata("away", away_meta)
+
           home_features = [str(value) for value in home_meta["feature_columns"]]
           away_features = [str(value) for value in away_meta["feature_columns"]]
-
-          if home_features != away_features:
-              raise RuntimeError(
-                  "Home/away metadata feature order mismatch: "
-                  f"home={home_features} away={away_features}"
-              )
 
           home_model = joblib.load(home_model_path)
           away_model = joblib.load(away_model_path)
@@ -246,7 +297,10 @@ jobs:
                       f"{label} model does not expose feature_names_in_"
                   )
 
-              actual_features = [str(value) for value in feature_names.tolist()]
+              actual_features = [
+                  str(value)
+                  for value in feature_names.tolist()
+              ]
               if actual_features != expected_features:
                   raise RuntimeError(
                       f"{label} model feature order mismatch: "
@@ -255,26 +309,57 @@ jobs:
 
           training = pd.read_csv(training_path, encoding="utf-8-sig")
           if training.empty:
-              raise RuntimeError(f"Committed training data is empty: {training_path}")
+              raise RuntimeError(
+                  f"Committed training data is empty: {training_path}"
+              )
 
+          all_features = list(dict.fromkeys(home_features + away_features))
           missing_features = [
-              column for column in home_features if column not in training.columns
+              column
+              for column in all_features
+              if column not in training.columns
           ]
           if missing_features:
               raise RuntimeError(
-                  f"Committed training data missing model features: {missing_features}"
+                  "Committed training data missing model features: "
+                  f"{missing_features}"
               )
 
-          sample = training.loc[:, home_features].head(1).copy()
-          if sample.empty:
-              raise RuntimeError("Could not obtain one committed training row for smoke test")
+          home_sample = training.loc[:, home_features].head(1).copy()
+          away_sample = training.loc[:, away_features].head(1).copy()
 
-          for column in home_features:
-              sample[column] = pd.to_numeric(sample[column], errors="coerce")
+          if home_sample.empty or away_sample.empty:
+              raise RuntimeError(
+                  "Could not obtain one committed training row for smoke test"
+              )
 
-          for label, model in [("home", home_model), ("away", away_model)]:
-              prediction = np.asarray(model.predict(sample), dtype=float)
+          for frame in [home_sample, away_sample]:
+              for column in frame.columns:
+                  frame[column] = pd.to_numeric(
+                      frame[column],
+                      errors="coerce",
+                  )
 
+          predictions = [
+              (
+                  "home",
+                  home_family,
+                  np.asarray(
+                      home_model.predict(home_sample),
+                      dtype=float,
+                  ),
+              ),
+              (
+                  "away",
+                  away_family,
+                  np.asarray(
+                      away_model.predict(away_sample),
+                      dtype=float,
+                  ),
+              ),
+          ]
+
+          for label, family, prediction in predictions:
               if prediction.shape != (1,):
                   raise RuntimeError(
                       f"{label} smoke prediction returned unexpected shape: "
@@ -282,14 +367,25 @@ jobs:
                   )
               if not np.isfinite(prediction).all():
                   raise RuntimeError(
-                      f"{label} smoke prediction is non-finite: {prediction.tolist()}"
+                      f"{label} smoke prediction is non-finite: "
+                      f"{prediction.tolist()}"
                   )
               if (prediction < 0).any():
                   raise RuntimeError(
-                      f"{label} smoke prediction is negative: {prediction.tolist()}"
+                      f"{label} smoke prediction is negative: "
+                      f"{prediction.tolist()}"
                   )
 
-              print(f"{label} smoke prediction={float(prediction[0]):.6f}")
+              feature_count = (
+                  len(home_features)
+                  if label == "home"
+                  else len(away_features)
+              )
+              print(
+                  f"{label} family={family} "
+                  f"features={feature_count} "
+                  f"smoke_prediction={float(prediction[0]):.6f}"
+              )
 
           print(
               "MLB model artifact validation passed for commit "
