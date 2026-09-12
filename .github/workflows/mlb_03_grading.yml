@@ -103,12 +103,21 @@ jobs:
         if: steps.selected_bets.outputs.found == 'true' && steps.morning_selected_bets.outputs.found == 'true' && steps.grade_morning_results.outcome == 'success'
         run: python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports_AM.py
 
+      - name: MLB Build Results Dashboard
+        if: steps.selected_bets.outputs.found == 'true' && (steps.grade_results.outcome == 'success' || steps.grade_morning_results.outcome == 'success')
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/04_mlb_results_dashboard.py
+
       - name: Commit MLB grading outputs
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add docs/win/baseball/mlb/
+          git add frontend/baseball_dashboard.html
+          git add frontend/mlb_dashboard.html
+
           git restore --staged docs/win/baseball/mlb/audit/leakage_audit.csv 2>/dev/null || true
+
           git diff --cached --quiet || git commit -m "chore: update MLB grading outputs"
           git push

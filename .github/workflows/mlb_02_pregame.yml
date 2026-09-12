@@ -100,11 +100,83 @@ jobs:
       - name: MLB Select Bets
         run: python docs/win/baseball/mlb/scripts/04_select/baseball_select_bets.py
 
+      - name: Check for selected bet files
+        id: selected_bets
+        shell: bash
+        run: |
+          if find docs/win/baseball/mlb/04_select \
+            -maxdepth 1 \
+            -type f \
+            ! -name ".gitkeep" \
+            | grep -q .; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Selected-bet files found."
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No selected-bet files found. Skipping grading, reports, and dashboard generation."
+          fi
+
+      - name: MLB Normalize Results
+        if: steps.selected_bets.outputs.found == 'true'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/normalize_mlb_results.py
+
+      - name: MLB Grade Results
+        id: grade_results
+        if: steps.selected_bets.outputs.found == 'true'
+        continue-on-error: true
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/01_mlb_results_grade.py
+
+      - name: MLB Analyze Results
+        if: steps.selected_bets.outputs.found == 'true' && steps.grade_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/02_mlb_results_analyze.py
+
+      - name: MLB Build Results Reports
+        if: steps.selected_bets.outputs.found == 'true' && steps.grade_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/03_mlb_results_reports.py
+
+      - name: MLB Build Results Dashboard
+        if: steps.selected_bets.outputs.found == 'true' && steps.grade_results.outcome == 'success'
+        run: python docs/win/baseball/mlb/scripts/05_final_scores/04_mlb_results_dashboard.py
+
+      - name: MLB Pipeline Health
+        if: always()
+        env:
+          MLB_PIPELINE_WORKFLOW: pregame
+          MLB_PIPELINE_JOB_STATUS: ${{ job.status }}
+        run: python docs/win/baseball/mlb/scripts/pipeline_health.py
+
       - name: Commit MLB outputs
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add docs/win/baseball/mlb/
+          git add frontend/baseball_dashboard.html
+          git add frontend/mlb_dashboard.html
+
           git restore --staged docs/win/baseball/mlb/audit/leakage_audit.csv 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "chore: update MLB pregame pipeline outputs"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No MLB output changes to commit."
+          else
+            git commit -m "chore: update MLB pregame pipeline outputs"
+            git pull --rebase --autostash origin main
+            git push origin main
+          fi
+
+      - name: Commit MLB pipeline health frontend
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add docs/win/baseball/mlb/pipeline_health.json
+          git add frontend/data/pipeline_health/mlb.json
+
+          if git diff --cached --quiet; then
+            echo "No MLB pipeline health changes to commit."
+          else
+            git commit -m "chore: update MLB pipeline health"
+            git pull --rebase --autostash origin main
+            git push origin main
+          fi
