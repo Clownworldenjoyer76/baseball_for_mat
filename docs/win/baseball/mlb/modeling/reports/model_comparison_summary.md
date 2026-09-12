@@ -1,6 +1,6 @@
 # MLB Run Model Comparison
 
-- Generated: `2026-09-11T21:57:42.143691+00:00`
+- Generated: `2026-09-12T13:31:09.116753+00:00`
 - Untouched chronological test period: `2026-08-14` through `2026-09-10`
 - Test games: `157`
 - Model fitting/tuning performed by this evaluation script: `NO`
@@ -8,12 +8,19 @@
 
 ## Production promotion gate
 
-Candidate promotion requires mean Poisson deviance <= the DRatings baseline for BOTH home and away models.
+Candidate promotion requires the coupled mean home/away Poisson deviance to meet or beat DRatings AND each probability market to pass both relative and absolute log-loss/ECE thresholds.
 
-| Side | DRatings baseline Poisson | Candidate Poisson | Candidate <= baseline |
+| Run metric | DRatings | Candidate | Candidate <= baseline |
 | --- | --- | --- | --- |
-| home | 2.272537 | 2.318701 | NO |
-| away | 2.460105 | 2.434801 | YES |
+| home Poisson (diagnostic) | 2.272537 | 2.318701 | NO |
+| away Poisson (diagnostic) | 2.460105 | 2.434801 | YES |
+| coupled mean Poisson (GATE) | 2.366321 | 2.376751 | NO |
+
+| Probability market gate | DRatings log loss | Candidate log loss | Log-loss ceiling | LL <= baseline | LL <= ceiling | DRatings ECE | Candidate ECE | ECE ceiling | ECE <= baseline | ECE <= ceiling | Market PASS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| moneyline | 0.664394 | 0.682398 | 0.670000 | NO | NO | 0.096429 | 0.081736 | 0.050000 | YES | NO | NO |
+| run_line | 0.690711 | 0.704978 | 0.660000 | NO | NO | 0.080527 | 0.131948 | 0.050000 | NO | NO | NO |
+| total | 0.721636 | 0.725276 | 0.670000 | NO | NO | 0.060940 | 0.094191 | 0.050000 | NO | NO | NO |
 
 - Production artifacts changed: **NO**.
 
@@ -33,7 +40,7 @@ Candidate promotion requires mean Poisson deviance <= the DRatings baseline for 
 
 ## Probability calibration
 
-Calibration YES/NO uses weighted expected calibration error (ECE) <= `0.05`. Totals use conditional win probability on resolved bets; pushes are excluded from the observed win-rate denominator.
+Calibration YES/NO uses the configured per-market weighted expected calibration error (ECE) ceiling. All current market ECE ceilings are `0.05`. Totals use conditional win probability on resolved bets; pushes are excluded from the observed win-rate denominator.
 
 | Market | New-model ECE | Calibrated | Predicted-vs-observed Spearman | Observed rate exactly non-decreasing | Populated bins |
 | --- | --- | --- | --- | --- | --- |

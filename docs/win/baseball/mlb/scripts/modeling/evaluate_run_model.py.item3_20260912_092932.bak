@@ -25,10 +25,8 @@ Promotion rule
 The candidate pair is promoted only when:
 1. the mean of home/away candidate Poisson deviances is <= the corresponding
    DRatings pair mean on the untouched chronological test set; and
-2. for moneyline, run line, and total probabilities, candidate log loss is
-   <= both DRatings log loss and the configured absolute market threshold; and
-3. for those same markets, candidate expected calibration error (ECE) is
-   <= both DRatings ECE and the configured absolute market threshold.
+2. candidate log loss is <= DRatings log loss for moneyline, run line, and
+   total probabilities on that same test period.
 
 Home and away run-model metrics remain visible individually, but promotion is
 coupled because downstream betting probabilities use both run means together.
@@ -88,20 +86,7 @@ PROBABILITY_BIN_LABELS = [
 
 EPSILON = 1e-12
 PROB_TOLERANCE = 1e-10
-MARKET_PROMOTION_THRESHOLDS = {
-    "moneyline": {
-        "log_loss": 0.67,
-        "ece": 0.05,
-    },
-    "run_line": {
-        "log_loss": 0.66,
-        "ece": 0.05,
-    },
-    "total": {
-        "log_loss": 0.67,
-        "ece": 0.05,
-    },
-}
+CALIBRATION_ECE_THRESHOLD = 0.05
 
 SPORTSBOOK_REQUIRED_COLUMNS = [
     "game_id",
@@ -763,7 +748,6 @@ def build_run_metrics(scored: pd.DataFrame) -> pd.DataFrame:
 def build_promotion_decision(
     run_metrics: pd.DataFrame,
     log_loss: pd.DataFrame,
-    calibrations: dict[str, pd.DataFrame],
     *,
     test_start: str,
     test_end: str,
@@ -851,95 +835,25 @@ def build_promotion_decision(
                 f"market={market_name}"
             )
 
-        if market_name not in calibrations:
+        baseline = float(log_lookup[baseline_key].log_loss)
+        candidate = float(log_lookup[candidate_key].log_loss)
+
+        if not np.isfinite(baseline) or not np.isfinite(candidate):
             fail(
-                "Promotion gate missing required probability calibration: "
-                f"market={market_name}"
+                "Promotion gate received non-finite probability log loss: "
+                f"market={market_name} baseline={baseline} candidate={candidate}"
             )
 
-        thresholds = MARKET_PROMOTION_THRESHOLDS.get(market_name)
-        if not isinstance(thresholds, dict):
-            fail(
-                "Promotion gate missing configured market thresholds: "
-                f"market={market_name}"
-            )
-
-        log_loss_threshold = float(thresholds["log_loss"])
-        ece_threshold = float(thresholds["ece"])
-
-        baseline_log_loss = float(log_lookup[baseline_key].log_loss)
-        candidate_log_loss = float(log_lookup[candidate_key].log_loss)
-        baseline_ece = expected_calibration_error(
-            calibrations[market_name],
-            "dratings",
-        )
-        candidate_ece = expected_calibration_error(
-            calibrations[market_name],
-            "new_model",
-        )
-
-        values_to_validate = {
-            "baseline_log_loss": baseline_log_loss,
-            "candidate_log_loss": candidate_log_loss,
-            "log_loss_threshold": log_loss_threshold,
-            "baseline_ece": baseline_ece,
-            "candidate_ece": candidate_ece,
-            "ece_threshold": ece_threshold,
-        }
-        invalid = {
-            key: value
-            for key, value in values_to_validate.items()
-            if not np.isfinite(value)
-        }
-        if invalid:
-            fail(
-                "Promotion gate received non-finite probability metric: "
-                f"market={market_name} values={invalid}"
-            )
-
-        log_loss_lte_baseline = bool(
-            candidate_log_loss <= baseline_log_loss
-        )
-        log_loss_lte_threshold = bool(
-            candidate_log_loss <= log_loss_threshold
-        )
-        ece_lte_baseline = bool(
-            candidate_ece <= baseline_ece
-        )
-        ece_lte_threshold = bool(
-            candidate_ece <= ece_threshold
-        )
-        passed = bool(
-            log_loss_lte_baseline
-            and log_loss_lte_threshold
-            and ece_lte_baseline
-            and ece_lte_threshold
-        )
+        passed = bool(candidate <= baseline)
         market_passed = market_passed and passed
 
         market_comparison[market_name] = {
             "baseline_system": "dratings",
-            "log_loss": {
-                "baseline_value": baseline_log_loss,
-                "candidate_value": candidate_log_loss,
-                "absolute_threshold": log_loss_threshold,
-                "candidate_lte_baseline": log_loss_lte_baseline,
-                "candidate_lte_threshold": log_loss_lte_threshold,
-                "difference_candidate_minus_baseline": (
-                    candidate_log_loss - baseline_log_loss
-                ),
-            },
-            "calibration_ece": {
-                "baseline_value": baseline_ece,
-                "candidate_value": candidate_ece,
-                "absolute_threshold": ece_threshold,
-                "candidate_lte_baseline": ece_lte_baseline,
-                "candidate_lte_threshold": ece_lte_threshold,
-                "difference_candidate_minus_baseline": (
-                    candidate_ece - baseline_ece
-                ),
-            },
-            "passed": passed,
+            "metric": "log_loss",
+            "baseline_value": baseline,
+            "candidate_value": candidate,
+            "candidate_lte_baseline": passed,
+            "difference_candidate_minus_baseline": candidate - baseline,
             "gating_component": True,
         }
 
@@ -950,27 +864,9 @@ def build_promotion_decision(
     failed_components: list[str] = []
     if not run_pair_passed:
         failed_components.append("run_pair_poisson")
-
     for market_name, values in market_comparison.items():
-        log_gate = values["log_loss"]
-        ece_gate = values["calibration_ece"]
-
-        if not log_gate["candidate_lte_baseline"]:
-            failed_components.append(
-                f"{market_name}_log_loss_baseline"
-            )
-        if not log_gate["candidate_lte_threshold"]:
-            failed_components.append(
-                f"{market_name}_log_loss_threshold"
-            )
-        if not ece_gate["candidate_lte_baseline"]:
-            failed_components.append(
-                f"{market_name}_ece_baseline"
-            )
-        if not ece_gate["candidate_lte_threshold"]:
-            failed_components.append(
-                f"{market_name}_ece_threshold"
-            )
+        if not values["candidate_lte_baseline"]:
+            failed_components.append(f"{market_name}_log_loss")
 
     return {
         "status": (
@@ -981,9 +877,8 @@ def build_promotion_decision(
         "gate_passed": all_passed,
         "gate_rule": (
             "coupled candidate mean(home,away) Poisson deviance <= DRatings "
-            "coupled mean AND, for moneyline, run_line, and total, candidate "
-            "log loss <= DRatings and configured absolute threshold AND "
-            "candidate ECE <= DRatings and configured absolute threshold"
+            "coupled mean AND candidate log_loss <= DRatings for moneyline, "
+            "run_line, and total probabilities"
         ),
         "test_start_date": str(test_start),
         "test_end_date": str(test_end),
@@ -1147,9 +1042,8 @@ def apply_promotion_decision(
     }
     result["notes"] = (
         "Coupled run-model pair passed the production gate: pair-level mean "
-        "Poisson deviance met or beat DRatings, and moneyline/run-line/total "
-        "log loss and ECE each met both the DRatings baseline and configured "
-        "absolute threshold. The two models were promoted together."
+        "Poisson deviance and moneyline/run-line/total probability log loss "
+        "all met or beat DRatings. The two models were promoted together."
     )
 
     _write_json(report_path, result)
@@ -2668,8 +2562,7 @@ def write_summary(
             "ece": ece,
             "calibrated": (
                 np.isfinite(ece)
-                and ece
-                <= MARKET_PROMOTION_THRESHOLDS[market_name]["ece"]
+                and ece <= CALIBRATION_ECE_THRESHOLD
             ),
             **monotonic,
         }
@@ -2785,22 +2678,12 @@ def write_summary(
     gate_market_rows = []
     for market_name in ["moneyline", "run_line", "total"]:
         values = market_gate[market_name]
-        log_gate = values["log_loss"]
-        ece_gate = values["calibration_ece"]
         gate_market_rows.append(
             [
                 market_name,
-                _fmt_float(log_gate["baseline_value"]),
-                _fmt_float(log_gate["candidate_value"]),
-                _fmt_float(log_gate["absolute_threshold"]),
-                _yes_no(log_gate["candidate_lte_baseline"]),
-                _yes_no(log_gate["candidate_lte_threshold"]),
-                _fmt_float(ece_gate["baseline_value"]),
-                _fmt_float(ece_gate["candidate_value"]),
-                _fmt_float(ece_gate["absolute_threshold"]),
-                _yes_no(ece_gate["candidate_lte_baseline"]),
-                _yes_no(ece_gate["candidate_lte_threshold"]),
-                _yes_no(values["passed"]),
+                _fmt_float(values["baseline_value"]),
+                _fmt_float(values["candidate_value"]),
+                _yes_no(values["candidate_lte_baseline"]),
             ]
         )
 
@@ -2817,8 +2700,8 @@ def write_summary(
         "",
         (
             "Candidate promotion requires the coupled mean home/away Poisson "
-            "deviance to meet or beat DRatings AND each probability market "
-            "to pass both relative and absolute log-loss/ECE thresholds."
+            "deviance to meet or beat DRatings AND moneyline, run-line, and "
+            "total probability log loss to each meet or beat DRatings."
         ),
         "",
         markdown_table(
@@ -2855,15 +2738,7 @@ def write_summary(
                 "Probability market gate",
                 "DRatings log loss",
                 "Candidate log loss",
-                "Log-loss ceiling",
-                "LL <= baseline",
-                "LL <= ceiling",
-                "DRatings ECE",
-                "Candidate ECE",
-                "ECE ceiling",
-                "ECE <= baseline",
-                "ECE <= ceiling",
-                "Market PASS",
+                "Candidate <= baseline",
             ],
             gate_market_rows,
         ),
@@ -2910,11 +2785,10 @@ def write_summary(
         "## Probability calibration",
         "",
         (
-            "Calibration YES/NO uses the configured per-market weighted "
-            "expected calibration error (ECE) ceiling. All current market "
-            "ECE ceilings are `0.05`. Totals use conditional win probability "
-            "on resolved bets; pushes are excluded from the observed win-rate "
-            "denominator."
+            "Calibration YES/NO uses weighted expected calibration error "
+            f"(ECE) <= `{CALIBRATION_ECE_THRESHOLD:.2f}`. "
+            "Totals use conditional win probability on resolved bets; pushes "
+            "are excluded from the observed win-rate denominator."
         ),
         "",
         markdown_table(
@@ -3176,7 +3050,6 @@ def main() -> None:
         promotion_decision = build_promotion_decision(
             run_metrics,
             log_loss,
-            calibrations,
             test_start=test_start,
             test_end=test_end,
         )

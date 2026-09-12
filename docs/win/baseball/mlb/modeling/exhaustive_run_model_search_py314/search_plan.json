@@ -1,0 +1,41 @@
+{
+  "search_strategy": "two_stage_coarse_then_local_refinement",
+  "versions": {
+    "python": "3.14.7",
+    "numpy": "2.5.3",
+    "pandas": "3.0.5",
+    "scipy": "1.18.1",
+    "scikit_learn": "1.9.1",
+    "lightgbm": "4.7.0",
+    "xgboost": "3.4.1",
+    "lightgbm_import_error": null,
+    "xgboost_import_error": null
+  },
+  "feature_sets": {
+    "all": 53,
+    "dratings_only": 5,
+    "no_dratings": 48,
+    "no_dratings_prob": 51,
+    "dratings_plus_pitcher": 31,
+    "dratings_plus_bullpen": 27,
+    "pitcher_only": 26,
+    "bullpen_only": 22
+  },
+  "coarse_family_grid_sizes": {
+    "hist_gradient_boosting": 48,
+    "random_forest": 16,
+    "extra_trees": 16,
+    "poisson_glm": 5,
+    "tweedie_glm": 9,
+    "lightgbm": 36,
+    "xgboost": 36
+  },
+  "coarse_candidate_configs_per_side": 1328,
+  "cv_folds": 4,
+  "coarse_model_fits_both_sides": 10624,
+  "maximum_refinement_seed_count_per_side": 25,
+  "refinement_rule": "top 10 overall + best per family + best per feature set; local one-factor perturbations for every seed plus small Cartesian interaction search for the top 5 seeds",
+  "pair_top_k": 300,
+  "untouched_test_rows": 157,
+  "untouched_test_used_for_selection": false
+}
