@@ -1,10 +1,96 @@
 {
+  "artifact_stage": "exhaustive_search_winner_unpromoted",
+  "production_modified": false,
+  "selection_method": "development_only_expanding_walk_forward_cv_and_coupled_pair_search",
   "training_start_date": "2026-03-26",
-  "training_end_date": "2026-07-08",
-  "validation_start_date": "2026-07-09",
-  "validation_end_date": "2026-08-02",
-  "test_start_date": "2026-08-03",
-  "test_end_date": "2026-08-29",
+  "training_end_date": "2026-07-20",
+  "validation_start_date": "2026-07-21",
+  "validation_end_date": "2026-08-13",
+  "test_start_date": "2026-08-14",
+  "test_end_date": "2026-09-10",
+  "package_versions": {
+    "python": "3.12.10",
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "scipy": "1.18.1",
+    "scikit_learn": "1.9.1",
+    "lightgbm": "4.7.0",
+    "xgboost": "3.2.0",
+    "lightgbm_import_error": null,
+    "xgboost_import_error": null
+  },
+  "created_at": "2026-09-12T02:48:00.318384+00:00",
+  "cv_folds": [
+    {
+      "fold_id": 1,
+      "train_start": "2026-03-26",
+      "train_end": "2026-06-02",
+      "validation_start": "2026-06-03",
+      "validation_end": "2026-06-20"
+    },
+    {
+      "fold_id": 2,
+      "train_start": "2026-03-26",
+      "train_end": "2026-06-20",
+      "validation_start": "2026-06-21",
+      "validation_end": "2026-07-07"
+    },
+    {
+      "fold_id": 3,
+      "train_start": "2026-03-26",
+      "train_end": "2026-07-07",
+      "validation_start": "2026-07-08",
+      "validation_end": "2026-07-27"
+    },
+    {
+      "fold_id": 4,
+      "train_start": "2026-03-26",
+      "train_end": "2026-07-27",
+      "validation_start": "2026-07-28",
+      "validation_end": "2026-08-13"
+    }
+  ],
+  "untouched_test_candidate_metrics": {
+    "moneyline_log_loss": 0.6588802036983923,
+    "runline_minus_1_5_log_loss": 0.6487728118978469,
+    "runline_plus_1_5_log_loss": 0.6550463820946717,
+    "totals_halfline_log_loss": 0.6657568713088174,
+    "margin_nll": 3.165844276349247,
+    "total_nll": 3.0759687508348645,
+    "home_poisson": 2.309420588449626,
+    "away_poisson": 2.361883164846748,
+    "home_mae": 2.424002819421196,
+    "away_mae": 2.465615552731929
+  },
+  "untouched_test_dratings_metrics": {
+    "moneyline_log_loss": 0.6643942302181731,
+    "runline_minus_1_5_log_loss": 0.6528008481468202,
+    "runline_plus_1_5_log_loss": 0.6802568673218697,
+    "totals_halfline_log_loss": 0.6813189847540846,
+    "margin_nll": 3.217595549073064,
+    "total_nll": 3.0875954700835746,
+    "home_poisson": 2.2725369677445344,
+    "away_poisson": 2.460105414715994,
+    "home_mae": 2.3712738853503184,
+    "away_mae": 2.4894904458598726
+  },
+  "untouched_test_ratios": {
+    "home_poisson": 1.0162301521289214,
+    "away_poisson": 0.9600739670415362,
+    "moneyline_log_loss": 0.9917006706726365,
+    "runline_minus_1_5_log_loss": 0.9938296093511396,
+    "runline_plus_1_5_log_loss": 0.9629397563798948,
+    "totals_halfline_log_loss": 0.9771588436642725,
+    "margin_nll": 0.9839161659896236,
+    "total_nll": 0.9962343774107184,
+    "composite_ratio": 0.985108693467277,
+    "worst_component_ratio": 1.0162301521289214
+  },
+  "integration_warning": "Research artifact only. build_run_projection.py currently contains HistGradientBoosting-specific walk-forward fitting logic. If this winner uses another model family or different training behavior, production projection code must be updated and validated before promotion.",
+  "side": "away",
+  "candidate_id": "15fad4fc350fd375711d",
+  "family": "poisson_glm",
+  "feature_set": "dratings_plus_pitcher",
   "feature_columns": [
     "dratings_home_prob",
     "dratings_away_prob",
@@ -36,58 +122,11 @@
     "home_sp_pitches_30d",
     "away_sp_pitches_30d",
     "home_sp_games_30d",
-    "away_sp_games_30d",
-    "home_bp_pa_14d",
-    "away_bp_pa_14d",
-    "home_bp_woba_allowed_14d",
-    "away_bp_woba_allowed_14d",
-    "home_bp_k_rate_14d",
-    "away_bp_k_rate_14d",
-    "home_bp_bb_rate_14d",
-    "away_bp_bb_rate_14d",
-    "home_bp_hard_rate_14d",
-    "away_bp_hard_rate_14d",
-    "home_bp_pitches_3d",
-    "away_bp_pitches_3d",
-    "home_bp_pa_7d",
-    "away_bp_pa_7d",
-    "home_bp_woba_allowed_7d",
-    "away_bp_woba_allowed_7d",
-    "home_bp_k_rate_7d",
-    "away_bp_k_rate_7d",
-    "home_bp_bb_rate_7d",
-    "away_bp_bb_rate_7d",
-    "home_bp_hard_rate_7d",
-    "away_bp_hard_rate_7d"
+    "away_sp_games_30d"
   ],
-  "selected_hyperparameters": {
-    "learning_rate": 0.03,
-    "max_leaf_nodes": 7,
-    "min_samples_leaf": 10,
-    "l2_regularization": 0
+  "params": {
+    "alpha": 10.0,
+    "solver": "lbfgs"
   },
-  "training_row_count": 1125,
-  "validation_row_count": 219,
-  "test_row_count": 127,
-  "baseline_metrics": {
-    "mae": 2.4293700787401575,
-    "mean_poisson_deviance": 2.3745079680446914,
-    "mean_predicted_runs": 4.175984251968504,
-    "mean_actual_runs": 3.8661417322834644
-  },
-  "model_metrics": {
-    "mae": 2.498517175378032,
-    "mean_poisson_deviance": 2.4570371068370385,
-    "mean_predicted_runs": 4.3688076992976175,
-    "mean_actual_runs": 3.8661417322834644
-  },
-  "created_at": "2026-08-30T15:46:56.386801+00:00",
-  "validation_mean_poisson_deviance": 2.0724078704958186,
-  "target_column": "target_away_runs",
-  "baseline_column": "dratings_away_projected_runs",
-  "model_class": "HistGradientBoostingRegressor",
-  "loss": "poisson",
-  "random_state": 42,
-  "final_fit_row_count": 1344,
-  "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection"
+  "target_column": "target_away_runs"
 }
