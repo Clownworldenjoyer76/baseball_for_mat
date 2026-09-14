@@ -1,6 +1,6 @@
 # MLB Run Model Comparison
 
-- Generated: `2026-09-13T00:11:58.291568+00:00`
+- Generated: `2026-09-13T15:56:39.037405+00:00`
 - Untouched chronological test period: `2026-08-14` through `2026-09-10`
 - Test games: `157`
 - Model fitting/tuning performed by this evaluation script: `NO`
@@ -19,8 +19,8 @@ Candidate promotion requires the coupled mean home/away Poisson deviance to meet
 | Probability market gate | DRatings log loss | Candidate log loss | Log-loss ceiling | LL <= baseline | LL <= ceiling | DRatings ECE | Candidate ECE | ECE ceiling | ECE <= baseline | ECE <= ceiling | Market PASS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | moneyline | 0.664394 | 0.658880 | 0.670000 | YES | YES | 0.096429 | 0.060500 | 0.050000 | YES | NO | NO |
-| run_line | 0.690711 | 0.692510 | 0.660000 | NO | NO | 0.080527 | 0.088846 | 0.050000 | NO | NO | NO |
-| total | 0.721636 | 0.730855 | 0.670000 | NO | NO | 0.060940 | 0.159940 | 0.050000 | NO | NO | NO |
+| run_line | 0.666529 | 0.651910 | 0.660000 | YES | YES | 0.094556 | 0.078292 | 0.050000 | YES | NO | NO |
+| total | 0.681319 | 0.665757 | 0.670000 | YES | YES | 0.096706 | 0.082801 | 0.050000 | YES | NO | NO |
 
 - Production artifacts changed: **NO**.
 
@@ -45,8 +45,8 @@ Calibration YES/NO uses the configured per-market weighted expected calibration 
 | Market | New-model ECE | Calibrated | Predicted-vs-observed Spearman | Observed rate exactly non-decreasing | Populated bins |
 | --- | --- | --- | --- | --- | --- |
 | moneyline | 0.060500 | NO | 0.942857 | NO | 6 |
-| run_line | 0.088846 | NO | 0.928571 | NO | 8 |
-| total | 0.159940 | NO | 0.542857 | NO | 6 |
+| run_line | 0.078292 | NO | 0.785714 | NO | 8 |
+| total | 0.082801 | NO | 0.927273 | NO | 10 |
 
 - Are predicted moneyline probabilities calibrated? **NO**.
 - Are predicted run-line probabilities calibrated? **NO**.
@@ -58,11 +58,11 @@ Calibration YES/NO uses the configured per-market weighted expected calibration 
 | System | Market | Evaluation side | Rows | Log loss |
 | --- | --- | --- | --- | --- |
 | dratings | moneyline | home | 157 | 0.664394 |
-| dratings | run_line | home | 156 | 0.690711 |
-| dratings | total | over_resolved | 153 | 0.721636 |
+| dratings | run_line | home_fixed_-1.5_and_+1.5 | 314 | 0.666529 |
+| dratings | total | over_common_half_lines | 942 | 0.681319 |
 | new_model | moneyline | home | 157 | 0.658880 |
-| new_model | run_line | home | 156 | 0.692510 |
-| new_model | total | over_resolved | 153 | 0.730855 |
+| new_model | run_line | home_fixed_-1.5_and_+1.5 | 314 | 0.651910 |
+| new_model | total | over_common_half_lines | 942 | 0.665757 |
 
 ## EV, realized return, and Kelly
 

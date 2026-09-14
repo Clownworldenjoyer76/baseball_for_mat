@@ -51,7 +51,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import poisson, skellam, spearmanr
+from scipy.stats import spearmanr
 from sklearn.metrics import mean_absolute_error, mean_poisson_deviance
 
 
@@ -88,10 +88,6 @@ PROBABILITY_BIN_LABELS = [
 
 EPSILON = 1e-12
 PROB_TOLERANCE = 1e-10
-COMMON_TOTAL_LINES = np.array(
-    [6.5, 7.5, 8.5, 9.5, 10.5, 11.5],
-    dtype=float,
-)
 MARKET_PROMOTION_THRESHOLDS = {
     "moneyline": {
         "log_loss": 0.67,
@@ -1812,143 +1808,6 @@ def calibration_table(
     return pd.DataFrame(rows)
 
 
-def _search_aligned_probability_sets(
-    market: pd.DataFrame,
-    system: str,
-) -> dict[str, list[tuple[str, np.ndarray, np.ndarray]]]:
-    """Return the fixed probability markets used by exhaustive model search."""
-    systems = {
-        "dratings": (
-            "dratings_home_projected_runs",
-            "dratings_away_projected_runs",
-        ),
-        "new_model": (
-            "model_home_runs",
-            "model_away_runs",
-        ),
-    }
-
-    if system not in systems:
-        fail(f"Unsupported probability system: {system}")
-
-    home_col, away_col = systems[system]
-
-    required = [
-        home_col,
-        away_col,
-        "target_home_runs",
-        "target_away_runs",
-    ]
-    require_columns(
-        market,
-        required,
-        f"{system} search-aligned probability frame",
-    )
-
-    home_mean = pd.to_numeric(
-        market[home_col],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-    away_mean = pd.to_numeric(
-        market[away_col],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-    actual_home = pd.to_numeric(
-        market["target_home_runs"],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-    actual_away = pd.to_numeric(
-        market["target_away_runs"],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-
-    arrays = {
-        "home_mean": home_mean,
-        "away_mean": away_mean,
-        "actual_home": actual_home,
-        "actual_away": actual_away,
-    }
-    invalid = {
-        name: int((~np.isfinite(values)).sum())
-        for name, values in arrays.items()
-        if (~np.isfinite(values)).any()
-    }
-    if invalid:
-        fail(
-            f"{system} search-aligned probability inputs contain "
-            f"non-finite values: {invalid}"
-        )
-
-    if np.any(home_mean <= 0) or np.any(away_mean <= 0):
-        fail(
-            f"{system} search-aligned run means must be positive"
-        )
-
-    diff = actual_home - actual_away
-    actual_total = actual_home + actual_away
-
-    run_line_sets = [
-        (
-            "home_-1.5",
-            1.0 - skellam.cdf(1, home_mean, away_mean),
-            (diff >= 2).astype(float),
-        ),
-        (
-            "home_+1.5",
-            1.0 - skellam.cdf(-2, home_mean, away_mean),
-            (diff >= -1).astype(float),
-        ),
-    ]
-
-    total_mean = home_mean + away_mean
-    total_sets: list[tuple[str, np.ndarray, np.ndarray]] = []
-
-    for line in COMMON_TOTAL_LINES:
-        threshold = int(math.floor(float(line)))
-        probability = (
-            1.0
-            - poisson.cdf(
-                threshold,
-                total_mean,
-            )
-        )
-        observed = (
-            actual_total > float(line)
-        ).astype(float)
-        total_sets.append(
-            (
-                f"over_{line:.1f}",
-                np.asarray(probability, dtype=float),
-                observed,
-            )
-        )
-
-    for market_name, sets in [
-        ("run_line", run_line_sets),
-        ("total", total_sets),
-    ]:
-        for side, probability, observed in sets:
-            if (
-                np.any(~np.isfinite(probability))
-                or np.any(probability < -PROB_TOLERANCE)
-                or np.any(probability > 1.0 + PROB_TOLERANCE)
-            ):
-                fail(
-                    f"{system} {market_name} {side} produced invalid "
-                    "search-aligned probabilities"
-                )
-            if np.any(~np.isfinite(observed)):
-                fail(
-                    f"{system} {market_name} {side} produced invalid "
-                    "search-aligned outcomes"
-                )
-
-    return {
-        "run_line": run_line_sets,
-        "total": total_sets,
-    }
-
-
 def build_calibration_reports(
     market: pd.DataFrame,
 ) -> dict[str, pd.DataFrame]:
@@ -1971,31 +1830,37 @@ def build_calibration_reports(
                 )
             )
 
-        aligned = _search_aligned_probability_sets(
-            market,
-            system,
-        )
-
-        for side, probability, observed in aligned["run_line"]:
             run_line_records.extend(
                 {
                     "system": system,
                     "side": side,
-                    "predicted_probability": float(p),
-                    "observed_win": float(y),
+                    "predicted_probability": probability,
+                    "observed_win": observed,
                 }
-                for p, y in zip(probability, observed)
+                for probability, observed in zip(
+                    market[f"{system}_{side}_rl_prob"],
+                    market[f"observed_{side}_rl_win"],
+                )
+                if (
+                    pd.notna(probability)
+                    and pd.notna(observed)
+                )
             )
 
-        for side, probability, observed in aligned["total"]:
+        for side in ["over", "under"]:
             total_records.extend(
                 {
                     "system": system,
                     "side": side,
-                    "predicted_probability": float(p),
-                    "observed_win": float(y),
+                    "predicted_probability": probability,
+                    "observed_win": observed,
                 }
-                for p, y in zip(probability, observed)
+                for probability, observed in zip(
+                    market[
+                        f"{system}_{side}_total_conditional_prob"
+                    ],
+                    market[f"observed_{side}_win"],
+                )
             )
 
     return {
@@ -2009,6 +1874,7 @@ def build_calibration_reports(
             pd.DataFrame(total_records)
         ),
     }
+
 
 def binary_log_loss(
     observed,
@@ -2046,92 +1912,61 @@ def binary_log_loss(
 def build_probability_log_loss(
     market: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Score the same fixed markets used by exhaustive_run_model_search.py."""
     rows: list[dict] = []
 
+    definitions = [
+        (
+            "moneyline",
+            "home",
+            "observed_home_ml_win",
+            "home_ml_prob",
+        ),
+        (
+            "run_line",
+            "home",
+            "observed_home_rl_win",
+            "home_rl_prob",
+        ),
+        (
+            "total",
+            "over_resolved",
+            "observed_over_win",
+            "over_total_conditional_prob",
+        ),
+    ]
+
     for system in ["dratings", "new_model"]:
-        moneyline_observed = pd.to_numeric(
-            market["observed_home_ml_win"],
-            errors="coerce",
-        )
-        moneyline_probability = pd.to_numeric(
-            market[f"{system}_home_ml_prob"],
-            errors="coerce",
-        )
-        moneyline_valid = (
-            moneyline_observed.notna()
-            & moneyline_probability.notna()
-        )
+        for (
+            market_name,
+            evaluation_side,
+            observed_col,
+            probability_suffix,
+        ) in definitions:
+            observed = pd.to_numeric(
+                market[observed_col],
+                errors="coerce",
+            )
+            probability = pd.to_numeric(
+                market[f"{system}_{probability_suffix}"],
+                errors="coerce",
+            )
+            valid = observed.notna() & probability.notna()
 
-        rows.append(
-            {
-                "system": system,
-                "market": "moneyline",
-                "evaluation_side": "home",
-                "rows": int(moneyline_valid.sum()),
-                "log_loss": binary_log_loss(
-                    moneyline_observed[moneyline_valid],
-                    moneyline_probability[moneyline_valid],
-                ),
-            }
-        )
-
-        aligned = _search_aligned_probability_sets(
-            market,
-            system,
-        )
-
-        run_line_observed = np.concatenate(
-            [
-                observed
-                for _, _, observed in aligned["run_line"]
-            ]
-        )
-        run_line_probability = np.concatenate(
-            [
-                probability
-                for _, probability, _ in aligned["run_line"]
-            ]
-        )
-        rows.append(
-            {
-                "system": system,
-                "market": "run_line",
-                "evaluation_side": "home_fixed_-1.5_and_+1.5",
-                "rows": int(run_line_observed.size),
-                "log_loss": binary_log_loss(
-                    run_line_observed,
-                    run_line_probability,
-                ),
-            }
-        )
-
-        total_observed = np.concatenate(
-            [
-                observed
-                for _, _, observed in aligned["total"]
-            ]
-        )
-        total_probability = np.concatenate(
-            [
-                probability
-                for _, probability, _ in aligned["total"]
-            ]
-        )
-        rows.append(
-            {
-                "system": system,
-                "market": "total",
-                "evaluation_side": "over_common_half_lines",
-                "rows": int(total_observed.size),
-                "log_loss": binary_log_loss(
-                    total_observed,
-                    total_probability,
-                ),
-            }
-        )
+            rows.append(
+                {
+                    "system": system,
+                    "market": market_name,
+                    "evaluation_side": evaluation_side,
+                    "rows": int(valid.sum()),
+                    "log_loss": binary_log_loss(
+                        observed[valid],
+                        probability[valid],
+                    ),
+                }
+            )
 
     return pd.DataFrame(rows)
+
 
 def _scalar(value) -> float:
     if isinstance(value, pd.Series):

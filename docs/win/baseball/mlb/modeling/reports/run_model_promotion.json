@@ -45,11 +45,11 @@
         },
         "calibration_ece": {
           "baseline_value": 0.0964285479170287,
-          "candidate_value": 0.06049972470907563,
+          "candidate_value": 0.06049972470907565,
           "absolute_threshold": 0.05,
           "candidate_lte_baseline": true,
           "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": -0.03592882320795308
+          "difference_candidate_minus_baseline": -0.035928823207953056
         },
         "passed": false,
         "gating_component": true
@@ -57,20 +57,20 @@
       "run_line": {
         "baseline_system": "dratings",
         "log_loss": {
-          "baseline_value": 0.6907110122277754,
-          "candidate_value": 0.6925097711075711,
+          "baseline_value": 0.6665288577343449,
+          "candidate_value": 0.6519095969962592,
           "absolute_threshold": 0.66,
-          "candidate_lte_baseline": false,
-          "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": 0.0017987588797956366
+          "candidate_lte_baseline": true,
+          "candidate_lte_threshold": true,
+          "difference_candidate_minus_baseline": -0.014619260738085726
         },
         "calibration_ece": {
-          "baseline_value": 0.0805273823779052,
-          "candidate_value": 0.08884588033342783,
+          "baseline_value": 0.09455605001252536,
+          "candidate_value": 0.07829213802027889,
           "absolute_threshold": 0.05,
-          "candidate_lte_baseline": false,
+          "candidate_lte_baseline": true,
           "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": 0.008318497955522627
+          "difference_candidate_minus_baseline": -0.01626391199224647
         },
         "passed": false,
         "gating_component": true
@@ -78,20 +78,20 @@
       "total": {
         "baseline_system": "dratings",
         "log_loss": {
-          "baseline_value": 0.7216355643589154,
-          "candidate_value": 0.7308554395267927,
+          "baseline_value": 0.6813189847540846,
+          "candidate_value": 0.6657568713088176,
           "absolute_threshold": 0.67,
-          "candidate_lte_baseline": false,
-          "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": 0.009219875167877256
+          "candidate_lte_baseline": true,
+          "candidate_lte_threshold": true,
+          "difference_candidate_minus_baseline": -0.015562113445267034
         },
         "calibration_ece": {
-          "baseline_value": 0.060940063743745596,
-          "candidate_value": 0.15993998127660997,
+          "baseline_value": 0.096706285068472,
+          "candidate_value": 0.08280112268549218,
           "absolute_threshold": 0.05,
-          "candidate_lte_baseline": false,
+          "candidate_lte_baseline": true,
           "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": 0.09899991753286437
+          "difference_candidate_minus_baseline": -0.013905162382979813
         },
         "passed": false,
         "gating_component": true
@@ -100,18 +100,12 @@
   },
   "failed_components": [
     "moneyline_ece_threshold",
-    "run_line_log_loss_baseline",
-    "run_line_log_loss_threshold",
-    "run_line_ece_baseline",
     "run_line_ece_threshold",
-    "total_log_loss_baseline",
-    "total_log_loss_threshold",
-    "total_ece_baseline",
     "total_ece_threshold"
   ],
-  "evaluated_at": "2026-09-13T00:11:58.141862+00:00",
+  "evaluated_at": "2026-09-13T15:56:38.920092+00:00",
   "candidate_dir": "docs\\win\\baseball\\mlb\\models\\run_projection\\candidates",
   "production_model_dir": "docs\\win\\baseball\\mlb\\models\\run_projection",
   "production_artifacts_changed": false,
-  "notes": "Coupled promotion gate failed: moneyline_ece_threshold, run_line_log_loss_baseline, run_line_log_loss_threshold, run_line_ece_baseline, run_line_ece_threshold, total_log_loss_baseline, total_log_loss_threshold, total_ece_baseline, total_ece_threshold. Existing production model and metadata artifacts were left unchanged."
+  "notes": "Coupled promotion gate failed: moneyline_ece_threshold, run_line_ece_threshold, total_ece_threshold. Existing production model and metadata artifacts were left unchanged."
 }
