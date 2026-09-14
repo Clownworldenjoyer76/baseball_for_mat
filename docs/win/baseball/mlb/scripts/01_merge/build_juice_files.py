@@ -11,6 +11,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import poisson, skellam
+from probability_calibration import (
+    calibrate_binary_probability,
+    calibration_artifact_path,
+)
 
 INPUT_DIR = Path("docs/win/baseball/mlb/01_merge")
 OUTPUT_DIR = Path("docs/win/baseball/mlb/02_juice")
@@ -347,9 +351,15 @@ def moneyline_probabilities(
             "invalid moneyline resolved probability mass"
         )
 
-    return (
+    p_home = calibrate_binary_probability(
+        "moneyline",
         p_home_raw / resolved,
-        p_away_raw / resolved,
+    )
+    p_away = 1.0 - p_home
+
+    return (
+        p_home,
+        p_away,
         p_tie,
     )
 
@@ -400,6 +410,10 @@ def run_line_probabilities(
         )
     )
 
+    p_home = calibrate_binary_probability(
+        "run_line",
+        p_home,
+    )
     p_away = 1.0 - p_home
 
     if (
@@ -503,6 +517,25 @@ def totals_probabilities(
             f"unsupported total line: "
             f"{total_line}"
         )
+
+    resolved = p_over + p_under
+    if (
+        not np.isfinite(resolved)
+        or resolved <= 0.0
+        or resolved > 1.0 + PROB_TOLERANCE
+    ):
+        raise ValueError(
+            "invalid totals resolved probability mass"
+        )
+
+    conditional_over = p_over / resolved
+    conditional_over = calibrate_binary_probability(
+        "total",
+        conditional_over,
+    )
+
+    p_over = resolved * conditional_over
+    p_under = resolved * (1.0 - conditional_over)
 
     return (
         p_over,
@@ -1186,8 +1219,8 @@ def main():
         "sportsbook odds are not probability inputs"
     )
     log(
-        "RUN-LINE PROBABILITIES USE RAW SKELLAM OUTPUT: "
-        "no post-hoc calibration is applied"
+        "OUT-OF-SAMPLE MARKET CALIBRATION ENABLED: "
+        f"artifact={calibration_artifact_path()}"
     )
 
     for f in OUTPUT_DIR.glob(
