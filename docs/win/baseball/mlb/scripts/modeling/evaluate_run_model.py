@@ -22,17 +22,10 @@ docs/win/baseball/mlb/modeling/reports/run_model_promotion.json
 
 Promotion rule
 --------------
-The candidate pair is promoted only when:
-1. the mean of home/away candidate Poisson deviances is <= the corresponding
-   DRatings pair mean on the untouched chronological test set; and
-2. for moneyline, run line, and total probabilities, candidate log loss is
-   <= both DRatings log loss and the configured absolute market threshold; and
-3. for those same markets, candidate expected calibration error (ECE) is
-   <= both DRatings ECE and the configured absolute market threshold.
-
-Home and away run-model metrics remain visible individually, but promotion is
-coupled because downstream betting probabilities use both run means together.
-If any required gate component fails, production artifacts remain unchanged.
+The candidate is promoted only when candidate mean Poisson deviance is less than
+or equal to the DRatings baseline mean Poisson deviance for BOTH home and away
+run models on the untouched chronological test set. If either side fails, the
+existing production model and metadata files remain unchanged.
 
 This script never fits or tunes a model.
 """
@@ -51,7 +44,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import poisson, skellam, spearmanr
+from scipy.stats import spearmanr
 from sklearn.metrics import mean_absolute_error, mean_poisson_deviance
 
 
@@ -88,24 +81,7 @@ PROBABILITY_BIN_LABELS = [
 
 EPSILON = 1e-12
 PROB_TOLERANCE = 1e-10
-COMMON_TOTAL_LINES = np.array(
-    [6.5, 7.5, 8.5, 9.5, 10.5, 11.5],
-    dtype=float,
-)
-MARKET_PROMOTION_THRESHOLDS = {
-    "moneyline": {
-        "log_loss": 0.67,
-        "ece": 0.05,
-    },
-    "run_line": {
-        "log_loss": 0.66,
-        "ece": 0.05,
-    },
-    "total": {
-        "log_loss": 0.67,
-        "ece": 0.05,
-    },
-}
+CALIBRATION_ECE_THRESHOLD = 0.05
 
 SPORTSBOOK_REQUIRED_COLUMNS = [
     "game_id",
@@ -359,10 +335,11 @@ def load_json(path: Path, label: str) -> dict:
 def validate_metadata(
     home_metadata: dict,
     away_metadata: dict,
-) -> tuple[list[str], list[str], list[str], str, str, int | None]:
+) -> tuple[list[str], str, str, int]:
     required = [
         "test_start_date",
         "test_end_date",
+        "test_row_count",
         "feature_columns",
     ]
 
@@ -381,32 +358,21 @@ def validate_metadata(
         if len(features) != len(set(features)):
             fail(f"{label} feature_columns contains duplicates")
 
-        family = str(metadata.get("family") or "").strip()
-        if family:
-            params = metadata.get("params")
-            if not isinstance(params, dict):
-                fail(
-                    f"{label} family={family!r} requires dict metadata params"
-                )
-        else:
-            model_class = str(metadata.get("model_class") or "").strip()
-            selected = metadata.get("selected_hyperparameters")
-            if (
-                model_class == "HistGradientBoostingRegressor"
-                and isinstance(selected, dict)
-            ):
-                pass
-            elif model_class:
-                fail(
-                    f"{label} legacy model_class={model_class!r} is unsupported "
-                    "without a family/params model specification"
-                )
-
     home_features = list(home_metadata["feature_columns"])
     away_features = list(away_metadata["feature_columns"])
-    all_features = list(dict.fromkeys(home_features + away_features))
 
-    for key in ["test_start_date", "test_end_date"]:
+    if home_features != away_features:
+        fail(
+            "Home and away metadata feature order differs: "
+            f"home={home_features} away={away_features}"
+        )
+
+    keys_that_must_match = [
+        "test_start_date",
+        "test_end_date",
+        "test_row_count",
+    ]
+    for key in keys_that_must_match:
         if home_metadata[key] != away_metadata[key]:
             fail(
                 f"Home/away metadata mismatch for {key}: "
@@ -431,47 +397,18 @@ def validate_metadata(
             f"{test_start} > {test_end}"
         )
 
-    home_count = home_metadata.get("test_row_count")
-    away_count = away_metadata.get("test_row_count")
-
-    if home_count is None and away_count is None:
-        expected_test_rows = None
-    elif home_count is None or away_count is None:
+    try:
+        test_row_count = int(home_metadata["test_row_count"])
+    except (TypeError, ValueError):
         fail(
-            "test_row_count must be present in both home/away metadata or neither"
+            "Metadata test_row_count is not an integer: "
+            f"{home_metadata['test_row_count']}"
         )
-    else:
-        try:
-            home_count = int(home_count)
-            away_count = int(away_count)
-        except (TypeError, ValueError):
-            fail(
-                "Metadata test_row_count is not an integer: "
-                f"home={home_count!r} away={away_count!r}"
-            )
 
-        if home_count <= 0 or away_count <= 0:
-            fail(
-                "Metadata test_row_count must be positive: "
-                f"home={home_count} away={away_count}"
-            )
+    if test_row_count <= 0:
+        fail(f"Metadata test_row_count must be positive: {test_row_count}")
 
-        if home_count != away_count:
-            fail(
-                "Home/away metadata mismatch for test_row_count: "
-                f"home={home_count} away={away_count}"
-            )
-
-        expected_test_rows = home_count
-
-    return (
-        home_features,
-        away_features,
-        all_features,
-        test_start,
-        test_end,
-        expected_test_rows,
-    )
+    return home_features, test_start, test_end, test_row_count
 
 
 def load_test_period(
@@ -479,7 +416,7 @@ def load_test_period(
     feature_columns: list[str],
     test_start: str,
     test_end: str,
-    expected_rows: int | None,
+    expected_rows: int,
 ) -> pd.DataFrame:
     if not training_path.exists():
         fail(f"Training set not found: {training_path}")
@@ -539,7 +476,7 @@ def load_test_period(
             f"{test_start} through {test_end}"
         )
 
-    if expected_rows is not None and len(test) != expected_rows:
+    if len(test) != expected_rows:
         fail(
             "Test-period row count does not match saved model metadata: "
             f"metadata={expected_rows} reconstructed={len(test)}"
@@ -622,8 +559,7 @@ def validate_model_feature_order(
 
 def score_models(
     test: pd.DataFrame,
-    home_feature_columns: list[str],
-    away_feature_columns: list[str],
+    feature_columns: list[str],
     model_dir: Path,
 ) -> pd.DataFrame:
     home_path = model_dir / HOME_MODEL_NAME
@@ -638,24 +574,23 @@ def score_models(
 
     validate_model_feature_order(
         home_model,
-        home_feature_columns,
+        feature_columns,
         "home",
     )
     validate_model_feature_order(
         away_model,
-        away_feature_columns,
+        feature_columns,
         "away",
     )
 
-    X_home = test.loc[:, home_feature_columns]
-    X_away = test.loc[:, away_feature_columns]
+    X = test[feature_columns]
 
     home_predictions = np.asarray(
-        home_model.predict(X_home),
+        home_model.predict(X),
         dtype=float,
     )
     away_predictions = np.asarray(
-        away_model.predict(X_away),
+        away_model.predict(X),
         dtype=float,
     )
 
@@ -766,37 +701,34 @@ def build_run_metrics(scored: pd.DataFrame) -> pd.DataFrame:
 
 def build_promotion_decision(
     run_metrics: pd.DataFrame,
-    log_loss: pd.DataFrame,
-    calibrations: dict[str, pd.DataFrame],
     *,
     test_start: str,
     test_end: str,
 ) -> dict:
-    run_lookup = {
+    lookup = {
         (str(row.system), str(row.side)): row
         for row in run_metrics.itertuples(index=False)
     }
 
-    required_run = [
+    required = [
         ("dratings", "home"),
         ("new_model", "home"),
         ("dratings", "away"),
         ("new_model", "away"),
     ]
-    missing_run = [key for key in required_run if key not in run_lookup]
-    if missing_run:
-        fail(f"Promotion gate missing required run metrics: {missing_run}")
+    missing = [key for key in required if key not in lookup]
+    if missing:
+        fail(f"Promotion gate missing required run metrics: {missing}")
 
-    comparison: dict[str, object] = {}
-    baseline_poisson_values: list[float] = []
-    candidate_poisson_values: list[float] = []
+    comparison = {}
+    all_passed = True
 
     for side in ["home", "away"]:
         baseline = float(
-            run_lookup[("dratings", side)].mean_poisson_deviance
+            lookup[("dratings", side)].mean_poisson_deviance
         )
         candidate = float(
-            run_lookup[("new_model", side)].mean_poisson_deviance
+            lookup[("new_model", side)].mean_poisson_deviance
         )
 
         if not np.isfinite(baseline) or not np.isfinite(candidate):
@@ -805,176 +737,17 @@ def build_promotion_decision(
                 f"baseline={baseline} candidate={candidate}"
             )
 
-        side_improved = bool(candidate <= baseline)
-        baseline_poisson_values.append(baseline)
-        candidate_poisson_values.append(candidate)
+        passed = bool(candidate <= baseline)
+        all_passed = all_passed and passed
 
         comparison[side] = {
             "baseline_system": "dratings",
             "metric": "mean_poisson_deviance",
             "baseline_value": baseline,
             "candidate_value": candidate,
-            "candidate_lte_baseline": side_improved,
+            "candidate_lte_baseline": passed,
             "difference_candidate_minus_baseline": candidate - baseline,
-            "gating_component": False,
         }
-
-    baseline_pair_poisson = float(np.mean(baseline_poisson_values))
-    candidate_pair_poisson = float(np.mean(candidate_poisson_values))
-    run_pair_passed = bool(
-        candidate_pair_poisson <= baseline_pair_poisson
-    )
-
-    comparison["run_pair"] = {
-        "baseline_system": "dratings",
-        "metric": "mean_home_away_poisson_deviance",
-        "baseline_value": baseline_pair_poisson,
-        "candidate_value": candidate_pair_poisson,
-        "candidate_lte_baseline": run_pair_passed,
-        "difference_candidate_minus_baseline": (
-            candidate_pair_poisson - baseline_pair_poisson
-        ),
-        "gating_component": True,
-    }
-
-    log_lookup = {
-        (str(row.system), str(row.market)): row
-        for row in log_loss.itertuples(index=False)
-    }
-
-    market_comparison: dict[str, dict] = {}
-    market_passed = True
-
-    for market_name in ["moneyline", "run_line", "total"]:
-        baseline_key = ("dratings", market_name)
-        candidate_key = ("new_model", market_name)
-
-        if baseline_key not in log_lookup or candidate_key not in log_lookup:
-            fail(
-                "Promotion gate missing required probability log loss: "
-                f"market={market_name}"
-            )
-
-        if market_name not in calibrations:
-            fail(
-                "Promotion gate missing required probability calibration: "
-                f"market={market_name}"
-            )
-
-        thresholds = MARKET_PROMOTION_THRESHOLDS.get(market_name)
-        if not isinstance(thresholds, dict):
-            fail(
-                "Promotion gate missing configured market thresholds: "
-                f"market={market_name}"
-            )
-
-        log_loss_threshold = float(thresholds["log_loss"])
-        ece_threshold = float(thresholds["ece"])
-
-        baseline_log_loss = float(log_lookup[baseline_key].log_loss)
-        candidate_log_loss = float(log_lookup[candidate_key].log_loss)
-        baseline_ece = expected_calibration_error(
-            calibrations[market_name],
-            "dratings",
-        )
-        candidate_ece = expected_calibration_error(
-            calibrations[market_name],
-            "new_model",
-        )
-
-        values_to_validate = {
-            "baseline_log_loss": baseline_log_loss,
-            "candidate_log_loss": candidate_log_loss,
-            "log_loss_threshold": log_loss_threshold,
-            "baseline_ece": baseline_ece,
-            "candidate_ece": candidate_ece,
-            "ece_threshold": ece_threshold,
-        }
-        invalid = {
-            key: value
-            for key, value in values_to_validate.items()
-            if not np.isfinite(value)
-        }
-        if invalid:
-            fail(
-                "Promotion gate received non-finite probability metric: "
-                f"market={market_name} values={invalid}"
-            )
-
-        log_loss_lte_baseline = bool(
-            candidate_log_loss <= baseline_log_loss
-        )
-        log_loss_lte_threshold = bool(
-            candidate_log_loss <= log_loss_threshold
-        )
-        ece_lte_baseline = bool(
-            candidate_ece <= baseline_ece
-        )
-        ece_lte_threshold = bool(
-            candidate_ece <= ece_threshold
-        )
-        passed = bool(
-            log_loss_lte_baseline
-            and log_loss_lte_threshold
-            and ece_lte_baseline
-            and ece_lte_threshold
-        )
-        market_passed = market_passed and passed
-
-        market_comparison[market_name] = {
-            "baseline_system": "dratings",
-            "log_loss": {
-                "baseline_value": baseline_log_loss,
-                "candidate_value": candidate_log_loss,
-                "absolute_threshold": log_loss_threshold,
-                "candidate_lte_baseline": log_loss_lte_baseline,
-                "candidate_lte_threshold": log_loss_lte_threshold,
-                "difference_candidate_minus_baseline": (
-                    candidate_log_loss - baseline_log_loss
-                ),
-            },
-            "calibration_ece": {
-                "baseline_value": baseline_ece,
-                "candidate_value": candidate_ece,
-                "absolute_threshold": ece_threshold,
-                "candidate_lte_baseline": ece_lte_baseline,
-                "candidate_lte_threshold": ece_lte_threshold,
-                "difference_candidate_minus_baseline": (
-                    candidate_ece - baseline_ece
-                ),
-            },
-            "passed": passed,
-            "gating_component": True,
-        }
-
-    comparison["markets"] = market_comparison
-
-    all_passed = bool(run_pair_passed and market_passed)
-
-    failed_components: list[str] = []
-    if not run_pair_passed:
-        failed_components.append("run_pair_poisson")
-
-    for market_name, values in market_comparison.items():
-        log_gate = values["log_loss"]
-        ece_gate = values["calibration_ece"]
-
-        if not log_gate["candidate_lte_baseline"]:
-            failed_components.append(
-                f"{market_name}_log_loss_baseline"
-            )
-        if not log_gate["candidate_lte_threshold"]:
-            failed_components.append(
-                f"{market_name}_log_loss_threshold"
-            )
-        if not ece_gate["candidate_lte_baseline"]:
-            failed_components.append(
-                f"{market_name}_ece_baseline"
-            )
-        if not ece_gate["candidate_lte_threshold"]:
-            failed_components.append(
-                f"{market_name}_ece_threshold"
-            )
 
     return {
         "status": (
@@ -982,17 +755,14 @@ def build_promotion_decision(
             if all_passed
             else "candidate_rejected"
         ),
-        "gate_passed": all_passed,
+        "gate_passed": bool(all_passed),
         "gate_rule": (
-            "coupled candidate mean(home,away) Poisson deviance <= DRatings "
-            "coupled mean AND, for moneyline, run_line, and total, candidate "
-            "log loss <= DRatings and configured absolute threshold AND "
-            "candidate ECE <= DRatings and configured absolute threshold"
+            "candidate mean_poisson_deviance <= DRatings baseline "
+            "for BOTH home and away models"
         ),
         "test_start_date": str(test_start),
         "test_end_date": str(test_end),
         "comparison": comparison,
-        "failed_components": failed_components,
     }
 
 
@@ -1034,11 +804,10 @@ def apply_promotion_decision(
     }
 
     if not decision["gate_passed"]:
-        failed = decision.get("failed_components") or []
         result["notes"] = (
-            "Coupled promotion gate failed"
-            + (f": {', '.join(str(x) for x in failed)}" if failed else "")
-            + ". Existing production model and metadata artifacts were left unchanged."
+            "At least one candidate side exceeded the DRatings baseline "
+            "Poisson deviance. Existing production model and metadata "
+            "artifacts were left unchanged."
         )
         _write_json(report_path, result)
         _log(
@@ -1088,10 +857,6 @@ def apply_promotion_decision(
 
     home_production_metadata["artifact_stage"] = "production"
     away_production_metadata["artifact_stage"] = "production"
-    home_production_metadata["production_modified"] = True
-    away_production_metadata["production_modified"] = True
-    home_production_metadata.pop("integration_warning", None)
-    away_production_metadata.pop("integration_warning", None)
     home_production_metadata["promotion_status"] = "candidate_promoted"
     away_production_metadata["promotion_status"] = "candidate_promoted"
     home_production_metadata["promotion_baseline_comparison"] = (
@@ -1150,10 +915,8 @@ def apply_promotion_decision(
         for key, path in production_paths.items()
     }
     result["notes"] = (
-        "Coupled run-model pair passed the production gate: pair-level mean "
-        "Poisson deviance met or beat DRatings, and moneyline/run-line/total "
-        "log loss and ECE each met both the DRatings baseline and configured "
-        "absolute threshold. The two models were promoted together."
+        "Both candidate run models met or beat the DRatings baseline "
+        "Poisson deviance and were promoted together."
     )
 
     _write_json(report_path, result)
@@ -1812,143 +1575,6 @@ def calibration_table(
     return pd.DataFrame(rows)
 
 
-def _search_aligned_probability_sets(
-    market: pd.DataFrame,
-    system: str,
-) -> dict[str, list[tuple[str, np.ndarray, np.ndarray]]]:
-    """Return the fixed probability markets used by exhaustive model search."""
-    systems = {
-        "dratings": (
-            "dratings_home_projected_runs",
-            "dratings_away_projected_runs",
-        ),
-        "new_model": (
-            "model_home_runs",
-            "model_away_runs",
-        ),
-    }
-
-    if system not in systems:
-        fail(f"Unsupported probability system: {system}")
-
-    home_col, away_col = systems[system]
-
-    required = [
-        home_col,
-        away_col,
-        "target_home_runs",
-        "target_away_runs",
-    ]
-    require_columns(
-        market,
-        required,
-        f"{system} search-aligned probability frame",
-    )
-
-    home_mean = pd.to_numeric(
-        market[home_col],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-    away_mean = pd.to_numeric(
-        market[away_col],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-    actual_home = pd.to_numeric(
-        market["target_home_runs"],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-    actual_away = pd.to_numeric(
-        market["target_away_runs"],
-        errors="coerce",
-    ).to_numpy(dtype=float)
-
-    arrays = {
-        "home_mean": home_mean,
-        "away_mean": away_mean,
-        "actual_home": actual_home,
-        "actual_away": actual_away,
-    }
-    invalid = {
-        name: int((~np.isfinite(values)).sum())
-        for name, values in arrays.items()
-        if (~np.isfinite(values)).any()
-    }
-    if invalid:
-        fail(
-            f"{system} search-aligned probability inputs contain "
-            f"non-finite values: {invalid}"
-        )
-
-    if np.any(home_mean <= 0) or np.any(away_mean <= 0):
-        fail(
-            f"{system} search-aligned run means must be positive"
-        )
-
-    diff = actual_home - actual_away
-    actual_total = actual_home + actual_away
-
-    run_line_sets = [
-        (
-            "home_-1.5",
-            1.0 - skellam.cdf(1, home_mean, away_mean),
-            (diff >= 2).astype(float),
-        ),
-        (
-            "home_+1.5",
-            1.0 - skellam.cdf(-2, home_mean, away_mean),
-            (diff >= -1).astype(float),
-        ),
-    ]
-
-    total_mean = home_mean + away_mean
-    total_sets: list[tuple[str, np.ndarray, np.ndarray]] = []
-
-    for line in COMMON_TOTAL_LINES:
-        threshold = int(math.floor(float(line)))
-        probability = (
-            1.0
-            - poisson.cdf(
-                threshold,
-                total_mean,
-            )
-        )
-        observed = (
-            actual_total > float(line)
-        ).astype(float)
-        total_sets.append(
-            (
-                f"over_{line:.1f}",
-                np.asarray(probability, dtype=float),
-                observed,
-            )
-        )
-
-    for market_name, sets in [
-        ("run_line", run_line_sets),
-        ("total", total_sets),
-    ]:
-        for side, probability, observed in sets:
-            if (
-                np.any(~np.isfinite(probability))
-                or np.any(probability < -PROB_TOLERANCE)
-                or np.any(probability > 1.0 + PROB_TOLERANCE)
-            ):
-                fail(
-                    f"{system} {market_name} {side} produced invalid "
-                    "search-aligned probabilities"
-                )
-            if np.any(~np.isfinite(observed)):
-                fail(
-                    f"{system} {market_name} {side} produced invalid "
-                    "search-aligned outcomes"
-                )
-
-    return {
-        "run_line": run_line_sets,
-        "total": total_sets,
-    }
-
-
 def build_calibration_reports(
     market: pd.DataFrame,
 ) -> dict[str, pd.DataFrame]:
@@ -1971,31 +1597,37 @@ def build_calibration_reports(
                 )
             )
 
-        aligned = _search_aligned_probability_sets(
-            market,
-            system,
-        )
-
-        for side, probability, observed in aligned["run_line"]:
             run_line_records.extend(
                 {
                     "system": system,
                     "side": side,
-                    "predicted_probability": float(p),
-                    "observed_win": float(y),
+                    "predicted_probability": probability,
+                    "observed_win": observed,
                 }
-                for p, y in zip(probability, observed)
+                for probability, observed in zip(
+                    market[f"{system}_{side}_rl_prob"],
+                    market[f"observed_{side}_rl_win"],
+                )
+                if (
+                    pd.notna(probability)
+                    and pd.notna(observed)
+                )
             )
 
-        for side, probability, observed in aligned["total"]:
+        for side in ["over", "under"]:
             total_records.extend(
                 {
                     "system": system,
                     "side": side,
-                    "predicted_probability": float(p),
-                    "observed_win": float(y),
+                    "predicted_probability": probability,
+                    "observed_win": observed,
                 }
-                for p, y in zip(probability, observed)
+                for probability, observed in zip(
+                    market[
+                        f"{system}_{side}_total_conditional_prob"
+                    ],
+                    market[f"observed_{side}_win"],
+                )
             )
 
     return {
@@ -2009,6 +1641,7 @@ def build_calibration_reports(
             pd.DataFrame(total_records)
         ),
     }
+
 
 def binary_log_loss(
     observed,
@@ -2046,92 +1679,61 @@ def binary_log_loss(
 def build_probability_log_loss(
     market: pd.DataFrame,
 ) -> pd.DataFrame:
-    """Score the same fixed markets used by exhaustive_run_model_search.py."""
     rows: list[dict] = []
 
+    definitions = [
+        (
+            "moneyline",
+            "home",
+            "observed_home_ml_win",
+            "home_ml_prob",
+        ),
+        (
+            "run_line",
+            "home",
+            "observed_home_rl_win",
+            "home_rl_prob",
+        ),
+        (
+            "total",
+            "over_resolved",
+            "observed_over_win",
+            "over_total_conditional_prob",
+        ),
+    ]
+
     for system in ["dratings", "new_model"]:
-        moneyline_observed = pd.to_numeric(
-            market["observed_home_ml_win"],
-            errors="coerce",
-        )
-        moneyline_probability = pd.to_numeric(
-            market[f"{system}_home_ml_prob"],
-            errors="coerce",
-        )
-        moneyline_valid = (
-            moneyline_observed.notna()
-            & moneyline_probability.notna()
-        )
+        for (
+            market_name,
+            evaluation_side,
+            observed_col,
+            probability_suffix,
+        ) in definitions:
+            observed = pd.to_numeric(
+                market[observed_col],
+                errors="coerce",
+            )
+            probability = pd.to_numeric(
+                market[f"{system}_{probability_suffix}"],
+                errors="coerce",
+            )
+            valid = observed.notna() & probability.notna()
 
-        rows.append(
-            {
-                "system": system,
-                "market": "moneyline",
-                "evaluation_side": "home",
-                "rows": int(moneyline_valid.sum()),
-                "log_loss": binary_log_loss(
-                    moneyline_observed[moneyline_valid],
-                    moneyline_probability[moneyline_valid],
-                ),
-            }
-        )
-
-        aligned = _search_aligned_probability_sets(
-            market,
-            system,
-        )
-
-        run_line_observed = np.concatenate(
-            [
-                observed
-                for _, _, observed in aligned["run_line"]
-            ]
-        )
-        run_line_probability = np.concatenate(
-            [
-                probability
-                for _, probability, _ in aligned["run_line"]
-            ]
-        )
-        rows.append(
-            {
-                "system": system,
-                "market": "run_line",
-                "evaluation_side": "home_fixed_-1.5_and_+1.5",
-                "rows": int(run_line_observed.size),
-                "log_loss": binary_log_loss(
-                    run_line_observed,
-                    run_line_probability,
-                ),
-            }
-        )
-
-        total_observed = np.concatenate(
-            [
-                observed
-                for _, _, observed in aligned["total"]
-            ]
-        )
-        total_probability = np.concatenate(
-            [
-                probability
-                for _, probability, _ in aligned["total"]
-            ]
-        )
-        rows.append(
-            {
-                "system": system,
-                "market": "total",
-                "evaluation_side": "over_common_half_lines",
-                "rows": int(total_observed.size),
-                "log_loss": binary_log_loss(
-                    total_observed,
-                    total_probability,
-                ),
-            }
-        )
+            rows.append(
+                {
+                    "system": system,
+                    "market": market_name,
+                    "evaluation_side": evaluation_side,
+                    "rows": int(valid.sum()),
+                    "log_loss": binary_log_loss(
+                        observed[valid],
+                        probability[valid],
+                    ),
+                }
+            )
 
     return pd.DataFrame(rows)
+
 
 def _scalar(value) -> float:
     if isinstance(value, pd.Series):
@@ -2833,8 +2435,7 @@ def write_summary(
             "ece": ece,
             "calibrated": (
                 np.isfinite(ece)
-                and ece
-                <= MARKET_PROMOTION_THRESHOLDS[market_name]["ece"]
+                and ece <= CALIBRATION_ECE_THRESHOLD
             ),
             **monotonic,
         }
@@ -2944,30 +2545,6 @@ def write_summary(
 
     home_gate = promotion["comparison"]["home"]
     away_gate = promotion["comparison"]["away"]
-    pair_gate = promotion["comparison"]["run_pair"]
-    market_gate = promotion["comparison"]["markets"]
-
-    gate_market_rows = []
-    for market_name in ["moneyline", "run_line", "total"]:
-        values = market_gate[market_name]
-        log_gate = values["log_loss"]
-        ece_gate = values["calibration_ece"]
-        gate_market_rows.append(
-            [
-                market_name,
-                _fmt_float(log_gate["baseline_value"]),
-                _fmt_float(log_gate["candidate_value"]),
-                _fmt_float(log_gate["absolute_threshold"]),
-                _yes_no(log_gate["candidate_lte_baseline"]),
-                _yes_no(log_gate["candidate_lte_threshold"]),
-                _fmt_float(ece_gate["baseline_value"]),
-                _fmt_float(ece_gate["candidate_value"]),
-                _fmt_float(ece_gate["absolute_threshold"]),
-                _yes_no(ece_gate["candidate_lte_baseline"]),
-                _yes_no(ece_gate["candidate_lte_threshold"]),
-                _yes_no(values["passed"]),
-            ]
-        )
 
     summary_lines = [
         "# MLB Run Model Comparison",
@@ -2981,56 +2558,31 @@ def write_summary(
         "## Production promotion gate",
         "",
         (
-            "Candidate promotion requires the coupled mean home/away Poisson "
-            "deviance to meet or beat DRatings AND each probability market "
-            "to pass both relative and absolute log-loss/ECE thresholds."
+            "Candidate promotion requires mean Poisson deviance <= the "
+            "DRatings baseline for BOTH home and away models."
         ),
         "",
         markdown_table(
             [
-                "Run metric",
-                "DRatings",
-                "Candidate",
+                "Side",
+                "DRatings baseline Poisson",
+                "Candidate Poisson",
                 "Candidate <= baseline",
             ],
             [
                 [
-                    "home Poisson (diagnostic)",
+                    "home",
                     _fmt_float(home_gate["baseline_value"]),
                     _fmt_float(home_gate["candidate_value"]),
                     _yes_no(home_gate["candidate_lte_baseline"]),
                 ],
                 [
-                    "away Poisson (diagnostic)",
+                    "away",
                     _fmt_float(away_gate["baseline_value"]),
                     _fmt_float(away_gate["candidate_value"]),
                     _yes_no(away_gate["candidate_lte_baseline"]),
                 ],
-                [
-                    "coupled mean Poisson (GATE)",
-                    _fmt_float(pair_gate["baseline_value"]),
-                    _fmt_float(pair_gate["candidate_value"]),
-                    _yes_no(pair_gate["candidate_lte_baseline"]),
-                ],
             ],
-        ),
-        "",
-        markdown_table(
-            [
-                "Probability market gate",
-                "DRatings log loss",
-                "Candidate log loss",
-                "Log-loss ceiling",
-                "LL <= baseline",
-                "LL <= ceiling",
-                "DRatings ECE",
-                "Candidate ECE",
-                "ECE ceiling",
-                "ECE <= baseline",
-                "ECE <= ceiling",
-                "Market PASS",
-            ],
-            gate_market_rows,
         ),
         "",
         (
@@ -3075,11 +2627,10 @@ def write_summary(
         "## Probability calibration",
         "",
         (
-            "Calibration YES/NO uses the configured per-market weighted "
-            "expected calibration error (ECE) ceiling. All current market "
-            "ECE ceilings are `0.05`. Totals use conditional win probability "
-            "on resolved bets; pushes are excluded from the observed win-rate "
-            "denominator."
+            "Calibration YES/NO uses weighted expected calibration error "
+            f"(ECE) <= `{CALIBRATION_ECE_THRESHOLD:.2f}`. "
+            "Totals use conditional win probability on resolved bets; pushes "
+            "are excluded from the observed win-rate denominator."
         ),
         "",
         markdown_table(
@@ -3281,9 +2832,7 @@ def main() -> None:
         )
 
         (
-            home_feature_columns,
-            away_feature_columns,
-            all_feature_columns,
+            feature_columns,
             test_start,
             test_end,
             expected_test_rows,
@@ -3294,7 +2843,7 @@ def main() -> None:
 
         test = load_test_period(
             args.training_data,
-            all_feature_columns,
+            feature_columns,
             test_start,
             test_end,
             expected_test_rows,
@@ -3302,13 +2851,18 @@ def main() -> None:
 
         scored = score_models(
             test,
-            home_feature_columns,
-            away_feature_columns,
+            feature_columns,
             args.candidate_dir,
         )
 
         run_metrics = build_run_metrics(
             scored
+        )
+
+        promotion_decision = build_promotion_decision(
+            run_metrics,
+            test_start=test_start,
+            test_end=test_end,
         )
 
         sportsbook = load_sportsbook_test_period(
@@ -3336,14 +2890,6 @@ def main() -> None:
 
         log_loss = build_probability_log_loss(
             market
-        )
-
-        promotion_decision = build_promotion_decision(
-            run_metrics,
-            log_loss,
-            calibrations,
-            test_start=test_start,
-            test_end=test_end,
         )
 
         values = build_value_records(

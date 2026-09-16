@@ -1,111 +1,30 @@
 {
   "status": "candidate_rejected",
   "gate_passed": false,
-  "gate_rule": "coupled candidate mean(home,away) Poisson deviance <= DRatings coupled mean AND, for moneyline, run_line, and total, candidate log loss <= DRatings and configured absolute threshold AND candidate ECE <= DRatings and configured absolute threshold",
-  "test_start_date": "2026-08-14",
-  "test_end_date": "2026-09-10",
+  "gate_rule": "candidate mean_poisson_deviance <= DRatings baseline for BOTH home and away models",
+  "test_start_date": "2026-08-18",
+  "test_end_date": "2026-09-15",
   "comparison": {
     "home": {
       "baseline_system": "dratings",
       "metric": "mean_poisson_deviance",
-      "baseline_value": 2.2725369677445344,
-      "candidate_value": 2.309420588449626,
+      "baseline_value": 2.3008546534761307,
+      "candidate_value": 2.462089731498236,
       "candidate_lte_baseline": false,
-      "difference_candidate_minus_baseline": 0.03688362070509177,
-      "gating_component": false
+      "difference_candidate_minus_baseline": 0.16123507802210524
     },
     "away": {
       "baseline_system": "dratings",
       "metric": "mean_poisson_deviance",
-      "baseline_value": 2.460105414715994,
-      "candidate_value": 2.361883164846748,
+      "baseline_value": 2.5778486037109505,
+      "candidate_value": 2.526233628625964,
       "candidate_lte_baseline": true,
-      "difference_candidate_minus_baseline": -0.09822224986924599,
-      "gating_component": false
-    },
-    "run_pair": {
-      "baseline_system": "dratings",
-      "metric": "mean_home_away_poisson_deviance",
-      "baseline_value": 2.366321191230264,
-      "candidate_value": 2.3356518766481873,
-      "candidate_lte_baseline": true,
-      "difference_candidate_minus_baseline": -0.03066931458207689,
-      "gating_component": true
-    },
-    "markets": {
-      "moneyline": {
-        "baseline_system": "dratings",
-        "log_loss": {
-          "baseline_value": 0.6643942302181731,
-          "candidate_value": 0.6588802036983923,
-          "absolute_threshold": 0.67,
-          "candidate_lte_baseline": true,
-          "candidate_lte_threshold": true,
-          "difference_candidate_minus_baseline": -0.005514026519780835
-        },
-        "calibration_ece": {
-          "baseline_value": 0.0964285479170287,
-          "candidate_value": 0.06049972470907565,
-          "absolute_threshold": 0.05,
-          "candidate_lte_baseline": true,
-          "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": -0.035928823207953056
-        },
-        "passed": false,
-        "gating_component": true
-      },
-      "run_line": {
-        "baseline_system": "dratings",
-        "log_loss": {
-          "baseline_value": 0.6665288577343449,
-          "candidate_value": 0.6519095969962592,
-          "absolute_threshold": 0.66,
-          "candidate_lte_baseline": true,
-          "candidate_lte_threshold": true,
-          "difference_candidate_minus_baseline": -0.014619260738085726
-        },
-        "calibration_ece": {
-          "baseline_value": 0.09455605001252536,
-          "candidate_value": 0.07829213802027889,
-          "absolute_threshold": 0.05,
-          "candidate_lte_baseline": true,
-          "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": -0.01626391199224647
-        },
-        "passed": false,
-        "gating_component": true
-      },
-      "total": {
-        "baseline_system": "dratings",
-        "log_loss": {
-          "baseline_value": 0.6813189847540846,
-          "candidate_value": 0.6657568713088176,
-          "absolute_threshold": 0.67,
-          "candidate_lte_baseline": true,
-          "candidate_lte_threshold": true,
-          "difference_candidate_minus_baseline": -0.015562113445267034
-        },
-        "calibration_ece": {
-          "baseline_value": 0.096706285068472,
-          "candidate_value": 0.08280112268549218,
-          "absolute_threshold": 0.05,
-          "candidate_lte_baseline": true,
-          "candidate_lte_threshold": false,
-          "difference_candidate_minus_baseline": -0.013905162382979813
-        },
-        "passed": false,
-        "gating_component": true
-      }
+      "difference_candidate_minus_baseline": -0.05161497508498636
     }
   },
-  "failed_components": [
-    "moneyline_ece_threshold",
-    "run_line_ece_threshold",
-    "total_ece_threshold"
-  ],
-  "evaluated_at": "2026-09-13T15:56:38.920092+00:00",
-  "candidate_dir": "docs\\win\\baseball\\mlb\\models\\run_projection\\candidates",
-  "production_model_dir": "docs\\win\\baseball\\mlb\\models\\run_projection",
+  "evaluated_at": "2026-09-16T07:42:59.972108+00:00",
+  "candidate_dir": "docs/win/baseball/mlb/models/run_projection/candidates",
+  "production_model_dir": "docs/win/baseball/mlb/models/run_projection",
   "production_artifacts_changed": false,
-  "notes": "Coupled promotion gate failed: moneyline_ece_threshold, run_line_ece_threshold, total_ece_threshold. Existing production model and metadata artifacts were left unchanged."
+  "notes": "At least one candidate side exceeded the DRatings baseline Poisson deviance. Existing production model and metadata artifacts were left unchanged."
 }

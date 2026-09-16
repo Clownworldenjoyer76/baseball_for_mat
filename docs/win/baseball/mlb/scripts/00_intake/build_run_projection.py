@@ -38,11 +38,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import PoissonRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 
 BASE_DIR = Path("docs/win/baseball/mlb")
@@ -200,7 +196,6 @@ TARGET_COLUMNS = [
 ]
 
 MIN_PRIOR_UNIQUE_DATES = 3
-RANDOM_STATE = 42
 
 
 def _now() -> str:
@@ -399,21 +394,23 @@ def model_version(
     return f"{label}:unknown"
 
 
-def metadata_feature_contracts(
+def assert_metadata_feature_contract(
     home_metadata: dict,
     away_metadata: dict,
-) -> tuple[list[str], list[str], list[str]]:
+) -> list[str]:
     home_features = list(home_metadata["feature_columns"])
     away_features = list(away_metadata["feature_columns"])
 
-    # Preserve each model's exact persisted order.  The union is used only to
-    # construct source rows/training history; each model receives its own frame.
-    all_features = list(dict.fromkeys(home_features + away_features))
+    if home_features != away_features:
+        fail(
+            "Home and away model metadata "
+            "feature order differs; "
+            f"home={home_features} "
+            f"away={away_features}"
+        )
 
-    if not all_features:
-        fail("Combined model feature contract is empty")
+    return home_features
 
-    return home_features, away_features, all_features
 
 def assert_model_feature_order(
     model,
@@ -445,89 +442,6 @@ def assert_model_feature_order(
             f"model={model_features} "
             f"metadata={metadata_features}"
         )
-
-
-def metadata_model_spec(
-    metadata: dict,
-    label: str,
-) -> tuple[str, dict]:
-    family = str(metadata.get("family") or "").strip()
-    params = metadata.get("params")
-
-    if family:
-        if not isinstance(params, dict):
-            fail(f"{label} metadata has family={family!r} but invalid params")
-        return family, dict(params)
-
-    # Backward compatibility for currently committed production HGB metadata.
-    if metadata.get("model_class") == "HistGradientBoostingRegressor":
-        selected = metadata.get("selected_hyperparameters")
-        if not isinstance(selected, dict):
-            fail(f"{label} legacy HGB metadata missing selected_hyperparameters")
-
-        legacy_params = {
-            "loss": metadata.get("loss", "poisson"),
-            "learning_rate": selected["learning_rate"],
-            "max_leaf_nodes": selected["max_leaf_nodes"],
-            "min_samples_leaf": selected["min_samples_leaf"],
-            "l2_regularization": selected["l2_regularization"],
-            "max_iter": 100,
-            "early_stopping": "auto",
-        }
-        return "hist_gradient_boosting", legacy_params
-
-    fail(
-        f"{label} metadata does not contain a supported model specification; "
-        f"family={family!r} model_class={metadata.get('model_class')!r}"
-    )
-
-
-def _make_model(
-    family: str,
-    params: dict,
-    random_state: int = RANDOM_STATE,
-):
-    if family == "hist_gradient_boosting":
-        return HistGradientBoostingRegressor(
-            loss=params.get("loss", "poisson"),
-            learning_rate=params["learning_rate"],
-            max_leaf_nodes=params["max_leaf_nodes"],
-            min_samples_leaf=params["min_samples_leaf"],
-            l2_regularization=params["l2_regularization"],
-            max_iter=params.get("max_iter", 100),
-            early_stopping=params.get("early_stopping", "auto"),
-            random_state=random_state,
-        )
-
-    if family == "random_forest":
-        return Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
-            ("model", RandomForestRegressor(
-                criterion=params["criterion"],
-                n_estimators=params["n_estimators"],
-                max_depth=params["max_depth"],
-                min_samples_leaf=params["min_samples_leaf"],
-                max_features=params["max_features"],
-                max_samples=params.get("max_samples"),
-                bootstrap=True,
-                random_state=random_state,
-                n_jobs=-1,
-            )),
-        ])
-
-    if family == "poisson_glm":
-        return Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
-            ("scale", StandardScaler()),
-            ("model", PoissonRegressor(
-                alpha=params["alpha"],
-                solver=params["solver"],
-                max_iter=3000,
-                tol=1e-8,
-            )),
-        ])
-
-    fail(f"Unsupported production run-model family: {family}")
 
 
 def assert_secondary_game_id_match(
@@ -1156,13 +1070,16 @@ def _fit_full_prior_model(
     prior: pd.DataFrame,
     feature_columns: list[str],
     target_column: str,
-    family: str,
     params: dict,
-):
-    model = _make_model(
-        family,
-        params,
-        RANDOM_STATE,
+    random_state: int,
+) -> HistGradientBoostingRegressor:
+    model = HistGradientBoostingRegressor(
+        loss="poisson",
+        learning_rate=params["learning_rate"],
+        max_leaf_nodes=params["max_leaf_nodes"],
+        min_samples_leaf=params["min_samples_leaf"],
+        l2_regularization=params["l2_regularization"],
+        random_state=random_state,
     )
 
     model.fit(
@@ -1176,10 +1093,8 @@ def _fit_full_prior_model(
 def fit_walk_forward_models(
     target_date: pd.Timestamp,
     training_history: pd.DataFrame,
-    home_feature_columns: list[str],
-    away_feature_columns: list[str],
-    home_metadata: dict,
-    away_metadata: dict,
+    feature_columns: list[str],
+    trainer,
 ):
     prior = training_history.loc[
         training_history["_game_date_dt"] < target_date
@@ -1195,40 +1110,55 @@ def fit_walk_forward_models(
     if len(prior_dates) < MIN_PRIOR_UNIQUE_DATES:
         return None
 
-    home_family, home_params = metadata_model_spec(
-        home_metadata,
-        "home_runs",
+    splits = trainer.chronological_date_split(prior)
+
+    (
+        home_params,
+        home_validation_score,
+    ) = trainer.select_hyperparameters(
+        splits["train"],
+        splits["validation"],
+        feature_columns,
+        "target_home_runs",
+        f"walk_forward_home_{target_date.date()}",
     )
-    away_family, away_params = metadata_model_spec(
-        away_metadata,
-        "away_runs",
+
+    (
+        away_params,
+        away_validation_score,
+    ) = trainer.select_hyperparameters(
+        splits["train"],
+        splits["validation"],
+        feature_columns,
+        "target_away_runs",
+        f"walk_forward_away_{target_date.date()}",
     )
 
     home_model = _fit_full_prior_model(
         prior,
-        home_feature_columns,
+        feature_columns,
         "target_home_runs",
-        home_family,
         home_params,
+        trainer.RANDOM_STATE,
     )
 
     away_model = _fit_full_prior_model(
         prior,
-        away_feature_columns,
+        feature_columns,
         "target_away_runs",
-        away_family,
         away_params,
+        trainer.RANDOM_STATE,
     )
 
     assert_model_feature_order(
         home_model,
-        home_feature_columns,
+        feature_columns,
         f"walk_forward_home_{target_date.date()}",
     )
 
     assert_model_feature_order(
         away_model,
-        away_feature_columns,
+        feature_columns,
         f"walk_forward_away_{target_date.date()}",
     )
 
@@ -1244,8 +1174,6 @@ def fit_walk_forward_models(
         f";target={target_date.date().isoformat()}"
         f";train_end={train_end}"
         f";rows={len(prior)}"
-        f";home_family={home_family}"
-        f";away_family={away_family}"
         ";home_params="
         + json.dumps(
             home_params,
@@ -1265,10 +1193,12 @@ def fit_walk_forward_models(
         "training_rows": len(prior),
         "training_unique_dates": len(prior_dates),
         "training_end_date": train_end,
-        "home_family": home_family,
-        "away_family": away_family,
-        "home_params": home_params,
-        "away_params": away_params,
+        "home_validation_score": float(
+            home_validation_score
+        ),
+        "away_validation_score": float(
+            away_validation_score
+        ),
         "version": version,
     }
 
@@ -1277,6 +1207,7 @@ def fit_walk_forward_models(
         away_model,
         audit,
     )
+
 
 def _target_timestamp(
     date_str: str,
@@ -1345,18 +1276,15 @@ def process_date(
     production_away_model,
     home_metadata: dict,
     away_metadata: dict,
-    home_feature_columns: list[str],
-    away_feature_columns: list[str],
-    all_feature_columns: list[str],
+    feature_columns: list[str],
     training_history: pd.DataFrame,
-    force_loaded_models: bool,
-    output_dir: Path,
+    trainer,
 ) -> Path:
     pred_path = PRED_DIR / f"{date_str}_MLB.csv"
     games_path = GAMES_DIR / f"{date_str}_games.csv"
     sdv_path = SDV_DIR / f"{date_str}_sportsdataverse.csv"
     context_path = CONTEXT_DIR / f"{date_str}_game_context.csv"
-    output_path = output_dir / f"{date_str}_MLB.csv"
+    output_path = OUTPUT_DIR / f"{date_str}_MLB.csv"
 
     pred = read_csv_checked(
         pred_path,
@@ -1388,11 +1316,8 @@ def process_date(
         games,
         sdv,
         context,
-        all_feature_columns,
+        feature_columns,
     )
-
-    X_home = X.loc[:, home_feature_columns].copy()
-    X_away = X.loc[:, away_feature_columns].copy()
 
     if output_path.resolve() == pred_path.resolve():
         fail(
@@ -1429,7 +1354,7 @@ def process_date(
         "_game_date_dt"
     ].max()
 
-    if (not force_loaded_models) and target_date <= history_max_date:
+    if target_date <= history_max_date:
         prior = training_history.loc[
             training_history["_game_date_dt"] < target_date
         ]
@@ -1456,10 +1381,8 @@ def process_date(
             fitted = fit_walk_forward_models(
                 target_date,
                 training_history,
-                home_feature_columns,
-                away_feature_columns,
-                home_metadata,
-                away_metadata,
+                feature_columns,
+                trainer,
             )
 
             if fitted is None:
@@ -1476,14 +1399,16 @@ def process_date(
                 away_model,
                 audit,
             ) = fitted
+
             home_runs = validate_predictions(
-                home_model.predict(X_home),
+                home_model.predict(X),
                 "walk_forward_home_runs_model",
                 date_str,
                 joined,
             )
+
             away_runs = validate_predictions(
-                away_model.predict(X_away),
+                away_model.predict(X),
                 "walk_forward_away_runs_model",
                 date_str,
                 joined,
@@ -1502,11 +1427,16 @@ def process_date(
             _log(
                 "WALK_FORWARD "
                 f"date={date_str} "
-                f"training_rows={audit['training_rows']} "
-                f"training_unique_dates={audit['training_unique_dates']} "
-                f"training_end={audit['training_end_date']} "
-                f"home_family={audit['home_family']} "
-                f"away_family={audit['away_family']}"
+                "training_rows="
+                f"{audit['training_rows']} "
+                "training_unique_dates="
+                f"{audit['training_unique_dates']} "
+                "training_end="
+                f"{audit['training_end_date']} "
+                "home_validation_score="
+                f"{audit['home_validation_score']:.12f} "
+                "away_validation_score="
+                f"{audit['away_validation_score']:.12f}"
             )
 
         except Exception as exc:
@@ -1527,13 +1457,14 @@ def process_date(
 
     else:
         home_runs = validate_predictions(
-            production_home_model.predict(X_home),
+            production_home_model.predict(X),
             "production_home_runs_model",
             date_str,
             joined,
         )
+
         away_runs = validate_predictions(
-            production_away_model.predict(X_away),
+            production_away_model.predict(X),
             "production_away_runs_model",
             date_str,
             joined,
@@ -1606,8 +1537,7 @@ def process_date(
     _log(
         f"WROTE {output_path} "
         f"rows={len(result)} "
-        f"home_features={len(home_feature_columns)} "
-        f"away_features={len(away_feature_columns)}"
+        f"features={len(feature_columns)}"
     )
 
     return output_path
@@ -1626,34 +1556,9 @@ def parse_args() -> argparse.Namespace:
             "prediction date."
         ),
     )
-    parser.add_argument(
-        "--model-dir",
-        type=Path,
-        default=MODEL_DIR,
-        help=(
-            "Directory containing home/away model joblib and metadata files. "
-            "Defaults to committed production models."
-        ),
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=OUTPUT_DIR,
-        help=(
-            "Projection output directory. Use a separate directory for "
-            "pre-promotion verification."
-        ),
-    )
-    parser.add_argument(
-        "--force-loaded-models",
-        action="store_true",
-        help=(
-            "Use the loaded model artifacts for supplied dates even when those "
-            "dates are historical. Intended for exact integration verification."
-        ),
-    )
 
     return parser.parse_args()
+
 
 def normalize_date_arg(
     value: str,
@@ -1678,80 +1583,58 @@ def discover_all_dates() -> list[str]:
     ]
 
 
-def load_runtime_models(
-    model_dir: Path,
-):
-    home_model_file = model_dir / "home_runs_model.joblib"
-    away_model_file = model_dir / "away_runs_model.joblib"
-    home_metadata_file = model_dir / "home_runs_model_metadata.json"
-    away_metadata_file = model_dir / "away_runs_model_metadata.json"
-
+def load_runtime_models():
     _log(
-        "Loading run-model metadata "
-        f"model_dir={model_dir}"
+        "Loading production "
+        "model metadata"
     )
 
     home_metadata = load_metadata(
-        home_metadata_file,
+        HOME_METADATA_FILE,
         "home_runs",
     )
 
     away_metadata = load_metadata(
-        away_metadata_file,
+        AWAY_METADATA_FILE,
         "away_runs",
     )
 
-    (
-        home_feature_columns,
-        away_feature_columns,
-        all_feature_columns,
-    ) = metadata_feature_contracts(
+    feature_columns = assert_metadata_feature_contract(
         home_metadata,
         away_metadata,
     )
 
     _log(
-        "Loading run-model artifacts "
-        f"model_dir={model_dir}"
+        "Loading committed "
+        "production models"
     )
 
     home_model = load_model(
-        home_model_file,
+        HOME_MODEL_FILE,
         "home_runs",
     )
 
     away_model = load_model(
-        away_model_file,
+        AWAY_MODEL_FILE,
         "away_runs",
     )
 
     assert_model_feature_order(
         home_model,
-        home_feature_columns,
+        feature_columns,
         "home_runs",
     )
 
     assert_model_feature_order(
         away_model,
-        away_feature_columns,
-        "away_runs",
-    )
-
-    home_family, _ = metadata_model_spec(
-        home_metadata,
-        "home_runs",
-    )
-    away_family, _ = metadata_model_spec(
-        away_metadata,
+        feature_columns,
         "away_runs",
     )
 
     _log(
-        "Run-model loading complete; "
-        f"home_family={home_family} "
-        f"away_family={away_family} "
-        f"home_features={len(home_feature_columns)} "
-        f"away_features={len(away_feature_columns)}"
+        "Production model loading "
+        "complete; "
+        f"features={len(feature_columns)}"
     )
 
     return (
@@ -1759,17 +1642,12 @@ def load_runtime_models(
         away_model,
         home_metadata,
         away_metadata,
-        home_feature_columns,
-        away_feature_columns,
-        all_feature_columns,
+        feature_columns,
     )
+
 
 def main() -> None:
     args = parse_args()
-
-    model_dir = args.model_dir.resolve()
-    output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
 
     with LOG_FILE.open(
         "w",
@@ -1798,10 +1676,7 @@ def main() -> None:
             "Dates to rebuild: "
             f"{len(dates)} "
             f"first={dates[0]} "
-            f"last={dates[-1]} "
-            f"model_dir={model_dir} "
-            f"output_dir={output_dir} "
-            f"force_loaded_models={args.force_loaded_models}"
+            f"last={dates[-1]}"
         )
 
         (
@@ -1809,19 +1684,22 @@ def main() -> None:
             production_away_model,
             home_metadata,
             away_metadata,
-            home_feature_columns,
-            away_feature_columns,
-            all_feature_columns,
-        ) = load_runtime_models(model_dir)
+            feature_columns,
+        ) = load_runtime_models()
 
         training_builder = _load_python_module(
             TRAINING_BUILDER_FILE,
             "_mlb_build_run_training_set_for_projection",
         )
 
+        trainer = _load_python_module(
+            TRAINER_FILE,
+            "_mlb_train_run_model_for_projection",
+        )
+
         training_history = build_training_history_in_memory(
             training_builder,
-            all_feature_columns,
+            feature_columns,
         )
 
         dates_processed = 0
@@ -1833,12 +1711,9 @@ def main() -> None:
                 production_away_model=production_away_model,
                 home_metadata=home_metadata,
                 away_metadata=away_metadata,
-                home_feature_columns=home_feature_columns,
-                away_feature_columns=away_feature_columns,
-                all_feature_columns=all_feature_columns,
+                feature_columns=feature_columns,
                 training_history=training_history,
-                force_loaded_models=args.force_loaded_models,
-                output_dir=output_dir,
+                trainer=trainer,
             )
 
             dates_processed += 1
@@ -1863,6 +1738,7 @@ def main() -> None:
         )
 
         raise SystemExit(1)
+
 
 if __name__ == "__main__":
     main()
