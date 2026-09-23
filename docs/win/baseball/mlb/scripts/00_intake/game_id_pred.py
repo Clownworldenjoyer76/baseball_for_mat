@@ -778,8 +778,14 @@ def build_sportsbook_presence(date_str: str, pred_groups: dict, pred_key_order: 
 # VALIDATION
 # ─────────────────────────────────────────────
 
-def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[dict]):
-    if len(output_rows) != eligible_count:
+def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[dict], allow_preserved: bool = False):
+    if allow_preserved:
+        if len(output_rows) < eligible_count:
+            fail(
+                f"{date_str} | eligible output row count below refreshed eligible count: "
+                f"eligible_prediction_rows={eligible_count} output_rows={len(output_rows)}"
+            )
+    elif len(output_rows) != eligible_count:
         fail(
             f"{date_str} | eligible output row count mismatch: "
             f"eligible_prediction_rows={eligible_count} output_rows={len(output_rows)}"
@@ -801,6 +807,56 @@ def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[d
             )
 
         seen_game_ids[game_id] = csv_row
+
+
+def merge_with_existing_same_day(date_str: str, refreshed_rows: list[dict], games_rows: list[dict]) -> tuple[list[dict], int]:
+    """Upsert refreshed rows into the existing same-day matched set without deleting games that vanished upstream."""
+    if parse_date_value(date_str) != current_cutoff_date():
+        return refreshed_rows, 0
+
+    existing_path = OUT_DIR / f"{date_str}_MLB.csv"
+    if not existing_path.exists():
+        return refreshed_rows, 0
+
+    existing_rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction baseline")
+    if not existing_rows:
+        return refreshed_rows, 0
+
+    valid_game_ids = {
+        (row.get("game_id") or "").strip()
+        for row in games_rows
+        if (row.get("game_id") or "").strip()
+    }
+
+    merged = {}
+    for row in existing_rows:
+        game_id = (row.get("game_id") or "").strip()
+        if game_id and game_id in valid_game_ids:
+            merged[game_id] = {col: row.get(col, "") for col in OUTPUT_HEADER}
+
+    before_refresh = set(merged)
+    for row in refreshed_rows:
+        game_id = (row.get("game_id") or "").strip()
+        if game_id:
+            merged[game_id] = {col: row.get(col, "") for col in OUTPUT_HEADER}
+
+    refreshed_ids = {(row.get("game_id") or "").strip() for row in refreshed_rows}
+    preserved_ids = sorted((before_refresh - refreshed_ids) & valid_game_ids)
+
+    game_order = [
+        (row.get("game_id") or "").strip()
+        for row in games_rows
+        if (row.get("game_id") or "").strip() in merged
+    ]
+    ordered_rows = [merged[game_id] for game_id in game_order]
+
+    if preserved_ids:
+        log(
+            f"{date_str} | preserved same-day matched predictions absent from latest refresh: "
+            f"count={len(preserved_ids)} game_ids={preserved_ids}"
+        )
+
+    return ordered_rows, len(preserved_ids)
 
 
 # ─────────────────────────────────────────────
@@ -875,12 +931,17 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
             write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
             print_rejection_rows(date_str, rejection_path, rejection_rows)
 
-        write_output_csv(date_str, OUTPUT_HEADER, [], summary)
+        preserved_rows = []
+        preserved_count = 0
+        if games_path.exists():
+            games_for_preserve = load_csv(games_path, REQUIRED_GAMES_COLS, "games input", required_file=False)
+            preserved_rows, preserved_count = merge_with_existing_same_day(date_str, [], games_for_preserve)
+        write_output_csv(date_str, OUTPUT_HEADER, preserved_rows, summary)
 
         log(
             f"{date_str} | no sportsbook-eligible prediction rows. "
             f"input_predictions={len(pred_rows)} nonfatal_rejections={nonfatal_rejection_count} "
-            f"output_rows=0"
+            f"output_rows={len(preserved_rows)} preserved_rows={preserved_count}"
         )
 
         summary["rejected"] += len(rejection_rows)
@@ -926,13 +987,17 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
                 print_rejection_rows(date_str, rejection_path, rejection_rows)
 
-            write_output_csv(date_str, OUTPUT_HEADER, [], summary)
+            existing_rows = []
+            existing_path = OUT_DIR / f"{date_str}_MLB.csv"
+            if parse_date_value(date_str) == current_cutoff_date() and existing_path.exists():
+                existing_rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction baseline")
+            write_output_csv(date_str, OUTPUT_HEADER, existing_rows, summary)
 
             log(
                 f"{date_str} | current/future games file missing. "
                 f"games_path={games_path} input_predictions={len(pred_rows)} "
                 f"sportsbook_rows={len(book_rows)} eligible_predictions={eligible_count} "
-                f"output_rows=0 nonfatal_rejections={nonfatal_rejection_count}"
+                f"output_rows={len(existing_rows)} nonfatal_rejections={nonfatal_rejection_count}"
             )
 
             summary["rejected"] += len(rejection_rows)
@@ -982,13 +1047,17 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
                 print_rejection_rows(date_str, rejection_path, rejection_rows)
 
-            write_output_csv(date_str, OUTPUT_HEADER, [], summary)
+            existing_rows = []
+            existing_path = OUT_DIR / f"{date_str}_MLB.csv"
+            if parse_date_value(date_str) == current_cutoff_date() and existing_path.exists():
+                existing_rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction baseline")
+            write_output_csv(date_str, OUTPUT_HEADER, existing_rows, summary)
 
             log(
                 f"{date_str} | current/future games file empty. "
                 f"games_path={games_path} input_predictions={len(pred_rows)} "
                 f"sportsbook_rows={len(book_rows)} eligible_predictions={eligible_count} "
-                f"output_rows=0 nonfatal_rejections={nonfatal_rejection_count}"
+                f"output_rows={len(existing_rows)} nonfatal_rejections={nonfatal_rejection_count}"
             )
 
             summary["rejected"] += len(rejection_rows)
@@ -1347,11 +1416,14 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
 
     validate_output_rows(date_str, eligible_count, output_rows)
 
+    output_rows, preserved_count = merge_with_existing_same_day(date_str, output_rows, games_rows)
+    validate_output_rows(date_str, eligible_count, output_rows, allow_preserved=True)
+
     written_path = write_output_csv(date_str, OUTPUT_HEADER, output_rows, summary)
 
     log(
         f"{date_str} | WROTE: {written_path} | rows={len(output_rows)} "
-        f"matched={matched} "
+        f"matched={matched} preserved_rows={preserved_count} "
         f"input_predictions={len(pred_rows)} "
         f"sportsbook_rows={len(book_rows)} "
         f"eligible_predictions={eligible_count} "
