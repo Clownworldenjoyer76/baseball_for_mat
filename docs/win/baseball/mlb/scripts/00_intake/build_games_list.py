@@ -403,9 +403,9 @@ def process_date(
             continue
 
         if (
-            len(raws) > 1
-            and len(unused_books) > 1
-            and len(raws) == len(unused_books)
+            1
+            < len(raws)
+            == len(unused_books)
         ):
             sorted_raws = sorted(
                 raws,

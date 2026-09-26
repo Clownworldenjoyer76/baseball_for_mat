@@ -704,7 +704,7 @@ def build_sportsbook_presence(date_str: str, pred_groups: dict, pred_key_order: 
             )
             continue
 
-        if len(preds) > 1 and len(unused_books) > 1 and len(preds) == len(unused_books):
+        if 1 < len(preds) == len(unused_books):
             sorted_preds = sorted(
                 preds,
                 key=lambda x: (
@@ -1903,9 +1903,8 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
             continue
 
         if (
-            len(preds) > 1
-            and len(unused_games) > 1
-            and len(preds)
+            1
+            < len(preds)
             == len(unused_games)
         ):
             sorted_preds = sorted(
