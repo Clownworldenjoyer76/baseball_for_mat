@@ -155,12 +155,12 @@ def _clean_value(value):
     try:
         if pd.isna(value):
             return None
-    except Exception:
+    except (TypeError, ValueError):
         pass
     if hasattr(value, "item"):
         try:
             return value.item()
-        except Exception:
+        except (TypeError, ValueError):
             pass
     if isinstance(value, pd.Timestamp):
         return value.isoformat()

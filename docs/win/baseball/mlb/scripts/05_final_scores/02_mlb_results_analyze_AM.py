@@ -16,7 +16,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 def to_float(value):
     try:
         return float(value)
-    except Exception:
+    except (TypeError, ValueError):
         return pd.NA
 
 
@@ -82,7 +82,7 @@ def build_day_night(row):
                 return "Day" if t.hour < 17 else "Night"
             except ValueError:
                 continue
-    except Exception:
+    except (TypeError, AttributeError):
         pass
 
     return ""

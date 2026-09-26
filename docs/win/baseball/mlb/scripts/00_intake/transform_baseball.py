@@ -112,7 +112,7 @@ def process_file(file_path, files_written):
 
         try:
             dt, game_date, game_time = parse_datetime(row[0])
-        except Exception:
+        except (IndexError, AttributeError, TypeError, ValueError):
             parse_errors += 1
             continue
 
@@ -170,7 +170,7 @@ def process_file(file_path, files_written):
 
                 predictions_by_date.setdefault(game_date, []).append(pred_row)
 
-            except Exception:
+            except (IndexError, AttributeError, TypeError, ValueError):
                 parse_errors += 1
                 continue
 

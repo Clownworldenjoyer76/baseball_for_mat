@@ -67,7 +67,7 @@ def parse_event_utc_datetime(value):
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(timezone.utc)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
 
 

@@ -365,7 +365,7 @@ def process_side(df, juice_df, side, uses_odds_bands, audit_rows):
             fair_decimal = float(row[fair_col])
             dk_american = float(row[american_col])
             dk_decimal = float(row[dk_decimal_col])
-        except Exception:
+        except (TypeError, ValueError, KeyError, ZeroDivisionError, OverflowError):
             append_audit_row(audit_rows, row, side, "bad_parse")
             _log(f"row={idx} side={side} reason=bad_parse", "SKIP")
             skipped_bad += 1
@@ -440,7 +440,7 @@ def process_side(df, juice_df, side, uses_odds_bands, audit_rows):
             })
             applied += 1
 
-        except Exception:
+        except (TypeError, ValueError, KeyError, ZeroDivisionError, OverflowError):
             append_audit_row(audit_rows, row, side, "calc_error")
             _log(f"row={idx} side={side} reason=calc_error", "SKIP")
             skipped_bad += 1
@@ -484,7 +484,7 @@ def apply_normalization(df, audit_rows):
                     audit_row["normalized_prob"] = under_norm
                     break
 
-        except Exception:
+        except (TypeError, ValueError, KeyError, ZeroDivisionError, OverflowError):
             continue
 
     return df

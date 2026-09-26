@@ -806,7 +806,7 @@ def write_parquet(
             path
         )
 
-    except Exception:
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError):
         df.to_parquet(
             path,
             index=False,
@@ -822,7 +822,7 @@ def read_parquet(path: Path) -> pd.DataFrame:
             .to_pandas()
         )
 
-    except Exception:
+    except (ImportError, OSError, RuntimeError, TypeError, ValueError):
         return pd.read_parquet(path)
 
 

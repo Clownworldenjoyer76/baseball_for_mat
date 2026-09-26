@@ -576,7 +576,7 @@ def _filter_valid_run_projection_rows(
 
             try:
                 numeric_value = float(value)
-            except Exception:
+            except (TypeError, ValueError):
                 issues.append(
                     f"nonnumeric {col}={value}"
                 )

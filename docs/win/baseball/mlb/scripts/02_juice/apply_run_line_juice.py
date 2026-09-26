@@ -343,7 +343,7 @@ def process_row(df, juice_df, idx, row, audit_rows):
         away_odds = float(row["away_dk_run_line_american"])
         home_dk_decimal = float(row["home_dk_run_line_decimal"])
         away_dk_decimal = float(row["away_dk_run_line_decimal"])
-    except Exception:
+    except (TypeError, ValueError, KeyError):
         append_audit_rows(audit_rows, row, "home", "bad_parse")
         append_audit_rows(audit_rows, row, "away", "bad_parse")
         _log(f"row={idx} reason=conversion_failed", "SKIP")

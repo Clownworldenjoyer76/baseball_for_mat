@@ -123,7 +123,7 @@ def build_id_to_name_map(rows: list) -> dict:
 def parse_int(value, default=0) -> int:
     try:
         return int(str(value).strip())
-    except Exception:
+    except (TypeError, ValueError):
         return default
 
 
@@ -135,7 +135,7 @@ def utc_to_local_datetime(
     try:
         dt = datetime.fromisoformat(str(utc_str).replace("Z", "+00:00"))
         return dt.astimezone(ZoneInfo(tz_id))
-    except Exception:
+    except (TypeError, ValueError, OverflowError, KeyError):
         return None
 
 
@@ -153,7 +153,7 @@ def parse_book_datetime(
             "%Y-%m-%d %H:%M:%S",
         )
         return dt.replace(tzinfo=ZoneInfo(tz_id))
-    except Exception:
+    except (TypeError, ValueError, OverflowError, KeyError):
         return None
 
 

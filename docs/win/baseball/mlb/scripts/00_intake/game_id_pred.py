@@ -258,7 +258,7 @@ def norm(s: str) -> str:
 def parse_int(value, default=0) -> int:
     try:
         return int(str(value).strip())
-    except Exception:
+    except (TypeError, ValueError):
         return default
 
 

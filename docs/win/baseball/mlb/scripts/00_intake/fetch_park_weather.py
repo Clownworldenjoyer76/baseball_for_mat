@@ -140,7 +140,7 @@ def _to_float(value):
         if not s:
             return None
         return float(s)
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 
@@ -191,7 +191,7 @@ def parse_metno_time_utc(value: str):
 
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -199,7 +199,7 @@ def parse_games_file_date(games_file: Path):
     try:
         date_part = games_file.stem.replace("_games", "")
         return datetime.strptime(date_part, "%Y_%m_%d").date()
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 
@@ -504,7 +504,7 @@ def process_date(
                     "ERROR",
                 )
                 summary["errors"] += 1
-            except Exception:
+            except (requests.RequestException, TypeError, ValueError, KeyError, IndexError, OSError):
                 _log(
                     f"{game_pk} | "
                     f"MET Norway fetch/parse failed",

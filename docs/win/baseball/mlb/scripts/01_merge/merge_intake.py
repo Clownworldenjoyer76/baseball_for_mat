@@ -1169,7 +1169,7 @@ def american_to_prob(odds):
             )
         )
 
-    except Exception:
+    except (TypeError, ValueError, ZeroDivisionError, OverflowError):
         return None
 
 
@@ -1317,7 +1317,7 @@ def validate_model_projection_row(
             ]
         )
 
-    except Exception:
+    except (TypeError, ValueError, KeyError):
         return (
             "model_projection_run_values_nonnumeric"
         )

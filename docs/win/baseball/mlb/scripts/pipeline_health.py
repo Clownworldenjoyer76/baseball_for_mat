@@ -159,7 +159,7 @@ def read_existing() -> dict:
     try:
         payload = json.loads(OUTPUT.read_text(encoding="utf-8"))
         return payload if isinstance(payload, dict) else {}
-    except Exception:
+    except (OSError, UnicodeError, json.JSONDecodeError):
         return {}
 
 
@@ -169,7 +169,7 @@ def read_json(path: Path) -> dict:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         return payload if isinstance(payload, dict) else {}
-    except Exception:
+    except (OSError, UnicodeError, json.JSONDecodeError):
         return {}
 
 

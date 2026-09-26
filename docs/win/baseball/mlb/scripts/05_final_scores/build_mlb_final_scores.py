@@ -1032,7 +1032,7 @@ def raw_row_text(row):
             ensure_ascii=False,
             default=str,
         )
-    except Exception:
+    except (TypeError, ValueError, OverflowError, RecursionError):
         return repr(row)
 
 

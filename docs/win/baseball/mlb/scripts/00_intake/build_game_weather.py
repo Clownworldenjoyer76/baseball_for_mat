@@ -140,7 +140,7 @@ def _to_float(value):
             return None
 
         return float(s)
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 
@@ -223,7 +223,7 @@ def parse_metno_time_utc(value: str):
         return datetime.fromisoformat(
             s.replace("Z", "+00:00")
         ).astimezone(UTC)
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -244,7 +244,7 @@ def metno_time_to_local_hour(
         return local_dt.strftime(
             "%Y-%m-%d %H:00"
         )
-    except Exception:
+    except (ValueError, OverflowError, KeyError):
         return ""
 
 
@@ -291,7 +291,7 @@ def get_weather_applicable(row: dict) -> int:
 
     try:
         return int(float(value))
-    except Exception:
+    except (TypeError, ValueError, OverflowError):
         return 0
 
 
@@ -451,7 +451,7 @@ def process_raw_file(
             raw_path,
             dtype=str,
         )
-    except Exception:
+    except (OSError, UnicodeError, pd.errors.ParserError, ValueError):
         _log(
             f"{raw_path.name} | "
             f"failed to read raw MET Norway CSV",

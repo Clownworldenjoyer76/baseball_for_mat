@@ -42,7 +42,7 @@ def to_float(value):
         if math.isnan(v):
             return None
         return v
-    except Exception:
+    except (TypeError, ValueError):
         return None
 
 
