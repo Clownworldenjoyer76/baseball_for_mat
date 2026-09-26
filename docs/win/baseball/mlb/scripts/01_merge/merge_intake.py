@@ -78,7 +78,7 @@ def _safe_log_text(msg):
     )
 
     text = re.sub(
-        r'(?i)\bbearer\s+[A-Za-z0-9\-\._~\+/]+=*',
+        r'(?i)\bbearer\s+[A-Za-z0-9\-._~+/]+=*',
         'Bearer [REDACTED]',
         text,
     )

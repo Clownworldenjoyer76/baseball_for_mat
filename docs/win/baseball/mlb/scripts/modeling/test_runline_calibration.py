@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import importlib.util
 import math
-import sys
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path

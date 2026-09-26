@@ -51,7 +51,6 @@ Outputs:
 from __future__ import annotations
 
 import importlib.util
-import json
 import warnings
 from datetime import UTC, datetime
 from pathlib import Path

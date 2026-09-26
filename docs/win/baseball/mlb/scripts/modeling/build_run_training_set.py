@@ -19,7 +19,6 @@ copied into the training dataset.
 from __future__ import annotations
 
 import argparse
-import sys
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
