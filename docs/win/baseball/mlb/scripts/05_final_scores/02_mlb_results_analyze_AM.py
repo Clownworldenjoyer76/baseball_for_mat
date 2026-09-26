@@ -229,7 +229,7 @@ def total_range_bucket(value):
         return "UNBUCKETED"
 
     import math
-    floor = math.floor(float(value) * 2) / 2
+    floor = float(math.floor(float(value) * 2)) / 2.0
     hi = floor + 0.5
 
     return f"{floor:.1f}_to_{hi:.1f}"

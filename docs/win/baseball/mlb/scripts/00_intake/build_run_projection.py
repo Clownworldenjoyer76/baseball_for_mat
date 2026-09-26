@@ -1563,9 +1563,9 @@ def process_date(
                 "training_end="
                 f"{audit['training_end_date']} "
                 "home_validation_score="
-                f"{audit['home_validation_score']:.12f} "
+                f"{float(audit['home_validation_score']):.12f} "
                 "away_validation_score="
-                f"{audit['away_validation_score']:.12f}"
+                f"{float(audit['away_validation_score']):.12f}"
             )
 
         except Exception as exc:

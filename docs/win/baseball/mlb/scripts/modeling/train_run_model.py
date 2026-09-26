@@ -31,6 +31,7 @@ import json
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Never
 
 import joblib
 import numpy as np
@@ -156,7 +157,7 @@ def _log(message: str, level: str = "INFO") -> None:
         f.write(f"{_now()} | {level:<5} | {message.rstrip()}\n")
 
 
-def fail(message: str) -> None:
+def fail(message: str) -> Never:
     _log(message, "ERROR")
     raise RuntimeError(message)
 

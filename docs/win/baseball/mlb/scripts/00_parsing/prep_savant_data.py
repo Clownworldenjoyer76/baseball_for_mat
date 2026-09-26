@@ -89,7 +89,7 @@ FIELDING_DROP = [
 ]
 
 
-def _year_key(filename: str) -> str:
+def _year_key(filename: str) -> str | None:
     """Extract year key from filename for PA threshold lookup."""
     stem = Path(filename).stem
     for yr in ["2026", "2025", "2024", "2023", "2022"]:
