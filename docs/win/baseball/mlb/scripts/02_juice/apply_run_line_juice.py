@@ -269,7 +269,7 @@ def validate_juice_config(juice_df: pd.DataFrame) -> None:
         raise ValueError(f"run-line juice config missing fav_ud/venue combinations: {missing_combos}")
 
     overlap_count = 0
-    for (fav_ud, venue), group in juice_df.groupby(["fav_ud", "venue"]):
+    for _, group in juice_df.groupby(["fav_ud", "venue"]):
         group = group.sort_values(["band_min", "band_max"])
         prev_max = None
         for _, row in group.iterrows():

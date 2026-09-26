@@ -89,13 +89,13 @@ FIELDING_DROP = [
 ]
 
 
-def _year_key(filename: str) -> str | None:
-    """Extract year key from filename for PA threshold lookup."""
+def _year_key(filename: str) -> str:
+    """Extract a four-digit year token from the filename."""
     stem = Path(filename).stem
-    for yr in ["2026", "2025", "2024", "2023", "2022"]:
-        if yr in stem:
-            return yr
-    return None
+    for token in stem.split("_"):
+        if len(token) == 4 and token.isdigit():
+            return token
+    return ""
 
 
 def _check_duplicates(df: pd.DataFrame, id_col: str, filepath: str) -> int:
@@ -113,9 +113,9 @@ def clean_batting_pitching(filepath: Path, summary: dict) -> None:
     _log(f"--- {label}")
 
     year_key = _year_key(label)
-    if year_key is None:
+    if year_key not in PA_THRESHOLDS:
         _log(
-            "  Cannot determine year key from filename — skipping",
+            "  Cannot determine supported year key from filename — skipping",
             "WARN",
         )
         summary["skipped"] += 1

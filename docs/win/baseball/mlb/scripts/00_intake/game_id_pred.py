@@ -1317,7 +1317,6 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
                 rejection_rows,
             )
 
-        preserved_rows = []
         preserved_count = 0
 
         is_current_date = (

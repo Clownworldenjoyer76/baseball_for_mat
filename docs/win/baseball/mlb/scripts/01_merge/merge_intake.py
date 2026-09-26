@@ -1272,8 +1272,6 @@ def choose_team_for_audit(
 
 
 def validate_model_projection_row(
-    date,
-    game_id,
     pred_row,
 ):
     """
@@ -1815,8 +1813,6 @@ def process_date(
 
         reject_reason = (
             validate_model_projection_row(
-                date,
-                game_id,
                 p,
             )
         )

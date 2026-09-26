@@ -661,7 +661,6 @@ def candidate_matches_teams(candidate, home_team, away_team):
 
 def resolve_completed_game_ids(
     *,
-    game_date,
     game_time,
     home_team,
     away_team,
@@ -1242,7 +1241,6 @@ def add_final_record(
     seen_by_game_id,
     seen_by_fallback_key,
     key_audit_rows,
-    use_game_time_for_fallback,
 ):
     game_id = str(record.get("game_id", "") or "").strip()
     game_pk = str(record.get("gamePk", "") or "").strip()
@@ -1576,7 +1574,6 @@ def preserve_existing_final_score_records(
                     seen_by_game_id=seen_by_game_id,
                     seen_by_fallback_key=seen_by_fallback_key,
                     key_audit_rows=key_audit_rows,
-                    use_game_time_for_fallback=False,
                 )
 
                 if action in {
@@ -1955,7 +1952,6 @@ def backfill_missing_finals_from_mlb(
                     seen_by_game_id=seen_by_game_id,
                     seen_by_fallback_key=seen_by_fallback_key,
                     key_audit_rows=key_audit_rows,
-                    use_game_time_for_fallback=False,
                 )
 
                 if action in {
@@ -2291,7 +2287,6 @@ def process_file(
             book_lookup = sportsbook_lookup_cache[game_date]
 
             resolution = resolve_completed_game_ids(
-                game_date=game_date,
                 game_time=raw_game_time,
                 home_team=home_team,
                 away_team=away_team,
@@ -2419,7 +2414,6 @@ def process_file(
                 seen_by_game_id=seen_by_game_id,
                 seen_by_fallback_key=seen_by_fallback_key,
                 key_audit_rows=key_audit_rows,
-                use_game_time_for_fallback=False,
             )
 
             if action in {
@@ -2587,7 +2581,6 @@ def migrate_legacy_final_score_files(
                 )
 
                 resolution = resolve_completed_game_ids(
-                    game_date=record["game_date"],
                     game_time=record["game_time"],
                     home_team=record["home_team"],
                     away_team=record["away_team"],

@@ -221,7 +221,6 @@ def write_games_file(
 
 def process_date(
     date_str: str,
-    team_map: dict,
     id_to_name: dict,
     summary: dict,
 ) -> None:
@@ -729,7 +728,6 @@ def main():
             try:
                 process_date(
                     date_str,
-                    team_map,
                     id_to_name,
                     summary,
                 )

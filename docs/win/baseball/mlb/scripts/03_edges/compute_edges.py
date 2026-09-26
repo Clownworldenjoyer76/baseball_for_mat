@@ -729,7 +729,6 @@ def main():
 
     for input_file in input_files:
         name = input_file.name.lower()
-        market = None
 
         pf = {
             "name": input_file.name,
