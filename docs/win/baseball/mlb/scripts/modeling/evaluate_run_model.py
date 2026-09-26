@@ -325,7 +325,9 @@ def load_json(path: Path, label: str) -> dict:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except Exception as exc:
-        fail(f"Could not parse {label} {path}: {exc}")
+        message = f"Could not parse {label} {path}: {exc}"
+        _log(message, "ERROR")
+        raise RuntimeError(message) from exc
 
     if not isinstance(payload, dict):
         fail(f"{label} must be a JSON object: {path}")
@@ -387,10 +389,12 @@ def validate_metadata(
         start_dt = pd.Timestamp(test_start).normalize()
         end_dt = pd.Timestamp(test_end).normalize()
     except Exception as exc:
-        fail(
+        message = (
             "Invalid test date range in metadata: "
             f"start={test_start} end={test_end} error={exc}"
         )
+        _log(message, "ERROR")
+        raise RuntimeError(message) from exc
 
     if start_dt > end_dt:
         fail(
@@ -400,11 +404,13 @@ def validate_metadata(
 
     try:
         test_row_count = int(home_metadata["test_row_count"])
-    except (TypeError, ValueError):
-        fail(
+    except (TypeError, ValueError) as exc:
+        message = (
             "Metadata test_row_count is not an integer: "
             f"{home_metadata['test_row_count']}"
         )
+        _log(message, "ERROR")
+        raise RuntimeError(message) from exc
 
     if test_row_count <= 0:
         fail(f"Metadata test_row_count must be positive: {test_row_count}")

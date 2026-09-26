@@ -500,7 +500,9 @@ def train_one_side(
         target_column = "target_away_runs"
         baseline_column = "dratings_away_projected_runs"
     else:
-        fail(f"Unknown model side: {side}")
+        message = f"Unknown model side: {side}"
+        _log(message, "ERROR")
+        raise RuntimeError(message)
 
     selected_hyperparameters, validation_score = (
         select_hyperparameters(
