@@ -373,7 +373,7 @@ def parse_book_datetime(date_str: str, time_str: str):
     return parse_games_datetime(date_str, time_str)
 
 
-def minutes_between(a, b):
+def minutes_between(a: datetime | None, b: datetime | None) -> float | None:
     if a is None or b is None:
         return None
 
@@ -455,21 +455,21 @@ def describe_book_entry(book_entry: dict) -> str:
     return "|".join(diff_fields)
 
 
-def describe_candidates(scored: list[tuple]) -> str:
+def describe_candidates(scored: list[tuple[float | None, dict]]) -> str:
     parts = []
 
     for diff, game_entry in scored:
-        diff_text = "NA" if diff is None else str(round(diff, 1))
+        diff_text = "NA" if diff is None else f"{diff:.1f}"
         parts.append(f"{describe_game_entry(game_entry)}|diff_minutes={diff_text}")
 
     return "; ".join(parts)
 
 
-def describe_book_candidates(scored: list[tuple]) -> str:
+def describe_book_candidates(scored: list[tuple[float | None, dict]]) -> str:
     parts = []
 
     for diff, book_entry in scored:
-        diff_text = "NA" if diff is None else str(round(diff, 1))
+        diff_text = "NA" if diff is None else f"{diff:.1f}"
         parts.append(f"{describe_book_entry(book_entry)}|diff_minutes={diff_text}")
 
     return "; ".join(parts)
