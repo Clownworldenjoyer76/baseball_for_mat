@@ -1,10 +1,11 @@
 {
+  "artifact_stage": "production",
   "training_start_date": "2026-03-26",
-  "training_end_date": "2026-07-08",
-  "validation_start_date": "2026-07-09",
-  "validation_end_date": "2026-08-02",
-  "test_start_date": "2026-08-03",
-  "test_end_date": "2026-08-29",
+  "training_end_date": "2026-07-25",
+  "validation_start_date": "2026-07-26",
+  "validation_end_date": "2026-08-20",
+  "test_start_date": "2026-08-24",
+  "test_end_date": "2026-09-18",
   "feature_columns": [
     "dratings_home_prob",
     "dratings_away_prob",
@@ -62,32 +63,58 @@
   ],
   "selected_hyperparameters": {
     "learning_rate": 0.03,
-    "max_leaf_nodes": 7,
+    "max_leaf_nodes": 15,
     "min_samples_leaf": 10,
     "l2_regularization": 0
   },
-  "training_row_count": 1125,
-  "validation_row_count": 219,
-  "test_row_count": 127,
+  "training_row_count": 1494,
+  "validation_row_count": 227,
+  "test_row_count": 120,
   "baseline_metrics": {
-    "mae": 2.4293700787401575,
-    "mean_poisson_deviance": 2.3745079680446914,
-    "mean_predicted_runs": 4.175984251968504,
-    "mean_actual_runs": 3.8661417322834644
+    "mae": 2.5535,
+    "mean_poisson_deviance": 2.476340581145696,
+    "mean_predicted_runs": 4.161666666666666,
+    "mean_actual_runs": 4.608333333333333
   },
   "model_metrics": {
-    "mae": 2.498517175378032,
-    "mean_poisson_deviance": 2.4570371068370385,
-    "mean_predicted_runs": 4.3688076992976175,
-    "mean_actual_runs": 3.8661417322834644
+    "mae": 2.6205882073913123,
+    "mean_poisson_deviance": 2.473104467667501,
+    "mean_predicted_runs": 4.253318379897634,
+    "mean_actual_runs": 4.608333333333333
   },
-  "created_at": "2026-08-30T15:46:56.386801+00:00",
-  "validation_mean_poisson_deviance": 2.0724078704958186,
+  "created_at": "2026-09-19T07:41:36.448996+00:00",
+  "validation_mean_poisson_deviance": 2.254594434859137,
   "target_column": "target_away_runs",
   "baseline_column": "dratings_away_projected_runs",
   "model_class": "HistGradientBoostingRegressor",
   "loss": "poisson",
   "random_state": 42,
-  "final_fit_row_count": 1344,
-  "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection"
+  "final_fit_row_count": 1721,
+  "final_fit_rule": "refit_on_training_plus_validation_after_validation_selection",
+  "promotion_status": "candidate_promoted",
+  "promotion_baseline_comparison": {
+    "status": "candidate_promoted",
+    "promoted_at": "2026-09-19T07:41:41.355287+00:00",
+    "gate_rule": "candidate mean_poisson_deviance <= DRatings baseline for BOTH home and away models",
+    "test_start_date": "2026-08-24",
+    "test_end_date": "2026-09-18",
+    "comparison": {
+      "home": {
+        "baseline_system": "dratings",
+        "metric": "mean_poisson_deviance",
+        "baseline_value": 2.07911408428022,
+        "candidate_value": 2.041503895030808,
+        "candidate_lte_baseline": true,
+        "difference_candidate_minus_baseline": -0.03761018924941162
+      },
+      "away": {
+        "baseline_system": "dratings",
+        "metric": "mean_poisson_deviance",
+        "baseline_value": 2.476340581145696,
+        "candidate_value": 2.473104467667501,
+        "candidate_lte_baseline": true,
+        "difference_candidate_minus_baseline": -0.0032361134781950796
+      }
+    }
+  }
 }

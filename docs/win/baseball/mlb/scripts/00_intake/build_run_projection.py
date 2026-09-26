@@ -30,10 +30,12 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import sys
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import joblib
 import numpy as np
@@ -196,6 +198,7 @@ TARGET_COLUMNS = [
 ]
 
 MIN_PRIOR_UNIQUE_DATES = 3
+NY = ZoneInfo("America/New_York")
 
 
 def _now() -> str:
@@ -1209,6 +1212,114 @@ def fit_walk_forward_models(
     )
 
 
+def _current_pipeline_date() -> str:
+    env_date = str(os.environ.get("DATE", "") or "").strip().replace("-", "_")
+
+    if env_date:
+        parsed = pd.to_datetime(
+            env_date.replace("_", "-"),
+            errors="coerce",
+        )
+
+        if pd.notna(parsed):
+            return pd.Timestamp(parsed).strftime("%Y_%m_%d")
+
+    return datetime.now(NY).strftime("%Y_%m_%d")
+
+
+def _assert_frame_date_contract(
+    date_str: str,
+    df: pd.DataFrame,
+    label: str,
+) -> None:
+    if "game_date" not in df.columns or df.empty:
+        return
+
+    expected = _target_timestamp(date_str)
+    parsed = pd.to_datetime(
+        df["game_date"].astype("string").str.replace("_", "-", regex=False),
+        errors="coerce",
+    ).dt.normalize()
+
+    bad = parsed.isna() | (parsed != expected)
+
+    if bad.any():
+        sample_columns = [
+            col
+            for col in ["game_id", "gamePk", "game_date", "home_team", "away_team"]
+            if col in df.columns
+        ]
+        sample = df.loc[bad, sample_columns].head(20).to_dict("records")
+        fail(
+            f"{label} contains rows outside projection date {date_str}; "
+            f"bad_rows={int(bad.sum())}; sample={sample}"
+        )
+
+
+def _assert_current_day_source_coverage(
+    date_str: str,
+    source: pd.DataFrame,
+    result: pd.DataFrame,
+    label: str,
+) -> None:
+    """Prevent a successful current-day projection write from dropping source games."""
+    if date_str != _current_pipeline_date():
+        return
+
+    if "game_id" not in source.columns:
+        fail(f"{label} source missing game_id column")
+
+    source_ids = normalize_game_id(source["game_id"])
+    source_blank = source_ids.isna() | (source_ids == "")
+
+    if source_blank.any():
+        sample = source.loc[source_blank].head(20).to_dict("records")
+        fail(
+            f"{label} current-day source contains blank game_id; "
+            f"bad_rows={int(source_blank.sum())}; sample={sample}"
+        )
+
+    source_dupes = source_ids.duplicated(keep=False)
+    if source_dupes.any():
+        sample = source_ids.loc[source_dupes].head(20).tolist()
+        fail(
+            f"{label} current-day source contains duplicate game_id; "
+            f"duplicate_rows={int(source_dupes.sum())}; sample={sample}"
+        )
+
+    if "game_id" not in result.columns:
+        fail(f"{label} result missing game_id column")
+
+    result_ids = normalize_game_id(result["game_id"])
+    result_blank = result_ids.isna() | (result_ids == "")
+
+    if result_blank.any():
+        sample = result.loc[result_blank].head(20).to_dict("records")
+        fail(
+            f"{label} current-day result contains blank game_id; "
+            f"bad_rows={int(result_blank.sum())}; sample={sample}"
+        )
+
+    result_dupes = result_ids.duplicated(keep=False)
+    if result_dupes.any():
+        sample = result_ids.loc[result_dupes].head(20).tolist()
+        fail(
+            f"{label} current-day result contains duplicate game_id; "
+            f"duplicate_rows={int(result_dupes.sum())}; sample={sample}"
+        )
+
+    source_set = set(source_ids.astype(str))
+    result_set = set(result_ids.astype(str))
+    missing = sorted(source_set - result_set)
+    extra = sorted(result_set - source_set)
+
+    if missing or extra:
+        fail(
+            f"{label} current-day source/result game_id coverage mismatch; "
+            f"missing_from_result={missing}; extra_in_result={extra}"
+        )
+
+
 def _target_timestamp(
     date_str: str,
 ) -> pd.Timestamp:
@@ -1310,6 +1421,17 @@ def process_date(
         f"game_context {date_str}",
     )
 
+    _assert_frame_date_contract(
+        date_str,
+        pred,
+        f"predictions {date_str}",
+    )
+    _assert_frame_date_contract(
+        date_str,
+        games,
+        f"games {date_str}",
+    )
+
     joined, X = build_feature_frame(
         date_str,
         pred,
@@ -1334,6 +1456,13 @@ def process_date(
         result["run_model_version"] = pd.Series(dtype="string")
         result["run_model_feature_status"] = pd.Series(
             dtype="string"
+        )
+
+        _assert_current_day_source_coverage(
+            date_str,
+            pred,
+            result,
+            "build_run_projection",
         )
 
         result.to_csv(
@@ -1528,6 +1657,13 @@ def process_date(
                 "Missing required preserved "
                 f"DRatings column: {col}"
             )
+
+    _assert_current_day_source_coverage(
+        date_str,
+        pred,
+        result,
+        "build_run_projection",
+    )
 
     result.to_csv(
         output_path,

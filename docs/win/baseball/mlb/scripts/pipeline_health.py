@@ -178,6 +178,8 @@ def current_counts(now: datetime) -> tuple[dict, dict, list[str], list[str]]:
     date = now.strftime("%Y_%m_%d")
     paths = {
         "daily_games": BASE / f"00_intake/games/{date}_games.csv",
+        "prediction_source": BASE / f"00_intake/predictions/pred_with_game_id/{date}_MLB.csv",
+        "prediction_baseline": BASE / f"00_intake/predictions/pred_with_game_id/baseline/{date}_MLB.csv",
         "predictions": BASE / f"00_intake/predictions/model_projection/{date}_MLB.csv",
         "sportsbook": BASE / f"00_intake/sportsbook/{date}_MLB.csv",
         "merged": BASE / f"01_merge/{date}_mlb_moneyline.csv",
@@ -187,33 +189,62 @@ def current_counts(now: datetime) -> tuple[dict, dict, list[str], list[str]]:
 
     rows = {key: read_rows(path) for key, path in paths.items()}
     scheduled_ids, scheduled_blank, scheduled_dupes = ids_and_integrity(rows["daily_games"])
+    prediction_source_ids, prediction_source_blank, prediction_source_dupes = ids_and_integrity(rows["prediction_source"])
+    prediction_baseline_ids, prediction_baseline_blank, prediction_baseline_dupes = ids_and_integrity(rows["prediction_baseline"])
     prediction_ids, prediction_blank, prediction_dupes = ids_and_integrity(rows["predictions"])
     sportsbook_ids, sportsbook_blank, sportsbook_dupes = ids_and_integrity(rows["sportsbook"])
     merged_ids, merged_blank, merged_dupes = ids_and_integrity(rows["merged"])
+    baseline_exists = paths["prediction_baseline"].exists()
 
     warnings: list[str] = []
     fatals: list[str] = []
 
     integrity = {
         "blank_daily_game_ids": scheduled_blank,
+        "blank_prediction_source_game_ids": prediction_source_blank,
+        "blank_prediction_baseline_game_ids": prediction_baseline_blank,
         "blank_prediction_game_ids": prediction_blank,
         "blank_sportsbook_game_ids": sportsbook_blank,
         "blank_merged_game_ids": merged_blank,
         "daily_duplicate_game_ids": scheduled_dupes,
+        "prediction_source_duplicate_game_ids": prediction_source_dupes,
+        "prediction_baseline_duplicate_game_ids": prediction_baseline_dupes,
         "prediction_duplicate_game_ids": prediction_dupes,
         "sportsbook_duplicate_game_ids": sportsbook_dupes,
         "merged_duplicate_game_ids": merged_dupes,
     }
 
-    if any((scheduled_blank, prediction_blank, sportsbook_blank, merged_blank)):
+    if any((scheduled_blank, prediction_source_blank, prediction_baseline_blank, prediction_blank, sportsbook_blank, merged_blank)):
         fatals.append("MLB: blank game_id found in current-day pipeline data")
-    if any((scheduled_dupes, prediction_dupes, sportsbook_dupes, merged_dupes)):
+    if any((scheduled_dupes, prediction_source_dupes, prediction_baseline_dupes, prediction_dupes, sportsbook_dupes, merged_dupes)):
         fatals.append("MLB: duplicate game_id found in current-day pipeline data")
 
+    scheduled_missing_prediction_source = sorted(scheduled_ids - prediction_source_ids)
     scheduled_missing_predictions = sorted(scheduled_ids - prediction_ids)
+    prediction_source_missing_model_projection = sorted(prediction_source_ids - prediction_ids)
+    model_projection_not_in_prediction_source = sorted(prediction_ids - prediction_source_ids)
     scheduled_missing_sportsbook = sorted(scheduled_ids - sportsbook_ids)
     sportsbook_not_merged = sorted(sportsbook_ids - merged_ids)
+    baseline_missing_prediction_source = sorted(prediction_baseline_ids - prediction_source_ids)
+    prediction_source_missing_baseline = sorted(prediction_source_ids - prediction_baseline_ids)
 
+    if prediction_source_missing_model_projection:
+        fatals.append(
+            f"MLB: {len(prediction_source_missing_model_projection)} pred_with_game_id game(s) are missing from model_projection"
+        )
+    if model_projection_not_in_prediction_source:
+        fatals.append(
+            f"MLB: {len(model_projection_not_in_prediction_source)} model_projection game(s) are not present in pred_with_game_id"
+        )
+    if baseline_exists and (baseline_missing_prediction_source or prediction_source_missing_baseline):
+        fatals.append(
+            "MLB: same-day prediction baseline and pred_with_game_id output have different game_id sets"
+        )
+
+    if scheduled_missing_prediction_source:
+        warnings.append(
+            f"MLB: {len(scheduled_missing_prediction_source)} scheduled game(s) have no pred_with_game_id source row"
+        )
     if scheduled_missing_predictions:
         warnings.append(
             f"MLB: {len(scheduled_missing_predictions)} scheduled game(s) have no model projection"
@@ -232,6 +263,8 @@ def current_counts(now: datetime) -> tuple[dict, dict, list[str], list[str]]:
         "paths": {key: str(path) for key, path in paths.items()},
         "counts": {
             "scheduled_games": len(scheduled_ids),
+            "prediction_source_games": len(prediction_source_ids),
+            "prediction_baseline_games": len(prediction_baseline_ids),
             "prediction_games": len(prediction_ids),
             "sportsbook_games": len(sportsbook_ids),
             "merged_games": len(merged_ids),
@@ -241,7 +274,13 @@ def current_counts(now: datetime) -> tuple[dict, dict, list[str], list[str]]:
         },
         "identity": integrity,
         "coverage": {
+            "baseline_exists": baseline_exists,
+            "scheduled_missing_prediction_source": scheduled_missing_prediction_source,
             "scheduled_missing_predictions": scheduled_missing_predictions,
+            "prediction_source_missing_model_projection": prediction_source_missing_model_projection,
+            "model_projection_not_in_prediction_source": model_projection_not_in_prediction_source,
+            "baseline_missing_prediction_source": baseline_missing_prediction_source,
+            "prediction_source_missing_baseline": prediction_source_missing_baseline,
             "scheduled_missing_sportsbook": scheduled_missing_sportsbook,
             "sportsbook_not_merged": sportsbook_not_merged,
         },

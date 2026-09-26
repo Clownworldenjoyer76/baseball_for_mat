@@ -404,6 +404,90 @@ def write_output_csv(df: pd.DataFrame, path: Path, label: str) -> dict:
     return counts
 
 
+
+def locked_pick_key(row) -> tuple[str, str, str, str]:
+    game_id = sv(row.get("game_id")) or ""
+    market_type = (sv(row.get("market_type")) or "").lower()
+    bet_side = (sv(row.get("bet_side")) or "").lower()
+    line = fv(row.get("line"))
+    line_key = "" if line is None else format(line, ".12g")
+
+    return game_id, market_type, bet_side, line_key
+
+
+def append_new_locked_picks(
+    current_df: pd.DataFrame,
+    path: Path,
+    locked_at: str,
+) -> int:
+    required_key_columns = [
+        "game_id",
+        "market_type",
+        "bet_side",
+        "line",
+    ]
+
+    validate_no_duplicate_columns(current_df, f"{path.name} current locked candidates")
+    validate_required_columns(
+        current_df,
+        required_key_columns,
+        f"{path.name} current locked candidates",
+    )
+
+    current = current_df.copy()
+    current["locked_at"] = locked_at
+
+    if not path.exists():
+        current.to_csv(path, index=False)
+        return len(current)
+
+    existing = pd.read_csv(path)
+
+    validate_no_duplicate_columns(existing, f"{path.name} existing locked file")
+    validate_required_columns(
+        existing,
+        required_key_columns,
+        f"{path.name} existing locked file",
+    )
+
+    if "locked_at" not in existing.columns:
+        existing["locked_at"] = ""
+
+    existing_keys = {
+        locked_pick_key(row)
+        for _, row in existing.iterrows()
+    }
+
+    new_mask = []
+    seen_new_keys = set()
+
+    for _, row in current.iterrows():
+        key = locked_pick_key(row)
+        is_new = key not in existing_keys and key not in seen_new_keys
+        new_mask.append(is_new)
+
+        if is_new:
+            seen_new_keys.add(key)
+
+    new_rows = current.loc[new_mask].copy()
+
+    if new_rows.empty:
+        return 0
+
+    all_columns = list(existing.columns)
+    for column in new_rows.columns:
+        if column not in all_columns:
+            all_columns.append(column)
+
+    existing = existing.reindex(columns=all_columns)
+    new_rows = new_rows.reindex(columns=all_columns)
+
+    combined = pd.concat([existing, new_rows], ignore_index=True)
+    combined.to_csv(path, index=False)
+
+    return len(new_rows)
+
+
 def row_count_check(slate: str, market_frames: dict, summary: dict) -> None:
     counts = {
         market: len(df)
@@ -1238,7 +1322,7 @@ def choose_slates(slates: dict) -> tuple[list, str]:
 # =========================
 
 def main():
-    run_timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    locked_at = _now()
 
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         f.write(f"=== MLB select_bets RUN {_now()} ===\n")
@@ -1614,11 +1698,16 @@ def main():
 
                 if final:
                     out = OUTPUT_DIR / f"{slate}_MLB.csv"
-                    locked_out = LOCKED_DIR / f"{slate}_MLB_{run_timestamp}.csv"
+                    locked_out = LOCKED_DIR / f"{slate}_MLB.csv"
 
                     out_df = pd.DataFrame(final)
                     validation_counts = write_output_csv(out_df, out, f"{slate} selected output")
-                    out_df.to_csv(locked_out, index=False)
+
+                    new_locked_picks = append_new_locked_picks(
+                        out_df,
+                        locked_out,
+                        locked_at,
+                    )
 
                     for key, value in validation_counts.items():
                         summary[key] += value
@@ -1633,7 +1722,13 @@ def main():
                         f"WROTE: {out.name} "
                         f"({len(final)} bets | ml={ps['ml']} rl={ps['rl']} tot={ps['tot']})"
                     )
-                    _log(f"WROTE LOCKED: {locked_out}")
+                    if new_locked_picks:
+                        _log(
+                            f"WROTE LOCKED: {locked_out} "
+                            f"(new picks appended={new_locked_picks})"
+                        )
+                    else:
+                        _log(f"LOCKED UNCHANGED: {locked_out} (no new picks)")
                 else:
                     _log(f"{slate} no bets passed filters", "WARN")
                     ps["status"] = "no_bets"

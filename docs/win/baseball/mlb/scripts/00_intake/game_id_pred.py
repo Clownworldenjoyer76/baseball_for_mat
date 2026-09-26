@@ -11,7 +11,7 @@
 #
 # Output:
 #   docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/{date}_MLB.csv
-#   docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/{date}_MLB.csv
+#   docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/baseline/{date}_MLB.csv
 #
 # Rejections:
 #   docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id/rejections/{date}_unmatched_predictions.csv
@@ -48,6 +48,7 @@ import sys
 import traceback
 from datetime import date, datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 PRED_DIR = Path("docs/win/baseball/mlb/00_intake/predictions")
@@ -56,15 +57,18 @@ BOOK_DIR = Path("docs/win/baseball/mlb/00_intake/sportsbook")
 
 OUT_DIR = Path("docs/win/baseball/mlb/00_intake/predictions/pred_with_game_id")
 REJECTION_DIR = OUT_DIR / "rejections"
+BASELINE_DIR = OUT_DIR / "baseline"
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/00_intake")
 
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 REJECTION_DIR.mkdir(parents=True, exist_ok=True)
+BASELINE_DIR.mkdir(parents=True, exist_ok=True)
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 
 LOG_FILE = ERROR_DIR / "game_id_pred.txt"
 
 MAX_TIME_DIFF_MINUTES = 90
+NY = ZoneInfo("America/New_York")
 
 OUTPUT_HEADER = [
     "game_id",
@@ -232,6 +236,13 @@ def write_output_csv(date_str: str, header: list[str], rows: list[dict], summary
     return out_path
 
 
+def clear_stale_rejection_file(rejection_path: Path) -> None:
+    """Remove a prior rejection CSV after a clean successful run for that date."""
+    if rejection_path.exists():
+        rejection_path.unlink()
+        log(f"REMOVED STALE REJECTION FILE: {rejection_path}")
+
+
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
@@ -274,7 +285,7 @@ def current_cutoff_date():
     if parsed_env_date is not None:
         return parsed_env_date
 
-    return datetime.now(timezone.utc).date()
+    return datetime.now(NY).date()
 
 
 def is_current_or_future_date(date_str: str) -> bool:
@@ -284,6 +295,28 @@ def is_current_or_future_date(date_str: str) -> bool:
         fail(f"Could not parse date for current/future validation: {date_str}")
 
     return parsed_date >= current_cutoff_date()
+
+
+def validate_row_date(date_str: str, row: dict, label: str, csv_row: int | None = None) -> None:
+    expected_date = parse_date_value(date_str)
+    actual_raw = row.get("game_date", "")
+    actual_date = parse_date_value(actual_raw)
+    row_text = "" if csv_row is None else f" csv_row={csv_row}"
+
+    if expected_date is None:
+        fail(f"Could not parse filename date for {label}: {date_str}")
+
+    if actual_date is None:
+        fail(
+            f"{date_str} | {label} has invalid game_date={actual_raw!r}"
+            f"{row_text}"
+        )
+
+    if actual_date != expected_date:
+        fail(
+            f"{date_str} | {label} game_date mismatch{row_text}: "
+            f"row_game_date={actual_raw!r} expected_date={expected_date.isoformat()}"
+        )
 
 
 def parse_prediction_datetime(date_str: str, time_str: str):
@@ -479,16 +512,18 @@ def print_rejection_rows(date_str: str, rejection_path: Path, rejection_rows: li
 # GROUP BUILDERS
 # ─────────────────────────────────────────────
 
-def build_prediction_groups(pred_rows: list[dict]) -> tuple[dict, list]:
+def build_prediction_groups(pred_rows: list[dict], date_str: str) -> tuple[dict, list]:
     groups = {}
     key_order = []
 
     for idx, p in enumerate(pred_rows):
+        csv_row = idx + 2
+        validate_row_date(date_str, p, "prediction row", csv_row)
         key = (norm(p.get("home_team", "")), norm(p.get("away_team", "")))
 
         if not key[0] or not key[1]:
             fail(
-                f"prediction row has blank team at csv_row={idx + 2}: "
+                f"prediction row has blank team at csv_row={csv_row}: "
                 f"away={p.get('away_team', '')} home={p.get('home_team', '')}"
             )
 
@@ -500,7 +535,7 @@ def build_prediction_groups(pred_rows: list[dict]) -> tuple[dict, list]:
             "row": p,
             "key": key,
             "index": idx,
-            "csv_row": idx + 2,
+            "csv_row": csv_row,
             "dt": parse_prediction_datetime(
                 p.get("game_date", ""),
                 p.get("game_time", ""),
@@ -518,6 +553,7 @@ def build_games_groups(games_rows: list[dict], date_str: str) -> dict:
     for idx, g in enumerate(games_rows):
         csv_row = idx + 2
 
+        validate_row_date(date_str, g, "games row", csv_row)
         game_id = (g.get("game_id") or "").strip()
         game_pk = (g.get("gamePk") or "").strip()
 
@@ -575,6 +611,7 @@ def build_book_groups(book_rows: list[dict], date_str: str) -> dict:
 
     for idx, b in enumerate(book_rows):
         csv_row = idx + 2
+        validate_row_date(date_str, b, "sportsbook row", csv_row)
         game_id = (b.get("game_id") or "").strip()
 
         if not game_id:
@@ -795,7 +832,16 @@ def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[d
 
     for idx, row in enumerate(output_rows):
         csv_row = idx + 2
+        validate_row_date(date_str, row, "output row", csv_row)
         game_id = (row.get("game_id") or "").strip()
+        home_team = norm(row.get("home_team", ""))
+        away_team = norm(row.get("away_team", ""))
+
+        if not home_team or not away_team:
+            fail(
+                f"{date_str} | output row has blank team at csv_row={csv_row}: "
+                f"away={row.get('away_team', '')} home={row.get('home_team', '')}"
+            )
 
         if not game_id:
             fail(f"{date_str} | output row has blank game_id at csv_row={csv_row}: {row}")
@@ -809,54 +855,231 @@ def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[d
         seen_game_ids[game_id] = csv_row
 
 
-def merge_with_existing_same_day(date_str: str, refreshed_rows: list[dict], games_rows: list[dict]) -> tuple[list[dict], int]:
-    """Upsert refreshed rows into the existing same-day matched set without deleting games that vanished upstream."""
+def load_same_day_baseline(date_str: str) -> list[dict]:
+    """Load the durable cumulative same-day matched-prediction baseline."""
+    baseline_path = BASELINE_DIR / f"{date_str}_MLB.csv"
+    if baseline_path.exists():
+        return load_csv(baseline_path, OUTPUT_HEADER, "same-day matched prediction baseline")
+
+    # Migration fallback: seed once from the previously committed mutable output.
+    # After the baseline exists, later refreshes never use the mutable output as persistence.
+    existing_path = OUT_DIR / f"{date_str}_MLB.csv"
+    if existing_path.exists():
+        rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction seed")
+        if rows:
+            log(
+                f"{date_str} | seeding durable same-day baseline from existing matched output: "
+                f"rows={len(rows)}"
+            )
+            return rows
+
+    return []
+
+
+def merge_with_same_day_baseline(
+    date_str: str,
+    refreshed_rows: list[dict],
+    games_rows: list[dict],
+    refreshed_eligible_count: int,
+) -> tuple[list[dict], int]:
+    """Cumulatively upsert today's refreshed matches into a durable baseline."""
     if parse_date_value(date_str) != current_cutoff_date():
         return refreshed_rows, 0
 
-    existing_path = OUT_DIR / f"{date_str}_MLB.csv"
-    if not existing_path.exists():
-        return refreshed_rows, 0
+    # build_games_list.py does not output a game-status field. The authoritative
+    # contract available here is membership in the current games file. Validate
+    # game identities before using that membership to mutate durable state.
+    if not games_rows:
+        fail(f"{date_str} | refusing to update same-day baseline from empty games rows")
 
-    existing_rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction baseline")
-    if not existing_rows:
-        return refreshed_rows, 0
+    build_games_groups(games_rows, date_str)
 
-    valid_game_ids = {
-        (row.get("game_id") or "").strip()
+    games_by_id = {
+        (row.get("game_id") or "").strip(): row
         for row in games_rows
         if (row.get("game_id") or "").strip()
     }
+    valid_game_ids = set(games_by_id)
+
+    baseline_rows = load_same_day_baseline(date_str)
+
+    if baseline_rows:
+        validate_output_rows(
+            date_str,
+            0,
+            baseline_rows,
+            allow_preserved=True,
+        )
 
     merged = {}
-    for row in existing_rows:
-        game_id = (row.get("game_id") or "").strip()
-        if game_id and game_id in valid_game_ids:
-            merged[game_id] = {col: row.get(col, "") for col in OUTPUT_HEADER}
 
-    before_refresh = set(merged)
+    for row in baseline_rows:
+        game_id = (row.get("game_id") or "").strip()
+
+        if not game_id or game_id not in valid_game_ids:
+            continue
+
+        game_row = games_by_id[game_id]
+
+        baseline_home = norm(row.get("home_team", ""))
+        baseline_away = norm(row.get("away_team", ""))
+        games_home = norm(game_row.get("home_team", ""))
+        games_away = norm(game_row.get("away_team", ""))
+
+        if baseline_home != games_home or baseline_away != games_away:
+            fail(
+                f"{date_str} | baseline identity mismatch for game_id={game_id}: "
+                f"baseline={row.get('away_team', '')} @ {row.get('home_team', '')} "
+                f"games={game_row.get('away_team', '')} @ {game_row.get('home_team', '')}"
+            )
+
+        baseline_date = parse_date_value(row.get("game_date", ""))
+        games_date = parse_date_value(game_row.get("game_date", ""))
+
+        if baseline_date is None or games_date is None or baseline_date != games_date:
+            fail(
+                f"{date_str} | baseline date mismatch for game_id={game_id}: "
+                f"baseline_game_date={row.get('game_date', '')} "
+                f"games_game_date={game_row.get('game_date', '')}"
+            )
+
+        merged[game_id] = {
+            col: row.get(col, "")
+            for col in OUTPUT_HEADER
+        }
+
+    baseline_ids = set(merged)
+    refreshed_ids = set()
+
     for row in refreshed_rows:
         game_id = (row.get("game_id") or "").strip()
-        if game_id:
-            merged[game_id] = {col: row.get(col, "") for col in OUTPUT_HEADER}
 
-    refreshed_ids = {(row.get("game_id") or "").strip() for row in refreshed_rows}
-    preserved_ids = sorted((before_refresh - refreshed_ids) & valid_game_ids)
+        if not game_id:
+            fail(
+                f"{date_str} | refreshed row has blank game_id "
+                f"before baseline merge: {row}"
+            )
 
-    game_order = [
-        (row.get("game_id") or "").strip()
-        for row in games_rows
-        if (row.get("game_id") or "").strip() in merged
+        if game_id not in valid_game_ids:
+            fail(
+                f"{date_str} | refreshed game_id missing from authoritative games file "
+                f"before baseline merge: game_id={game_id}"
+            )
+
+        game_row = games_by_id[game_id]
+
+        refreshed_home = norm(row.get("home_team", ""))
+        refreshed_away = norm(row.get("away_team", ""))
+        games_home = norm(game_row.get("home_team", ""))
+        games_away = norm(game_row.get("away_team", ""))
+
+        if refreshed_home != games_home or refreshed_away != games_away:
+            fail(
+                f"{date_str} | refreshed identity mismatch for game_id={game_id}: "
+                f"refreshed={row.get('away_team', '')} @ {row.get('home_team', '')} "
+                f"games={game_row.get('away_team', '')} @ {game_row.get('home_team', '')}"
+            )
+
+        refreshed_date = parse_date_value(row.get("game_date", ""))
+        games_date = parse_date_value(game_row.get("game_date", ""))
+
+        if refreshed_date is None or games_date is None or refreshed_date != games_date:
+            fail(
+                f"{date_str} | refreshed date mismatch for game_id={game_id}: "
+                f"refreshed_game_date={row.get('game_date', '')} "
+                f"games_game_date={game_row.get('game_date', '')}"
+            )
+
+        refreshed_ids.add(game_id)
+
+        merged[game_id] = {
+            col: row.get(col, "")
+            for col in OUTPUT_HEADER
+        }
+
+    if len(refreshed_ids) != len(refreshed_rows):
+        fail(
+            f"{date_str} | refreshed rows collapsed during baseline merge: "
+            f"refreshed_rows={len(refreshed_rows)} "
+            f"unique_game_ids={len(refreshed_ids)}"
+        )
+
+    preserved_ids = sorted(baseline_ids - refreshed_ids)
+    game_order = []
+    seen_game_ids = set()
+
+    for row in games_rows:
+        game_id = (row.get("game_id") or "").strip()
+
+        if game_id in merged and game_id not in seen_game_ids:
+            game_order.append(game_id)
+            seen_game_ids.add(game_id)
+
+    ordered_rows = [
+        merged[game_id]
+        for game_id in game_order
     ]
-    ordered_rows = [merged[game_id] for game_id in game_order]
+
+    # Validate the cumulative state against the refreshed eligible-row contract
+    # before replacing the durable baseline.
+    validate_output_rows(
+        date_str,
+        refreshed_eligible_count,
+        ordered_rows,
+        allow_preserved=True,
+    )
+
+    baseline_path = BASELINE_DIR / f"{date_str}_MLB.csv"
+    temp_path = baseline_path.with_suffix(
+        baseline_path.suffix + ".tmp"
+    )
+
+    write_csv(
+        temp_path,
+        OUTPUT_HEADER,
+        ordered_rows,
+    )
+
+    os.replace(
+        temp_path,
+        baseline_path,
+    )
+
+    log(
+        f"{date_str} | durable same-day baseline updated: "
+        f"rows={len(ordered_rows)} "
+        f"refreshed={len(refreshed_ids)} "
+        f"preserved={len(preserved_ids)}"
+    )
 
     if preserved_ids:
         log(
-            f"{date_str} | preserved same-day matched predictions absent from latest refresh: "
-            f"count={len(preserved_ids)} game_ids={preserved_ids}"
+            f"{date_str} | preserved baseline predictions absent from latest refresh: "
+            f"game_ids={preserved_ids}"
         )
 
     return ordered_rows, len(preserved_ids)
+
+
+def load_same_day_fallback_output(date_str: str) -> list[dict]:
+    """Return durable same-day state when games data is temporarily unavailable."""
+    if parse_date_value(date_str) != current_cutoff_date():
+        return []
+
+    # load_same_day_baseline() already performs the one-time migration fallback
+    # when no durable baseline exists. Do not consult the mutable output again
+    # here: an existing-but-empty baseline must remain authoritative.
+    rows = load_same_day_baseline(date_str)
+
+    if rows:
+        validate_output_rows(
+            date_str,
+            0,
+            rows,
+            allow_preserved=True,
+        )
+
+    return rows
 
 
 # ─────────────────────────────────────────────
@@ -864,20 +1087,151 @@ def merge_with_existing_same_day(date_str: str, refreshed_rows: list[dict], game
 # ─────────────────────────────────────────────
 
 def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
+    if parse_date_value(date_str) is None:
+        fail(
+            f"Could not parse prediction filename date: "
+            f"{date_str}"
+        )
+
     games_path = GAMES_DIR / f"{date_str}_games.csv"
     book_path = BOOK_DIR / f"{date_str}_MLB.csv"
-    rejection_path = REJECTION_DIR / f"{date_str}_unmatched_predictions.csv"
+    rejection_path = (
+        REJECTION_DIR
+        / f"{date_str}_unmatched_predictions.csv"
+    )
 
-    pred_rows = load_csv(pred_path, REQUIRED_PRED_COLS, "prediction input")
-    book_rows = load_csv(book_path, REQUIRED_BOOK_COLS, "sportsbook input", required_file=False)
+    pred_rows = load_csv(
+        pred_path,
+        REQUIRED_PRED_COLS,
+        "prediction input",
+    )
+
+    book_rows = load_csv(
+        book_path,
+        REQUIRED_BOOK_COLS,
+        "sportsbook input",
+        required_file=False,
+    )
 
     if not pred_rows:
-        log(f"{date_str} | no prediction rows — skipping", "WARN")
+        durable_path = (
+            BASELINE_DIR
+            / f"{date_str}_MLB.csv"
+        )
+        existing_path = (
+            OUT_DIR
+            / f"{date_str}_MLB.csv"
+        )
+
+        has_same_day_state = (
+            durable_path.exists()
+            or existing_path.exists()
+        )
+
+        if (
+            parse_date_value(date_str)
+            == current_cutoff_date()
+            and has_same_day_state
+        ):
+            if games_path.exists():
+                games_for_preserve = load_csv(
+                    games_path,
+                    REQUIRED_GAMES_COLS,
+                    "games input",
+                    required_file=False,
+                )
+
+                if games_for_preserve:
+                    (
+                        preserved_rows,
+                        preserved_count,
+                    ) = merge_with_same_day_baseline(
+                        date_str,
+                        [],
+                        games_for_preserve,
+                        0,
+                    )
+                else:
+                    preserved_rows = (
+                        load_same_day_fallback_output(
+                            date_str
+                        )
+                    )
+                    preserved_count = len(
+                        preserved_rows
+                    )
+            else:
+                preserved_rows = (
+                    load_same_day_fallback_output(
+                        date_str
+                    )
+                )
+                preserved_count = len(
+                    preserved_rows
+                )
+
+            validate_output_rows(
+                date_str,
+                0,
+                preserved_rows,
+                allow_preserved=True,
+            )
+
+            write_output_csv(
+                date_str,
+                OUTPUT_HEADER,
+                preserved_rows,
+                summary,
+            )
+
+            clear_stale_rejection_file(
+                rejection_path
+            )
+
+            log(
+                f"{date_str} | no prediction rows; "
+                f"synchronized durable same-day state: "
+                f"output_rows={len(preserved_rows)} "
+                f"preserved_rows={preserved_count}",
+                "WARN",
+            )
+
+            summary["total_rows"] += len(
+                preserved_rows
+            )
+            summary["skipped"] += 1
+            return
+
+        if (
+            parse_date_value(date_str)
+            == current_cutoff_date()
+        ):
+            clear_stale_rejection_file(
+                rejection_path
+            )
+
+        log(
+            f"{date_str} | no prediction rows — skipping",
+            "WARN",
+        )
         summary["skipped"] += 1
         return
 
-    pred_groups, pred_key_order = build_prediction_groups(pred_rows)
-    book_groups = build_book_groups(book_rows, date_str) if book_rows else {}
+    pred_groups, pred_key_order = (
+        build_prediction_groups(
+            pred_rows,
+            date_str,
+        )
+    )
+
+    book_groups = (
+        build_book_groups(
+            book_rows,
+            date_str,
+        )
+        if book_rows
+        else {}
+    )
 
     sportsbook_presence = build_sportsbook_presence(
         date_str=date_str,
@@ -890,30 +1244,48 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
     nonfatal_rejection_count = 0
 
     for key in pred_key_order:
-        preds = pred_groups.get(key, [])
+        preds = pred_groups.get(
+            key,
+            [],
+        )
 
         for pred_entry in preds:
-            presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+            presence = sportsbook_presence.get(
+                pred_entry["index"],
+                {
+                    "present": False,
+                    "detail": "",
+                },
+            )
 
             if presence["present"]:
                 continue
 
-            rejection_rows.append(make_rejection_row(
-                pred_entry=pred_entry,
-                reason="sportsbook_game_missing_for_prediction",
-                candidate_games="",
-                fatal=False,
-                sportsbook_present=False,
-                sportsbook_match_detail=presence.get("detail", ""),
-            ))
+            rejection_rows.append(
+                make_rejection_row(
+                    pred_entry=pred_entry,
+                    reason=(
+                        "sportsbook_game_missing_for_prediction"
+                    ),
+                    candidate_games="",
+                    fatal=False,
+                    sportsbook_present=False,
+                    sportsbook_match_detail=presence.get(
+                        "detail",
+                        "",
+                    ),
+                )
+            )
 
             nonfatal_rejection_count += 1
 
             log(
-                f"{date_str} | non-fatal rejected prediction because sportsbook row is missing: "
+                f"{date_str} | non-fatal rejected prediction "
+                f"because sportsbook row is missing: "
                 f"csv_row={pred_entry['csv_row']} "
                 f"{matchup_label(pred_entry['row'])} "
-                f"pred_time={pred_entry['row'].get('game_time', '')}",
+                f"pred_time="
+                f"{pred_entry['row'].get('game_time', '')}",
                 "WARN",
             )
 
@@ -921,152 +1293,415 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
         pred_entry["index"]
         for preds in pred_groups.values()
         for pred_entry in preds
-        if sportsbook_presence.get(pred_entry["index"], {"present": False})["present"]
+        if sportsbook_presence.get(
+            pred_entry["index"],
+            {"present": False},
+        )["present"]
     }
 
-    eligible_count = len(eligible_pred_indexes)
+    eligible_count = len(
+        eligible_pred_indexes
+    )
 
     if eligible_count == 0:
         if rejection_rows:
-            write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
-            print_rejection_rows(date_str, rejection_path, rejection_rows)
+            write_csv(
+                rejection_path,
+                REJECTION_HEADER,
+                rejection_rows,
+            )
+
+            print_rejection_rows(
+                date_str,
+                rejection_path,
+                rejection_rows,
+            )
 
         preserved_rows = []
         preserved_count = 0
-        if games_path.exists():
-            games_for_preserve = load_csv(games_path, REQUIRED_GAMES_COLS, "games input", required_file=False)
-            preserved_rows, preserved_count = merge_with_existing_same_day(date_str, [], games_for_preserve)
-        write_output_csv(date_str, OUTPUT_HEADER, preserved_rows, summary)
 
-        log(
-            f"{date_str} | no sportsbook-eligible prediction rows. "
-            f"input_predictions={len(pred_rows)} nonfatal_rejections={nonfatal_rejection_count} "
-            f"output_rows={len(preserved_rows)} preserved_rows={preserved_count}"
+        is_current_date = (
+            parse_date_value(date_str)
+            == current_cutoff_date()
         )
 
-        summary["rejected"] += len(rejection_rows)
-        summary["nonfatal_rejections"] += nonfatal_rejection_count
+        if is_current_date:
+            if games_path.exists():
+                games_for_preserve = load_csv(
+                    games_path,
+                    REQUIRED_GAMES_COLS,
+                    "games input",
+                    required_file=False,
+                )
+
+                if games_for_preserve:
+                    (
+                        preserved_rows,
+                        preserved_count,
+                    ) = merge_with_same_day_baseline(
+                        date_str,
+                        [],
+                        games_for_preserve,
+                        0,
+                    )
+                else:
+                    preserved_rows = (
+                        load_same_day_fallback_output(
+                            date_str
+                        )
+                    )
+                    preserved_count = len(
+                        preserved_rows
+                    )
+            else:
+                preserved_rows = (
+                    load_same_day_fallback_output(
+                        date_str
+                    )
+                )
+                preserved_count = len(
+                    preserved_rows
+                )
+
+            write_output_csv(
+                date_str,
+                OUTPUT_HEADER,
+                preserved_rows,
+                summary,
+            )
+
+            summary["total_rows"] += len(
+                preserved_rows
+            )
+
+            output_action = (
+                f"wrote_current_day_state "
+                f"rows={len(preserved_rows)}"
+            )
+        else:
+            output_action = (
+                "left_noncurrent_output_unchanged"
+            )
+
+        log(
+            f"{date_str} | no sportsbook-eligible "
+            f"prediction rows. "
+            f"input_predictions={len(pred_rows)} "
+            f"nonfatal_rejections="
+            f"{nonfatal_rejection_count} "
+            f"preserved_rows={preserved_count} "
+            f"output_action={output_action}"
+        )
+
+        summary["rejected"] += len(
+            rejection_rows
+        )
+        summary[
+            "nonfatal_rejections"
+        ] += nonfatal_rejection_count
         return
 
     if not games_path.exists():
-        if is_current_or_future_date(date_str):
-            for idx in sorted(eligible_pred_indexes):
+        if is_current_or_future_date(
+            date_str
+        ):
+            for idx in sorted(
+                eligible_pred_indexes
+            ):
                 pred_entry = {
                     "row": pred_rows[idx],
                     "index": idx,
                     "csv_row": idx + 2,
                 }
-                presence = sportsbook_presence.get(idx, {"present": False, "detail": ""})
+
+                presence = (
+                    sportsbook_presence.get(
+                        idx,
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
 
                 already_rejected = any(
-                    rejection_row.get("source_csv_row", "") == str(idx + 2)
-                    for rejection_row in rejection_rows
+                    rejection_row.get(
+                        "source_csv_row",
+                        "",
+                    )
+                    == str(idx + 2)
+                    for rejection_row
+                    in rejection_rows
                 )
 
                 if already_rejected:
                     continue
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="games_file_missing_current_or_future",
-                    candidate_games=str(games_path),
-                    fatal=False,
-                    sportsbook_present=presence.get("present", False),
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "games_file_missing_"
+                            "current_or_future"
+                        ),
+                        candidate_games=str(
+                            games_path
+                        ),
+                        fatal=False,
+                        sportsbook_present=presence.get(
+                            "present",
+                            False,
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 nonfatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | non-fatal rejected prediction because current/future games file is missing: "
-                    f"csv_row={idx + 2} games_path={games_path}",
+                    f"{date_str} | non-fatal rejected prediction "
+                    f"because current/future games file "
+                    f"is missing: "
+                    f"csv_row={idx + 2} "
+                    f"games_path={games_path}",
                     "WARN",
                 )
 
             if rejection_rows:
-                write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
-                print_rejection_rows(date_str, rejection_path, rejection_rows)
+                write_csv(
+                    rejection_path,
+                    REJECTION_HEADER,
+                    rejection_rows,
+                )
 
-            existing_rows = []
-            existing_path = OUT_DIR / f"{date_str}_MLB.csv"
-            if parse_date_value(date_str) == current_cutoff_date() and existing_path.exists():
-                existing_rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction baseline")
-            write_output_csv(date_str, OUTPUT_HEADER, existing_rows, summary)
+                print_rejection_rows(
+                    date_str,
+                    rejection_path,
+                    rejection_rows,
+                )
 
-            log(
-                f"{date_str} | current/future games file missing. "
-                f"games_path={games_path} input_predictions={len(pred_rows)} "
-                f"sportsbook_rows={len(book_rows)} eligible_predictions={eligible_count} "
-                f"output_rows={len(existing_rows)} nonfatal_rejections={nonfatal_rejection_count}"
+            is_current_date = (
+                parse_date_value(date_str)
+                == current_cutoff_date()
             )
 
-            summary["rejected"] += len(rejection_rows)
-            summary["nonfatal_rejections"] += nonfatal_rejection_count
+            if is_current_date:
+                existing_rows = (
+                    load_same_day_fallback_output(
+                        date_str
+                    )
+                )
+
+                write_output_csv(
+                    date_str,
+                    OUTPUT_HEADER,
+                    existing_rows,
+                    summary,
+                )
+
+                summary["total_rows"] += len(
+                    existing_rows
+                )
+
+                output_action = (
+                    f"wrote_current_day_state "
+                    f"rows={len(existing_rows)}"
+                )
+            else:
+                output_action = (
+                    "left_future_output_unchanged"
+                )
+
+            log(
+                f"{date_str} | current/future "
+                f"games file missing. "
+                f"games_path={games_path} "
+                f"input_predictions="
+                f"{len(pred_rows)} "
+                f"sportsbook_rows="
+                f"{len(book_rows)} "
+                f"eligible_predictions="
+                f"{eligible_count} "
+                f"nonfatal_rejections="
+                f"{nonfatal_rejection_count} "
+                f"output_action={output_action}"
+            )
+
+            summary["rejected"] += len(
+                rejection_rows
+            )
+            summary[
+                "nonfatal_rejections"
+            ] += nonfatal_rejection_count
             return
 
-        fail(f"{date_str} | past-date games file missing: {games_path}")
+        fail(
+            f"{date_str} | past-date "
+            f"games file missing: "
+            f"{games_path}"
+        )
 
-    games_rows = load_csv(games_path, REQUIRED_GAMES_COLS, "games input", required_file=True)
+    games_rows = load_csv(
+        games_path,
+        REQUIRED_GAMES_COLS,
+        "games input",
+        required_file=True,
+    )
 
     if not games_rows:
-        if is_current_or_future_date(date_str):
-            for idx in sorted(eligible_pred_indexes):
+        if is_current_or_future_date(
+            date_str
+        ):
+            for idx in sorted(
+                eligible_pred_indexes
+            ):
                 pred_entry = {
                     "row": pred_rows[idx],
                     "index": idx,
                     "csv_row": idx + 2,
                 }
-                presence = sportsbook_presence.get(idx, {"present": False, "detail": ""})
+
+                presence = (
+                    sportsbook_presence.get(
+                        idx,
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
 
                 already_rejected = any(
-                    rejection_row.get("source_csv_row", "") == str(idx + 2)
-                    for rejection_row in rejection_rows
+                    rejection_row.get(
+                        "source_csv_row",
+                        "",
+                    )
+                    == str(idx + 2)
+                    for rejection_row
+                    in rejection_rows
                 )
 
                 if already_rejected:
                     continue
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="games_file_empty_current_or_future",
-                    candidate_games=str(games_path),
-                    fatal=False,
-                    sportsbook_present=presence.get("present", False),
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "games_file_empty_"
+                            "current_or_future"
+                        ),
+                        candidate_games=str(
+                            games_path
+                        ),
+                        fatal=False,
+                        sportsbook_present=presence.get(
+                            "present",
+                            False,
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 nonfatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | non-fatal rejected prediction because current/future games file is empty: "
-                    f"csv_row={idx + 2} games_path={games_path}",
+                    f"{date_str} | non-fatal rejected prediction "
+                    f"because current/future games file "
+                    f"is empty: "
+                    f"csv_row={idx + 2} "
+                    f"games_path={games_path}",
                     "WARN",
                 )
 
             if rejection_rows:
-                write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
-                print_rejection_rows(date_str, rejection_path, rejection_rows)
+                write_csv(
+                    rejection_path,
+                    REJECTION_HEADER,
+                    rejection_rows,
+                )
 
-            existing_rows = []
-            existing_path = OUT_DIR / f"{date_str}_MLB.csv"
-            if parse_date_value(date_str) == current_cutoff_date() and existing_path.exists():
-                existing_rows = load_csv(existing_path, OUTPUT_HEADER, "existing matched prediction baseline")
-            write_output_csv(date_str, OUTPUT_HEADER, existing_rows, summary)
+                print_rejection_rows(
+                    date_str,
+                    rejection_path,
+                    rejection_rows,
+                )
 
-            log(
-                f"{date_str} | current/future games file empty. "
-                f"games_path={games_path} input_predictions={len(pred_rows)} "
-                f"sportsbook_rows={len(book_rows)} eligible_predictions={eligible_count} "
-                f"output_rows={len(existing_rows)} nonfatal_rejections={nonfatal_rejection_count}"
+            is_current_date = (
+                parse_date_value(date_str)
+                == current_cutoff_date()
             )
 
-            summary["rejected"] += len(rejection_rows)
-            summary["nonfatal_rejections"] += nonfatal_rejection_count
+            if is_current_date:
+                existing_rows = (
+                    load_same_day_fallback_output(
+                        date_str
+                    )
+                )
+
+                write_output_csv(
+                    date_str,
+                    OUTPUT_HEADER,
+                    existing_rows,
+                    summary,
+                )
+
+                summary["total_rows"] += len(
+                    existing_rows
+                )
+
+                output_action = (
+                    f"wrote_current_day_state "
+                    f"rows={len(existing_rows)}"
+                )
+            else:
+                output_action = (
+                    "left_future_output_unchanged"
+                )
+
+            log(
+                f"{date_str} | current/future "
+                f"games file empty. "
+                f"games_path={games_path} "
+                f"input_predictions="
+                f"{len(pred_rows)} "
+                f"sportsbook_rows="
+                f"{len(book_rows)} "
+                f"eligible_predictions="
+                f"{eligible_count} "
+                f"nonfatal_rejections="
+                f"{nonfatal_rejection_count} "
+                f"output_action={output_action}"
+            )
+
+            summary["rejected"] += len(
+                rejection_rows
+            )
+            summary[
+                "nonfatal_rejections"
+            ] += nonfatal_rejection_count
             return
 
-        fail(f"{date_str} | past-date games file has zero rows: {games_path}")
+        fail(
+            f"{date_str} | past-date "
+            f"games file has zero rows: "
+            f"{games_path}"
+        )
 
-    games_groups = build_games_groups(games_rows, date_str)
+    games_groups = build_games_groups(
+        games_rows,
+        date_str,
+    )
 
     output_by_pred_index = {}
     fatal_rejection_count = 0
@@ -1075,86 +1710,191 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
     for key in pred_key_order:
         preds = [
             pred_entry
-            for pred_entry in pred_groups.get(key, [])
-            if pred_entry["index"] in eligible_pred_indexes
+            for pred_entry
+            in pred_groups.get(
+                key,
+                [],
+            )
+            if pred_entry["index"]
+            in eligible_pred_indexes
         ]
 
-        games = games_groups.get(key, [])
+        games = games_groups.get(
+            key,
+            [],
+        )
 
         if not preds:
             continue
 
-        label = matchup_label(preds[0]["row"])
+        label = matchup_label(
+            preds[0]["row"]
+        )
 
         if not games:
             for pred_entry in preds:
-                presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+                presence = (
+                    sportsbook_presence.get(
+                        pred_entry["index"],
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="no_games_row_for_same_home_away",
-                    candidate_games="",
-                    fatal=True,
-                    sportsbook_present=presence["present"],
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "no_games_row_for_"
+                            "same_home_away"
+                        ),
+                        candidate_games="",
+                        fatal=True,
+                        sportsbook_present=(
+                            presence["present"]
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 fatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | fatal unmatched sportsbook-eligible prediction no games row: "
-                    f"{label} pred_time={pred_entry['row'].get('game_time', '')}",
+                    f"{date_str} | fatal unmatched "
+                    f"sportsbook-eligible prediction "
+                    f"no games row: "
+                    f"{label} "
+                    f"pred_time="
+                    f"{pred_entry['row'].get('game_time', '')}",
                     "ERROR",
                 )
+
             continue
 
-        unused_games = [g for g in games if not g["used"]]
+        unused_games = [
+            g
+            for g in games
+            if not g["used"]
+        ]
 
-        if len(preds) == 1 and len(unused_games) == 1:
+        if (
+            len(preds) == 1
+            and len(unused_games) == 1
+        ):
             pred_entry = preds[0]
             game_entry = unused_games[0]
             game_entry["used"] = True
 
-            game_id = (game_entry["row"].get("game_id") or "").strip()
+            game_id = (
+                game_entry["row"].get(
+                    "game_id"
+                )
+                or ""
+            ).strip()
 
             if not game_id:
-                presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+                presence = (
+                    sportsbook_presence.get(
+                        pred_entry["index"],
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="matched_games_row_has_blank_game_id",
-                    candidate_games=describe_game_entry(game_entry),
-                    fatal=True,
-                    sportsbook_present=presence["present"],
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "matched_games_row_"
+                            "has_blank_game_id"
+                        ),
+                        candidate_games=(
+                            describe_game_entry(
+                                game_entry
+                            )
+                        ),
+                        fatal=True,
+                        sportsbook_present=(
+                            presence["present"]
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 fatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | matched games row has blank game_id: "
-                    f"{label} games_csv_row={game_entry['csv_row']}",
+                    f"{date_str} | matched games row "
+                    f"has blank game_id: "
+                    f"{label} "
+                    f"games_csv_row="
+                    f"{game_entry['csv_row']}",
                     "ERROR",
                 )
+
                 continue
 
-            output_by_pred_index[pred_entry["index"]] = make_output_row(pred_entry, game_id)
+            output_by_pred_index[
+                pred_entry["index"]
+            ] = make_output_row(
+                pred_entry,
+                game_id,
+            )
+
             matched += 1
 
-            diff = minutes_between(pred_entry.get("dt"), game_entry.get("dt"))
-            diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+            diff = minutes_between(
+                pred_entry.get("dt"),
+                game_entry.get("dt"),
+            )
+
+            diff_text = (
+                ""
+                if diff is None
+                else (
+                    f" diff_minutes="
+                    f"{round(diff, 1)}"
+                )
+            )
 
             level = "INFO"
-            label_text = "MATCHED one-to-one"
+            label_text = (
+                "MATCHED one-to-one"
+            )
 
-            if diff is not None and diff > MAX_TIME_DIFF_MINUTES:
+            if (
+                diff is not None
+                and diff
+                > MAX_TIME_DIFF_MINUTES
+            ):
                 level = "WARN"
-                label_text = "MATCHED one-to-one with time mismatch"
+                label_text = (
+                    "MATCHED one-to-one "
+                    "with time mismatch"
+                )
 
             log(
-                f"{date_str} | {label_text}: {label} "
-                f"pred_time={pred_entry['row'].get('game_time', '')} "
-                f"games_time={game_entry['row'].get('game_time', '')} "
+                f"{date_str} | "
+                f"{label_text}: "
+                f"{label} "
+                f"pred_time="
+                f"{pred_entry['row'].get('game_time', '')} "
+                f"games_time="
+                f"{game_entry['row'].get('game_time', '')} "
                 f"game_id={game_id}"
                 f"{diff_text}",
                 level,
@@ -1162,11 +1902,18 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
 
             continue
 
-        if len(preds) > 1 and len(unused_games) > 1 and len(preds) == len(unused_games):
+        if (
+            len(preds) > 1
+            and len(unused_games) > 1
+            and len(preds)
+            == len(unused_games)
+        ):
             sorted_preds = sorted(
                 preds,
                 key=lambda x: (
-                    dt_sort_value(x.get("dt")),
+                    dt_sort_value(
+                        x.get("dt")
+                    ),
                     x["index"],
                 ),
             )
@@ -1174,58 +1921,138 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
             sorted_games = sorted(
                 unused_games,
                 key=lambda x: (
-                    dt_sort_value(x.get("dt")),
+                    dt_sort_value(
+                        x.get("dt")
+                    ),
                     x["game_number"],
                     x["index"],
                 ),
             )
 
             log(
-                f"{date_str} | ORDER MATCH duplicate matchup: "
-                f"{label} eligible_pred_count={len(sorted_preds)} games_count={len(sorted_games)}"
+                f"{date_str} | "
+                f"ORDER MATCH duplicate matchup: "
+                f"{label} "
+                f"eligible_pred_count="
+                f"{len(sorted_preds)} "
+                f"games_count="
+                f"{len(sorted_games)}"
             )
 
-            for pred_entry, game_entry in zip(sorted_preds, sorted_games):
+            for (
+                pred_entry,
+                game_entry,
+            ) in zip(
+                sorted_preds,
+                sorted_games,
+            ):
                 game_entry["used"] = True
 
-                game_id = (game_entry["row"].get("game_id") or "").strip()
+                game_id = (
+                    game_entry["row"].get(
+                        "game_id"
+                    )
+                    or ""
+                ).strip()
 
                 if not game_id:
-                    presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+                    presence = (
+                        sportsbook_presence.get(
+                            pred_entry[
+                                "index"
+                            ],
+                            {
+                                "present": False,
+                                "detail": "",
+                            },
+                        )
+                    )
 
-                    rejection_rows.append(make_rejection_row(
-                        pred_entry=pred_entry,
-                        reason="matched_games_row_has_blank_game_id",
-                        candidate_games=describe_game_entry(game_entry),
-                        fatal=True,
-                        sportsbook_present=presence["present"],
-                        sportsbook_match_detail=presence.get("detail", ""),
-                    ))
+                    rejection_rows.append(
+                        make_rejection_row(
+                            pred_entry=(
+                                pred_entry
+                            ),
+                            reason=(
+                                "matched_games_row_"
+                                "has_blank_game_id"
+                            ),
+                            candidate_games=(
+                                describe_game_entry(
+                                    game_entry
+                                )
+                            ),
+                            fatal=True,
+                            sportsbook_present=(
+                                presence[
+                                    "present"
+                                ]
+                            ),
+                            sportsbook_match_detail=(
+                                presence.get(
+                                    "detail",
+                                    "",
+                                )
+                            ),
+                        )
+                    )
 
                     fatal_rejection_count += 1
 
                     log(
-                        f"{date_str} | matched games row has blank game_id: "
-                        f"{label} games_csv_row={game_entry['csv_row']}",
+                        f"{date_str} | "
+                        f"matched games row "
+                        f"has blank game_id: "
+                        f"{label} "
+                        f"games_csv_row="
+                        f"{game_entry['csv_row']}",
                         "ERROR",
                     )
+
                     continue
 
-                output_by_pred_index[pred_entry["index"]] = make_output_row(pred_entry, game_id)
+                output_by_pred_index[
+                    pred_entry["index"]
+                ] = make_output_row(
+                    pred_entry,
+                    game_id,
+                )
+
                 matched += 1
 
-                diff = minutes_between(pred_entry.get("dt"), game_entry.get("dt"))
-                diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+                diff = minutes_between(
+                    pred_entry.get("dt"),
+                    game_entry.get("dt"),
+                )
+
+                diff_text = (
+                    ""
+                    if diff is None
+                    else (
+                        f" diff_minutes="
+                        f"{round(diff, 1)}"
+                    )
+                )
 
                 level = "INFO"
-                if diff is not None and diff > MAX_TIME_DIFF_MINUTES:
+
+                if (
+                    diff is not None
+                    and diff
+                    > MAX_TIME_DIFF_MINUTES
+                ):
                     level = "WARN"
 
                 log(
-                    f"{date_str} | MATCHED order: {label} "
-                    f"pred_time={pred_entry['row'].get('game_time', '')} "
-                    f"games_time={game_entry['row'].get('game_time', '')} "
-                    f"gameNumber={game_entry['row'].get('gameNumber', '')} "
+                    f"{date_str} | "
+                    f"MATCHED order: "
+                    f"{label} "
+                    f"pred_time="
+                    f"{pred_entry['row'].get('game_time', '')} "
+                    f"games_time="
+                    f"{game_entry['row'].get('game_time', '')} "
+                    f"gameNumber="
+                    f"{game_entry['row'].get('gameNumber', '')} "
                     f"game_id={game_id}"
                     f"{diff_text}",
                     level,
@@ -1236,131 +2063,286 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
         sorted_preds = sorted(
             preds,
             key=lambda x: (
-                dt_sort_value(x.get("dt")),
+                dt_sort_value(
+                    x.get("dt")
+                ),
                 x["index"],
             ),
         )
 
         for pred_entry in sorted_preds:
-            available_games = [g for g in games if not g["used"]]
+            available_games = [
+                g
+                for g in games
+                if not g["used"]
+            ]
 
             if not available_games:
-                presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+                presence = (
+                    sportsbook_presence.get(
+                        pred_entry["index"],
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="no_unused_games_row_for_same_home_away",
-                    candidate_games="",
-                    fatal=True,
-                    sportsbook_present=presence["present"],
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "no_unused_games_row_"
+                            "for_same_home_away"
+                        ),
+                        candidate_games="",
+                        fatal=True,
+                        sportsbook_present=(
+                            presence["present"]
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 fatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | fatal unmatched sportsbook-eligible prediction no unused games row: "
-                    f"{label} pred_time={pred_entry['row'].get('game_time', '')}",
+                    f"{date_str} | fatal unmatched "
+                    f"sportsbook-eligible prediction "
+                    f"no unused games row: "
+                    f"{label} "
+                    f"pred_time="
+                    f"{pred_entry['row'].get('game_time', '')}",
                     "ERROR",
                 )
+
                 continue
 
             scored = []
 
             for game_entry in available_games:
-                diff = minutes_between(pred_entry.get("dt"), game_entry.get("dt"))
-                scored.append((diff, game_entry))
+                diff = minutes_between(
+                    pred_entry.get("dt"),
+                    game_entry.get("dt"),
+                )
 
-            scored_valid = [x for x in scored if x[0] is not None]
+                scored.append(
+                    (
+                        diff,
+                        game_entry,
+                    )
+                )
+
+            scored_valid = [
+                x
+                for x in scored
+                if x[0] is not None
+            ]
 
             selected = None
             selected_diff = None
 
             if scored_valid:
-                selected_diff, selected = min(scored_valid, key=lambda x: x[0])
+                (
+                    selected_diff,
+                    selected,
+                ) = min(
+                    scored_valid,
+                    key=lambda x: x[0],
+                )
 
-                if selected_diff > MAX_TIME_DIFF_MINUTES:
+                if (
+                    selected_diff
+                    > MAX_TIME_DIFF_MINUTES
+                ):
                     selected = None
 
             if selected is None:
-                candidates = describe_candidates(scored)
-                presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+                candidates = (
+                    describe_candidates(
+                        scored
+                    )
+                )
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="no_games_row_within_time_threshold",
-                    candidate_games=candidates,
-                    fatal=True,
-                    sportsbook_present=presence["present"],
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                presence = (
+                    sportsbook_presence.get(
+                        pred_entry["index"],
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
+
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "no_games_row_within_"
+                            "time_threshold"
+                        ),
+                        candidate_games=(
+                            candidates
+                        ),
+                        fatal=True,
+                        sportsbook_present=(
+                            presence["present"]
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 fatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | fatal unmatched sportsbook-eligible prediction time threshold: "
-                    f"{label} pred_time={pred_entry['row'].get('game_time', '')} "
-                    f"candidate_games={candidates}",
+                    f"{date_str} | fatal unmatched "
+                    f"sportsbook-eligible prediction "
+                    f"time threshold: "
+                    f"{label} "
+                    f"pred_time="
+                    f"{pred_entry['row'].get('game_time', '')} "
+                    f"candidate_games="
+                    f"{candidates}",
                     "ERROR",
                 )
+
                 continue
 
             selected["used"] = True
 
-            game_id = (selected["row"].get("game_id") or "").strip()
+            game_id = (
+                selected["row"].get(
+                    "game_id"
+                )
+                or ""
+            ).strip()
 
             if not game_id:
-                presence = sportsbook_presence.get(pred_entry["index"], {"present": False, "detail": ""})
+                presence = (
+                    sportsbook_presence.get(
+                        pred_entry["index"],
+                        {
+                            "present": False,
+                            "detail": "",
+                        },
+                    )
+                )
 
-                rejection_rows.append(make_rejection_row(
-                    pred_entry=pred_entry,
-                    reason="matched_games_row_has_blank_game_id",
-                    candidate_games=describe_game_entry(selected),
-                    fatal=True,
-                    sportsbook_present=presence["present"],
-                    sportsbook_match_detail=presence.get("detail", ""),
-                ))
+                rejection_rows.append(
+                    make_rejection_row(
+                        pred_entry=pred_entry,
+                        reason=(
+                            "matched_games_row_"
+                            "has_blank_game_id"
+                        ),
+                        candidate_games=(
+                            describe_game_entry(
+                                selected
+                            )
+                        ),
+                        fatal=True,
+                        sportsbook_present=(
+                            presence["present"]
+                        ),
+                        sportsbook_match_detail=(
+                            presence.get(
+                                "detail",
+                                "",
+                            )
+                        ),
+                    )
+                )
 
                 fatal_rejection_count += 1
 
                 log(
-                    f"{date_str} | matched games row has blank game_id: "
-                    f"{label} games_csv_row={selected['csv_row']}",
+                    f"{date_str} | "
+                    f"matched games row "
+                    f"has blank game_id: "
+                    f"{label} "
+                    f"games_csv_row="
+                    f"{selected['csv_row']}",
                     "ERROR",
                 )
+
                 continue
 
-            output_by_pred_index[pred_entry["index"]] = make_output_row(pred_entry, game_id)
+            output_by_pred_index[
+                pred_entry["index"]
+            ] = make_output_row(
+                pred_entry,
+                game_id,
+            )
+
             matched += 1
 
-            diff_text = "" if selected_diff is None else f" diff_minutes={round(selected_diff, 1)}"
+            diff_text = (
+                ""
+                if selected_diff is None
+                else (
+                    f" diff_minutes="
+                    f"{round(selected_diff, 1)}"
+                )
+            )
 
             log(
-                f"{date_str} | MATCHED closest: {label} "
-                f"pred_time={pred_entry['row'].get('game_time', '')} "
-                f"games_time={selected['row'].get('game_time', '')} "
+                f"{date_str} | "
+                f"MATCHED closest: "
+                f"{label} "
+                f"pred_time="
+                f"{pred_entry['row'].get('game_time', '')} "
+                f"games_time="
+                f"{selected['row'].get('game_time', '')} "
                 f"game_id={game_id}"
                 f"{diff_text}"
             )
 
     for key, games in games_groups.items():
-        unused = [g for g in games if not g["used"]]
+        unused = [
+            g
+            for g in games
+            if not g["used"]
+        ]
+
         for game_entry in unused:
             g = game_entry["row"]
+
             log(
-                f"{date_str} | UNUSED games row: "
-                f"{g.get('away_team', '')} @ {g.get('home_team', '')} "
-                f"game_id={g.get('game_id', '')} game_time={g.get('game_time', '')}",
+                f"{date_str} | "
+                f"UNUSED games row: "
+                f"{g.get('away_team', '')} @ "
+                f"{g.get('home_team', '')} "
+                f"game_id="
+                f"{g.get('game_id', '')} "
+                f"game_time="
+                f"{g.get('game_time', '')}",
                 "WARN",
             )
 
-    for idx in sorted(eligible_pred_indexes):
+    for idx in sorted(
+        eligible_pred_indexes
+    ):
         if idx in output_by_pred_index:
             continue
 
         already_rejected = any(
-            rejection_row.get("source_csv_row", "") == str(idx + 2)
-            for rejection_row in rejection_rows
+            rejection_row.get(
+                "source_csv_row",
+                "",
+            )
+            == str(idx + 2)
+            for rejection_row
+            in rejection_rows
         )
 
         if already_rejected:
@@ -1371,70 +2353,162 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
             "index": idx,
             "csv_row": idx + 2,
         }
-        presence = sportsbook_presence.get(idx, {"present": False, "detail": ""})
 
-        rejection_rows.append(make_rejection_row(
-            pred_entry=pred_entry,
-            reason="eligible_prediction_row_not_processed",
-            candidate_games="",
-            fatal=True,
-            sportsbook_present=presence["present"],
-            sportsbook_match_detail=presence.get("detail", ""),
-        ))
+        presence = sportsbook_presence.get(
+            idx,
+            {
+                "present": False,
+                "detail": "",
+            },
+        )
+
+        rejection_rows.append(
+            make_rejection_row(
+                pred_entry=pred_entry,
+                reason=(
+                    "eligible_prediction_row_"
+                    "not_processed"
+                ),
+                candidate_games="",
+                fatal=True,
+                sportsbook_present=(
+                    presence["present"]
+                ),
+                sportsbook_match_detail=(
+                    presence.get(
+                        "detail",
+                        "",
+                    )
+                ),
+            )
+        )
 
         fatal_rejection_count += 1
 
         log(
-            f"{date_str} | eligible prediction row not processed: "
-            f"csv_row={idx + 2} away={pred_rows[idx].get('away_team', '')} "
-            f"home={pred_rows[idx].get('home_team', '')}",
+            f"{date_str} | "
+            f"eligible prediction row "
+            f"not processed: "
+            f"csv_row={idx + 2} "
+            f"away="
+            f"{pred_rows[idx].get('away_team', '')} "
+            f"home="
+            f"{pred_rows[idx].get('home_team', '')}",
             "ERROR",
         )
 
     if rejection_rows:
-        write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
-        print_rejection_rows(date_str, rejection_path, rejection_rows)
+        write_csv(
+            rejection_path,
+            REJECTION_HEADER,
+            rejection_rows,
+        )
+
+        print_rejection_rows(
+            date_str,
+            rejection_path,
+            rejection_rows,
+        )
 
     if fatal_rejection_count:
-        summary["rejected"] += len(rejection_rows)
-        summary["fatal_rejections"] += fatal_rejection_count
-        summary["nonfatal_rejections"] += nonfatal_rejection_count
-        summary["errors"] += fatal_rejection_count
+        summary["rejected"] += len(
+            rejection_rows
+        )
+        summary[
+            "fatal_rejections"
+        ] += fatal_rejection_count
+        summary[
+            "nonfatal_rejections"
+        ] += nonfatal_rejection_count
+        summary[
+            "errors"
+        ] += fatal_rejection_count
 
         fail(
-            f"{date_str} | fatal sportsbook-eligible prediction rows could not be assigned game_id: "
-            f"fatal_count={fatal_rejection_count} "
-            f"nonfatal_count={nonfatal_rejection_count} "
-            f"rejection_csv={rejection_path}"
+            f"{date_str} | fatal "
+            f"sportsbook-eligible prediction rows "
+            f"could not be assigned game_id: "
+            f"fatal_count="
+            f"{fatal_rejection_count} "
+            f"nonfatal_count="
+            f"{nonfatal_rejection_count} "
+            f"rejection_csv="
+            f"{rejection_path}"
         )
 
     output_rows = []
 
-    for idx in range(len(pred_rows)):
+    for idx in range(
+        len(pred_rows)
+    ):
         if idx in output_by_pred_index:
-            output_rows.append(output_by_pred_index[idx])
+            output_rows.append(
+                output_by_pred_index[idx]
+            )
 
-    validate_output_rows(date_str, eligible_count, output_rows)
+    validate_output_rows(
+        date_str,
+        eligible_count,
+        output_rows,
+    )
 
-    output_rows, preserved_count = merge_with_existing_same_day(date_str, output_rows, games_rows)
-    validate_output_rows(date_str, eligible_count, output_rows, allow_preserved=True)
+    (
+        output_rows,
+        preserved_count,
+    ) = merge_with_same_day_baseline(
+        date_str,
+        output_rows,
+        games_rows,
+        eligible_count,
+    )
 
-    written_path = write_output_csv(date_str, OUTPUT_HEADER, output_rows, summary)
+    validate_output_rows(
+        date_str,
+        eligible_count,
+        output_rows,
+        allow_preserved=True,
+    )
+
+    written_path = write_output_csv(
+        date_str,
+        OUTPUT_HEADER,
+        output_rows,
+        summary,
+    )
+
+    if not rejection_rows:
+        clear_stale_rejection_file(
+            rejection_path
+        )
 
     log(
-        f"{date_str} | WROTE: {written_path} | rows={len(output_rows)} "
-        f"matched={matched} preserved_rows={preserved_count} "
-        f"input_predictions={len(pred_rows)} "
-        f"sportsbook_rows={len(book_rows)} "
-        f"eligible_predictions={eligible_count} "
-        f"nonfatal_rejections={nonfatal_rejection_count} "
+        f"{date_str} | "
+        f"WROTE: {written_path} "
+        f"| rows={len(output_rows)} "
+        f"matched={matched} "
+        f"preserved_rows="
+        f"{preserved_count} "
+        f"input_predictions="
+        f"{len(pred_rows)} "
+        f"sportsbook_rows="
+        f"{len(book_rows)} "
+        f"eligible_predictions="
+        f"{eligible_count} "
+        f"nonfatal_rejections="
+        f"{nonfatal_rejection_count} "
         f"fatal_rejections=0"
     )
 
-    summary["total_rows"] += len(output_rows)
+    summary["total_rows"] += len(
+        output_rows
+    )
     summary["matched"] += matched
-    summary["rejected"] += len(rejection_rows)
-    summary["nonfatal_rejections"] += nonfatal_rejection_count
+    summary["rejected"] += len(
+        rejection_rows
+    )
+    summary[
+        "nonfatal_rejections"
+    ] += nonfatal_rejection_count
 
 
 # ─────────────────────────────────────────────
@@ -1442,8 +2516,15 @@ def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
 # ─────────────────────────────────────────────
 
 def main():
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write(f"=== game_id_pred RUN {_now()} ===\n")
+    with open(
+        LOG_FILE,
+        "w",
+        encoding="utf-8",
+    ) as f:
+        f.write(
+            f"=== game_id_pred RUN "
+            f"{_now()} ===\n"
+        )
 
     summary = {
         "files_written": 0,
@@ -1457,26 +2538,51 @@ def main():
     }
 
     try:
-        pred_files = sorted(PRED_DIR.glob("*_MLB.csv"))
+        pred_files = sorted(
+            PRED_DIR.glob(
+                "*_MLB.csv"
+            )
+        )
 
         pred_files = [
-            p for p in pred_files
-            if "pred_with_game_id" not in str(p)
+            p
+            for p in pred_files
+            if "pred_with_game_id"
+            not in str(p)
         ]
 
-        log(f"prediction files found: {len(pred_files)}")
+        log(
+            f"prediction files found: "
+            f"{len(pred_files)}"
+        )
 
         for pred_path in pred_files:
-            date_str = pred_path.stem.replace("_MLB", "")
-            process_date(date_str, pred_path, summary)
+            date_str = (
+                pred_path.stem.replace(
+                    "_MLB",
+                    "",
+                )
+            )
+
+            process_date(
+                date_str,
+                pred_path,
+                summary,
+            )
 
     except Exception as e:
         tb = traceback.format_exc()
-        log(f"FATAL: {e}\n{tb}", "ERROR")
+
+        log(
+            f"FATAL: {e}\n{tb}",
+            "ERROR",
+        )
 
         print("")
         print("=" * 80)
-        print("FATAL ERROR IN game_id_pred.py")
+        print(
+            "FATAL ERROR IN game_id_pred.py"
+        )
         print("=" * 80)
         print(f"error={e}")
         print("")
@@ -1487,41 +2593,92 @@ def main():
         if summary["errors"] == 0:
             summary["errors"] += 1
 
-    status = "SUCCESS" if summary["errors"] == 0 and summary["fatal_rejections"] == 0 else "FAILED"
+    status = (
+        "SUCCESS"
+        if (
+            summary["errors"] == 0
+            and summary[
+                "fatal_rejections"
+            ] == 0
+        )
+        else "FAILED"
+    )
 
     lines = [
         "",
         "=" * 60,
         f"SUMMARY  {_now()}",
         "=" * 60,
-        f"  files_written        : {summary['files_written']}",
-        f"  total_rows           : {summary['total_rows']}",
-        f"  matched              : {summary['matched']}",
-        f"  rejected             : {summary['rejected']}",
-        f"  nonfatal_rejections  : {summary['nonfatal_rejections']}",
-        f"  fatal_rejections     : {summary['fatal_rejections']}",
-        f"  skipped              : {summary['skipped']}",
-        f"  errors               : {summary['errors']}",
+        (
+            f"  files_written        : "
+            f"{summary['files_written']}"
+        ),
+        (
+            f"  total_rows           : "
+            f"{summary['total_rows']}"
+        ),
+        (
+            f"  matched              : "
+            f"{summary['matched']}"
+        ),
+        (
+            f"  rejected             : "
+            f"{summary['rejected']}"
+        ),
+        (
+            f"  nonfatal_rejections  : "
+            f"{summary['nonfatal_rejections']}"
+        ),
+        (
+            f"  fatal_rejections     : "
+            f"{summary['fatal_rejections']}"
+        ),
+        (
+            f"  skipped              : "
+            f"{summary['skipped']}"
+        ),
+        (
+            f"  errors               : "
+            f"{summary['errors']}"
+        ),
         "",
         f"STATUS: {status}",
         "=" * 60,
     ]
 
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    with open(
+        LOG_FILE,
+        "a",
+        encoding="utf-8",
+    ) as f:
+        f.write(
+            "\n".join(lines)
+            + "\n"
+        )
 
     print(
         f"game_id_pred complete. "
-        f"{summary['files_written']} files written. "
-        f"matched={summary['matched']} "
-        f"rejected={summary['rejected']} "
-        f"nonfatal_rejections={summary['nonfatal_rejections']} "
-        f"fatal_rejections={summary['fatal_rejections']} "
-        f"errors={summary['errors']} "
+        f"{summary['files_written']} "
+        f"files written. "
+        f"matched="
+        f"{summary['matched']} "
+        f"rejected="
+        f"{summary['rejected']} "
+        f"nonfatal_rejections="
+        f"{summary['nonfatal_rejections']} "
+        f"fatal_rejections="
+        f"{summary['fatal_rejections']} "
+        f"errors="
+        f"{summary['errors']} "
         f"Status: {status}"
     )
 
-    if summary["errors"] != 0 or summary["fatal_rejections"] != 0:
+    if (
+        summary["errors"] != 0
+        or summary[
+            "fatal_rejections"
+        ] != 0
+    ):
         sys.exit(1)
 
 

@@ -2,27 +2,27 @@
   "status": "candidate_rejected",
   "gate_passed": false,
   "gate_rule": "candidate mean_poisson_deviance <= DRatings baseline for BOTH home and away models",
-  "test_start_date": "2026-08-18",
-  "test_end_date": "2026-09-15",
+  "test_start_date": "2026-08-30",
+  "test_end_date": "2026-09-25",
   "comparison": {
     "home": {
       "baseline_system": "dratings",
       "metric": "mean_poisson_deviance",
-      "baseline_value": 2.3008546534761307,
-      "candidate_value": 2.462089731498236,
+      "baseline_value": 2.013785465587571,
+      "candidate_value": 2.1055589797438325,
       "candidate_lte_baseline": false,
-      "difference_candidate_minus_baseline": 0.16123507802210524
+      "difference_candidate_minus_baseline": 0.09177351415626145
     },
     "away": {
       "baseline_system": "dratings",
       "metric": "mean_poisson_deviance",
-      "baseline_value": 2.5778486037109505,
-      "candidate_value": 2.526233628625964,
-      "candidate_lte_baseline": true,
-      "difference_candidate_minus_baseline": -0.05161497508498636
+      "baseline_value": 2.264751984030937,
+      "candidate_value": 2.2649409184057774,
+      "candidate_lte_baseline": false,
+      "difference_candidate_minus_baseline": 0.0001889343748402439
     }
   },
-  "evaluated_at": "2026-09-16T07:42:59.972108+00:00",
+  "evaluated_at": "2026-09-26T07:44:36.110198+00:00",
   "candidate_dir": "docs/win/baseball/mlb/models/run_projection/candidates",
   "production_model_dir": "docs/win/baseball/mlb/models/run_projection",
   "production_artifacts_changed": false,
