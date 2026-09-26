@@ -863,7 +863,7 @@ def build_training_history_in_memory(
 ) -> pd.DataFrame:
     summary = _training_summary_template()
 
-    dates = training_builder._discover_dates(summary)
+    dates = training_builder.discover_dates(summary)
 
     if not dates:
         fail(

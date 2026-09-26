@@ -875,7 +875,7 @@ def _safe_weather_frame(
     ].copy()
 
 
-def _discover_dates(summary: dict) -> list[str]:
+def discover_dates(summary: dict) -> list[str]:
     prediction_dates: list[str] = []
 
     for path in sorted(
@@ -1710,7 +1710,7 @@ def main() -> None:
     }
 
     try:
-        dates = _discover_dates(summary)
+        dates = discover_dates(summary)
 
         dates = _filter_dates(
             dates,
