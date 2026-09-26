@@ -1828,7 +1828,7 @@ def realized_return(
     if float(observed_win) == 0.0:
         return -1.0
 
-    fail(f"Invalid observed_win value: {observed_win}")
+    return fail(f"Invalid observed_win value: {observed_win}")
 
 
 def build_value_records(
