@@ -387,7 +387,7 @@ def read_json_list(input_path):
     return loaded
 
 
-def event_id(event):
+def get_event_id(event):
     value = event.get("id")
     if value is None:
         return None
@@ -430,12 +430,12 @@ def merge_with_existing(existing_events, pulled_events):
     preserved_started = 0
 
     for pulled in pulled_events:
-        pulled_id = event_id(pulled)
+        pulled_id = get_event_id(pulled)
         pulled_identity = event_identity(pulled)
         match_index = None
 
         for index, existing in enumerate(merged):
-            same_id = pulled_id is not None and event_id(existing) == pulled_id
+            same_id = pulled_id is not None and get_event_id(existing) == pulled_id
             same_game = event_identity(existing) == pulled_identity
             if same_id or same_game:
                 match_index = index

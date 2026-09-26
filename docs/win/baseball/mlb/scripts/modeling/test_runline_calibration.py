@@ -762,18 +762,18 @@ def fit_logistic_calibrator(
     def objective(
         theta,
     ) -> float:
-        intercept = float(
+        trial_intercept = float(
             theta[0]
         )
 
-        slope = float(
+        trial_slope = float(
             theta[1]
         )
 
         p = clip_prob(
             expit(
-                intercept
-                + slope
+                trial_intercept
+                + trial_slope
                 * x
             )
         )
@@ -1552,9 +1552,9 @@ if __name__ == "__main__":
             130
         )
 
-    except Exception as exc:
+    except Exception as main_error:
         print(
-            f"ERROR: {exc}"
+            f"ERROR: {main_error}"
         )
 
         print(

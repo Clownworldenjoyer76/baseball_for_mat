@@ -59,8 +59,8 @@ FORBIDDEN_READ_TOKENS = [
 SCRIPT_NAME = "merge_intake.py"
 STAGE_NAME = "01_merge"
 
-with open(LOG_FILE, "w", encoding="utf-8") as f:
-    f.write(f"=== merge_intake RUN {RUN_TS} ===\n")
+with open(LOG_FILE, "w", encoding="utf-8") as startup_log:
+    startup_log.write(f"=== merge_intake RUN {RUN_TS} ===\n")
 
 
 # ─────────────────────────────────────────────
@@ -2757,7 +2757,7 @@ def process_date(
 # MAIN
 # ─────────────────────────────────────────────
 
-if __name__ == "__main__":
+def main():
     summary = {
         "slates_processed": 0,
         "slates_written": 0,
@@ -2928,3 +2928,7 @@ if __name__ == "__main__":
         )
 
         raise
+
+
+if __name__ == "__main__":
+    main()

@@ -2059,9 +2059,9 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         sys.exit(130)
 
-    except Exception as exc:
+    except Exception as main_error:
         print(
-            f"FAILED: {exc}"
+            f"FAILED: {main_error}"
         )
 
         print(

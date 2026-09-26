@@ -646,13 +646,13 @@ def process_date(
     if output_rows:
         output_rows = sorted(
             output_rows,
-            key=lambda r: (
-                r.get("game_date", ""),
-                r.get("game_time", ""),
-                r.get("home_team", ""),
-                r.get("away_team", ""),
+            key=lambda sort_row: (
+                sort_row.get("game_date", ""),
+                sort_row.get("game_time", ""),
+                sort_row.get("home_team", ""),
+                sort_row.get("away_team", ""),
                 parse_int(
-                    r.get("gameNumber", "1"),
+                    sort_row.get("gameNumber", "1"),
                     1,
                 ),
             ),

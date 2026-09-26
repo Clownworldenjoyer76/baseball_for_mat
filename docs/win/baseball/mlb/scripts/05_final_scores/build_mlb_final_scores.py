@@ -44,8 +44,8 @@ TEAM_KEY_ALIASES = {
     "st. louis cardinals": "st louis cardinals",
 }
 
-with open(LOG_FILE, "w", encoding="utf-8") as f:
-    f.write(f"=== build_mlb_final_scores RUN {RUN_TS} ===\n")
+with open(LOG_FILE, "w", encoding="utf-8") as startup_log:
+    startup_log.write(f"=== build_mlb_final_scores RUN {RUN_TS} ===\n")
 
 
 class FinalScoreConflictError(RuntimeError):
@@ -681,17 +681,17 @@ def resolve_completed_game_ids(
     current_game_pk = str(current_game_pk or "").strip()
     current_game_number = str(current_game_number or "").strip()
 
-    def result_from_game(candidate, source):
+    def result_from_game(resolved_candidate, source):
         return {
             "resolved": bool(
-                str(candidate.get("game_id", "") or "").strip()
-                and str(candidate.get("gamePk", "") or "").strip()
+                str(resolved_candidate.get("game_id", "") or "").strip()
+                and str(resolved_candidate.get("gamePk", "") or "").strip()
             ),
-            "game_id": str(candidate.get("game_id", "") or "").strip(),
-            "gamePk": str(candidate.get("gamePk", "") or "").strip(),
-            "gameNumber": str(candidate.get("gameNumber", "") or "").strip(),
+            "game_id": str(resolved_candidate.get("game_id", "") or "").strip(),
+            "gamePk": str(resolved_candidate.get("gamePk", "") or "").strip(),
+            "gameNumber": str(resolved_candidate.get("gameNumber", "") or "").strip(),
             "scheduled_game_time": str(
-                candidate.get("game_time", "") or game_time or ""
+                resolved_candidate.get("game_time", "") or game_time or ""
             ).strip(),
             "resolution_source": source,
             "games_candidate_count": len(games_candidates),

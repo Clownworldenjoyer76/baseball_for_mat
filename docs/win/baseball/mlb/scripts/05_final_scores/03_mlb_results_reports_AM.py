@@ -18,8 +18,8 @@ ML_DIR       = Path("docs/win/baseball/mlb/05_final_scores/morning/reports/money
 RL_DIR       = Path("docs/win/baseball/mlb/05_final_scores/morning/reports/run_line")
 TOT_DIR      = Path("docs/win/baseball/mlb/05_final_scores/morning/reports/totals")
 
-for d in [SUMMARY_DIR, OVERVIEW_DIR, ML_DIR, RL_DIR, TOT_DIR]:
-    d.mkdir(parents=True, exist_ok=True)
+for startup_dir in [SUMMARY_DIR, OVERVIEW_DIR, ML_DIR, RL_DIR, TOT_DIR]:
+    startup_dir.mkdir(parents=True, exist_ok=True)
 
 LEAGUE = "MLB"
 

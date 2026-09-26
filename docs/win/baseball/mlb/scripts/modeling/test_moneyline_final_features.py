@@ -1554,8 +1554,8 @@ def pitchmix_stats(
 
     rows = []
 
-    for pitch_type, weight in mix.items():
-        stats = hitter_stats(
+    for pitch_type, pitch_weight in mix.items():
+        pitch_stats = hitter_stats(
             pitch_type_index,
             hitters,
             date,
@@ -1565,15 +1565,15 @@ def pitchmix_stats(
         )
 
         if (
-            stats["pa"] > 0
+            pitch_stats["pa"] > 0
             and pd.notna(
-                stats["woba"]
+                pitch_stats["woba"]
             )
         ):
             rows.append(
                 (
-                    weight,
-                    stats,
+                    pitch_weight,
+                    pitch_stats,
                 )
             )
 
@@ -2875,9 +2875,9 @@ if __name__ == "__main__":
     except SystemExit:
         raise
 
-    except Exception as exc:
+    except Exception as main_error:
         print(
-            f"ERROR: {exc}",
+            f"ERROR: {main_error}",
             file=sys.stderr,
         )
 

@@ -3020,9 +3020,9 @@ if __name__ == "__main__":
     except SystemExit:
         raise
 
-    except Exception as exc:
+    except Exception as main_error:
         print(
-            f"ERROR: {exc}",
+            f"ERROR: {main_error}",
             file=sys.stderr,
         )
 

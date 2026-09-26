@@ -1016,11 +1016,17 @@ def write_spot_check(final):
 def validate_graded_output(final):
     audit_rows = []
 
-    def add_validation(validation, column, bad_rows, status, notes):
+    def add_validation(
+        validation,
+        audit_column,
+        audit_bad_rows,
+        status,
+        notes,
+    ):
         audit_rows.append({
             "validation": validation,
-            "column": column,
-            "bad_rows": bad_rows,
+            "column": audit_column,
+            "bad_rows": audit_bad_rows,
             "status": status,
             "notes": notes,
         })
