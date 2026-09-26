@@ -686,18 +686,18 @@ def build_feature_frame(
             f"{missing_feature_columns}"
         )
 
-    X = joined.loc[:, feature_columns].copy()
+    x_features = joined.loc[:, feature_columns].copy()
 
-    if list(X.columns) != feature_columns:
+    if list(x_features.columns) != feature_columns:
         fail(
             "Constructed model feature order "
             "differs from metadata; "
-            f"constructed={list(X.columns)} "
+            f"constructed={list(x_features.columns)} "
             f"metadata={feature_columns}"
         )
 
-    for col in X.columns:
-        raw = X[col].copy()
+    for col in x_features.columns:
+        raw = x_features[col].copy()
 
         numeric = pd.to_numeric(
             raw,
@@ -724,7 +724,7 @@ def build_feature_frame(
         bad = coercion_failed | nonfinite
 
         if bad.any():
-            bad_indices = X.index[bad][:20]
+            bad_indices = x_features.index[bad][:20]
 
             for idx in bad_indices:
                 _row_issue(
@@ -737,14 +737,14 @@ def build_feature_frame(
 
             numeric.loc[bad] = np.nan
 
-        X[col] = numeric
+        x_features[col] = numeric
 
-    return joined, X
+    return joined, x_features
 
 
 def build_feature_status(
     joined: pd.DataFrame,
-    X: pd.DataFrame,
+    x_features: pd.DataFrame,
 ) -> pd.Series:
     statuses = []
 
@@ -761,8 +761,8 @@ def build_feature_status(
     for idx in joined.index:
         missing_features = [
             col
-            for col in X.columns
-            if pd.isna(X.loc[idx, col])
+            for col in x_features.columns
+            if pd.isna(x_features.loc[idx, col])
         ]
 
         home_ok = (
@@ -1338,7 +1338,7 @@ def _write_unavailable_historical_result(
     date_str: str,
     output_path: Path,
     joined: pd.DataFrame,
-    X: pd.DataFrame,
+    x_features: pd.DataFrame,
     reason: str,
 ) -> Path:
     result = joined.copy()
@@ -1355,7 +1355,7 @@ def _write_unavailable_historical_result(
 
     status = build_feature_status(
         result,
-        X,
+        x_features,
     )
 
     result["run_model_feature_status"] = (
@@ -1432,7 +1432,7 @@ def process_date(
         f"games {date_str}",
     )
 
-    joined, X = build_feature_frame(
+    joined, x_features = build_feature_frame(
         date_str,
         pred,
         games,
@@ -1497,7 +1497,7 @@ def process_date(
                 date_str,
                 output_path,
                 joined,
-                X,
+                x_features,
                 (
                     "insufficient_prior_dates_"
                     f"{prior_unique_dates}"
@@ -1519,7 +1519,7 @@ def process_date(
                     date_str,
                     output_path,
                     joined,
-                    X,
+                    x_features,
                     "walk_forward_fit_unavailable",
                 )
 
@@ -1530,14 +1530,14 @@ def process_date(
             ) = fitted
 
             home_runs = validate_predictions(
-                home_model.predict(X),
+                home_model.predict(x_features),
                 "walk_forward_home_runs_model",
                 date_str,
                 joined,
             )
 
             away_runs = validate_predictions(
-                away_model.predict(X),
+                away_model.predict(x_features),
                 "walk_forward_away_runs_model",
                 date_str,
                 joined,
@@ -1580,20 +1580,20 @@ def process_date(
                 date_str,
                 output_path,
                 joined,
-                X,
+                x_features,
                 "walk_forward_fit_failed",
             )
 
     else:
         home_runs = validate_predictions(
-            production_home_model.predict(X),
+            production_home_model.predict(x_features),
             "production_home_runs_model",
             date_str,
             joined,
         )
 
         away_runs = validate_predictions(
-            production_away_model.predict(X),
+            production_away_model.predict(x_features),
             "production_away_runs_model",
             date_str,
             joined,
@@ -1639,7 +1639,7 @@ def process_date(
     result["run_model_feature_status"] = (
         build_feature_status(
             result,
-            X,
+            x_features,
         )
         .astype("string")
         + projection_status_suffix

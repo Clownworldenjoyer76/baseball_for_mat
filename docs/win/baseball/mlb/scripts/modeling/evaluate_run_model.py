@@ -584,14 +584,14 @@ def score_models(
         "away",
     )
 
-    X = test[feature_columns]
+    x_features = test[feature_columns]
 
     home_predictions = np.asarray(
-        home_model.predict(X),
+        home_model.predict(x_features),
         dtype=float,
     )
     away_predictions = np.asarray(
-        away_model.predict(X),
+        away_model.predict(x_features),
         dtype=float,
     )
 

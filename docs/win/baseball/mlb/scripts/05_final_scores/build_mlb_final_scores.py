@@ -75,7 +75,7 @@ def failure_context(
     away_team,
     home_team,
     game_id,
-    gamePk,
+    game_pk,
 ):
     return (
         f"source_file={source_file} | "
@@ -84,7 +84,7 @@ def failure_context(
         f"away_team={away_team} | "
         f"home_team={home_team} | "
         f"game_id={game_id} | "
-        f"gamePk={gamePk}"
+        f"gamePk={game_pk}"
     )
 
 
@@ -361,22 +361,22 @@ def select_game_candidate(
     candidates,
     target_game_time,
     *,
-    current_gamePk="",
-    current_gameNumber="",
+    current_game_pk="",
+    current_game_number="",
 ):
     candidates = list(candidates or [])
 
-    current_gamePk = str(current_gamePk or "").strip()
-    current_gameNumber = str(current_gameNumber or "").strip()
+    current_game_pk = str(current_game_pk or "").strip()
+    current_game_number = str(current_game_number or "").strip()
 
     if not candidates:
         return {}, "no candidates"
 
-    if current_gamePk:
+    if current_game_pk:
         gamepk_matches = [
             candidate
             for candidate in candidates
-            if str(candidate.get("gamePk", "") or "").strip() == current_gamePk
+            if str(candidate.get("gamePk", "") or "").strip() == current_game_pk
         ]
 
         if len(gamepk_matches) != 1:
@@ -391,13 +391,13 @@ def select_game_candidate(
         ).strip()
 
         if (
-            current_gameNumber
+            current_game_number
             and candidate_game_number
-            and candidate_game_number != current_gameNumber
+            and candidate_game_number != current_game_number
         ):
             return {}, (
                 "existing gamePk matched but gameNumber conflicted "
-                f"(existing={current_gameNumber}, "
+                f"(existing={current_game_number}, "
                 f"candidate={candidate_game_number})"
             )
 
@@ -428,18 +428,18 @@ def select_game_candidate(
 
     pool = candidates
 
-    if len(pool) > 1 and current_gameNumber:
+    if len(pool) > 1 and current_game_number:
         number_matches = [
             candidate
             for candidate in pool
             if str(candidate.get("gameNumber", "") or "").strip()
-            == current_gameNumber
+            == current_game_number
         ]
 
         if not number_matches:
             return {}, (
                 "doubleheader candidates existed but none matched "
-                f"gameNumber={current_gameNumber}"
+                f"gameNumber={current_game_number}"
             )
 
         pool = number_matches
@@ -448,7 +448,7 @@ def select_game_candidate(
         candidate = pool[0]
 
         if parse_time_minutes(target_game_time) is None:
-            if current_gameNumber:
+            if current_game_number:
                 return candidate, "gameNumber_unique_no_time"
 
             return {}, (
@@ -468,7 +468,7 @@ def select_game_candidate(
                 "candidate failed scheduled-time tolerance"
             )
 
-        if current_gameNumber:
+        if current_game_number:
             return matched, "gameNumber+scheduled_time"
 
         return matched, "scheduled_time"
@@ -481,7 +481,7 @@ def select_game_candidate(
     )
 
     if not matched:
-        if current_gameNumber:
+        if current_game_number:
             return {}, (
                 "doubleheader gameNumber candidates remained "
                 "ambiguous after scheduled-time matching"
@@ -492,7 +492,7 @@ def select_game_candidate(
             "by scheduled time"
         )
 
-    if current_gameNumber:
+    if current_game_number:
         return matched, "gameNumber+scheduled_time"
 
     return matched, "scheduled_time"
@@ -572,20 +572,20 @@ def load_games_by_gamepk(date):
         reader = csv.DictReader(f)
 
         for row in reader:
-            gamePk = str(row.get("gamePk", "") or "").strip()
+            game_pk = str(row.get("gamePk", "") or "").strip()
 
-            if not gamePk:
+            if not game_pk:
                 continue
 
-            if gamePk in lookup:
+            if game_pk in lookup:
                 fail(
                     "Duplicate gamePk in games file during final-score backfill: "
-                    f"date={date} gamePk={gamePk}"
+                    f"date={date} gamePk={game_pk}"
                 )
 
-            lookup[gamePk] = {
+            lookup[game_pk] = {
                 "game_id": str(row.get("game_id", "") or "").strip(),
-                "gamePk": gamePk,
+                "gamePk": game_pk,
                 "gameNumber": str(row.get("gameNumber", "") or "").strip(),
                 "game_time": str(row.get("game_time", "") or "").strip(),
                 "home_team": str(row.get("home_team", "") or "").strip(),
@@ -666,8 +666,8 @@ def resolve_completed_game_ids(
     home_team,
     away_team,
     current_game_id="",
-    current_gamePk="",
-    current_gameNumber="",
+    current_game_pk="",
+    current_game_number="",
     games_lookup,
     games_by_game_id,
     games_by_gamepk,
@@ -678,8 +678,8 @@ def resolve_completed_game_ids(
     pred_candidates = predictions_lookup.get(key, [])
 
     current_game_id = str(current_game_id or "").strip()
-    current_gamePk = str(current_gamePk or "").strip()
-    current_gameNumber = str(current_gameNumber or "").strip()
+    current_game_pk = str(current_game_pk or "").strip()
+    current_game_number = str(current_game_number or "").strip()
 
     def result_from_game(candidate, source):
         return {
@@ -699,12 +699,12 @@ def resolve_completed_game_ids(
             "reason": "",
         }
 
-    if current_gamePk:
+    if current_game_pk:
         games_match, match_reason = select_game_candidate(
             games_candidates,
             game_time,
-            current_gamePk=current_gamePk,
-            current_gameNumber=current_gameNumber,
+            current_game_pk=current_game_pk,
+            current_game_number=current_game_number,
         )
 
         if games_match:
@@ -733,21 +733,21 @@ def resolve_completed_game_ids(
                 away_team,
             )
         ):
-            candidate_gamePk = str(
+            candidate_game_pk = str(
                 candidate.get("gamePk", "") or ""
             ).strip()
 
-            candidate_gameNumber = str(
+            candidate_game_number = str(
                 candidate.get("gameNumber", "") or ""
             ).strip()
 
             candidate_match, match_reason = select_game_candidate(
                 [candidate],
                 game_time,
-                current_gamePk=candidate_gamePk,
-                current_gameNumber=(
-                    current_gameNumber
-                    or candidate_gameNumber
+                current_game_pk=candidate_game_pk,
+                current_game_number=(
+                    current_game_number
+                    or candidate_game_number
                 ),
             )
 
@@ -760,7 +760,7 @@ def resolve_completed_game_ids(
     games_match, games_match_reason = select_game_candidate(
         games_candidates,
         game_time,
-        current_gameNumber=current_gameNumber,
+        current_game_number=current_game_number,
     )
 
     if games_match:
@@ -772,8 +772,8 @@ def resolve_completed_game_ids(
     pred_match, pred_match_reason = select_game_candidate(
         pred_candidates,
         game_time,
-        current_gamePk=current_gamePk,
-        current_gameNumber=current_gameNumber,
+        current_game_pk=current_game_pk,
+        current_game_number=current_game_number,
     )
 
     if pred_match:
@@ -781,11 +781,11 @@ def resolve_completed_game_ids(
             pred_match.get("game_id", "") or ""
         ).strip()
 
-        pred_gamePk = str(
+        pred_game_pk = str(
             pred_match.get("gamePk", "") or ""
         ).strip()
 
-        pred_gameNumber = str(
+        pred_game_number = str(
             pred_match.get("gameNumber", "") or ""
         ).strip()
 
@@ -793,8 +793,8 @@ def resolve_completed_game_ids(
             pred_match.get("game_time", "") or game_time or ""
         ).strip()
 
-        if pred_gamePk:
-            official = games_by_gamepk.get(pred_gamePk, {})
+        if pred_game_pk:
+            official = games_by_gamepk.get(pred_game_pk, {})
 
             if (
                 official
@@ -807,8 +807,8 @@ def resolve_completed_game_ids(
                 official_match, official_reason = select_game_candidate(
                     [official],
                     pred_game_time,
-                    current_gamePk=pred_gamePk,
-                    current_gameNumber=pred_gameNumber,
+                    current_game_pk=pred_game_pk,
+                    current_game_number=pred_game_number,
                 )
 
                 if official_match:
@@ -830,15 +830,15 @@ def resolve_completed_game_ids(
                     away_team,
                 )
             ):
-                official_gamePk = str(
+                official_game_pk = str(
                     official.get("gamePk", "") or ""
                 ).strip()
 
                 official_match, official_reason = select_game_candidate(
                     [official],
                     pred_game_time,
-                    current_gamePk=official_gamePk,
-                    current_gameNumber=pred_gameNumber,
+                    current_game_pk=official_game_pk,
+                    current_game_number=pred_game_number,
                 )
 
                 if official_match:
@@ -852,8 +852,8 @@ def resolve_completed_game_ids(
         official_from_matchup, official_reason = select_game_candidate(
             games_candidates,
             pred_game_time,
-            current_gamePk=pred_gamePk,
-            current_gameNumber=pred_gameNumber,
+            current_game_pk=pred_game_pk,
+            current_game_number=pred_game_number,
         )
 
         if official_from_matchup:
@@ -865,10 +865,10 @@ def resolve_completed_game_ids(
             )
 
         return {
-            "resolved": bool(pred_game_id and pred_gamePk),
+            "resolved": bool(pred_game_id and pred_game_pk),
             "game_id": pred_game_id,
-            "gamePk": pred_gamePk,
-            "gameNumber": pred_gameNumber,
+            "gamePk": pred_game_pk,
+            "gameNumber": pred_game_number,
             "scheduled_game_time": pred_game_time,
             "resolution_source": (
                 f"predictions_{pred_match_reason}"
@@ -910,7 +910,7 @@ def resolve_completed_game_ids(
             "gamePk/gameNumber/scheduled time"
         )
 
-    if current_gamePk:
+    if current_game_pk:
         reason_parts.append(
             "existing gamePk could not be verified against "
             "date/team/gameNumber/scheduled time"
@@ -919,8 +919,8 @@ def resolve_completed_game_ids(
     return {
         "resolved": False,
         "game_id": current_game_id,
-        "gamePk": current_gamePk,
-        "gameNumber": current_gameNumber,
+        "gamePk": current_game_pk,
+        "gameNumber": current_game_number,
         "scheduled_game_time": str(game_time or "").strip(),
         "resolution_source": "unresolved",
         "games_candidate_count": len(games_candidates),
@@ -940,8 +940,8 @@ def make_unresolved_completed_row(
     final_away_score,
     final_home_score,
     game_id,
-    gamePk,
-    gameNumber,
+    game_pk,
+    game_number,
     games_candidate_count,
     prediction_candidate_count,
     resolution_reason,
@@ -957,8 +957,8 @@ def make_unresolved_completed_row(
         "final_away_score": final_away_score,
         "final_home_score": final_home_score,
         "game_id": game_id,
-        "gamePk": gamePk,
-        "gameNumber": gameNumber,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
         "games_candidate_count": games_candidate_count,
         "prediction_candidate_count": prediction_candidate_count,
         "resolution_reason": resolution_reason,
@@ -1114,11 +1114,11 @@ def final_row_signature(record):
 
 
 def game_identity_conflict_reason(existing, incoming):
-    existing_gamePk = str(
+    existing_game_pk = str(
         existing.get("gamePk", "") or ""
     ).strip()
 
-    incoming_gamePk = str(
+    incoming_game_pk = str(
         incoming.get("gamePk", "") or ""
     ).strip()
 
@@ -1131,13 +1131,13 @@ def game_identity_conflict_reason(existing, incoming):
     ).strip()
 
     if (
-        existing_gamePk
-        and incoming_gamePk
-        and existing_gamePk != incoming_gamePk
+        existing_game_pk
+        and incoming_game_pk
+        and existing_game_pk != incoming_game_pk
     ):
         return (
             "same game_id mapped to different gamePk values "
-            f"({existing_gamePk} vs {incoming_gamePk})"
+            f"({existing_game_pk} vs {incoming_game_pk})"
         )
 
     if (
@@ -1151,9 +1151,9 @@ def game_identity_conflict_reason(existing, incoming):
         )
 
     if (
-        existing_gamePk
-        and incoming_gamePk
-        and existing_gamePk == incoming_gamePk
+        existing_game_pk
+        and incoming_game_pk
+        and existing_game_pk == incoming_game_pk
         and existing_game_number
         and incoming_game_number
         and existing_game_number == incoming_game_number
@@ -1213,8 +1213,8 @@ def make_key_audit_row(
     *,
     game_date,
     game_id,
-    gamePk,
-    gameNumber,
+    game_pk,
+    game_number,
     away_team,
     home_team,
     duplicate_count,
@@ -1224,8 +1224,8 @@ def make_key_audit_row(
     return {
         "game_date": game_date,
         "game_id": game_id,
-        "gamePk": gamePk,
-        "gameNumber": gameNumber,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
         "away_team": away_team,
         "home_team": home_team,
         "duplicate_count": duplicate_count,
@@ -1245,8 +1245,8 @@ def add_final_record(
     use_game_time_for_fallback,
 ):
     game_id = str(record.get("game_id", "") or "").strip()
-    gamePk = str(record.get("gamePk", "") or "").strip()
-    gameNumber = str(record.get("gameNumber", "") or "").strip()
+    game_pk = str(record.get("gamePk", "") or "").strip()
+    game_number = str(record.get("gameNumber", "") or "").strip()
     game_date = str(record.get("game_date", "") or "").strip()
     game_time = str(record.get("game_time", "") or "").strip()
     home_team = str(record.get("home_team", "") or "").strip()
@@ -1267,8 +1267,8 @@ def add_final_record(
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=gamePk,
-                gameNumber=gameNumber,
+                game_pk=game_pk,
+                game_number=game_number,
                 away_team=away_team,
                 home_team=home_team,
                 duplicate_count=1,
@@ -1287,8 +1287,8 @@ def add_final_record(
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=gamePk,
-                gameNumber=gameNumber,
+                game_pk=game_pk,
+                game_number=game_number,
                 away_team=away_team,
                 home_team=home_team,
                 duplicate_count=2,
@@ -1303,7 +1303,7 @@ def add_final_record(
                 away_team=away_team,
                 home_team=home_team,
                 game_id=game_id,
-                gamePk=gamePk,
+                game_pk=game_pk,
             )
 
             existing_source_file = str(
@@ -1313,7 +1313,7 @@ def add_final_record(
             fail_conflict(
                 "Conflicting final-score game identity found | "
                 f"{context} | "
-                f"gameNumber={gameNumber} | "
+                f"gameNumber={game_number} | "
                 f"reason={identity_conflict} | "
                 f"existing_source_file={existing_source_file}"
             )
@@ -1324,8 +1324,8 @@ def add_final_record(
             key_audit_rows.append(make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
-                gamePk=gamePk,
-                gameNumber=gameNumber,
+                game_pk=game_pk,
+                game_number=game_number,
                 away_team=away_team,
                 home_team=home_team,
                 duplicate_count=2,
@@ -1341,8 +1341,8 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id=game_id,
-            gamePk=gamePk,
-            gameNumber=gameNumber,
+            game_pk=game_pk,
+            game_number=game_number,
             away_team=away_team,
             home_team=home_team,
             duplicate_count=2,
@@ -1357,7 +1357,7 @@ def add_final_record(
             away_team=away_team,
             home_team=home_team,
             game_id=game_id,
-            gamePk=gamePk,
+            game_pk=game_pk,
         )
 
         existing_source_file = str(
@@ -1367,7 +1367,7 @@ def add_final_record(
         fail_conflict(
             "Conflicting final-score duplicate game_id found | "
             f"{context} | "
-            f"gameNumber={gameNumber} | "
+            f"gameNumber={game_number} | "
             f"existing_source_file={existing_source_file}"
         )
 
@@ -1375,8 +1375,8 @@ def add_final_record(
         game_date,
         normalize_team_key(home_team),
         normalize_team_key(away_team),
-        gamePk,
-        gameNumber,
+        game_pk,
+        game_number,
         game_time,
     )
 
@@ -1397,8 +1397,8 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id="",
-            gamePk=gamePk,
-            gameNumber=gameNumber,
+            game_pk=game_pk,
+            game_number=game_number,
             away_team=away_team,
             home_team=home_team,
             duplicate_count=1,
@@ -1420,8 +1420,8 @@ def add_final_record(
         key_audit_rows.append(make_key_audit_row(
             game_date=game_date,
             game_id="",
-            gamePk=gamePk,
-            gameNumber=gameNumber,
+            game_pk=game_pk,
+            game_number=game_number,
             away_team=away_team,
             home_team=home_team,
             duplicate_count=2,
@@ -1437,8 +1437,8 @@ def add_final_record(
     key_audit_rows.append(make_key_audit_row(
         game_date=game_date,
         game_id="",
-        gamePk=gamePk,
-        gameNumber=gameNumber,
+        game_pk=game_pk,
+        game_number=game_number,
         away_team=away_team,
         home_team=home_team,
         duplicate_count=2,
@@ -1456,7 +1456,7 @@ def add_final_record(
         away_team=away_team,
         home_team=home_team,
         game_id="",
-        gamePk=gamePk,
+        game_pk=game_pk,
     )
 
     existing_source_file = str(
@@ -1466,7 +1466,7 @@ def add_final_record(
     fail_conflict(
         "Conflicting blank-game_id final-score duplicate found | "
         f"{context} | "
-        f"gameNumber={gameNumber} | "
+        f"gameNumber={game_number} | "
         f"existing_source_file={existing_source_file}"
     )
 
@@ -1624,18 +1624,18 @@ def preserve_existing_final_score_records(
     }
 
 
-def fetch_mlb_game_feed(gamePk, cache):
-    gamePk = str(gamePk or "").strip()
+def fetch_mlb_game_feed(game_pk, cache):
+    game_pk = str(game_pk or "").strip()
 
-    if not gamePk:
+    if not game_pk:
         return None
 
-    if gamePk in cache:
-        return cache[gamePk]
+    if game_pk in cache:
+        return cache[game_pk]
 
     url = (
         "https://statsapi.mlb.com/api/v1.1/game/"
-        f"{gamePk}/feed/live"
+        f"{game_pk}/feed/live"
     )
 
     request = urllib.request.Request(
@@ -1662,13 +1662,13 @@ def fetch_mlb_game_feed(gamePk, cache):
     ) as exc:
         log(
             "MLB API ERROR | "
-            f"gamePk={gamePk} | "
+            f"gamePk={game_pk} | "
             f"error={exc}"
         )
-        cache[gamePk] = None
+        cache[game_pk] = None
         return None
 
-    cache[gamePk] = payload
+    cache[game_pk] = payload
     return payload
 
 
@@ -1802,11 +1802,11 @@ def backfill_missing_finals_from_mlb(
                     row.get("game_id", "") or ""
                 ).strip()
 
-                gamePk = str(
+                game_pk = str(
                     row.get("gamePk", "") or ""
                 ).strip()
 
-                gameNumber = str(
+                game_number = str(
                     row.get("gameNumber", "") or ""
                 ).strip()
 
@@ -1822,7 +1822,7 @@ def backfill_missing_finals_from_mlb(
                     row.get("away_team", "") or ""
                 ).strip()
 
-                if not game_id or not gamePk:
+                if not game_id or not game_pk:
                     skipped_missing_ids += 1
                     continue
 
@@ -1833,7 +1833,7 @@ def backfill_missing_finals_from_mlb(
                 api_checked += 1
 
                 feed = fetch_mlb_game_feed(
-                    gamePk,
+                    game_pk,
                     feed_cache,
                 )
 
@@ -1852,7 +1852,7 @@ def backfill_missing_finals_from_mlb(
                             f"games_file={games_path.name} | "
                             f"row={row_index} | "
                             f"game_id={game_id} | "
-                            f"gamePk={gamePk} | "
+                            f"gamePk={game_pk} | "
                             f"away_team={away_team} | "
                             f"home_team={home_team}"
                         )
@@ -1864,7 +1864,7 @@ def backfill_missing_finals_from_mlb(
                             f"games_file={games_path.name} | "
                             f"row={row_index} | "
                             f"game_id={game_id} | "
-                            f"gamePk={gamePk} | "
+                            f"gamePk={game_pk} | "
                             f"status={result.get('raw_status', '')}"
                         )
 
@@ -1897,7 +1897,7 @@ def backfill_missing_finals_from_mlb(
                         f"games_file={games_path.name} | "
                         f"row={row_index} | "
                         f"game_id={game_id} | "
-                        f"gamePk={gamePk} | "
+                        f"gamePk={game_pk} | "
                         f"local={away_team} @ {home_team} | "
                         f"mlb={api_away_team} @ {api_home_team}"
                     )
@@ -1929,8 +1929,8 @@ def backfill_missing_finals_from_mlb(
                     "sport": "baseball",
                     "league": "mlb",
                     "game_id": game_id,
-                    "gamePk": gamePk,
-                    "gameNumber": gameNumber,
+                    "gamePk": game_pk,
+                    "gameNumber": game_number,
                     "game_date": date,
                     "game_time": game_time,
                     "home_team": home_team,
@@ -1949,7 +1949,7 @@ def backfill_missing_finals_from_mlb(
                     record=record,
                     source_file=(
                         "MLB_STATSAPI_"
-                        f"gamePk_{gamePk}"
+                        f"gamePk_{game_pk}"
                     ),
                     final_records_by_date=final_records_by_date,
                     seen_by_game_id=seen_by_game_id,
@@ -1969,8 +1969,8 @@ def backfill_missing_finals_from_mlb(
                 status_audit_rows.append({
                     "game_date": date,
                     "game_id": game_id,
-                    "gamePk": gamePk,
-                    "gameNumber": gameNumber,
+                    "gamePk": game_pk,
+                    "gameNumber": game_number,
                     "away_team": away_team,
                     "home_team": home_team,
                     "final_away_score": str(away_score),
@@ -1983,7 +1983,7 @@ def backfill_missing_finals_from_mlb(
                     "status_notes": (
                         "DRatings/existing finals did not contain "
                         "this game; official MLB final score added "
-                        f"using gamePk={gamePk}"
+                        f"using gamePk={game_pk}"
                     ),
                 })
 
@@ -1991,8 +1991,8 @@ def backfill_missing_finals_from_mlb(
                     "MLB FALLBACK ADDED | "
                     f"game_date={date} | "
                     f"game_id={game_id} | "
-                    f"gamePk={gamePk} | "
-                    f"gameNumber={gameNumber} | "
+                    f"gamePk={game_pk} | "
+                    f"gameNumber={game_number} | "
                     f"game_time={game_time} | "
                     f"away_team={away_team} | "
                     f"home_team={home_team} | "
@@ -2305,11 +2305,11 @@ def process_file(
                 resolution.get("game_id", "") or ""
             ).strip()
 
-            gamePk = str(
+            game_pk = str(
                 resolution.get("gamePk", "") or ""
             ).strip()
 
-            gameNumber = str(
+            game_number = str(
                 resolution.get("gameNumber", "") or ""
             ).strip()
 
@@ -2324,7 +2324,7 @@ def process_file(
             if (
                 not resolution.get("resolved")
                 or not game_id
-                or not gamePk
+                or not game_pk
             ):
                 unresolved_rows += 1
 
@@ -2339,8 +2339,8 @@ def process_file(
                         final_away_score=str(away_score),
                         final_home_score=str(home_score),
                         game_id=game_id,
-                        gamePk=gamePk,
-                        gameNumber=gameNumber,
+                        game_pk=game_pk,
+                        game_number=game_number,
                         games_candidate_count=resolution.get(
                             "games_candidate_count",
                             0,
@@ -2360,8 +2360,8 @@ def process_file(
                 status_audit_rows.append({
                     "game_date": game_date,
                     "game_id": game_id,
-                    "gamePk": gamePk,
-                    "gameNumber": gameNumber,
+                    "gamePk": game_pk,
+                    "gameNumber": game_number,
                     "away_team": away_team,
                     "home_team": home_team,
                     "final_away_score": str(away_score),
@@ -2396,8 +2396,8 @@ def process_file(
                 "sport": "baseball",
                 "league": "mlb",
                 "game_id": game_id,
-                "gamePk": gamePk,
-                "gameNumber": gameNumber,
+                "gamePk": game_pk,
+                "gameNumber": game_number,
                 "game_date": game_date,
                 "game_time": scheduled_game_time,
                 "home_team": home_team,
@@ -2433,8 +2433,8 @@ def process_file(
             status_audit_rows.append({
                 "game_date": game_date,
                 "game_id": game_id,
-                "gamePk": gamePk,
-                "gameNumber": gameNumber,
+                "gamePk": game_pk,
+                "gameNumber": game_number,
                 "away_team": away_team,
                 "home_team": home_team,
                 "final_away_score": str(away_score),
@@ -2592,8 +2592,8 @@ def migrate_legacy_final_score_files(
                     home_team=record["home_team"],
                     away_team=record["away_team"],
                     current_game_id=record["game_id"],
-                    current_gamePk=record["gamePk"],
-                    current_gameNumber=record["gameNumber"],
+                    current_game_pk=record["gamePk"],
+                    current_game_number=record["gameNumber"],
                     games_lookup=games_lookup,
                     games_by_game_id=games_by_game_id,
                     games_by_gamepk=games_by_gamepk,
@@ -2657,8 +2657,8 @@ def migrate_legacy_final_score_files(
                                 "final_home_score"
                             ],
                             game_id=record["game_id"],
-                            gamePk=record["gamePk"],
-                            gameNumber=record["gameNumber"],
+                            game_pk=record["gamePk"],
+                            game_number=record["gameNumber"],
                             games_candidate_count=resolution.get(
                                 "games_candidate_count",
                                 0,
@@ -2755,11 +2755,11 @@ def verify_final_score_outputs_have_gamepk():
                 ):
                     continue
 
-                gamePk = str(
+                game_pk = str(
                     row.get("gamePk", "") or ""
                 ).strip()
 
-                if gamePk:
+                if game_pk:
                     continue
 
                 bad_rows.append({
@@ -2884,11 +2884,11 @@ def verify_doubleheader_identity_integrity():
                     final_row.get("game_id", "") or ""
                 ).strip()
 
-                gamePk = str(
+                game_pk = str(
                     final_row.get("gamePk", "") or ""
                 ).strip()
 
-                gameNumber = str(
+                game_number = str(
                     final_row.get("gameNumber", "") or ""
                 ).strip()
 
@@ -2896,13 +2896,13 @@ def verify_doubleheader_identity_integrity():
                     final_row.get("game_time", "") or ""
                 ).strip()
 
-                if not game_id or not gamePk:
+                if not game_id or not game_pk:
                     bad_rows.append({
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": "blank game_id/gamePk in multi-game matchup",
                     })
@@ -2913,8 +2913,8 @@ def verify_doubleheader_identity_integrity():
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": (
                             "same game_id used by multiple finals "
@@ -2923,13 +2923,13 @@ def verify_doubleheader_identity_integrity():
                     })
                     continue
 
-                if gamePk in seen_final_gamepks:
+                if game_pk in seen_final_gamepks:
                     bad_rows.append({
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": (
                             "same gamePk used by multiple finals "
@@ -2939,14 +2939,14 @@ def verify_doubleheader_identity_integrity():
                     continue
 
                 seen_final_game_ids.add(game_id)
-                seen_final_gamepks.add(gamePk)
+                seen_final_gamepks.add(game_pk)
 
                 gamepk_candidates = [
                     candidate
                     for candidate in candidate_rows
                     if str(
                         candidate.get("gamePk", "") or ""
-                    ).strip() == gamePk
+                    ).strip() == game_pk
                 ]
 
                 if len(gamepk_candidates) != 1:
@@ -2954,8 +2954,8 @@ def verify_doubleheader_identity_integrity():
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": (
                             "final gamePk did not map to exactly one "
@@ -2986,8 +2986,8 @@ def verify_doubleheader_identity_integrity():
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": (
                             "final game_id disagreed with the games "
@@ -2997,16 +2997,16 @@ def verify_doubleheader_identity_integrity():
                     continue
 
                 if (
-                    gameNumber
+                    game_number
                     and official_game_number
-                    and gameNumber != official_game_number
+                    and game_number != official_game_number
                 ):
                     bad_rows.append({
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": (
                             "final gameNumber disagreed with games "
@@ -3028,8 +3028,8 @@ def verify_doubleheader_identity_integrity():
                         "date": date,
                         "matchup": key,
                         "game_id": game_id,
-                        "gamePk": gamePk,
-                        "gameNumber": gameNumber,
+                        "gamePk": game_pk,
+                        "gameNumber": game_number,
                         "game_time": game_time,
                         "reason": (
                             "final scheduled time did not agree with "

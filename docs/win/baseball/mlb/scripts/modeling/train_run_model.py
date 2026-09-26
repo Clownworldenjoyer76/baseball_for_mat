@@ -386,10 +386,10 @@ def select_hyperparameters(
     target_column: str,
     label: str,
 ) -> tuple[dict, float]:
-    X_train = train[feature_columns]
+    x_train = train[feature_columns]
     y_train = train[target_column]
 
-    X_validation = validation[feature_columns]
+    x_validation = validation[feature_columns]
     y_validation = validation[target_column]
 
     best_params = None
@@ -409,12 +409,12 @@ def select_hyperparameters(
         )
 
         model.fit(
-            X_train,
+            x_train,
             y_train,
         )
 
         validation_predictions = model.predict(
-            X_validation
+            x_validation
         )
 
         validation_score = safe_mean_poisson_deviance(
