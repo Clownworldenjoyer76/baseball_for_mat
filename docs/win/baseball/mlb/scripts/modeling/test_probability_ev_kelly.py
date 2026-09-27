@@ -178,6 +178,76 @@ def _sign(
     return 0
 
 
+RUN_LINE_SWAP_CASES = [
+    (4.9, 3.6),
+    (3.2, 5.0),
+    (4.1, 4.1),
+    (6.0, 2.8),
+]
+
+
+def _assert_binary_ev_kelly_contract(
+    probability: float,
+    decimal_odds: float,
+    label: str,
+) -> None:
+    ev = _binary_ev(
+        probability,
+        decimal_odds,
+    )
+    raw_kelly = _binary_kelly_raw(
+        probability,
+        decimal_odds,
+    )
+
+    _assert_close(
+        ev,
+        (probability * decimal_odds) - 1.0,
+    )
+
+    assert _sign(raw_kelly) == _sign(ev), (
+        f"{label} Kelly/EV sign mismatch: "
+        f"p={probability} "
+        f"decimal={decimal_odds} "
+        f"ev={ev} "
+        f"kelly={raw_kelly}"
+    )
+
+
+def _assert_run_line_home_away_swap() -> None:
+    for home_runs, away_runs in RUN_LINE_SWAP_CASES:
+        home_cover, away_cover = PROBS.run_line_probabilities(
+            home_runs,
+            away_runs,
+            -1.5,
+            1.5,
+        )
+
+        _assert_close(
+            home_cover + away_cover,
+            1.0,
+        )
+
+        (
+            swapped_home_cover,
+            swapped_away_cover,
+        ) = PROBS.run_line_probabilities(
+            away_runs,
+            home_runs,
+            1.5,
+            -1.5,
+        )
+
+        _assert_close(
+            swapped_home_cover,
+            away_cover,
+        )
+        _assert_close(
+            swapped_away_cover,
+            home_cover,
+        )
+
+
 def test_moneyline_probability_ev_kelly_contract() -> None:
     rows = [
         (4.8, 3.6, 1.80, 2.20),
@@ -210,73 +280,15 @@ def test_moneyline_probability_ev_kelly_contract() -> None:
             (home_prob, home_decimal),
             (away_prob, away_decimal),
         ]:
-            ev = _binary_ev(
+            _assert_binary_ev_kelly_contract(
                 probability,
                 decimal_odds,
-            )
-
-            raw_kelly = _binary_kelly_raw(
-                probability,
-                decimal_odds,
-            )
-
-            _assert_close(
-                ev,
-                (probability * decimal_odds) - 1.0,
-            )
-
-            assert _sign(raw_kelly) == _sign(ev), (
-                f"Kelly/EV sign mismatch: "
-                f"p={probability} "
-                f"decimal={decimal_odds} "
-                f"ev={ev} "
-                f"kelly={raw_kelly}"
+                "Moneyline",
             )
 
 
 def test_run_line_complement_and_home_away_swap() -> None:
-    cases = [
-        (4.9, 3.6),
-        (3.2, 5.0),
-        (4.1, 4.1),
-        (6.0, 2.8),
-    ]
-
-    for home_runs, away_runs in cases:
-        (
-            home_cover,
-            away_cover,
-        ) = PROBS.run_line_probabilities(
-            home_runs,
-            away_runs,
-            -1.5,
-            1.5,
-        )
-
-        _assert_close(
-            home_cover + away_cover,
-            1.0,
-        )
-
-        (
-            swapped_home_cover,
-            swapped_away_cover,
-        ) = PROBS.run_line_probabilities(
-            away_runs,
-            home_runs,
-            1.5,
-            -1.5,
-        )
-
-        _assert_close(
-            swapped_home_cover,
-            away_cover,
-        )
-
-        _assert_close(
-            swapped_away_cover,
-            home_cover,
-        )
+    _assert_run_line_home_away_swap()
 
 
 def test_run_line_probability_contract_and_ranking() -> None:
@@ -326,48 +338,7 @@ def test_run_line_probability_contract_and_ranking() -> None:
 
 
 def test_run_line_probability_home_away_swap() -> None:
-    cases = [
-        (4.9, 3.6),
-        (3.2, 5.0),
-        (4.1, 4.1),
-        (6.0, 2.8),
-    ]
-
-    for home_runs, away_runs in cases:
-        (
-            home_cover,
-            away_cover,
-        ) = PROBS.run_line_probabilities(
-            home_runs,
-            away_runs,
-            -1.5,
-            1.5,
-        )
-
-        _assert_close(
-            home_cover + away_cover,
-            1.0,
-        )
-
-        (
-            swapped_home_cover,
-            swapped_away_cover,
-        ) = PROBS.run_line_probabilities(
-            away_runs,
-            home_runs,
-            1.5,
-            -1.5,
-        )
-
-        _assert_close(
-            swapped_home_cover,
-            away_cover,
-        )
-
-        _assert_close(
-            swapped_away_cover,
-            home_cover,
-        )
+    _assert_run_line_home_away_swap()
 
 
 def test_run_line_ev_kelly_contract() -> None:
@@ -386,10 +357,7 @@ def test_run_line_ev_kelly_contract() -> None:
         home_decimal,
         away_decimal,
     ) in cases:
-        (
-            home_prob,
-            away_prob,
-        ) = PROBS.run_line_probabilities(
+        home_prob, away_prob = PROBS.run_line_probabilities(
             home_runs,
             away_runs,
             home_line,
@@ -405,27 +373,10 @@ def test_run_line_ev_kelly_contract() -> None:
             (home_prob, home_decimal),
             (away_prob, away_decimal),
         ]:
-            ev = _binary_ev(
+            _assert_binary_ev_kelly_contract(
                 probability,
                 decimal_odds,
-            )
-
-            raw_kelly = _binary_kelly_raw(
-                probability,
-                decimal_odds,
-            )
-
-            _assert_close(
-                ev,
-                (probability * decimal_odds) - 1.0,
-            )
-
-            assert _sign(raw_kelly) == _sign(ev), (
-                f"Run-line Kelly/EV sign mismatch: "
-                f"p={probability} "
-                f"decimal={decimal_odds} "
-                f"ev={ev} "
-                f"kelly={raw_kelly}"
+                "Run-line",
             )
 
 
