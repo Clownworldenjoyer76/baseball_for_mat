@@ -299,41 +299,133 @@ def validate_forbidden_columns(df: pd.DataFrame, forbidden_columns: list, label:
         )
 
 
-def validate_canonical_probability_contract(df: pd.DataFrame, label: str) -> None:
-    legacy = [c for c in LEGACY_OFFICIAL_PROBABILITY_COLUMNS if c in df.columns]
+def validate_canonical_probability_contract(
+    df: pd.DataFrame,
+    label: str,
+) -> None:
+    legacy = [
+        column
+        for column in LEGACY_OFFICIAL_PROBABILITY_COLUMNS
+        if column in df.columns
+    ]
     if legacy:
-        raise ValueError(f"{label} contains obsolete official probability columns: {legacy}")
+        raise ValueError(
+            f"{label} contains obsolete official "
+            f"probability columns: {legacy}"
+        )
 
-    if "home_model_prob_moneyline" in df.columns:
-        cols = ["home_model_prob_moneyline", "away_model_prob_moneyline"]
-        values = [pd.to_numeric(df[c], errors="coerce") for c in cols]
-        bad = values[0].isna() | values[1].isna() | (values[0] < 0) | (values[0] > 1) | (values[1] < 0) | (values[1] > 1) | ((values[0] + values[1] - 1).abs() > 1e-6)
-        if bad.any():
-            raise ValueError(f"{label} invalid canonical moneyline probabilities; bad_rows={int(bad.sum())}")
+    pair_specs = (
+        (
+            "moneyline",
+            "home_model_prob_moneyline",
+            "away_model_prob_moneyline",
+        ),
+        (
+            "run-line",
+            "home_model_prob_run_line",
+            "away_model_prob_run_line",
+        ),
+    )
 
-    if "home_model_prob_run_line" in df.columns:
-        cols = ["home_model_prob_run_line", "away_model_prob_run_line"]
-        values = [pd.to_numeric(df[c], errors="coerce") for c in cols]
-        bad = values[0].isna() | values[1].isna() | (values[0] < 0) | (values[0] > 1) | (values[1] < 0) | (values[1] > 1) | ((values[0] + values[1] - 1).abs() > 1e-6)
+    for market_name, left_col, right_col in pair_specs:
+        if left_col not in df.columns:
+            continue
+
+        left = pd.to_numeric(
+            df[left_col],
+            errors="coerce",
+        )
+        right = pd.to_numeric(
+            df[right_col],
+            errors="coerce",
+        )
+
+        bad = (
+            left.isna()
+            | right.isna()
+            | (left < 0)
+            | (left > 1)
+            | (right < 0)
+            | (right > 1)
+            | ((left + right - 1).abs() > 1e-6)
+        )
+
         if bad.any():
-            raise ValueError(f"{label} invalid canonical run-line probabilities; bad_rows={int(bad.sum())}")
+            raise ValueError(
+                f"{label} invalid canonical "
+                f"{market_name} probabilities; "
+                f"bad_rows={int(bad.sum())}"
+            )
 
     if "over_model_prob_total_win" in df.columns:
         cols = [
-            "over_model_prob_total_win", "over_model_prob_total_loss",
-            "under_model_prob_total_win", "under_model_prob_total_loss",
+            "over_model_prob_total_win",
+            "over_model_prob_total_loss",
+            "under_model_prob_total_win",
+            "under_model_prob_total_loss",
             "total_model_prob_push",
         ]
-        v = {c: pd.to_numeric(df[c], errors="coerce") for c in cols}
-        bad = pd.Series(False, index=df.index)
-        for c in cols:
-            bad = bad | v[c].isna() | (v[c] < 0) | (v[c] > 1)
-        bad = bad | ((v["over_model_prob_total_win"] + v["over_model_prob_total_loss"] + v["total_model_prob_push"] - 1).abs() > 1e-6)
-        bad = bad | ((v["under_model_prob_total_win"] + v["under_model_prob_total_loss"] + v["total_model_prob_push"] - 1).abs() > 1e-6)
-        bad = bad | ((v["under_model_prob_total_win"] - v["over_model_prob_total_loss"]).abs() > 1e-6)
-        bad = bad | ((v["under_model_prob_total_loss"] - v["over_model_prob_total_win"]).abs() > 1e-6)
+        values = {
+            column: pd.to_numeric(
+                df[column],
+                errors="coerce",
+            )
+            for column in cols
+        }
+
+        bad = pd.Series(
+            False,
+            index=df.index,
+        )
+
+        for column in cols:
+            series = values[column]
+            bad = (
+                bad
+                | series.isna()
+                | (series < 0)
+                | (series > 1)
+            )
+
+        bad = bad | (
+            (
+                values["over_model_prob_total_win"]
+                + values["over_model_prob_total_loss"]
+                + values["total_model_prob_push"]
+                - 1
+            ).abs()
+            > 1e-6
+        )
+        bad = bad | (
+            (
+                values["under_model_prob_total_win"]
+                + values["under_model_prob_total_loss"]
+                + values["total_model_prob_push"]
+                - 1
+            ).abs()
+            > 1e-6
+        )
+        bad = bad | (
+            (
+                values["under_model_prob_total_win"]
+                - values["over_model_prob_total_loss"]
+            ).abs()
+            > 1e-6
+        )
+        bad = bad | (
+            (
+                values["under_model_prob_total_loss"]
+                - values["over_model_prob_total_win"]
+            ).abs()
+            > 1e-6
+        )
+
         if bad.any():
-            raise ValueError(f"{label} invalid canonical totals probabilities; bad_rows={int(bad.sum())}")
+            raise ValueError(
+                f"{label} invalid canonical totals "
+                f"probabilities; "
+                f"bad_rows={int(bad.sum())}"
+            )
 
 
 def validate_unique_game_id(df: pd.DataFrame, label: str) -> None:

@@ -10,16 +10,16 @@ from pathlib import Path
 import pandas as pd
 
 from juice_common import (
+    append_summary_status,
     fail_on_summary_errors,
     load_juice_config,
     log_stage_inputs,
     make_logger,
-    normalize_pair,
     read_csv_validated,
     require_nonempty_columns,
     utc_now,
-    validate_no_duplicate_columns,
-    validate_required_columns,
+    validate_normalized_probability_pair,
+    validate_stale_source,
     write_audit,
     write_csv_validated,
 )
@@ -118,11 +118,11 @@ def _write_summary(summary: dict, per_file: list) -> None:
             f"{pf['missing_any_total_dk']:>9} {pf['schema_errors']:>7}"
         )
 
-    status = "SUCCESS" if summary["errors"] == 0 and summary["schema_errors"] == 0 else "COMPLETED WITH ERRORS"
-    lines += ["", f"STATUS: {status}", "=" * 60]
-
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    append_summary_status(
+        lines,
+        summary,
+        LOG_FILE,
+    )
 
 
 # =========================
@@ -130,37 +130,27 @@ def _write_summary(summary: dict, per_file: list) -> None:
 # =========================
 
 def validate_stale_input(input_path: Path) -> None:
-    source_path = SOURCE_MERGE_DIR / input_path.name
-    if not source_path.exists():
-        _log(f"stale_check source_missing source={source_path} input={input_path}; continuing", "WARN")
-        return
-
-    if input_path.stat().st_mtime < source_path.stat().st_mtime:
-        raise ValueError(
-            f"stale 01_merguiced input: {input_path} is older than source merge file {source_path}"
-        )
+    validate_stale_source(
+        input_path,
+        SOURCE_MERGE_DIR,
+        _log,
+    )
 
 
-def validate_normalized_pair(df: pd.DataFrame, left_col: str, right_col: str, label: str) -> int:
-    bad = 0
-    for idx, row in df.iterrows():
-        left = pd.to_numeric(pd.Series([row[left_col]]), errors="coerce").iloc[0]
-        right = pd.to_numeric(pd.Series([row[right_col]]), errors="coerce").iloc[0]
-
-        if pd.isna(left) and pd.isna(right):
-            continue
-
-        if pd.isna(left) or pd.isna(right):
-            bad += 1
-            _log(f"{label} row={idx} reason=incomplete_normalized_pair {left_col}={left} {right_col}={right}", "ERROR")
-            continue
-
-        total = float(left) + float(right)
-        if not math.isfinite(total) or abs(total - 1.0) > NORMALIZATION_TOLERANCE:
-            bad += 1
-            _log(f"{label} row={idx} reason=normalized_sum_invalid total={total}", "ERROR")
-
-    return bad
+def validate_normalized_pair(
+    df: pd.DataFrame,
+    left_col: str,
+    right_col: str,
+    label: str,
+) -> int:
+    return validate_normalized_probability_pair(
+        df,
+        left_col,
+        right_col,
+        label,
+        NORMALIZATION_TOLERANCE,
+        _log,
+    )
 
 
 # =========================

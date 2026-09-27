@@ -105,38 +105,35 @@ def load_module(
     name: str,
     path: Path,
 ):
-    if not path.exists():
+    module_path = Path(path)
+
+    if not module_path.is_file():
         raise FileNotFoundError(
-            path
+            module_path
         )
 
-    spec = (
-        importlib.util
-        .spec_from_file_location(
-            name,
-            path,
-        )
+    spec = importlib.util.spec_from_file_location(
+        name,
+        str(module_path),
+    )
+    loader = (
+        None
+        if spec is None
+        else spec.loader
     )
 
-    if (
-        spec is None
-        or spec.loader is None
-    ):
+    if spec is None or loader is None:
         raise RuntimeError(
-            f"Could not load module: {path}"
+            f"Could not load module: "
+            f"{module_path}"
         )
 
-    module = (
-        importlib.util
-        .module_from_spec(
-            spec
-        )
+    module = importlib.util.module_from_spec(
+        spec
     )
-
-    spec.loader.exec_module(
+    loader.exec_module(
         module
     )
-
     return module
 
 
@@ -1276,41 +1273,39 @@ def build_summary(
         "current_sum",
         "classifier",
     ):
-        part = predictions[
-            predictions[
-                "variant"
-            ]
-            == variant
+        variant_mask = predictions[
+            "variant"
+        ].eq(
+            variant
+        )
+        part = predictions.loc[
+            variant_mask
         ].copy()
 
+        bucket_mask = buckets[
+            "variant"
+        ].eq(
+            variant
+        )
         bucket_part = (
-            buckets[
-                buckets[
-                    "variant"
-                ]
-                == variant
+            buckets.loc[
+                bucket_mask
             ]
             .sort_values(
-                "bucket"
+                by="bucket"
             )
         )
 
-        if (
-            part.empty
-            or bucket_part.empty
-        ):
+        if part.empty or bucket_part.empty:
             raise RuntimeError(
-                f"Missing evaluation "
-                f"data for {variant}"
+                f"Missing evaluation data "
+                f"for {variant}"
             )
 
-        y = (
-            part[
-                "win_binary"
-            ]
-            .to_numpy(
-                dtype=float
-            )
+        y = part[
+            "win_binary"
+        ].to_numpy(
+            dtype=float
         )
 
         p = np.clip(

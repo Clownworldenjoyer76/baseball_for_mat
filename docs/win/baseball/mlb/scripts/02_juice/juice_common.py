@@ -119,6 +119,106 @@ def log_stage_inputs(
     log(f"JUICE_FILE: {juice_file}")
 
 
+def validate_stale_source(
+    input_path: Path,
+    source_merge_dir: Path,
+    log,
+) -> None:
+    source_path = source_merge_dir / input_path.name
+    if not source_path.exists():
+        log(
+            f"stale_check source_missing source={source_path} "
+            f"input={input_path}; continuing",
+            "WARN",
+        )
+        return
+
+    if input_path.stat().st_mtime < source_path.stat().st_mtime:
+        raise ValueError(
+            f"stale 01_merguiced input: {input_path} "
+            f"is older than source merge file {source_path}"
+        )
+
+
+def validate_normalized_probability_pair(
+    df: pd.DataFrame,
+    left_col: str,
+    right_col: str,
+    label: str,
+    tolerance: float,
+    log,
+) -> int:
+    bad = 0
+
+    for idx, row in df.iterrows():
+        left = pd.to_numeric(
+            pd.Series([row[left_col]]),
+            errors="coerce",
+        ).iloc[0]
+        right = pd.to_numeric(
+            pd.Series([row[right_col]]),
+            errors="coerce",
+        ).iloc[0]
+
+        if pd.isna(left) and pd.isna(right):
+            continue
+
+        if pd.isna(left) or pd.isna(right):
+            bad += 1
+            log(
+                f"{label} row={idx} "
+                f"reason=incomplete_normalized_pair "
+                f"{left_col}={left} {right_col}={right}",
+                "ERROR",
+            )
+            continue
+
+        total = float(left) + float(right)
+
+        if (
+            not math.isfinite(total)
+            or abs(total - 1.0) > tolerance
+        ):
+            bad += 1
+            log(
+                f"{label} row={idx} "
+                f"reason=normalized_sum_invalid total={total}",
+                "ERROR",
+            )
+
+    return bad
+
+
+def append_summary_status(
+    lines: list[str],
+    summary: dict,
+    log_file: Path,
+) -> None:
+    status = (
+        "SUCCESS"
+        if (
+            summary["errors"] == 0
+            and summary["schema_errors"] == 0
+        )
+        else "COMPLETED WITH ERRORS"
+    )
+    lines.extend(
+        [
+            "",
+            f"STATUS: {status}",
+            "=" * 60,
+        ]
+    )
+
+    with log_file.open(
+        "a",
+        encoding="utf-8",
+    ) as handle:
+        handle.write(
+            "\n".join(lines) + "\n"
+        )
+
+
 def load_juice_config(
     path: Path,
     required_columns: list,

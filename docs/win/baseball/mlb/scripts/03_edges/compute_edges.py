@@ -136,22 +136,33 @@ def _write_summary(summary: dict, per_file: list) -> None:
 # =========================
 
 def duplicate_columns(columns) -> list:
-    seen = set()
-    duplicates = []
+    counts: dict[str, int] = {}
 
-    for col in columns:
-        if col in seen and col not in duplicates:
-            duplicates.append(col)
-        seen.add(col)
+    for column in columns:
+        counts[column] = counts.get(column, 0) + 1
 
-    return duplicates
+    return [
+        column
+        for column in dict.fromkeys(columns)
+        if counts[column] > 1
+    ]
 
 
-def validate_no_duplicate_columns(df: pd.DataFrame, label: str) -> None:
-    dupes = duplicate_columns(list(df.columns))
+def validate_no_duplicate_columns(
+    df: pd.DataFrame,
+    label: str,
+) -> None:
+    duplicate_names = duplicate_columns(
+        tuple(df.columns)
+    )
 
-    if dupes:
-        raise ValueError(f"{label} has duplicate columns: {dupes}")
+    if not duplicate_names:
+        return
+
+    raise ValueError(
+        f"{label} has duplicate columns: "
+        f"{duplicate_names}"
+    )
 
 
 def validate_required_columns(
@@ -159,10 +170,18 @@ def validate_required_columns(
     required_columns: list,
     label: str,
 ) -> None:
-    missing = [col for col in required_columns if col not in df.columns]
+    available_columns = set(df.columns)
+    missing = [
+        column
+        for column in required_columns
+        if column not in available_columns
+    ]
 
     if missing:
-        raise ValueError(f"{label} missing required columns: {missing}")
+        raise ValueError(
+            f"{label} missing required columns: "
+            f"{missing}"
+        )
 
 
 def validate_input_structure(
