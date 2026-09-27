@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import html
 import importlib.util
+import json
 import math
 import sys
 import time
@@ -115,108 +116,7 @@ EVALUATION_FRACTION = 0.30
 MIN_DEVELOPMENT_DATES = 45
 
 
-TEAM_ALIASES = {
-    "ARI": "ARI",
-    "AZ": "ARI",
-    "ARIZONA DIAMONDBACKS": "ARI",
-
-    "ATL": "ATL",
-    "ATLANTA BRAVES": "ATL",
-
-    "ATH": "ATH",
-    "OAK": "ATH",
-    "ATHLETICS": "ATH",
-    "OAKLAND ATHLETICS": "ATH",
-    "SACRAMENTO ATHLETICS": "ATH",
-
-    "BAL": "BAL",
-    "BALTIMORE ORIOLES": "BAL",
-
-    "BOS": "BOS",
-    "BOSTON RED SOX": "BOS",
-
-    "CHC": "CHC",
-    "CHICAGO CUBS": "CHC",
-
-    "CWS": "CWS",
-    "CHW": "CWS",
-    "CHICAGO WHITE SOX": "CWS",
-
-    "CIN": "CIN",
-    "CINCINNATI REDS": "CIN",
-
-    "CLE": "CLE",
-    "CLEVELAND GUARDIANS": "CLE",
-
-    "COL": "COL",
-    "COLORADO ROCKIES": "COL",
-
-    "DET": "DET",
-    "DETROIT TIGERS": "DET",
-
-    "HOU": "HOU",
-    "HOUSTON ASTROS": "HOU",
-
-    "KC": "KC",
-    "KCR": "KC",
-    "KANSAS CITY ROYALS": "KC",
-
-    "LAA": "LAA",
-    "LOS ANGELES ANGELS": "LAA",
-
-    "LAD": "LAD",
-    "LOS ANGELES DODGERS": "LAD",
-
-    "MIA": "MIA",
-    "MIAMI MARLINS": "MIA",
-
-    "MIL": "MIL",
-    "MILWAUKEE BREWERS": "MIL",
-
-    "MIN": "MIN",
-    "MINNESOTA TWINS": "MIN",
-
-    "NYM": "NYM",
-    "NEW YORK METS": "NYM",
-
-    "NYY": "NYY",
-    "NEW YORK YANKEES": "NYY",
-
-    "PHI": "PHI",
-    "PHILADELPHIA PHILLIES": "PHI",
-
-    "PIT": "PIT",
-    "PITTSBURGH PIRATES": "PIT",
-
-    "SD": "SD",
-    "SDP": "SD",
-    "SAN DIEGO PADRES": "SD",
-
-    "SF": "SF",
-    "SFG": "SF",
-    "SAN FRANCISCO GIANTS": "SF",
-
-    "SEA": "SEA",
-    "SEATTLE MARINERS": "SEA",
-
-    "STL": "STL",
-    "ST. LOUIS CARDINALS": "STL",
-    "ST LOUIS CARDINALS": "STL",
-
-    "TB": "TB",
-    "TBR": "TB",
-    "TAMPA BAY RAYS": "TB",
-
-    "TEX": "TEX",
-    "TEXAS RANGERS": "TEX",
-
-    "TOR": "TOR",
-    "TORONTO BLUE JAYS": "TOR",
-
-    "WSH": "WSH",
-    "WSN": "WSH",
-    "WASHINGTON NATIONALS": "WSH",
-}
+TEAM_ALIASES = json.loads((BASE / "config/mlb_team_aliases.json").read_text(encoding="utf-8"))
 
 
 STARTER_EXTRA_FEATURES = [

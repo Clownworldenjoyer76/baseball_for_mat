@@ -37,6 +37,7 @@ The raw SDV output column names are preserved intentionally.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 import traceback
@@ -91,39 +92,7 @@ BULLPEN_FEATURE_COLUMNS = [
     "bp_hard_rate_7d",
 ]
 
-TEAM_ALIASES = {
-    "ARI": "ARI", "AZ": "ARI", "ARIZONA DIAMONDBACKS": "ARI",
-    "ATL": "ATL", "ATLANTA BRAVES": "ATL",
-    "ATH": "ATH", "OAK": "ATH", "ATHLETICS": "ATH",
-    "OAKLAND ATHLETICS": "ATH", "SACRAMENTO ATHLETICS": "ATH",
-    "BAL": "BAL", "BALTIMORE ORIOLES": "BAL",
-    "BOS": "BOS", "BOSTON RED SOX": "BOS",
-    "CHC": "CHC", "CHICAGO CUBS": "CHC",
-    "CWS": "CWS", "CHW": "CWS", "CHICAGO WHITE SOX": "CWS",
-    "CIN": "CIN", "CINCINNATI REDS": "CIN",
-    "CLE": "CLE", "CLEVELAND GUARDIANS": "CLE",
-    "COL": "COL", "COLORADO ROCKIES": "COL",
-    "DET": "DET", "DETROIT TIGERS": "DET",
-    "HOU": "HOU", "HOUSTON ASTROS": "HOU",
-    "KC": "KC", "KCR": "KC", "KANSAS CITY ROYALS": "KC",
-    "LAA": "LAA", "LOS ANGELES ANGELS": "LAA",
-    "LAD": "LAD", "LOS ANGELES DODGERS": "LAD",
-    "MIA": "MIA", "MIAMI MARLINS": "MIA",
-    "MIL": "MIL", "MILWAUKEE BREWERS": "MIL",
-    "MIN": "MIN", "MINNESOTA TWINS": "MIN",
-    "NYM": "NYM", "NEW YORK METS": "NYM",
-    "NYY": "NYY", "NEW YORK YANKEES": "NYY",
-    "PHI": "PHI", "PHILADELPHIA PHILLIES": "PHI",
-    "PIT": "PIT", "PITTSBURGH PIRATES": "PIT",
-    "SD": "SD", "SDP": "SD", "SAN DIEGO PADRES": "SD",
-    "SF": "SF", "SFG": "SF", "SAN FRANCISCO GIANTS": "SF",
-    "SEA": "SEA", "SEATTLE MARINERS": "SEA",
-    "STL": "STL", "ST. LOUIS CARDINALS": "STL", "ST LOUIS CARDINALS": "STL",
-    "TB": "TB", "TBR": "TB", "TAMPA BAY RAYS": "TB",
-    "TEX": "TEX", "TEXAS RANGERS": "TEX",
-    "TOR": "TOR", "TORONTO BLUE JAYS": "TOR",
-    "WSH": "WSH", "WSN": "WSH", "WASHINGTON NATIONALS": "WSH",
-}
+TEAM_ALIASES = json.loads((BASE_DIR / "config/mlb_team_aliases.json").read_text(encoding="utf-8"))
 
 STRIKEOUT_EVENTS = {
     "strikeout",
@@ -1172,6 +1141,27 @@ def _bullpen_pitches_3d(
     return float(len(part))
 
 
+def _write_bullpen_window(
+    output: pd.DataFrame,
+    index,
+    side: str,
+    days: int,
+    performance: dict,
+) -> None:
+    metric_columns = {
+        "pa": "pa",
+        "woba_allowed": "woba",
+        "k_rate": "k_rate",
+        "bb_rate": "bb_rate",
+        "hard_rate": "hard_rate",
+    }
+    for suffix, metric in metric_columns.items():
+        output.loc[
+            index,
+            f"sdv_{side}_bp_{suffix}_{days}d",
+        ] = performance[metric]
+
+
 def attach_bullpen_features(
     games: pd.DataFrame,
     team_cache: pl.DataFrame | None,
@@ -1205,17 +1195,9 @@ def attach_bullpen_features(
                 target_game_date,
             )
 
-            output.loc[index, f"sdv_{side}_bp_pa_14d"] = perf14["pa"]
-            output.loc[index, f"sdv_{side}_bp_woba_allowed_14d"] = perf14["woba"]
-            output.loc[index, f"sdv_{side}_bp_k_rate_14d"] = perf14["k_rate"]
-            output.loc[index, f"sdv_{side}_bp_bb_rate_14d"] = perf14["bb_rate"]
-            output.loc[index, f"sdv_{side}_bp_hard_rate_14d"] = perf14["hard_rate"]
+            _write_bullpen_window(output, index, side, 14, perf14)
             output.loc[index, f"sdv_{side}_bp_pitches_3d"] = pitches3
-            output.loc[index, f"sdv_{side}_bp_pa_7d"] = perf7["pa"]
-            output.loc[index, f"sdv_{side}_bp_woba_allowed_7d"] = perf7["woba"]
-            output.loc[index, f"sdv_{side}_bp_k_rate_7d"] = perf7["k_rate"]
-            output.loc[index, f"sdv_{side}_bp_bb_rate_7d"] = perf7["bb_rate"]
-            output.loc[index, f"sdv_{side}_bp_hard_rate_7d"] = perf7["hard_rate"]
+            _write_bullpen_window(output, index, side, 7, perf7)
 
     return output
 

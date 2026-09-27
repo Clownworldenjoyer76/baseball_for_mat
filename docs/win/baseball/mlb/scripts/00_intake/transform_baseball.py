@@ -7,17 +7,13 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
+from intake_log import make_logger
+
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/00_intake")
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = ERROR_DIR / "transform_baseball.txt"
 
-with open(LOG_FILE, "w", encoding="utf-8") as startup_log:
-    startup_log.write(f"=== transform_baseball RUN {datetime.now().isoformat()} ===\n")
-
-
-def log(msg: str) -> None:
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{datetime.now().isoformat()} | {msg}\n")
+log = make_logger(LOG_FILE, "transform_baseball")
 
 
 # -------------------------

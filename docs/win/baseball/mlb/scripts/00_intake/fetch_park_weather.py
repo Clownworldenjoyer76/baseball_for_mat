@@ -10,7 +10,6 @@
 # Only processes games files dated today or in the future.
 
 import os
-import re
 import time
 from datetime import datetime, UTC
 from pathlib import Path
@@ -18,6 +17,13 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
+
+from weather_common import (
+    clean_value as _clean,
+    now_iso as _now,
+    sanitize_log_message as _sanitize_log_message,
+    to_float as _to_float,
+)
 
 # ─────────────────────────────────────────────
 # PATHS
@@ -90,32 +96,6 @@ OUTPUT_COLUMNS = [
 # LOGGING
 # ─────────────────────────────────────────────
 
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
-
-
-def _sanitize_log_message(msg: str) -> str:
-    sanitized = str(msg)
-
-    sanitized = re.sub(
-        r"(?i)\blat\s*=\s*[^,\s|]+",
-        "lat=<redacted>",
-        sanitized,
-    )
-    sanitized = re.sub(
-        r"(?i)\blon\s*=\s*[^,\s|]+",
-        "lon=<redacted>",
-        sanitized,
-    )
-    sanitized = re.sub(
-        r"\b-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\b",
-        "<redacted-coordinates>",
-        sanitized,
-    )
-
-    return sanitized
-
-
 def _log(msg: str, level: str = "INFO") -> None:
     safe_msg = _sanitize_log_message(msg).rstrip()
     with open(LOG_FILE, "a", encoding="utf-8") as f:
@@ -125,24 +105,6 @@ def _log(msg: str, level: str = "INFO") -> None:
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-
-def _clean(value) -> str:
-    if value is None:
-        return ""
-    if pd.isna(value):
-        return ""
-    return str(value).strip()
-
-
-def _to_float(value):
-    try:
-        s = _clean(value)
-        if not s:
-            return None
-        return float(s)
-    except (TypeError, ValueError):
-        return None
-
 
 def _blank_raw_weather() -> dict:
     return {col: "" for col in RAW_WEATHER_COLUMNS}

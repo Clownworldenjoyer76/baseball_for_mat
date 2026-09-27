@@ -202,76 +202,52 @@ def require_columns(path, actual_columns, required_columns, errors):
     return True
 
 
-def load_team_ids(errors):
-    if not require_file(TEAM_MAP_PATH, errors):
+def _load_reference_ids(path, required_columns, id_column, errors):
+    if not require_file(path, errors):
         return set()
 
     try:
-        columns, rows = read_csv_rows(TEAM_MAP_PATH)
+        columns, rows = read_csv_rows(path)
     except Exception as exc:
-        errors.append(f"{TEAM_MAP_PATH}: read error: {exc}")
+        errors.append(f"{path}: read error: {exc}")
         return set()
 
-    if not require_columns(
-        TEAM_MAP_PATH,
-        columns,
-        TEAM_MAP_REQUIRED_COLUMNS,
-        errors,
-    ):
+    if not require_columns(path, columns, required_columns, errors):
         return set()
 
-    team_ids = set()
-
+    values = set()
     for line_number, row in enumerate(rows, start=2):
-        team_id = clean(row.get("team_id"))
-        if not team_id:
-            errors.append(f"{TEAM_MAP_PATH}: row {line_number}: blank team_id")
+        value = clean(row.get(id_column))
+        if not value:
+            errors.append(f"{path}: row {line_number}: blank {id_column}")
             continue
-        if not team_id.isdigit():
+        if not value.isdigit():
             errors.append(
-                f"{TEAM_MAP_PATH}: row {line_number}: "
-                f"non-integer team_id: {team_id}"
+                f"{path}: row {line_number}: "
+                f"non-integer {id_column}: {value}"
             )
             continue
-        team_ids.add(team_id)
+        values.add(value)
 
-    return team_ids
+    return values
+
+
+def load_team_ids(errors):
+    return _load_reference_ids(
+        TEAM_MAP_PATH,
+        TEAM_MAP_REQUIRED_COLUMNS,
+        "team_id",
+        errors,
+    )
 
 
 def load_venue_ids(errors):
-    if not require_file(VENUE_MAP_PATH, errors):
-        return set()
-
-    try:
-        columns, rows = read_csv_rows(VENUE_MAP_PATH)
-    except Exception as exc:
-        errors.append(f"{VENUE_MAP_PATH}: read error: {exc}")
-        return set()
-
-    if not require_columns(
+    return _load_reference_ids(
         VENUE_MAP_PATH,
-        columns,
         VENUE_MAP_REQUIRED_COLUMNS,
+        "venue_id",
         errors,
-    ):
-        return set()
-
-    venue_ids = set()
-
-    for line_number, row in enumerate(rows, start=2):
-        venue_id = clean(row.get("venue_id"))
-        if not venue_id:
-            errors.append(f"{VENUE_MAP_PATH}: row {line_number}: blank venue_id")
-            continue
-        if not venue_id.isdigit():
-            errors.append(
-                f"{VENUE_MAP_PATH}: row {line_number}: "
-                f"non-integer venue_id: {venue_id}"
-            )
-            continue
-        venue_ids.add(venue_id)
-
-    return venue_ids
+    )
 
 
 def normalize_integer_string(value):

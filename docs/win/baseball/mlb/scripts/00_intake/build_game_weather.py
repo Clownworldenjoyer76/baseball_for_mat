@@ -13,12 +13,18 @@
 #   precip_in,humidity,will_it_rain,wind_blowing_out,
 #   air_pressure_at_sea_level,dew_point_f,symbol_code
 
-import re
 from datetime import datetime, UTC
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas as pd
+
+from weather_common import (
+    clean_value as _clean,
+    now_iso as _now,
+    sanitize_log_message as _sanitize_log_message,
+    to_float as _to_float,
+)
 
 # ─────────────────────────────────────────────
 # PATHS
@@ -81,32 +87,6 @@ HPA_TO_INHG = 0.0295299830714
 # LOGGING
 # ─────────────────────────────────────────────
 
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
-
-
-def _sanitize_log_message(msg: str) -> str:
-    sanitized = str(msg)
-
-    sanitized = re.sub(
-        r"(?i)\blat\s*=\s*[^,\s|]+",
-        "lat=<redacted>",
-        sanitized,
-    )
-    sanitized = re.sub(
-        r"(?i)\blon\s*=\s*[^,\s|]+",
-        "lon=<redacted>",
-        sanitized,
-    )
-    sanitized = re.sub(
-        r"\b-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\b",
-        "<redacted-coordinates>",
-        sanitized,
-    )
-
-    return sanitized
-
-
 def _log(msg: str, level: str = "INFO") -> None:
     safe_msg = _sanitize_log_message(msg).rstrip()
 
@@ -121,28 +101,6 @@ def _log(msg: str, level: str = "INFO") -> None:
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-
-def _clean(value) -> str:
-    if value is None:
-        return ""
-
-    if pd.isna(value):
-        return ""
-
-    return str(value).strip()
-
-
-def _to_float(value):
-    try:
-        s = _clean(value)
-
-        if not s:
-            return None
-
-        return float(s)
-    except (TypeError, ValueError):
-        return None
-
 
 def _round(value, digits: int):
     if value is None:

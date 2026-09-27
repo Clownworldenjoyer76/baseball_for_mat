@@ -108,6 +108,20 @@ def _check_duplicates(df: pd.DataFrame, id_col: str, filepath: str) -> int:
     return dupes
 
 
+def _write_clean_output(
+    df: pd.DataFrame,
+    filepath: Path,
+    summary: dict,
+    id_column: str,
+) -> None:
+    _check_duplicates(df, id_column, filepath.name)
+    out_path = filepath.parent / (filepath.stem + "_clean.csv")
+    df.to_csv(out_path, index=False)
+    _log(f"  WROTE: {out_path.name} ({len(df)} rows)")
+    summary["files_written"] += 1
+    summary["rows_written"] += len(df)
+
+
 def clean_batting_pitching(filepath: Path, summary: dict) -> None:
     label = filepath.name
     _log(f"--- {label}")
@@ -175,13 +189,7 @@ def clean_batting_pitching(filepath: Path, summary: dict) -> None:
     else:
         df["sample_flag"] = "ok"
 
-    _check_duplicates(df, "player_id", label)
-
-    out_path = filepath.parent / (filepath.stem + "_clean.csv")
-    df.to_csv(out_path, index=False)
-    _log(f"  WROTE: {out_path.name} ({len(df)} rows)")
-    summary["files_written"] += 1
-    summary["rows_written"] += len(df)
+    _write_clean_output(df, filepath, summary, "player_id")
 
 
 def clean_fielding(filepath: Path, summary: dict) -> None:
@@ -218,13 +226,7 @@ def clean_fielding(filepath: Path, summary: dict) -> None:
     df.drop(columns=cols_to_drop, inplace=True)
     _log(f"  Dropped columns: {cols_to_drop}")
 
-    _check_duplicates(df, "id", label)
-
-    out_path = filepath.parent / (filepath.stem + "_clean.csv")
-    df.to_csv(out_path, index=False)
-    _log(f"  WROTE: {out_path.name} ({len(df)} rows)")
-    summary["files_written"] += 1
-    summary["rows_written"] += len(df)
+    _write_clean_output(df, filepath, summary, "id")
 
 
 def clean_baserunning(filepath: Path, summary: dict) -> None:
@@ -248,13 +250,34 @@ def clean_baserunning(filepath: Path, summary: dict) -> None:
         )
         _log("  Renamed: entity_name → player_name")
 
-    _check_duplicates(df, "player_id", label)
+    _write_clean_output(df, filepath, summary, "player_id")
 
-    out_path = filepath.parent / (filepath.stem + "_clean.csv")
-    df.to_csv(out_path, index=False)
-    _log(f"  WROTE: {out_path.name} ({len(df)} rows)")
-    summary["files_written"] += 1
-    summary["rows_written"] += len(df)
+
+def _process_clean_files(
+    section: str,
+    directory: Path,
+    pattern: str,
+    cleaner,
+    summary: dict,
+) -> None:
+    _log(f"=== {section} ===")
+    files = sorted(
+        path
+        for path in directory.glob(pattern)
+        if "_clean" not in path.stem
+    )
+    _log(f"Files found: {len(files)}")
+
+    for filepath in files:
+        try:
+            cleaner(filepath, summary)
+        except Exception as exc:
+            _log(
+                f"UNHANDLED ERROR {filepath.name}: {exc}\n"
+                f"{traceback.format_exc()}",
+                "ERROR",
+            )
+            summary["errors"] += 1
 
 
 def main():
@@ -270,83 +293,34 @@ def main():
         "errors": 0,
     }
 
-    _log("=== BATTING ===")
-    batting_files = sorted(BATTING_DIR.glob("batting_*.csv"))
-    batting_files = [
-        f for f in batting_files
-        if "_clean" not in f.stem
-    ]
-    _log(f"Files found: {len(batting_files)}")
-
-    for fp in batting_files:
-        try:
-            clean_batting_pitching(fp, summary)
-        except Exception as e:
-            _log(
-                f"UNHANDLED ERROR {fp.name}: {e}\n"
-                f"{traceback.format_exc()}",
-                "ERROR",
-            )
-            summary["errors"] += 1
-
-    _log("=== PITCHING ===")
-    pitching_files = sorted(PITCHING_DIR.glob("pitching_*.csv"))
-    pitching_files = [
-        f for f in pitching_files
-        if "_clean" not in f.stem
-    ]
-    _log(f"Files found: {len(pitching_files)}")
-
-    for fp in pitching_files:
-        try:
-            clean_batting_pitching(fp, summary)
-        except Exception as e:
-            _log(
-                f"UNHANDLED ERROR {fp.name}: {e}\n"
-                f"{traceback.format_exc()}",
-                "ERROR",
-            )
-            summary["errors"] += 1
-
-    _log("=== FIELDING ===")
-    fielding_files = sorted(FIELDING_DIR.glob("fielding_*.csv"))
-    fielding_files = [
-        f for f in fielding_files
-        if "_clean" not in f.stem
-    ]
-    _log(f"Files found: {len(fielding_files)}")
-
-    for fp in fielding_files:
-        try:
-            clean_fielding(fp, summary)
-        except Exception as e:
-            _log(
-                f"UNHANDLED ERROR {fp.name}: {e}\n"
-                f"{traceback.format_exc()}",
-                "ERROR",
-            )
-            summary["errors"] += 1
-
-    _log("=== BASERUNNING ===")
-    baserunning_files = sorted(
-        BASERUNNING_DIR.glob("baserunning_*.csv")
+    _process_clean_files(
+        "BATTING",
+        BATTING_DIR,
+        "batting_*.csv",
+        clean_batting_pitching,
+        summary,
     )
-    baserunning_files = [
-        f for f in baserunning_files
-        if "_clean" not in f.stem
-    ]
-    _log(f"Files found: {len(baserunning_files)}")
-
-    for fp in baserunning_files:
-        try:
-            clean_baserunning(fp, summary)
-        except Exception as e:
-            _log(
-                f"UNHANDLED ERROR {fp.name}: {e}\n"
-                f"{traceback.format_exc()}",
-                "ERROR",
-            )
-            summary["errors"] += 1
+    _process_clean_files(
+        "PITCHING",
+        PITCHING_DIR,
+        "pitching_*.csv",
+        clean_batting_pitching,
+        summary,
+    )
+    _process_clean_files(
+        "FIELDING",
+        FIELDING_DIR,
+        "fielding_*.csv",
+        clean_fielding,
+        summary,
+    )
+    _process_clean_files(
+        "BASERUNNING",
+        BASERUNNING_DIR,
+        "baserunning_*.csv",
+        clean_baserunning,
+        summary,
+    )
 
     _log("=== PARK FACTORS ===")
     _log(
