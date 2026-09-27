@@ -1,23 +1,28 @@
-version: "1.0"
+version: '1.0'
 linter: qodana-python
-
 profile:
   name: qodana.recommended
-
 onlyDirectory: docs/win/baseball/mlb
+bootstrap: 'python -m pip install --upgrade pip
 
-bootstrap: |
-  python -m pip install --upgrade pip
   python -m pip install -r docs/win/baseball/mlb/requirements.txt
+
   python -m pip install playwright
+
   python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
+
   python -m pip check
 
+  '
 include:
-  - name: CheckDependencyLicenses
-
+- name: CheckDependencyLicenses
 exclude:
-  - name: All
-    paths:
-      - docs/win/baseball/mlb/vendor
-      - docs/win/baseball/mlb/00_intake/sportsdataverse/cache
+- name: All
+  paths:
+  - docs/win/baseball/mlb/vendor
+  - docs/win/baseball/mlb/00_intake/sportsdataverse/cache
+- name: DuplicatedCode
+  paths:
+  - docs/win/baseball/mlb/scripts/modeling/test_total_park_recency.py
+  - docs/win/baseball/mlb/scripts/modeling/test_total_repeated_holdout.py
+  - docs/win/baseball/mlb/scripts/modeling/test_total_simplified_models.py
