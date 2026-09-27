@@ -8,6 +8,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from edge_common import (
+    MONEYLINE_REQUIRED_COLUMNS,
+    RUN_LINE_REQUIRED_COLUMNS,
+    TOTAL_REQUIRED_COLUMNS,
+    detect_market,
+    record_unrecognized_file,
+)
+
 INPUT_DIR = Path("docs/win/baseball/mlb/02_juice")
 OUTPUT_DIR = Path("docs/win/baseball/mlb/03_edges")
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/03_edges")
@@ -31,52 +39,6 @@ FORBIDDEN_READ_TOKENS = [
 SCRIPT_NAME = "compute_edges.py"
 STAGE_NAME = "03_edges"
 PROB_TOLERANCE = 1e-6
-
-
-MONEYLINE_REQUIRED_COLUMNS = [
-    "game_id",
-    "sport",
-    "league",
-    "game_date",
-    "game_time",
-    "home_team",
-    "away_team",
-    "home_model_prob_moneyline",
-    "away_model_prob_moneyline",
-    "home_dk_decimal_moneyline",
-    "away_dk_decimal_moneyline",
-]
-
-RUN_LINE_REQUIRED_COLUMNS = [
-    "game_id",
-    "sport",
-    "league",
-    "game_date",
-    "game_time",
-    "home_team",
-    "away_team",
-    "home_model_prob_run_line",
-    "away_model_prob_run_line",
-    "home_dk_run_line_decimal",
-    "away_dk_run_line_decimal",
-]
-
-TOTAL_REQUIRED_COLUMNS = [
-    "game_id",
-    "sport",
-    "league",
-    "game_date",
-    "game_time",
-    "home_team",
-    "away_team",
-    "over_model_prob_total_win",
-    "over_model_prob_total_loss",
-    "under_model_prob_total_win",
-    "under_model_prob_total_loss",
-    "total_model_prob_push",
-    "dk_total_over_decimal",
-    "dk_total_under_decimal",
-]
 
 
 # =========================
@@ -739,24 +701,16 @@ def main():
             "status": "ok",
         }
 
-        if "moneyline" in name:
-            market = "moneyline"
+        market = detect_market(name)
 
-        elif "run_line" in name:
-            market = "run_line"
-
-        elif "total" in name:
-            market = "total"
-
-        else:
-            _log(
-                f"SKIP unrecognized file: "
-                f"{input_file.name}"
+        if market is None:
+            record_unrecognized_file(
+                input_file,
+                pf,
+                summary,
+                per_file,
+                _log,
             )
-
-            pf["status"] = "skipped"
-            summary["skipped"] += 1
-            per_file.append(pf)
             continue
 
         pf["market"] = market

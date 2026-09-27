@@ -217,33 +217,37 @@ def _validate_totals(df, label):
 
     _validate_prob_series(df, cols, label)
 
-    ow = pd.to_numeric(
-        df["over_model_prob_total_win"],
-        errors="coerce",
-    )
-    ol = pd.to_numeric(
-        df["over_model_prob_total_loss"],
-        errors="coerce",
-    )
-    uw = pd.to_numeric(
-        df["under_model_prob_total_win"],
-        errors="coerce",
-    )
-    ul = pd.to_numeric(
-        df["under_model_prob_total_loss"],
-        errors="coerce",
-    )
-    push = pd.to_numeric(
-        df["total_model_prob_push"],
-        errors="coerce",
+    probabilities = {
+        col: pd.to_numeric(df[col], errors="coerce")
+        for col in cols
+    }
+
+    identities = (
+        (
+            probabilities["over_model_prob_total_win"]
+            + probabilities["over_model_prob_total_loss"]
+            + probabilities["total_model_prob_push"]
+            - 1.0
+        ).abs(),
+        (
+            probabilities["under_model_prob_total_win"]
+            + probabilities["under_model_prob_total_loss"]
+            + probabilities["total_model_prob_push"]
+            - 1.0
+        ).abs(),
+        (
+            probabilities["under_model_prob_total_win"]
+            - probabilities["over_model_prob_total_loss"]
+        ).abs(),
+        (
+            probabilities["under_model_prob_total_loss"]
+            - probabilities["over_model_prob_total_win"]
+        ).abs(),
     )
 
-    bad = (
-        ((ow + ol + push - 1.0).abs() > PROB_TOLERANCE)
-        | ((uw + ul + push - 1.0).abs() > PROB_TOLERANCE)
-        | ((uw - ol).abs() > PROB_TOLERANCE)
-        | ((ul - ow).abs() > PROB_TOLERANCE)
-    )
+    bad = identities[0] > PROB_TOLERANCE
+    for difference in identities[1:]:
+        bad |= difference > PROB_TOLERANCE
 
     if bad.any():
         sample_cols = ["game_id"] + cols

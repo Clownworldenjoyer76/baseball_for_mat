@@ -5,10 +5,24 @@ import glob
 import math
 import sys
 import traceback
-from datetime import datetime, UTC
 from pathlib import Path
 
 import pandas as pd
+
+from juice_common import (
+    fail_on_summary_errors,
+    load_juice_config,
+    log_stage_inputs,
+    make_logger,
+    normalize_pair,
+    read_csv_validated,
+    require_nonempty_columns,
+    utc_now,
+    validate_no_duplicate_columns,
+    validate_required_columns,
+    write_audit,
+    write_csv_validated,
+)
 
 INPUT_DIR = Path("docs/win/baseball/mlb/01_merge/01_merguiced")
 SOURCE_MERGE_DIR = INPUT_DIR.parent
@@ -62,32 +76,12 @@ OPTIONAL_ODDS_BAND_COLUMNS = [
     "odds_max",
 ]
 
-AUDIT_COLUMNS = [
-    "date",
-    "game_id",
-    "market",
-    "side",
-    "dk_american",
-    "dk_decimal",
-    "fair_decimal",
-    "juiced_decimal",
-    "juiced_prob",
-    "normalized_prob",
-    "status",
-]
-
-
 # =========================
 # LOGGING
 # =========================
 
-def _now():
-    return datetime.now(UTC).isoformat()
-
-
-def _log(msg: str, level: str = "INFO"):
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(f"{_now()} | {level:<5} | {msg.rstrip()}\n")
+_now = utc_now
+_log = make_logger(LOG_FILE)
 
 
 def _write_summary(summary: dict, per_file: list) -> None:
@@ -134,54 +128,6 @@ def _write_summary(summary: dict, per_file: list) -> None:
 # =========================
 # SCHEMA GUARDS
 # =========================
-
-def duplicate_columns(columns):
-    seen = set()
-    duplicates = []
-
-    for col in columns:
-        if col in seen and col not in duplicates:
-            duplicates.append(col)
-        seen.add(col)
-
-    return duplicates
-
-
-def validate_no_duplicate_columns(df: pd.DataFrame, label: str) -> None:
-    dupes = duplicate_columns(list(df.columns))
-    if dupes:
-        raise ValueError(f"{label} has duplicate columns: {dupes}")
-
-
-def validate_required_columns(df: pd.DataFrame, required_columns: list, label: str) -> None:
-    missing = [col for col in required_columns if col not in df.columns]
-    if missing:
-        raise ValueError(f"{label} missing required columns: {missing}")
-
-
-def read_csv_validated(path: Path, required_columns: list, label: str) -> pd.DataFrame:
-    df = pd.read_csv(path)
-    validate_no_duplicate_columns(df, label)
-    validate_required_columns(df, required_columns, label)
-    return df
-
-
-def write_csv_validated(df: pd.DataFrame, path: Path, label: str) -> None:
-    validate_no_duplicate_columns(df, label)
-    df.to_csv(path, index=False)
-
-
-def require_nonempty_columns(df: pd.DataFrame, columns: list, label: str) -> None:
-    fully_empty = []
-    for col in columns:
-        if col not in df.columns:
-            raise ValueError(f"{label} missing required DK odds column: {col}")
-        if df[col].isna().all() or df[col].astype(str).str.strip().replace({"": pd.NA, "nan": pd.NA, "None": pd.NA}).isna().all():
-            fully_empty.append(col)
-
-    if fully_empty:
-        raise ValueError(f"{label} has fully empty DK odds columns: {fully_empty}")
-
 
 def validate_stale_input(input_path: Path) -> None:
     source_path = SOURCE_MERGE_DIR / input_path.name
@@ -526,15 +472,17 @@ def main():
         f.unlink()
 
     try:
-        _log(f"INPUT_DIR : {INPUT_DIR}")
-        _log(f"SOURCE_MERGE_DIR: {SOURCE_MERGE_DIR}")
-        _log(f"JUICE_FILE: {JUICE_FILE}")
-
-        juice_df = read_csv_validated(JUICE_FILE, REQUIRED_JUICE_COLUMNS, f"juice file {JUICE_FILE}")
-        juice_df["band_min"] = pd.to_numeric(juice_df["band_min"], errors="coerce")
-        juice_df["band_max"] = pd.to_numeric(juice_df["band_max"], errors="coerce")
-        juice_df["side"] = juice_df["side"].astype(str).str.strip().str.lower()
-        juice_df["extra_juice"] = pd.to_numeric(juice_df["extra_juice"], errors="coerce")
+        log_stage_inputs(
+            _log,
+            INPUT_DIR,
+            SOURCE_MERGE_DIR,
+            JUICE_FILE,
+        )
+        juice_df = load_juice_config(
+            JUICE_FILE,
+            REQUIRED_JUICE_COLUMNS,
+            categorical_columns=("side",),
+        )
 
         if config_uses_odds_bands(juice_df):
             juice_df["odds_min"] = pd.to_numeric(juice_df["odds_min"], errors="coerce")
@@ -666,17 +614,9 @@ def main():
         sys.exit(1)
 
     audit_path = AUDIT_DIR / "total_post_juice_audit.csv"
-    pd.DataFrame(audit_rows, columns=AUDIT_COLUMNS).to_csv(audit_path, index=False)
-    _log(f"WROTE AUDIT: {audit_path}")
-
+    write_audit(audit_rows, audit_path, _log)
     _write_summary(summary, per_file)
-
-    if summary["errors"] > 0 or summary["schema_errors"] > 0:
-        print(
-            f"apply_total_juice completed with errors. "
-            f"errors={summary['errors']} schema_errors={summary['schema_errors']}"
-        )
-        sys.exit(1)
+    fail_on_summary_errors(summary, "apply_total_juice")
 
     print(
         f"apply_total_juice complete. "
