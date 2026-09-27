@@ -413,58 +413,66 @@ def write_market_bucket(
     )
 
 
-def build_moneyline(df):
-    ml = df[
-        df["market_type"] == "moneyline"
+def build_market_reports(
+    df,
+    market_type,
+    reports,
+    output_dir,
+    summary_sides,
+):
+    market_rows = df[
+        df["market_type"] == market_type
     ].copy()
-    if ml.empty:
+
+    if market_rows.empty:
         return
 
-    ml["league"] = LEAGUE
+    market_rows["league"] = LEAGUE
 
+    for bucket_col, fname in reports:
+        write_market_bucket(
+            market_rows,
+            bucket_col,
+            fname,
+            output_dir,
+        )
+
+    summary_rows = market_rows[
+        market_rows["side_group"].isin(
+            summary_sides
+        )
+    ]
+
+    for bucket_col, fname in reports:
+        write_market_bucket(
+            summary_rows,
+            bucket_col,
+            fname.replace(
+                ".csv",
+                "_home_away_summary.csv",
+            ),
+            output_dir,
+            home_away=True,
+        )
+
+
+def build_moneyline(df):
     reports = (
         ("ev_bucket", "mlb_moneyline_by_ev.csv"),
         ("odds_bucket", "mlb_moneyline_by_odds.csv"),
         ("kelly_bucket", "mlb_moneyline_by_kelly.csv"),
         ("win_prob_bucket", "mlb_moneyline_by_win_prob.csv"),
     )
-
-    for bucket_col, fname in reports:
-        write_market_bucket(
-            ml,
-            bucket_col,
-            fname,
-            ML_DIR,
-        )
-
-    home_away = ml[
-        ml["side_group"].isin(
-            ["HOME", "AWAY"]
-        )
-    ]
-
-    for bucket_col, fname in reports:
-        write_market_bucket(
-            home_away,
-            bucket_col,
-            fname.replace(
-                ".csv",
-                "_home_away_summary.csv",
-            ),
-            ML_DIR,
-            home_away=True,
-        )
+    build_market_reports(
+        df,
+        "moneyline",
+        reports,
+        ML_DIR,
+        ("HOME", "AWAY"),
+    )
 
 
 def build_run_line(df):
-    rl = df[
-        df["market_type"] == "run_line"
-    ].copy()
-    if rl.empty:
-        return
-
-    rl["league"] = LEAGUE
-
     reports = (
         ("ev_bucket", "mlb_run_line_by_ev.csv"),
         ("odds_bucket", "mlb_run_line_by_odds.csv"),
@@ -472,43 +480,16 @@ def build_run_line(df):
         ("win_prob_bucket", "mlb_run_line_by_win_prob.csv"),
         ("run_line_side", "mlb_run_line_by_side.csv"),
     )
-
-    for bucket_col, fname in reports:
-        write_market_bucket(
-            rl,
-            bucket_col,
-            fname,
-            RL_DIR,
-        )
-
-    home_away = rl[
-        rl["side_group"].isin(
-            ["HOME", "AWAY"]
-        )
-    ]
-
-    for bucket_col, fname in reports:
-        write_market_bucket(
-            home_away,
-            bucket_col,
-            fname.replace(
-                ".csv",
-                "_home_away_summary.csv",
-            ),
-            RL_DIR,
-            home_away=True,
-        )
+    build_market_reports(
+        df,
+        "run_line",
+        reports,
+        RL_DIR,
+        ("HOME", "AWAY"),
+    )
 
 
 def build_totals(df):
-    totals = df[
-        df["market_type"] == "total"
-    ].copy()
-    if totals.empty:
-        return
-
-    totals["league"] = LEAGUE
-
     reports = (
         ("ev_bucket", "mlb_total_by_ev.csv"),
         ("odds_bucket", "mlb_total_by_odds.csv"),
@@ -517,32 +498,13 @@ def build_totals(df):
         ("total_range_bucket", "mlb_total_by_total_range.csv"),
         ("side_group", "mlb_total_by_side.csv"),
     )
-
-    for bucket_col, fname in reports:
-        write_market_bucket(
-            totals,
-            bucket_col,
-            fname,
-            TOT_DIR,
-        )
-
-    over_under = totals[
-        totals["side_group"].isin(
-            ["OVER", "UNDER"]
-        )
-    ]
-
-    for bucket_col, fname in reports:
-        write_market_bucket(
-            over_under,
-            bucket_col,
-            fname.replace(
-                ".csv",
-                "_home_away_summary.csv",
-            ),
-            TOT_DIR,
-            home_away=True,
-        )
+    build_market_reports(
+        df,
+        "total",
+        reports,
+        TOT_DIR,
+        ("OVER", "UNDER"),
+    )
 
 
 ###############################################################

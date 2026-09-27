@@ -18,6 +18,7 @@ from juice_common import (
     read_csv_validated,
     require_nonempty_columns,
     utc_now,
+    validate_fav_ud_venue_juice_config,
     validate_normalized_probability_pair,
     validate_stale_source,
     write_audit,
@@ -131,68 +132,9 @@ def _write_summary(summary: dict, per_file: list) -> None:
 # SCHEMA GUARDS
 # =========================
 
-def validate_stale_input(input_path: Path) -> None:
-    validate_stale_source(
-        input_path,
-        SOURCE_MERGE_DIR,
-        _log,
-    )
-
-
-def validate_normalized_pair(
-    df: pd.DataFrame,
-    left_col: str,
-    right_col: str,
-    label: str,
-) -> int:
-    return validate_normalized_probability_pair(
-        df,
-        left_col,
-        right_col,
-        label,
-        NORMALIZATION_TOLERANCE,
-        _log,
-    )
-
-
 # =========================
 # JUICE CONFIG VALIDATION
 # =========================
-
-def validate_juice_config(juice_df: pd.DataFrame) -> None:
-    invalid = juice_df[
-        juice_df["band_min"].isna() |
-        juice_df["band_max"].isna() |
-        juice_df["extra_juice"].isna() |
-        (juice_df["band_min"] >= juice_df["band_max"]) |
-        (~juice_df["fav_ud"].isin(["favorite", "underdog"])) |
-        (~juice_df["venue"].isin(["home", "away"]))
-    ]
-    if not invalid.empty:
-        raise ValueError(f"moneyline juice config contains invalid rows: {len(invalid)}")
-
-    dupes = juice_df.duplicated(subset=["band_min", "band_max", "fav_ud", "venue"], keep=False)
-    if dupes.any():
-        raise ValueError(f"moneyline juice config contains duplicate bands: {int(dupes.sum())}")
-
-    required_combos = {(fav_ud, venue) for fav_ud in ["favorite", "underdog"] for venue in ["home", "away"]}
-    present_combos = set(zip(juice_df["fav_ud"], juice_df["venue"]))
-    missing_combos = sorted(required_combos - present_combos)
-    if missing_combos:
-        raise ValueError(f"moneyline juice config missing fav_ud/venue combinations: {missing_combos}")
-
-    overlap_count = 0
-    for _, group in juice_df.groupby(["fav_ud", "venue"]):
-        group = group.sort_values(["band_min", "band_max"])
-        prev_max = None
-        for _, row in group.iterrows():
-            if prev_max is not None and float(row["band_min"]) < prev_max:
-                overlap_count += 1
-            prev_max = max(prev_max, float(row["band_max"])) if prev_max is not None else float(row["band_max"])
-
-    if overlap_count:
-        raise ValueError(f"moneyline juice config contains overlapping bands: {overlap_count}")
-
 
 # =========================
 # JUICE LOOKUP
@@ -416,7 +358,10 @@ def main():
             REQUIRED_JUICE_COLUMNS,
             categorical_columns=("fav_ud", "venue"),
         )
-        validate_juice_config(juice_df)
+        validate_fav_ud_venue_juice_config(
+            juice_df,
+            "moneyline",
+        )
 
         files = sorted(glob.glob(str(INPUT_DIR / "*_mlb_moneyline.csv")))
         summary["files_found"] = len(files)
@@ -446,7 +391,11 @@ def main():
             _log(f"--- FILE: {in_path.name}")
 
             try:
-                validate_stale_input(in_path)
+                validate_stale_source(
+                    in_path,
+                    SOURCE_MERGE_DIR,
+                    _log,
+                )
 
                 df = read_csv_validated(in_path, REQUIRED_INPUT_COLUMNS, f"{in_path.name} input")
                 require_nonempty_columns(df, DK_ODDS_COLUMNS, f"{in_path.name} input")
@@ -491,11 +440,13 @@ def main():
                     else:
                         pf["skipped_bad"] += 1
 
-                norm_bad = validate_normalized_pair(
+                norm_bad = validate_normalized_probability_pair(
                     df,
                     "home_normalized_prob_moneyline",
                     "away_normalized_prob_moneyline",
                     f"{in_path.name} moneyline",
+                    NORMALIZATION_TOLERANCE,
+                    _log,
                 )
                 if norm_bad:
                     summary["normalization_errors"] += norm_bad

@@ -219,6 +219,99 @@ def append_summary_status(
         )
 
 
+def validate_fav_ud_venue_juice_config(
+    juice_df: pd.DataFrame,
+    market_label: str,
+) -> None:
+    invalid = juice_df[
+        juice_df["band_min"].isna()
+        | juice_df["band_max"].isna()
+        | juice_df["extra_juice"].isna()
+        | (juice_df["band_min"] >= juice_df["band_max"])
+        | (~juice_df["fav_ud"].isin(["favorite", "underdog"]))
+        | (~juice_df["venue"].isin(["home", "away"]))
+    ]
+
+    if not invalid.empty:
+        raise ValueError(
+            f"{market_label} juice config contains invalid rows: "
+            f"{len(invalid)}"
+        )
+
+    duplicate_mask = juice_df.duplicated(
+        subset=[
+            "band_min",
+            "band_max",
+            "fav_ud",
+            "venue",
+        ],
+        keep=False,
+    )
+    if duplicate_mask.any():
+        raise ValueError(
+            f"{market_label} juice config contains duplicate bands: "
+            f"{int(duplicate_mask.sum())}"
+        )
+
+    required_combos = {
+        (fav_ud, venue)
+        for fav_ud in ["favorite", "underdog"]
+        for venue in ["home", "away"]
+    }
+    present_combos = set(
+        zip(
+            juice_df["fav_ud"],
+            juice_df["venue"],
+        )
+    )
+    missing_combos = sorted(
+        required_combos - present_combos
+    )
+    if missing_combos:
+        raise ValueError(
+            f"{market_label} juice config missing "
+            f"fav_ud/venue combinations: {missing_combos}"
+        )
+
+    overlap_count = 0
+    for _, group in juice_df.groupby(
+        ["fav_ud", "venue"]
+    ):
+        ordered = group.sort_values(
+            ["band_min", "band_max"]
+        )
+        previous_max = None
+
+        for _, row in ordered.iterrows():
+            band_min = float(
+                row["band_min"]
+            )
+            band_max = float(
+                row["band_max"]
+            )
+
+            if (
+                previous_max is not None
+                and band_min < previous_max
+            ):
+                overlap_count += 1
+
+            previous_max = (
+                band_max
+                if previous_max is None
+                else max(
+                    previous_max,
+                    band_max,
+                )
+            )
+
+    if overlap_count:
+        raise ValueError(
+            f"{market_label} juice config contains "
+            f"overlapping bands: {overlap_count}"
+        )
+
+
 def load_juice_config(
     path: Path,
     required_columns: list,
