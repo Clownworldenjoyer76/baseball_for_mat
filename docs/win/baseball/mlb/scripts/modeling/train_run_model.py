@@ -148,30 +148,35 @@ RANDOM_STATE = 42
 POISSON_EPSILON = 1e-12
 
 
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
+def _make_training_log_helpers(log_file: Path):
+    def emit(message: str, level: str = "INFO") -> None:
+        timestamp = datetime.now(UTC).isoformat()
+        with log_file.open("a", encoding="utf-8") as handle:
+            handle.write(
+                f"{timestamp} | {level:<5} | {message.rstrip()}\n"
+            )
+
+    def abort(message: str) -> Never:
+        emit(message, "ERROR")
+        raise RuntimeError(message)
+
+    return emit, abort
 
 
-def _log(message: str, level: str = "INFO") -> None:
-    with LOG_FILE.open("a", encoding="utf-8") as f:
-        f.write(f"{_now()} | {level:<5} | {message.rstrip()}\n")
-
-
-def fail(message: str) -> Never:
-    _log(message, "ERROR")
-    raise RuntimeError(message)
+_log, fail = _make_training_log_helpers(LOG_FILE)
 
 
 def duplicate_columns(columns) -> list[str]:
-    seen: set[str] = set()
-    dupes: list[str] = []
+    counts: dict[str, int] = {}
 
-    for col in columns:
-        if col in seen and col not in dupes:
-            dupes.append(col)
-        seen.add(col)
+    for column in columns:
+        counts[column] = counts.get(column, 0) + 1
 
-    return dupes
+    return [
+        column
+        for column in dict.fromkeys(columns)
+        if counts[column] > 1
+    ]
 
 
 def load_training_set(path: Path) -> pd.DataFrame:
@@ -585,7 +590,7 @@ def train_one_side(
         "test_row_count": int(len(test)),
         "baseline_metrics": baseline_metrics,
         "model_metrics": model_metrics,
-        "created_at": _now(),
+        "created_at": datetime.now(UTC).isoformat(),
         "validation_mean_poisson_deviance": validation_score,
         "target_column": target_column,
         "baseline_column": baseline_column,
@@ -646,7 +651,7 @@ def main() -> None:
     args = parse_args()
 
     with LOG_FILE.open("w", encoding="utf-8") as f:
-        f.write(f"=== train_run_model RUN {_now()} ===\n")
+        f.write(f"=== train_run_model RUN {datetime.now(UTC).isoformat()} ===\n")
 
     try:
         args.candidate_dir.mkdir(parents=True, exist_ok=True)

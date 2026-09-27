@@ -415,13 +415,15 @@ def aggregate_lineup(
         vals = avg_accum[col]
         result[f"{side}_lineup_{col}"] = (sum(vals) / len(vals)) if vals else None
 
-    result[f"{side}_lineup_frv"] = frv_sum
-    result[f"{side}_lineup_brv"] = brv_sum
-    result[f"{side}_catcher_framing"] = catcher_framing
-    result[f"{side}_low_sample_count"] = low_sample
-    result[f"{side}_n_left"] = n_left
-    result[f"{side}_n_right"] = n_right
-    result[f"{side}_n_switch"] = n_switch
+    result.update({
+        f"{side}_lineup_frv": frv_sum,
+        f"{side}_lineup_brv": brv_sum,
+        f"{side}_catcher_framing": catcher_framing,
+        f"{side}_low_sample_count": low_sample,
+        f"{side}_n_left": n_left,
+        f"{side}_n_right": n_right,
+        f"{side}_n_switch": n_switch,
+    })
 
     return result, n_left, n_right, n_switch, batters_found
 

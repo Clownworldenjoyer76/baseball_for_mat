@@ -119,55 +119,37 @@ SDV_REQUIRED = [
 ]
 
 
+_SDV_SUFFIX_MAP = {
+    "sp_stuff_plus": "sp_pitch_quality_plus",
+    "sp_command_plus": "sp_command_plus",
+    "sp_xera": "sp_xera",
+    "sp_xera_30d": "sp_xera_30d",
+    "sp_xwoba": "sp_xwoba",
+    "sp_xwoba_30d": "sp_xwoba_30d",
+    "sp_avg_velo": "sp_avg_velo",
+    "sp_avg_velo_30d": "sp_avg_velo_30d",
+    "sp_velo_delta_30d": "sp_velo_delta_30d",
+    "sp_pitches": "sp_pitches",
+    "sp_games": "sp_games",
+    "sp_pitches_30d": "sp_pitches_30d",
+    "sp_games_30d": "sp_games_30d",
+    "bp_pa_14d": "bp_pa_14d",
+    "bp_woba_allowed_14d": "bp_woba_allowed_14d",
+    "bp_k_rate_14d": "bp_k_rate_14d",
+    "bp_bb_rate_14d": "bp_bb_rate_14d",
+    "bp_hard_rate_14d": "bp_hard_rate_14d",
+    "bp_pitches_3d": "bp_pitches_3d",
+    "bp_pa_7d": "bp_pa_7d",
+    "bp_woba_allowed_7d": "bp_woba_allowed_7d",
+    "bp_k_rate_7d": "bp_k_rate_7d",
+    "bp_bb_rate_7d": "bp_bb_rate_7d",
+    "bp_hard_rate_7d": "bp_hard_rate_7d",
+}
+
 SDV_FEATURE_MAP = {
-    "sdv_home_sp_stuff_plus": "home_sp_pitch_quality_plus",
-    "sdv_away_sp_stuff_plus": "away_sp_pitch_quality_plus",
-    "sdv_home_sp_command_plus": "home_sp_command_plus",
-    "sdv_away_sp_command_plus": "away_sp_command_plus",
-    "sdv_home_sp_xera": "home_sp_xera",
-    "sdv_away_sp_xera": "away_sp_xera",
-    "sdv_home_sp_xera_30d": "home_sp_xera_30d",
-    "sdv_away_sp_xera_30d": "away_sp_xera_30d",
-    "sdv_home_sp_xwoba": "home_sp_xwoba",
-    "sdv_away_sp_xwoba": "away_sp_xwoba",
-    "sdv_home_sp_xwoba_30d": "home_sp_xwoba_30d",
-    "sdv_away_sp_xwoba_30d": "away_sp_xwoba_30d",
-    "sdv_home_sp_avg_velo": "home_sp_avg_velo",
-    "sdv_away_sp_avg_velo": "away_sp_avg_velo",
-    "sdv_home_sp_avg_velo_30d": "home_sp_avg_velo_30d",
-    "sdv_away_sp_avg_velo_30d": "away_sp_avg_velo_30d",
-    "sdv_home_sp_velo_delta_30d": "home_sp_velo_delta_30d",
-    "sdv_away_sp_velo_delta_30d": "away_sp_velo_delta_30d",
-    "sdv_home_sp_pitches": "home_sp_pitches",
-    "sdv_away_sp_pitches": "away_sp_pitches",
-    "sdv_home_sp_games": "home_sp_games",
-    "sdv_away_sp_games": "away_sp_games",
-    "sdv_home_sp_pitches_30d": "home_sp_pitches_30d",
-    "sdv_away_sp_pitches_30d": "away_sp_pitches_30d",
-    "sdv_home_sp_games_30d": "home_sp_games_30d",
-    "sdv_away_sp_games_30d": "away_sp_games_30d",
-    "sdv_home_bp_pa_14d": "home_bp_pa_14d",
-    "sdv_away_bp_pa_14d": "away_bp_pa_14d",
-    "sdv_home_bp_woba_allowed_14d": "home_bp_woba_allowed_14d",
-    "sdv_away_bp_woba_allowed_14d": "away_bp_woba_allowed_14d",
-    "sdv_home_bp_k_rate_14d": "home_bp_k_rate_14d",
-    "sdv_away_bp_k_rate_14d": "away_bp_k_rate_14d",
-    "sdv_home_bp_bb_rate_14d": "home_bp_bb_rate_14d",
-    "sdv_away_bp_bb_rate_14d": "away_bp_bb_rate_14d",
-    "sdv_home_bp_hard_rate_14d": "home_bp_hard_rate_14d",
-    "sdv_away_bp_hard_rate_14d": "away_bp_hard_rate_14d",
-    "sdv_home_bp_pitches_3d": "home_bp_pitches_3d",
-    "sdv_away_bp_pitches_3d": "away_bp_pitches_3d",
-    "sdv_home_bp_pa_7d": "home_bp_pa_7d",
-    "sdv_away_bp_pa_7d": "away_bp_pa_7d",
-    "sdv_home_bp_woba_allowed_7d": "home_bp_woba_allowed_7d",
-    "sdv_away_bp_woba_allowed_7d": "away_bp_woba_allowed_7d",
-    "sdv_home_bp_k_rate_7d": "home_bp_k_rate_7d",
-    "sdv_away_bp_k_rate_7d": "away_bp_k_rate_7d",
-    "sdv_home_bp_bb_rate_7d": "home_bp_bb_rate_7d",
-    "sdv_away_bp_bb_rate_7d": "away_bp_bb_rate_7d",
-    "sdv_home_bp_hard_rate_7d": "home_bp_hard_rate_7d",
-    "sdv_away_bp_hard_rate_7d": "away_bp_hard_rate_7d",
+    f"sdv_{side}_{source_suffix}": f"{side}_{target_suffix}"
+    for side in ("home", "away")
+    for source_suffix, target_suffix in _SDV_SUFFIX_MAP.items()
 }
 
 
@@ -201,18 +183,30 @@ MIN_PRIOR_UNIQUE_DATES = 3
 NY = ZoneInfo("America/New_York")
 
 
-def _now() -> str:
-    return datetime.now(UTC).isoformat()
+class _ProjectionLog:
+    def __init__(self, path: Path):
+        self.path = path
+
+    @staticmethod
+    def timestamp() -> str:
+        return datetime.now(UTC).isoformat()
+
+    def write(self, message: str, level: str = "INFO") -> None:
+        timestamp = self.timestamp()
+        with self.path.open("a", encoding="utf-8") as handle:
+            handle.write(
+                f"{timestamp} | {level:<5} | {message.rstrip()}\n"
+            )
+
+    def abort(self, message: str) -> None:
+        self.write(message, "ERROR")
+        raise RuntimeError(message)
 
 
-def _log(message: str, level: str = "INFO") -> None:
-    with LOG_FILE.open("a", encoding="utf-8") as f:
-        f.write(f"{_now()} | {level:<5} | {message.rstrip()}\n")
-
-
-def fail(message: str) -> None:
-    _log(message, "ERROR")
-    raise RuntimeError(message)
+_RUN_LOG = _ProjectionLog(LOG_FILE)
+_now = _RUN_LOG.timestamp
+_log = _RUN_LOG.write
+fail = _RUN_LOG.abort
 
 
 def _row_issue(date_str: str, message: str) -> None:
@@ -235,35 +229,35 @@ def duplicate_columns(columns) -> list[str]:
     return dupes
 
 
+def _validate_required_frame(
+    frame: pd.DataFrame,
+    required: list[str],
+    label: str,
+) -> None:
+    dupes = duplicate_columns(list(frame.columns))
+    if dupes:
+        fail(f"{label} duplicate columns: {dupes}")
+
+    missing = sorted(set(required).difference(frame.columns))
+    if missing:
+        fail(f"{label} missing required columns: {missing}")
+
+
 def read_csv_checked(
     path: Path,
     required: list[str],
     label: str,
 ) -> pd.DataFrame:
-    if not path.exists():
+    if not path.is_file():
         fail(f"{label} missing required file: {path}")
 
-    df = pd.read_csv(
+    frame = pd.read_csv(
         path,
         dtype=str,
         encoding="utf-8-sig",
     )
-
-    dupes = duplicate_columns(list(df.columns))
-
-    if dupes:
-        fail(f"{label} duplicate columns: {dupes}")
-
-    missing = [
-        col
-        for col in required
-        if col not in df.columns
-    ]
-
-    if missing:
-        fail(f"{label} missing required columns: {missing}")
-
-    return df
+    _validate_required_frame(frame, required, label)
+    return frame
 
 
 def normalize_game_id(series: pd.Series) -> pd.Series:
@@ -1256,57 +1250,46 @@ def _assert_frame_date_contract(
         )
 
 
+def _validated_game_ids(
+    frame: pd.DataFrame,
+    label: str,
+    role: str,
+) -> pd.Series:
+    if "game_id" not in frame.columns:
+        fail(f"{label} {role} missing game_id column")
+
+    game_ids = normalize_game_id(frame["game_id"])
+    blank = game_ids.isna() | (game_ids == "")
+
+    if blank.any():
+        sample = frame.loc[blank].head(20).to_dict("records")
+        fail(
+            f"{label} current-day {role} contains blank game_id; "
+            f"bad_rows={int(blank.sum())}; sample={sample}"
+        )
+
+    dupes = game_ids.duplicated(keep=False)
+    if dupes.any():
+        sample = game_ids.loc[dupes].head(20).tolist()
+        fail(
+            f"{label} current-day {role} contains duplicate game_id; "
+            f"duplicate_rows={int(dupes.sum())}; sample={sample}"
+        )
+
+    return game_ids
+
+
 def _assert_current_day_source_coverage(
     date_str: str,
     source: pd.DataFrame,
     result: pd.DataFrame,
     label: str,
 ) -> None:
-    """Prevent a successful current-day projection write from dropping source games."""
     if date_str != _current_pipeline_date():
         return
 
-    if "game_id" not in source.columns:
-        fail(f"{label} source missing game_id column")
-
-    source_ids = normalize_game_id(source["game_id"])
-    source_blank = source_ids.isna() | (source_ids == "")
-
-    if source_blank.any():
-        sample = source.loc[source_blank].head(20).to_dict("records")
-        fail(
-            f"{label} current-day source contains blank game_id; "
-            f"bad_rows={int(source_blank.sum())}; sample={sample}"
-        )
-
-    source_dupes = source_ids.duplicated(keep=False)
-    if source_dupes.any():
-        sample = source_ids.loc[source_dupes].head(20).tolist()
-        fail(
-            f"{label} current-day source contains duplicate game_id; "
-            f"duplicate_rows={int(source_dupes.sum())}; sample={sample}"
-        )
-
-    if "game_id" not in result.columns:
-        fail(f"{label} result missing game_id column")
-
-    result_ids = normalize_game_id(result["game_id"])
-    result_blank = result_ids.isna() | (result_ids == "")
-
-    if result_blank.any():
-        sample = result.loc[result_blank].head(20).to_dict("records")
-        fail(
-            f"{label} current-day result contains blank game_id; "
-            f"bad_rows={int(result_blank.sum())}; sample={sample}"
-        )
-
-    result_dupes = result_ids.duplicated(keep=False)
-    if result_dupes.any():
-        sample = result_ids.loc[result_dupes].head(20).tolist()
-        fail(
-            f"{label} current-day result contains duplicate game_id; "
-            f"duplicate_rows={int(result_dupes.sum())}; sample={sample}"
-        )
+    source_ids = _validated_game_ids(source, label, "source")
+    result_ids = _validated_game_ids(result, label, "result")
 
     source_set = set(source_ids.astype(str))
     result_set = set(result_ids.astype(str))
