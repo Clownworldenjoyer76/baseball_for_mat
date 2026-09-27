@@ -498,32 +498,45 @@ def select_game_candidate(
     return matched, "scheduled_time"
 
 
-def load_games_lookup(date):
-    path = GAMES_DIR / f"{date}_games.csv"
+def _load_identity_matchup_lookup(path, missing_message):
     lookup = {}
 
     if not path.exists():
-        log(f"GAMES FILE MISSING FOR FINAL-SCORE GAME_ID/GAMEPK LOOKUP: {path}")
+        log(f"{missing_message}: {path}")
         return lookup
 
-    with open(path, newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-
-        for r in reader:
-            home_team = str(r.get("home_team", "") or "").strip()
-            away_team = str(r.get("away_team", "") or "").strip()
+    with open(path, newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            home_team = str(row.get("home_team", "") or "").strip()
+            away_team = str(row.get("away_team", "") or "").strip()
             key = matchup_key(home_team, away_team)
 
             lookup.setdefault(key, []).append({
-                "game_id": str(r.get("game_id", "") or "").strip(),
-                "gamePk": str(r.get("gamePk", "") or "").strip(),
-                "gameNumber": str(r.get("gameNumber", "") or "").strip(),
-                "game_time": str(r.get("game_time", "") or "").strip(),
+                "game_id": str(row.get("game_id", "") or "").strip(),
+                "gamePk": str(row.get("gamePk", "") or "").strip(),
+                "gameNumber": str(row.get("gameNumber", "") or "").strip(),
+                "game_time": str(row.get("game_time", "") or "").strip(),
                 "home_team": home_team,
                 "away_team": away_team,
             })
 
     return lookup
+
+
+def identity_fields(row):
+    return (
+        str(row.get("game_id", "") or "").strip(),
+        str(row.get("gamePk", "") or "").strip(),
+        str(row.get("gameNumber", "") or "").strip(),
+        str(row.get("game_time", "") or "").strip(),
+    )
+
+
+def load_games_lookup(date):
+    return _load_identity_matchup_lookup(
+        GAMES_DIR / f"{date}_games.csv",
+        "GAMES FILE MISSING FOR FINAL-SCORE GAME_ID/GAMEPK LOOKUP",
+    )
 
 
 def load_games_by_game_id(date):
@@ -596,31 +609,10 @@ def load_games_by_gamepk(date):
 
 
 def load_predictions_lookup(date):
-    path = PRED_DIR / f"{date}_MLB.csv"
-    lookup = {}
-
-    if not path.exists():
-        log(f"PREDICTION FILE MISSING FOR FINAL-SCORE GAME_ID LOOKUP: {path}")
-        return lookup
-
-    with open(path, newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-
-        for r in reader:
-            home_team = str(r.get("home_team", "") or "").strip()
-            away_team = str(r.get("away_team", "") or "").strip()
-            key = matchup_key(home_team, away_team)
-
-            lookup.setdefault(key, []).append({
-                "game_id": str(r.get("game_id", "") or "").strip(),
-                "gamePk": str(r.get("gamePk", "") or "").strip(),
-                "gameNumber": str(r.get("gameNumber", "") or "").strip(),
-                "game_time": str(r.get("game_time", "") or "").strip(),
-                "home_team": home_team,
-                "away_team": away_team,
-            })
-
-    return lookup
+    return _load_identity_matchup_lookup(
+        PRED_DIR / f"{date}_MLB.csv",
+        "PREDICTION FILE MISSING FOR FINAL-SCORE GAME_ID LOOKUP",
+    )
 
 
 def load_sportsbook_lookup(date):
@@ -999,13 +991,12 @@ def is_summary_row(row):
 def write_csv(path, header, rows, files_written, label):
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(rows)
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        csv.writer(handle).writerows([header, *rows])
 
-    files_written.append((str(path), len(rows)))
-    log(f"WROTE {label} -> {path} ({len(rows)} rows)")
+    row_count = len(rows)
+    files_written.append((str(path), row_count))
+    log(f"WROTE {label} -> {path} ({row_count} rows)")
 
 
 def write_audit_csv(path, header, rows, label):
@@ -1795,21 +1786,12 @@ def backfill_missing_finals_from_mlb(
             for row_index, row in enumerate(reader, start=2):
                 games_rows_seen += 1
 
-                game_id = str(
-                    row.get("game_id", "") or ""
-                ).strip()
-
-                game_pk = str(
-                    row.get("gamePk", "") or ""
-                ).strip()
-
-                game_number = str(
-                    row.get("gameNumber", "") or ""
-                ).strip()
-
-                game_time = str(
-                    row.get("game_time", "") or ""
-                ).strip()
+                (
+                    game_id,
+                    game_pk,
+                    game_number,
+                    game_time,
+                ) = identity_fields(row)
 
                 home_team = str(
                     row.get("home_team", "") or ""
@@ -2873,21 +2855,12 @@ def verify_doubleheader_identity_integrity():
             seen_final_gamepks = set()
 
             for final_row in relevant_finals:
-                game_id = str(
-                    final_row.get("game_id", "") or ""
-                ).strip()
-
-                game_pk = str(
-                    final_row.get("gamePk", "") or ""
-                ).strip()
-
-                game_number = str(
-                    final_row.get("gameNumber", "") or ""
-                ).strip()
-
-                game_time = str(
-                    final_row.get("game_time", "") or ""
-                ).strip()
+                (
+                    game_id,
+                    game_pk,
+                    game_number,
+                    game_time,
+                ) = identity_fields(final_row)
 
                 if not game_id or not game_pk:
                     bad_rows.append({

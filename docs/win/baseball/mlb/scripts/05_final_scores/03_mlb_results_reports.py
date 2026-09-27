@@ -481,7 +481,7 @@ def build_totals(df):
 ######################## MAIN #################################
 ###############################################################
 
-def run():
+def run(completion_label: str = "MLB reports"):
     clear_report_outputs()
 
     if not INPUT_FILE.exists():
@@ -497,7 +497,7 @@ def run():
     build_run_line(df)
     build_totals(df)
 
-    print("MLB reports complete.")
+    print(f"{completion_label} complete.")
 
 
 if __name__ == "__main__":

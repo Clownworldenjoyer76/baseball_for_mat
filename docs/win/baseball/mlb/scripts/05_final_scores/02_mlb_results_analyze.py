@@ -294,7 +294,7 @@ def prepare(df):
 ######################## MAIN #################################
 ###############################################################
 
-def run():
+def run(completion_label: str = "MLB analyze"):
     if not MLB_INPUT.exists():
         print(f"ERROR: input file not found: {MLB_INPUT}")
         return
@@ -305,7 +305,7 @@ def run():
     out = OUTPUT_DIR / "work_mlb.csv"
     mlb.to_csv(out, index=False)
 
-    print(f"MLB analyze complete. Rows={len(mlb)} | Out={out}")
+    print(f"{completion_label} complete. Rows={len(mlb)} | Out={out}")
 
 
 if __name__ == "__main__":

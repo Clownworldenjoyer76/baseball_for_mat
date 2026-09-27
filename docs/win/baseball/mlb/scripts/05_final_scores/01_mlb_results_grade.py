@@ -1352,9 +1352,9 @@ def grade_league():
     return True
 
 
-def main():
+def main(script_name: str = "01_mlb_results_grade.py"):
     reset_logs()
-    log_summary("START 01_mlb_results_grade.py")
+    log_summary(f"START {script_name}")
 
     try:
         success = grade_league()
@@ -1362,7 +1362,7 @@ def main():
         log_error(f"UNHANDLED ERROR | {type(error).__name__}: {error}")
         success = False
 
-    log_summary("END 01_mlb_results_grade.py")
+    log_summary(f"END {script_name}")
 
     if not success:
         print("MLB grading completed with errors. Check logs.")
