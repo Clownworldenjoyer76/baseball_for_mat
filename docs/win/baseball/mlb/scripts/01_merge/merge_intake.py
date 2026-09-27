@@ -1454,6 +1454,31 @@ def validate_market_outputs(
     )
 
 
+def append_team_mismatch_errors(
+    *,
+    date,
+    game_id,
+    left_row,
+    right_row,
+    left_label,
+    right_label,
+    errors,
+):
+    for side in ("home", "away"):
+        key = f"_{side}_team_norm"
+        left_value = left_row[key]
+        right_value = right_row[key]
+
+        if left_value != right_value:
+            errors.append(
+                f"{date} | {side} team mismatch "
+                f"{left_label}/{right_label} "
+                f"game_id={game_id}: "
+                f"{left_label}={left_value} "
+                f"{right_label}={right_value}"
+            )
+
+
 def validate_cross_source_teams(
     date,
     game_id,
@@ -1464,66 +1489,26 @@ def validate_cross_source_teams(
     team_id_to_canonical,
     errors,
 ):
-    if (
-        pred_row[
-            "_home_team_norm"
-        ]
-        != book_row[
-            "_home_team_norm"
-        ]
-    ):
-        errors.append(
-            f"{date} | home team mismatch pred/book "
-            f"game_id={game_id}: "
-            f"pred={pred_row['_home_team_norm']} "
-            f"book={book_row['_home_team_norm']}"
-        )
-
-    if (
-        pred_row[
-            "_away_team_norm"
-        ]
-        != book_row[
-            "_away_team_norm"
-        ]
-    ):
-        errors.append(
-            f"{date} | away team mismatch pred/book "
-            f"game_id={game_id}: "
-            f"pred={pred_row['_away_team_norm']} "
-            f"book={book_row['_away_team_norm']}"
-        )
+    append_team_mismatch_errors(
+        date=date,
+        game_id=game_id,
+        left_row=pred_row,
+        right_row=book_row,
+        left_label="pred",
+        right_label="book",
+        errors=errors,
+    )
 
     if games_row:
-        if (
-            book_row[
-                "_home_team_norm"
-            ]
-            != games_row[
-                "_home_team_norm"
-            ]
-        ):
-            errors.append(
-                f"{date} | home team mismatch book/games "
-                f"game_id={game_id}: "
-                f"book={book_row['_home_team_norm']} "
-                f"games={games_row['_home_team_norm']}"
-            )
-
-        if (
-            book_row[
-                "_away_team_norm"
-            ]
-            != games_row[
-                "_away_team_norm"
-            ]
-        ):
-            errors.append(
-                f"{date} | away team mismatch book/games "
-                f"game_id={game_id}: "
-                f"book={book_row['_away_team_norm']} "
-                f"games={games_row['_away_team_norm']}"
-            )
+        append_team_mismatch_errors(
+            date=date,
+            game_id=game_id,
+            left_row=book_row,
+            right_row=games_row,
+            left_label="book",
+            right_label="games",
+            errors=errors,
+        )
 
     if (
         games_row
