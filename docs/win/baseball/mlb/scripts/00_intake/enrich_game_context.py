@@ -123,6 +123,14 @@ PITCHING_COLS = [
 
 STATCAST_PRIORITY = ["2022", "2023", "2024", "2025", "2026"]
 
+RAW_NO_GAME_REQUIRED_COLUMNS = {
+    "gamePk",
+    "game_date",
+    "venue_id",
+    "home_team_id",
+    "away_team_id",
+}
+
 
 def _load_statcast(directory: Path, cols: list, id_col: str = "player_id") -> dict:
     merged = {}
@@ -457,7 +465,23 @@ def process_date(
     df = pd.read_csv(raw_path, dtype=str)
 
     if df.empty:
-        _log(f"{date_str} | mlb_raw file has zero rows: {raw_path}", "ERROR")
+        missing_columns = sorted(
+            RAW_NO_GAME_REQUIRED_COLUMNS.difference(df.columns)
+        )
+
+        if not missing_columns:
+            _log(
+                f"{date_str} | mlb_raw file has zero rows with expected "
+                f"raw schema; treating as a no-game date: {raw_path}"
+            )
+            summary["no_game_dates"] += 1
+            return
+
+        _log(
+            f"{date_str} | mlb_raw file has zero rows and invalid raw "
+            f"schema; missing_columns={missing_columns}: {raw_path}",
+            "ERROR",
+        )
         summary["errors"] += 1
         return
 
@@ -638,6 +662,7 @@ def main():
         "missing_pitcher": 0,
         "missing_batter": 0,
         "weather_cache_hits": 0,
+        "no_game_dates": 0,
         "errors": 0,
     }
 
@@ -713,6 +738,7 @@ def main():
         f"  missing_pitcher   : {summary['missing_pitcher']}",
         f"  missing_batter    : {summary['missing_batter']}",
         f"  weather_cache_hits: {summary['weather_cache_hits']}",
+        f"  no_game_dates     : {summary['no_game_dates']}",
         f"  errors            : {summary['errors']}",
         "",
         f"STATUS: {status}",

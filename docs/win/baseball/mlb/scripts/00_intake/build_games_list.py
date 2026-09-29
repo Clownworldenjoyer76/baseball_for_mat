@@ -83,7 +83,8 @@ def load_csv(path: Path) -> list:
         return []
 
     with open(path, newline="", encoding="utf-8-sig") as f:
-        return list(csv.DictReader(f))
+        _qodana_return_value = list(csv.DictReader(f))
+    return _qodana_return_value
 
 
 def load_team_map() -> dict:

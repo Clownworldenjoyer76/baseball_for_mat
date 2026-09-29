@@ -116,7 +116,8 @@ def duplicate_columns(columns):
 
 def read_header_columns(path):
     with Path(path).open("r", encoding="utf-8-sig", newline="") as handle:
-        return next(csv.reader(handle), [])
+        _qodana_return_value = next(csv.reader(handle), [])
+    return _qodana_return_value
 
 
 def validate_no_duplicate_header(path, label):

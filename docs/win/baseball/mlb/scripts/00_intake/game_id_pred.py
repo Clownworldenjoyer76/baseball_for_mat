@@ -213,7 +213,8 @@ def load_csv(path: Path, required_cols=None, label=None, required_file=False) ->
         if required_cols:
             assert_required_columns(path, header, required_cols, label or str(path))
 
-        return list(reader)
+        _qodana_return_value = list(reader)
+    return _qodana_return_value
 
 
 def write_csv(path: Path, header: list[str], rows: list[dict]):

@@ -8,6 +8,7 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from zoneinfo import ZoneInfo
 from urllib.request import urlopen
 
 
@@ -23,6 +24,8 @@ OUTPUT_DIR = Path("docs/win/baseball/mlb/00_intake/mlb_raw")
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/00_intake")
 ERROR_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = ERROR_DIR / "scrape_mlb_raw.txt"
+
+TIMEZONE = ZoneInfo("America/New_York")
 
 CSV_HEADERS = [
     "gamePk",
@@ -218,7 +221,8 @@ def load_existing_rows(out_path: Path) -> dict:
 
     with out_path.open("r", newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        return {row["gamePk"]: row for row in reader}
+        _qodana_return_value = {row["gamePk"]: row for row in reader}
+    return _qodana_return_value
 
 
 def merge_row(existing: dict, new: dict) -> dict:
@@ -259,7 +263,7 @@ def main() -> int:
     target_date = (
         sys.argv[1]
         if len(sys.argv) > 1
-        else datetime.now().strftime("%Y-%m-%d")
+        else datetime.now(TIMEZONE).strftime("%Y-%m-%d")
     )
     out_name = f"{target_date.replace('-', '_')}_mlb_raw.csv"
     out_path = OUTPUT_DIR / out_name
@@ -277,6 +281,42 @@ def main() -> int:
         dates = schedule.get("dates", [])
         games = dates[0].get("games", []) if dates else []
         schedule_games = len(games)
+
+        if schedule_games == 0:
+            if out_path.exists():
+                existing_rows = load_existing_rows(out_path)
+                final_file_rows = len(existing_rows)
+
+                if final_file_rows == 0:
+                    out_path.unlink()
+                    log(
+                        "Removed header-only no-game raw file: "
+                        f"{out_path}"
+                    )
+                else:
+                    log(
+                        "MLB schedule returned zero games, but the existing "
+                        f"raw file contains {final_file_rows} rows; "
+                        "preserving existing data.",
+                        "WARN",
+                    )
+
+            log("--- SUMMARY ---")
+            log(f"Schedule games found: {schedule_games}")
+            log(f"Scheduled or pre-game games: {eligible_games}")
+            log(f"Rows fetched this run: {rows_written}")
+            log(f"Final output rows: {final_file_rows}")
+            log(f"Output file: {out_path}")
+            log(
+                "No MLB games scheduled for target date; "
+                "no new raw file written."
+            )
+            log("STATUS: SUCCESS")
+
+            print(out_path.as_posix())
+            print("rows_written=0")
+            print("no_games=1")
+            return 0
 
         new_rows = {}
 

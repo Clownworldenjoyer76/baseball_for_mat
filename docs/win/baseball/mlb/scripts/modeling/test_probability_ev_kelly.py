@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 import math
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -48,17 +49,32 @@ def _load_module(name: str, path: Path):
             f"Required production module not found: {path}"
         )
 
-    spec = importlib.util.spec_from_file_location(name, path)
+    module_dir = str(path.parent)
+    added_to_path = module_dir not in sys.path
 
-    if spec is None or spec.loader is None:
-        raise RuntimeError(
-            f"Could not load production module: {path}"
+    if added_to_path:
+        sys.path.insert(0, module_dir)
+
+    try:
+        spec = importlib.util.spec_from_file_location(
+            name,
+            path,
         )
 
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+        if spec is None or spec.loader is None:
+            raise RuntimeError(
+                f"Could not load production module: {path}"
+            )
 
-    return module
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+
+        return module
+
+    finally:
+        if added_to_path:
+            sys.path.remove(module_dir)
 
 
 PROBS = _load_module(

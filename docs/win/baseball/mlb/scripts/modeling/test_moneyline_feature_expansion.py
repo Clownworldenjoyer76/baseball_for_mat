@@ -2485,7 +2485,7 @@ def build_report(
     coverage: pd.DataFrame,
     evaluation_start,
     evaluation_dates,
-    statcast_rows,
+    statcast_rows: int,
 ):
 
     display = summary.copy()

@@ -108,7 +108,8 @@ def read_rows(path: Path) -> list[dict]:
     if not path.exists():
         return []
     with path.open(newline="", encoding="utf-8-sig") as handle:
-        return list(csv.DictReader(handle))
+        _qodana_return_value = list(csv.DictReader(handle))
+    return _qodana_return_value
 
 
 def ids_and_integrity(rows: list[dict]) -> tuple[set[str], int, list[str]]:
