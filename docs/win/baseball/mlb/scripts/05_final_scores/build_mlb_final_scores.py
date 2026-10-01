@@ -1541,7 +1541,7 @@ def preserve_existing_final_score_records(
         with open(path, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
 
-            for row_index, row in enumerate(reader, start=2):
+            for row in reader:
                 rows_seen += 1
 
                 record = {
@@ -2136,7 +2136,7 @@ def process_file(
 
         (
             status_norm,
-            raw_status,
+            _raw_status,
             status_source,
             status_available,
         ) = infer_game_status(row)

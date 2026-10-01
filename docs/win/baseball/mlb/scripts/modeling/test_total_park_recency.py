@@ -338,10 +338,7 @@ def build_leakage_safe_park_features(
     league_sum = 0.0
     league_count = 0
 
-    for (
-        game_date,
-        group,
-    ) in out.groupby(
+    for _, group in out.groupby(
         "_game_date_dt",
         sort=True,
     ):

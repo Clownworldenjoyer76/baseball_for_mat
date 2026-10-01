@@ -107,7 +107,7 @@ def process_file(file_path, files_written):
             continue
 
         try:
-            dt, game_date, game_time = parse_datetime(row[0])
+            _dt, game_date, game_time = parse_datetime(row[0])
         except (IndexError, AttributeError, TypeError, ValueError):
             parse_errors += 1
             continue

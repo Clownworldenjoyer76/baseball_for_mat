@@ -198,7 +198,7 @@ def validate_juice_config(juice_df: pd.DataFrame) -> bool:
     overlap_count = 0
     if uses_odds_bands:
         group_cols = ["side"]
-        for side, group in juice_df.groupby(group_cols):
+        for _, group in juice_df.groupby(group_cols):
             rows = list(group.sort_values(["band_min", "band_max", "odds_min", "odds_max"]).to_dict("records"))
             for i, left in enumerate(rows):
                 for right in rows[i + 1:]:

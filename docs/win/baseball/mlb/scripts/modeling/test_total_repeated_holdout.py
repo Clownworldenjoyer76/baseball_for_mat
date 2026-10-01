@@ -341,10 +341,7 @@ def build_leakage_safe_park_features(
     league_sum = 0.0
     league_count = 0
 
-    for (
-        game_date,
-        group,
-    ) in out.groupby(
+    for _, group in out.groupby(
         "_game_date_dt",
         sort=True,
     ):
@@ -1979,8 +1976,8 @@ def main() -> None:
 
         (
             park_params,
-            park_val_ll,
-            park_val_brier,
+            _park_val_ll,
+            _park_val_brier,
         ) = tune_classifier(
             train_x_park,
             train_y,

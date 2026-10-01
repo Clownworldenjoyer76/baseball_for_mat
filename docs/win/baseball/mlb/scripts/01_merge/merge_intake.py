@@ -1724,8 +1724,8 @@ def process_date(
     (
         games_rows,
         games_idx,
-        games_game_id_to_pk,
-        games_pk_to_game_id,
+        _games_game_id_to_pk,
+        _games_pk_to_game_id,
     ) = load_games_index(
         date,
         alias_map,

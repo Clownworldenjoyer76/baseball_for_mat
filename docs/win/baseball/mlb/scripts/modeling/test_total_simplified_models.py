@@ -1666,7 +1666,7 @@ def main():
             (
                 best_c,
                 validation_ll,
-                validation_brier,
+                _validation_brier,
             ) = tune_logistic(
                 train_x,
                 train_y,
@@ -1720,7 +1720,7 @@ def main():
         (
             full_params,
             full_validation_ll,
-            full_validation_brier,
+            _full__validation_brier,
         ) = tune_full_classifier(
             train_x,
             train_y,
