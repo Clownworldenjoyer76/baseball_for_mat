@@ -1976,6 +1976,135 @@ def legacy_row_has_final_score(row):
     return away_score >= 0 and home_score >= 0
 
 
+def _prepare_existing_final_record(row, date):
+    record = {
+        col: str(
+            row.get(col, "") or ""
+        ).strip()
+        for col in FINAL_HEADER
+    }
+
+    record["sport"] = (
+        record["sport"]
+        or "baseball"
+    )
+    record["league"] = (
+        record["league"]
+        or "mlb"
+    )
+    record["game_date"] = (
+        record["game_date"]
+        or date
+    )
+
+    if (
+        not record["game_status"]
+        and legacy_row_has_final_score(record)
+    ):
+        record["game_status"] = "final"
+
+    completed = (
+        record["game_status"].strip().lower()
+        == "final"
+        and legacy_row_has_final_score(record)
+    )
+
+    if not completed:
+        return record, "not_final"
+
+    if not record["final_total"]:
+        record["final_total"] = str(
+            int(record["final_away_score"])
+            + int(record["final_home_score"])
+        )
+
+    if not record["final_scores_generated_at"]:
+        record[
+            "final_scores_generated_at"
+        ] = RUN_TS
+
+    if (
+        not record["game_id"]
+        or not record["gamePk"]
+    ):
+        return record, "missing_ids"
+
+    return record, "ready"
+
+
+def _append_existing_final_status(
+    status_audit_rows,
+    record,
+):
+    status_audit_rows.append({
+        "game_date": record["game_date"],
+        "game_id": record["game_id"],
+        "gamePk": record["gamePk"],
+        "gameNumber": record["gameNumber"],
+        "away_team": record["away_team"],
+        "home_team": record["home_team"],
+        "final_away_score": (
+            record["final_away_score"]
+        ),
+        "final_home_score": (
+            record["final_home_score"]
+        ),
+        "game_status": "final",
+        "status_source": (
+            "existing_final_score_file"
+        ),
+        "status_available": "True",
+        "status_notes": (
+            "valid existing final preserved "
+            "before DRatings rebuild"
+        ),
+    })
+
+
+def _preserve_existing_final_row(
+    *,
+    row,
+    date,
+    path,
+    final_records_by_date,
+    seen_by_game_id,
+    seen_by_fallback_key,
+    status_audit_rows,
+    key_audit_rows,
+):
+    record, state = (
+        _prepare_existing_final_record(
+            row,
+            date,
+        )
+    )
+
+    if state != "ready":
+        return state
+
+    action = add_final_record(
+        record=record,
+        source_file=f"existing:{path.name}",
+        final_records_by_date=final_records_by_date,
+        seen_by_game_id=seen_by_game_id,
+        seen_by_fallback_key=seen_by_fallback_key,
+        key_audit_rows=key_audit_rows,
+    )
+
+    _append_existing_final_status(
+        status_audit_rows,
+        record,
+    )
+
+    if action in {
+        "duplicate_collapsed",
+        "blank_game_id_duplicate_collapsed",
+    }:
+        return "duplicate"
+
+    return "preserved"
+
+
 def preserve_existing_final_score_records(
     *,
     final_records_by_date,
@@ -1984,113 +2113,74 @@ def preserve_existing_final_score_records(
     status_audit_rows,
     key_audit_rows,
 ):
-    files_seen = 0
-    rows_seen = 0
-    rows_preserved = 0
-    rows_skipped_missing_ids = 0
-    rows_skipped_not_final = 0
-    duplicate_rows = 0
+    counts = {
+        "files_seen": 0,
+        "rows_seen": 0,
+        "rows_preserved": 0,
+        "skipped_missing_ids": 0,
+        "skipped_not_final": 0,
+        "duplicates": 0,
+    }
 
-    for path in sorted(FINAL_DIR.glob("*_final_scores_MLB.csv")):
-        files_seen += 1
-        date = legacy_final_date_from_path(path)
+    counter_by_state = {
+        "preserved": "rows_preserved",
+        "duplicate": "duplicates",
+        "missing_ids": "skipped_missing_ids",
+        "not_final": "skipped_not_final",
+    }
+
+    for path in sorted(
+        FINAL_DIR.glob(
+            "*_final_scores_MLB.csv"
+        )
+    ):
+        counts["files_seen"] += 1
+
+        date = legacy_final_date_from_path(
+            path
+        )
 
         if not date:
             continue
 
-        with open(path, newline="", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
+        with open(
+            path,
+            newline="",
+            encoding="utf-8-sig",
+        ) as handle:
+            reader = csv.DictReader(handle)
 
             for row in reader:
-                rows_seen += 1
+                counts["rows_seen"] += 1
 
-                record = {
-                    col: str(row.get(col, "") or "").strip()
-                    for col in FINAL_HEADER
-                }
-
-                record["sport"] = record["sport"] or "baseball"
-                record["league"] = record["league"] or "mlb"
-                record["game_date"] = record["game_date"] or date
-
-                if not record["game_status"] and legacy_row_has_final_score(record):
-                    record["game_status"] = "final"
-
-                completed = (
-                    record["game_status"].strip().lower() == "final"
-                    and legacy_row_has_final_score(record)
-                )
-
-                if not completed:
-                    rows_skipped_not_final += 1
-                    continue
-
-                if not record["final_total"]:
-                    record["final_total"] = str(
-                        int(record["final_away_score"])
-                        + int(record["final_home_score"])
-                    )
-
-                if not record["final_scores_generated_at"]:
-                    record["final_scores_generated_at"] = RUN_TS
-
-                if not record["game_id"] or not record["gamePk"]:
-                    rows_skipped_missing_ids += 1
-                    continue
-
-                action = add_final_record(
-                    record=record,
-                    source_file=f"existing:{path.name}",
+                state = _preserve_existing_final_row(
+                    row=row,
+                    date=date,
+                    path=path,
                     final_records_by_date=final_records_by_date,
                     seen_by_game_id=seen_by_game_id,
                     seen_by_fallback_key=seen_by_fallback_key,
+                    status_audit_rows=status_audit_rows,
                     key_audit_rows=key_audit_rows,
                 )
 
-                if action in {
-                    "duplicate_collapsed",
-                    "blank_game_id_duplicate_collapsed",
-                }:
-                    duplicate_rows += 1
-                else:
-                    rows_preserved += 1
-
-                status_audit_rows.append({
-                    "game_date": record["game_date"],
-                    "game_id": record["game_id"],
-                    "gamePk": record["gamePk"],
-                    "gameNumber": record["gameNumber"],
-                    "away_team": record["away_team"],
-                    "home_team": record["home_team"],
-                    "final_away_score": record["final_away_score"],
-                    "final_home_score": record["final_home_score"],
-                    "game_status": "final",
-                    "status_source": "existing_final_score_file",
-                    "status_available": "True",
-                    "status_notes": (
-                        "valid existing final preserved before DRatings rebuild"
-                    ),
-                })
+                counts[
+                    counter_by_state[state]
+                ] += 1
 
     log(
         "EXISTING FINAL PRESERVATION | "
-        f"files_seen={files_seen} | "
-        f"rows_seen={rows_seen} | "
-        f"rows_preserved={rows_preserved} | "
-        f"duplicates={duplicate_rows} | "
-        f"skipped_missing_ids={rows_skipped_missing_ids} | "
-        f"skipped_not_final={rows_skipped_not_final}"
+        f"files_seen={counts['files_seen']} | "
+        f"rows_seen={counts['rows_seen']} | "
+        f"rows_preserved={counts['rows_preserved']} | "
+        f"duplicates={counts['duplicates']} | "
+        f"skipped_missing_ids="
+        f"{counts['skipped_missing_ids']} | "
+        f"skipped_not_final="
+        f"{counts['skipped_not_final']}"
     )
 
-    return {
-        "files_seen": files_seen,
-        "rows_seen": rows_seen,
-        "rows_preserved": rows_preserved,
-        "duplicates": duplicate_rows,
-        "skipped_missing_ids": rows_skipped_missing_ids,
-        "skipped_not_final": rows_skipped_not_final,
-    }
-
+    return counts
 
 def fetch_mlb_game_feed(game_pk, cache):
     game_pk = str(game_pk or "").strip()
