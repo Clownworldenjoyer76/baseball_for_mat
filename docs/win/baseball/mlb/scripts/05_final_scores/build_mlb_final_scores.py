@@ -726,228 +726,368 @@ def candidate_matches_teams(candidate, home_team, away_team):
     ) == matchup_key(home_team, away_team)
 
 
-def resolve_completed_game_ids(
-    *,
+def _resolved_game_result(
+    candidate,
+    source,
     game_time,
-    home_team,
-    away_team,
-    current_game_id="",
-    current_game_pk="",
-    current_game_number="",
-    games_lookup,
-    games_by_game_id,
-    games_by_gamepk,
-    predictions_lookup,
+    games_candidate_count,
+    prediction_candidate_count,
 ):
-    key = matchup_key(home_team, away_team)
-    games_candidates = games_lookup.get(key, [])
-    pred_candidates = predictions_lookup.get(key, [])
-
-    current_game_id = str(current_game_id or "").strip()
-    current_game_pk = str(current_game_pk or "").strip()
-    current_game_number = str(current_game_number or "").strip()
-
-    def result_from_game(resolved_candidate, source):
-        return {
-            "resolved": bool(
-                str(resolved_candidate.get("game_id", "") or "").strip()
-                and str(resolved_candidate.get("gamePk", "") or "").strip()
-            ),
-            "game_id": str(resolved_candidate.get("game_id", "") or "").strip(),
-            "gamePk": str(resolved_candidate.get("gamePk", "") or "").strip(),
-            "gameNumber": str(resolved_candidate.get("gameNumber", "") or "").strip(),
-            "scheduled_game_time": str(
-                resolved_candidate.get("game_time", "") or game_time or ""
-            ).strip(),
-            "resolution_source": source,
-            "games_candidate_count": len(games_candidates),
-            "prediction_candidate_count": len(pred_candidates),
-            "reason": "",
-        }
-
-    if current_game_pk:
-        games_match, match_reason = select_game_candidate(
-            games_candidates,
-            game_time,
-            current_game_pk=current_game_pk,
-            current_game_number=current_game_number,
-        )
-
-        if games_match:
-            resolved = result_from_game(
-                games_match,
-                f"games_existing_gamePk_{match_reason}",
-            )
-
-            if not resolved["game_id"] and current_game_id:
-                resolved["game_id"] = current_game_id
-                resolved["resolved"] = bool(
-                    resolved["gamePk"]
-                    and resolved["game_id"]
-                )
-
-            return resolved
-
-    if current_game_id:
-        candidate = games_by_game_id.get(current_game_id, {})
-
-        if (
-            candidate
-            and candidate_matches_teams(
-                candidate,
-                home_team,
-                away_team,
-            )
-        ):
-            candidate_game_pk = str(
-                candidate.get("gamePk", "") or ""
-            ).strip()
-
-            candidate_game_number = str(
-                candidate.get("gameNumber", "") or ""
-            ).strip()
-
-            candidate_match, match_reason = select_game_candidate(
-                [candidate],
-                game_time,
-                current_game_pk=candidate_game_pk,
-                current_game_number=(
-                    current_game_number
-                    or candidate_game_number
-                ),
-            )
-
-            if candidate_match:
-                return result_from_game(
-                    candidate_match,
-                    f"games_existing_game_id_{match_reason}",
-                )
-
-    games_match, games_match_reason = select_game_candidate(
-        games_candidates,
-        game_time,
-        current_game_number=current_game_number,
+    game_id = _identity_value(
+        candidate,
+        "game_id",
+    )
+    game_pk = _identity_value(
+        candidate,
+        "gamePk",
     )
 
-    if games_match:
-        return result_from_game(
-            games_match,
-            f"games_date_teams_{games_match_reason}",
-        )
+    return {
+        "resolved": bool(game_id and game_pk),
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": _identity_value(
+            candidate,
+            "gameNumber",
+        ),
+        "scheduled_game_time": str(
+            candidate.get("game_time", "")
+            or game_time
+            or ""
+        ).strip(),
+        "resolution_source": source,
+        "games_candidate_count": games_candidate_count,
+        "prediction_candidate_count": prediction_candidate_count,
+        "reason": "",
+    }
 
-    pred_match, pred_match_reason = select_game_candidate(
-        pred_candidates,
+
+def _resolve_existing_game_pk(
+    *,
+    candidates,
+    game_time,
+    current_game_id,
+    current_game_pk,
+    current_game_number,
+    games_candidate_count,
+    prediction_candidate_count,
+):
+    if not current_game_pk:
+        return None
+
+    match, reason = select_game_candidate(
+        candidates,
         game_time,
         current_game_pk=current_game_pk,
         current_game_number=current_game_number,
     )
 
-    if pred_match:
-        pred_game_id = str(
-            pred_match.get("game_id", "") or ""
-        ).strip()
+    if not match:
+        return None
 
-        pred_game_pk = str(
-            pred_match.get("gamePk", "") or ""
-        ).strip()
+    resolved = _resolved_game_result(
+        match,
+        f"games_existing_gamePk_{reason}",
+        game_time,
+        games_candidate_count,
+        prediction_candidate_count,
+    )
 
-        pred_game_number = str(
-            pred_match.get("gameNumber", "") or ""
-        ).strip()
-
-        pred_game_time = str(
-            pred_match.get("game_time", "") or game_time or ""
-        ).strip()
-
-        if pred_game_pk:
-            official = games_by_gamepk.get(pred_game_pk, {})
-
-            if (
-                official
-                and candidate_matches_teams(
-                    official,
-                    home_team,
-                    away_team,
-                )
-            ):
-                official_match, official_reason = select_game_candidate(
-                    [official],
-                    pred_game_time,
-                    current_game_pk=pred_game_pk,
-                    current_game_number=pred_game_number,
-                )
-
-                if official_match:
-                    return result_from_game(
-                        official_match,
-                        "predictions_"
-                        f"{pred_match_reason}_then_games_by_gamePk_"
-                        f"{official_reason}",
-                    )
-
-        if pred_game_id:
-            official = games_by_game_id.get(pred_game_id, {})
-
-            if (
-                official
-                and candidate_matches_teams(
-                    official,
-                    home_team,
-                    away_team,
-                )
-            ):
-                official_game_pk = str(
-                    official.get("gamePk", "") or ""
-                ).strip()
-
-                official_match, official_reason = select_game_candidate(
-                    [official],
-                    pred_game_time,
-                    current_game_pk=official_game_pk,
-                    current_game_number=pred_game_number,
-                )
-
-                if official_match:
-                    return result_from_game(
-                        official_match,
-                        "predictions_"
-                        f"{pred_match_reason}_then_games_by_game_id_"
-                        f"{official_reason}",
-                    )
-
-        official_from_matchup, official_reason = select_game_candidate(
-            games_candidates,
-            pred_game_time,
-            current_game_pk=pred_game_pk,
-            current_game_number=pred_game_number,
+    if (
+        not resolved["game_id"]
+        and current_game_id
+    ):
+        resolved["game_id"] = current_game_id
+        resolved["resolved"] = bool(
+            resolved["gamePk"]
+            and resolved["game_id"]
         )
 
-        if official_from_matchup:
-            return result_from_game(
-                official_from_matchup,
-                "predictions_"
-                f"{pred_match_reason}_then_games_matchup_"
-                f"{official_reason}",
-            )
+    return resolved
 
-        return {
-            "resolved": bool(pred_game_id and pred_game_pk),
-            "game_id": pred_game_id,
-            "gamePk": pred_game_pk,
-            "gameNumber": pred_game_number,
-            "scheduled_game_time": pred_game_time,
-            "resolution_source": (
-                f"predictions_{pred_match_reason}"
-            ),
-            "games_candidate_count": len(games_candidates),
-            "prediction_candidate_count": len(pred_candidates),
-            "reason": (
-                "prediction candidate resolved, but the corresponding "
-                "official games row could not be verified using "
-                "gamePk, gameNumber, and scheduled time"
-            ),
-        }
 
+def _resolve_existing_game_id(
+    *,
+    games_by_game_id,
+    game_time,
+    home_team,
+    away_team,
+    current_game_id,
+    current_game_number,
+    games_candidate_count,
+    prediction_candidate_count,
+):
+    if not current_game_id:
+        return None
+
+    candidate = games_by_game_id.get(
+        current_game_id,
+        {},
+    )
+
+    if not candidate:
+        return None
+
+    if not candidate_matches_teams(
+        candidate,
+        home_team,
+        away_team,
+    ):
+        return None
+
+    candidate_game_pk = _identity_value(
+        candidate,
+        "gamePk",
+    )
+    candidate_game_number = _identity_value(
+        candidate,
+        "gameNumber",
+    )
+
+    match, reason = select_game_candidate(
+        [candidate],
+        game_time,
+        current_game_pk=candidate_game_pk,
+        current_game_number=(
+            current_game_number
+            or candidate_game_number
+        ),
+    )
+
+    if not match:
+        return None
+
+    return _resolved_game_result(
+        match,
+        f"games_existing_game_id_{reason}",
+        game_time,
+        games_candidate_count,
+        prediction_candidate_count,
+    )
+
+
+def _official_from_prediction_game_pk(
+    *,
+    games_by_gamepk,
+    pred_game_pk,
+    pred_game_number,
+    pred_game_time,
+    home_team,
+    away_team,
+    source_prefix,
+    games_candidate_count,
+    prediction_candidate_count,
+):
+    if not pred_game_pk:
+        return None
+
+    official = games_by_gamepk.get(
+        pred_game_pk,
+        {},
+    )
+
+    if not official:
+        return None
+
+    if not candidate_matches_teams(
+        official,
+        home_team,
+        away_team,
+    ):
+        return None
+
+    match, reason = select_game_candidate(
+        [official],
+        pred_game_time,
+        current_game_pk=pred_game_pk,
+        current_game_number=pred_game_number,
+    )
+
+    if not match:
+        return None
+
+    return _resolved_game_result(
+        match,
+        (
+            f"{source_prefix}"
+            f"_then_games_by_gamePk_{reason}"
+        ),
+        pred_game_time,
+        games_candidate_count,
+        prediction_candidate_count,
+    )
+
+
+def _official_from_prediction_game_id(
+    *,
+    games_by_game_id,
+    pred_game_id,
+    pred_game_number,
+    pred_game_time,
+    home_team,
+    away_team,
+    source_prefix,
+    games_candidate_count,
+    prediction_candidate_count,
+):
+    if not pred_game_id:
+        return None
+
+    official = games_by_game_id.get(
+        pred_game_id,
+        {},
+    )
+
+    if not official:
+        return None
+
+    if not candidate_matches_teams(
+        official,
+        home_team,
+        away_team,
+    ):
+        return None
+
+    official_game_pk = _identity_value(
+        official,
+        "gamePk",
+    )
+
+    match, reason = select_game_candidate(
+        [official],
+        pred_game_time,
+        current_game_pk=official_game_pk,
+        current_game_number=pred_game_number,
+    )
+
+    if not match:
+        return None
+
+    return _resolved_game_result(
+        match,
+        (
+            f"{source_prefix}"
+            f"_then_games_by_game_id_{reason}"
+        ),
+        pred_game_time,
+        games_candidate_count,
+        prediction_candidate_count,
+    )
+
+
+def _resolve_prediction_candidate(
+    *,
+    pred_match,
+    pred_match_reason,
+    games_candidates,
+    games_by_game_id,
+    games_by_gamepk,
+    game_time,
+    home_team,
+    away_team,
+    games_candidate_count,
+    prediction_candidate_count,
+):
+    pred_game_id = _identity_value(
+        pred_match,
+        "game_id",
+    )
+    pred_game_pk = _identity_value(
+        pred_match,
+        "gamePk",
+    )
+    pred_game_number = _identity_value(
+        pred_match,
+        "gameNumber",
+    )
+    pred_game_time = str(
+        pred_match.get("game_time", "")
+        or game_time
+        or ""
+    ).strip()
+
+    source_prefix = (
+        f"predictions_{pred_match_reason}"
+    )
+
+    resolved = _official_from_prediction_game_pk(
+        games_by_gamepk=games_by_gamepk,
+        pred_game_pk=pred_game_pk,
+        pred_game_number=pred_game_number,
+        pred_game_time=pred_game_time,
+        home_team=home_team,
+        away_team=away_team,
+        source_prefix=source_prefix,
+        games_candidate_count=games_candidate_count,
+        prediction_candidate_count=prediction_candidate_count,
+    )
+
+    if resolved is not None:
+        return resolved
+
+    resolved = _official_from_prediction_game_id(
+        games_by_game_id=games_by_game_id,
+        pred_game_id=pred_game_id,
+        pred_game_number=pred_game_number,
+        pred_game_time=pred_game_time,
+        home_team=home_team,
+        away_team=away_team,
+        source_prefix=source_prefix,
+        games_candidate_count=games_candidate_count,
+        prediction_candidate_count=prediction_candidate_count,
+    )
+
+    if resolved is not None:
+        return resolved
+
+    official, reason = select_game_candidate(
+        games_candidates,
+        pred_game_time,
+        current_game_pk=pred_game_pk,
+        current_game_number=pred_game_number,
+    )
+
+    if official:
+        return _resolved_game_result(
+            official,
+            (
+                f"{source_prefix}"
+                f"_then_games_matchup_{reason}"
+            ),
+            pred_game_time,
+            games_candidate_count,
+            prediction_candidate_count,
+        )
+
+    return {
+        "resolved": bool(
+            pred_game_id
+            and pred_game_pk
+        ),
+        "game_id": pred_game_id,
+        "gamePk": pred_game_pk,
+        "gameNumber": pred_game_number,
+        "scheduled_game_time": pred_game_time,
+        "resolution_source": source_prefix,
+        "games_candidate_count": games_candidate_count,
+        "prediction_candidate_count": prediction_candidate_count,
+        "reason": (
+            "prediction candidate resolved, but the corresponding "
+            "official games row could not be verified using "
+            "gamePk, gameNumber, and scheduled time"
+        ),
+    }
+
+
+def _unresolved_resolution_result(
+    *,
+    game_time,
+    current_game_id,
+    current_game_pk,
+    current_game_number,
+    games_candidates,
+    pred_candidates,
+):
     reason_parts = []
 
     if not games_candidates:
@@ -987,13 +1127,133 @@ def resolve_completed_game_ids(
         "game_id": current_game_id,
         "gamePk": current_game_pk,
         "gameNumber": current_game_number,
-        "scheduled_game_time": str(game_time or "").strip(),
+        "scheduled_game_time": str(
+            game_time or ""
+        ).strip(),
         "resolution_source": "unresolved",
-        "games_candidate_count": len(games_candidates),
-        "prediction_candidate_count": len(pred_candidates),
+        "games_candidate_count": len(
+            games_candidates
+        ),
+        "prediction_candidate_count": len(
+            pred_candidates
+        ),
         "reason": "; ".join(reason_parts),
     }
 
+
+def resolve_completed_game_ids(
+    *,
+    game_time,
+    home_team,
+    away_team,
+    current_game_id="",
+    current_game_pk="",
+    current_game_number="",
+    games_lookup,
+    games_by_game_id,
+    games_by_gamepk,
+    predictions_lookup,
+):
+    key = matchup_key(
+        home_team,
+        away_team,
+    )
+
+    games_candidates = games_lookup.get(
+        key,
+        [],
+    )
+    pred_candidates = predictions_lookup.get(
+        key,
+        [],
+    )
+
+    current_game_id = str(
+        current_game_id or ""
+    ).strip()
+    current_game_pk = str(
+        current_game_pk or ""
+    ).strip()
+    current_game_number = str(
+        current_game_number or ""
+    ).strip()
+
+    counts = {
+        "games_candidate_count": len(
+            games_candidates
+        ),
+        "prediction_candidate_count": len(
+            pred_candidates
+        ),
+    }
+
+    resolved = _resolve_existing_game_pk(
+        candidates=games_candidates,
+        game_time=game_time,
+        current_game_id=current_game_id,
+        current_game_pk=current_game_pk,
+        current_game_number=current_game_number,
+        **counts,
+    )
+
+    if resolved is not None:
+        return resolved
+
+    resolved = _resolve_existing_game_id(
+        games_by_game_id=games_by_game_id,
+        game_time=game_time,
+        home_team=home_team,
+        away_team=away_team,
+        current_game_id=current_game_id,
+        current_game_number=current_game_number,
+        **counts,
+    )
+
+    if resolved is not None:
+        return resolved
+
+    match, reason = select_game_candidate(
+        games_candidates,
+        game_time,
+        current_game_number=current_game_number,
+    )
+
+    if match:
+        return _resolved_game_result(
+            match,
+            f"games_date_teams_{reason}",
+            game_time,
+            **counts,
+        )
+
+    pred_match, pred_reason = select_game_candidate(
+        pred_candidates,
+        game_time,
+        current_game_pk=current_game_pk,
+        current_game_number=current_game_number,
+    )
+
+    if pred_match:
+        return _resolve_prediction_candidate(
+            pred_match=pred_match,
+            pred_match_reason=pred_reason,
+            games_candidates=games_candidates,
+            games_by_game_id=games_by_game_id,
+            games_by_gamepk=games_by_gamepk,
+            game_time=game_time,
+            home_team=home_team,
+            away_team=away_team,
+            **counts,
+        )
+
+    return _unresolved_resolution_result(
+        game_time=game_time,
+        current_game_id=current_game_id,
+        current_game_pk=current_game_pk,
+        current_game_number=current_game_number,
+        games_candidates=games_candidates,
+        pred_candidates=pred_candidates,
+    )
 
 def make_unresolved_completed_row(
     *,
