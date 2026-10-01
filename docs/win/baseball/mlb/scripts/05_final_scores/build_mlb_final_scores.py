@@ -1123,75 +1123,123 @@ def final_row_signature(record):
     )
 
 
+def _identity_value(record, key):
+    return str(
+        record.get(key, "") or ""
+    ).strip()
+
+
+def _different_nonblank(left, right):
+    return bool(
+        left
+        and right
+        and left != right
+    )
+
+
+def _same_nonblank(left, right):
+    return bool(
+        left
+        and right
+        and left == right
+    )
+
+
+def _scheduled_time_conflict(existing, incoming):
+    existing_time = _identity_value(
+        existing,
+        "game_time",
+    )
+    incoming_time = _identity_value(
+        incoming,
+        "game_time",
+    )
+
+    diff = time_difference_minutes(
+        existing_time,
+        incoming_time,
+    )
+
+    conflict = (
+        diff is not None
+        and diff
+        > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
+    )
+
+    return (
+        conflict,
+        existing_time,
+        incoming_time,
+    )
+
+
 def game_identity_conflict_reason(existing, incoming):
-    existing_game_pk = str(
-        existing.get("gamePk", "") or ""
-    ).strip()
+    existing_game_pk = _identity_value(
+        existing,
+        "gamePk",
+    )
+    incoming_game_pk = _identity_value(
+        incoming,
+        "gamePk",
+    )
 
-    incoming_game_pk = str(
-        incoming.get("gamePk", "") or ""
-    ).strip()
-
-    existing_game_number = str(
-        existing.get("gameNumber", "") or ""
-    ).strip()
-
-    incoming_game_number = str(
-        incoming.get("gameNumber", "") or ""
-    ).strip()
-
-    if (
-        existing_game_pk
-        and incoming_game_pk
-        and existing_game_pk != incoming_game_pk
+    if _different_nonblank(
+        existing_game_pk,
+        incoming_game_pk,
     ):
         return (
             "same game_id mapped to different gamePk values "
             f"({existing_game_pk} vs {incoming_game_pk})"
         )
 
-    if (
-        existing_game_number
-        and incoming_game_number
-        and existing_game_number != incoming_game_number
+    existing_game_number = _identity_value(
+        existing,
+        "gameNumber",
+    )
+    incoming_game_number = _identity_value(
+        incoming,
+        "gameNumber",
+    )
+
+    if _different_nonblank(
+        existing_game_number,
+        incoming_game_number,
     ):
         return (
             "same game_id mapped to different gameNumber values "
             f"({existing_game_number} vs {incoming_game_number})"
         )
 
-    if (
-        existing_game_pk
-        and incoming_game_pk
-        and existing_game_pk == incoming_game_pk
-        and existing_game_number
-        and incoming_game_number
-        and existing_game_number == incoming_game_number
-    ):
-        existing_time = str(
-            existing.get("game_time", "") or ""
-        ).strip()
+    same_identity = (
+        _same_nonblank(
+            existing_game_pk,
+            incoming_game_pk,
+        )
+        and _same_nonblank(
+            existing_game_number,
+            incoming_game_number,
+        )
+    )
 
-        incoming_time = str(
-            incoming.get("game_time", "") or ""
-        ).strip()
+    if not same_identity:
+        return ""
 
-        diff = time_difference_minutes(
-            existing_time,
-            incoming_time,
+    (
+        time_conflict,
+        existing_time,
+        incoming_time,
+    ) = _scheduled_time_conflict(
+        existing,
+        incoming,
+    )
+
+    if time_conflict:
+        return (
+            "same game_id/gamePk/gameNumber had incompatible "
+            f"scheduled times ({existing_time} vs {incoming_time})"
         )
 
-        if (
-            diff is not None
-            and diff > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
-        ):
-            return (
-                "same game_id/gamePk/gameNumber had incompatible "
-                f"scheduled times ({existing_time} vs {incoming_time})"
-            )
-
     return ""
-
 
 def merge_duplicate_metadata(existing, record):
     existing_gamepk = str(existing.get("gamePk", "") or "").strip()
