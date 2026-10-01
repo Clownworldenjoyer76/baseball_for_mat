@@ -1855,33 +1855,33 @@ def build_value_records(
                     "moneyline",
                     "home",
                     float(getattr(row, f"{system}_home_ml_prob")),
-                    getattr(row, "home_dk_moneyline_decimal"),
-                    int(getattr(row, "observed_home_ml_win")),
+                    row.home_dk_moneyline_decimal,
+                    int(row.observed_home_ml_win),
                     np.nan,
                 ),
                 (
                     "moneyline",
                     "away",
                     float(getattr(row, f"{system}_away_ml_prob")),
-                    getattr(row, "away_dk_moneyline_decimal"),
-                    int(getattr(row, "observed_away_ml_win")),
+                    row.away_dk_moneyline_decimal,
+                    int(row.observed_away_ml_win),
                     np.nan,
                 ),
                 (
                     "run_line",
                     "home",
                     getattr(row, f"{system}_home_rl_prob"),
-                    getattr(row, "home_dk_run_line_decimal"),
-                    getattr(row, "observed_home_rl_win"),
-                    getattr(row, "home_run_line"),
+                    row.home_dk_run_line_decimal,
+                    row.observed_home_rl_win,
+                    row.home_run_line,
                 ),
                 (
                     "run_line",
                     "away",
                     getattr(row, f"{system}_away_rl_prob"),
-                    getattr(row, "away_dk_run_line_decimal"),
-                    getattr(row, "observed_away_rl_win"),
-                    getattr(row, "away_run_line"),
+                    row.away_dk_run_line_decimal,
+                    row.observed_away_rl_win,
+                    row.away_run_line,
                 ),
             ]
 
@@ -1970,8 +1970,8 @@ def build_value_records(
                             f"{system}_over_total_conditional_prob",
                         )
                     ),
-                    getattr(row, "dk_total_over_decimal"),
-                    getattr(row, "observed_over_win"),
+                    row.dk_total_over_decimal,
+                    row.observed_over_win,
                 ),
                 (
                     "under",
@@ -1993,8 +1993,8 @@ def build_value_records(
                             f"{system}_under_total_conditional_prob",
                         )
                     ),
-                    getattr(row, "dk_total_under_decimal"),
-                    getattr(row, "observed_under_win"),
+                    row.dk_total_under_decimal,
+                    row.observed_under_win,
                 ),
             ]
 
