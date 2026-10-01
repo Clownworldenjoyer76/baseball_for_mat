@@ -2659,6 +2659,607 @@ def backfill_missing_finals_from_mlb(
 
     return counts
 
+def _new_process_file_counts():
+    return {
+        "parse_errors": 0,
+        "skipped_summary": 0,
+        "skipped_duplicate": 0,
+        "skipped_not_completed": 0,
+        "completed_rows_seen": 0,
+        "accepted_rows": 0,
+        "unresolved_rows": 0,
+    }
+
+
+def _validate_final_source_row(
+    row,
+    row_index,
+    file_path,
+    parse_error_rows,
+    status_audit_rows,
+):
+    if not isinstance(row, list):
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="validate_row_structure",
+                error=(
+                    "expected row list, found "
+                    f"{type(row).__name__}"
+                ),
+                row=row,
+            )
+        )
+        return "parse_error", None
+
+    if not row:
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="validate_row_structure",
+                error="empty row",
+                row=row,
+            )
+        )
+        return "parse_error", None
+
+    if is_summary_row(row):
+        return "summary", None
+
+    if len(row) < 2:
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="validate_row_structure",
+                error=(
+                    "expected at least 2 fields, "
+                    f"found {len(row)}"
+                ),
+                row=row,
+            )
+        )
+        return "parse_error", None
+
+    status = infer_game_status(row)
+
+    if is_completed_game(row):
+        return "ready", status
+
+    (
+        status_norm,
+        _raw_status,
+        status_source,
+        status_available,
+    ) = status
+
+    status_audit_rows.append({
+        "game_date": "",
+        "game_id": "",
+        "gamePk": "",
+        "gameNumber": "",
+        "away_team": "",
+        "home_team": "",
+        "final_away_score": "",
+        "final_home_score": "",
+        "game_status": status_norm,
+        "status_source": status_source,
+        "status_available": str(status_available),
+        "status_notes": (
+            "non-final row not written "
+            "to final-score output"
+        ),
+    })
+
+    return "not_completed", status
+
+
+def _parse_final_source_fields(
+    row,
+    row_index,
+    file_path,
+    parse_error_rows,
+):
+    try:
+        _dt, game_date, game_time = (
+            parse_datetime(row[0])
+        )
+    except Exception as exc:
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="parse_datetime",
+                error=exc,
+                row=row,
+            )
+        )
+        return None
+
+    try:
+        team_value = row[1]
+
+        if not isinstance(team_value, str):
+            raise TypeError(
+                "expected team field to be str, found "
+                f"{type(team_value).__name__}"
+            )
+
+        teams = team_value.split("\n")
+
+        if len(teams) < 2:
+            raise ValueError(
+                "expected at least two team names"
+            )
+
+        away_team = clean_team(teams[0])
+        home_team = clean_team(teams[1])
+
+        if not away_team or not home_team:
+            raise ValueError(
+                "away or home team is blank"
+            )
+
+    except Exception as exc:
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="parse_teams",
+                error=exc,
+                row=row,
+            )
+        )
+        return None
+
+    try:
+        score_value = row[5]
+
+        if not isinstance(score_value, str):
+            raise TypeError(
+                "expected score field to be str, found "
+                f"{type(score_value).__name__}"
+            )
+
+        scores = score_value.split("\n")
+
+        if len(scores) < 2:
+            raise ValueError(
+                "expected away/home final scores, found "
+                f"{len(scores)} score field(s)"
+            )
+
+        away_score = int(scores[0].strip())
+        home_score = int(scores[1].strip())
+
+    except Exception as exc:
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="parse_scores",
+                error=exc,
+                row=row,
+            )
+        )
+        return None
+
+    return {
+        "game_date": game_date,
+        "raw_game_time": game_time,
+        "away_team": away_team,
+        "home_team": home_team,
+        "away_score": away_score,
+        "home_score": home_score,
+        "final_total": str(
+            away_score + home_score
+        ),
+    }
+
+
+def _load_final_source_lookups(
+    game_date,
+    caches,
+):
+    if game_date not in caches["games"]:
+        caches["games"][game_date] = (
+            load_games_lookup(game_date)
+        )
+        caches["game_ids"][game_date] = (
+            load_games_by_game_id(game_date)
+        )
+        caches["game_pks"][game_date] = (
+            load_games_by_gamepk(game_date)
+        )
+
+    if game_date not in caches["predictions"]:
+        caches["predictions"][game_date] = (
+            load_predictions_lookup(game_date)
+        )
+
+    if game_date not in caches["sportsbook"]:
+        caches["sportsbook"][game_date] = (
+            load_sportsbook_lookup(game_date)
+        )
+
+    return {
+        "games": caches["games"][game_date],
+        "game_ids": caches["game_ids"][game_date],
+        "game_pks": caches["game_pks"][game_date],
+        "predictions": caches["predictions"][game_date],
+        "sportsbook": caches["sportsbook"][game_date],
+    }
+
+
+def _append_unresolved_source_row(
+    *,
+    file_path,
+    row_index,
+    row,
+    parsed,
+    resolution,
+    status,
+    unresolved_completed_rows,
+    status_audit_rows,
+):
+    game_id = _identity_value(
+        resolution,
+        "game_id",
+    )
+    game_pk = _identity_value(
+        resolution,
+        "gamePk",
+    )
+    game_number = _identity_value(
+        resolution,
+        "gameNumber",
+    )
+
+    unresolved_completed_rows.append(
+        make_unresolved_completed_row(
+            source_file=file_path.name,
+            row_index=row_index,
+            game_date=parsed["game_date"],
+            game_time=parsed["raw_game_time"],
+            away_team=parsed["away_team"],
+            home_team=parsed["home_team"],
+            final_away_score=str(
+                parsed["away_score"]
+            ),
+            final_home_score=str(
+                parsed["home_score"]
+            ),
+            game_id=game_id,
+            game_pk=game_pk,
+            game_number=game_number,
+            games_candidate_count=resolution.get(
+                "games_candidate_count",
+                0,
+            ),
+            prediction_candidate_count=resolution.get(
+                "prediction_candidate_count",
+                0,
+            ),
+            resolution_reason=resolution.get(
+                "reason",
+                "unresolved",
+            ),
+            raw_row=raw_row_text(row),
+        )
+    )
+
+    (
+        status_norm,
+        _raw_status,
+        status_source,
+        status_available,
+    ) = status
+
+    status_audit_rows.append({
+        "game_date": parsed["game_date"],
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
+        "away_team": parsed["away_team"],
+        "home_team": parsed["home_team"],
+        "final_away_score": str(
+            parsed["away_score"]
+        ),
+        "final_home_score": str(
+            parsed["home_score"]
+        ),
+        "game_status": status_norm,
+        "status_source": status_source,
+        "status_available": str(
+            status_available
+        ),
+        "status_notes": (
+            "completed game unresolved; excluded "
+            "from final-score output and written to "
+            "unresolved_completed_games.csv"
+        ),
+    })
+
+
+def _accept_final_source_row(
+    *,
+    file_path,
+    parsed,
+    resolution,
+    lookups,
+    status,
+    final_records_by_date,
+    seen_by_game_id,
+    seen_by_fallback_key,
+    status_audit_rows,
+    key_audit_rows,
+):
+    game_id = _identity_value(
+        resolution,
+        "game_id",
+    )
+    game_pk = _identity_value(
+        resolution,
+        "gamePk",
+    )
+    game_number = _identity_value(
+        resolution,
+        "gameNumber",
+    )
+
+    scheduled_game_time = str(
+        resolution.get(
+            "scheduled_game_time",
+            "",
+        )
+        or parsed["raw_game_time"]
+    ).strip()
+
+    book = closest_time_book_match(
+        lookups["sportsbook"].get(
+            matchup_key(
+                parsed["home_team"],
+                parsed["away_team"],
+            ),
+            [],
+        ),
+        parsed["raw_game_time"],
+        correction_minutes=0,
+        prefer_correction=False,
+    )
+
+    (
+        status_norm,
+        _raw_status,
+        status_source,
+        status_available,
+    ) = status
+
+    record = {
+        "sport": "baseball",
+        "league": "mlb",
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
+        "game_date": parsed["game_date"],
+        "game_time": scheduled_game_time,
+        "home_team": parsed["home_team"],
+        "away_team": parsed["away_team"],
+        "final_away_score": str(
+            parsed["away_score"]
+        ),
+        "final_home_score": str(
+            parsed["home_score"]
+        ),
+        "final_total": parsed["final_total"],
+        "away_run_line": book.get(
+            "away_run_line"
+        ),
+        "home_run_line": book.get(
+            "home_run_line"
+        ),
+        "total": book.get("total"),
+        "game_status": status_norm,
+        "final_scores_generated_at": RUN_TS,
+    }
+
+    action = add_final_record(
+        record=record,
+        source_file=file_path.name,
+        final_records_by_date=final_records_by_date,
+        seen_by_game_id=seen_by_game_id,
+        seen_by_fallback_key=seen_by_fallback_key,
+        key_audit_rows=key_audit_rows,
+    )
+
+    status_note = (
+        "explicit source status available"
+        if status_available
+        else (
+            "status inferred as final from "
+            "completed DRatings row shape"
+        )
+    )
+
+    status_audit_rows.append({
+        "game_date": parsed["game_date"],
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
+        "away_team": parsed["away_team"],
+        "home_team": parsed["home_team"],
+        "final_away_score": str(
+            parsed["away_score"]
+        ),
+        "final_home_score": str(
+            parsed["home_score"]
+        ),
+        "game_status": status_norm,
+        "status_source": status_source,
+        "status_available": str(
+            status_available
+        ),
+        "status_notes": (
+            "resolved_ids="
+            f"{resolution.get('resolution_source', '')}; "
+            f"{status_note}"
+        ),
+    })
+
+    return action in {
+        "duplicate_collapsed",
+        "blank_game_id_duplicate_collapsed",
+    }
+
+
+def _process_final_source_row(
+    *,
+    row,
+    row_index,
+    file_path,
+    caches,
+    final_records_by_date,
+    seen_by_game_id,
+    seen_by_fallback_key,
+    status_audit_rows,
+    key_audit_rows,
+    parse_error_rows,
+    unresolved_completed_rows,
+):
+    state, status = _validate_final_source_row(
+        row,
+        row_index,
+        file_path,
+        parse_error_rows,
+        status_audit_rows,
+    )
+
+    if state != "ready":
+        return state
+
+    parsed = _parse_final_source_fields(
+        row,
+        row_index,
+        file_path,
+        parse_error_rows,
+    )
+
+    if parsed is None:
+        return "parse_error"
+
+    try:
+        lookups = _load_final_source_lookups(
+            parsed["game_date"],
+            caches,
+        )
+
+        resolution = resolve_completed_game_ids(
+            game_time=parsed["raw_game_time"],
+            home_team=parsed["home_team"],
+            away_team=parsed["away_team"],
+            games_lookup=lookups["games"],
+            games_by_game_id=lookups["game_ids"],
+            games_by_gamepk=lookups["game_pks"],
+            predictions_lookup=lookups[
+                "predictions"
+            ],
+        )
+
+        game_id = _identity_value(
+            resolution,
+            "game_id",
+        )
+        game_pk = _identity_value(
+            resolution,
+            "gamePk",
+        )
+
+        if (
+            not resolution.get("resolved")
+            or not game_id
+            or not game_pk
+        ):
+            _append_unresolved_source_row(
+                file_path=file_path,
+                row_index=row_index,
+                row=row,
+                parsed=parsed,
+                resolution=resolution,
+                status=status,
+                unresolved_completed_rows=(
+                    unresolved_completed_rows
+                ),
+                status_audit_rows=(
+                    status_audit_rows
+                ),
+            )
+            return "unresolved"
+
+        duplicate = _accept_final_source_row(
+            file_path=file_path,
+            parsed=parsed,
+            resolution=resolution,
+            lookups=lookups,
+            status=status,
+            final_records_by_date=(
+                final_records_by_date
+            ),
+            seen_by_game_id=seen_by_game_id,
+            seen_by_fallback_key=(
+                seen_by_fallback_key
+            ),
+            status_audit_rows=status_audit_rows,
+            key_audit_rows=key_audit_rows,
+        )
+
+        return (
+            "duplicate"
+            if duplicate
+            else "accepted"
+        )
+
+    except FinalScoreConflictError:
+        raise
+
+    except Exception as exc:
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index=row_index,
+                stage="build_final_record",
+                error=exc,
+                row=row,
+            )
+        )
+        return "parse_error"
+
+
+def _log_process_file_counts(
+    counts,
+    final_records_by_date,
+):
+    log(
+        f"  completed_rows_seen="
+        f"{counts['completed_rows_seen']}, "
+        f"accepted_rows="
+        f"{counts['accepted_rows']}, "
+        f"unresolved_completed_rows="
+        f"{counts['unresolved_rows']}, "
+        f"parse_errors="
+        f"{counts['parse_errors']}, "
+        f"skipped_summary="
+        f"{counts['skipped_summary']}, "
+        f"skipped_duplicate="
+        f"{counts['skipped_duplicate']}, "
+        f"skipped_not_completed="
+        f"{counts['skipped_not_completed']}, "
+        f"final_score_dates_accumulated="
+        f"{len(final_records_by_date)}"
+    )
+
+
 def process_file(
     file_path,
     final_records_by_date,
@@ -2671,447 +3272,91 @@ def process_file(
 ):
     log(f"Processing {file_path.name}")
 
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    with open(
+        file_path,
+        "r",
+        encoding="utf-8",
+    ) as handle:
+        data = json.load(handle)
 
-    games_lookup_cache = {}
-    games_by_game_id_cache = {}
-    games_by_gamepk_cache = {}
-    predictions_lookup_cache = {}
-    sportsbook_lookup_cache = {}
-
-    parse_errors = 0
-    skipped_summary = 0
-    skipped_duplicate = 0
-    skipped_not_completed = 0
-    completed_rows_seen = 0
-    accepted_rows = 0
-    unresolved_rows = 0
+    counts = _new_process_file_counts()
 
     if not isinstance(data, list):
-        parse_errors += 1
+        counts["parse_errors"] += 1
 
-        parse_error_rows.append(make_parse_error_row(
-            source_file=file_path.name,
-            row_index="",
-            stage="validate_json_structure",
-            error=(
-                "expected top-level JSON list, found "
-                f"{type(data).__name__}"
-            ),
-            row=data,
-        ))
-
-        log(
-            f"  completed_rows_seen={completed_rows_seen}, "
-            f"accepted_rows={accepted_rows}, "
-            f"unresolved_completed_rows={unresolved_rows}, "
-            f"parse_errors={parse_errors}, "
-            f"skipped_summary={skipped_summary}, "
-            f"skipped_duplicate={skipped_duplicate}, "
-            f"skipped_not_completed={skipped_not_completed}, "
-            f"final_score_dates_accumulated="
-            f"{len(final_records_by_date)}"
+        parse_error_rows.append(
+            make_parse_error_row(
+                source_file=file_path.name,
+                row_index="",
+                stage="validate_json_structure",
+                error=(
+                    "expected top-level JSON list, found "
+                    f"{type(data).__name__}"
+                ),
+                row=data,
+            )
         )
 
+        _log_process_file_counts(
+            counts,
+            final_records_by_date,
+        )
         return
 
-    for row_index, row in enumerate(data, start=1):
-        if not isinstance(row, list):
-            parse_errors += 1
+    caches = {
+        "games": {},
+        "game_ids": {},
+        "game_pks": {},
+        "predictions": {},
+        "sportsbook": {},
+    }
 
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="validate_row_structure",
-                error=(
-                    "expected row list, found "
-                    f"{type(row).__name__}"
-                ),
-                row=row,
-            ))
+    counter_by_state = {
+        "parse_error": "parse_errors",
+        "summary": "skipped_summary",
+        "duplicate": "skipped_duplicate",
+        "not_completed": "skipped_not_completed",
+        "accepted": "accepted_rows",
+        "unresolved": "unresolved_rows",
+    }
 
-            continue
-
-        if not row:
-            parse_errors += 1
-
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="validate_row_structure",
-                error="empty row",
-                row=row,
-            ))
-
-            continue
-
-        if is_summary_row(row):
-            skipped_summary += 1
-            continue
-
-        if len(row) < 2:
-            parse_errors += 1
-
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="validate_row_structure",
-                error=(
-                    f"expected at least 2 fields, "
-                    f"found {len(row)}"
-                ),
-                row=row,
-            ))
-
-            continue
-
-        (
-            status_norm,
-            _raw_status,
-            status_source,
-            status_available,
-        ) = infer_game_status(row)
-
-        if not is_completed_game(row):
-            skipped_not_completed += 1
-
-            status_audit_rows.append({
-                "game_date": "",
-                "game_id": "",
-                "gamePk": "",
-                "gameNumber": "",
-                "away_team": "",
-                "home_team": "",
-                "final_away_score": "",
-                "final_home_score": "",
-                "game_status": status_norm,
-                "status_source": status_source,
-                "status_available": str(status_available),
-                "status_notes": (
-                    "non-final row not written "
-                    "to final-score output"
-                ),
-            })
-
-            continue
-
-        completed_rows_seen += 1
-
-        try:
-            _dt, game_date, raw_game_time = parse_datetime(row[0])
-
-        except Exception as exc:
-            parse_errors += 1
-
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="parse_datetime",
-                error=exc,
-                row=row,
-            ))
-
-            continue
-
-        try:
-            team_value = row[1]
-
-            if not isinstance(team_value, str):
-                raise TypeError(
-                    "expected team field to be str, found "
-                    f"{type(team_value).__name__}"
-                )
-
-            teams = team_value.split("\n")
-
-            if len(teams) < 2:
-                raise ValueError(
-                    "expected at least two team names"
-                )
-
-            away_team = clean_team(teams[0])
-            home_team = clean_team(teams[1])
-
-            if not away_team or not home_team:
-                raise ValueError(
-                    "away or home team is blank"
-                )
-
-        except Exception as exc:
-            parse_errors += 1
-
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="parse_teams",
-                error=exc,
-                row=row,
-            ))
-
-            continue
-
-        key = matchup_key(
-            home_team,
-            away_team,
+    for row_index, row in enumerate(
+        data,
+        start=1,
+    ):
+        state = _process_final_source_row(
+            row=row,
+            row_index=row_index,
+            file_path=file_path,
+            caches=caches,
+            final_records_by_date=(
+                final_records_by_date
+            ),
+            seen_by_game_id=seen_by_game_id,
+            seen_by_fallback_key=(
+                seen_by_fallback_key
+            ),
+            status_audit_rows=status_audit_rows,
+            key_audit_rows=key_audit_rows,
+            parse_error_rows=parse_error_rows,
+            unresolved_completed_rows=(
+                unresolved_completed_rows
+            ),
         )
 
-        try:
-            score_value = row[5]
+        if state in {
+            "accepted",
+            "duplicate",
+            "unresolved",
+        }:
+            counts["completed_rows_seen"] += 1
 
-            if not isinstance(score_value, str):
-                raise TypeError(
-                    "expected score field to be str, found "
-                    f"{type(score_value).__name__}"
-                )
+        counts[counter_by_state[state]] += 1
 
-            scores = score_value.split("\n")
-
-            if len(scores) < 2:
-                raise ValueError(
-                    "expected away/home final scores, found "
-                    f"{len(scores)} score field(s)"
-                )
-
-            away_score = int(scores[0].strip())
-            home_score = int(scores[1].strip())
-            final_total = str(away_score + home_score)
-
-        except Exception as exc:
-            parse_errors += 1
-
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="parse_scores",
-                error=exc,
-                row=row,
-            ))
-
-            continue
-
-        try:
-            if game_date not in games_lookup_cache:
-                games_lookup_cache[game_date] = load_games_lookup(
-                    game_date
-                )
-
-                games_by_game_id_cache[game_date] = (
-                    load_games_by_game_id(game_date)
-                )
-
-                games_by_gamepk_cache[game_date] = (
-                    load_games_by_gamepk(game_date)
-                )
-
-            if game_date not in predictions_lookup_cache:
-                predictions_lookup_cache[game_date] = (
-                    load_predictions_lookup(game_date)
-                )
-
-            if game_date not in sportsbook_lookup_cache:
-                sportsbook_lookup_cache[game_date] = (
-                    load_sportsbook_lookup(game_date)
-                )
-
-            games_lookup = games_lookup_cache[game_date]
-            games_by_game_id = games_by_game_id_cache[game_date]
-            games_by_gamepk = games_by_gamepk_cache[game_date]
-            pred_lookup = predictions_lookup_cache[game_date]
-            book_lookup = sportsbook_lookup_cache[game_date]
-
-            resolution = resolve_completed_game_ids(
-                game_time=raw_game_time,
-                home_team=home_team,
-                away_team=away_team,
-                games_lookup=games_lookup,
-                games_by_game_id=games_by_game_id,
-                games_by_gamepk=games_by_gamepk,
-                predictions_lookup=pred_lookup,
-            )
-
-            game_id = str(
-                resolution.get("game_id", "") or ""
-            ).strip()
-
-            game_pk = str(
-                resolution.get("gamePk", "") or ""
-            ).strip()
-
-            game_number = str(
-                resolution.get("gameNumber", "") or ""
-            ).strip()
-
-            scheduled_game_time = str(
-                resolution.get(
-                    "scheduled_game_time",
-                    "",
-                )
-                or raw_game_time
-            ).strip()
-
-            if (
-                not resolution.get("resolved")
-                or not game_id
-                or not game_pk
-            ):
-                unresolved_rows += 1
-
-                unresolved_completed_rows.append(
-                    make_unresolved_completed_row(
-                        source_file=file_path.name,
-                        row_index=row_index,
-                        game_date=game_date,
-                        game_time=raw_game_time,
-                        away_team=away_team,
-                        home_team=home_team,
-                        final_away_score=str(away_score),
-                        final_home_score=str(home_score),
-                        game_id=game_id,
-                        game_pk=game_pk,
-                        game_number=game_number,
-                        games_candidate_count=resolution.get(
-                            "games_candidate_count",
-                            0,
-                        ),
-                        prediction_candidate_count=resolution.get(
-                            "prediction_candidate_count",
-                            0,
-                        ),
-                        resolution_reason=resolution.get(
-                            "reason",
-                            "unresolved",
-                        ),
-                        raw_row=raw_row_text(row),
-                    )
-                )
-
-                status_audit_rows.append({
-                    "game_date": game_date,
-                    "game_id": game_id,
-                    "gamePk": game_pk,
-                    "gameNumber": game_number,
-                    "away_team": away_team,
-                    "home_team": home_team,
-                    "final_away_score": str(away_score),
-                    "final_home_score": str(home_score),
-                    "game_status": status_norm,
-                    "status_source": status_source,
-                    "status_available": str(
-                        status_available
-                    ),
-                    "status_notes": (
-                        "completed game unresolved; excluded "
-                        "from final-score output and written to "
-                        "unresolved_completed_games.csv"
-                    ),
-                })
-
-                continue
-
-            book_candidates = book_lookup.get(
-                key,
-                [],
-            )
-
-            book = closest_time_book_match(
-                book_candidates,
-                raw_game_time,
-                correction_minutes=0,
-                prefer_correction=False,
-            )
-
-            record = {
-                "sport": "baseball",
-                "league": "mlb",
-                "game_id": game_id,
-                "gamePk": game_pk,
-                "gameNumber": game_number,
-                "game_date": game_date,
-                "game_time": scheduled_game_time,
-                "home_team": home_team,
-                "away_team": away_team,
-                "final_away_score": str(away_score),
-                "final_home_score": str(home_score),
-                "final_total": final_total,
-                "away_run_line": book.get("away_run_line"),
-                "home_run_line": book.get("home_run_line"),
-                "total": book.get("total"),
-                "game_status": status_norm,
-                "final_scores_generated_at": RUN_TS,
-            }
-
-            action = add_final_record(
-                record=record,
-                source_file=file_path.name,
-                final_records_by_date=final_records_by_date,
-                seen_by_game_id=seen_by_game_id,
-                seen_by_fallback_key=seen_by_fallback_key,
-                key_audit_rows=key_audit_rows,
-            )
-
-            if action in {
-                "duplicate_collapsed",
-                "blank_game_id_duplicate_collapsed",
-            }:
-                skipped_duplicate += 1
-            else:
-                accepted_rows += 1
-
-            status_audit_rows.append({
-                "game_date": game_date,
-                "game_id": game_id,
-                "gamePk": game_pk,
-                "gameNumber": game_number,
-                "away_team": away_team,
-                "home_team": home_team,
-                "final_away_score": str(away_score),
-                "final_home_score": str(home_score),
-                "game_status": status_norm,
-                "status_source": status_source,
-                "status_available": str(status_available),
-                "status_notes": (
-                    "resolved_ids="
-                    f"{resolution.get('resolution_source', '')}; "
-                    + (
-                        "explicit source status available"
-                        if status_available
-                        else (
-                            "status inferred as final from "
-                            "completed DRatings row shape"
-                        )
-                    )
-                ),
-            })
-
-        except FinalScoreConflictError:
-            raise
-
-        except Exception as exc:
-            parse_errors += 1
-
-            parse_error_rows.append(make_parse_error_row(
-                source_file=file_path.name,
-                row_index=row_index,
-                stage="build_final_record",
-                error=exc,
-                row=row,
-            ))
-
-            continue
-
-    log(
-        f"  completed_rows_seen={completed_rows_seen}, "
-        f"accepted_rows={accepted_rows}, "
-        f"unresolved_completed_rows={unresolved_rows}, "
-        f"parse_errors={parse_errors}, "
-        f"skipped_summary={skipped_summary}, "
-        f"skipped_duplicate={skipped_duplicate}, "
-        f"skipped_not_completed={skipped_not_completed}, "
-        f"final_score_dates_accumulated="
-        f"{len(final_records_by_date)}"
+    _log_process_file_counts(
+        counts,
+        final_records_by_date,
     )
-
 
 def _prepare_legacy_final_record(row, date):
     record = {
