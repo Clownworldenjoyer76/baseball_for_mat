@@ -377,6 +377,158 @@ def closest_time_book_match(
     )
 
 
+def _select_candidate_by_game_pk(
+    candidates,
+    target_game_time,
+    current_game_pk,
+    current_game_number,
+):
+    matches = [
+        candidate
+        for candidate in candidates
+        if str(
+            candidate.get("gamePk", "") or ""
+        ).strip()
+        == current_game_pk
+    ]
+
+    if len(matches) != 1:
+        return {}, (
+            "existing gamePk did not identify exactly one "
+            "date/team candidate"
+        )
+
+    candidate = matches[0]
+    candidate_game_number = str(
+        candidate.get("gameNumber", "") or ""
+    ).strip()
+
+    if (
+        current_game_number
+        and candidate_game_number
+        and candidate_game_number
+        != current_game_number
+    ):
+        return {}, (
+            "existing gamePk matched but gameNumber conflicted "
+            f"(existing={current_game_number}, "
+            f"candidate={candidate_game_number})"
+        )
+
+    if parse_time_minutes(target_game_time) is None:
+        return candidate, (
+            "gamePk+gameNumber+scheduled_time"
+        )
+
+    candidate_time = str(
+        candidate.get("game_time", "") or ""
+    ).strip()
+
+    if parse_time_minutes(candidate_time) is None:
+        return {}, (
+            "existing gamePk matched but candidate scheduled "
+            "time was unavailable"
+        )
+
+    diff = time_difference_minutes(
+        target_game_time,
+        candidate_time,
+    )
+
+    if (
+        diff is None
+        or diff
+        > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
+    ):
+        return {}, (
+            "existing gamePk matched but scheduled time "
+            f"was outside tolerance ({diff} minutes)"
+        )
+
+    return candidate, (
+        "gamePk+gameNumber+scheduled_time"
+    )
+
+
+def _filter_candidates_by_game_number(
+    candidates,
+    current_game_number,
+):
+    if (
+        len(candidates) <= 1
+        or not current_game_number
+    ):
+        return candidates, ""
+
+    matches = [
+        candidate
+        for candidate in candidates
+        if str(
+            candidate.get("gameNumber", "") or ""
+        ).strip()
+        == current_game_number
+    ]
+
+    if not matches:
+        return [], (
+            "doubleheader candidates existed but none matched "
+            f"gameNumber={current_game_number}"
+        )
+
+    return matches, ""
+
+
+def _resolve_candidate_by_time(
+    candidates,
+    target_game_time,
+    current_game_number,
+):
+    if len(candidates) == 1:
+        candidate = candidates[0]
+
+        if parse_time_minutes(target_game_time) is None:
+            if current_game_number:
+                return candidate, (
+                    "gameNumber_unique_no_time"
+                )
+
+            return {}, (
+                "single date/team candidate existed but "
+                "scheduled target time was unavailable"
+            )
+
+    matched = closest_time_record_match(
+        candidates,
+        target_game_time,
+        correction_minutes=0,
+        prefer_correction=False,
+    )
+
+    if matched:
+        if current_game_number:
+            return matched, (
+                "gameNumber+scheduled_time"
+            )
+
+        return matched, "scheduled_time"
+
+    if len(candidates) == 1:
+        return {}, (
+            "candidate failed scheduled-time tolerance"
+        )
+
+    if current_game_number:
+        return {}, (
+            "doubleheader gameNumber candidates remained "
+            "ambiguous after scheduled-time matching"
+        )
+
+    return {}, (
+        "same-team candidates could not be resolved "
+        "uniquely by scheduled time"
+    )
+
+
 def select_game_candidate(
     candidates,
     target_game_time,
@@ -386,137 +538,40 @@ def select_game_candidate(
 ):
     candidates = list(candidates or [])
 
-    current_game_pk = str(current_game_pk or "").strip()
-    current_game_number = str(current_game_number or "").strip()
+    current_game_pk = str(
+        current_game_pk or ""
+    ).strip()
+
+    current_game_number = str(
+        current_game_number or ""
+    ).strip()
 
     if not candidates:
         return {}, "no candidates"
 
     if current_game_pk:
-        gamepk_matches = [
-            candidate
-            for candidate in candidates
-            if str(candidate.get("gamePk", "") or "").strip() == current_game_pk
-        ]
-
-        if len(gamepk_matches) != 1:
-            return {}, (
-                "existing gamePk did not identify exactly one "
-                "date/team candidate"
-            )
-
-        candidate = gamepk_matches[0]
-        candidate_game_number = str(
-            candidate.get("gameNumber", "") or ""
-        ).strip()
-
-        if (
-            current_game_number
-            and candidate_game_number
-            and candidate_game_number != current_game_number
-        ):
-            return {}, (
-                "existing gamePk matched but gameNumber conflicted "
-                f"(existing={current_game_number}, "
-                f"candidate={candidate_game_number})"
-            )
-
-        candidate_time = str(candidate.get("game_time", "") or "").strip()
-
-        if parse_time_minutes(target_game_time) is not None:
-            if parse_time_minutes(candidate_time) is None:
-                return {}, (
-                    "existing gamePk matched but candidate scheduled "
-                    "time was unavailable"
-                )
-
-            diff = time_difference_minutes(
-                target_game_time,
-                candidate_time,
-            )
-
-            if (
-                diff is None
-                or diff > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
-            ):
-                return {}, (
-                    "existing gamePk matched but scheduled time "
-                    f"was outside tolerance ({diff} minutes)"
-                )
-
-        return candidate, "gamePk+gameNumber+scheduled_time"
-
-    pool = candidates
-
-    if len(pool) > 1 and current_game_number:
-        number_matches = [
-            candidate
-            for candidate in pool
-            if str(candidate.get("gameNumber", "") or "").strip()
-            == current_game_number
-        ]
-
-        if not number_matches:
-            return {}, (
-                "doubleheader candidates existed but none matched "
-                f"gameNumber={current_game_number}"
-            )
-
-        pool = number_matches
-
-    if len(pool) == 1:
-        candidate = pool[0]
-
-        if parse_time_minutes(target_game_time) is None:
-            if current_game_number:
-                return candidate, "gameNumber_unique_no_time"
-
-            return {}, (
-                "single date/team candidate existed but scheduled "
-                "target time was unavailable"
-            )
-
-        matched = closest_time_record_match(
-            pool,
+        return _select_candidate_by_game_pk(
+            candidates,
             target_game_time,
-            correction_minutes=0,
-            prefer_correction=False,
+            current_game_pk,
+            current_game_number,
         )
 
-        if not matched:
-            return {}, (
-                "candidate failed scheduled-time tolerance"
-            )
-
-        if current_game_number:
-            return matched, "gameNumber+scheduled_time"
-
-        return matched, "scheduled_time"
-
-    matched = closest_time_record_match(
-        pool,
-        target_game_time,
-        correction_minutes=0,
-        prefer_correction=False,
+    pool, failure = (
+        _filter_candidates_by_game_number(
+            candidates,
+            current_game_number,
+        )
     )
 
-    if not matched:
-        if current_game_number:
-            return {}, (
-                "doubleheader gameNumber candidates remained "
-                "ambiguous after scheduled-time matching"
-            )
+    if failure:
+        return {}, failure
 
-        return {}, (
-            "same-team candidates could not be resolved uniquely "
-            "by scheduled time"
-        )
-
-    if current_game_number:
-        return matched, "gameNumber+scheduled_time"
-
-    return matched, "scheduled_time"
-
+    return _resolve_candidate_by_time(
+        pool,
+        target_game_time,
+        current_game_number,
+    )
 
 def _load_identity_matchup_lookup(path, missing_message):
     lookup = {}
