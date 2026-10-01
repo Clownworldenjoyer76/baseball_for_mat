@@ -202,87 +202,310 @@ def _invalid_moneyline_numeric(values):
     return None
 
 
-def process_row(df, juice_df, idx, row, audit_rows):
-    if any(pd.isna(row[col]) for col in DK_ODDS_COLUMNS):
-        _audit_moneyline_both(audit_rows, row, "missing_dk_odds")
-        _log(f"row={idx} reason=missing_dk_odds", "SKIP")
-        return df, "bad"
+def _prepare_moneyline_values(row, idx, audit_rows):
+    if any(
+        pd.isna(row[col])
+        for col in DK_ODDS_COLUMNS
+    ):
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "missing_dk_odds",
+        )
+        _log(
+            f"row={idx} reason=missing_dk_odds",
+            "SKIP",
+        )
+        return None, "bad"
+
     try:
         values = _parse_moneyline_row(row)
     except (TypeError, ValueError, KeyError):
-        _audit_moneyline_both(audit_rows, row, "bad_parse")
-        _log(f"row={idx} reason=conversion_failed", "SKIP")
-        return df, "bad"
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "bad_parse",
+        )
+        _log(
+            f"row={idx} reason=conversion_failed",
+            "SKIP",
+        )
+        return None, "bad"
+
     invalid = _invalid_moneyline_numeric(values)
     if invalid is not None:
         label, value = invalid
-        _audit_moneyline_both(audit_rows, row, "invalid_numeric")
-        _log(f"row={idx} reason=invalid_numeric {label}={value}", "SKIP")
-        return df, "bad"
-    ha, aa = values["home_american"], values["away_american"]
-    hd, ad = values["home_decimal"], values["away_decimal"]
-    hf, af = values["home_fair"], values["away_fair"]
-    if hf <= 1 or af <= 1 or hd <= 1 or ad <= 1:
-        _audit_moneyline_both(audit_rows, row, "invalid_decimal")
-        _log(f"row={idx} reason=invalid_decimal", "SKIP")
-        return df, "bad"
-    home_type = "favorite" if ha < 0 else "underdog"
-    away_type = "favorite" if aa < 0 else "underdog"
-    home_extra = find_band_row(juice_df, ha, home_type, "home")
-    away_extra = find_band_row(juice_df, aa, away_type, "away")
-    if home_extra is None or away_extra is None:
         _audit_moneyline_both(
-            audit_rows, row, "missing_band",
-            {"dk_american": ha, "dk_decimal": hd, "fair_decimal": hf},
-            {"dk_american": aa, "dk_decimal": ad, "fair_decimal": af},
+            audit_rows,
+            row,
+            "invalid_numeric",
         )
-        _log(f"row={idx} reason=band_lookup_failed home={ha} away={aa}", "SKIP")
-        return df, "noband"
-    home_juiced_decimal = hf * (1 - home_extra)
-    away_juiced_decimal = af * (1 - away_extra)
-    juiced = (home_juiced_decimal, away_juiced_decimal)
-    if not all(math.isfinite(value) for value in juiced):
-        _audit_moneyline_both(audit_rows, row, "invalid_juiced_decimal")
         _log(
-            f"row={idx} reason=nonfinite_juiced_decimal "
-            f"home={home_juiced_decimal} away={away_juiced_decimal}", "SKIP"
-        )
-        return df, "bad"
-    if home_juiced_decimal <= 1 or away_juiced_decimal <= 1:
-        _audit_moneyline_both(audit_rows, row, "invalid_juiced_decimal")
-        _log(
-            f"row={idx} reason=invalid_juiced_decimal "
-            f"home={home_juiced_decimal} away={away_juiced_decimal}", "SKIP"
-        )
-        return df, "bad"
-    home_prob = 1 / home_juiced_decimal
-    away_prob = 1 / away_juiced_decimal
-    normalized = normalize_pair(home_prob, away_prob)
-    if normalized is None:
-        _audit_moneyline_both(audit_rows, row, "invalid_normalization_total")
-        _log(
-            f"row={idx} reason=invalid_normalization_total val={home_prob + away_prob}",
+            f"row={idx} reason=invalid_numeric "
+            f"{label}={value}",
             "SKIP",
         )
-        return df, "bad"
+        return None, "bad"
+
+    decimals = (
+        values["home_fair"],
+        values["away_fair"],
+        values["home_decimal"],
+        values["away_decimal"],
+    )
+    if any(value <= 1 for value in decimals):
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "invalid_decimal",
+        )
+        _log(
+            f"row={idx} reason=invalid_decimal",
+            "SKIP",
+        )
+        return None, "bad"
+
+    return values, None
+
+
+def _moneyline_band_extras(
+    juice_df,
+    row,
+    idx,
+    audit_rows,
+    values,
+):
+    ha = values["home_american"]
+    aa = values["away_american"]
+    hd = values["home_decimal"]
+    ad = values["away_decimal"]
+    hf = values["home_fair"]
+    af = values["away_fair"]
+
+    home_type = (
+        "favorite"
+        if ha < 0
+        else "underdog"
+    )
+    away_type = (
+        "favorite"
+        if aa < 0
+        else "underdog"
+    )
+
+    home_extra = find_band_row(
+        juice_df,
+        ha,
+        home_type,
+        "home",
+    )
+    away_extra = find_band_row(
+        juice_df,
+        aa,
+        away_type,
+        "away",
+    )
+
+    if home_extra is None or away_extra is None:
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "missing_band",
+            {
+                "dk_american": ha,
+                "dk_decimal": hd,
+                "fair_decimal": hf,
+            },
+            {
+                "dk_american": aa,
+                "dk_decimal": ad,
+                "fair_decimal": af,
+            },
+        )
+        _log(
+            f"row={idx} reason=band_lookup_failed "
+            f"home={ha} away={aa}",
+            "SKIP",
+        )
+        return None
+
+    return home_extra, away_extra
+
+
+def _moneyline_juiced_result(
+    row,
+    idx,
+    audit_rows,
+    values,
+    extras,
+):
+    hf = values["home_fair"]
+    af = values["away_fair"]
+    home_extra, away_extra = extras
+
+    home_decimal = hf * (1 - home_extra)
+    away_decimal = af * (1 - away_extra)
+    juiced = (home_decimal, away_decimal)
+
+    if not all(math.isfinite(value) for value in juiced):
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "invalid_juiced_decimal",
+        )
+        _log(
+            f"row={idx} reason=nonfinite_juiced_decimal "
+            f"home={home_decimal} away={away_decimal}",
+            "SKIP",
+        )
+        return None
+
+    if home_decimal <= 1 or away_decimal <= 1:
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "invalid_juiced_decimal",
+        )
+        _log(
+            f"row={idx} reason=invalid_juiced_decimal "
+            f"home={home_decimal} away={away_decimal}",
+            "SKIP",
+        )
+        return None
+
+    home_prob = 1 / home_decimal
+    away_prob = 1 / away_decimal
+    normalized = normalize_pair(
+        home_prob,
+        away_prob,
+    )
+
+    if normalized is None:
+        _audit_moneyline_both(
+            audit_rows,
+            row,
+            "invalid_normalization_total",
+        )
+        _log(
+            f"row={idx} reason=invalid_normalization_total "
+            f"val={home_prob + away_prob}",
+            "SKIP",
+        )
+        return None
+
     home_norm, away_norm = normalized
-    df.at[idx, "home_juiced_decimal_moneyline"] = home_juiced_decimal
-    df.at[idx, "away_juiced_decimal_moneyline"] = away_juiced_decimal
-    df.at[idx, "home_juiced_prob_moneyline"] = home_prob
-    df.at[idx, "away_juiced_prob_moneyline"] = away_prob
-    df.at[idx, "home_normalized_prob_moneyline"] = home_norm
-    df.at[idx, "away_normalized_prob_moneyline"] = away_norm
-    append_audit_rows(audit_rows, row, "home", "juiced", {
-        "dk_american": ha, "dk_decimal": hd, "fair_decimal": hf,
-        "juiced_decimal": home_juiced_decimal, "juiced_prob": home_prob,
-        "normalized_prob": home_norm,
-    })
-    append_audit_rows(audit_rows, row, "away", "juiced", {
-        "dk_american": aa, "dk_decimal": ad, "fair_decimal": af,
-        "juiced_decimal": away_juiced_decimal, "juiced_prob": away_prob,
-        "normalized_prob": away_norm,
-    })
+    return {
+        "home_decimal": home_decimal,
+        "away_decimal": away_decimal,
+        "home_prob": home_prob,
+        "away_prob": away_prob,
+        "home_norm": home_norm,
+        "away_norm": away_norm,
+    }
+
+
+def _write_moneyline_result(
+    df,
+    idx,
+    row,
+    audit_rows,
+    values,
+    result,
+):
+    df.at[
+        idx,
+        "home_juiced_decimal_moneyline",
+    ] = result["home_decimal"]
+    df.at[
+        idx,
+        "away_juiced_decimal_moneyline",
+    ] = result["away_decimal"]
+    df.at[
+        idx,
+        "home_juiced_prob_moneyline",
+    ] = result["home_prob"]
+    df.at[
+        idx,
+        "away_juiced_prob_moneyline",
+    ] = result["away_prob"]
+    df.at[
+        idx,
+        "home_normalized_prob_moneyline",
+    ] = result["home_norm"]
+    df.at[
+        idx,
+        "away_normalized_prob_moneyline",
+    ] = result["away_norm"]
+
+    append_audit_rows(
+        audit_rows,
+        row,
+        "home",
+        "juiced",
+        {
+            "dk_american": values["home_american"],
+            "dk_decimal": values["home_decimal"],
+            "fair_decimal": values["home_fair"],
+            "juiced_decimal": result["home_decimal"],
+            "juiced_prob": result["home_prob"],
+            "normalized_prob": result["home_norm"],
+        },
+    )
+    append_audit_rows(
+        audit_rows,
+        row,
+        "away",
+        "juiced",
+        {
+            "dk_american": values["away_american"],
+            "dk_decimal": values["away_decimal"],
+            "fair_decimal": values["away_fair"],
+            "juiced_decimal": result["away_decimal"],
+            "juiced_prob": result["away_prob"],
+            "normalized_prob": result["away_norm"],
+        },
+    )
+
+
+def process_row(df, juice_df, idx, row, audit_rows):
+    values, status = _prepare_moneyline_values(
+        row,
+        idx,
+        audit_rows,
+    )
+    if status is not None:
+        return df, status
+
+    extras = _moneyline_band_extras(
+        juice_df,
+        row,
+        idx,
+        audit_rows,
+        values,
+    )
+    if extras is None:
+        return df, "noband"
+
+    result = _moneyline_juiced_result(
+        row,
+        idx,
+        audit_rows,
+        values,
+        extras,
+    )
+    if result is None:
+        return df, "bad"
+
+    _write_moneyline_result(
+        df,
+        idx,
+        row,
+        audit_rows,
+        values,
+        result,
+    )
     return df, "ok"
+
 
 def _new_moneyline_summary():
     return {

@@ -3947,14 +3947,239 @@ def verify_final_score_outputs_have_gamepk():
     )
 
 
+def _multi_game_matchup_groups(games_rows):
+    groups = {}
+    for row in games_rows:
+        key = matchup_key(
+            row.get("home_team", ""),
+            row.get("away_team", ""),
+        )
+        groups.setdefault(key, []).append(row)
+
+    return {
+        key: rows
+        for key, rows in groups.items()
+        if len(rows) > 1
+    }
+
+
+def _candidate_gamepks(
+    candidate_rows,
+    date,
+    key,
+):
+    gamepks = [
+        str(row.get("gamePk", "") or "").strip()
+        for row in candidate_rows
+        if str(row.get("gamePk", "") or "").strip()
+    ]
+
+    if len(gamepks) != len(set(gamepks)):
+        fail(
+            "Duplicate gamePk values exist inside a "
+            "same-date/same-team games group; "
+            f"date={date} matchup={key} "
+            f"gamePks={gamepks}"
+        )
+
+    return gamepks
+
+
+def _relevant_multi_game_finals(final_rows, key):
+    return [
+        row
+        for row in final_rows
+        if matchup_key(
+            row.get("home_team", ""),
+            row.get("away_team", ""),
+        ) == key
+        and str(
+            row.get("game_status", "") or ""
+        ).strip().lower() == "final"
+        and legacy_row_has_final_score(row)
+    ]
+
+
+def _doubleheader_bad_row(
+    date,
+    key,
+    identity,
+    reason,
+):
+    game_id, game_pk, game_number, game_time = identity
+    return {
+        "date": date,
+        "matchup": key,
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
+        "game_time": game_time,
+        "reason": reason,
+    }
+
+
+def _validate_final_identity_uniqueness(
+    identity,
+    seen_game_ids,
+    seen_gamepks,
+):
+    game_id, game_pk, _game_number, _game_time = identity
+
+    if not game_id or not game_pk:
+        return "blank game_id/gamePk in multi-game matchup"
+
+    if game_id in seen_game_ids:
+        return (
+            "same game_id used by multiple finals "
+            "in same-team multi-game matchup"
+        )
+
+    if game_pk in seen_gamepks:
+        return (
+            "same gamePk used by multiple finals "
+            "in same-team multi-game matchup"
+        )
+
+    seen_game_ids.add(game_id)
+    seen_gamepks.add(game_pk)
+    return None
+
+
+def _official_candidate_for_gamepk(
+    candidate_rows,
+    game_pk,
+):
+    matches = [
+        candidate
+        for candidate in candidate_rows
+        if str(
+            candidate.get("gamePk", "") or ""
+        ).strip() == game_pk
+    ]
+
+    if len(matches) != 1:
+        return None
+
+    return matches[0]
+
+
+def _validate_final_against_games(
+    identity,
+    candidate_rows,
+):
+    game_id, game_pk, game_number, game_time = identity
+    official = _official_candidate_for_gamepk(
+        candidate_rows,
+        game_pk,
+    )
+
+    if official is None:
+        return (
+            "final gamePk did not map to exactly one "
+            "games candidate"
+        )
+
+    official_game_id = str(
+        official.get("game_id", "") or ""
+    ).strip()
+    official_game_number = str(
+        official.get("gameNumber", "") or ""
+    ).strip()
+    official_game_time = str(
+        official.get("game_time", "") or ""
+    ).strip()
+
+    if official_game_id and official_game_id != game_id:
+        return (
+            "final game_id disagreed with the games "
+            "row selected by gamePk"
+        )
+
+    if (
+        game_number
+        and official_game_number
+        and game_number != official_game_number
+    ):
+        return (
+            "final gameNumber disagreed with games "
+            "row selected by gamePk"
+        )
+
+    diff = time_difference_minutes(
+        game_time,
+        official_game_time,
+    )
+    if (
+        diff is None
+        or diff > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
+    ):
+        return (
+            "final scheduled time did not agree with "
+            "games row selected by gamePk/gameNumber"
+        )
+
+    return None
+
+
+def _verify_multi_game_group(
+    date,
+    key,
+    candidate_rows,
+    final_rows,
+    bad_rows,
+):
+    _candidate_gamepks(
+        candidate_rows,
+        date,
+        key,
+    )
+    relevant_finals = _relevant_multi_game_finals(
+        final_rows,
+        key,
+    )
+    seen_game_ids = set()
+    seen_gamepks = set()
+    verified = 0
+
+    for final_row in relevant_finals:
+        identity = identity_fields(final_row)
+        reason = _validate_final_identity_uniqueness(
+            identity,
+            seen_game_ids,
+            seen_gamepks,
+        )
+
+        if reason is None:
+            reason = _validate_final_against_games(
+                identity,
+                candidate_rows,
+            )
+
+        if reason is not None:
+            bad_rows.append(
+                _doubleheader_bad_row(
+                    date,
+                    key,
+                    identity,
+                    reason,
+                )
+            )
+            continue
+
+        verified += 1
+
+    return verified
+
+
 def verify_doubleheader_identity_integrity():
     doubleheader_matchups = 0
     verified_final_rows = 0
     bad_rows = []
 
-    for games_path in sorted(GAMES_DIR.glob("*_games.csv")):
+    for games_path in sorted(
+        GAMES_DIR.glob("*_games.csv")
+    ):
         date = games_date_from_path(games_path)
-
         if not date:
             continue
 
@@ -3962,30 +4187,19 @@ def verify_doubleheader_identity_integrity():
             games_path,
             newline="",
             encoding="utf-8-sig",
-        ) as f:
-            games_rows = list(csv.DictReader(f))
+        ) as handle:
+            games_rows = list(csv.DictReader(handle))
 
-        groups = {}
-
-        for row in games_rows:
-            key = matchup_key(
-                row.get("home_team", ""),
-                row.get("away_team", ""),
-            )
-
-            groups.setdefault(key, []).append(row)
-
-        multi_groups = {
-            key: rows
-            for key, rows in groups.items()
-            if len(rows) > 1
-        }
-
+        multi_groups = _multi_game_matchup_groups(
+            games_rows
+        )
         if not multi_groups:
             continue
 
-        final_path = FINAL_DIR / f"{date}_final_scores_MLB.csv"
-
+        final_path = (
+            FINAL_DIR
+            / f"{date}_final_scores_MLB.csv"
+        )
         if not final_path.exists():
             continue
 
@@ -3993,193 +4207,18 @@ def verify_doubleheader_identity_integrity():
             final_path,
             newline="",
             encoding="utf-8-sig",
-        ) as f:
-            final_rows = list(csv.DictReader(f))
+        ) as handle:
+            final_rows = list(csv.DictReader(handle))
 
         for key, candidate_rows in multi_groups.items():
             doubleheader_matchups += 1
-
-            candidate_gamepks = [
-                str(row.get("gamePk", "") or "").strip()
-                for row in candidate_rows
-                if str(row.get("gamePk", "") or "").strip()
-            ]
-
-            if len(candidate_gamepks) != len(set(candidate_gamepks)):
-                fail(
-                    "Duplicate gamePk values exist inside a "
-                    "same-date/same-team games group; "
-                    f"date={date} matchup={key} "
-                    f"gamePks={candidate_gamepks}"
-                )
-
-            relevant_finals = [
-                row
-                for row in final_rows
-                if matchup_key(
-                    row.get("home_team", ""),
-                    row.get("away_team", ""),
-                ) == key
-                and str(
-                    row.get("game_status", "") or ""
-                ).strip().lower() == "final"
-                and legacy_row_has_final_score(row)
-            ]
-
-            seen_final_game_ids = set()
-            seen_final_gamepks = set()
-
-            for final_row in relevant_finals:
-                (
-                    game_id,
-                    game_pk,
-                    game_number,
-                    game_time,
-                ) = identity_fields(final_row)
-
-                if not game_id or not game_pk:
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": "blank game_id/gamePk in multi-game matchup",
-                    })
-                    continue
-
-                if game_id in seen_final_game_ids:
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": (
-                            "same game_id used by multiple finals "
-                            "in same-team multi-game matchup"
-                        ),
-                    })
-                    continue
-
-                if game_pk in seen_final_gamepks:
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": (
-                            "same gamePk used by multiple finals "
-                            "in same-team multi-game matchup"
-                        ),
-                    })
-                    continue
-
-                seen_final_game_ids.add(game_id)
-                seen_final_gamepks.add(game_pk)
-
-                gamepk_candidates = [
-                    candidate
-                    for candidate in candidate_rows
-                    if str(
-                        candidate.get("gamePk", "") or ""
-                    ).strip() == game_pk
-                ]
-
-                if len(gamepk_candidates) != 1:
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": (
-                            "final gamePk did not map to exactly one "
-                            "games candidate"
-                        ),
-                    })
-                    continue
-
-                official = gamepk_candidates[0]
-
-                official_game_id = str(
-                    official.get("game_id", "") or ""
-                ).strip()
-
-                official_game_number = str(
-                    official.get("gameNumber", "") or ""
-                ).strip()
-
-                official_game_time = str(
-                    official.get("game_time", "") or ""
-                ).strip()
-
-                if (
-                    official_game_id
-                    and official_game_id != game_id
-                ):
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": (
-                            "final game_id disagreed with the games "
-                            "row selected by gamePk"
-                        ),
-                    })
-                    continue
-
-                if (
-                    game_number
-                    and official_game_number
-                    and game_number != official_game_number
-                ):
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": (
-                            "final gameNumber disagreed with games "
-                            "row selected by gamePk"
-                        ),
-                    })
-                    continue
-
-                diff = time_difference_minutes(
-                    game_time,
-                    official_game_time,
-                )
-
-                if (
-                    diff is None
-                    or diff > DOUBLEHEADER_TIME_TOLERANCE_MINUTES
-                ):
-                    bad_rows.append({
-                        "date": date,
-                        "matchup": key,
-                        "game_id": game_id,
-                        "gamePk": game_pk,
-                        "gameNumber": game_number,
-                        "game_time": game_time,
-                        "reason": (
-                            "final scheduled time did not agree with "
-                            "games row selected by gamePk/gameNumber"
-                        ),
-                    })
-                    continue
-
-                verified_final_rows += 1
+            verified_final_rows += _verify_multi_game_group(
+                date,
+                key,
+                candidate_rows,
+                final_rows,
+                bad_rows,
+            )
 
     if bad_rows:
         fail(
@@ -4195,18 +4234,9 @@ def verify_doubleheader_identity_integrity():
     )
 
 
-def main():
-    files_written = []
-    final_records_by_date = {}
-    seen_by_game_id = {}
-    seen_by_fallback_key = {}
 
-    status_audit_rows = []
-    key_audit_rows = []
-    parse_error_rows = []
-    unresolved_completed_rows = []
-
-    status_audit_header = [
+def _final_score_audit_headers():
+    status_header = [
         "game_date",
         "game_id",
         "gamePk",
@@ -4220,8 +4250,7 @@ def main():
         "status_available",
         "status_notes",
     ]
-
-    key_audit_header = [
+    key_header = [
         "game_date",
         "game_id",
         "gamePk",
@@ -4232,8 +4261,7 @@ def main():
         "status",
         "notes",
     ]
-
-    unresolved_audit_header = [
+    unresolved_header = [
         "source_file",
         "row_index",
         "game_date",
@@ -4250,350 +4278,402 @@ def main():
         "resolution_reason",
         "raw_row",
     ]
+    return status_header, key_header, unresolved_header
 
-    try:
-        raw_files = sorted(
-            RAW_DIR.glob("*_mlb_raw.json")
+
+def _load_final_score_raw_records(
+    final_records_by_date,
+    seen_by_game_id,
+    seen_by_fallback_key,
+    status_audit_rows,
+    key_audit_rows,
+    parse_error_rows,
+    unresolved_completed_rows,
+):
+    raw_files = sorted(
+        RAW_DIR.glob("*_mlb_raw.json")
+    )
+    if not raw_files:
+        fail(
+            f"No DRatings raw files found in {RAW_DIR}"
         )
 
-        if not raw_files:
+    log(f"Raw files found: {len(raw_files)}")
+    log(
+        "Historical final-score build timestamp: "
+        f"{RUN_TS}"
+    )
+
+    existing_summary = preserve_existing_final_score_records(
+        final_records_by_date=final_records_by_date,
+        seen_by_game_id=seen_by_game_id,
+        seen_by_fallback_key=seen_by_fallback_key,
+        status_audit_rows=status_audit_rows,
+        key_audit_rows=key_audit_rows,
+    )
+
+    for file in raw_files:
+        process_file(
+            file_path=file,
+            final_records_by_date=final_records_by_date,
+            seen_by_game_id=seen_by_game_id,
+            seen_by_fallback_key=seen_by_fallback_key,
+            status_audit_rows=status_audit_rows,
+            key_audit_rows=key_audit_rows,
+            parse_error_rows=parse_error_rows,
+            unresolved_completed_rows=unresolved_completed_rows,
+        )
+
+    return raw_files, existing_summary
+
+
+def _abort_on_final_score_parse_errors(
+    raw_files,
+    parse_error_rows,
+    unresolved_completed_rows,
+):
+    total_parse_errors = len(parse_error_rows)
+    if not total_parse_errors:
+        return
+
+    log("--- SUMMARY ---")
+    log(
+        "Raw files processed before failure: "
+        f"{len(raw_files)}"
+    )
+    log(
+        "Parse errors encountered: "
+        f"{total_parse_errors}"
+    )
+    log_review_rows(
+        parse_error_rows,
+        unresolved_completed_rows,
+    )
+    fail(
+        "Final-score build aborted because "
+        f"parse_errors={total_parse_errors}. "
+        "Final-score outputs were not written."
+    )
+
+
+def _resolved_final_missing_ids(record):
+    status = str(
+        record.get("game_status", "") or ""
+    ).strip().lower()
+    if status != "final":
+        return False
+
+    game_id = str(
+        record.get("game_id", "") or ""
+    ).strip()
+    game_pk = str(
+        record.get("gamePk", "") or ""
+    ).strip()
+    return not game_id or not game_pk
+
+
+def _write_final_score_records(
+    final_records_by_date,
+    files_written,
+):
+    for date in sorted(final_records_by_date):
+        records = final_records_by_date[date]
+        bad_resolved = [
+            record
+            for record in records
+            if _resolved_final_missing_ids(record)
+        ]
+        if bad_resolved:
             fail(
-                f"No DRatings raw files found in {RAW_DIR}"
+                "Resolved completed rows cannot be written "
+                "with blank game_id/gamePk; "
+                f"date={date} "
+                f"bad_rows={len(bad_resolved)}"
             )
 
-        log(
-            f"Raw files found: {len(raw_files)}"
+        out = (
+            FINAL_DIR
+            / f"{date}_final_scores_MLB.csv"
         )
-
-        log(
-            "Historical final-score build timestamp: "
-            f"{RUN_TS}"
-        )
-
-        existing_final_summary = (
-            preserve_existing_final_score_records(
-                final_records_by_date=final_records_by_date,
-                seen_by_game_id=seen_by_game_id,
-                seen_by_fallback_key=seen_by_fallback_key,
-                status_audit_rows=status_audit_rows,
-                key_audit_rows=key_audit_rows,
-            )
-        )
-
-        for file in raw_files:
-            process_file(
-                file_path=file,
-                final_records_by_date=final_records_by_date,
-                seen_by_game_id=seen_by_game_id,
-                seen_by_fallback_key=seen_by_fallback_key,
-                status_audit_rows=status_audit_rows,
-                key_audit_rows=key_audit_rows,
-                parse_error_rows=parse_error_rows,
-                unresolved_completed_rows=unresolved_completed_rows,
-            )
-
-        total_parse_errors = len(parse_error_rows)
-
-        if total_parse_errors > 0:
-            log("--- SUMMARY ---")
-
-            log(
-                "Raw files processed before failure: "
-                f"{len(raw_files)}"
-            )
-
-            log(
-                "Parse errors encountered: "
-                f"{total_parse_errors}"
-            )
-
-            log_review_rows(
-                parse_error_rows,
-                unresolved_completed_rows,
-            )
-
-            fail(
-                "Final-score build aborted because "
-                f"parse_errors={total_parse_errors}. "
-                "Final-score outputs were not written."
-            )
-
-        mlb_fallback_summary = (
-            backfill_missing_finals_from_mlb(
-                final_records_by_date=final_records_by_date,
-                seen_by_game_id=seen_by_game_id,
-                seen_by_fallback_key=seen_by_fallback_key,
-                status_audit_rows=status_audit_rows,
-                key_audit_rows=key_audit_rows,
-            )
-        )
-
-        for date in sorted(final_records_by_date):
-            records = final_records_by_date[date]
-
-            bad_resolved = [
-                record
-                for record in records
-                if (
-                    str(
-                        record.get(
-                            "game_status",
-                            "",
-                        )
-                        or ""
-                    ).strip().lower()
-                    == "final"
-                )
-                and (
-                    not str(
-                        record.get(
-                            "game_id",
-                            "",
-                        )
-                        or ""
-                    ).strip()
-                    or not str(
-                        record.get(
-                            "gamePk",
-                            "",
-                        )
-                        or ""
-                    ).strip()
-                )
+        rows = [
+            [
+                record.get(col, "")
+                for col in FINAL_HEADER
             ]
-
-            if bad_resolved:
-                fail(
-                    "Resolved completed rows cannot be written "
-                    "with blank game_id/gamePk; "
-                    f"date={date} "
-                    f"bad_rows={len(bad_resolved)}"
-                )
-
-            out = (
-                FINAL_DIR
-                / f"{date}_final_scores_MLB.csv"
-            )
-
-            rows = [
-                [
-                    record.get(col, "")
-                    for col in FINAL_HEADER
-                ]
-                for record in records
-            ]
-
-            write_csv(
-                out,
-                FINAL_HEADER,
-                rows,
-                files_written,
-                "final scores",
-            )
-
-        legacy_backfill_summary = (
-            migrate_legacy_final_score_files(
-                files_written,
-                unresolved_completed_rows,
-            )
+            for record in records
+        ]
+        write_csv(
+            out,
+            FINAL_HEADER,
+            rows,
+            files_written,
+            "final scores",
         )
 
-        verify_final_score_outputs_have_gamepk()
-        verify_doubleheader_identity_integrity()
 
-        write_audit_csv(
-            STATUS_AUDIT_FILE,
-            status_audit_header,
-            status_audit_rows,
-            "final-score status audit",
+def _write_final_score_audits(
+    status_header,
+    key_header,
+    unresolved_header,
+    status_audit_rows,
+    key_audit_rows,
+    unresolved_completed_rows,
+):
+    write_audit_csv(
+        STATUS_AUDIT_FILE,
+        status_header,
+        status_audit_rows,
+        "final-score status audit",
+    )
+    write_audit_csv(
+        KEY_AUDIT_FILE,
+        key_header,
+        key_audit_rows,
+        "final-score key audit",
+    )
+    write_audit_csv(
+        UNRESOLVED_AUDIT_FILE,
+        unresolved_header,
+        unresolved_completed_rows,
+        "unresolved completed-game audit",
+    )
+
+
+def _unknown_final_status_count(status_audit_rows):
+    return sum(
+        1
+        for row in status_audit_rows
+        if str(
+            row.get("game_status", "")
+        ).strip().lower() == "unknown"
+    )
+
+
+def _log_final_score_review_status(
+    total_parse_errors,
+    unresolved_count,
+):
+    if total_parse_errors:
+        fail(
+            "Final-score build cannot report success because "
+            f"parse_errors={total_parse_errors}"
         )
 
-        write_audit_csv(
-            KEY_AUDIT_FILE,
-            key_audit_header,
-            key_audit_rows,
-            "final-score key audit",
-        )
+    log(
+        "Parse-error review: "
+        "no parse errors encountered."
+    )
 
-        write_audit_csv(
-            UNRESOLVED_AUDIT_FILE,
-            unresolved_audit_header,
-            unresolved_completed_rows,
-            "unresolved completed-game audit",
-        )
-
-        unknown_status_count = sum(
-            1
-            for row in status_audit_rows
-            if (
-                str(
-                    row.get(
-                        "game_status",
-                        "",
-                    )
-                ).strip().lower()
-                == "unknown"
-            )
-        )
-
-        total_parse_errors = len(parse_error_rows)
-
-        unresolved_completed_rows_count = len(
-            unresolved_completed_rows
-        )
-
-        log("--- SUMMARY ---")
-
+    if unresolved_count:
         log(
-            f"Raw files processed: {len(raw_files)}"
+            "WARNING: Genuinely unresolved completed games "
+            "were excluded from final-score outputs and "
+            f"written to {UNRESOLVED_AUDIT_FILE}."
         )
+        return
 
-        log(
-            f"Files written: {len(files_written)}"
-        )
+    log(
+        "Unresolved completed-game review: none."
+    )
 
-        log(
+
+def _log_final_score_summary(
+    raw_files,
+    files_written,
+    final_records_by_date,
+    seen_by_game_id,
+    existing_summary,
+    mlb_summary,
+    legacy_summary,
+    unresolved_count,
+    total_parse_errors,
+    unknown_status_count,
+):
+    log("--- SUMMARY ---")
+    summary_lines = [
+        f"Raw files processed: {len(raw_files)}",
+        f"Files written: {len(files_written)}",
+        (
             "Final-score dates written once: "
             f"{len(final_records_by_date)}"
-        )
-
-        log(
+        ),
+        (
             "Final-score game_id primary-key rows: "
             f"{len(seen_by_game_id)}"
-        )
-
-        log(
+        ),
+        (
             "Existing valid final-score rows preserved: "
-            f"{existing_final_summary['rows_preserved']}"
-        )
-
-        log(
+            f"{existing_summary['rows_preserved']}"
+        ),
+        (
             "Existing final rows skipped for missing IDs: "
-            f"{existing_final_summary['skipped_missing_ids']}"
-        )
-
-        log(
+            f"{existing_summary['skipped_missing_ids']}"
+        ),
+        (
             "MLB fallback games checked: "
-            f"{mlb_fallback_summary['api_checked']}"
-        )
-
-        log(
+            f"{mlb_summary['api_checked']}"
+        ),
+        (
             "MLB fallback final rows added: "
-            f"{mlb_fallback_summary['added']}"
-        )
-
-        log(
+            f"{mlb_summary['added']}"
+        ),
+        (
             "MLB fallback games not final: "
-            f"{mlb_fallback_summary['api_not_final']}"
-        )
-
-        log(
+            f"{mlb_summary['api_not_final']}"
+        ),
+        (
             "MLB fallback API errors: "
-            f"{mlb_fallback_summary['api_errors']}"
-        )
-
-        log(
+            f"{mlb_summary['api_errors']}"
+        ),
+        (
             "MLB fallback final-score missing: "
-            f"{mlb_fallback_summary['api_score_missing']}"
-        )
-
-        log(
+            f"{mlb_summary['api_score_missing']}"
+        ),
+        (
             "MLB fallback team mismatches: "
-            f"{mlb_fallback_summary['api_team_mismatch']}"
-        )
-
-        log(
-            "Unresolved completed rows: "
-            f"{unresolved_completed_rows_count}"
-        )
-
-        log(
-            "Parse errors encountered: "
-            f"{total_parse_errors}"
-        )
-
-        log(
-            "Unknown status audit rows: "
-            f"{unknown_status_count}"
-        )
-
-        log(
+            f"{mlb_summary['api_team_mismatch']}"
+        ),
+        f"Unresolved completed rows: {unresolved_count}",
+        f"Parse errors encountered: {total_parse_errors}",
+        f"Unknown status audit rows: {unknown_status_count}",
+        (
             "Historical final-score files updated: "
-            f"{legacy_backfill_summary['migrated_files']}"
-        )
-
-        log(
+            f"{legacy_summary['migrated_files']}"
+        ),
+        (
             "Historical final-score rows retained: "
-            f"{legacy_backfill_summary['migrated_rows']}"
-        )
-
-        log(
+            f"{legacy_summary['migrated_rows']}"
+        ),
+        (
             "Historical completed rows resolved/backfilled: "
-            f"{legacy_backfill_summary['resolved_rows']}"
-        )
-
-        log(
+            f"{legacy_summary['resolved_rows']}"
+        ),
+        (
             "Historical completed rows moved to unresolved audit: "
-            f"{legacy_backfill_summary['unresolved_rows']}"
-        )
-
-        log(
-            f"Status audit: {STATUS_AUDIT_FILE}"
-        )
-
-        log(
-            f"Key audit: {KEY_AUDIT_FILE}"
-        )
-
-        log(
+            f"{legacy_summary['unresolved_rows']}"
+        ),
+        f"Status audit: {STATUS_AUDIT_FILE}",
+        f"Key audit: {KEY_AUDIT_FILE}",
+        (
             "Unresolved completed-game audit: "
             f"{UNRESOLVED_AUDIT_FILE}"
-        )
+        ),
+    ]
+    for line in summary_lines:
+        log(line)
 
-        if total_parse_errors:
-            fail(
-                "Final-score build cannot report success because "
-                f"parse_errors={total_parse_errors}"
-            )
-        else:
-            log(
-                "Parse-error review: "
-                "no parse errors encountered."
-            )
+    _log_final_score_review_status(
+        total_parse_errors,
+        unresolved_count,
+    )
 
-        if unresolved_completed_rows_count:
-            log(
-                "WARNING: Genuinely unresolved completed games "
-                "were excluded from final-score outputs and "
-                f"written to {UNRESOLVED_AUDIT_FILE}."
-            )
-        else:
-            log(
-                "Unresolved completed-game review: none."
-            )
-
-        for path, count in files_written:
-            log(
-                f"  FILE: {path} ({count} rows)"
-            )
-
-        log_review_rows(
-            parse_error_rows,
-            unresolved_completed_rows,
-        )
-
-        log("STATUS: SUCCESS")
-
-    except Exception as e:
+    for output_path, count in files_written:
         log(
-            f"FATAL ERROR: {e}\n"
+            f"  FILE: {output_path} ({count} rows)"
+        )
+
+
+def _run_final_score_build():
+    files_written = []
+    final_records_by_date = {}
+    seen_by_game_id = {}
+    seen_by_fallback_key = {}
+    status_audit_rows = []
+    key_audit_rows = []
+    parse_error_rows = []
+    unresolved_completed_rows = []
+
+    (
+        status_header,
+        key_header,
+        unresolved_header,
+    ) = _final_score_audit_headers()
+
+    raw_files, existing_summary = _load_final_score_raw_records(
+        final_records_by_date,
+        seen_by_game_id,
+        seen_by_fallback_key,
+        status_audit_rows,
+        key_audit_rows,
+        parse_error_rows,
+        unresolved_completed_rows,
+    )
+    _abort_on_final_score_parse_errors(
+        raw_files,
+        parse_error_rows,
+        unresolved_completed_rows,
+    )
+
+    mlb_summary = backfill_missing_finals_from_mlb(
+        final_records_by_date=final_records_by_date,
+        seen_by_game_id=seen_by_game_id,
+        seen_by_fallback_key=seen_by_fallback_key,
+        status_audit_rows=status_audit_rows,
+        key_audit_rows=key_audit_rows,
+    )
+
+    _write_final_score_records(
+        final_records_by_date,
+        files_written,
+    )
+
+    legacy_summary = migrate_legacy_final_score_files(
+        files_written,
+        unresolved_completed_rows,
+    )
+
+    verify_final_score_outputs_have_gamepk()
+    verify_doubleheader_identity_integrity()
+
+    _write_final_score_audits(
+        status_header,
+        key_header,
+        unresolved_header,
+        status_audit_rows,
+        key_audit_rows,
+        unresolved_completed_rows,
+    )
+
+    total_parse_errors = len(parse_error_rows)
+    unresolved_count = len(
+        unresolved_completed_rows
+    )
+    unknown_status_count = _unknown_final_status_count(
+        status_audit_rows
+    )
+
+    _log_final_score_summary(
+        raw_files,
+        files_written,
+        final_records_by_date,
+        seen_by_game_id,
+        existing_summary,
+        mlb_summary,
+        legacy_summary,
+        unresolved_count,
+        total_parse_errors,
+        unknown_status_count,
+    )
+    log_review_rows(
+        parse_error_rows,
+        unresolved_completed_rows,
+    )
+    log("STATUS: SUCCESS")
+
+
+def main():
+    try:
+        _run_final_score_build()
+    except Exception as error:
+        log(
+            f"FATAL ERROR: {error}\n"
             f"{traceback.format_exc()}"
         )
-
         log("STATUS: FAILED")
         raise
 
     print("MLB final-score build complete.")
+
 
 
 if __name__ == "__main__":

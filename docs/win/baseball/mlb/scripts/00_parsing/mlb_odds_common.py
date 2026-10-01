@@ -244,37 +244,128 @@ def build_markets(odds, home_team, away_team, pulled_at):
     return markets
 
 
-def _convert_espn_event(entry, target_et_date, now_utc, team_cache, pulled_at):
+def _espn_event_competition(entry):
     event_ref = https_ref((entry or {}).get("$ref"))
     if not event_ref:
-        return None, "incomplete"
+        return None
+
     event = get_json(event_ref)
     competitions = event.get("competitions") or []
     if not competitions:
-        return None, "incomplete"
-    competition = competitions[0]
-    commence_time = event.get("date") or competition.get("date")
-    event_for_time = {"commence_time": commence_time}
-    if not is_target_et_date(event_for_time, target_et_date):
-        return None, "non_target"
+        return None
+
+    return event, competitions[0]
+
+
+def _espn_event_time_status(
+    event,
+    competition,
+    target_et_date,
+    now_utc,
+):
+    commence_time = (
+        event.get("date")
+        or competition.get("date")
+    )
+    event_for_time = {
+        "commence_time": commence_time,
+    }
+
+    if not is_target_et_date(
+        event_for_time,
+        target_et_date,
+    ):
+        return commence_time, "non_target"
+
     if has_started(event_for_time, now_utc):
-        return None, "started"
-    event_id = str(event.get("id") or competition.get("id") or "").strip()
-    competition_id = str(competition.get("id") or event_id).strip()
+        return commence_time, "started"
+
+    return commence_time, None
+
+
+def _espn_event_ids(event, competition):
+    event_id = str(
+        event.get("id")
+        or competition.get("id")
+        or ""
+    ).strip()
+    competition_id = str(
+        competition.get("id")
+        or event_id
+    ).strip()
+
     if not event_id or not competition_id:
-        return None, "incomplete"
-    home_team, away_team = competition_sides(competition, team_cache)
-    if not home_team or not away_team:
-        return None, "incomplete"
+        return None
+
+    return event_id, competition_id
+
+
+def _espn_event_markets(
+    event_id,
+    competition_id,
+    home_team,
+    away_team,
+    pulled_at,
+):
     odds_payload = get_json(
-        f"{ESPN_BASE}/events/{event_id}/competitions/{competition_id}/odds"
+        f"{ESPN_BASE}/events/{event_id}/"
+        f"competitions/{competition_id}/odds"
     )
     odds = draftkings_odds_item(odds_payload)
     if not odds:
-        return None, "no_odds"
-    markets = build_markets(odds, home_team, away_team, pulled_at)
+        return None
+
+    return build_markets(
+        odds,
+        home_team,
+        away_team,
+        pulled_at,
+    )
+
+
+def _convert_espn_event(
+    entry,
+    target_et_date,
+    now_utc,
+    team_cache,
+    pulled_at,
+):
+    context = _espn_event_competition(entry)
+    if context is None:
+        return None, "incomplete"
+
+    event, competition = context
+    commence_time, status = _espn_event_time_status(
+        event,
+        competition,
+        target_et_date,
+        now_utc,
+    )
+    if status is not None:
+        return None, status
+
+    ids = _espn_event_ids(event, competition)
+    if ids is None:
+        return None, "incomplete"
+
+    event_id, competition_id = ids
+    home_team, away_team = competition_sides(
+        competition,
+        team_cache,
+    )
+    if not home_team or not away_team:
+        return None, "incomplete"
+
+    markets = _espn_event_markets(
+        event_id,
+        competition_id,
+        home_team,
+        away_team,
+        pulled_at,
+    )
     if not markets:
         return None, "no_odds"
+
     return {
         "id": event_id,
         "sport_key": "baseball_mlb",
@@ -289,6 +380,7 @@ def _convert_espn_event(entry, target_et_date, now_utc, team_cache, pulled_at):
             "markets": markets,
         }],
     }, "converted"
+
 
 
 def fetch_espn_events(target_et_date, now_utc):

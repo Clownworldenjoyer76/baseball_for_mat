@@ -257,9 +257,7 @@ def safe_corr(
     )
 
 
-def build_leakage_safe_park_features(
-    frame: pd.DataFrame,
-) -> pd.DataFrame:
+def _prepare_leakage_safe_park_frame(frame):
     required = [
         "_game_date_dt",
         "game_id",
@@ -267,13 +265,11 @@ def build_leakage_safe_park_features(
         "target_home_runs",
         "target_away_runs",
     ]
-
     missing = [
         col
         for col in required
         if col not in frame.columns
     ]
-
     if missing:
         raise RuntimeError(
             "Cannot build park features; "
@@ -281,63 +277,139 @@ def build_leakage_safe_park_features(
         )
 
     out = frame.copy()
-
-    out[
-        "_actual_total_for_park"
-    ] = (
-        numeric(
-            out,
-            "target_home_runs",
-        )
-        + numeric(
-            out,
-            "target_away_runs",
-        )
+    out["_actual_total_for_park"] = (
+        numeric(out, "target_home_runs")
+        + numeric(out, "target_away_runs")
     )
-
-    out[
-        "_venue_for_park"
-    ] = pd.to_numeric(
+    out["_venue_for_park"] = pd.to_numeric(
         out["venue_id"],
         errors="coerce",
     )
 
-    out[
-        "park_prior_games"
-    ] = np.nan
+    for column in (
+        "park_prior_games",
+        "park_prior_avg_total",
+        "league_prior_avg_total",
+        "park_run_factor_asof",
+        "park_prior_games_log",
+    ):
+        out[column] = np.nan
 
-    out[
-        "park_prior_avg_total"
-    ] = np.nan
-
-    out[
-        "league_prior_avg_total"
-    ] = np.nan
-
-    out[
-        "park_run_factor_asof"
-    ] = np.nan
-
-    out[
-        "park_prior_games_log"
-    ] = np.nan
-
-    out = (
+    return (
         out
-        .sort_values(
-            [
-                "_game_date_dt",
-                "game_id",
-            ]
-        )
-        .reset_index(
-            drop=True
-        )
+        .sort_values(["_game_date_dt", "game_id"])
+        .reset_index(drop=True)
     )
 
+
+def _park_venue_id(value):
+    if not np.isfinite(value):
+        return None
+    return int(round(float(value)))
+
+
+def _apply_park_prior_features(
+    out,
+    indices,
+    venue_sum,
+    venue_count,
+    league_sum,
+    league_count,
+):
+    league_prior_avg = (
+        league_sum / league_count
+        if league_count > 0
+        else np.nan
+    )
+
+    for idx in indices:
+        venue_id = _park_venue_id(
+            out.at[idx, "_venue_for_park"]
+        )
+        if venue_id is None:
+            continue
+
+        prior_count = venue_count.get(venue_id, 0)
+        prior_sum = venue_sum.get(venue_id, 0.0)
+        out.at[idx, "park_prior_games"] = float(prior_count)
+        out.at[idx, "park_prior_games_log"] = float(
+            np.log1p(prior_count)
+        )
+
+        if prior_count > 0:
+            out.at[idx, "park_prior_avg_total"] = (
+                prior_sum / prior_count
+            )
+
+        if (
+            league_count < MIN_PRIOR_LEAGUE_GAMES
+            or not np.isfinite(league_prior_avg)
+            or league_prior_avg <= 0
+        ):
+            continue
+
+        out.at[idx, "league_prior_avg_total"] = league_prior_avg
+        shrunk_venue_avg = (
+            prior_sum
+            + league_prior_avg * PARK_SHRINK_GAMES
+        ) / (
+            prior_count + PARK_SHRINK_GAMES
+        )
+        park_factor = (
+            100.0 * shrunk_venue_avg / league_prior_avg
+        )
+
+        if not np.isfinite(park_factor):
+            raise RuntimeError(
+                "Non-finite park factor: "
+                f"game_id={out.at[idx, 'game_id']}"
+            )
+
+        out.at[idx, "park_run_factor_asof"] = float(park_factor)
+
+
+def _update_park_history(
+    out,
+    indices,
+    venue_sum,
+    venue_count,
+    league_sum,
+    league_count,
+):
+    for idx in indices:
+        actual_total = out.at[idx, "_actual_total_for_park"]
+        if not np.isfinite(actual_total) or actual_total < 0:
+            raise RuntimeError(
+                "Invalid historical actual total: "
+                f"game_id={out.at[idx, 'game_id']}"
+            )
+
+        league_sum += float(actual_total)
+        league_count += 1
+
+        venue_id = _park_venue_id(
+            out.at[idx, "_venue_for_park"]
+        )
+        if venue_id is None:
+            continue
+
+        venue_sum[venue_id] = (
+            venue_sum.get(venue_id, 0.0)
+            + float(actual_total)
+        )
+        venue_count[venue_id] = (
+            venue_count.get(venue_id, 0) + 1
+        )
+
+    return league_sum, league_count
+
+
+def build_leakage_safe_park_features(
+    frame: pd.DataFrame,
+) -> pd.DataFrame:
+    out = _prepare_leakage_safe_park_frame(frame)
     venue_sum: dict[int, float] = {}
     venue_count: dict[int, int] = {}
-
     league_sum = 0.0
     league_count = 0
 
@@ -345,196 +417,23 @@ def build_leakage_safe_park_features(
         "_game_date_dt",
         sort=True,
     ):
-        indices = (
-            group.index.tolist()
+        indices = group.index.tolist()
+        _apply_park_prior_features(
+            out,
+            indices,
+            venue_sum,
+            venue_count,
+            league_sum,
+            league_count,
         )
-
-        league_prior_avg = (
-            league_sum
-            / league_count
-            if league_count > 0
-            else np.nan
+        league_sum, league_count = _update_park_history(
+            out,
+            indices,
+            venue_sum,
+            venue_count,
+            league_sum,
+            league_count,
         )
-
-        # Calculate all games on this date before adding
-        # any results from this same date.
-        for idx in indices:
-            venue_value = (
-                out.at[
-                    idx,
-                    "_venue_for_park",
-                ]
-            )
-
-            if not np.isfinite(
-                venue_value
-            ):
-                continue
-
-            venue_id = int(
-                round(
-                    float(
-                        venue_value
-                    )
-                )
-            )
-
-            prior_count = (
-                venue_count.get(
-                    venue_id,
-                    0,
-                )
-            )
-
-            prior_sum = (
-                venue_sum.get(
-                    venue_id,
-                    0.0,
-                )
-            )
-
-            out.at[
-                idx,
-                "park_prior_games",
-            ] = float(
-                prior_count
-            )
-
-            out.at[
-                idx,
-                "park_prior_games_log",
-            ] = float(
-                np.log1p(
-                    prior_count
-                )
-            )
-
-            if prior_count > 0:
-                out.at[
-                    idx,
-                    "park_prior_avg_total",
-                ] = (
-                    prior_sum
-                    / prior_count
-                )
-
-            if (
-                league_count
-                < MIN_PRIOR_LEAGUE_GAMES
-                or not np.isfinite(
-                    league_prior_avg
-                )
-                or league_prior_avg <= 0
-            ):
-                continue
-
-            out.at[
-                idx,
-                "league_prior_avg_total",
-            ] = (
-                league_prior_avg
-            )
-
-            shrunk_venue_avg = (
-                prior_sum
-                + (
-                    league_prior_avg
-                    * PARK_SHRINK_GAMES
-                )
-            ) / (
-                prior_count
-                + PARK_SHRINK_GAMES
-            )
-
-            park_factor = (
-                100.0
-                * shrunk_venue_avg
-                / league_prior_avg
-            )
-
-            if not np.isfinite(
-                park_factor
-            ):
-                raise RuntimeError(
-                    "Non-finite park factor: "
-                    f"game_id={out.at[idx, 'game_id']}"
-                )
-
-            out.at[
-                idx,
-                "park_run_factor_asof",
-            ] = float(
-                park_factor
-            )
-
-        # Add this date to history only after every feature
-        # for this date has been calculated.
-        for idx in indices:
-            actual_total = (
-                out.at[
-                    idx,
-                    "_actual_total_for_park",
-                ]
-            )
-
-            if (
-                not np.isfinite(
-                    actual_total
-                )
-                or actual_total < 0
-            ):
-                raise RuntimeError(
-                    "Invalid historical actual total: "
-                    f"game_id={out.at[idx, 'game_id']}"
-                )
-
-            league_sum += float(
-                actual_total
-            )
-
-            league_count += 1
-
-            venue_value = (
-                out.at[
-                    idx,
-                    "_venue_for_park",
-                ]
-            )
-
-            if not np.isfinite(
-                venue_value
-            ):
-                continue
-
-            venue_id = int(
-                round(
-                    float(
-                        venue_value
-                    )
-                )
-            )
-
-            venue_sum[
-                venue_id
-            ] = (
-                venue_sum.get(
-                    venue_id,
-                    0.0,
-                )
-                + float(
-                    actual_total
-                )
-            )
-
-            venue_count[
-                venue_id
-            ] = (
-                venue_count.get(
-                    venue_id,
-                    0,
-                )
-                + 1
-            )
 
     return out.drop(
         columns=[
@@ -542,6 +441,7 @@ def build_leakage_safe_park_features(
             "_venue_for_park",
         ]
     )
+
 
 
 def attach_resolved_totals(

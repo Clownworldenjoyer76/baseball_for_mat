@@ -116,127 +116,147 @@ def write_csv(path, header, rows, files_written, label):
 # PROCESS
 # -------------------------
 
-def process_file(file_path, files_written):
-    safe_file_path = Path(
-        file_path
-    ).resolve()
-
+def _trusted_transform_raw_file(file_path):
+    safe_file_path = Path(file_path).resolve()
     allowed_root = RAW_DIR.resolve()
 
-    if not safe_file_path.is_relative_to(
-        allowed_root
-    ):
+    if not safe_file_path.is_relative_to(allowed_root):
         raise ValueError(
             "Refusing DRatings input outside "
             f"trusted directory: {file_path}"
         )
 
-    if not safe_file_path.name.endswith(
-        "_mlb_raw.json"
-    ):
+    if not safe_file_path.name.endswith("_mlb_raw.json"):
         raise ValueError(
             "Refusing unexpected DRatings "
             f"input file: {file_path}"
         )
 
-    file_path = safe_file_path
+    return safe_file_path
 
+
+def _future_prediction_row(
+    row,
+    game_date,
+    game_time,
+    home_team,
+    away_team,
+):
+    try:
+        pitchers = row[2].split("\n")
+        away_pitcher = pitchers[0].strip()
+        home_pitcher = (
+            pitchers[1].strip()
+            if len(pitchers) > 1
+            else ""
+        )
+
+        probs = row[3].split("\n")
+        away_prob = pct_to_decimal(probs[0])
+        home_prob = (
+            pct_to_decimal(probs[1])
+            if len(probs) > 1
+            else ""
+        )
+
+        runs = row[6].split("\n")
+        away_runs = runs[0].strip()
+        home_runs = (
+            runs[1].strip()
+            if len(runs) > 1
+            else ""
+        )
+
+        return [
+            "",
+            "baseball",
+            "mlb",
+            game_date,
+            game_time,
+            home_team,
+            away_team,
+            home_pitcher,
+            away_pitcher,
+            home_prob,
+            away_prob,
+            away_runs,
+            home_runs,
+            row[7],
+        ]
+    except (IndexError, AttributeError, TypeError, ValueError):
+        return None
+
+
+def _transform_raw_row(row):
+    if not row or len(row) < 2:
+        return "skip", None, None
+
+    if is_summary_row(row):
+        return "summary", None, None
+
+    try:
+        _dt, game_date, game_time = parse_datetime(row[0])
+    except (IndexError, AttributeError, TypeError, ValueError):
+        return "parse_error", None, None
+
+    teams = row[1].split("\n")
+    if len(teams) < 2:
+        return "skip", None, None
+
+    away_team = clean_team(teams[0])
+    home_team = clean_team(teams[1])
+
+    if is_future_game(row):
+        prediction = _future_prediction_row(
+            row,
+            game_date,
+            game_time,
+            home_team,
+            away_team,
+        )
+        if prediction is None:
+            return "parse_error", None, None
+        return "future", game_date, prediction
+
+    if is_completed_game(row):
+        return "completed", None, None
+
+    return "unknown", None, None
+
+
+def process_file(file_path, files_written):
+    file_path = _trusted_transform_raw_file(file_path)
     log(f"Processing {file_path.name}")
 
-    with file_path.open(
-        "r",
-        encoding="utf-8",
-    ) as handle:
+    with file_path.open("r", encoding="utf-8") as handle:
         data = json.load(handle)
 
     predictions_by_date = {}
-
-    parse_errors = 0
-    skipped_summary = 0
-    completed_rows_ignored = 0
-    unknown_rows = 0
+    counters = {
+        "parse_error": 0,
+        "summary": 0,
+        "completed": 0,
+        "unknown": 0,
+    }
 
     for row in data:
-        if not row or len(row) < 2:
+        status, game_date, prediction = _transform_raw_row(row)
+
+        if status == "future":
+            predictions_by_date.setdefault(
+                game_date,
+                [],
+            ).append(prediction)
             continue
 
-        if is_summary_row(row):
-            skipped_summary += 1
-            continue
+        if status in counters:
+            counters[status] += 1
 
-        try:
-            _dt, game_date, game_time = parse_datetime(row[0])
-        except (IndexError, AttributeError, TypeError, ValueError):
-            parse_errors += 1
-            continue
-
-        teams = row[1].split("\n")
-        if len(teams) < 2:
-            continue
-
-        away_team = clean_team(teams[0])
-        home_team = clean_team(teams[1])
-
-        if is_future_game(row):
-            # Cell layout (11 cells):
-            #   0: date/time
-            #   1: teams (with records)
-            #   2: pitchers (away\nhome)
-            #   3: win probs (away%\nhome%)
-            #   4: moneyline (away\nhome)
-            #   5: run line (away\nhome)
-            #   6: projected runs (away\nhome)
-            #   7: total projected runs
-            #   8: over/under lines
-            #   9: bet value label
-            #  10: empty
-            try:
-                pitchers = row[2].split("\n")
-                away_pitcher = pitchers[0].strip()
-                home_pitcher = pitchers[1].strip() if len(pitchers) > 1 else ""
-
-                probs = row[3].split("\n")
-                away_prob = pct_to_decimal(probs[0])
-                home_prob = pct_to_decimal(probs[1]) if len(probs) > 1 else ""
-
-                runs = row[6].split("\n")
-                away_runs = runs[0].strip()
-                home_runs = runs[1].strip() if len(runs) > 1 else ""
-
-                total_runs = row[7]
-
-                pred_row = [
-                    "",
-                    "baseball",
-                    "mlb",
-                    game_date,
-                    game_time,
-                    home_team,
-                    away_team,
-                    home_pitcher,
-                    away_pitcher,
-                    home_prob,
-                    away_prob,
-                    away_runs,
-                    home_runs,
-                    total_runs,
-                ]
-
-                predictions_by_date.setdefault(game_date, []).append(pred_row)
-
-            except (IndexError, AttributeError, TypeError, ValueError):
-                parse_errors += 1
-                continue
-
-        elif is_completed_game(row):
-            # Step 6: intake does not generate post-game score files.
-            # Completed rows are handled only by the post-game final-score workflow.
-            completed_rows_ignored += 1
-            continue
-
-        else:
-            unknown_rows += 1
-            log(f"  SKIPPED unknown row ({len(row)} cells): {row[0]} | {row[1]}")
+        if status == "unknown":
+            log(
+                "  SKIPPED unknown row "
+                f"({len(row)} cells): {row[0]} | {row[1]}"
+            )
 
     prediction_header = [
         "game_id",
@@ -257,15 +277,22 @@ def process_file(file_path, files_written):
 
     for date, rows in predictions_by_date.items():
         out = PRED_DIR / f"{date}_MLB.csv"
-        write_csv(out, prediction_header, rows, files_written, "predictions")
+        write_csv(
+            out,
+            prediction_header,
+            rows,
+            files_written,
+            "predictions",
+        )
 
     log(
-        f"  parse_errors={parse_errors}, "
-        f"skipped_summary={skipped_summary}, "
-        f"completed_rows_ignored={completed_rows_ignored}, "
-        f"unknown_rows={unknown_rows}, "
+        f"  parse_errors={counters['parse_error']}, "
+        f"skipped_summary={counters['summary']}, "
+        f"completed_rows_ignored={counters['completed']}, "
+        f"unknown_rows={counters['unknown']}, "
         f"predictions_dates={len(predictions_by_date)}"
     )
+
 
 
 # -------------------------
