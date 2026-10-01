@@ -2325,7 +2325,6 @@ def fetch_mlb_game_feed(game_pk, cache):
         ValueError,
         RuntimeError,
         http.client.HTTPException,
-        TimeoutError,
         OSError,
     ) as exc:
         log(

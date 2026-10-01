@@ -466,7 +466,7 @@ def process_date(
                     "ERROR",
                 )
                 summary["errors"] += 1
-            except (requests.RequestException, TypeError, ValueError, KeyError, IndexError, OSError):
+            except (TypeError, ValueError, KeyError, IndexError, OSError):
                 _log(
                     f"{game_pk} | "
                     f"MET Norway fetch/parse failed",

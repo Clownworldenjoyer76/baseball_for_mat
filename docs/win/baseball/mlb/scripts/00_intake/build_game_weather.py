@@ -409,7 +409,7 @@ def process_raw_file(
             raw_path,
             dtype=str,
         )
-    except (OSError, UnicodeError, pd.errors.ParserError, ValueError):
+    except (OSError, pd.errors.ParserError, ValueError):
         _log(
             f"{raw_path.name} | "
             f"failed to read raw MET Norway CSV",
