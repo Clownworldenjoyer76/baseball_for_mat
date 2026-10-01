@@ -30,15 +30,12 @@ warnings.filterwarnings(
     category=UserWarning,
 )
 
-ROOT = next((
-    p
-    for start in (
-        Path.cwd().resolve(),
-        Path(__file__).resolve().parent,
-    )
-    for p in (start, *start.parents)
-    if (p / "docs/win/baseball/mlb").exists()
+ROOT = next(
+    (p for start in (Path.cwd().resolve(), Path(__file__).resolve().parent) for p in (start, *start.parents) if (p / "docs/win/baseball/mlb").exists()),
+    None,
 )
+if ROOT is None:
+    raise RuntimeError("Repository root not found")
 
 BASE = ROOT / "docs/win/baseball/mlb"
 
