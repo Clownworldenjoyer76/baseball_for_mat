@@ -180,6 +180,26 @@ def infer_game_status(row):
                 return normalize_status(val), str(val).strip(), field, True
 
     if isinstance(row, list) and len(row) == 8:
+        score_value = row[5]
+
+        if isinstance(score_value, str):
+            scores = score_value.split("\n")
+
+            if len(scores) >= 2:
+                try:
+                    away_score = int(scores[0].strip())
+                    home_score = int(scores[1].strip())
+                except ValueError:
+                    pass
+                else:
+                    if away_score == 0 and home_score == 0:
+                        return (
+                            "unknown",
+                            "0-0",
+                            "row_len_8_zero_zero_placeholder",
+                            False,
+                        )
+
         return "final", "final", "row_len_8_completed_score", False
 
     return "unknown", "unknown", "not_available_in_current_raw_shape", False
@@ -2798,6 +2818,7 @@ def verify_doubleheader_identity_integrity():
                 row.get("home_team", ""),
                 row.get("away_team", ""),
             )
+
             groups.setdefault(key, []).append(row)
 
         multi_groups = {

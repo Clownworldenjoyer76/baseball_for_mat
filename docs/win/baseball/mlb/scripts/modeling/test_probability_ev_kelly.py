@@ -17,9 +17,9 @@ def _find_repo_root() -> Path:
 
     for parent in file_path.parents:
         if (
-            (parent / "requirements.txt").exists()
-            and (parent / "docs/win/baseball/mlb").exists()
-        ):
+            parent
+            / "docs/win/baseball/mlb/requirements.txt"
+        ).exists():
             return parent
 
     raise RuntimeError(
