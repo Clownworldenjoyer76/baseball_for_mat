@@ -656,165 +656,135 @@ def build_book_groups(book_rows: list[dict], date_str: str) -> dict:
 # SPORTSBOOK PRESENCE
 # ─────────────────────────────────────────────
 
-def build_sportsbook_presence(date_str: str, pred_groups: dict, pred_key_order: list, book_groups: dict) -> dict:
-    presence = {}
+def _initialize_sportsbook_presence(presence, preds):
+    for pred_entry in preds:
+        presence[pred_entry["index"]] = {"present": False, "detail": ""}
 
-    for key in pred_key_order:
-        preds = pred_groups.get(key, [])
-        books = book_groups.get(key, [])
 
-        if not preds:
-            continue
+def _sportsbook_one_to_one(date_str, label, preds, unused_books, presence):
+    if len(preds) != 1 or len(unused_books) != 1:
+        return False
+    pred_entry = preds[0]
+    book_entry = unused_books[0]
+    book_entry["used"] = True
+    presence[pred_entry["index"]] = {
+        "present": True,
+        "detail": describe_book_entry(book_entry),
+    }
+    diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
+    diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+    log(
+        f"{date_str} | SPORTSBOOK MATCH one-to-one: {label} "
+        f"pred_time={pred_entry['row'].get('game_time', '')} "
+        f"book_time={book_entry['row'].get('game_time', '')}{diff_text}"
+    )
+    return True
 
-        label = matchup_label(preds[0]["row"])
 
-        for pred_entry in preds:
-            presence[pred_entry["index"]] = {
-                "present": False,
-                "detail": "",
-            }
+def _sportsbook_order_match(date_str, label, preds, unused_books, presence):
+    if not (1 < len(preds) == len(unused_books)):
+        return False
+    sorted_preds = sorted(
+        preds, key=lambda item: (dt_sort_value(item.get("dt")), item["index"])
+    )
+    sorted_books = sorted(
+        unused_books, key=lambda item: (dt_sort_value(item.get("dt")), item["index"])
+    )
+    log(
+        f"{date_str} | SPORTSBOOK ORDER MATCH duplicate matchup: {label} "
+        f"pred_count={len(sorted_preds)} book_count={len(sorted_books)}"
+    )
+    for pred_entry, book_entry in zip(sorted_preds, sorted_books):
+        book_entry["used"] = True
+        presence[pred_entry["index"]] = {
+            "present": True,
+            "detail": describe_book_entry(book_entry),
+        }
+        diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
+        diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+        log(
+            f"{date_str} | SPORTSBOOK MATCH order: {label} "
+            f"pred_time={pred_entry['row'].get('game_time', '')} "
+            f"book_time={book_entry['row'].get('game_time', '')}{diff_text}"
+        )
+    return True
 
-        if not books:
-            log(
-                f"{date_str} | sportsbook missing for prediction matchup: "
-                f"{label} pred_count={len(preds)}",
-                "WARN",
-            )
-            continue
 
-        unused_books = [b for b in books if not b["used"]]
+def _closest_unused_book(pred_entry, books):
+    available = [book for book in books if not book["used"]]
+    scored = [
+        (minutes_between(pred_entry.get("dt"), book.get("dt")), book)
+        for book in available
+    ]
+    valid = [item for item in scored if item[0] is not None]
+    if not valid:
+        return None, None, scored
+    selected_diff, selected = min(valid, key=lambda item: item[0])
+    if selected_diff > MAX_TIME_DIFF_MINUTES:
+        return None, selected_diff, scored
+    return selected, selected_diff, scored
 
-        if len(preds) == 1 and len(unused_books) == 1:
-            pred_entry = preds[0]
-            book_entry = unused_books[0]
-            book_entry["used"] = True
 
-            presence[pred_entry["index"]] = {
-                "present": True,
-                "detail": describe_book_entry(book_entry),
-            }
-
-            diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
-            diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
-
-            log(
-                f"{date_str} | SPORTSBOOK MATCH one-to-one: {label} "
-                f"pred_time={pred_entry['row'].get('game_time', '')} "
-                f"book_time={book_entry['row'].get('game_time', '')}"
-                f"{diff_text}"
-            )
-            continue
-
-        if 1 < len(preds) == len(unused_books):
-            sorted_preds = sorted(
-                preds,
-                key=lambda x: (
-                    dt_sort_value(x.get("dt")),
-                    x["index"],
-                ),
-            )
-
-            sorted_books = sorted(
-                unused_books,
-                key=lambda x: (
-                    dt_sort_value(x.get("dt")),
-                    x["index"],
-                ),
-            )
-
-            log(
-                f"{date_str} | SPORTSBOOK ORDER MATCH duplicate matchup: "
-                f"{label} pred_count={len(sorted_preds)} book_count={len(sorted_books)}"
-            )
-
-            for pred_entry, book_entry in zip(sorted_preds, sorted_books):
-                book_entry["used"] = True
-
-                presence[pred_entry["index"]] = {
-                    "present": True,
-                    "detail": describe_book_entry(book_entry),
-                }
-
-                diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
-                diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
-
+def _sportsbook_closest_matches(date_str, label, preds, books, presence):
+    sorted_preds = sorted(
+        preds, key=lambda item: (dt_sort_value(item.get("dt")), item["index"])
+    )
+    for pred_entry in sorted_preds:
+        selected, selected_diff, scored = _closest_unused_book(pred_entry, books)
+        if selected is None:
+            if not [book for book in books if not book["used"]]:
                 log(
-                    f"{date_str} | SPORTSBOOK MATCH order: {label} "
-                    f"pred_time={pred_entry['row'].get('game_time', '')} "
-                    f"book_time={book_entry['row'].get('game_time', '')}"
-                    f"{diff_text}"
+                    f"{date_str} | sportsbook no unused row for prediction: {label} "
+                    f"pred_time={pred_entry['row'].get('game_time', '')}",
+                    "WARN",
                 )
-
+            else:
+                log(
+                    f"{date_str} | sportsbook missing within time threshold: {label} "
+                    f"pred_time={pred_entry['row'].get('game_time', '')} "
+                    f"candidate_books={describe_book_candidates(scored)}",
+                    "WARN",
+                )
             continue
-
-        sorted_preds = sorted(
-            preds,
-            key=lambda x: (
-                dt_sort_value(x.get("dt")),
-                x["index"],
-            ),
+        selected["used"] = True
+        presence[pred_entry["index"]] = {
+            "present": True,
+            "detail": describe_book_entry(selected),
+        }
+        diff_text = "" if selected_diff is None else f" diff_minutes={round(selected_diff, 1)}"
+        log(
+            f"{date_str} | SPORTSBOOK MATCH closest: {label} "
+            f"pred_time={pred_entry['row'].get('game_time', '')} "
+            f"book_time={selected['row'].get('game_time', '')}{diff_text}"
         )
 
-        for pred_entry in sorted_preds:
-            available_books = [b for b in books if not b["used"]]
 
-            if not available_books:
-                log(
-                    f"{date_str} | sportsbook no unused row for prediction: "
-                    f"{label} pred_time={pred_entry['row'].get('game_time', '')}",
-                    "WARN",
-                )
-                continue
+def _match_sportsbook_group(date_str, preds, books, presence):
+    label = matchup_label(preds[0]["row"])
+    if not books:
+        log(
+            f"{date_str} | sportsbook missing for prediction matchup: "
+            f"{label} pred_count={len(preds)}",
+            "WARN",
+        )
+        return
+    unused_books = [book for book in books if not book["used"]]
+    if _sportsbook_one_to_one(date_str, label, preds, unused_books, presence):
+        return
+    if _sportsbook_order_match(date_str, label, preds, unused_books, presence):
+        return
+    _sportsbook_closest_matches(date_str, label, preds, books, presence)
 
-            scored = []
 
-            for book_entry in available_books:
-                diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
-                scored.append((diff, book_entry))
-
-            scored_valid = [x for x in scored if x[0] is not None]
-
-            selected = None
-            selected_diff = None
-
-            if scored_valid:
-                selected_diff, selected = min(scored_valid, key=lambda x: x[0])
-
-                if selected_diff > MAX_TIME_DIFF_MINUTES:
-                    selected = None
-
-            if selected is None:
-                candidates = describe_book_candidates(scored)
-                log(
-                    f"{date_str} | sportsbook missing within time threshold: "
-                    f"{label} pred_time={pred_entry['row'].get('game_time', '')} "
-                    f"candidate_books={candidates}",
-                    "WARN",
-                )
-                continue
-
-            selected["used"] = True
-
-            presence[pred_entry["index"]] = {
-                "present": True,
-                "detail": describe_book_entry(selected),
-            }
-
-            diff_text = "" if selected_diff is None else f" diff_minutes={round(selected_diff, 1)}"
-
-            log(
-                f"{date_str} | SPORTSBOOK MATCH closest: {label} "
-                f"pred_time={pred_entry['row'].get('game_time', '')} "
-                f"book_time={selected['row'].get('game_time', '')}"
-                f"{diff_text}"
-            )
-
+def build_sportsbook_presence(date_str: str, pred_groups: dict, pred_key_order: list, book_groups: dict) -> dict:
+    presence = {}
+    for key in pred_key_order:
+        preds = pred_groups.get(key, [])
+        if not preds:
+            continue
+        _initialize_sportsbook_presence(presence, preds)
+        _match_sportsbook_group(date_str, preds, book_groups.get(key, []), presence)
     return presence
-
-
-# ─────────────────────────────────────────────
-# VALIDATION
-# ─────────────────────────────────────────────
 
 def validate_output_rows(date_str: str, eligible_count: int, output_rows: list[dict], allow_preserved: bool = False):
     if allow_preserved:
@@ -916,158 +886,108 @@ def validate_same_day_row_identity(
         )
 
 
+def _same_day_games_by_id(date_str, games_rows):
+    if not games_rows:
+        fail(f"{date_str} | refusing to update same-day baseline from empty games rows")
+    build_games_groups(games_rows, date_str)
+    return {
+        (row.get("game_id") or "").strip(): row
+        for row in games_rows
+        if (row.get("game_id") or "").strip()
+    }
+
+
+def _merge_preserved_baseline_rows(date_str, baseline_rows, games_by_id):
+    merged = {}
+    for row in baseline_rows:
+        game_id = (row.get("game_id") or "").strip()
+        if not game_id or game_id not in games_by_id:
+            continue
+        validate_same_day_row_identity(
+            date_str, row, games_by_id[game_id], "baseline"
+        )
+        merged[game_id] = {col: row.get(col, "") for col in OUTPUT_HEADER}
+    return merged
+
+
+def _merge_refreshed_baseline_rows(date_str, refreshed_rows, games_by_id, merged):
+    refreshed_ids = set()
+    valid_game_ids = set(games_by_id)
+    for row in refreshed_rows:
+        game_id = (row.get("game_id") or "").strip()
+        if not game_id:
+            fail(
+                f"{date_str} | refreshed row has blank game_id before baseline merge: {row}"
+            )
+        if game_id not in valid_game_ids:
+            fail(
+                f"{date_str} | refreshed game_id missing from authoritative games file "
+                f"before baseline merge: game_id={game_id}"
+            )
+        validate_same_day_row_identity(
+            date_str, row, games_by_id[game_id], "refreshed"
+        )
+        refreshed_ids.add(game_id)
+        merged[game_id] = {col: row.get(col, "") for col in OUTPUT_HEADER}
+    if len(refreshed_ids) != len(refreshed_rows):
+        fail(
+            f"{date_str} | refreshed rows collapsed during baseline merge: "
+            f"refreshed_rows={len(refreshed_rows)} unique_game_ids={len(refreshed_ids)}"
+        )
+    return refreshed_ids
+
+
+def _ordered_same_day_rows(games_rows, merged):
+    order = []
+    seen = set()
+    for row in games_rows:
+        game_id = (row.get("game_id") or "").strip()
+        if game_id in merged and game_id not in seen:
+            order.append(game_id)
+            seen.add(game_id)
+    return [merged[game_id] for game_id in order]
+
+
+def _write_same_day_baseline(date_str, rows):
+    baseline_path = BASELINE_DIR / f"{date_str}_MLB.csv"
+    temp_path = baseline_path.with_suffix(baseline_path.suffix + ".tmp")
+    write_csv(temp_path, OUTPUT_HEADER, rows)
+    os.replace(temp_path, baseline_path)
+
+
 def merge_with_same_day_baseline(
     date_str: str,
     refreshed_rows: list[dict],
     games_rows: list[dict],
     refreshed_eligible_count: int,
 ) -> tuple[list[dict], int]:
-    """Cumulatively upsert today's refreshed matches into a durable baseline."""
     if parse_date_value(date_str) != current_cutoff_date():
         return refreshed_rows, 0
-
-    # build_games_list.py does not output a game-status field. The authoritative
-    # contract available here is membership in the current games file. Validate
-    # game identities before using that membership to mutate durable state.
-    if not games_rows:
-        fail(f"{date_str} | refusing to update same-day baseline from empty games rows")
-
-    build_games_groups(games_rows, date_str)
-
-    games_by_id = {
-        (row.get("game_id") or "").strip(): row
-        for row in games_rows
-        if (row.get("game_id") or "").strip()
-    }
-    valid_game_ids = set(games_by_id)
-
+    games_by_id = _same_day_games_by_id(date_str, games_rows)
     baseline_rows = load_same_day_baseline(date_str)
-
     if baseline_rows:
-        validate_output_rows(
-            date_str,
-            0,
-            baseline_rows,
-            allow_preserved=True,
-        )
-
-    merged = {}
-
-    for row in baseline_rows:
-        game_id = (row.get("game_id") or "").strip()
-
-        if not game_id or game_id not in valid_game_ids:
-            continue
-
-        game_row = games_by_id[game_id]
-        validate_same_day_row_identity(
-            date_str,
-            row,
-            game_row,
-            "baseline",
-        )
-
-        merged[game_id] = {
-            col: row.get(col, "")
-            for col in OUTPUT_HEADER
-        }
-
+        validate_output_rows(date_str, 0, baseline_rows, allow_preserved=True)
+    merged = _merge_preserved_baseline_rows(date_str, baseline_rows, games_by_id)
     baseline_ids = set(merged)
-    refreshed_ids = set()
-
-    for row in refreshed_rows:
-        game_id = (row.get("game_id") or "").strip()
-
-        if not game_id:
-            fail(
-                f"{date_str} | refreshed row has blank game_id "
-                f"before baseline merge: {row}"
-            )
-
-        if game_id not in valid_game_ids:
-            fail(
-                f"{date_str} | refreshed game_id missing from authoritative games file "
-                f"before baseline merge: game_id={game_id}"
-            )
-
-        game_row = games_by_id[game_id]
-        validate_same_day_row_identity(
-            date_str,
-            row,
-            game_row,
-            "refreshed",
-        )
-
-        refreshed_ids.add(game_id)
-
-        merged[game_id] = {
-            col: row.get(col, "")
-            for col in OUTPUT_HEADER
-        }
-
-    if len(refreshed_ids) != len(refreshed_rows):
-        fail(
-            f"{date_str} | refreshed rows collapsed during baseline merge: "
-            f"refreshed_rows={len(refreshed_rows)} "
-            f"unique_game_ids={len(refreshed_ids)}"
-        )
-
+    refreshed_ids = _merge_refreshed_baseline_rows(
+        date_str, refreshed_rows, games_by_id, merged
+    )
     preserved_ids = sorted(baseline_ids - refreshed_ids)
-    game_order = []
-    seen_game_ids = set()
-
-    for row in games_rows:
-        game_id = (row.get("game_id") or "").strip()
-
-        if game_id in merged and game_id not in seen_game_ids:
-            game_order.append(game_id)
-            seen_game_ids.add(game_id)
-
-    ordered_rows = [
-        merged[game_id]
-        for game_id in game_order
-    ]
-
-    # Validate the cumulative state against the refreshed eligible-row contract
-    # before replacing the durable baseline.
+    ordered_rows = _ordered_same_day_rows(games_rows, merged)
     validate_output_rows(
-        date_str,
-        refreshed_eligible_count,
-        ordered_rows,
-        allow_preserved=True,
+        date_str, refreshed_eligible_count, ordered_rows, allow_preserved=True
     )
-
-    baseline_path = BASELINE_DIR / f"{date_str}_MLB.csv"
-    temp_path = baseline_path.with_suffix(
-        baseline_path.suffix + ".tmp"
-    )
-
-    write_csv(
-        temp_path,
-        OUTPUT_HEADER,
-        ordered_rows,
-    )
-
-    os.replace(
-        temp_path,
-        baseline_path,
-    )
-
+    _write_same_day_baseline(date_str, ordered_rows)
     log(
-        f"{date_str} | durable same-day baseline updated: "
-        f"rows={len(ordered_rows)} "
-        f"refreshed={len(refreshed_ids)} "
-        f"preserved={len(preserved_ids)}"
+        f"{date_str} | durable same-day baseline updated: rows={len(ordered_rows)} "
+        f"refreshed={len(refreshed_ids)} preserved={len(preserved_ids)}"
     )
-
     if preserved_ids:
         log(
             f"{date_str} | preserved baseline predictions absent from latest refresh: "
             f"game_ids={preserved_ids}"
         )
-
     return ordered_rows, len(preserved_ids)
-
 
 def load_same_day_fallback_output(date_str: str) -> list[dict]:
     """Return durable same-day state when games data is temporarily unavailable."""
@@ -1272,989 +1192,496 @@ def record_output_match(
     return diff, diff_text, level
 
 
-def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
-    if parse_date_value(date_str) is None:
-        fail(
-            f"Could not parse prediction filename date: "
-            f"{date_str}"
-        )
-
-    games_path = GAMES_DIR / f"{date_str}_games.csv"
-    book_path = BOOK_DIR / f"{date_str}_MLB.csv"
-    rejection_path = (
-        REJECTION_DIR
-        / f"{date_str}_unmatched_predictions.csv"
+def _prediction_date_paths(date_str):
+    return (
+        GAMES_DIR / f"{date_str}_games.csv",
+        BOOK_DIR / f"{date_str}_MLB.csv",
+        REJECTION_DIR / f"{date_str}_unmatched_predictions.csv",
     )
 
-    pred_rows = load_csv(
-        pred_path,
-        REQUIRED_PRED_COLS,
-        "prediction input",
-    )
 
-    book_rows = load_csv(
-        book_path,
-        REQUIRED_BOOK_COLS,
-        "sportsbook input",
-        required_file=False,
-    )
-
-    if not pred_rows:
-        durable_path = (
-            BASELINE_DIR
-            / f"{date_str}_MLB.csv"
+def _handle_no_prediction_rows(date_str, games_path, rejection_path, summary):
+    durable_path = BASELINE_DIR / f"{date_str}_MLB.csv"
+    existing_path = OUT_DIR / f"{date_str}_MLB.csv"
+    current = parse_date_value(date_str) == current_cutoff_date()
+    if current and (durable_path.exists() or existing_path.exists()):
+        preserved_rows, preserved_count = load_preserved_same_day_state(
+            date_str, games_path
         )
-        existing_path = (
-            OUT_DIR
-            / f"{date_str}_MLB.csv"
-        )
-
-        has_same_day_state = (
-            durable_path.exists()
-            or existing_path.exists()
-        )
-
-        if (
-            parse_date_value(date_str)
-            == current_cutoff_date()
-            and has_same_day_state
-        ):
-            (
-                preserved_rows,
-                preserved_count,
-            ) = load_preserved_same_day_state(
-                date_str,
-                games_path,
-            )
-
-            validate_output_rows(
-                date_str,
-                0,
-                preserved_rows,
-                allow_preserved=True,
-            )
-
-            write_output_csv(
-                date_str,
-                OUTPUT_HEADER,
-                preserved_rows,
-                summary,
-            )
-
-            clear_stale_rejection_file(
-                rejection_path
-            )
-
-            log(
-                f"{date_str} | no prediction rows; "
-                f"synchronized durable same-day state: "
-                f"output_rows={len(preserved_rows)} "
-                f"preserved_rows={preserved_count}",
-                "WARN",
-            )
-
-            summary["total_rows"] += len(
-                preserved_rows
-            )
-            summary["skipped"] += 1
-            return
-
-        if (
-            parse_date_value(date_str)
-            == current_cutoff_date()
-        ):
-            clear_stale_rejection_file(
-                rejection_path
-            )
-
+        validate_output_rows(date_str, 0, preserved_rows, allow_preserved=True)
+        write_output_csv(date_str, OUTPUT_HEADER, preserved_rows, summary)
+        clear_stale_rejection_file(rejection_path)
         log(
-            f"{date_str} | no prediction rows — skipping",
+            f"{date_str} | no prediction rows; synchronized durable same-day state: "
+            f"output_rows={len(preserved_rows)} preserved_rows={preserved_count}",
             "WARN",
         )
+        summary["total_rows"] += len(preserved_rows)
         summary["skipped"] += 1
         return
+    if current:
+        clear_stale_rejection_file(rejection_path)
+    log(f"{date_str} | no prediction rows ??? skipping", "WARN")
+    summary["skipped"] += 1
 
-    pred_groups, pred_key_order = (
-        build_prediction_groups(
-            pred_rows,
-            date_str,
-        )
-    )
 
-    book_groups = (
-        build_book_groups(
-            book_rows,
-            date_str,
-        )
-        if book_rows
-        else {}
-    )
-
-    sportsbook_presence = build_sportsbook_presence(
+def _prediction_sportsbook_state(date_str, pred_rows, book_rows):
+    pred_groups, pred_key_order = build_prediction_groups(pred_rows, date_str)
+    book_groups = build_book_groups(book_rows, date_str) if book_rows else {}
+    presence = build_sportsbook_presence(
         date_str=date_str,
         pred_groups=pred_groups,
         pred_key_order=pred_key_order,
         book_groups=book_groups,
     )
-
     rejection_rows = []
-    nonfatal_rejection_count = 0
-
+    nonfatal = 0
     for key in pred_key_order:
-        preds = pred_groups.get(
-            key,
-            [],
-        )
-
-        for pred_entry in preds:
-            presence = sportsbook_presence.get(
-                pred_entry["index"],
-                {
-                    "present": False,
-                    "detail": "",
-                },
-            )
-
-            if presence["present"]:
+        for pred_entry in pred_groups.get(key, []):
+            match = presence.get(pred_entry["index"], {"present": False, "detail": ""})
+            if match["present"]:
                 continue
-
             rejection_rows.append(
                 make_rejection_row(
                     pred_entry=pred_entry,
-                    reason=(
-                        "sportsbook_game_missing_for_prediction"
-                    ),
+                    reason="sportsbook_game_missing_for_prediction",
                     candidate_games="",
                     fatal=False,
                     sportsbook_present=False,
-                    sportsbook_match_detail=presence.get(
-                        "detail",
-                        "",
-                    ),
+                    sportsbook_match_detail=match.get("detail", ""),
                 )
             )
-
-            nonfatal_rejection_count += 1
-
+            nonfatal += 1
             log(
-                f"{date_str} | non-fatal rejected prediction "
-                f"because sportsbook row is missing: "
-                f"csv_row={pred_entry['csv_row']} "
-                f"{matchup_label(pred_entry['row'])} "
-                f"pred_time="
-                f"{pred_entry['row'].get('game_time', '')}",
+                f"{date_str} | non-fatal rejected prediction because sportsbook row is missing: "
+                f"csv_row={pred_entry['csv_row']} {matchup_label(pred_entry['row'])} "
+                f"pred_time={pred_entry['row'].get('game_time', '')}",
                 "WARN",
             )
-
-    eligible_pred_indexes = {
+    eligible = {
         pred_entry["index"]
         for preds in pred_groups.values()
         for pred_entry in preds
-        if sportsbook_presence.get(
-            pred_entry["index"],
-            {"present": False},
-        )["present"]
+        if presence.get(pred_entry["index"], {"present": False})["present"]
     }
+    return pred_groups, pred_key_order, presence, rejection_rows, nonfatal, eligible
 
-    eligible_count = len(
-        eligible_pred_indexes
+
+def _handle_no_eligible_predictions(
+    date_str, pred_rows, games_path, rejection_path, rejection_rows,
+    nonfatal_rejection_count, summary,
+):
+    if rejection_rows:
+        write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
+        print_rejection_rows(date_str, rejection_path, rejection_rows)
+    preserved_count = 0
+    if parse_date_value(date_str) == current_cutoff_date():
+        preserved_rows, preserved_count = load_preserved_same_day_state(date_str, games_path)
+        write_output_csv(date_str, OUTPUT_HEADER, preserved_rows, summary)
+        summary["total_rows"] += len(preserved_rows)
+        output_action = f"wrote_current_day_state rows={len(preserved_rows)}"
+    else:
+        output_action = "left_noncurrent_output_unchanged"
+    log(
+        f"{date_str} | no sportsbook-eligible prediction rows. "
+        f"input_predictions={len(pred_rows)} nonfatal_rejections={nonfatal_rejection_count} "
+        f"preserved_rows={preserved_count} output_action={output_action}"
+    )
+    summary["rejected"] += len(rejection_rows)
+    summary["nonfatal_rejections"] += nonfatal_rejection_count
+
+
+def _load_prediction_games_rows(
+    date_str, games_path, pred_rows, book_rows, eligible_pred_indexes,
+    sportsbook_presence, eligible_count, rejection_path, rejection_rows,
+    nonfatal_rejection_count, summary,
+):
+    unavailable = "missing" if not games_path.exists() else None
+    if unavailable is None:
+        games_rows = load_csv(
+            games_path, REQUIRED_GAMES_COLS, "games input", required_file=True
+        )
+        unavailable = "empty" if not games_rows else None
+    else:
+        games_rows = []
+    if unavailable is None:
+        return games_rows
+    if is_current_or_future_date(date_str):
+        handle_current_future_games_unavailable(
+            date_str=date_str,
+            games_path=games_path,
+            unavailable_kind=unavailable,
+            pred_rows=pred_rows,
+            book_rows=book_rows,
+            eligible_pred_indexes=eligible_pred_indexes,
+            sportsbook_presence=sportsbook_presence,
+            eligible_count=eligible_count,
+            rejection_path=rejection_path,
+            rejection_rows=rejection_rows,
+            nonfatal_rejection_count=nonfatal_rejection_count,
+            summary=summary,
+        )
+        return None
+    fail(
+        f"{date_str} | past-date games file "
+        f"{'missing' if unavailable == 'missing' else 'has zero rows'}: {games_path}"
     )
 
-    if eligible_count == 0:
-        if rejection_rows:
-            write_csv(
-                rejection_path,
-                REJECTION_HEADER,
-                rejection_rows,
-            )
 
-            print_rejection_rows(
-                date_str,
-                rejection_path,
-                rejection_rows,
-            )
-
-        preserved_count = 0
-
-        is_current_date = (
-            parse_date_value(date_str)
-            == current_cutoff_date()
-        )
-
-        if is_current_date:
-            (
-                preserved_rows,
-                preserved_count,
-            ) = load_preserved_same_day_state(
-                date_str,
-                games_path,
-            )
-
-            write_output_csv(
-                date_str,
-                OUTPUT_HEADER,
-                preserved_rows,
-                summary,
-            )
-
-            summary["total_rows"] += len(
-                preserved_rows
-            )
-
-            output_action = (
-                f"wrote_current_day_state "
-                f"rows={len(preserved_rows)}"
-            )
-        else:
-            output_action = (
-                "left_noncurrent_output_unchanged"
-            )
-
-        log(
-            f"{date_str} | no sportsbook-eligible "
-            f"prediction rows. "
-            f"input_predictions={len(pred_rows)} "
-            f"nonfatal_rejections="
-            f"{nonfatal_rejection_count} "
-            f"preserved_rows={preserved_count} "
-            f"output_action={output_action}"
-        )
-
-        summary["rejected"] += len(
-            rejection_rows
-        )
-        summary[
-            "nonfatal_rejections"
-        ] += nonfatal_rejection_count
-        return
-
-    if not games_path.exists():
-        if is_current_or_future_date(date_str):
-            handle_current_future_games_unavailable(
-                date_str=date_str,
-                games_path=games_path,
-                unavailable_kind="missing",
-                pred_rows=pred_rows,
-                book_rows=book_rows,
-                eligible_pred_indexes=eligible_pred_indexes,
-                sportsbook_presence=sportsbook_presence,
-                eligible_count=eligible_count,
-                rejection_path=rejection_path,
-                rejection_rows=rejection_rows,
-                nonfatal_rejection_count=nonfatal_rejection_count,
-                summary=summary,
-            )
-            return
-
-        fail(
-            f"{date_str} | past-date "
-            f"games file missing: "
-            f"{games_path}"
-        )
-
-    games_rows = load_csv(
-        games_path,
-        REQUIRED_GAMES_COLS,
-        "games input",
-        required_file=True,
-    )
-
-    if not games_rows:
-        if is_current_or_future_date(date_str):
-            handle_current_future_games_unavailable(
-                date_str=date_str,
-                games_path=games_path,
-                unavailable_kind="empty",
-                pred_rows=pred_rows,
-                book_rows=book_rows,
-                eligible_pred_indexes=eligible_pred_indexes,
-                sportsbook_presence=sportsbook_presence,
-                eligible_count=eligible_count,
-                rejection_path=rejection_path,
-                rejection_rows=rejection_rows,
-                nonfatal_rejection_count=nonfatal_rejection_count,
-                summary=summary,
-            )
-            return
-
-        fail(
-            f"{date_str} | past-date "
-            f"games file has zero rows: "
-            f"{games_path}"
-        )
-
-    games_groups = build_games_groups(
-        games_rows,
-        date_str,
-    )
-
-    output_by_pred_index = {}
-    fatal_rejection_count = 0
-    matched = 0
-
-    for key in pred_key_order:
-        preds = [
-            pred_entry
-            for pred_entry
-            in pred_groups.get(
-                key,
-                [],
-            )
-            if pred_entry["index"]
-            in eligible_pred_indexes
-        ]
-
-        games = games_groups.get(
-            key,
-            [],
-        )
-
-        if not preds:
-            continue
-
-        label = matchup_label(
-            preds[0]["row"]
-        )
-
-        if not games:
-            for pred_entry in preds:
-                presence = (
-                    sportsbook_presence.get(
-                        pred_entry["index"],
-                        {
-                            "present": False,
-                            "detail": "",
-                        },
-                    )
-                )
-
-                rejection_rows.append(
-                    make_rejection_row(
-                        pred_entry=pred_entry,
-                        reason=(
-                            "no_games_row_for_"
-                            "same_home_away"
-                        ),
-                        candidate_games="",
-                        fatal=True,
-                        sportsbook_present=(
-                            presence["present"]
-                        ),
-                        sportsbook_match_detail=(
-                            presence.get(
-                                "detail",
-                                "",
-                            )
-                        ),
-                    )
-                )
-
-                fatal_rejection_count += 1
-
-                log(
-                    f"{date_str} | fatal unmatched "
-                    f"sportsbook-eligible prediction "
-                    f"no games row: "
-                    f"{label} "
-                    f"pred_time="
-                    f"{pred_entry['row'].get('game_time', '')}",
-                    "ERROR",
-                )
-
-            continue
-
-        unused_games = [
-            g
-            for g in games
-            if not g["used"]
-        ]
-
-        if (
-            len(preds) == 1
-            and len(unused_games) == 1
-        ):
-            pred_entry = preds[0]
-            game_entry = unused_games[0]
-            game_entry["used"] = True
-
-            game_id = (
-                game_entry["row"].get(
-                    "game_id"
-                )
-                or ""
-            ).strip()
-
-            if not game_id:
-                reject_blank_matched_game_id(
-                    date_str=date_str,
-                    label=label,
-                    pred_entry=pred_entry,
-                    game_entry=game_entry,
-                    sportsbook_presence=sportsbook_presence,
-                    rejection_rows=rejection_rows,
-                )
-                fatal_rejection_count += 1
-                continue
-
-            (
-                diff,
-                diff_text,
-                level,
-            ) = record_output_match(
-                output_by_pred_index,
-                pred_entry,
-                game_entry,
-                game_id,
-            )
-
-            matched += 1
-            label_text = (
-                "MATCHED one-to-one"
-            )
-
-            if (
-                diff is not None
-                and diff
-                > MAX_TIME_DIFF_MINUTES
-            ):
-                level = "WARN"
-                label_text = (
-                    "MATCHED one-to-one "
-                    "with time mismatch"
-                )
-
-            log(
-                f"{date_str} | "
-                f"{label_text}: "
-                f"{label} "
-                f"pred_time="
-                f"{pred_entry['row'].get('game_time', '')} "
-                f"games_time="
-                f"{game_entry['row'].get('game_time', '')} "
-                f"game_id={game_id}"
-                f"{diff_text}",
-                level,
-            )
-
-            continue
-
-        if (
-            1
-            < len(preds)
-            == len(unused_games)
-        ):
-            sorted_preds = sorted(
-                preds,
-                key=lambda x: (
-                    dt_sort_value(
-                        x.get("dt")
-                    ),
-                    x["index"],
-                ),
-            )
-
-            sorted_games = sorted(
-                unused_games,
-                key=lambda x: (
-                    dt_sort_value(
-                        x.get("dt")
-                    ),
-                    x["game_number"],
-                    x["index"],
-                ),
-            )
-
-            log(
-                f"{date_str} | "
-                f"ORDER MATCH duplicate matchup: "
-                f"{label} "
-                f"eligible_pred_count="
-                f"{len(sorted_preds)} "
-                f"games_count="
-                f"{len(sorted_games)}"
-            )
-
-            for (
-                pred_entry,
-                game_entry,
-            ) in zip(
-                sorted_preds,
-                sorted_games,
-            ):
-                game_entry["used"] = True
-
-                game_id = (
-                    game_entry["row"].get(
-                        "game_id"
-                    )
-                    or ""
-                ).strip()
-
-                if not game_id:
-                    reject_blank_matched_game_id(
-                        date_str=date_str,
-                        label=label,
-                        pred_entry=pred_entry,
-                        game_entry=game_entry,
-                        sportsbook_presence=sportsbook_presence,
-                        rejection_rows=rejection_rows,
-                    )
-                    fatal_rejection_count += 1
-                    continue
-
-                (
-                    diff,
-                    diff_text,
-                    level,
-                ) = record_output_match(
-                    output_by_pred_index,
-                    pred_entry,
-                    game_entry,
-                    game_id,
-                )
-
-                matched += 1
-
-                if (
-                    diff is not None
-                    and diff
-                    > MAX_TIME_DIFF_MINUTES
-                ):
-                    level = "WARN"
-
-                log(
-                    f"{date_str} | "
-                    f"MATCHED order: "
-                    f"{label} "
-                    f"pred_time="
-                    f"{pred_entry['row'].get('game_time', '')} "
-                    f"games_time="
-                    f"{game_entry['row'].get('game_time', '')} "
-                    f"gameNumber="
-                    f"{game_entry['row'].get('gameNumber', '')} "
-                    f"game_id={game_id}"
-                    f"{diff_text}",
-                    level,
-                )
-
-            continue
-
-        sorted_preds = sorted(
-            preds,
-            key=lambda x: (
-                dt_sort_value(
-                    x.get("dt")
-                ),
-                x["index"],
-            ),
-        )
-
-        for pred_entry in sorted_preds:
-            available_games = [
-                g
-                for g in games
-                if not g["used"]
-            ]
-
-            if not available_games:
-                presence = (
-                    sportsbook_presence.get(
-                        pred_entry["index"],
-                        {
-                            "present": False,
-                            "detail": "",
-                        },
-                    )
-                )
-
-                rejection_rows.append(
-                    make_rejection_row(
-                        pred_entry=pred_entry,
-                        reason=(
-                            "no_unused_games_row_"
-                            "for_same_home_away"
-                        ),
-                        candidate_games="",
-                        fatal=True,
-                        sportsbook_present=(
-                            presence["present"]
-                        ),
-                        sportsbook_match_detail=(
-                            presence.get(
-                                "detail",
-                                "",
-                            )
-                        ),
-                    )
-                )
-
-                fatal_rejection_count += 1
-
-                log(
-                    f"{date_str} | fatal unmatched "
-                    f"sportsbook-eligible prediction "
-                    f"no unused games row: "
-                    f"{label} "
-                    f"pred_time="
-                    f"{pred_entry['row'].get('game_time', '')}",
-                    "ERROR",
-                )
-
-                continue
-
-            scored = []
-
-            for game_entry in available_games:
-                diff = minutes_between(
-                    pred_entry.get("dt"),
-                    game_entry.get("dt"),
-                )
-
-                scored.append(
-                    (
-                        diff,
-                        game_entry,
-                    )
-                )
-
-            scored_valid = [
-                x
-                for x in scored
-                if x[0] is not None
-            ]
-
-            selected = None
-            selected_diff = None
-
-            if scored_valid:
-                (
-                    selected_diff,
-                    selected,
-                ) = min(
-                    scored_valid,
-                    key=lambda x: x[0],
-                )
-
-                if (
-                    selected_diff
-                    > MAX_TIME_DIFF_MINUTES
-                ):
-                    selected = None
-
-            if selected is None:
-                candidates = (
-                    describe_candidates(
-                        scored
-                    )
-                )
-
-                presence = (
-                    sportsbook_presence.get(
-                        pred_entry["index"],
-                        {
-                            "present": False,
-                            "detail": "",
-                        },
-                    )
-                )
-
-                rejection_rows.append(
-                    make_rejection_row(
-                        pred_entry=pred_entry,
-                        reason=(
-                            "no_games_row_within_"
-                            "time_threshold"
-                        ),
-                        candidate_games=(
-                            candidates
-                        ),
-                        fatal=True,
-                        sportsbook_present=(
-                            presence["present"]
-                        ),
-                        sportsbook_match_detail=(
-                            presence.get(
-                                "detail",
-                                "",
-                            )
-                        ),
-                    )
-                )
-
-                fatal_rejection_count += 1
-
-                log(
-                    f"{date_str} | fatal unmatched "
-                    f"sportsbook-eligible prediction "
-                    f"time threshold: "
-                    f"{label} "
-                    f"pred_time="
-                    f"{pred_entry['row'].get('game_time', '')} "
-                    f"candidate_games="
-                    f"{candidates}",
-                    "ERROR",
-                )
-
-                continue
-
-            selected["used"] = True
-
-            game_id = (
-                selected["row"].get(
-                    "game_id"
-                )
-                or ""
-            ).strip()
-
-            if not game_id:
-                reject_blank_matched_game_id(
-                    date_str=date_str,
-                    label=label,
-                    pred_entry=pred_entry,
-                    game_entry=selected,
-                    sportsbook_presence=sportsbook_presence,
-                    rejection_rows=rejection_rows,
-                )
-                fatal_rejection_count += 1
-                continue
-
-            output_by_pred_index[
-                pred_entry["index"]
-            ] = make_output_row(
-                pred_entry,
-                game_id,
-            )
-
-            matched += 1
-
-            diff_text = (
-                ""
-                if selected_diff is None
-                else (
-                    f" diff_minutes="
-                    f"{round(selected_diff, 1)}"
-                )
-            )
-
-            log(
-                f"{date_str} | "
-                f"MATCHED closest: "
-                f"{label} "
-                f"pred_time="
-                f"{pred_entry['row'].get('game_time', '')} "
-                f"games_time="
-                f"{selected['row'].get('game_time', '')} "
-                f"game_id={game_id}"
-                f"{diff_text}"
-            )
-
-    for key, games in games_groups.items():
-        unused = [
-            g
-            for g in games
-            if not g["used"]
-        ]
-
-        for game_entry in unused:
-            g = game_entry["row"]
-
-            log(
-                f"{date_str} | "
-                f"UNUSED games row: "
-                f"{g.get('away_team', '')} @ "
-                f"{g.get('home_team', '')} "
-                f"game_id="
-                f"{g.get('game_id', '')} "
-                f"game_time="
-                f"{g.get('game_time', '')}",
-                "WARN",
-            )
-
-    for idx in sorted(
-        eligible_pred_indexes
-    ):
-        if idx in output_by_pred_index:
-            continue
-
-        already_rejected = any(
-            rejection_row.get(
-                "source_csv_row",
-                "",
-            )
-            == str(idx + 2)
-            for rejection_row
-            in rejection_rows
-        )
-
-        if already_rejected:
-            continue
-
-        pred_entry = {
-            "row": pred_rows[idx],
-            "index": idx,
-            "csv_row": idx + 2,
-        }
-
+def _reject_prediction_group_without_games(
+    date_str, label, preds, sportsbook_presence, rejection_rows,
+):
+    for pred_entry in preds:
         presence = sportsbook_presence.get(
-            idx,
-            {
-                "present": False,
-                "detail": "",
-            },
+            pred_entry["index"], {"present": False, "detail": ""}
         )
-
         rejection_rows.append(
             make_rejection_row(
                 pred_entry=pred_entry,
-                reason=(
-                    "eligible_prediction_row_"
-                    "not_processed"
-                ),
+                reason="no_games_row_for_same_home_away",
                 candidate_games="",
                 fatal=True,
-                sportsbook_present=(
-                    presence["present"]
-                ),
-                sportsbook_match_detail=(
-                    presence.get(
-                        "detail",
-                        "",
-                    )
-                ),
+                sportsbook_present=presence["present"],
+                sportsbook_match_detail=presence.get("detail", ""),
             )
         )
-
-        fatal_rejection_count += 1
-
         log(
-            f"{date_str} | "
-            f"eligible prediction row "
-            f"not processed: "
-            f"csv_row={idx + 2} "
-            f"away="
-            f"{pred_rows[idx].get('away_team', '')} "
-            f"home="
-            f"{pred_rows[idx].get('home_team', '')}",
+            f"{date_str} | fatal unmatched sportsbook-eligible prediction no games row: "
+            f"{label} pred_time={pred_entry['row'].get('game_time', '')}",
             "ERROR",
         )
+    return len(preds)
 
-    if rejection_rows:
-        write_csv(
-            rejection_path,
-            REJECTION_HEADER,
-            rejection_rows,
+
+def _match_single_prediction_game(
+    date_str, label, pred_entry, game_entry, sportsbook_presence,
+    rejection_rows, output_by_pred_index,
+):
+    game_entry["used"] = True
+    game_id = (game_entry["row"].get("game_id") or "").strip()
+    if not game_id:
+        reject_blank_matched_game_id(
+            date_str=date_str, label=label, pred_entry=pred_entry,
+            game_entry=game_entry, sportsbook_presence=sportsbook_presence,
+            rejection_rows=rejection_rows,
         )
+        return 0, 1
+    diff, diff_text, level = record_output_match(
+        output_by_pred_index, pred_entry, game_entry, game_id
+    )
+    label_text = "MATCHED one-to-one"
+    if diff is not None and diff > MAX_TIME_DIFF_MINUTES:
+        level = "WARN"
+        label_text = "MATCHED one-to-one with time mismatch"
+    log(
+        f"{date_str} | {label_text}: {label} "
+        f"pred_time={pred_entry['row'].get('game_time', '')} "
+        f"games_time={game_entry['row'].get('game_time', '')} "
+        f"game_id={game_id}{diff_text}",
+        level,
+    )
+    return 1, 0
 
-        print_rejection_rows(
-            date_str,
-            rejection_path,
-            rejection_rows,
+
+def _match_ordered_prediction_games(
+    date_str, label, preds, games, sportsbook_presence,
+    rejection_rows, output_by_pred_index,
+):
+    sorted_preds = sorted(
+        preds, key=lambda item: (dt_sort_value(item.get("dt")), item["index"])
+    )
+    sorted_games = sorted(
+        games,
+        key=lambda item: (
+            dt_sort_value(item.get("dt")), item["game_number"], item["index"]
+        ),
+    )
+    log(
+        f"{date_str} | ORDER MATCH duplicate matchup: {label} "
+        f"eligible_pred_count={len(sorted_preds)} games_count={len(sorted_games)}"
+    )
+    matched = 0
+    fatal = 0
+    for pred_entry, game_entry in zip(sorted_preds, sorted_games):
+        game_entry["used"] = True
+        game_id = (game_entry["row"].get("game_id") or "").strip()
+        if not game_id:
+            reject_blank_matched_game_id(
+                date_str=date_str, label=label, pred_entry=pred_entry,
+                game_entry=game_entry, sportsbook_presence=sportsbook_presence,
+                rejection_rows=rejection_rows,
+            )
+            fatal += 1
+            continue
+        diff, diff_text, level = record_output_match(
+            output_by_pred_index, pred_entry, game_entry, game_id
         )
-
-    if fatal_rejection_count:
-        summary["rejected"] += len(
-            rejection_rows
+        if diff is not None and diff > MAX_TIME_DIFF_MINUTES:
+            level = "WARN"
+        matched += 1
+        log(
+            f"{date_str} | MATCHED order: {label} "
+            f"pred_time={pred_entry['row'].get('game_time', '')} "
+            f"games_time={game_entry['row'].get('game_time', '')} "
+            f"gameNumber={game_entry['row'].get('gameNumber', '')} "
+            f"game_id={game_id}{diff_text}", level,
         )
-        summary[
-            "fatal_rejections"
-        ] += fatal_rejection_count
-        summary[
-            "nonfatal_rejections"
-        ] += nonfatal_rejection_count
-        summary[
-            "errors"
-        ] += fatal_rejection_count
+    return matched, fatal
 
-        fail(
-            f"{date_str} | fatal "
-            f"sportsbook-eligible prediction rows "
-            f"could not be assigned game_id: "
-            f"fatal_count="
-            f"{fatal_rejection_count} "
-            f"nonfatal_count="
-            f"{nonfatal_rejection_count} "
-            f"rejection_csv="
-            f"{rejection_path}"
+
+def _match_closest_prediction_games(
+    date_str, label, preds, games, sportsbook_presence,
+    rejection_rows, output_by_pred_index,
+):
+    matched = 0
+    fatal = 0
+    sorted_preds = sorted(
+        preds, key=lambda item: (dt_sort_value(item.get("dt")), item["index"])
+    )
+    for pred_entry in sorted_preds:
+        available = [game for game in games if not game["used"]]
+        if not available:
+            presence = sportsbook_presence.get(
+                pred_entry["index"], {"present": False, "detail": ""}
+            )
+            rejection_rows.append(make_rejection_row(
+                pred_entry=pred_entry,
+                reason="no_unused_games_row_for_same_home_away",
+                candidate_games="", fatal=True,
+                sportsbook_present=presence["present"],
+                sportsbook_match_detail=presence.get("detail", ""),
+            ))
+            fatal += 1
+            log(
+                f"{date_str} | fatal unmatched sportsbook-eligible prediction no unused games row: "
+                f"{label} pred_time={pred_entry['row'].get('game_time', '')}", "ERROR"
+            )
+            continue
+        scored = [
+            (minutes_between(pred_entry.get("dt"), game.get("dt")), game)
+            for game in available
+        ]
+        valid = [item for item in scored if item[0] is not None]
+        selected = None
+        selected_diff = None
+        if valid:
+            selected_diff, selected = min(valid, key=lambda item: item[0])
+            if selected_diff > MAX_TIME_DIFF_MINUTES:
+                selected = None
+        if selected is None:
+            candidates = describe_candidates(scored)
+            presence = sportsbook_presence.get(
+                pred_entry["index"], {"present": False, "detail": ""}
+            )
+            rejection_rows.append(make_rejection_row(
+                pred_entry=pred_entry,
+                reason="no_games_row_within_time_threshold",
+                candidate_games=candidates, fatal=True,
+                sportsbook_present=presence["present"],
+                sportsbook_match_detail=presence.get("detail", ""),
+            ))
+            fatal += 1
+            log(
+                f"{date_str} | fatal unmatched sportsbook-eligible prediction time threshold: "
+                f"{label} pred_time={pred_entry['row'].get('game_time', '')} "
+                f"candidate_games={candidates}", "ERROR"
+            )
+            continue
+        selected["used"] = True
+        game_id = (selected["row"].get("game_id") or "").strip()
+        if not game_id:
+            reject_blank_matched_game_id(
+                date_str=date_str, label=label, pred_entry=pred_entry,
+                game_entry=selected, sportsbook_presence=sportsbook_presence,
+                rejection_rows=rejection_rows,
+            )
+            fatal += 1
+            continue
+        output_by_pred_index[pred_entry["index"]] = make_output_row(pred_entry, game_id)
+        matched += 1
+        diff_text = "" if selected_diff is None else f" diff_minutes={round(selected_diff, 1)}"
+        log(
+            f"{date_str} | MATCHED closest: {label} "
+            f"pred_time={pred_entry['row'].get('game_time', '')} "
+            f"games_time={selected['row'].get('game_time', '')} "
+            f"game_id={game_id}{diff_text}"
         )
+    return matched, fatal
 
-    output_rows = []
 
-    for idx in range(
-        len(pred_rows)
-    ):
-        if idx in output_by_pred_index:
-            output_rows.append(
-                output_by_pred_index[idx]
+def _match_prediction_group(
+    date_str, preds, games, sportsbook_presence, rejection_rows, output_by_pred_index,
+):
+    label = matchup_label(preds[0]["row"])
+    if not games:
+        return 0, _reject_prediction_group_without_games(
+            date_str, label, preds, sportsbook_presence, rejection_rows
+        )
+    unused = [game for game in games if not game["used"]]
+    if len(preds) == 1 and len(unused) == 1:
+        return _match_single_prediction_game(
+            date_str, label, preds[0], unused[0], sportsbook_presence,
+            rejection_rows, output_by_pred_index,
+        )
+    if 1 < len(preds) == len(unused):
+        return _match_ordered_prediction_games(
+            date_str, label, preds, unused, sportsbook_presence,
+            rejection_rows, output_by_pred_index,
+        )
+    return _match_closest_prediction_games(
+        date_str, label, preds, games, sportsbook_presence,
+        rejection_rows, output_by_pred_index,
+    )
+
+
+def _match_predictions_to_games(
+    date_str, pred_groups, pred_key_order, eligible_pred_indexes,
+    games_groups, sportsbook_presence, rejection_rows,
+):
+    output = {}
+    matched = 0
+    fatal = 0
+    for key in pred_key_order:
+        preds = [
+            entry for entry in pred_groups.get(key, [])
+            if entry["index"] in eligible_pred_indexes
+        ]
+        if not preds:
+            continue
+        matched_delta, fatal_delta = _match_prediction_group(
+            date_str, preds, games_groups.get(key, []), sportsbook_presence,
+            rejection_rows, output,
+        )
+        matched += matched_delta
+        fatal += fatal_delta
+    return output, matched, fatal
+
+
+def _log_unused_prediction_games(date_str, games_groups):
+    for games in games_groups.values():
+        for game_entry in [game for game in games if not game["used"]]:
+            row = game_entry["row"]
+            log(
+                f"{date_str} | UNUSED games row: {row.get('away_team', '')} @ "
+                f"{row.get('home_team', '')} game_id={row.get('game_id', '')} "
+                f"game_time={row.get('game_time', '')}", "WARN"
             )
 
-    validate_output_rows(
-        date_str,
-        eligible_count,
-        output_rows,
-    )
 
-    (
-        output_rows,
-        preserved_count,
-    ) = merge_with_same_day_baseline(
-        date_str,
-        output_rows,
-        games_rows,
-        eligible_count,
-    )
-
-    validate_output_rows(
-        date_str,
-        eligible_count,
-        output_rows,
-        allow_preserved=True,
-    )
-
-    written_path = write_output_csv(
-        date_str,
-        OUTPUT_HEADER,
-        output_rows,
-        summary,
-    )
-
-    if not rejection_rows:
-        clear_stale_rejection_file(
-            rejection_path
+def _append_unprocessed_eligible_predictions(
+    date_str, pred_rows, eligible_pred_indexes, output_by_pred_index,
+    sportsbook_presence, rejection_rows,
+):
+    fatal = 0
+    rejected_source_rows = {str(row.get("source_csv_row", "")) for row in rejection_rows}
+    for idx in sorted(eligible_pred_indexes):
+        if idx in output_by_pred_index or str(idx + 2) in rejected_source_rows:
+            continue
+        pred_entry = {"row": pred_rows[idx], "index": idx, "csv_row": idx + 2}
+        presence = sportsbook_presence.get(idx, {"present": False, "detail": ""})
+        rejection_rows.append(make_rejection_row(
+            pred_entry=pred_entry,
+            reason="eligible_prediction_row_not_processed",
+            candidate_games="", fatal=True,
+            sportsbook_present=presence["present"],
+            sportsbook_match_detail=presence.get("detail", ""),
+        ))
+        fatal += 1
+        log(
+            f"{date_str} | eligible prediction row not processed: csv_row={idx + 2} "
+            f"away={pred_rows[idx].get('away_team', '')} home={pred_rows[idx].get('home_team', '')}",
+            "ERROR",
         )
+    return fatal
 
+
+def _finalize_prediction_date(
+    date_str, pred_rows, book_rows, games_rows, eligible_count,
+    output_by_pred_index, matched, rejection_rows, fatal_rejection_count,
+    nonfatal_rejection_count, rejection_path, summary,
+):
+    if rejection_rows:
+        write_csv(rejection_path, REJECTION_HEADER, rejection_rows)
+        print_rejection_rows(date_str, rejection_path, rejection_rows)
+    if fatal_rejection_count:
+        summary["rejected"] += len(rejection_rows)
+        summary["fatal_rejections"] += fatal_rejection_count
+        summary["nonfatal_rejections"] += nonfatal_rejection_count
+        summary["errors"] += fatal_rejection_count
+        fail(
+            f"{date_str} | fatal sportsbook-eligible prediction rows could not be assigned game_id: "
+            f"fatal_count={fatal_rejection_count} nonfatal_count={nonfatal_rejection_count} "
+            f"rejection_csv={rejection_path}"
+        )
+    output_rows = [
+        output_by_pred_index[idx]
+        for idx in range(len(pred_rows))
+        if idx in output_by_pred_index
+    ]
+    validate_output_rows(date_str, eligible_count, output_rows)
+    output_rows, preserved_count = merge_with_same_day_baseline(
+        date_str, output_rows, games_rows, eligible_count
+    )
+    validate_output_rows(date_str, eligible_count, output_rows, allow_preserved=True)
+    written_path = write_output_csv(date_str, OUTPUT_HEADER, output_rows, summary)
+    if not rejection_rows:
+        clear_stale_rejection_file(rejection_path)
     log(
-        f"{date_str} | "
-        f"WROTE: {written_path} "
-        f"| rows={len(output_rows)} "
-        f"matched={matched} "
-        f"preserved_rows="
-        f"{preserved_count} "
-        f"input_predictions="
-        f"{len(pred_rows)} "
-        f"sportsbook_rows="
-        f"{len(book_rows)} "
-        f"eligible_predictions="
-        f"{eligible_count} "
-        f"nonfatal_rejections="
-        f"{nonfatal_rejection_count} "
-        f"fatal_rejections=0"
+        f"{date_str} | WROTE: {written_path} | rows={len(output_rows)} matched={matched} "
+        f"preserved_rows={preserved_count} input_predictions={len(pred_rows)} "
+        f"sportsbook_rows={len(book_rows)} eligible_predictions={eligible_count} "
+        f"nonfatal_rejections={nonfatal_rejection_count} fatal_rejections=0"
     )
-
-    summary["total_rows"] += len(
-        output_rows
-    )
+    summary["total_rows"] += len(output_rows)
     summary["matched"] += matched
-    summary["rejected"] += len(
-        rejection_rows
+    summary["rejected"] += len(rejection_rows)
+    summary["nonfatal_rejections"] += nonfatal_rejection_count
+
+
+def process_date(date_str: str, pred_path: Path, summary: dict) -> None:
+    if parse_date_value(date_str) is None:
+        fail(f"Could not parse prediction filename date: {date_str}")
+    games_path, book_path, rejection_path = _prediction_date_paths(date_str)
+    pred_rows = load_csv(pred_path, REQUIRED_PRED_COLS, "prediction input")
+    book_rows = load_csv(
+        book_path, REQUIRED_BOOK_COLS, "sportsbook input", required_file=False
     )
-    summary[
-        "nonfatal_rejections"
-    ] += nonfatal_rejection_count
-
-
-# ─────────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────────
+    if not pred_rows:
+        _handle_no_prediction_rows(date_str, games_path, rejection_path, summary)
+        return
+    (
+        pred_groups, pred_key_order, sportsbook_presence,
+        rejection_rows, nonfatal_rejection_count, eligible_pred_indexes,
+    ) = _prediction_sportsbook_state(date_str, pred_rows, book_rows)
+    eligible_count = len(eligible_pred_indexes)
+    if eligible_count == 0:
+        _handle_no_eligible_predictions(
+            date_str, pred_rows, games_path, rejection_path,
+            rejection_rows, nonfatal_rejection_count, summary,
+        )
+        return
+    games_rows = _load_prediction_games_rows(
+        date_str, games_path, pred_rows, book_rows, eligible_pred_indexes,
+        sportsbook_presence, eligible_count, rejection_path, rejection_rows,
+        nonfatal_rejection_count, summary,
+    )
+    if games_rows is None:
+        return
+    games_groups = build_games_groups(games_rows, date_str)
+    output_by_pred_index, matched, fatal_rejection_count = _match_predictions_to_games(
+        date_str, pred_groups, pred_key_order, eligible_pred_indexes,
+        games_groups, sportsbook_presence, rejection_rows,
+    )
+    _log_unused_prediction_games(date_str, games_groups)
+    fatal_rejection_count += _append_unprocessed_eligible_predictions(
+        date_str, pred_rows, eligible_pred_indexes, output_by_pred_index,
+        sportsbook_presence, rejection_rows,
+    )
+    _finalize_prediction_date(
+        date_str, pred_rows, book_rows, games_rows, eligible_count,
+        output_by_pred_index, matched, rejection_rows, fatal_rejection_count,
+        nonfatal_rejection_count, rejection_path, summary,
+    )
 
 def main():
     with open(

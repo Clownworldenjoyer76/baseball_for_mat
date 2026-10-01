@@ -344,6 +344,43 @@ BATTER_AVG_COLS = [
 ]
 
 
+def _safe_float(value, default=None):
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
+def _accumulate_lineup_batter(
+    bid, label, batting, fielding, baserunning, batter_map, avg_accum, state,
+):
+    if not bid:
+        _log(f"Blank batter id ({label})", "WARN")
+        return
+    bmap_row = batter_map.get(bid, {})
+    bat_side = str(bmap_row.get("bat_side_code", "")).strip().upper()
+    hand_key = {"L": "left", "R": "right", "S": "switch"}.get(bat_side)
+    if hand_key is not None:
+        state[hand_key] += 1
+    bstats = batting.get(bid)
+    if not bstats:
+        _log(f"Batter {bid} ({label}) not found in any Statcast file", "WARN")
+    else:
+        state["found"] += 1
+        for col in BATTER_AVG_COLS:
+            value = _safe_float(bstats.get(col))
+            if value is not None:
+                avg_accum[col].append(value)
+        if bstats.get("sample_flag") == "low":
+            state["low_sample"] += 1
+    fstats = fielding.get(bid, {})
+    state["frv"] += _safe_float(fstats.get("total_runs", 0) or 0, 0.0)
+    if str(bmap_row.get("primary_position_code", "")).strip() == "2":
+        state["catcher_framing"] = _safe_float(fstats.get("framing_runs", 0) or 0)
+    brstats = baserunning.get(bid, {})
+    state["brv"] += _safe_float(brstats.get("runner_runs_tot", 0) or 0, 0.0)
+
+
 def aggregate_lineup(
     batter_ids: list,
     batting: dict,
@@ -352,292 +389,166 @@ def aggregate_lineup(
     batter_map: dict,
     side: str,
 ) -> tuple:
-    avg_accum = {c: [] for c in BATTER_AVG_COLS}
-
-    frv_sum = 0.0
-    brv_sum = 0.0
-    low_sample = 0
-    catcher_framing = None
-
-    n_left = 0
-    n_right = 0
-    n_switch = 0
-    batters_found = 0
-
-    for i, bid in enumerate(batter_ids):
-        bid = str(bid or "").strip()
-        label = f"{side}_bat_{i + 1}"
-
-        if not bid:
-            _log(f"Blank batter id ({label})", "WARN")
-            continue
-
-        bmap_row = batter_map.get(bid, {})
-
-        bat_side = str(bmap_row.get("bat_side_code", "")).strip().upper()
-        if bat_side == "L":
-            n_left += 1
-        elif bat_side == "R":
-            n_right += 1
-        elif bat_side == "S":
-            n_switch += 1
-
-        bstats = batting.get(bid)
-        if not bstats:
-            _log(f"Batter {bid} ({label}) not found in any Statcast file", "WARN")
-        else:
-            batters_found += 1
-
-            for col in BATTER_AVG_COLS:
-                val = bstats.get(col)
-                if val is not None:
-                    try:
-                        avg_accum[col].append(float(val))
-                    except (ValueError, TypeError):
-                        pass
-
-            if bstats.get("sample_flag") == "low":
-                low_sample += 1
-
-        fstats = fielding.get(bid, {})
-        try:
-            frv_sum += float(fstats.get("total_runs", 0) or 0)
-        except (ValueError, TypeError):
-            pass
-
-        if str(bmap_row.get("primary_position_code", "")).strip() == "2":
-            try:
-                catcher_framing = float(fstats.get("framing_runs", 0) or 0)
-            except (ValueError, TypeError):
-                catcher_framing = None
-
-        brstats = baserunning.get(bid, {})
-        try:
-            brv_sum += float(brstats.get("runner_runs_tot", 0) or 0)
-        except (ValueError, TypeError):
-            pass
-
-    result = {}
-
-    for col in BATTER_AVG_COLS:
-        vals = avg_accum[col]
-        result[f"{side}_lineup_{col}"] = (sum(vals) / len(vals)) if vals else None
-
+    avg_accum = {col: [] for col in BATTER_AVG_COLS}
+    state = {
+        "frv": 0.0, "brv": 0.0, "low_sample": 0,
+        "catcher_framing": None, "left": 0, "right": 0,
+        "switch": 0, "found": 0,
+    }
+    for index, batter_id in enumerate(batter_ids):
+        bid = str(batter_id or "").strip()
+        _accumulate_lineup_batter(
+            bid, f"{side}_bat_{index + 1}", batting, fielding,
+            baserunning, batter_map, avg_accum, state,
+        )
+    result = {
+        f"{side}_lineup_{col}": (sum(values) / len(values)) if values else None
+        for col, values in avg_accum.items()
+    }
     result.update({
-        f"{side}_lineup_frv": frv_sum,
-        f"{side}_lineup_brv": brv_sum,
-        f"{side}_catcher_framing": catcher_framing,
-        f"{side}_low_sample_count": low_sample,
-        f"{side}_n_left": n_left,
-        f"{side}_n_right": n_right,
-        f"{side}_n_switch": n_switch,
+        f"{side}_lineup_frv": state["frv"],
+        f"{side}_lineup_brv": state["brv"],
+        f"{side}_catcher_framing": state["catcher_framing"],
+        f"{side}_low_sample_count": state["low_sample"],
+        f"{side}_n_left": state["left"],
+        f"{side}_n_right": state["right"],
+        f"{side}_n_switch": state["switch"],
     })
+    return result, state["left"], state["right"], state["switch"], state["found"]
 
-    return result, n_left, n_right, n_switch, batters_found
-
-
-# ─────────────────────────────────────────────
-# PROCESS ONE DATE
-# ─────────────────────────────────────────────
-
-def process_date(
-    date_str: str,
-    venue_map: dict,
-    pitcher_map: dict,
-    batter_map: dict,
-    batting: dict,
-    pitching: dict,
-    fielding: dict,
-    baserunning: dict,
-    park_index: dict,
-    summary: dict,
-) -> None:
-    date_str = normalize_date(date_str)
-
+def _load_context_raw_frame(date_str, summary):
     raw_path = MLBraw_DIR / f"{date_str}_mlb_raw.csv"
-
     if not raw_path.exists():
         _log(f"mlb_raw file not found: {raw_path}", "ERROR")
         summary["missing_raw"] += 1
         summary["errors"] += 1
-        return
-
+        return raw_path, None
     df = pd.read_csv(raw_path, dtype=str)
-
-    if df.empty:
-        missing_columns = sorted(
-            RAW_NO_GAME_REQUIRED_COLUMNS.difference(df.columns)
-        )
-
-        if not missing_columns:
-            _log(
-                f"{date_str} | mlb_raw file has zero rows with expected "
-                f"raw schema; treating as a no-game date: {raw_path}"
-            )
-            summary["no_game_dates"] += 1
-            return
-
+    if not df.empty:
+        return raw_path, df
+    missing = sorted(RAW_NO_GAME_REQUIRED_COLUMNS.difference(df.columns))
+    if not missing:
         _log(
-            f"{date_str} | mlb_raw file has zero rows and invalid raw "
-            f"schema; missing_columns={missing_columns}: {raw_path}",
-            "ERROR",
+            f"{date_str} | mlb_raw file has zero rows with expected raw schema; "
+            f"treating as a no-game date: {raw_path}"
+        )
+        summary["no_game_dates"] += 1
+    else:
+        _log(
+            f"{date_str} | mlb_raw file has zero rows and invalid raw schema; "
+            f"missing_columns={missing}: {raw_path}", "ERROR"
         )
         summary["errors"] += 1
-        return
+    return raw_path, None
 
+
+def _build_context_output_row(
+    row, date_str, venue_map, pitcher_map, batter_map, batting, pitching,
+    fielding, baserunning, park_index, weather_map, summary,
+):
+    game_pk = str(row.get("gamePk", "") or "").strip()
+    if not game_pk:
+        _log(f"{date_str} | row missing gamePk: {row.to_dict()}", "ERROR")
+        summary["errors"] += 1
+        return None
+    game_date = row.get("game_date", "")
+    venue_id = str(row.get("venue_id", "") or "").strip()
+    day_night = str(row.get("day_night", "") or "").strip().lower()
+    home_tid = str(row.get("home_team_id", "") or "").strip()
+    away_tid = str(row.get("away_team_id", "") or "").strip()
+    home_pid = str(row.get("home_pitcher_id", "") or "").strip()
+    away_pid = str(row.get("away_pitcher_id", "") or "").strip()
+    venue = venue_map.get(venue_id, {})
+    roof_type = venue.get("roof_type", "")
+    turf_type = venue.get("turf_type", "")
+    home_hand = pitcher_map.get(home_pid)
+    away_hand = pitcher_map.get(away_pid)
+    hpstats, home_sp_found = get_pitcher_stats(home_pid, pitching)
+    apstats, away_sp_found = get_pitcher_stats(away_pid, pitching)
+    summary["missing_pitcher"] += int(not home_sp_found) + int(not away_sp_found)
+    home_bats = [row.get(f"home_bat_{i}_id", "") for i in range(1, 10)]
+    away_bats = [row.get(f"away_bat_{i}_id", "") for i in range(1, 10)]
+    home_agg, home_l, home_r, home_s, home_found = aggregate_lineup(
+        home_bats, batting, fielding, baserunning, batter_map, "home"
+    )
+    away_agg, away_l, away_r, away_s, away_found = aggregate_lineup(
+        away_bats, batting, fielding, baserunning, batter_map, "away"
+    )
+    summary["missing_batter"] += (9 - home_found) + (9 - away_found)
+    condition = get_park_condition(roof_type, day_night)
+    park = weighted_park_factor(
+        park_index, venue_id, condition,
+        home_l + away_l, home_r + away_r, home_s + away_s,
+    )
+    if not park:
+        _log(
+            f"Park factor not found: gamePk={game_pk} venue={venue_id} condition={condition}",
+            "WARN",
+        )
+    weather = weather_map.get(game_pk, {})
+    if weather:
+        summary["weather_cache_hits"] += 1
+    return {
+        "game_date": game_date, "gamePk": game_pk,
+        "home_team_id": home_tid, "away_team_id": away_tid,
+        "venue_id": venue_id, "roof_type": roof_type, "turf_type": turf_type,
+        "home_pitcher_id": home_pid, "away_pitcher_id": away_pid,
+        "home_pitcher_hand": home_hand, "away_pitcher_hand": away_hand,
+        "home_sp_xwoba": hpstats.get("xwoba"), "away_sp_xwoba": apstats.get("xwoba"),
+        "home_sp_k_pct": hpstats.get("k_pct"), "away_sp_k_pct": apstats.get("k_pct"),
+        "home_sp_bb_pct": hpstats.get("bb_pct"), "away_sp_bb_pct": apstats.get("bb_pct"),
+        "home_sp_barrel_pct": hpstats.get("barrel_pct"), "away_sp_barrel_pct": apstats.get("barrel_pct"),
+        "home_sp_whiff_pct": hpstats.get("whiff_pct"), "away_sp_whiff_pct": apstats.get("whiff_pct"),
+        "home_sp_sample_flag": hpstats.get("sample_flag"), "away_sp_sample_flag": apstats.get("sample_flag"),
+        **home_agg, **away_agg,
+        "park_factor": park.get("park_Park Factor"), "park_wOBAcon": park.get("park_wOBAcon"),
+        "park_xwOBAcon": park.get("park_xwOBAcon"), "park_HR": park.get("park_HR"),
+        "park_R": park.get("park_R"), "park_factor_B": park.get("park_Park Factor_B"),
+        "park_wOBAcon_B": park.get("park_wOBAcon_B"), "park_xwOBAcon_B": park.get("park_xwOBAcon_B"),
+        "park_HR_B": park.get("park_HR_B"), "park_R_B": park.get("park_R_B"),
+        "home_batters_found": home_found, "away_batters_found": away_found,
+        "home_sp_found": int(home_sp_found), "away_sp_found": int(away_sp_found),
+        "sp_data_available": int(home_sp_found and away_sp_found),
+        "lineup_data_available": int(home_found == 9 and away_found == 9),
+        "weather_applicable": weather.get("weather_applicable"),
+        "weather_time": weather.get("weather_time"), "temp_f": weather.get("temp_f"),
+        "wind_mph": weather.get("wind_mph"), "wind_dir": weather.get("wind_dir"),
+        "precip_in": weather.get("precip_in"), "humidity": weather.get("humidity"),
+        "will_it_rain": weather.get("will_it_rain"),
+        "wind_blowing_out": weather.get("wind_blowing_out"),
+        "air_pressure_at_sea_level": weather.get("air_pressure_at_sea_level"),
+        "dew_point_f": weather.get("dew_point_f"), "symbol_code": weather.get("symbol_code"),
+    }
+
+
+def process_date(
+    date_str: str, venue_map: dict, pitcher_map: dict, batter_map: dict,
+    batting: dict, pitching: dict, fielding: dict, baserunning: dict,
+    park_index: dict, summary: dict,
+) -> None:
+    date_str = normalize_date(date_str)
+    raw_path, df = _load_context_raw_frame(date_str, summary)
+    if df is None:
+        return
     weather_map = load_weather(date_str)
     _log(f"--- {date_str} | raw games={len(df)} | weather rows={len(weather_map)}")
-
     output_rows = []
-
     for _, row in df.iterrows():
-        game_pk = str(row.get("gamePk", "") or "").strip()
-        game_date = row.get("game_date", "")
-        venue_id = str(row.get("venue_id", "") or "").strip()
-        day_night = str(row.get("day_night", "") or "").strip().lower()
-        home_tid = str(row.get("home_team_id", "") or "").strip()
-        away_tid = str(row.get("away_team_id", "") or "").strip()
-        home_pid = str(row.get("home_pitcher_id", "") or "").strip()
-        away_pid = str(row.get("away_pitcher_id", "") or "").strip()
-
-        if not game_pk:
-            _log(f"{date_str} | row missing gamePk: {row.to_dict()}", "ERROR")
-            summary["errors"] += 1
-            continue
-
-        vinfo = venue_map.get(venue_id, {})
-        roof_type = vinfo.get("roof_type", "")
-        turf_type = vinfo.get("turf_type", "")
-
-        home_hand = pitcher_map.get(home_pid, None)
-        away_hand = pitcher_map.get(away_pid, None)
-
-        hpstats, home_sp_found = get_pitcher_stats(home_pid, pitching)
-        apstats, away_sp_found = get_pitcher_stats(away_pid, pitching)
-
-        if not home_sp_found:
-            summary["missing_pitcher"] += 1
-        if not away_sp_found:
-            summary["missing_pitcher"] += 1
-
-        home_bats = [row.get(f"home_bat_{i}_id", "") for i in range(1, 10)]
-        away_bats = [row.get(f"away_bat_{i}_id", "") for i in range(1, 10)]
-
-        home_agg, home_l, home_r, home_s, home_batters_found = aggregate_lineup(
-            home_bats,
-            batting,
-            fielding,
-            baserunning,
-            batter_map,
-            "home",
+        output = _build_context_output_row(
+            row, date_str, venue_map, pitcher_map, batter_map, batting,
+            pitching, fielding, baserunning, park_index, weather_map, summary,
         )
-
-        away_agg, away_l, away_r, away_s, away_batters_found = aggregate_lineup(
-            away_bats,
-            batting,
-            fielding,
-            baserunning,
-            batter_map,
-            "away",
-        )
-
-        summary["missing_batter"] += (9 - home_batters_found) + (9 - away_batters_found)
-
-        condition = get_park_condition(roof_type, day_night)
-
-        total_l = home_l + away_l
-        total_r = home_r + away_r
-        total_s = home_s + away_s
-
-        park = weighted_park_factor(
-            park_index,
-            venue_id,
-            condition,
-            total_l,
-            total_r,
-            total_s,
-        )
-
-        if not park:
-            _log(f"Park factor not found: gamePk={game_pk} venue={venue_id} condition={condition}", "WARN")
-
-        w = weather_map.get(game_pk, {})
-        if w:
-            summary["weather_cache_hits"] += 1
-
-        output_rows.append({
-            "game_date": game_date,
-            "gamePk": game_pk,
-            "home_team_id": home_tid,
-            "away_team_id": away_tid,
-            "venue_id": venue_id,
-            "roof_type": roof_type,
-            "turf_type": turf_type,
-            "home_pitcher_id": home_pid,
-            "away_pitcher_id": away_pid,
-            "home_pitcher_hand": home_hand,
-            "away_pitcher_hand": away_hand,
-            "home_sp_xwoba": hpstats.get("xwoba"),
-            "away_sp_xwoba": apstats.get("xwoba"),
-            "home_sp_k_pct": hpstats.get("k_pct"),
-            "away_sp_k_pct": apstats.get("k_pct"),
-            "home_sp_bb_pct": hpstats.get("bb_pct"),
-            "away_sp_bb_pct": apstats.get("bb_pct"),
-            "home_sp_barrel_pct": hpstats.get("barrel_pct"),
-            "away_sp_barrel_pct": apstats.get("barrel_pct"),
-            "home_sp_whiff_pct": hpstats.get("whiff_pct"),
-            "away_sp_whiff_pct": apstats.get("whiff_pct"),
-            "home_sp_sample_flag": hpstats.get("sample_flag"),
-            "away_sp_sample_flag": apstats.get("sample_flag"),
-            **home_agg,
-            **away_agg,
-            "park_factor": park.get("park_Park Factor"),
-            "park_wOBAcon": park.get("park_wOBAcon"),
-            "park_xwOBAcon": park.get("park_xwOBAcon"),
-            "park_HR": park.get("park_HR"),
-            "park_R": park.get("park_R"),
-            "park_factor_B": park.get("park_Park Factor_B"),
-            "park_wOBAcon_B": park.get("park_wOBAcon_B"),
-            "park_xwOBAcon_B": park.get("park_xwOBAcon_B"),
-            "park_HR_B": park.get("park_HR_B"),
-            "park_R_B": park.get("park_R_B"),
-            "home_batters_found": home_batters_found,
-            "away_batters_found": away_batters_found,
-            "home_sp_found": 1 if home_sp_found else 0,
-            "away_sp_found": 1 if away_sp_found else 0,
-            "sp_data_available": 1 if (home_sp_found and away_sp_found) else 0,
-            "lineup_data_available": 1 if (home_batters_found == 9 and away_batters_found == 9) else 0,
-            "weather_applicable": w.get("weather_applicable"),
-            "weather_time": w.get("weather_time"),
-            "temp_f": w.get("temp_f"),
-            "wind_mph": w.get("wind_mph"),
-            "wind_dir": w.get("wind_dir"),
-            "precip_in": w.get("precip_in"),
-            "humidity": w.get("humidity"),
-            "will_it_rain": w.get("will_it_rain"),
-            "wind_blowing_out": w.get("wind_blowing_out"),
-            "air_pressure_at_sea_level": w.get("air_pressure_at_sea_level"),
-            "dew_point_f": w.get("dew_point_f"),
-            "symbol_code": w.get("symbol_code"),
-        })
-
+        if output is not None:
+            output_rows.append(output)
     if not output_rows:
         _log(f"{date_str} | no output rows built; context file not written", "ERROR")
         summary["errors"] += 1
         return
-
     out_path = MLBraw_DIR / f"{date_str}_game_context.csv"
     pd.DataFrame(output_rows).to_csv(out_path, index=False)
-
     _log(f"{date_str} | WROTE: {out_path} ({len(output_rows)} rows)")
-
     summary["files_written"] += 1
     summary["rows_written"] += len(output_rows)
-
-
-# ─────────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────────
 
 def parse_args():
     parser = argparse.ArgumentParser()

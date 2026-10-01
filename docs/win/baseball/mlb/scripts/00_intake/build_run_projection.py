@@ -508,6 +508,96 @@ def _load_python_module(
             sys.path.remove(module_dir)
 
 
+def _filter_projection_prediction_ids(date_str, pred):
+    pred = pred.copy()
+    pred["game_id"] = normalize_game_id(pred["game_id"])
+    blank = pred["game_id"].isna() | (pred["game_id"] == "")
+    for row in pred.loc[
+        blank, ["game_id", "game_date", "home_team", "away_team"]
+    ].head(20).to_dict("records"):
+        _row_issue(date_str, f"blank prediction game_id row={row}")
+    return pred.loc[~blank].copy()
+
+
+def _merge_projection_games(date_str, pred, games):
+    base = pred.rename(columns=DRATINGS_RENAME).copy()
+    for source_col in DRATINGS_RENAME:
+        base[source_col] = pred[source_col]
+    keep = [
+        col for col in [
+            "game_id", "gamePk", "game_date", "home_team", "away_team",
+            "venue_id", "day_night",
+        ] if col in games.columns
+    ]
+    joined = base.merge(
+        games[keep], on="game_id", how="left", suffixes=("", "_games"),
+        validate="one_to_one",
+    )
+    missing = joined["gamePk"].isna()
+    for row in joined.loc[
+        missing, ["game_id", "game_date", "home_team", "away_team"]
+    ].head(20).to_dict("records"):
+        _row_issue(date_str, f"prediction missing games.gamePk row={row}")
+    return joined.loc[~missing].copy()
+
+
+def _merge_projection_sdv(joined, sdv):
+    keep = [
+        col for col in ([
+            "gamePk", "game_id", "sdv_as_of_date", "sdv_status",
+            "sdv_home_sp_found", "sdv_away_sp_found",
+        ] + list(SDV_FEATURE_MAP.keys()))
+        if col in sdv.columns
+    ]
+    joined = joined.merge(
+        sdv[keep].rename(columns={"game_id": "game_id_sdv"}),
+        on="gamePk", how="left", validate="one_to_one",
+    )
+    assert_secondary_game_id_match(
+        joined, "game_id", "game_id_sdv", "games->sportsdataverse"
+    )
+    return joined.rename(columns=SDV_FEATURE_MAP)
+
+
+def _merge_projection_context(joined, context, feature_columns):
+    needed = [
+        col for col in feature_columns
+        if col in SAFE_CONTEXT_FEATURES and col in context.columns
+    ]
+    if not needed:
+        return joined
+    return joined.merge(
+        context[["gamePk", *needed]], on="gamePk", how="left",
+        validate="one_to_one", suffixes=("", "_context"),
+    )
+
+
+def _coerce_projection_features(date_str, joined, feature_columns):
+    x_features = joined.loc[:, feature_columns].copy()
+    if list(x_features.columns) != feature_columns:
+        fail(
+            "Constructed model feature order differs from metadata; "
+            f"constructed={list(x_features.columns)} metadata={feature_columns}"
+        )
+    for col in x_features.columns:
+        raw = x_features[col].copy()
+        numeric = pd.to_numeric(raw, errors="coerce")
+        raw_text = raw.astype("string").str.strip()
+        bad = (
+            (raw_text.notna() & (raw_text != "") & numeric.isna())
+            | (numeric.notna() & ~np.isfinite(numeric))
+        )
+        for idx in x_features.index[bad][:20]:
+            _row_issue(
+                date_str,
+                f"feature={col} invalid value={raw.loc[idx]!r} "
+                f"game_id={joined.loc[idx, 'game_id']}",
+            )
+        numeric.loc[bad] = np.nan
+        x_features[col] = numeric
+    return x_features
+
+
 def build_feature_frame(
     date_str: str,
     pred: pd.DataFrame,
@@ -516,231 +606,25 @@ def build_feature_frame(
     context: pd.DataFrame,
     feature_columns: list[str],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    pred = pred.copy()
-
-    pred["game_id"] = normalize_game_id(pred["game_id"])
-
-    blank_game_id = (
-        pred["game_id"].isna()
-        | (pred["game_id"] == "")
-    )
-
-    if blank_game_id.any():
-        bad_rows = (
-            pred.loc[
-                blank_game_id,
-                [
-                    "game_id",
-                    "game_date",
-                    "home_team",
-                    "away_team",
-                ],
-            ]
-            .head(20)
-            .to_dict("records")
-        )
-
-        for row in bad_rows:
-            _row_issue(
-                date_str,
-                "blank prediction "
-                f"game_id row={row}",
-            )
-
-        pred = pred.loc[~blank_game_id].copy()
-
+    pred = _filter_projection_prediction_ids(date_str, pred)
     if pred.empty:
-        return (
-            pred.copy(),
-            pd.DataFrame(columns=feature_columns),
-        )
-
+        return pred.copy(), pd.DataFrame(columns=feature_columns)
     pred = prepare_keys(pred, "predictions")
     games = prepare_keys(games, "games")
     sdv = prepare_keys(sdv, "sportsdataverse")
     context = prepare_keys(context, "game_context")
-
-    base = pred.rename(columns=DRATINGS_RENAME).copy()
-
-    for source_col in DRATINGS_RENAME:
-        base[source_col] = pred[source_col]
-
-    games_keep = [
-        col
-        for col in [
-            "game_id",
-            "gamePk",
-            "game_date",
-            "home_team",
-            "away_team",
-            "venue_id",
-            "day_night",
-        ]
-        if col in games.columns
-    ]
-
-    joined = base.merge(
-        games[games_keep],
-        on="game_id",
-        how="left",
-        suffixes=("", "_games"),
-        validate="one_to_one",
-    )
-
-    missing_gamepk = joined["gamePk"].isna()
-
-    if missing_gamepk.any():
-        bad_rows = (
-            joined.loc[
-                missing_gamepk,
-                [
-                    "game_id",
-                    "game_date",
-                    "home_team",
-                    "away_team",
-                ],
-            ]
-            .head(20)
-            .to_dict("records")
-        )
-
-        for row in bad_rows:
-            _row_issue(
-                date_str,
-                "prediction missing "
-                f"games.gamePk row={row}",
-            )
-
-        joined = joined.loc[~missing_gamepk].copy()
-
+    joined = _merge_projection_games(date_str, pred, games)
     if joined.empty:
-        return (
-            joined,
-            pd.DataFrame(columns=feature_columns),
-        )
-
-    sdv_keep = [
-        col
-        for col in (
-            [
-                "gamePk",
-                "game_id",
-                "sdv_as_of_date",
-                "sdv_status",
-                "sdv_home_sp_found",
-                "sdv_away_sp_found",
-            ]
-            + list(SDV_FEATURE_MAP.keys())
-        )
-        if col in sdv.columns
-    ]
-
-    joined = joined.merge(
-        sdv[sdv_keep].rename(
-            columns={"game_id": "game_id_sdv"}
-        ),
-        on="gamePk",
-        how="left",
-        validate="one_to_one",
-    )
-
-    assert_secondary_game_id_match(
-        joined,
-        "game_id",
-        "game_id_sdv",
-        "games->sportsdataverse",
-    )
-
-    joined = joined.rename(columns=SDV_FEATURE_MAP)
-
-    context_features_needed = [
-        col
-        for col in feature_columns
-        if (
-            col in SAFE_CONTEXT_FEATURES
-            and col in context.columns
-        )
-    ]
-
-    if context_features_needed:
-        context_keep = ["gamePk"] + context_features_needed
-
-        joined = joined.merge(
-            context[context_keep],
-            on="gamePk",
-            how="left",
-            validate="one_to_one",
-            suffixes=("", "_context"),
-        )
-
-    missing_feature_columns = [
-        col
-        for col in feature_columns
-        if col not in joined.columns
-    ]
-
-    if missing_feature_columns:
+        return joined, pd.DataFrame(columns=feature_columns)
+    joined = _merge_projection_sdv(joined, sdv)
+    joined = _merge_projection_context(joined, context, feature_columns)
+    missing = [col for col in feature_columns if col not in joined.columns]
+    if missing:
         fail(
-            "Required model feature columns "
-            "unavailable for production projection: "
-            f"{missing_feature_columns}"
+            "Required model feature columns unavailable for production projection: "
+            f"{missing}"
         )
-
-    x_features = joined.loc[:, feature_columns].copy()
-
-    if list(x_features.columns) != feature_columns:
-        fail(
-            "Constructed model feature order "
-            "differs from metadata; "
-            f"constructed={list(x_features.columns)} "
-            f"metadata={feature_columns}"
-        )
-
-    for col in x_features.columns:
-        raw = x_features[col].copy()
-
-        numeric = pd.to_numeric(
-            raw,
-            errors="coerce",
-        )
-
-        raw_text = raw.astype("string").str.strip()
-
-        nonblank_raw = (
-            raw_text.notna()
-            & (raw_text != "")
-        )
-
-        coercion_failed = (
-            nonblank_raw
-            & numeric.isna()
-        )
-
-        nonfinite = (
-            numeric.notna()
-            & ~np.isfinite(numeric)
-        )
-
-        bad = coercion_failed | nonfinite
-
-        if bad.any():
-            bad_indices = x_features.index[bad][:20]
-
-            for idx in bad_indices:
-                _row_issue(
-                    date_str,
-                    f"feature={col} "
-                    f"invalid value={raw.loc[idx]!r} "
-                    "game_id="
-                    f"{joined.loc[idx, 'game_id']}",
-                )
-
-            numeric.loc[bad] = np.nan
-
-        x_features[col] = numeric
-
-    return joined, x_features
-
+    return joined, _coerce_projection_features(date_str, joined, feature_columns)
 
 def build_feature_status(
     joined: pd.DataFrame,
@@ -857,217 +741,76 @@ def _training_summary_template() -> dict:
     }
 
 
-def build_training_history_in_memory(
-    training_builder,
-    feature_columns: list[str],
-) -> pd.DataFrame:
-    summary = _training_summary_template()
+def _drop_invalid_training_dates(training):
+    training["_game_date_dt"] = pd.to_datetime(
+        training["game_date"].astype("string").str.replace("_", "-", regex=False),
+        errors="coerce",
+    ).dt.normalize()
+    bad = training["_game_date_dt"].isna()
+    for row in training.loc[bad, ["game_id", "game_date"]].head(20).to_dict("records"):
+        _log(f"TRAINING ROW SKIPPED invalid game_date row={row}", "WARN")
+    return training.loc[~bad].copy()
 
-    dates = training_builder.discover_dates(summary)
 
-    if not dates:
-        fail(
-            "No finalized historical dates "
-            "available for walk-forward training"
-        )
-
-    frames: list[pd.DataFrame] = []
-
-    _log(
-        "Building leakage-safe "
-        "walk-forward training history "
-        "in memory; "
-        f"dates={len(dates)} "
-        f"first={dates[0]} "
-        f"last={dates[-1]}"
-    )
-
-    for date_str in dates:
-        frame = training_builder.build_date_training_rows(
-            date_str,
-            summary,
-        )
-
-        if not frame.empty:
-            frames.append(frame)
-
-    if not frames:
-        fail(
-            "Walk-forward training "
-            "history is empty"
-        )
-
-    training = pd.concat(
-        frames,
-        ignore_index=True,
-        sort=False,
-    )
-
-    training_builder.validate_final_output(training)
-
-    missing = [
-        col
-        for col in (
-            feature_columns
-            + TARGET_COLUMNS
-        )
-        if col not in training.columns
-    ]
-
-    if missing:
-        fail(
-            "Walk-forward training history "
-            "missing production model columns: "
-            f"{missing}"
-        )
-
-    training["_game_date_dt"] = (
-        pd.to_datetime(
-            training["game_date"]
-            .astype("string")
-            .str.replace(
-                "_",
-                "-",
-                regex=False,
-            ),
-            errors="coerce",
-        )
-        .dt.normalize()
-    )
-
-    bad_dates = training["_game_date_dt"].isna()
-
-    if bad_dates.any():
-        bad_rows = (
-            training.loc[
-                bad_dates,
-                [
-                    "game_id",
-                    "game_date",
-                ],
-            ]
-            .head(20)
-            .to_dict("records")
-        )
-
-        for row in bad_rows:
-            _log(
-                "TRAINING ROW SKIPPED "
-                "invalid game_date "
-                f"row={row}",
-                "WARN",
-            )
-
-        training = training.loc[~bad_dates].copy()
-
-    for col in feature_columns + TARGET_COLUMNS:
-        raw = training[col].copy()
-
-        numeric = pd.to_numeric(
-            raw,
-            errors="coerce",
-        )
-
-        if col in TARGET_COLUMNS:
-            bad = (
-                numeric.isna()
-                | ~np.isfinite(numeric)
-                | (numeric < 0)
-            )
-
-            if bad.any():
-                bad_rows = (
-                    training.loc[
-                        bad,
-                        [
-                            "game_id",
-                            "game_date",
-                            col,
-                        ],
-                    ]
-                    .head(20)
-                    .to_dict("records")
-                )
-
-                for row in bad_rows:
-                    _log(
-                        "TRAINING ROW SKIPPED "
-                        f"invalid target={col} "
-                        f"row={row}",
-                        "WARN",
-                    )
-
-                training = training.loc[~bad].copy()
-
-                numeric = pd.to_numeric(
-                    training[col],
-                    errors="coerce",
-                )
-
-            training[col] = numeric
-            continue
-
-        bad_feature = (
-            numeric.notna()
-            & ~np.isfinite(numeric)
-        )
-
-        if bad_feature.any():
-            bad_rows = (
-                training.loc[
-                    bad_feature,
-                    [
-                        "game_id",
-                        "game_date",
-                        col,
-                    ],
-                ]
-                .head(20)
-                .to_dict("records")
-            )
-
-            for row in bad_rows:
-                _log(
-                    "TRAINING FEATURE "
-                    "SET TO MISSING "
-                    f"feature={col} "
-                    f"row={row}",
-                    "WARN",
-                )
-
-            numeric.loc[bad_feature] = np.nan
-
-        training[col] = numeric
-
-    if training.empty:
-        fail(
-            "Walk-forward training history "
-            "has no valid rows"
-        )
-
-    training = (
-        training.sort_values(
-            [
-                "_game_date_dt",
-                "game_id",
-            ],
-            kind="stable",
-        )
-        .reset_index(drop=True)
-    )
-
-    _log(
-        "Walk-forward training "
-        "history ready; "
-        f"rows={len(training)} "
-        "first="
-        f"{training['_game_date_dt'].min().date()} "
-        "last="
-        f"{training['_game_date_dt'].max().date()}"
-    )
-
+def _coerce_training_history_column(training, col):
+    raw = training[col].copy()
+    numeric = pd.to_numeric(raw, errors="coerce")
+    if col in TARGET_COLUMNS:
+        bad = numeric.isna() | ~np.isfinite(numeric) | (numeric < 0)
+        for row in training.loc[bad, ["game_id", "game_date", col]].head(20).to_dict("records"):
+            _log(f"TRAINING ROW SKIPPED invalid target={col} row={row}", "WARN")
+        training = training.loc[~bad].copy()
+        training[col] = pd.to_numeric(training[col], errors="coerce")
+        return training
+    bad = numeric.notna() & ~np.isfinite(numeric)
+    for row in training.loc[bad, ["game_id", "game_date", col]].head(20).to_dict("records"):
+        _log(f"TRAINING FEATURE SET TO MISSING feature={col} row={row}", "WARN")
+    numeric.loc[bad] = np.nan
+    training[col] = numeric
     return training
 
+
+def build_training_history_in_memory(training_builder, feature_columns: list[str]) -> pd.DataFrame:
+    summary = _training_summary_template()
+    dates = training_builder.discover_dates(summary)
+    if not dates:
+        fail("No finalized historical dates available for walk-forward training")
+    frames = []
+    _log(
+        "Building leakage-safe walk-forward training history in memory; "
+        f"dates={len(dates)} first={dates[0]} last={dates[-1]}"
+    )
+    for date_str in dates:
+        frame = training_builder.build_date_training_rows(date_str, summary)
+        if not frame.empty:
+            frames.append(frame)
+    if not frames:
+        fail("Walk-forward training history is empty")
+    training = pd.concat(frames, ignore_index=True, sort=False)
+    training_builder.validate_final_output(training)
+    missing = [
+        col for col in feature_columns + TARGET_COLUMNS
+        if col not in training.columns
+    ]
+    if missing:
+        fail(
+            "Walk-forward training history missing production model columns: "
+            f"{missing}"
+        )
+    training = _drop_invalid_training_dates(training)
+    for col in feature_columns + TARGET_COLUMNS:
+        training = _coerce_training_history_column(training, col)
+    if training.empty:
+        fail("Walk-forward training history has no valid rows")
+    training = training.sort_values(
+        ["_game_date_dt", "game_id"], kind="stable"
+    ).reset_index(drop=True)
+    _log(
+        "Walk-forward training history ready; "
+        f"rows={len(training)} first={training['_game_date_dt'].min().date()} "
+        f"last={training['_game_date_dt'].max().date()}"
+    )
+    return training
 
 def _fit_full_prior_model(
     prior: pd.DataFrame,
