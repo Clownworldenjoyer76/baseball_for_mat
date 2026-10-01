@@ -28,7 +28,6 @@ When no dates are supplied, every *_MLB.csv file in pred_with_game_id is rebuilt
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 import sys
@@ -484,22 +483,29 @@ def _load_python_module(
     path: Path,
     module_name: str,
 ):
-    if not path.exists():
-        fail(f"Required modeling script missing: {path}")
+    module_dir = str(path.parent)
+    added_to_path = module_dir not in sys.path
 
-    spec = importlib.util.spec_from_file_location(
-        module_name,
-        path,
-    )
+    if added_to_path:
+        sys.path.insert(0, module_dir)
 
-    if spec is None or spec.loader is None:
-        fail(f"Unable to load modeling script: {path}")
+    try:
+        from module_loader import load_module_from_path
 
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-
-    return module
+        return load_module_from_path(
+            module_name,
+            path,
+            fail=fail,
+            missing_message=(
+                "Required modeling script missing: {path}"
+            ),
+            invalid_spec_message=(
+                "Unable to load modeling script: {path}"
+            ),
+        )
+    finally:
+        if added_to_path:
+            sys.path.remove(module_dir)
 
 
 def build_feature_frame(

@@ -48,7 +48,7 @@ def reset_outputs():
         NO_MAP_FILE.unlink()
 
 
-def log(msg: object, level: str = "INFO") -> None:
+def log(msg: str, level: str = "INFO") -> None:
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(f"[{datetime.now(UTC).isoformat()}] {level:<5} | {msg}\n")
 
