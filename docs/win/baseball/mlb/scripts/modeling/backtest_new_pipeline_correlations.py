@@ -597,6 +597,205 @@ def candidate(
     }
 
 
+def _moneyline_candidates(row, context_row, mh, ma, hs, aws):
+    out = []
+    hp, ap, _ = JUICE.moneyline_probabilities(mh, ma)
+
+    for side, probability, odds_col in (
+        ("home", hp, "home_dk_moneyline_american"),
+        ("away", ap, "away_dk_moneyline_american"),
+    ):
+        american = f(row.get(odds_col))
+        decimal = american_to_decimal(american)
+
+        if american is None or decimal is None or decimal <= 1:
+            raise ValueError(f"moneyline {side} invalid odds")
+
+        context_ok, reason = context_allowed(
+            context_row,
+            "moneyline",
+        )
+        edge = mh - ma if side == "home" else ma - mh
+        result = grade_moneyline(side, hs, aws)
+
+        out.append(
+            candidate(
+                row,
+                "moneyline",
+                side,
+                None,
+                american,
+                probability,
+                1 - probability,
+                0.0,
+                binary_ev(probability, decimal),
+                binary_kelly_raw(probability, decimal),
+                edge,
+                result,
+                context_ok,
+                reason,
+            )
+        )
+
+    return out
+
+
+def _run_line_candidates(row, context_row, mh, ma, hs, aws):
+    out = []
+    home_line = f(row.get("home_run_line"))
+    away_line = f(row.get("away_run_line"))
+
+    if home_line is None or away_line is None:
+        raise ValueError("missing run line")
+
+    home_probability, away_probability = (
+        JUICE.run_line_probabilities(
+            mh,
+            ma,
+            home_line,
+            away_line,
+        )
+    )
+
+    for side, probability, line, odds_col in (
+        (
+            "home",
+            home_probability,
+            home_line,
+            "home_dk_run_line_american",
+        ),
+        (
+            "away",
+            away_probability,
+            away_line,
+            "away_dk_run_line_american",
+        ),
+    ):
+        american = f(row.get(odds_col))
+        decimal = american_to_decimal(american)
+
+        if american is None or decimal is None or decimal <= 1:
+            raise ValueError(f"run_line {side} invalid odds")
+
+        context_ok, reason = context_allowed(
+            context_row,
+            "run_line",
+        )
+        edge = (
+            mh + line - ma
+            if side == "home"
+            else ma + line - mh
+        )
+        result = grade_run_line(
+            side,
+            line,
+            hs,
+            aws,
+        )
+
+        out.append(
+            candidate(
+                row,
+                "run_line",
+                side,
+                line,
+                american,
+                probability,
+                1 - probability,
+                0.0,
+                binary_ev(probability, decimal),
+                binary_kelly_raw(probability, decimal),
+                edge,
+                result,
+                context_ok,
+                reason,
+            )
+        )
+
+    return out
+
+
+def _total_candidates(row, context_row, mh, ma, hs, aws):
+    out = []
+    line = f(row.get("total"))
+
+    if line is None:
+        raise ValueError("missing total")
+
+    over_probability, under_probability, push_probability = (
+        JUICE.totals_probabilities(
+            mh,
+            ma,
+            line,
+        )
+    )
+
+    for side, win_probability, loss_probability, odds_col in (
+        (
+            "over",
+            over_probability,
+            under_probability,
+            "dk_total_over_american",
+        ),
+        (
+            "under",
+            under_probability,
+            over_probability,
+            "dk_total_under_american",
+        ),
+    ):
+        american = f(row.get(odds_col))
+        decimal = american_to_decimal(american)
+
+        if american is None or decimal is None or decimal <= 1:
+            raise ValueError(f"total {side} invalid odds")
+
+        context_ok, reason = context_allowed(
+            context_row,
+            "total",
+        )
+        edge = (
+            mh + ma - line
+            if side == "over"
+            else line - (mh + ma)
+        )
+        result = grade_total(
+            side,
+            line,
+            hs,
+            aws,
+        )
+
+        out.append(
+            candidate(
+                row,
+                "total",
+                side,
+                line,
+                american,
+                win_probability,
+                loss_probability,
+                push_probability,
+                total_ev(
+                    win_probability,
+                    loss_probability,
+                    decimal,
+                ),
+                total_kelly_raw(
+                    win_probability,
+                    loss_probability,
+                    decimal,
+                ),
+                edge,
+                result,
+                context_ok,
+                reason,
+            )
+        )
+
+    return out
+
+
 def candidates_for_game(
     row,
     context_row,
@@ -606,309 +805,34 @@ def candidates_for_game(
 
     mh = float(row["model_home_runs"])
     ma = float(row["model_away_runs"])
-
     hs = float(row["target_home_runs"])
     aws = float(row["target_away_runs"])
 
-    # MONEYLINE
-    try:
-        hp, ap, _ = (
-            JUICE.moneyline_probabilities(
-                mh,
-                ma,
-            )
-        )
+    market_builders = (
+        ("moneyline", _moneyline_candidates),
+        ("run_line", _run_line_candidates),
+        ("total", _total_candidates),
+    )
 
-        for side, p, odds_col in (
-            (
-                "home",
-                hp,
-                "home_dk_moneyline_american",
-            ),
-            (
-                "away",
-                ap,
-                "away_dk_moneyline_american",
-            ),
-        ):
-            american = f(
-                row.get(odds_col)
-            )
-
-            d = american_to_decimal(
-                american
-            )
-
-            if (
-                american is None
-                or d is None
-                or d <= 1
-            ):
-                raise ValueError(
-                    f"moneyline {side} "
-                    "invalid odds"
-                )
-
-            ctx, reason = context_allowed(
-                context_row,
-                "moneyline",
-            )
-
-            edge = (
-                mh - ma
-                if side == "home"
-                else ma - mh
-            )
-
-            result = grade_moneyline(
-                side,
-                hs,
-                aws,
-            )
-
-            out.append(
-                candidate(
+    for market_name, builder in market_builders:
+        try:
+            out.extend(
+                builder(
                     row,
-                    "moneyline",
-                    side,
-                    None,
-                    american,
-                    p,
-                    1 - p,
-                    0.0,
-                    binary_ev(p, d),
-                    binary_kelly_raw(
-                        p,
-                        d,
-                    ),
-                    edge,
-                    result,
-                    ctx,
-                    reason,
+                    context_row,
+                    mh,
+                    ma,
+                    hs,
+                    aws,
                 )
             )
-
-    except Exception as exc:
-        errors.append(
-            f"{row['game_id']} "
-            f"moneyline: {exc}"
-        )
-
-    # RUN LINE
-    try:
-        hl = f(
-            row.get("home_run_line")
-        )
-
-        al = f(
-            row.get("away_run_line")
-        )
-
-        if hl is None or al is None:
-            raise ValueError(
-                "missing run line"
+        except Exception as exc:
+            errors.append(
+                f"{row['game_id']} "
+                f"{market_name}: {exc}"
             )
-
-        hp, ap = (
-            JUICE.run_line_probabilities(
-                mh,
-                ma,
-                hl,
-                al,
-            )
-        )
-
-        for (
-            side,
-            p,
-            line,
-            odds_col,
-        ) in (
-            (
-                "home",
-                hp,
-                hl,
-                "home_dk_run_line_american",
-            ),
-            (
-                "away",
-                ap,
-                al,
-                "away_dk_run_line_american",
-            ),
-        ):
-            american = f(
-                row.get(odds_col)
-            )
-
-            d = american_to_decimal(
-                american
-            )
-
-            if (
-                american is None
-                or d is None
-                or d <= 1
-            ):
-                raise ValueError(
-                    f"run_line {side} "
-                    "invalid odds"
-                )
-
-            ctx, reason = context_allowed(
-                context_row,
-                "run_line",
-            )
-
-            edge = (
-                mh + line - ma
-                if side == "home"
-                else ma + line - mh
-            )
-
-            result = grade_run_line(
-                side,
-                line,
-                hs,
-                aws,
-            )
-
-            out.append(
-                candidate(
-                    row,
-                    "run_line",
-                    side,
-                    line,
-                    american,
-                    p,
-                    1 - p,
-                    0.0,
-                    binary_ev(p, d),
-                    binary_kelly_raw(
-                        p,
-                        d,
-                    ),
-                    edge,
-                    result,
-                    ctx,
-                    reason,
-                )
-            )
-
-    except Exception as exc:
-        errors.append(
-            f"{row['game_id']} "
-            f"run_line: {exc}"
-        )
-
-    # TOTAL
-    try:
-        line = f(
-            row.get("total")
-        )
-
-        if line is None:
-            raise ValueError(
-                "missing total"
-            )
-
-        po, pu, pp = (
-            JUICE.totals_probabilities(
-                mh,
-                ma,
-                line,
-            )
-        )
-
-        for (
-            side,
-            pw,
-            pl,
-            odds_col,
-        ) in (
-            (
-                "over",
-                po,
-                pu,
-                "dk_total_over_american",
-            ),
-            (
-                "under",
-                pu,
-                po,
-                "dk_total_under_american",
-            ),
-        ):
-            american = f(
-                row.get(odds_col)
-            )
-
-            d = american_to_decimal(
-                american
-            )
-
-            if (
-                american is None
-                or d is None
-                or d <= 1
-            ):
-                raise ValueError(
-                    f"total {side} invalid odds"
-                )
-
-            ctx, reason = context_allowed(
-                context_row,
-                "total",
-            )
-
-            edge = (
-                mh + ma - line
-                if side == "over"
-                else line - (mh + ma)
-            )
-
-            result = grade_total(
-                side,
-                line,
-                hs,
-                aws,
-            )
-
-            out.append(
-                candidate(
-                    row,
-                    "total",
-                    side,
-                    line,
-                    american,
-                    pw,
-                    pl,
-                    pp,
-                    total_ev(
-                        pw,
-                        pl,
-                        d,
-                    ),
-                    total_kelly_raw(
-                        pw,
-                        pl,
-                        d,
-                    ),
-                    edge,
-                    result,
-                    ctx,
-                    reason,
-                )
-            )
-
-    except Exception as exc:
-        errors.append(
-            f"{row['game_id']} "
-            f"total: {exc}"
-        )
 
     return out, errors
-
 
 def apply_selector(df):
     df = df.copy()
