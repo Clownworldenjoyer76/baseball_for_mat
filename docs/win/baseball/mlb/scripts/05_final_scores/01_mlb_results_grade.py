@@ -441,45 +441,54 @@ def audit_and_drop_blank_score_game_ids(scores):
     return clean_scores, len(blank_scores)
 
 
+def _grade_moneyline_outcome(side, away_score, home_score):
+    if away_score == home_score:
+        return "Push"
+    if side == "home":
+        return "Win" if home_score > away_score else "Loss"
+    if side == "away":
+        return "Win" if away_score > home_score else "Loss"
+    return ""
+
+
+def _grade_run_line_outcome(side, row, away_score, home_score):
+    line = float(row.get("line", ""))
+    if side == "home":
+        difference = home_score + line - away_score
+    elif side == "away":
+        difference = away_score + line - home_score
+    else:
+        return ""
+    if abs(difference) < 1e-9:
+        return "Push"
+    return "Win" if difference > 0 else "Loss"
+
+
+def _grade_total_outcome(side, row, away_score, home_score):
+    line = float(row.get("line", ""))
+    final_total = away_score + home_score
+    if abs(final_total - line) < 1e-9:
+        return "Push"
+    if side == "over":
+        return "Win" if final_total > line else "Loss"
+    if side == "under":
+        return "Win" if final_total < line else "Loss"
+    return ""
+
+
 def determine_outcome(row):
     try:
         market = str(row.get("market_type", "")).strip().lower()
         side = str(row.get("bet_side", "")).strip().lower()
         away_score = float(row["final_away_score"])
         home_score = float(row["final_home_score"])
-
-        if market == "moneyline":
-            if away_score == home_score:
-                return "Push"
-            if side == "home":
-                return "Win" if home_score > away_score else "Loss"
-            if side == "away":
-                return "Win" if away_score > home_score else "Loss"
-
-        if market == "run_line":
-            line = float(row.get("line", ""))
-            if side == "home":
-                difference = home_score + line - away_score
-            elif side == "away":
-                difference = away_score + line - home_score
-            else:
-                return ""
-
-            if abs(difference) < 1e-9:
-                return "Push"
-            return "Win" if difference > 0 else "Loss"
-
-        if market == "total":
-            line = float(row.get("line", ""))
-            final_total = away_score + home_score
-
-            if abs(final_total - line) < 1e-9:
-                return "Push"
-            if side == "over":
-                return "Win" if final_total > line else "Loss"
-            if side == "under":
-                return "Win" if final_total < line else "Loss"
-
+        graders = {
+            "moneyline": lambda: _grade_moneyline_outcome(side, away_score, home_score),
+            "run_line": lambda: _grade_run_line_outcome(side, row, away_score, home_score),
+            "total": lambda: _grade_total_outcome(side, row, away_score, home_score),
+        }
+        grader = graders.get(market)
+        return grader() if grader is not None else ""
     except Exception as error:
         log_error(
             f"DETERMINE OUTCOME ERROR | "
@@ -487,9 +496,7 @@ def determine_outcome(row):
             f"market_type={row.get('market_type', '')} "
             f"bet_side={row.get('bet_side', '')} | {error}"
         )
-
-    return ""
-
+        return ""
 
 def build_calculation(row):
     try:

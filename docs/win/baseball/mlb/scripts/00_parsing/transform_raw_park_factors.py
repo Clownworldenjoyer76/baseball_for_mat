@@ -145,74 +145,61 @@ def looks_like_header(parts):
     )
 
 
-def extract_table_rows_from_raw_dump(raw_path):
-    text = raw_path.read_text(encoding="utf-8-sig", errors="replace")
-    lines = [line.rstrip("\r\n") for line in text.splitlines()]
-
-    header_index = None
-    header_parts = None
-
+def _find_park_table_header(lines):
     for index, line in enumerate(lines):
         parts = split_line(line)
         if looks_like_header(parts):
-            header_index = index
-            header_parts = parts
-            break
+            if parts and parts[0] in {"Rk.", "Rk", "Rank"}:
+                parts = parts[1:]
+            return index, parts
+    raise ValueError("Could not find park-factor table header row in raw input.")
 
-    if header_index is None or header_parts is None:
-        raise ValueError("Could not find park-factor table header row in raw input.")
 
-    if header_parts and header_parts[0] in {"Rk.", "Rk", "Rank"}:
-        header_parts = header_parts[1:]
+def _park_row_from_line(line, raw_line_number, header_parts):
+    if not clean(line):
+        return None
+    parts = split_line(line)
+    if not parts:
+        return None
+    if parts[0].isdigit() and len(parts) == len(header_parts) + 1:
+        parts = parts[1:]
+    if len(parts) < len(header_parts):
+        return None
+    if len(parts) > len(header_parts):
+        raise ValueError(
+            f"row {raw_line_number}: too many columns. "
+            f"Expected {len(header_parts)}, got {len(parts)}. Line: {line}"
+        )
+    row = {
+        header_parts[index]: clean(parts[index])
+        for index in range(len(header_parts))
+    }
+    if not clean(row.get("Team")) or not clean(row.get("Venue")):
+        return None
+    return row
 
+
+def extract_table_rows_from_raw_dump(raw_path):
+    text = raw_path.read_text(encoding="utf-8-sig", errors="replace")
+    lines = [line.rstrip("\r\n") for line in text.splitlines()]
+    header_index, header_parts = _find_park_table_header(lines)
     missing = [col for col in RAW_REQUIRED_COLUMNS if col not in header_parts]
     if missing:
         raise ValueError(
             "Raw park-factor table header is missing required columns: "
             + ", ".join(missing)
         )
-
     rows = []
-
     for raw_line_number, line in enumerate(
-        lines[header_index + 1 :],
+        lines[header_index + 1:],
         start=header_index + 2,
     ):
-        if not clean(line):
-            continue
-
-        parts = split_line(line)
-
-        if not parts:
-            continue
-
-        if parts[0].isdigit() and len(parts) == len(header_parts) + 1:
-            parts = parts[1:]
-
-        if len(parts) < len(header_parts):
-            continue
-
-        if len(parts) > len(header_parts):
-            raise ValueError(
-                f"row {raw_line_number}: too many columns. "
-                f"Expected {len(header_parts)}, got {len(parts)}. Line: {line}"
-            )
-
-        row = {
-            header_parts[i]: clean(parts[i])
-            for i in range(len(header_parts))
-        }
-
-        if not clean(row.get("Team")) or not clean(row.get("Venue")):
-            continue
-
-        rows.append(row)
-
+        row = _park_row_from_line(line, raw_line_number, header_parts)
+        if row is not None:
+            rows.append(row)
     if not rows:
         raise ValueError("No data rows found after park-factor table header.")
-
     return rows
-
 
 def read_csv_dicts(path, delimiter=","):
     with path.open("r", encoding="utf-8-sig", newline="") as f:
@@ -395,192 +382,143 @@ def validate_raw_row(row, row_number):
     return errors
 
 
-def transform(
-    raw_path,
-    team_map_path,
-    venue_map_path,
-    output_path,
-    audit_path,
-):
-    raw_rows = extract_table_rows_from_raw_dump(raw_path)
-    require_columns(raw_rows, RAW_REQUIRED_COLUMNS, "Raw park-factor file")
-
-    team_map = load_team_map(team_map_path)
-    canonical_teams = load_canonical_teams(team_map_path)
-    venue_map = load_venue_map(venue_map_path)
-
-    output_rows = []
-    audit_lines = []
-
-    seen_keys = set()
-    errors = []
-    warnings = []
-
-    matched_team_ids = set()
-
-    for index, raw in enumerate(raw_rows, start=2):
-        row_errors = validate_raw_row(raw, index)
-        errors.extend(row_errors)
-
-        team = normalize_team(raw.get("Team"))
-        venue = normalize_venue(raw.get("Venue"))
-        year = clean(raw.get("Year"))
-
-        row_key = (
-            normalize_key(team),
-            normalize_key(venue),
-            year,
+def _transform_park_factor_row(raw, index, team_map, venue_map, seen_keys):
+    errors = list(validate_raw_row(raw, index))
+    team = normalize_team(raw.get("Team"))
+    venue = normalize_venue(raw.get("Venue"))
+    year = clean(raw.get("Year"))
+    row_key = (normalize_key(team), normalize_key(venue), year)
+    if row_key in seen_keys:
+        errors.append(
+            f"row {index}: duplicate Team/Venue/Year: {team} | {venue} | {year}"
         )
+        return None, errors
+    seen_keys.add(row_key)
+    team_match = team_map.get(normalize_key(team))
+    venue_match = venue_map.get(normalize_key(venue))
+    if not team_match:
+        errors.append(f"row {index}: no team_id match for Team: {team}")
+        return None, errors
+    if not venue_match:
+        errors.append(f"row {index}: no venue_id match for Venue: {venue}")
+        return None, errors
+    team_venue = clean(team_match.get("venue_id"))
+    venue_venue = clean(venue_match.get("venue_id"))
+    if team_venue != venue_venue:
+        errors.append(
+            f"row {index}: team map venue_id does not match venue map venue_id "
+            f"for {team} | {venue}. team map={team_venue}, venue map={venue_venue}"
+        )
+        return None, errors
+    out = {col: clean(raw.get(col)) for col in RAW_REQUIRED_COLUMNS}
+    out.update({
+        "Team": team,
+        "Venue": venue,
+        "venue_id": venue_venue,
+        "team_id": clean(team_match.get("team_id")),
+    })
+    return out, errors
 
-        if row_key in seen_keys:
-            errors.append(
-                f"row {index}: duplicate Team/Venue/Year: "
-                f"{team} | {venue} | {year}"
-            )
-            continue
 
-        seen_keys.add(row_key)
-
-        team_match = team_map.get(normalize_key(team))
-        venue_match = venue_map.get(normalize_key(venue))
-
-        if not team_match:
-            errors.append(
-                f"row {index}: no team_id match for Team: {team}"
-            )
-            continue
-
-        if not venue_match:
-            errors.append(
-                f"row {index}: no venue_id match for Venue: {venue}"
-            )
-            continue
-
-        team_map_venue_id = clean(team_match.get("venue_id"))
-        venue_map_venue_id = clean(venue_match.get("venue_id"))
-
-        if team_map_venue_id != venue_map_venue_id:
-            errors.append(
-                f"row {index}: team map venue_id does not match "
-                f"venue map venue_id for {team} | {venue}. "
-                f"team map={team_map_venue_id}, "
-                f"venue map={venue_map_venue_id}"
-            )
-            continue
-
-        out = {}
-
-        for col in RAW_REQUIRED_COLUMNS:
-            out[col] = clean(raw.get(col))
-
-        out["Team"] = team
-        out["Venue"] = venue
-        out["venue_id"] = venue_map_venue_id
-        out["team_id"] = clean(team_match.get("team_id"))
-
-        matched_team_ids.add(out["team_id"])
-        output_rows.append(out)
-
+def _park_transform_warnings(output_rows, canonical_teams, matched_team_ids):
+    warnings = []
     missing_teams = sorted(
-        team_name
-        for team_id, team_name in canonical_teams.items()
+        team_name for team_id, team_name in canonical_teams.items()
         if team_id not in matched_team_ids
     )
-
     if len(output_rows) != 30:
         warnings.append(
-            f"output row count is {len(output_rows)}, "
-            "expected 30 for full MLB park-factor file"
+            f"output row count is {len(output_rows)}, expected 30 for full MLB park-factor file"
         )
-
     if missing_teams:
         warnings.append(
-            "teams in team map but missing from raw input: "
-            + ", ".join(missing_teams)
+            "teams in team map but missing from raw input: " + ", ".join(missing_teams)
         )
+    return warnings
 
+
+def _write_park_transform_csv(output_path, output_rows):
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open("w", encoding="utf-8", newline="") as f:
+    with output_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
-            f,
+            handle,
             fieldnames=FINAL_COLUMNS,
             quoting=csv.QUOTE_ALL,
             lineterminator="\n",
         )
-
         writer.writeheader()
-
         for row in output_rows:
-            writer.writerow(
-                {
-                    col: row.get(col, "")
-                    for col in FINAL_COLUMNS
-                }
-            )
+            writer.writerow({col: row.get(col, "") for col in FINAL_COLUMNS})
 
-    audit_lines.append("PARK FACTOR TRANSFORM AUDIT")
-    audit_lines.append("")
-    audit_lines.append(f"raw input: {raw_path}")
-    audit_lines.append(f"team map: {team_map_path}")
-    audit_lines.append(f"venue map: {venue_map_path}")
-    audit_lines.append(f"output: {output_path}")
-    audit_lines.append("")
-    audit_lines.append(f"raw rows extracted: {len(raw_rows)}")
-    audit_lines.append(f"output rows: {len(output_rows)}")
-    audit_lines.append(f"errors: {len(errors)}")
-    audit_lines.append(f"warnings: {len(warnings)}")
-    audit_lines.append("")
 
+def _write_park_transform_audit(
+    audit_path, raw_path, team_map_path, venue_map_path, output_path,
+    raw_rows, output_rows, errors, warnings,
+):
+    lines = [
+        "PARK FACTOR TRANSFORM AUDIT", "",
+        f"raw input: {raw_path}",
+        f"team map: {team_map_path}",
+        f"venue map: {venue_map_path}",
+        f"output: {output_path}", "",
+        f"raw rows extracted: {len(raw_rows)}",
+        f"output rows: {len(output_rows)}",
+        f"errors: {len(errors)}",
+        f"warnings: {len(warnings)}", "",
+    ]
     if errors:
-        audit_lines.append("ERRORS")
-
-        for error in errors:
-            audit_lines.append(f"- {error}")
-
-        audit_lines.append("")
-
+        lines.extend(["ERRORS", *[f"- {error}" for error in errors], ""])
     if warnings:
-        audit_lines.append("WARNINGS")
-
-        for warning in warnings:
-            audit_lines.append(f"- {warning}")
-
-        audit_lines.append("")
-
-    audit_lines.append("OUTPUT ROWS")
-
-    for row in output_rows:
-        audit_lines.append(
-            f"- {row['Team']} | {row['Venue']} | {row['Year']} | "
-            f"venue_id={row['venue_id']} | team_id={row['team_id']}"
-        )
-
-    audit_path.parent.mkdir(parents=True, exist_ok=True)
-    audit_path.write_text(
-        "\n".join(audit_lines) + "\n",
-        encoding="utf-8",
+        lines.extend(["WARNINGS", *[f"- {warning}" for warning in warnings], ""])
+    lines.append("OUTPUT ROWS")
+    lines.extend(
+        f"- {row['Team']} | {row['Venue']} | {row['Year']} | "
+        f"venue_id={row['venue_id']} | team_id={row['team_id']}"
+        for row in output_rows
     )
+    audit_path.parent.mkdir(parents=True, exist_ok=True)
+    audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+
+def transform(raw_path, team_map_path, venue_map_path, output_path, audit_path):
+    raw_rows = extract_table_rows_from_raw_dump(raw_path)
+    require_columns(raw_rows, RAW_REQUIRED_COLUMNS, "Raw park-factor file")
+    team_map = load_team_map(team_map_path)
+    canonical_teams = load_canonical_teams(team_map_path)
+    venue_map = load_venue_map(venue_map_path)
+    output_rows = []
+    errors = []
+    seen_keys = set()
+    matched_team_ids = set()
+    for index, raw in enumerate(raw_rows, start=2):
+        out, row_errors = _transform_park_factor_row(
+            raw, index, team_map, venue_map, seen_keys
+        )
+        errors.extend(row_errors)
+        if out is not None:
+            matched_team_ids.add(out["team_id"])
+            output_rows.append(out)
+    warnings = _park_transform_warnings(
+        output_rows, canonical_teams, matched_team_ids
+    )
+    _write_park_transform_csv(output_path, output_rows)
+    _write_park_transform_audit(
+        audit_path, raw_path, team_map_path, venue_map_path, output_path,
+        raw_rows, output_rows, errors, warnings,
+    )
     if errors:
         print(
-            f"FAILED: {len(errors)} error(s). "
-            f"Audit written to: {audit_path}",
+            f"FAILED: {len(errors)} error(s). Audit written to: {audit_path}",
             file=sys.stderr,
         )
         return 1
-
     print(f"OK: wrote {len(output_rows)} rows to {output_path}")
     print(f"Audit written to: {audit_path}")
-
     if warnings:
         print(
-            f"WARNING: {len(warnings)} warning(s). "
-            "Review audit before using output."
+            f"WARNING: {len(warnings)} warning(s). Review audit before using output."
         )
-
     return 0
-
 
 def main():
     parser = argparse.ArgumentParser(

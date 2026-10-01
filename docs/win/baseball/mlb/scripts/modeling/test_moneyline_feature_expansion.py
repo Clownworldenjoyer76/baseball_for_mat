@@ -388,295 +388,116 @@ def load_training():
 # ============================================================
 
 
-def load_starter_extra(
-    training: pd.DataFrame,
-) -> pd.DataFrame:
-
-    source_map = {
-        "sdv_home_sp_pitch_types":
-            "home_sp_pitch_types_extra",
-
-        "sdv_away_sp_pitch_types":
-            "away_sp_pitch_types_extra",
-
-        "sdv_home_sp_avg_spin":
-            "home_sp_avg_spin_extra",
-
-        "sdv_away_sp_avg_spin":
-            "away_sp_avg_spin_extra",
-
-        "sdv_home_sp_avg_spin_30d":
-            "home_sp_avg_spin_30d_extra",
-
-        "sdv_away_sp_avg_spin_30d":
-            "away_sp_avg_spin_30d_extra",
-
-        "sdv_home_sp_stuff_scored_pitches":
-            "home_sp_stuff_sample_extra",
-
-        "sdv_away_sp_stuff_scored_pitches":
-            "away_sp_stuff_sample_extra",
-
-        "sdv_home_sp_command_scored_pitches":
-            "home_sp_command_sample_extra",
-
-        "sdv_away_sp_command_scored_pitches":
-            "away_sp_command_sample_extra",
+def _starter_extra_source_map():
+    return {
+        "sdv_home_sp_pitch_types": "home_sp_pitch_types_extra",
+        "sdv_away_sp_pitch_types": "away_sp_pitch_types_extra",
+        "sdv_home_sp_avg_spin": "home_sp_avg_spin_extra",
+        "sdv_away_sp_avg_spin": "away_sp_avg_spin_extra",
+        "sdv_home_sp_avg_spin_30d": "home_sp_avg_spin_30d_extra",
+        "sdv_away_sp_avg_spin_30d": "away_sp_avg_spin_30d_extra",
+        "sdv_home_sp_stuff_scored_pitches": "home_sp_stuff_sample_extra",
+        "sdv_away_sp_stuff_scored_pitches": "away_sp_stuff_sample_extra",
+        "sdv_home_sp_command_scored_pitches": "home_sp_command_sample_extra",
+        "sdv_away_sp_command_scored_pitches": "away_sp_command_sample_extra",
     }
 
-    training_dates = {
-        row["_gamePk"]: pd.Timestamp(
-            row["_game_date_dt"]
-        ).normalize()
-        for _, row in training[
-            ["_gamePk", "_game_date_dt"]
-        ].iterrows()
-    }
 
-    frames = []
-
-    for path in sorted(
-        SDV_DIR.glob("*_sportsdataverse.csv")
-    ):
-        df = pd.read_csv(
-            path,
-            encoding="utf-8-sig",
-        )
-
-        if (
-            df.empty
-            or "gamePk" not in df.columns
-            or "game_date" not in df.columns
-        ):
-            continue
-
-        df["_gamePk"] = (
-            df["gamePk"]
-            .map(normalize_gamepk)
-        )
-
-        df["_game_date_dt"] = (
-            normalize_date_series(
-                df["game_date"]
-            )
-        )
-
-        if "sdv_as_of_date" in df.columns:
-            df["_sdv_as_of_dt"] = (
-                normalize_date_series(
-                    df["sdv_as_of_date"]
-                )
-            )
-
+def _prepare_starter_extra_snapshot(path, training_dates, source_map):
+    df = pd.read_csv(path, encoding="utf-8-sig")
+    if df.empty or "gamePk" not in df.columns or "game_date" not in df.columns:
+        return None
+    df["_gamePk"] = df["gamePk"].map(normalize_gamepk)
+    df["_game_date_dt"] = normalize_date_series(df["game_date"])
+    df["_sdv_as_of_dt"] = (
+        normalize_date_series(df["sdv_as_of_date"])
+        if "sdv_as_of_date" in df.columns
+        else pd.NaT
+    )
+    df = df[df["_gamePk"].isin(training_dates)].copy()
+    if df.empty:
+        return None
+    expected_date = df["_gamePk"].map(training_dates)
+    df = df[df["_game_date_dt"] == expected_date].copy()
+    if df.empty:
+        return None
+    valid_as_of = df["_sdv_as_of_dt"].isna() | (
+        df["_sdv_as_of_dt"] < df["_game_date_dt"]
+    )
+    df = df[valid_as_of].copy()
+    if df.empty:
+        return None
+    for source, target in source_map.items():
+        df[target] = numeric(df[source]) if source in df.columns else np.nan
+    for side in ("home", "away"):
+        season_spin = f"{side}_sp_avg_spin_extra"
+        recent_spin = f"{side}_sp_avg_spin_30d_extra"
+        df[f"{side}_sp_spin_delta_30d_extra"] = df[recent_spin] - df[season_spin]
+        last_source = f"sdv_{side}_sp_last_game_date"
+        rest_target = f"{side}_sp_days_rest_extra"
+        if last_source in df.columns:
+            last_date = normalize_date_series(df[last_source])
+            df[rest_target] = (df["_game_date_dt"] - last_date).dt.days
         else:
-            df["_sdv_as_of_dt"] = pd.NaT
+            df[rest_target] = np.nan
+    for col in STARTER_EXTRA_FEATURES:
+        if col not in df.columns:
+            df[col] = np.nan
+    df["_feature_count"] = df[STARTER_EXTRA_FEATURES].notna().sum(axis=1)
+    df["_source_file"] = path.name
+    return df[[
+        "_gamePk", "_game_date_dt", "_sdv_as_of_dt", "_feature_count",
+        "_source_file", *STARTER_EXTRA_FEATURES,
+    ]].copy()
 
-        # Keep only games that actually exist
-        # in the historical training dataset.
-        df = df[
-            df["_gamePk"].isin(
-                training_dates
-            )
-        ].copy()
 
-        if df.empty:
-            continue
-
-        # A repeated gamePk can exist in more than
-        # one historical SDV snapshot. Only accept
-        # rows whose stated game date matches the
-        # training dataset's actual game date.
-        expected_date = (
-            df["_gamePk"]
-            .map(training_dates)
+def _dedupe_starter_extra_frames(frames):
+    out = pd.concat(frames, ignore_index=True, sort=False)
+    raw_rows = len(out)
+    duplicate_rows = int(out["_gamePk"].duplicated(keep=False).sum())
+    duplicate_games = int(
+        out.loc[out["_gamePk"].duplicated(keep=False), "_gamePk"].nunique()
+    )
+    out = (
+        out.sort_values(
+            ["_gamePk", "_feature_count", "_sdv_as_of_dt", "_source_file"],
+            ascending=[True, False, False, False],
+            na_position="last",
         )
+        .drop_duplicates(subset=["_gamePk"], keep="first")
+        .reset_index(drop=True)
+    )
+    if out["_gamePk"].duplicated().any():
+        raise RuntimeError("SportsDataverse deduplication failed")
+    return out, raw_rows, duplicate_rows, duplicate_games
 
-        df = df[
-            df["_game_date_dt"]
-            == expected_date
-        ].copy()
 
-        if df.empty:
-            continue
-
-        # Pregame safety check.
-        valid_as_of = (
-            df["_sdv_as_of_dt"].isna()
-            | (
-                df["_sdv_as_of_dt"]
-                < df["_game_date_dt"]
-            )
-        )
-
-        df = df[
-            valid_as_of
-        ].copy()
-
-        if df.empty:
-            continue
-
-        for source, target in source_map.items():
-            if source in df.columns:
-                df[target] = numeric(
-                    df[source]
-                )
-            else:
-                df[target] = np.nan
-
-        for side in ("home", "away"):
-            season_spin = (
-                f"{side}_sp_avg_spin_extra"
-            )
-
-            recent_spin = (
-                f"{side}_sp_avg_spin_30d_extra"
-            )
-
-            delta_col = (
-                f"{side}_sp_spin_delta_30d_extra"
-            )
-
-            df[delta_col] = (
-                df[recent_spin]
-                - df[season_spin]
-            )
-
-            last_game_source = (
-                f"sdv_{side}_sp_last_game_date"
-            )
-
-            rest_target = (
-                f"{side}_sp_days_rest_extra"
-            )
-
-            if last_game_source in df.columns:
-                last_date = (
-                    normalize_date_series(
-                        df[last_game_source]
-                    )
-                )
-
-                df[rest_target] = (
-                    df["_game_date_dt"]
-                    - last_date
-                ).dt.days
-
-            else:
-                df[rest_target] = np.nan
-
-        for col in STARTER_EXTRA_FEATURES:
-            if col not in df.columns:
-                df[col] = np.nan
-
-        df["_feature_count"] = (
-            df[STARTER_EXTRA_FEATURES]
-            .notna()
-            .sum(axis=1)
-        )
-
-        df["_source_file"] = path.name
-
-        frames.append(
-            df[
-                [
-                    "_gamePk",
-                    "_game_date_dt",
-                    "_sdv_as_of_dt",
-                    "_feature_count",
-                    "_source_file",
-                    *STARTER_EXTRA_FEATURES,
-                ]
-            ].copy()
-        )
-
+def load_starter_extra(training: pd.DataFrame) -> pd.DataFrame:
+    source_map = _starter_extra_source_map()
+    training_dates = {
+        row["_gamePk"]: pd.Timestamp(row["_game_date_dt"]).normalize()
+        for _, row in training[["_gamePk", "_game_date_dt"]].iterrows()
+    }
+    frames = []
+    for path in sorted(SDV_DIR.glob("*_sportsdataverse.csv")):
+        frame = _prepare_starter_extra_snapshot(path, training_dates, source_map)
+        if frame is not None:
+            frames.append(frame)
     if not frames:
         raise RuntimeError(
             f"No usable historical SportsDataverse files found in {SDV_DIR}"
         )
-
-    out = pd.concat(
-        frames,
-        ignore_index=True,
-        sort=False,
-    )
-
-    raw_rows = len(out)
-
-    duplicate_rows = int(
-        out["_gamePk"]
-        .duplicated(keep=False)
-        .sum()
-    )
-
-    duplicate_games = int(
-        out.loc[
-            out["_gamePk"].duplicated(
-                keep=False
-            ),
-            "_gamePk",
-        ]
-        .nunique()
-    )
-
-    # Important:
-    # duplicate historical SDV snapshots are not
-    # an error. Prefer the row with the most usable
-    # features, then the latest valid pregame
-    # as-of date.
-    out = (
-        out.sort_values(
-            [
-                "_gamePk",
-                "_feature_count",
-                "_sdv_as_of_dt",
-                "_source_file",
-            ],
-            ascending=[
-                True,
-                False,
-                False,
-                False,
-            ],
-            na_position="last",
-        )
-        .drop_duplicates(
-            subset=["_gamePk"],
-            keep="first",
-        )
-        .reset_index(drop=True)
-    )
-
-    if out["_gamePk"].duplicated().any():
-        raise RuntimeError(
-            "SportsDataverse deduplication failed"
-        )
-
+    out, raw_rows, duplicate_rows, duplicate_games = _dedupe_starter_extra_frames(frames)
     print(
         "SportsDataverse starter rows: "
-        f"{raw_rows} raw, "
-        f"{duplicate_games} duplicated games, "
+        f"{raw_rows} raw, {duplicate_games} duplicated games, "
         f"{len(out)} unique games retained."
     )
-
     if duplicate_rows:
         print(
-            "Historical duplicate SDV snapshots "
-            "were safely reduced to one pregame "
-            "row per game."
+            "Historical duplicate SDV snapshots were safely reduced to one pregame row per game."
         )
-
-    return out[
-        [
-            "_gamePk",
-            *STARTER_EXTRA_FEATURES,
-        ]
-    ].copy()
-
-
-# ============================================================
-# STATCAST DOWNLOAD CACHE
-# ============================================================
-
+    return out[["_gamePk", *STARTER_EXTRA_FEATURES]].copy()
 
 def statcast_chunk_path(
     start_date: pd.Timestamp,

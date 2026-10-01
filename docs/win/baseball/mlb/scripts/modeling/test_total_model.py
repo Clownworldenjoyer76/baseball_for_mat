@@ -142,259 +142,95 @@ BP_FEATURES = list(
 )
 
 
-def load_training():
-    frame = pd.read_csv(
-        TRAINING_FILE,
-        encoding="utf-8-sig",
-    )
-
-    if frame.empty:
-        raise RuntimeError(
-            f"Training set is empty: "
-            f"{TRAINING_FILE}"
-        )
-
+def _total_training_base_features(frame):
     trainer_bp = [
-        col
-        for col in TRAIN.CORE_FEATURE_COLUMNS
+        col for col in TRAIN.CORE_FEATURE_COLUMNS
         if "_bp_" in col
     ]
-
     if trainer_bp != BP_FEATURES:
         raise RuntimeError(
             "Bullpen feature contract mismatch: "
-            f"trainer={trainer_bp}; "
-            f"builder={BP_FEATURES}"
+            f"trainer={trainer_bp}; builder={BP_FEATURES}"
         )
-
     base_core = [
-        col
-        for col in TRAIN.CORE_FEATURE_COLUMNS
+        col for col in TRAIN.CORE_FEATURE_COLUMNS
         if col not in BP_FEATURES
     ]
-
-    base_features = (
-        list(base_core)
-        + [
-            col
-            for col
-            in TRAIN.OPTIONAL_NUMERIC_FEATURE_COLUMNS
-            if col in frame.columns
-        ]
-    )
-
-    required = (
-        list(
-            TRAIN.AUDIT_COLUMNS
-        )
-        + list(
-            TRAIN.TARGET_COLUMNS
-        )
-        + base_core
-    )
-
-    missing = [
-        col
-        for col in required
-        if col not in frame.columns
+    base_features = list(base_core) + [
+        col for col in TRAIN.OPTIONAL_NUMERIC_FEATURE_COLUMNS
+        if col in frame.columns
     ]
-
+    required = list(TRAIN.AUDIT_COLUMNS) + list(TRAIN.TARGET_COLUMNS) + base_core
+    missing = [col for col in required if col not in frame.columns]
     if missing:
         raise RuntimeError(
-            "Base training set missing "
-            f"required columns: {missing}"
+            "Base training set missing required columns: "
+            f"{missing}"
         )
+    return base_features
 
-    frame = (
-        TRAIN
-        .coerce_and_validate_training_data(
-            frame,
-            base_features,
-        )
-    )
 
-    frame["game_id"] = (
-        frame["game_id"]
-        .astype("string")
-        .str.strip()
-    )
+def _prepare_total_training_identity(frame):
+    frame["game_id"] = frame["game_id"].astype("string").str.strip()
+    frame["_home_code"] = frame["home_team"].map(BP.EXP.canonical_team)
+    frame["_away_code"] = frame["away_team"].map(BP.EXP.canonical_team)
+    if frame["game_id"].duplicated().any():
+        raise RuntimeError("Training data contains duplicate game_id")
+    if frame["_home_code"].isna().any() or frame["_away_code"].isna().any():
+        raise RuntimeError("Training data contains unmapped teams")
+    return frame
 
-    frame["_home_code"] = (
-        frame["home_team"]
-        .map(
-            BP.EXP.canonical_team
-        )
-    )
 
-    frame["_away_code"] = (
-        frame["away_team"]
-        .map(
-            BP.EXP.canonical_team
-        )
-    )
-
-    if (
-        frame["game_id"]
-        .duplicated()
-        .any()
-    ):
-        raise RuntimeError(
-            "Training data contains "
-            "duplicate game_id"
-        )
-
-    if (
-        frame["_home_code"]
-        .isna()
-        .any()
-        or frame["_away_code"]
-        .isna()
-        .any()
-    ):
-        raise RuntimeError(
-            "Training data contains "
-            "unmapped teams"
-        )
-
-    print(
-        "Loading existing Statcast cache..."
-    )
-
+def _attach_total_bullpen_features(frame):
+    print("Loading existing Statcast cache...")
     raw = BP.load_cache()
-
     if raw.empty:
+        raise RuntimeError("Statcast cache is empty")
+    cache_max = pd.to_datetime(raw["_game_date_dt"], errors="coerce").max()
+    required_through = frame["_game_date_dt"].max() - pd.Timedelta(days=1)
+    if pd.isna(cache_max) or cache_max < required_through:
         raise RuntimeError(
-            "Statcast cache is empty"
+            f"Statcast cache ends {cache_max}; "
+            f"required through {required_through}"
         )
-
-    cache_max = pd.to_datetime(
-        raw["_game_date_dt"],
-        errors="coerce",
-    ).max()
-
-    required_through = (
-        frame["_game_date_dt"].max()
-        - pd.Timedelta(
-            days=1
-        )
-    )
-
-    if (
-        pd.isna(cache_max)
-        or cache_max
-        < required_through
-    ):
-        raise RuntimeError(
-            f"Statcast cache ends "
-            f"{cache_max}; "
-            f"required through "
-            f"{required_through}"
-        )
-
-    print(
-        "Building exact production "
-        "bullpen features..."
-    )
-
-    (
-        team_daily,
-        pitcher_daily,
-    ) = BP.build_tables(
-        raw
-    )
-
-    frame = BP.attach_features(
-        frame,
-        team_daily,
-        pitcher_daily,
-    )
-
-    missing_bp = [
-        col
-        for col in BP_FEATURES
-        if col not in frame.columns
-    ]
-
+    print("Building exact production bullpen features...")
+    team_daily, pitcher_daily = BP.build_tables(raw)
+    frame = BP.attach_features(frame, team_daily, pitcher_daily)
+    missing_bp = [col for col in BP_FEATURES if col not in frame.columns]
     if missing_bp:
-        raise RuntimeError(
-            "Bullpen builder failed "
-            f"to create: {missing_bp}"
-        )
+        raise RuntimeError(f"Bullpen builder failed to create: {missing_bp}")
+    return frame
 
-    features = (
-        TRAIN
-        .determine_feature_columns(
-            frame
-        )
+
+def _validate_total_training_target(frame):
+    frame["target_total_runs"] = (
+        frame["target_home_runs"] + frame["target_away_runs"]
     )
+    target = frame["target_total_runs"]
+    invalid = target.isna() | ~np.isfinite(target) | (target < 0)
+    if invalid.any():
+        raise RuntimeError("Invalid target_total_runs")
+    return frame
 
-    frame = (
-        TRAIN
-        .coerce_and_validate_training_data(
-            frame,
-            features,
-        )
-    )
 
-    frame[
-        "target_total_runs"
-    ] = (
-        frame[
-            "target_home_runs"
-        ]
-        + frame[
-            "target_away_runs"
-        ]
-    )
-
-    if (
-        frame[
-            "target_total_runs"
-        ].isna().any()
-        or (
-            ~np.isfinite(
-                frame[
-                    "target_total_runs"
-                ]
-            )
-        ).any()
-        or (
-            frame[
-                "target_total_runs"
-            ]
-            < 0
-        ).any()
-    ):
-        raise RuntimeError(
-            "Invalid target_total_runs"
-        )
-
-    frame = (
-        frame
-        .sort_values(
-            [
-                "_game_date_dt",
-                "game_id",
-            ]
-        )
-        .reset_index(
-            drop=True
-        )
-    )
-
+def load_training():
+    frame = pd.read_csv(TRAINING_FILE, encoding="utf-8-sig")
+    if frame.empty:
+        raise RuntimeError(f"Training set is empty: {TRAINING_FILE}")
+    base_features = _total_training_base_features(frame)
+    frame = TRAIN.coerce_and_validate_training_data(frame, base_features)
+    frame = _prepare_total_training_identity(frame)
+    frame = _attach_total_bullpen_features(frame)
+    features = TRAIN.determine_feature_columns(frame)
+    frame = TRAIN.coerce_and_validate_training_data(frame, features)
+    frame = _validate_total_training_target(frame)
+    frame = frame.sort_values(["_game_date_dt", "game_id"]).reset_index(drop=True)
     print(
-        f"Training data ready: "
-        f"{len(frame):,} rows, "
-        f"{frame['_game_date_dt'].nunique():,} "
-        f"dates, "
+        f"Training data ready: {len(frame):,} rows, "
+        f"{frame['_game_date_dt'].nunique():,} dates, "
         f"{len(features)} features"
     )
-
-    return (
-        frame,
-        features,
-    )
-
+    return frame, features
 
 def fit_one(
     train,

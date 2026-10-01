@@ -236,117 +236,94 @@ def _valid_decimal_odds(value) -> bool:
     return np.isfinite(value) and value > 1.0
 
 
+def _two_way_market_issue(row, *, market_label, home_prob_col, away_prob_col, home_odds_col, away_odds_col):
+    home_prob = row.get(home_prob_col)
+    away_prob = row.get(away_prob_col)
+    home_odds = row.get(home_odds_col)
+    away_odds = row.get(away_odds_col)
+    if not _finite_probability(home_prob):
+        return f"invalid/missing {home_prob_col}={home_prob}"
+    if not _finite_probability(away_prob):
+        return f"invalid/missing {away_prob_col}={away_prob}"
+    if abs(float(home_prob) + float(away_prob) - 1.0) > PROB_TOLERANCE:
+        return (
+            f"{market_label} probabilities do not sum to 1: "
+            f"home={home_prob} away={away_prob}"
+        )
+    if not _valid_decimal_odds(home_odds):
+        return f"invalid/missing {home_odds_col}={home_odds}"
+    if not _valid_decimal_odds(away_odds):
+        return f"invalid/missing {away_odds_col}={away_odds}"
+    return None
+
+
+def _total_market_issue(row):
+    probability_columns = [
+        "over_model_prob_total_win", "over_model_prob_total_loss",
+        "under_model_prob_total_win", "under_model_prob_total_loss",
+        "total_model_prob_push",
+    ]
+    for col in probability_columns:
+        value = row.get(col)
+        if not _finite_probability(value):
+            return f"invalid/missing {col}={value}"
+    over_win = float(row["over_model_prob_total_win"])
+    over_loss = float(row["over_model_prob_total_loss"])
+    under_win = float(row["under_model_prob_total_win"])
+    under_loss = float(row["under_model_prob_total_loss"])
+    push = float(row["total_model_prob_push"])
+    checks = (
+        (
+            abs(over_win + over_loss + push - 1.0) > PROB_TOLERANCE,
+            f"over total probabilities do not sum to 1: win={over_win} loss={over_loss} push={push}",
+        ),
+        (
+            abs(under_win + under_loss + push - 1.0) > PROB_TOLERANCE,
+            f"under total probabilities do not sum to 1: win={under_win} loss={under_loss} push={push}",
+        ),
+        (
+            abs(under_win - over_loss) > PROB_TOLERANCE,
+            f"totals probability identity mismatch: under_win={under_win} over_loss={over_loss}",
+        ),
+        (
+            abs(under_loss - over_win) > PROB_TOLERANCE,
+            f"totals probability identity mismatch: under_loss={under_loss} over_win={over_win}",
+        ),
+    )
+    for failed, message in checks:
+        if failed:
+            return message
+    over_odds = row.get("dk_total_over_decimal")
+    under_odds = row.get("dk_total_under_decimal")
+    if not _valid_decimal_odds(over_odds):
+        return f"invalid/missing dk_total_over_decimal={over_odds}"
+    if not _valid_decimal_odds(under_odds):
+        return f"invalid/missing dk_total_under_decimal={under_odds}"
+    return None
+
+
 def _row_issue(row: pd.Series, market: str) -> str | None:
     if market == "moneyline":
-        home_prob = row.get("home_model_prob_moneyline")
-        away_prob = row.get("away_model_prob_moneyline")
-        home_odds = row.get("home_dk_decimal_moneyline")
-        away_odds = row.get("away_dk_decimal_moneyline")
-
-        if not _finite_probability(home_prob):
-            return f"invalid/missing home_model_prob_moneyline={home_prob}"
-
-        if not _finite_probability(away_prob):
-            return f"invalid/missing away_model_prob_moneyline={away_prob}"
-
-        if abs(float(home_prob) + float(away_prob) - 1.0) > PROB_TOLERANCE:
-            return (
-                "moneyline probabilities do not sum to 1: "
-                f"home={home_prob} away={away_prob}"
-            )
-
-        if not _valid_decimal_odds(home_odds):
-            return f"invalid/missing home_dk_decimal_moneyline={home_odds}"
-
-        if not _valid_decimal_odds(away_odds):
-            return f"invalid/missing away_dk_decimal_moneyline={away_odds}"
-
-        return None
-
+        return _two_way_market_issue(
+            row,
+            market_label="moneyline",
+            home_prob_col="home_model_prob_moneyline",
+            away_prob_col="away_model_prob_moneyline",
+            home_odds_col="home_dk_decimal_moneyline",
+            away_odds_col="away_dk_decimal_moneyline",
+        )
     if market == "run_line":
-        home_prob = row.get("home_model_prob_run_line")
-        away_prob = row.get("away_model_prob_run_line")
-        home_odds = row.get("home_dk_run_line_decimal")
-        away_odds = row.get("away_dk_run_line_decimal")
-
-        if not _finite_probability(home_prob):
-            return f"invalid/missing home_model_prob_run_line={home_prob}"
-
-        if not _finite_probability(away_prob):
-            return f"invalid/missing away_model_prob_run_line={away_prob}"
-
-        if abs(float(home_prob) + float(away_prob) - 1.0) > PROB_TOLERANCE:
-            return (
-                "run-line probabilities do not sum to 1: "
-                f"home={home_prob} away={away_prob}"
-            )
-
-        if not _valid_decimal_odds(home_odds):
-            return f"invalid/missing home_dk_run_line_decimal={home_odds}"
-
-        if not _valid_decimal_odds(away_odds):
-            return f"invalid/missing away_dk_run_line_decimal={away_odds}"
-
-        return None
-
+        return _two_way_market_issue(
+            row,
+            market_label="run-line",
+            home_prob_col="home_model_prob_run_line",
+            away_prob_col="away_model_prob_run_line",
+            home_odds_col="home_dk_run_line_decimal",
+            away_odds_col="away_dk_run_line_decimal",
+        )
     if market == "total":
-        probability_columns = [
-            "over_model_prob_total_win",
-            "over_model_prob_total_loss",
-            "under_model_prob_total_win",
-            "under_model_prob_total_loss",
-            "total_model_prob_push",
-        ]
-
-        for col in probability_columns:
-            value = row.get(col)
-
-            if not _finite_probability(value):
-                return f"invalid/missing {col}={value}"
-
-        over_win = float(row["over_model_prob_total_win"])
-        over_loss = float(row["over_model_prob_total_loss"])
-        under_win = float(row["under_model_prob_total_win"])
-        under_loss = float(row["under_model_prob_total_loss"])
-        push = float(row["total_model_prob_push"])
-
-        if abs(over_win + over_loss + push - 1.0) > PROB_TOLERANCE:
-            return (
-                "over total probabilities do not sum to 1: "
-                f"win={over_win} loss={over_loss} push={push}"
-            )
-
-        if abs(under_win + under_loss + push - 1.0) > PROB_TOLERANCE:
-            return (
-                "under total probabilities do not sum to 1: "
-                f"win={under_win} loss={under_loss} push={push}"
-            )
-
-        if abs(under_win - over_loss) > PROB_TOLERANCE:
-            return (
-                "totals probability identity mismatch: "
-                f"under_win={under_win} over_loss={over_loss}"
-            )
-
-        if abs(under_loss - over_win) > PROB_TOLERANCE:
-            return (
-                "totals probability identity mismatch: "
-                f"under_loss={under_loss} over_win={over_win}"
-            )
-
-        over_odds = row.get("dk_total_over_decimal")
-        under_odds = row.get("dk_total_under_decimal")
-
-        if not _valid_decimal_odds(over_odds):
-            return f"invalid/missing dk_total_over_decimal={over_odds}"
-
-        if not _valid_decimal_odds(under_odds):
-            return f"invalid/missing dk_total_under_decimal={under_odds}"
-
-        return None
-
+        return _total_market_issue(row)
     return f"unknown market={market}"
-
 
 def filter_bad_rows(
     df: pd.DataFrame,

@@ -112,540 +112,203 @@ def validate_feature_contract() -> None:
         )
 
 
+def _validate_runline_training_identity(frame):
+    frame["game_id"] = frame["game_id"].astype("string").str.strip()
+    frame["_gamePk"] = frame["gamePk"].map(BT.gamepk)
+    frame["_home_code"] = frame["home_team"].map(BP.EXP.canonical_team)
+    frame["_away_code"] = frame["away_team"].map(BP.EXP.canonical_team)
+    if frame["game_id"].isna().any() or (frame["game_id"] == "").any():
+        raise RuntimeError("Training data contains blank game_id")
+    if frame["game_id"].duplicated().any():
+        raise RuntimeError("Training data contains duplicate game_id")
+    if frame["_gamePk"].isna().any():
+        raise RuntimeError("Training data contains missing gamePk")
+    bad_teams = frame[frame["_home_code"].isna() | frame["_away_code"].isna()]
+    if not bad_teams.empty:
+        sample = (
+            bad_teams[["home_team", "away_team"]]
+            .drop_duplicates().head(20).to_dict("records")
+        )
+        raise RuntimeError(f"Could not map training teams: {sample}")
+    return frame
+
+
+def _attach_runline_bullpen_features(frame):
+    print("Loading existing moneyline Statcast cache...")
+    raw_statcast = BP.load_cache()
+    if raw_statcast.empty:
+        raise RuntimeError("Moneyline Statcast cache is empty")
+    cache_max = pd.to_datetime(
+        raw_statcast["_game_date_dt"], errors="coerce"
+    ).max()
+    required_through = frame["_game_date_dt"].max() - pd.Timedelta(days=1)
+    if pd.isna(cache_max) or cache_max < required_through:
+        raise RuntimeError(
+            "Existing Statcast cache does not cover the required historical period. "
+            f"cache_max={cache_max}; required_through={required_through}"
+        )
+    print("Building exact 14-day + 3-day + 7-day bullpen features...")
+    team_daily, pitcher_daily = BP.build_tables(raw_statcast)
+    frame = BP.attach_features(frame, team_daily, pitcher_daily)
+    missing = [
+        col for col in PRODUCTION_BULLPEN_FEATURES
+        if col not in frame.columns
+    ]
+    if missing:
+        raise RuntimeError(f"Bullpen builder failed to create: {missing}")
+    return frame
+
+
+def _validate_runline_feature_order(features):
+    expected = [col for col in TRAIN.CORE_FEATURE_COLUMNS if "_bp_" in col]
+    actual = [col for col in features if "_bp_" in col]
+    if actual != expected:
+        raise RuntimeError(
+            "Bullpen feature order differs from production: "
+            f"actual={actual}; expected={expected}"
+        )
+
+
 def load_current_training() -> tuple[pd.DataFrame, list[str]]:
     if not TRAINING_FILE.exists():
         raise FileNotFoundError(TRAINING_FILE)
-
-    frame = pd.read_csv(
-        TRAINING_FILE,
-        encoding="utf-8-sig",
-    )
-
+    frame = pd.read_csv(TRAINING_FILE, encoding="utf-8-sig")
     if frame.empty:
-        raise RuntimeError(
-            f"Training set is empty: {TRAINING_FILE}"
-        )
-
+        raise RuntimeError(f"Training set is empty: {TRAINING_FILE}")
     validate_feature_contract()
-
     base_core = [
-        col
-        for col in TRAIN.CORE_FEATURE_COLUMNS
+        col for col in TRAIN.CORE_FEATURE_COLUMNS
         if col not in PRODUCTION_BULLPEN_FEATURES
     ]
-
     base_features = list(base_core)
-
     base_features.extend(
-        col
-        for col in TRAIN.OPTIONAL_NUMERIC_FEATURE_COLUMNS
+        col for col in TRAIN.OPTIONAL_NUMERIC_FEATURE_COLUMNS
         if col in frame.columns
     )
-
-    required = (
-        list(TRAIN.AUDIT_COLUMNS)
-        + list(TRAIN.TARGET_COLUMNS)
-        + base_core
-    )
-
-    missing = [
-        col
-        for col in required
-        if col not in frame.columns
-    ]
-
+    required = list(TRAIN.AUDIT_COLUMNS) + list(TRAIN.TARGET_COLUMNS) + base_core
+    missing = [col for col in required if col not in frame.columns]
     if missing:
         raise RuntimeError(
             "Committed base training set missing actual required columns: "
             f"{missing}"
         )
-
-    frame = TRAIN.coerce_and_validate_training_data(
-        frame,
-        base_features,
-    )
-
-    frame["game_id"] = (
-        frame["game_id"]
-        .astype("string")
-        .str.strip()
-    )
-
-    frame["_gamePk"] = frame["gamePk"].map(
-        BT.gamepk
-    )
-
-    frame["_home_code"] = frame["home_team"].map(
-        BP.EXP.canonical_team
-    )
-
-    frame["_away_code"] = frame["away_team"].map(
-        BP.EXP.canonical_team
-    )
-
-    if (
-        frame["game_id"].isna().any()
-        or (frame["game_id"] == "").any()
-    ):
-        raise RuntimeError(
-            "Training data contains blank game_id"
-        )
-
-    if frame["game_id"].duplicated().any():
-        raise RuntimeError(
-            "Training data contains duplicate game_id"
-        )
-
-    if frame["_gamePk"].isna().any():
-        raise RuntimeError(
-            "Training data contains missing gamePk"
-        )
-
-    bad_teams = frame[
-        frame["_home_code"].isna()
-        | frame["_away_code"].isna()
-    ]
-
-    if not bad_teams.empty:
-        sample = (
-            bad_teams[
-                [
-                    "home_team",
-                    "away_team",
-                ]
-            ]
-            .drop_duplicates()
-            .head(20)
-            .to_dict("records")
-        )
-
-        raise RuntimeError(
-            f"Could not map training teams: {sample}"
-        )
-
+    frame = TRAIN.coerce_and_validate_training_data(frame, base_features)
+    frame = _validate_runline_training_identity(frame)
+    frame = _attach_runline_bullpen_features(frame)
+    features = TRAIN.determine_feature_columns(frame)
+    _validate_runline_feature_order(features)
+    frame = TRAIN.coerce_and_validate_training_data(frame, features)
+    frame = frame.sort_values(["_game_date_dt", "game_id"]).reset_index(drop=True)
     print(
-        "Loading existing moneyline Statcast cache..."
+        f"Training data ready: {len(frame):,} rows, "
+        f"{frame['_game_date_dt'].nunique():,} dates, {len(features)} features"
     )
-
-    raw_statcast = BP.load_cache()
-
-    if raw_statcast.empty:
-        raise RuntimeError(
-            "Moneyline Statcast cache is empty"
-        )
-
-    cache_max = pd.to_datetime(
-        raw_statcast["_game_date_dt"],
-        errors="coerce",
-    ).max()
-
-    required_through = (
-        frame["_game_date_dt"].max()
-        - pd.Timedelta(days=1)
-    )
-
-    if (
-        pd.isna(cache_max)
-        or cache_max < required_through
-    ):
-        raise RuntimeError(
-            "Existing Statcast cache does not cover "
-            "the required historical period. "
-            f"cache_max={cache_max}; "
-            f"required_through={required_through}"
-        )
-
-    print(
-        "Building exact 14-day + 3-day + 7-day bullpen features..."
-    )
-
-    team_daily, pitcher_daily = BP.build_tables(
-        raw_statcast
-    )
-
-    frame = BP.attach_features(
-        frame,
-        team_daily,
-        pitcher_daily,
-    )
-
-    missing_bp = [
-        col
-        for col in PRODUCTION_BULLPEN_FEATURES
-        if col not in frame.columns
-    ]
-
-    if missing_bp:
-        raise RuntimeError(
-            "Bullpen builder failed to create: "
-            f"{missing_bp}"
-        )
-
-    features = TRAIN.determine_feature_columns(
-        frame
-    )
-
-    expected_order = [
-        col
-        for col in TRAIN.CORE_FEATURE_COLUMNS
-        if "_bp_" in col
-    ]
-
-    actual_order = [
-        col
-        for col in features
-        if "_bp_" in col
-    ]
-
-    if actual_order != expected_order:
-        raise RuntimeError(
-            "Bullpen feature order differs from production: "
-            f"actual={actual_order}; "
-            f"expected={expected_order}"
-        )
-
-    frame = TRAIN.coerce_and_validate_training_data(
-        frame,
-        features,
-    )
-
-    frame = (
-        frame.sort_values(
-            [
-                "_game_date_dt",
-                "game_id",
-            ]
-        )
-        .reset_index(drop=True)
-    )
-
-    print(
-        f"Training data ready: "
-        f"{len(frame):,} rows, "
-        f"{frame['_game_date_dt'].nunique():,} dates, "
-        f"{len(features)} features"
-    )
-
     return frame, features
+
+def _validate_historical_run_predictions(target):
+    for col in ("model_home_runs", "model_away_runs"):
+        values = pd.to_numeric(target[col], errors="coerce")
+        bad = values.isna() | ~np.isfinite(values) | (values < 0)
+        if bad.any():
+            raise RuntimeError(f"Invalid historical {col} predictions")
+
+
+def _runline_candidate_rows(joined, label):
+    rows = []
+    for _, row in joined.iterrows():
+        home_line = BT.f(row.get("home_run_line"))
+        away_line = BT.f(row.get("away_run_line"))
+        if home_line is None or away_line is None:
+            continue
+        mh = float(row["model_home_runs"])
+        ma = float(row["model_away_runs"])
+        hs = float(row["target_home_runs"])
+        aws = float(row["target_away_runs"])
+        home_prob, away_prob = JUICE.run_line_probabilities(
+            mh, ma, home_line, away_line
+        )
+        for side, line, raw_prob in (
+            ("home", home_line, home_prob),
+            ("away", away_line, away_prob),
+        ):
+            raw_prob = float(raw_prob)
+            if not np.isfinite(raw_prob) or not 0.0 < raw_prob < 1.0:
+                raise RuntimeError(
+                    f"Invalid run-line probability {raw_prob} "
+                    f"for game_id={row['game_id']} side={side}"
+                )
+            result = BT.grade_run_line(side, line, hs, aws)
+            if result not in {"Win", "Loss"}:
+                continue
+            rows.append({
+                "game_date": label,
+                "game_id": str(row["game_id"]),
+                "home_team": row.get("home_team_train"),
+                "away_team": row.get("away_team_train"),
+                "side": side,
+                "run_line": float(line),
+                "model_home_runs": mh,
+                "model_away_runs": ma,
+                "raw_prob": raw_prob,
+                "win_binary": 1.0 if result == "Win" else 0.0,
+            })
+    return rows
+
+
+def _replay_runline_date(training, features, book_path, target_date, label):
+    target = training[training["_game_date_dt"] == target_date].copy()
+    home_model, away_model, _ = BT.train_models(training, target_date, features)
+    target["model_home_runs"] = home_model.predict(target[features])
+    target["model_away_runs"] = away_model.predict(target[features])
+    _validate_historical_run_predictions(target)
+    book = BT.load_sportsbook(book_path)
+    joined = target.merge(
+        book,
+        on="game_id",
+        how="inner",
+        suffixes=("_train", "_book"),
+        validate="one_to_one",
+    )
+    return _runline_candidate_rows(joined, label)
 
 
 def build_runline_predictions() -> pd.DataFrame:
     training, features = load_current_training()
-
     books = BT.sportsbook_files()
-
-    dates = sorted(
-        set(
-            training["_game_date_dt"]
-        ).intersection(
-            books
-        )
-    )
-
+    dates = sorted(set(training["_game_date_dt"]).intersection(books))
     if not dates:
-        raise RuntimeError(
-            "No overlapping training/sportsbook dates"
-        )
-
-    rows: list[dict] = []
-    skipped: list[str] = []
-
-    for index, target_date in enumerate(
-        dates,
-        1,
-    ):
-        label = pd.Timestamp(
-            target_date
-        ).strftime(
-            "%Y-%m-%d"
-        )
-
-        prior = training[
-            training["_game_date_dt"]
-            < target_date
-        ]
-
-        if (
-            prior["_game_date_dt"].nunique()
-            < 3
-        ):
-            skipped.append(
-                label
-            )
-
+        raise RuntimeError("No overlapping training/sportsbook dates")
+    rows = []
+    skipped = []
+    for index, target_date in enumerate(dates, 1):
+        label = pd.Timestamp(target_date).strftime("%Y-%m-%d")
+        prior = training[training["_game_date_dt"] < target_date]
+        if prior["_game_date_dt"].nunique() < 3:
+            skipped.append(label)
             continue
-
-        print(
-            f"BACKTEST "
-            f"{index}/{len(dates)} "
-            f"{label}"
-        )
-
+        print(f"BACKTEST {index}/{len(dates)} {label}")
         try:
-            target = training[
-                training["_game_date_dt"]
-                == target_date
-            ].copy()
-
-            (
-                home_model,
-                away_model,
-                _,
-            ) = BT.train_models(
-                training,
-                target_date,
-                features,
+            rows.extend(
+                _replay_runline_date(
+                    training, features, books[target_date], target_date, label
+                )
             )
-
-            target[
-                "model_home_runs"
-            ] = home_model.predict(
-                target[features]
-            )
-
-            target[
-                "model_away_runs"
-            ] = away_model.predict(
-                target[features]
-            )
-
-            for col in (
-                "model_home_runs",
-                "model_away_runs",
-            ):
-                values = pd.to_numeric(
-                    target[col],
-                    errors="coerce",
-                )
-
-                bad = (
-                    values.isna()
-                    | ~np.isfinite(
-                        values
-                    )
-                    | (
-                        values
-                        < 0
-                    )
-                )
-
-                if bad.any():
-                    raise RuntimeError(
-                        f"Invalid historical "
-                        f"{col} predictions"
-                    )
-
-            book = BT.load_sportsbook(
-                books[target_date]
-            )
-
-            joined = target.merge(
-                book,
-                on="game_id",
-                how="inner",
-                suffixes=(
-                    "_train",
-                    "_book",
-                ),
-                validate="one_to_one",
-            )
-
-            for _, row in joined.iterrows():
-                home_line = BT.f(
-                    row.get(
-                        "home_run_line"
-                    )
-                )
-
-                away_line = BT.f(
-                    row.get(
-                        "away_run_line"
-                    )
-                )
-
-                if (
-                    home_line is None
-                    or away_line is None
-                ):
-                    continue
-
-                mh = float(
-                    row[
-                        "model_home_runs"
-                    ]
-                )
-
-                ma = float(
-                    row[
-                        "model_away_runs"
-                    ]
-                )
-
-                hs = float(
-                    row[
-                        "target_home_runs"
-                    ]
-                )
-
-                aws = float(
-                    row[
-                        "target_away_runs"
-                    ]
-                )
-
-                (
-                    home_prob,
-                    away_prob,
-                ) = JUICE.run_line_probabilities(
-                    mh,
-                    ma,
-                    home_line,
-                    away_line,
-                )
-
-                for (
-                    side,
-                    line,
-                    raw_prob,
-                ) in (
-                    (
-                        "home",
-                        home_line,
-                        home_prob,
-                    ),
-                    (
-                        "away",
-                        away_line,
-                        away_prob,
-                    ),
-                ):
-                    raw_prob = float(
-                        raw_prob
-                    )
-
-                    if (
-                        not np.isfinite(
-                            raw_prob
-                        )
-                        or not (
-                            0.0
-                            < raw_prob
-                            < 1.0
-                        )
-                    ):
-                        raise RuntimeError(
-                            "Invalid run-line "
-                            f"probability {raw_prob} "
-                            f"for game_id="
-                            f"{row['game_id']} "
-                            f"side={side}"
-                        )
-
-                    result = BT.grade_run_line(
-                        side,
-                        line,
-                        hs,
-                        aws,
-                    )
-
-                    if result not in {
-                        "Win",
-                        "Loss",
-                    }:
-                        continue
-
-                    rows.append(
-                        {
-                            "game_date":
-                                label,
-                            "game_id":
-                                str(
-                                    row[
-                                        "game_id"
-                                    ]
-                                ),
-                            "home_team":
-                                row.get(
-                                    "home_team_train"
-                                ),
-                            "away_team":
-                                row.get(
-                                    "away_team_train"
-                                ),
-                            "side":
-                                side,
-                            "run_line":
-                                float(
-                                    line
-                                ),
-                            "model_home_runs":
-                                mh,
-                            "model_away_runs":
-                                ma,
-                            "raw_prob":
-                                raw_prob,
-                            "win_binary":
-                                (
-                                    1.0
-                                    if result
-                                    == "Win"
-                                    else 0.0
-                                ),
-                        }
-                    )
-
         except Exception as exc:
-            print(
-                f"  SKIPPED: {exc}"
-            )
-
-            skipped.append(
-                label
-            )
-
+            print(f"  SKIPPED: {exc}")
+            skipped.append(label)
     if not rows:
-        raise RuntimeError(
-            "No resolved run-line "
-            "predictions were produced"
-        )
-
-    frame = pd.DataFrame(
-        rows
-    )
-
+        raise RuntimeError("No resolved run-line predictions were produced")
+    frame = pd.DataFrame(rows)
     frame["_date"] = pd.to_datetime(
-        frame["game_date"],
-        errors="coerce",
+        frame["game_date"], errors="coerce"
     ).dt.normalize()
-
-    frame = frame.dropna(
-        subset=[
-            "_date",
-            "raw_prob",
-            "win_binary",
-        ]
-    )
-
-    frame = (
-        frame.sort_values(
-            [
-                "_date",
-                "game_id",
-                "side",
-            ]
-        )
-        .reset_index(drop=True)
-    )
-
+    frame = frame.dropna(subset=["_date", "raw_prob", "win_binary"])
+    frame = frame.sort_values(["_date", "game_id", "side"]).reset_index(drop=True)
     print(
-        f"Run-line replay complete: "
-        f"{len(frame):,} resolved rows, "
-        f"{frame['_date'].nunique():,} dates, "
-        f"{len(set(skipped))} skipped dates"
+        f"Run-line replay complete: {len(frame):,} resolved rows, "
+        f"{frame['_date'].nunique():,} dates, {len(set(skipped))} skipped dates"
     )
-
     return frame
-
 
 def split_calibration_data(
     frame: pd.DataFrame,

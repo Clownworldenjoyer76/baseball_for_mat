@@ -1017,6 +1017,80 @@ def _rename_prediction_features(
     )
 
 
+
+def _log_unresolved_final_gamepks(date_str, count):
+    if count:
+        _log(
+            f"final_scores {date_str} unresolved gamePk rows: {count}",
+            "WARN",
+        )
+
+
+def _warn_final_score_join_misses(date_str, joined, mask):
+    if not mask.any():
+        return
+    sample = joined.loc[
+        mask,
+        ["game_id", "gamePk", "game_date", "home_team", "away_team"],
+    ].head(10).to_dict("records")
+    _log(
+        f"{date_str} final-score join misses: {int(mask.sum())}; sample={sample}",
+        "WARN",
+    )
+
+
+def _validate_matched_final_rows(date_str, joined, mask):
+    if not mask.any():
+        return
+    sample = joined.loc[
+        mask,
+        ["game_id", "gamePk", "game_status", "final_home_score", "final_away_score"],
+    ].head(10).to_dict("records")
+    fail(
+        f"{date_str} matched final-score rows are invalid; "
+        f"bad_rows={int(mask.sum())}; sample={sample}"
+    )
+
+
+def _validate_training_sdv_leakage(date_str, joined, mask):
+    if not mask.any():
+        return
+    sample = joined.loc[
+        mask,
+        ["game_id", "gamePk", "game_date", "sdv_as_of_date"],
+    ].head(10).to_dict("records")
+    fail(
+        f"{date_str} SDV leakage validation failed; "
+        "sdv_as_of_date must be < game_date; "
+        f"bad_rows={int(mask.sum())}; sample={sample}"
+    )
+
+
+def _merge_training_weather(joined, weather):
+    if weather is None:
+        return joined
+    return joined.merge(weather, on="gamePk", how="left", validate="many_to_one")
+
+
+def _coerce_training_output_columns(output):
+    numeric_columns = (
+        DRATINGS_COLUMNS
+        + list(SDV_FEATURE_MAP.values())
+        + TARGET_COLUMNS
+        + WEATHER_FEATURES
+    )
+    for col in numeric_columns:
+        if col in output.columns:
+            output[col] = pd.to_numeric(output[col], errors="coerce")
+    output["game_date"] = pd.to_datetime(
+        output["game_date"], errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+    output["sdv_as_of_date"] = pd.to_datetime(
+        output["sdv_as_of_date"], errors="coerce"
+    ).dt.strftime("%Y-%m-%d")
+    return output
+
+
 def build_date_training_rows(
     date_str: str,
     summary: dict,
@@ -1268,12 +1342,7 @@ def build_date_training_rows(
         .tolist()
     )
 
-    if unresolved_gamepk_count:
-        _log(
-            f"final_scores {date_str} unresolved gamePk rows: "
-            f"{unresolved_gamepk_count}",
-            "WARN",
-        )
+    _log_unresolved_final_gamepks(date_str, unresolved_gamepk_count)
 
     final_join = final.loc[
         ~unresolved_final_gamepk,
@@ -1316,28 +1385,7 @@ def build_date_training_rows(
         failed_final_score_join.sum()
     )
 
-    if failed_final_score_join.any():
-        sample = (
-            joined.loc[
-                failed_final_score_join,
-                [
-                    "game_id",
-                    "gamePk",
-                    "game_date",
-                    "home_team",
-                    "away_team",
-                ],
-            ]
-            .head(10)
-            .to_dict("records")
-        )
-
-        _log(
-            f"{date_str} final-score join misses: "
-            f"{int(failed_final_score_join.sum())}; "
-            f"sample={sample}",
-            "WARN",
-        )
+    _warn_final_score_join_misses(date_str, joined, failed_final_score_join)
 
     _assert_secondary_game_id_match(
         joined,
@@ -1376,27 +1424,7 @@ def build_date_training_rows(
         )
     )
 
-    if invalid_matched_final.any():
-        sample = (
-            joined.loc[
-                invalid_matched_final,
-                [
-                    "game_id",
-                    "gamePk",
-                    "game_status",
-                    "final_home_score",
-                    "final_away_score",
-                ],
-            ]
-            .head(10)
-            .to_dict("records")
-        )
-
-        fail(
-            f"{date_str} matched final-score rows are invalid; "
-            f"bad_rows={int(invalid_matched_final.sum())}; "
-            f"sample={sample}"
-        )
+    _validate_matched_final_rows(date_str, joined, invalid_matched_final)
 
     invalid_final = (
         final_join_missing
@@ -1437,27 +1465,7 @@ def build_date_training_rows(
         leakage.sum()
     )
 
-    if leakage.any():
-        sample = (
-            joined.loc[
-                leakage,
-                [
-                    "game_id",
-                    "gamePk",
-                    "game_date",
-                    "sdv_as_of_date",
-                ],
-            ]
-            .head(10)
-            .to_dict("records")
-        )
-
-        fail(
-            f"{date_str} SDV leakage validation failed; "
-            "sdv_as_of_date must be < game_date; "
-            f"bad_rows={int(leakage.sum())}; "
-            f"sample={sample}"
-        )
+    _validate_training_sdv_leakage(date_str, joined, leakage)
 
     keep = (
         ~missing_sdv
@@ -1478,13 +1486,7 @@ def build_date_training_rows(
         summary,
     )
 
-    if weather is not None:
-        joined = joined.merge(
-            weather,
-            on="gamePk",
-            how="left",
-            validate="many_to_one",
-        )
+    joined = _merge_training_weather(joined, weather)
 
     output_columns = (
         AUDIT_COLUMNS
@@ -1509,41 +1511,7 @@ def build_date_training_rows(
         output_columns
     ].copy()
 
-    for col in (
-        DRATINGS_COLUMNS
-        + list(
-            SDV_FEATURE_MAP.values()
-        )
-        + TARGET_COLUMNS
-    ):
-        if col in output.columns:
-            output[col] = pd.to_numeric(
-                output[col],
-                errors="coerce",
-            )
-
-    for col in WEATHER_FEATURES:
-        if col in output.columns:
-            output[col] = pd.to_numeric(
-                output[col],
-                errors="coerce",
-            )
-
-    output["game_date"] = (
-        pd.to_datetime(
-            output["game_date"],
-            errors="coerce",
-        )
-        .dt.strftime("%Y-%m-%d")
-    )
-
-    output["sdv_as_of_date"] = (
-        pd.to_datetime(
-            output["sdv_as_of_date"],
-            errors="coerce",
-        )
-        .dt.strftime("%Y-%m-%d")
-    )
+    output = _coerce_training_output_columns(output)
 
     return output
 

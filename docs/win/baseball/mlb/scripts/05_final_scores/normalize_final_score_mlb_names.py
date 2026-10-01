@@ -77,88 +77,86 @@ def write_no_map(rows):
     log(f"NO MAP CSV WRITTEN | {NO_MAP_FILE} | rows={len(no_map_df)}")
 
 
+def _parse_normalization_map_row(row, csv_row, map_file):
+    league = norm_key(row.get("league"))
+    team_id = clean(row.get("team_id"))
+    alias_raw = clean(row.get("alias"))
+    alias_key = norm_key(alias_raw)
+    canonical = clean(row.get("canonical_team"))
+    if not all((league, team_id, alias_raw, canonical)):
+        raise ValueError(
+            f"{map_file}:{csv_row} blank required value: "
+            f"league={league!r} team_id={team_id!r} "
+            f"alias={alias_raw!r} canonical_team={canonical!r}"
+        )
+    return league, team_id, alias_raw, alias_key, canonical
+
+
+def _add_normalization_map_row(
+    mapping, team_id_to_canonical, canonical_to_team_id,
+    team_id, alias_raw, alias_key, canonical, csv_row, map_file,
+):
+    existing = mapping.get(alias_key)
+    if existing and existing != canonical:
+        raise ValueError(
+            f"{map_file}:{csv_row} ambiguous alias mapping: "
+            f"alias={alias_raw!r} existing={existing!r} new={canonical!r}"
+        )
+    duplicate = existing == canonical
+    existing_for_id = team_id_to_canonical.get(team_id)
+    if existing_for_id and existing_for_id != canonical:
+        raise ValueError(
+            f"{map_file}:{csv_row} team_id maps to multiple canonical teams: "
+            f"team_id={team_id!r} existing={existing_for_id!r} new={canonical!r}"
+        )
+    existing_id = canonical_to_team_id.get(canonical)
+    if existing_id and existing_id != team_id:
+        raise ValueError(
+            f"{map_file}:{csv_row} canonical_team maps to multiple team_ids: "
+            f"canonical_team={canonical!r} existing={existing_id!r} new={team_id!r}"
+        )
+    mapping[alias_key] = canonical
+    team_id_to_canonical[team_id] = canonical
+    canonical_to_team_id[canonical] = team_id
+    return int(duplicate)
+
+
 def load_map(map_file: Path, filter_col: str, filter_val: str):
     if not map_file.exists():
         raise FileNotFoundError(f"Missing required map file: {map_file}")
-
     df = pd.read_csv(map_file, dtype=str).fillna("")
-
     missing = REQUIRED_MAP_COLUMNS - set(df.columns)
     if missing:
         raise ValueError(f"{map_file} missing required columns: {sorted(missing)}")
-
     if filter_col in df.columns:
         df = df[
             df[filter_col].astype(str).str.strip().str.lower()
             == str(filter_val).strip().lower()
         ].copy()
-
     if df.empty:
         raise ValueError(f"No rows found in {map_file} for {filter_col}={filter_val}")
-
     mapping = {}
     team_id_to_canonical = {}
     canonical_to_team_id = {}
-    duplicate_identical_alias_rows = 0
-
+    duplicate_rows = 0
     for idx, row in df.iterrows():
         csv_row = idx + 2
-
-        league = norm_key(row.get("league"))
-        team_id = clean(row.get("team_id"))
-        alias_raw = clean(row.get("alias"))
-        alias_key = norm_key(alias_raw)
-        canonical = clean(row.get("canonical_team"))
-
-        if not league or not team_id or not alias_raw or not canonical:
-            raise ValueError(
-                f"{map_file}:{csv_row} blank required value: "
-                f"league={league!r} team_id={team_id!r} "
-                f"alias={alias_raw!r} canonical_team={canonical!r}"
-            )
-
-        existing_canonical = mapping.get(alias_key)
-        if existing_canonical and existing_canonical != canonical:
-            raise ValueError(
-                f"{map_file}:{csv_row} ambiguous alias mapping: "
-                f"alias={alias_raw!r} existing={existing_canonical!r} new={canonical!r}"
-            )
-
-        if existing_canonical == canonical:
-            duplicate_identical_alias_rows += 1
-
-        mapping[alias_key] = canonical
-
-        existing_for_id = team_id_to_canonical.get(team_id)
-        if existing_for_id and existing_for_id != canonical:
-            raise ValueError(
-                f"{map_file}:{csv_row} team_id maps to multiple canonical teams: "
-                f"team_id={team_id!r} existing={existing_for_id!r} new={canonical!r}"
-            )
-
-        existing_id_for_canonical = canonical_to_team_id.get(canonical)
-        if existing_id_for_canonical and existing_id_for_canonical != team_id:
-            raise ValueError(
-                f"{map_file}:{csv_row} canonical_team maps to multiple team_ids: "
-                f"canonical_team={canonical!r} existing={existing_id_for_canonical!r} new={team_id!r}"
-            )
-
-        team_id_to_canonical[team_id] = canonical
-        canonical_to_team_id[canonical] = team_id
-
+        _, team_id, alias_raw, alias_key, canonical = _parse_normalization_map_row(
+            row, csv_row, map_file
+        )
+        duplicate_rows += _add_normalization_map_row(
+            mapping, team_id_to_canonical, canonical_to_team_id,
+            team_id, alias_raw, alias_key, canonical, csv_row, map_file,
+        )
     if not mapping:
         raise ValueError(f"No valid mappings loaded from {map_file}")
-
     log(
-        f"MAP LOADED | {filter_val} | "
-        f"aliases={len(mapping)} "
+        f"MAP LOADED | {filter_val} | aliases={len(mapping)} "
         f"team_ids={len(team_id_to_canonical)} "
         f"canonical_teams={len(canonical_to_team_id)} "
-        f"duplicate_identical_alias_rows={duplicate_identical_alias_rows}"
+        f"duplicate_identical_alias_rows={duplicate_rows}"
     )
-
     return mapping
-
 
 def normalize_file(file_path: Path, mapping: dict):
     df = pd.read_csv(file_path, dtype=str).fillna("")
