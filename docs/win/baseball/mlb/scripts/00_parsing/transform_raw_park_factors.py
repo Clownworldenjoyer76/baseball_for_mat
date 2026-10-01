@@ -129,7 +129,7 @@ def split_line(line):
         return [clean(part) for part in line.split("\t")]
 
     if "," in line and '"' in line:
-        return [clean(part) for part in next(csv.reader([line]))]
+        return [clean(part) for part in next(csv.reader([line]), [])]
 
     return [clean(part) for part in re.split(r"\s{2,}", line) if clean(part)]
 

@@ -30,7 +30,7 @@ warnings.filterwarnings(
     category=UserWarning,
 )
 
-ROOT = next(
+ROOT = next((
     p
     for start in (
         Path.cwd().resolve(),
