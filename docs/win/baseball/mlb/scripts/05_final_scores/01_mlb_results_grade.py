@@ -913,9 +913,6 @@ def write_reconciliation(all_bets, final, unmatched):
                 .str.strip()
             )
 
-        def count_reason(reason):
-            return int((reasons == reason).sum())
-
         selected_count = len(selected_date)
         graded_count = len(graded_date)
         unmatched_count = len(unmatched_date)
@@ -927,13 +924,13 @@ def write_reconciliation(all_bets, final, unmatched):
             "selected_rows": selected_count,
             "graded_rows": graded_count,
             "unmatched_rows": unmatched_count,
-            "missing_final_score_rows": count_reason("missing_final_score"),
-            "missing_game_id_rows": count_reason("missing_game_id"),
-            "future_game_rows": count_reason("future_game"),
-            "postponed_rows": count_reason("postponed"),
-            "canceled_rows": count_reason("canceled"),
-            "game_not_final_rows": count_reason("game_not_final"),
-            "unknown_game_status_rows": count_reason("unknown_game_status"),
+            "missing_final_score_rows": int((reasons == "missing_final_score").sum()),
+            "missing_game_id_rows": int((reasons == "missing_game_id").sum()),
+            "future_game_rows": int((reasons == "future_game").sum()),
+            "postponed_rows": int((reasons == "postponed").sum()),
+            "canceled_rows": int((reasons == "canceled").sum()),
+            "game_not_final_rows": int((reasons == "game_not_final").sum()),
+            "unknown_game_status_rows": int((reasons == "unknown_game_status").sum()),
             "other_unmatched_rows": other_count,
             "status": (
                 "ok"
