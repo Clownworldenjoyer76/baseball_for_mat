@@ -36,7 +36,6 @@ import argparse
 import json
 import math
 import shutil
-import sys
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
