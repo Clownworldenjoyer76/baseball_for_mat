@@ -388,47 +388,105 @@ def process_side(df, juice_df, side, uses_odds_bands, audit_rows):
 # NORMALIZATION
 # =========================
 
+def _normalized_total_probabilities(row):
+    try:
+        over_prob = float(
+            row["over_juiced_prob_total"]
+        )
+        under_prob = float(
+            row["under_juiced_prob_total"]
+        )
+    except (
+        TypeError,
+        ValueError,
+        KeyError,
+        OverflowError,
+    ):
+        return None
+
+    if not (
+        math.isfinite(over_prob)
+        and math.isfinite(under_prob)
+    ):
+        return None
+
+    total = over_prob + under_prob
+
+    if total <= 0:
+        return None
+
+    return (
+        over_prob / total,
+        under_prob / total,
+    )
+
+
+def _update_total_normalization_audit(
+    audit_rows,
+    game_id,
+    side,
+    probability,
+):
+    for audit_row in reversed(audit_rows):
+        matches = (
+            audit_row["game_id"] == game_id
+            and audit_row["market"] == "total"
+            and audit_row["side"] == side
+            and pd.isna(
+                audit_row["normalized_prob"]
+            )
+        )
+
+        if matches:
+            audit_row[
+                "normalized_prob"
+            ] = probability
+            return
+
+
 def apply_normalization(df, audit_rows):
     df["over_normalized_prob_total"] = pd.NA
     df["under_normalized_prob_total"] = pd.NA
 
     for idx, row in df.iterrows():
-        try:
-            op = float(row["over_juiced_prob_total"])
-            up = float(row["under_juiced_prob_total"])
+        normalized = (
+            _normalized_total_probabilities(
+                row
+            )
+        )
 
-            if not math.isfinite(op) or not math.isfinite(up):
-                continue
-
-            total = op + up
-
-            if total <= 0:
-                continue
-
-            over_norm = op / total
-            under_norm = up / total
-
-            df.at[idx, "over_normalized_prob_total"] = over_norm
-            df.at[idx, "under_normalized_prob_total"] = under_norm
-
-            for audit_row in reversed(audit_rows):
-                if audit_row["game_id"] == row.get("game_id") and audit_row["market"] == "total" and audit_row["side"] == "over" and pd.isna(audit_row["normalized_prob"]):
-                    audit_row["normalized_prob"] = over_norm
-                    break
-            for audit_row in reversed(audit_rows):
-                if audit_row["game_id"] == row.get("game_id") and audit_row["market"] == "total" and audit_row["side"] == "under" and pd.isna(audit_row["normalized_prob"]):
-                    audit_row["normalized_prob"] = under_norm
-                    break
-
-        except (TypeError, ValueError, KeyError, ZeroDivisionError, OverflowError):
+        if normalized is None:
             continue
 
+        over_norm, under_norm = normalized
+
+        df.at[
+            idx,
+            "over_normalized_prob_total",
+        ] = over_norm
+
+        df.at[
+            idx,
+            "under_normalized_prob_total",
+        ] = under_norm
+
+        game_id = row.get("game_id")
+
+        _update_total_normalization_audit(
+            audit_rows,
+            game_id,
+            "over",
+            over_norm,
+        )
+
+        _update_total_normalization_audit(
+            audit_rows,
+            game_id,
+            "under",
+            under_norm,
+        )
+
     return df
-
-
-# =========================
-# MAIN
-# =========================
 
 def main():
     with open(LOG_FILE, "w", encoding="utf-8") as f:
