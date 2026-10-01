@@ -334,6 +334,25 @@ def write_dict_csv(
     fieldnames,
     rows,
 ):
+    safe_path = Path(path).resolve()
+    allowed_root = OUT_DIR.resolve()
+
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        fail(
+            "Refusing merge dictionary output outside "
+            f"trusted directory: {path}"
+        )
+
+    if safe_path.suffix.lower() != ".csv":
+        fail(
+            "Refusing non-CSV merge dictionary "
+            f"output: {path}"
+        )
+
+    path = safe_path
+
     assert_no_duplicate_columns(
         fieldnames,
         f"{path} output",
@@ -344,14 +363,13 @@ def write_dict_csv(
         exist_ok=True,
     )
 
-    with open(
-        path,
+    with path.open(
         "w",
         newline="",
         encoding="utf-8",
-    ) as f:
+    ) as handle:
         writer = csv.DictWriter(
-            f,
+            handle,
             fieldnames=fieldnames,
             extrasaction="ignore",
         )
