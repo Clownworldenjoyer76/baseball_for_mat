@@ -74,7 +74,7 @@ SELECT = load_module(
 )
 
 # Do not write backtest training chatter into the production modeling log.
-TRAIN._log = lambda *args, **kwargs: None
+TRAIN.disable_logging()
 
 PROB_TOL = 1e-9
 
