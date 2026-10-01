@@ -531,57 +531,131 @@ def build_calculation(row):
     return ""
 
 
+def _resolve_score_merge_field(
+    output,
+    base,
+):
+    score_column = f"{base}_score"
+    bet_column = f"{base}_bet"
+
+    if score_column in output.columns:
+        output[base] = output[
+            score_column
+        ]
+        return
+
+    if (
+        base not in output.columns
+        and bet_column in output.columns
+    ):
+        output[base] = output[
+            bet_column
+        ]
+
+
+def _resolve_selected_merge_field(
+    output,
+    base,
+):
+    if base in output.columns:
+        return
+
+    bet_column = f"{base}_bet"
+
+    if bet_column in output.columns:
+        output[base] = output[
+            bet_column
+        ]
+        return
+
+    score_column = f"{base}_score"
+
+    if score_column in output.columns:
+        output[base] = output[
+            score_column
+        ]
+
+
+def _merged_column_base(column):
+    if column == "take_bet":
+        return None
+
+    if column.endswith("_bet"):
+        return column[:-4]
+
+    if column.endswith("_score"):
+        return column[:-6]
+
+    return None
+
+
 def resolve_merge_columns(frame):
     output = frame.copy()
 
     score_fields = {
-        "game_date", "game_time", "home_team", "away_team",
-        "sport", "league", "final_home_score", "final_away_score",
-        "final_total", "home_run_line", "away_run_line", "total",
-        "gamePk", "gameNumber", "game_status",
+        "game_date",
+        "game_time",
+        "home_team",
+        "away_team",
+        "sport",
+        "league",
+        "final_home_score",
+        "final_away_score",
+        "final_total",
+        "home_run_line",
+        "away_run_line",
+        "total",
+        "gamePk",
+        "gameNumber",
+        "game_status",
         "final_scores_generated_at",
     }
+
     selected_fields = {
-        "sport", "league", "game_date", "game_time",
-        "home_team", "away_team", "source_file",
+        "sport",
+        "league",
+        "game_date",
+        "game_time",
+        "home_team",
+        "away_team",
+        "source_file",
     }
 
     for base in score_fields:
-        score_column = f"{base}_score"
-        bet_column = f"{base}_bet"
-
-        if score_column in output.columns:
-            output[base] = output[score_column]
-        elif base not in output.columns and bet_column in output.columns:
-            output[base] = output[bet_column]
+        _resolve_score_merge_field(
+            output,
+            base,
+        )
 
     for base in selected_fields:
-        bet_column = f"{base}_bet"
-        score_column = f"{base}_score"
+        _resolve_selected_merge_field(
+            output,
+            base,
+        )
 
-        if base not in output.columns and bet_column in output.columns:
-            output[base] = output[bet_column]
-        elif base not in output.columns and score_column in output.columns:
-            output[base] = output[score_column]
+    resolved_fields = (
+        score_fields
+        | selected_fields
+    )
 
-    columns_to_drop = []
-    for column in output.columns:
-        if column == "take_bet":
-            continue
-        if column.endswith("_bet"):
-            base = column[:-4]
-        elif column.endswith("_score"):
-            base = column[:-6]
-        else:
-            continue
+    columns_to_drop = [
+        column
+        for column in output.columns
+        if _merged_column_base(column)
+        in resolved_fields
+    ]
 
-        if base in selected_fields or base in score_fields:
-            columns_to_drop.append(column)
+    output = output.drop(
+        columns=columns_to_drop,
+        errors="ignore",
+    )
 
-    output = output.drop(columns=columns_to_drop, errors="ignore")
-    validate_no_duplicate_columns(output, "post-resolve graded rows")
+    validate_no_duplicate_columns(
+        output,
+        "post-resolve graded rows",
+    )
+
     return output
-
 
 def load_selected_bets():
     files = sorted(SELECT_DIR.glob("*MLB*.csv"))
