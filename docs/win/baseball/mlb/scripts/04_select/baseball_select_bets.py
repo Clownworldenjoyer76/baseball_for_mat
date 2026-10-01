@@ -599,45 +599,70 @@ def row_count_check(slate: str, market_frames: dict, summary: dict) -> None:
         _log(f"{slate} market row-count check OK: {counts}")
 
 
-def validate_config() -> None:
+def _validate_context_config() -> None:
     context_cfg = CONFIG.get("context_data_filters", {})
 
-    if context_cfg.get("enabled", False):
-        for key in ["home_batters_found_min", "away_batters_found_min"]:
-            value = context_cfg.get(key)
-            if not isinstance(value, int) or not 0 <= value <= 9:
-                raise ValueError(f"context_data_filters.{key} must be an integer from 0 to 9")
+    if not context_cfg.get("enabled", False):
+        return
 
-        for key in ["home_sp_found_required", "away_sp_found_required"]:
-            value = context_cfg.get(key)
-            if value not in {0, 1}:
-                raise ValueError(f"context_data_filters.{key} must be 0 or 1")
+    for key in ["home_batters_found_min", "away_batters_found_min"]:
+        value = context_cfg.get(key)
+        if not isinstance(value, int) or not 0 <= value <= 9:
+            raise ValueError(
+                f"context_data_filters.{key} must be an integer from 0 to 9"
+            )
 
-    run_line_preference = CONFIG.get("run_line", {}).get("pick_preference", "best_ev")
-    if run_line_preference not in {"best_ev", "best_prob"}:
+    for key in ["home_sp_found_required", "away_sp_found_required"]:
+        value = context_cfg.get(key)
+        if value not in {0, 1}:
+            raise ValueError(
+                f"context_data_filters.{key} must be 0 or 1"
+            )
+
+
+def _validate_run_line_preference() -> None:
+    preference = CONFIG.get("run_line", {}).get(
+        "pick_preference",
+        "best_ev",
+    )
+    if preference not in {"best_ev", "best_prob"}:
         raise ValueError(
             "run_line.pick_preference must be best_ev or best_prob."
         )
 
+
+def _validate_market_bands() -> None:
+    band_keys = [
+        "ev_bands",
+        "kelly_bands",
+        "odds_bands",
+        "line_bands",
+        "prob_bands",
+    ]
+
     for market in ["moneyline", "run_line", "total"]:
         market_cfg = CONFIG.get(market, {})
+
         for side, rules in market_cfg.items():
             if not isinstance(rules, dict):
                 continue
 
-            for key in ["ev_bands", "kelly_bands", "odds_bands", "line_bands", "prob_bands"]:
-                if key not in rules:
-                    continue
-                for band in rules[key]:
+            for key in band_keys:
+                for band in rules.get(key, []):
                     if len(band) != 2:
-                        raise ValueError(f"{market}.{side}.{key} contains invalid band: {band}")
+                        raise ValueError(
+                            f"{market}.{side}.{key} contains invalid band: {band}"
+                        )
                     if band[0] > band[1]:
-                        raise ValueError(f"{market}.{side}.{key} contains inverted band: {band}")
+                        raise ValueError(
+                            f"{market}.{side}.{key} contains inverted band: {band}"
+                        )
 
 
-# =========================
-# HELPERS
-# =========================
+def validate_config() -> None:
+    _validate_context_config()
+    _validate_run_line_preference()
+    _validate_market_bands()
 
 def fv(x):
     try:
@@ -713,35 +738,69 @@ def check_probability_basis(prob_for_selection, prob_for_ev, prob_for_kelly, ev_
     return True, "", ""
 
 
+def _matches_exclude_rule(ev, kelly, odds, line, prob, rule):
+    values = (
+        ("ev", ev),
+        ("kelly", kelly),
+        ("odds", odds),
+        ("line", line),
+        ("prob", prob),
+    )
+
+    for name, value in values:
+        min_key = f"{name}_min"
+        max_key = f"{name}_max"
+
+        if min_key in rule and (
+            value is None or value < rule[min_key]
+        ):
+            return False
+
+        if max_key in rule and (
+            value is None or value > rule[max_key]
+        ):
+            return False
+
+    if "prob_bands" in rule and (
+        prob is None or not in_range(prob, rule["prob_bands"])
+    ):
+        return False
+
+    return True
+
+
 def violates_exclude_rules(ev, kelly, odds, line, prob, rules):
-    for r in rules.get("exclude_rules", []):
-        if "ev_min" in r and (ev is None or ev < r["ev_min"]):
-            continue
-        if "ev_max" in r and (ev is None or ev > r["ev_max"]):
-            continue
-        if "kelly_min" in r and (kelly is None or kelly < r["kelly_min"]):
-            continue
-        if "kelly_max" in r and (kelly is None or kelly > r["kelly_max"]):
-            continue
-        if "odds_min" in r and (odds is None or odds < r["odds_min"]):
-            continue
-        if "odds_max" in r and (odds is None or odds > r["odds_max"]):
-            continue
-        if "line_min" in r and (line is None or line < r["line_min"]):
-            continue
-        if "line_max" in r and (line is None or line > r["line_max"]):
-            continue
-        if "prob_min" in r and (prob is None or prob < r["prob_min"]):
-            continue
-        if "prob_max" in r and (prob is None or prob > r["prob_max"]):
-            continue
+    return any(
+        _matches_exclude_rule(ev, kelly, odds, line, prob, rule)
+        for rule in rules.get("exclude_rules", [])
+    )
 
-        if "prob_bands" in r and (prob is None or not in_range(prob, r["prob_bands"])):
-            continue
+def _optional_band_checks(odds, line, prob, rules):
+    specifications = (
+        ("odds", odds, "odds_bands", "odds_fail", "outside_odds_bands"),
+        ("line", line, "line_bands", "line_fail", "outside_line_bands"),
+        ("prob", prob, "prob_bands", "prob_fail", "outside_prob_bands"),
+    )
 
-        return True
+    return [
+        (label, value, rules[key], counter, failure)
+        for label, value, key, counter, failure in specifications
+        if key in rules
+    ]
 
-    return False
+
+def _probability_limit_failure(prob, rules):
+    if "prob_min" in rules and (
+        prob is None or prob < rules["prob_min"]
+    ):
+        return "below_prob_min"
+
+    if "prob_max" in rules and (
+        prob is None or prob > rules["prob_max"]
+    ):
+        return "above_prob_max"
+
+    return None
 
 
 def check_rules(ev, kelly, odds, line, prob, rules, counters):
@@ -755,46 +814,32 @@ def check_rules(ev, kelly, odds, line, prob, rules, counters):
         counters["kelly_fail"] += 1
         return False, "kelly_fail", "kelly<=0"
 
-    ev_band = matched_band(ev, rules.get("ev_bands", []))
-    if ev_band is None:
-        counters["ev_fail"] += 1
-        return False, "ev_fail", "outside_ev_bands"
-    reason_parts.append(f"ev_band={ev_band}")
+    band_checks = [
+        ("ev", ev, rules.get("ev_bands", []), "ev_fail", "outside_ev_bands"),
+        (
+            "kelly",
+            kelly,
+            rules.get("kelly_bands", []),
+            "kelly_fail",
+            "outside_kelly_bands",
+        ),
+    ]
+    band_checks.extend(
+        _optional_band_checks(odds, line, prob, rules)
+    )
 
-    kelly_band = matched_band(kelly, rules.get("kelly_bands", []))
-    if kelly_band is None:
-        counters["kelly_fail"] += 1
-        return False, "kelly_fail", "outside_kelly_bands"
-    reason_parts.append(f"kelly_band={kelly_band}")
+    for label, value, ranges, counter, failure in band_checks:
+        band = matched_band(value, ranges)
+        if band is None:
+            counters[counter] += 1
+            return False, counter, failure
 
-    if "odds_bands" in rules:
-        odds_band = matched_band(odds, rules["odds_bands"])
-        if odds_band is None:
-            counters["odds_fail"] += 1
-            return False, "odds_fail", "outside_odds_bands"
-        reason_parts.append(f"odds_band={odds_band}")
+        reason_parts.append(f"{label}_band={band}")
 
-    if "line_bands" in rules:
-        line_band = matched_band(line, rules["line_bands"])
-        if line_band is None:
-            counters["line_fail"] += 1
-            return False, "line_fail", "outside_line_bands"
-        reason_parts.append(f"line_band={line_band}")
-
-    if "prob_bands" in rules:
-        prob_band = matched_band(prob, rules["prob_bands"])
-        if prob_band is None:
-            counters["prob_fail"] += 1
-            return False, "prob_fail", "outside_prob_bands"
-        reason_parts.append(f"prob_band={prob_band}")
-
-    if "prob_min" in rules and (prob is None or prob < rules["prob_min"]):
+    probability_failure = _probability_limit_failure(prob, rules)
+    if probability_failure is not None:
         counters["prob_fail"] += 1
-        return False, "prob_fail", "below_prob_min"
-
-    if "prob_max" in rules and (prob is None or prob > rules["prob_max"]):
-        counters["prob_fail"] += 1
-        return False, "prob_fail", "above_prob_max"
+        return False, "prob_fail", probability_failure
 
     if violates_exclude_rules(ev, kelly, odds, line, prob, rules):
         counters["excluded"] += 1
@@ -802,7 +847,6 @@ def check_rules(ev, kelly, odds, line, prob, rules, counters):
 
     counters["passed"] += 1
     return True, "", ";".join(reason_parts)
-
 
 def init_counter():
     return {
