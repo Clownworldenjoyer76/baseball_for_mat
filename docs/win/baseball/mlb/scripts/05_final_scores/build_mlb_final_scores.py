@@ -3113,252 +3113,377 @@ def process_file(
     )
 
 
-def migrate_legacy_final_score_files(
+def _prepare_legacy_final_record(row, date):
+    record = {
+        col: str(
+            row.get(col, "") or ""
+        ).strip()
+        for col in FINAL_HEADER
+    }
+
+    changed = False
+
+    record["sport"] = (
+        record["sport"]
+        or "baseball"
+    )
+    record["league"] = (
+        record["league"]
+        or "mlb"
+    )
+    record["game_date"] = (
+        record["game_date"]
+        or date
+    )
+
+    has_final_score = (
+        legacy_row_has_final_score(record)
+    )
+
+    if (
+        not record["game_status"]
+        and has_final_score
+    ):
+        record["game_status"] = "final"
+        changed = True
+
+    if (
+        not record["final_total"]
+        and has_final_score
+    ):
+        record["final_total"] = str(
+            int(record["final_away_score"])
+            + int(record["final_home_score"])
+        )
+        changed = True
+
+    if not record["final_scores_generated_at"]:
+        record[
+            "final_scores_generated_at"
+        ] = RUN_TS
+        changed = True
+
+    return record, changed
+
+
+def _resolve_legacy_completed_record(
+    *,
+    record,
+    row,
+    row_index,
+    path,
+    games_lookup,
+    games_by_game_id,
+    games_by_gamepk,
+    predictions_lookup,
+    unresolved_completed_rows,
+):
+    completed = (
+        record["game_status"].strip().lower()
+        == "final"
+        and legacy_row_has_final_score(record)
+    )
+
+    if not completed:
+        return True, False, 0, 0
+
+    before_ids = (
+        record["game_id"],
+        record["gamePk"],
+        record["gameNumber"],
+        record["game_time"],
+    )
+
+    resolution = resolve_completed_game_ids(
+        game_time=record["game_time"],
+        home_team=record["home_team"],
+        away_team=record["away_team"],
+        current_game_id=record["game_id"],
+        current_game_pk=record["gamePk"],
+        current_game_number=record["gameNumber"],
+        games_lookup=games_lookup,
+        games_by_game_id=games_by_game_id,
+        games_by_gamepk=games_by_gamepk,
+        predictions_lookup=predictions_lookup,
+    )
+
+    record["game_id"] = str(
+        resolution.get("game_id", "")
+        or ""
+    ).strip()
+
+    record["gamePk"] = str(
+        resolution.get("gamePk", "")
+        or ""
+    ).strip()
+
+    record["gameNumber"] = str(
+        resolution.get("gameNumber", "")
+        or ""
+    ).strip()
+
+    scheduled_time = str(
+        resolution.get(
+            "scheduled_game_time",
+            "",
+        )
+        or ""
+    ).strip()
+
+    if scheduled_time:
+        record["game_time"] = scheduled_time
+
+    after_ids = (
+        record["game_id"],
+        record["gamePk"],
+        record["gameNumber"],
+        record["game_time"],
+    )
+
+    identity_changed = (
+        after_ids != before_ids
+    )
+
+    unresolved = (
+        not resolution.get("resolved")
+        or not record["game_id"]
+        or not record["gamePk"]
+    )
+
+    if not unresolved:
+        return (
+            True,
+            identity_changed,
+            int(identity_changed),
+            0,
+        )
+
+    unresolved_completed_rows.append(
+        make_unresolved_completed_row(
+            source_file=path.name,
+            row_index=row_index,
+            game_date=record["game_date"],
+            game_time=record["game_time"],
+            away_team=record["away_team"],
+            home_team=record["home_team"],
+            final_away_score=record[
+                "final_away_score"
+            ],
+            final_home_score=record[
+                "final_home_score"
+            ],
+            game_id=record["game_id"],
+            game_pk=record["gamePk"],
+            game_number=record[
+                "gameNumber"
+            ],
+            games_candidate_count=(
+                resolution.get(
+                    "games_candidate_count",
+                    0,
+                )
+            ),
+            prediction_candidate_count=(
+                resolution.get(
+                    "prediction_candidate_count",
+                    0,
+                )
+            ),
+            resolution_reason=(
+                resolution.get(
+                    "reason",
+                    (
+                        "legacy completed game "
+                        "could not resolve both IDs"
+                    ),
+                )
+            ),
+            raw_row=raw_row_text(row),
+        )
+    )
+
+    return (
+        False,
+        True,
+        int(identity_changed),
+        1,
+    )
+
+
+def _migrate_legacy_final_score_file(
+    path,
     files_written,
     unresolved_completed_rows,
 ):
-    migrated_files = 0
-    migrated_rows = 0
+    with open(
+        path,
+        newline="",
+        encoding="utf-8-sig",
+    ) as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = list(
+            reader.fieldnames or []
+        )
+        rows = list(reader)
+
+    if not fieldnames:
+        fail(
+            "Legacy final-score file has "
+            f"no header: {path}"
+        )
+
+    date = legacy_final_date_from_path(path)
+
+    if not date:
+        fail(
+            "Could not derive date from legacy "
+            f"final-score path: {path}"
+        )
+
+    games_lookup = load_games_lookup(date)
+    games_by_game_id = (
+        load_games_by_game_id(date)
+    )
+    games_by_gamepk = (
+        load_games_by_gamepk(date)
+    )
+    predictions_lookup = (
+        load_predictions_lookup(date)
+    )
+
+    missing_header_columns = [
+        col
+        for col in FINAL_HEADER
+        if col not in fieldnames
+    ]
+
+    changed = bool(
+        missing_header_columns
+    )
     resolved_rows = 0
     unresolved_rows = 0
+    output_rows = []
 
-    for path in sorted(FINAL_DIR.glob("*_final_scores_MLB.csv")):
-        with open(
-            path,
-            newline="",
-            encoding="utf-8-sig",
-        ) as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
-            rows = list(reader)
-
-        if not fieldnames:
-            fail(
-                f"Legacy final-score file has no header: {path}"
+    for row_index, row in enumerate(
+        rows,
+        start=2,
+    ):
+        record, record_changed = (
+            _prepare_legacy_final_record(
+                row,
+                date,
             )
+        )
 
-        date = legacy_final_date_from_path(path)
+        changed = (
+            changed or record_changed
+        )
 
-        if not date:
-            fail(
-                "Could not derive date from legacy "
-                f"final-score path: {path}"
-            )
+        (
+            retain,
+            resolution_changed,
+            resolved_delta,
+            unresolved_delta,
+        ) = _resolve_legacy_completed_record(
+            record=record,
+            row=row,
+            row_index=row_index,
+            path=path,
+            games_lookup=games_lookup,
+            games_by_game_id=games_by_game_id,
+            games_by_gamepk=games_by_gamepk,
+            predictions_lookup=predictions_lookup,
+            unresolved_completed_rows=unresolved_completed_rows,
+        )
 
-        games_lookup = load_games_lookup(date)
-        games_by_game_id = load_games_by_game_id(date)
-        games_by_gamepk = load_games_by_gamepk(date)
-        predictions_lookup = load_predictions_lookup(date)
+        changed = (
+            changed or resolution_changed
+        )
+        resolved_rows += resolved_delta
+        unresolved_rows += unresolved_delta
 
-        missing_header_columns = [
-            col
-            for col in FINAL_HEADER
-            if col not in fieldnames
-        ]
-
-        changed = bool(missing_header_columns)
-        output_rows = []
-
-        for row_index, row in enumerate(rows, start=2):
-            record = {
-                col: str(row.get(col, "") or "").strip()
-                for col in FINAL_HEADER
-            }
-
-            record["sport"] = (
-                record["sport"]
-                or "baseball"
-            )
-
-            record["league"] = (
-                record["league"]
-                or "mlb"
-            )
-
-            record["game_date"] = (
-                record["game_date"]
-                or date
-            )
-
-            if (
-                not record["game_status"]
-                and legacy_row_has_final_score(record)
-            ):
-                record["game_status"] = "final"
-                changed = True
-
-            if (
-                not record["final_total"]
-                and legacy_row_has_final_score(record)
-            ):
-                record["final_total"] = str(
-                    int(record["final_away_score"])
-                    + int(record["final_home_score"])
-                )
-                changed = True
-
-            if not record["final_scores_generated_at"]:
-                record["final_scores_generated_at"] = RUN_TS
-                changed = True
-
-            completed = (
-                record["game_status"].strip().lower() == "final"
-                and legacy_row_has_final_score(record)
-            )
-
-            if completed:
-                before_ids = (
-                    record["game_id"],
-                    record["gamePk"],
-                    record["gameNumber"],
-                    record["game_time"],
-                )
-
-                resolution = resolve_completed_game_ids(
-                    game_time=record["game_time"],
-                    home_team=record["home_team"],
-                    away_team=record["away_team"],
-                    current_game_id=record["game_id"],
-                    current_game_pk=record["gamePk"],
-                    current_game_number=record["gameNumber"],
-                    games_lookup=games_lookup,
-                    games_by_game_id=games_by_game_id,
-                    games_by_gamepk=games_by_gamepk,
-                    predictions_lookup=predictions_lookup,
-                )
-
-                record["game_id"] = str(
-                    resolution.get("game_id", "") or ""
-                ).strip()
-
-                record["gamePk"] = str(
-                    resolution.get("gamePk", "") or ""
-                ).strip()
-
-                record["gameNumber"] = str(
-                    resolution.get("gameNumber", "") or ""
-                ).strip()
-
-                scheduled_time = str(
-                    resolution.get(
-                        "scheduled_game_time",
-                        "",
-                    )
-                    or ""
-                ).strip()
-
-                if scheduled_time:
-                    record["game_time"] = scheduled_time
-
-                after_ids = (
-                    record["game_id"],
-                    record["gamePk"],
-                    record["gameNumber"],
-                    record["game_time"],
-                )
-
-                if after_ids != before_ids:
-                    changed = True
-                    resolved_rows += 1
-
-                if (
-                    not resolution.get("resolved")
-                    or not record["game_id"]
-                    or not record["gamePk"]
-                ):
-                    unresolved_rows += 1
-                    changed = True
-
-                    unresolved_completed_rows.append(
-                        make_unresolved_completed_row(
-                            source_file=path.name,
-                            row_index=row_index,
-                            game_date=record["game_date"],
-                            game_time=record["game_time"],
-                            away_team=record["away_team"],
-                            home_team=record["home_team"],
-                            final_away_score=record[
-                                "final_away_score"
-                            ],
-                            final_home_score=record[
-                                "final_home_score"
-                            ],
-                            game_id=record["game_id"],
-                            game_pk=record["gamePk"],
-                            game_number=record["gameNumber"],
-                            games_candidate_count=resolution.get(
-                                "games_candidate_count",
-                                0,
-                            ),
-                            prediction_candidate_count=resolution.get(
-                                "prediction_candidate_count",
-                                0,
-                            ),
-                            resolution_reason=resolution.get(
-                                "reason",
-                                (
-                                    "legacy completed game "
-                                    "could not resolve both IDs"
-                                ),
-                            ),
-                            raw_row=raw_row_text(row),
-                        )
-                    )
-
-                    continue
-
+        if retain:
             output_rows.append([
                 record.get(col, "")
                 for col in FINAL_HEADER
             ])
 
-        if changed:
-            write_csv(
-                path,
-                FINAL_HEADER,
-                output_rows,
-                files_written,
-                "historical final-score ID/schema backfill",
-            )
+    if changed:
+        write_csv(
+            path,
+            FINAL_HEADER,
+            output_rows,
+            files_written,
+            "historical final-score ID/schema backfill",
+        )
 
-            migrated_files += 1
-            migrated_rows += len(output_rows)
-
-            log(
-                "MIGRATED HISTORICAL FINAL-SCORE FILE | "
-                f"file={path.name} | "
-                f"rows={len(output_rows)} | "
-                f"missing_header_columns="
-                f"{missing_header_columns}"
-            )
-
-    log(
-        "Historical final-score files updated: "
-        f"{migrated_files}"
-    )
-
-    log(
-        "Historical final-score rows retained: "
-        f"{migrated_rows}"
-    )
-
-    log(
-        "Historical completed rows resolved/backfilled: "
-        f"{resolved_rows}"
-    )
-
-    log(
-        "Historical completed rows moved to unresolved audit: "
-        f"{unresolved_rows}"
-    )
+        log(
+            "MIGRATED HISTORICAL FINAL-SCORE FILE | "
+            f"file={path.name} | "
+            f"rows={len(output_rows)} | "
+            f"missing_header_columns="
+            f"{missing_header_columns}"
+        )
 
     return {
-        "migrated_files": migrated_files,
-        "migrated_rows": migrated_rows,
+        "migrated_files": int(changed),
+        "migrated_rows": (
+            len(output_rows)
+            if changed
+            else 0
+        ),
         "resolved_rows": resolved_rows,
         "unresolved_rows": unresolved_rows,
     }
 
+
+def migrate_legacy_final_score_files(
+    files_written,
+    unresolved_completed_rows,
+):
+    totals = {
+        "migrated_files": 0,
+        "migrated_rows": 0,
+        "resolved_rows": 0,
+        "unresolved_rows": 0,
+    }
+
+    for path in sorted(
+        FINAL_DIR.glob(
+            "*_final_scores_MLB.csv"
+        )
+    ):
+        result = (
+            _migrate_legacy_final_score_file(
+                path,
+                files_written,
+                unresolved_completed_rows,
+            )
+        )
+
+        for key in totals:
+            totals[key] += result[key]
+
+    log(
+        "Historical final-score files updated: "
+        f"{totals['migrated_files']}"
+    )
+    log(
+        "Historical final-score rows retained: "
+        f"{totals['migrated_rows']}"
+    )
+    log(
+        "Historical completed rows "
+        "resolved/backfilled: "
+        f"{totals['resolved_rows']}"
+    )
+    log(
+        "Historical completed rows moved "
+        "to unresolved audit: "
+        f"{totals['unresolved_rows']}"
+    )
+
+    return totals
 
 def verify_final_score_outputs_have_gamepk():
     bad_rows = []
