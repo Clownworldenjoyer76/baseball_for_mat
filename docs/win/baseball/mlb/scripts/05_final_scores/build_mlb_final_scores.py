@@ -2,11 +2,11 @@
 # docs/win/baseball/mlb/scripts/05_final_scores/build_mlb_final_scores.py
 
 import csv
+import http.client
 import json
 import re
 import traceback
-import urllib.error
-import urllib.request
+from urllib.parse import urlsplit
 from datetime import datetime, UTC
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -34,6 +34,7 @@ RUN_TS = datetime.now(UTC).isoformat()
 DOUBLEHEADER_TIME_TOLERANCE_MINUTES = 90
 MLB_API_TIMEOUT_SECONDS = 20
 MLB_API_USER_AGENT = "baseball_for_mat-final-score-builder/1.0"
+MLB_API_HOST = "statsapi.mlb.com"
 
 ET = ZoneInfo("America/New_York")
 
@@ -2182,6 +2183,89 @@ def preserve_existing_final_score_records(
 
     return counts
 
+def _validated_mlb_api_target(url: str) -> str:
+    try:
+        parsed = urlsplit(url)
+        port = parsed.port
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid MLB API URL: {url}"
+        ) from exc
+
+    trusted = (
+        parsed.scheme.lower() == "https"
+        and parsed.hostname == MLB_API_HOST
+        and parsed.username is None
+        and parsed.password is None
+        and port in (None, 443)
+    )
+
+    if not trusted:
+        raise ValueError(
+            f"Refusing untrusted MLB API URL: {url}"
+        )
+
+    target = parsed.path or "/"
+
+    if parsed.query:
+        target += f"?{parsed.query}"
+
+    return target
+
+
+def _fetch_mlb_api_json(
+    url: str,
+    *,
+    timeout: int,
+    headers: dict | None = None,
+) -> dict:
+    target = _validated_mlb_api_target(url)
+
+    connection = http.client.HTTPSConnection(
+        MLB_API_HOST,
+        443,
+        timeout=timeout,
+    )
+
+    try:
+        connection.request(
+            "GET",
+            target,
+            headers=headers or {},
+        )
+
+        response = connection.getresponse()
+        body = response.read()
+
+    finally:
+        connection.close()
+
+    if response.status >= 400:
+        raise RuntimeError(
+            "MLB API HTTP error "
+            f"{response.status} {response.reason}"
+        )
+
+    try:
+        payload = json.loads(
+            body.decode("utf-8")
+        )
+    except (
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+    ) as exc:
+        raise RuntimeError(
+            "MLB API returned invalid JSON"
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            "MLB API returned non-object JSON"
+        )
+
+    return payload
+
+
 def fetch_mlb_game_feed(game_pk, cache):
     game_pk = str(game_pk or "").strip()
 
@@ -2196,26 +2280,21 @@ def fetch_mlb_game_feed(game_pk, cache):
         f"{game_pk}/feed/live"
     )
 
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": MLB_API_USER_AGENT,
-            "Accept": "application/json",
-        },
-    )
-
     try:
-        with urllib.request.urlopen(
-            request,
+        payload = _fetch_mlb_api_json(
+            url,
             timeout=MLB_API_TIMEOUT_SECONDS,
-        ) as response:
-            payload = json.load(response)
+            headers={
+                "User-Agent": MLB_API_USER_AGENT,
+                "Accept": "application/json",
+            },
+        )
 
     except (
-        urllib.error.HTTPError,
-        urllib.error.URLError,
+        ValueError,
+        RuntimeError,
+        http.client.HTTPException,
         TimeoutError,
-        json.JSONDecodeError,
         OSError,
     ) as exc:
         log(
@@ -2228,7 +2307,6 @@ def fetch_mlb_game_feed(game_pk, cache):
 
     cache[game_pk] = payload
     return payload
-
 
 def extract_mlb_feed_status(feed):
     if not isinstance(feed, dict):

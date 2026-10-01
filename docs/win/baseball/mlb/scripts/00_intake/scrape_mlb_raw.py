@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 import csv
+import http.client
 import json
 import sys
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
-from urllib.request import urlopen
 
 
 SCHEDULE_URL = (
@@ -18,6 +18,7 @@ SCHEDULE_URL = (
 )
 LIVE_URL = "https://statsapi.mlb.com/api/v1.1/game/{game_pk}/feed/live"
 LINEUP_URL = "https://statsapi.mlb.com/api/v1/game/{game_pk}/lineups"
+MLB_API_HOST = "statsapi.mlb.com"
 
 OUTPUT_DIR = Path("docs/win/baseball/mlb/00_intake/mlb_raw")
 
@@ -75,19 +76,93 @@ def log(message: str, level: str = "INFO") -> None:
         f.write(f"{now_utc()} | {level:<5} | {message}\n")
 
 
-def fetch_json(url: str) -> dict:
+def _validated_mlb_target(url: str) -> str:
     try:
-        with urlopen(url, timeout=30) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
+        parsed = urlsplit(url)
+        port = parsed.port
+    except ValueError as exc:
         raise RuntimeError(
-            f"HTTP error for {url}: {exc.code} {exc.reason}"
+            f"Invalid MLB API URL: {url}"
         ) from exc
-    except URLError as exc:
-        raise RuntimeError(f"URL error for {url}: {exc.reason}") from exc
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Invalid JSON returned for {url}") from exc
 
+    trusted = (
+        parsed.scheme.lower() == "https"
+        and parsed.hostname == MLB_API_HOST
+        and parsed.username is None
+        and parsed.password is None
+        and port in (None, 443)
+    )
+
+    if not trusted:
+        raise RuntimeError(
+            f"Refusing untrusted MLB API URL: {url}"
+        )
+
+    target = parsed.path or "/"
+
+    if parsed.query:
+        target += f"?{parsed.query}"
+
+    return target
+
+
+def fetch_json(url: str) -> dict:
+    target = _validated_mlb_target(url)
+
+    connection = http.client.HTTPSConnection(
+        MLB_API_HOST,
+        443,
+        timeout=30,
+    )
+
+    try:
+        connection.request(
+            "GET",
+            target,
+            headers={
+                "Accept": "application/json",
+            },
+        )
+
+        response = connection.getresponse()
+        body = response.read()
+
+    except (
+        OSError,
+        http.client.HTTPException,
+    ) as exc:
+        raise RuntimeError(
+            f"URL error for {url}: {exc}"
+        ) from exc
+
+    finally:
+        connection.close()
+
+    if response.status >= 400:
+        raise RuntimeError(
+            f"HTTP error for {url}: "
+            f"{response.status} {response.reason}"
+        )
+
+    try:
+        payload = json.loads(
+            body.decode("utf-8")
+        )
+    except (
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+    ) as exc:
+        raise RuntimeError(
+            f"Invalid JSON returned for {url}"
+        ) from exc
+
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"Unexpected JSON type returned for {url}: "
+            f"{type(payload).__name__}"
+        )
+
+    return payload
 
 def safe_get(mapping: dict, *keys, default=""):
     current = mapping
