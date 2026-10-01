@@ -669,7 +669,7 @@ def process_date(
     park_index: dict, summary: dict,
 ) -> None:
     date_str = normalize_date(date_str)
-    raw_path, df = _load_context_raw_frame(date_str, summary)
+    _, df = _load_context_raw_frame(date_str, summary)
     if df is None:
         return
     weather_map = load_weather(date_str)
