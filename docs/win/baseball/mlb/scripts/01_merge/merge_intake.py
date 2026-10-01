@@ -455,6 +455,148 @@ def _key(value):
     ).lower()
 
 
+def _parse_team_map_row(row, row_num):
+    league = _key(
+        row.get("league")
+    )
+    team_id = _clean(
+        row.get("team_id")
+    )
+    alias_raw = _clean(
+        row.get("alias")
+    )
+    alias = _key(alias_raw)
+    canonical = _clean(
+        row.get("canonical_team")
+    )
+
+    if not all(
+        (
+            league,
+            team_id,
+            alias,
+            canonical,
+        )
+    ):
+        fail(
+            "team_map_mlb has blank required value "
+            f"at csv_row={row_num}: "
+            f"league={league!r} "
+            f"team_id={team_id!r} "
+            f"alias={alias_raw!r} "
+            f"canonical_team={canonical!r}"
+        )
+
+    return (
+        league,
+        team_id,
+        alias_raw,
+        alias,
+        canonical,
+    )
+
+
+def _validate_team_map_alias(
+    *,
+    alias_map,
+    alias,
+    alias_raw,
+    canonical,
+    row_num,
+):
+    existing = alias_map.get(alias)
+
+    if (
+        existing
+        and existing != canonical
+    ):
+        fail(
+            "team_map_mlb alias maps to multiple "
+            "canonical teams: "
+            f"csv_row={row_num} "
+            f"alias={alias_raw} "
+            f"existing={existing} "
+            f"new={canonical}"
+        )
+
+    duplicate = existing == canonical
+    alias_map[alias] = canonical
+
+    return int(duplicate)
+
+
+def _validate_team_map_ids(
+    *,
+    team_id_to_canonical,
+    canonical_to_team_id,
+    team_id,
+    canonical,
+    row_num,
+):
+    existing_canonical = (
+        team_id_to_canonical.get(
+            team_id
+        )
+    )
+
+    if (
+        existing_canonical
+        and existing_canonical != canonical
+    ):
+        fail(
+            "team_map_mlb team_id maps to multiple "
+            "canonical teams: "
+            f"csv_row={row_num} "
+            f"team_id={team_id} "
+            f"existing={existing_canonical} "
+            f"new={canonical}"
+        )
+
+    existing_team_id = (
+        canonical_to_team_id.get(
+            canonical
+        )
+    )
+
+    if (
+        existing_team_id
+        and existing_team_id != team_id
+    ):
+        fail(
+            "team_map_mlb canonical_team maps to "
+            "multiple team_ids: "
+            f"csv_row={row_num} "
+            f"canonical_team={canonical} "
+            f"existing={existing_team_id} "
+            f"new={team_id}"
+        )
+
+    team_id_to_canonical[
+        team_id
+    ] = canonical
+
+    canonical_to_team_id[
+        canonical
+    ] = team_id
+
+
+def _ensure_team_maps_loaded(
+    alias_map,
+    team_id_to_canonical,
+):
+    if not alias_map:
+        fail(
+            f"No MLB alias mappings loaded from "
+            f"{TEAM_MAP_FILE}"
+        )
+
+    if not team_id_to_canonical:
+        fail(
+            f"No MLB team_id mappings loaded from "
+            f"{TEAM_MAP_FILE}"
+        )
+
+
 def load_team_maps():
     rows = load_csv(
         TEAM_MAP_FILE,
@@ -477,128 +619,53 @@ def load_team_maps():
         rows,
         start=2,
     ):
-        league = _key(
-            row.get("league")
+        (
+            league,
+            team_id,
+            alias_raw,
+            alias,
+            canonical,
+        ) = _parse_team_map_row(
+            row,
+            row_num,
         )
-
-        team_id = _clean(
-            row.get("team_id")
-        )
-
-        alias_raw = _clean(
-            row.get("alias")
-        )
-
-        alias = _key(
-            alias_raw
-        )
-
-        canonical = _clean(
-            row.get("canonical_team")
-        )
-
-        if (
-            not league
-            or not team_id
-            or not alias
-            or not canonical
-        ):
-            fail(
-                "team_map_mlb has blank required value "
-                f"at csv_row={row_num}: "
-                f"league={league!r} "
-                f"team_id={team_id!r} "
-                f"alias={alias_raw!r} "
-                f"canonical_team={canonical!r}"
-            )
 
         if league != "mlb":
             continue
 
-        existing_alias = alias_map.get(
-            alias
-        )
-
-        if (
-            existing_alias
-            and existing_alias != canonical
-        ):
-            fail(
-                "team_map_mlb alias maps to multiple canonical teams: "
-                f"csv_row={row_num} "
-                f"alias={alias_raw} "
-                f"existing={existing_alias} "
-                f"new={canonical}"
-            )
-
-        if existing_alias == canonical:
-            duplicate_identical_alias_rows += 1
-
-        alias_map[
-            alias
-        ] = canonical
-
-        existing_canonical_for_id = (
-            team_id_to_canonical.get(
-                team_id
+        duplicate_identical_alias_rows += (
+            _validate_team_map_alias(
+                alias_map=alias_map,
+                alias=alias,
+                alias_raw=alias_raw,
+                canonical=canonical,
+                row_num=row_num,
             )
         )
 
-        if (
-            existing_canonical_for_id
-            and existing_canonical_for_id != canonical
-        ):
-            fail(
-                "team_map_mlb team_id maps to multiple canonical teams: "
-                f"csv_row={row_num} "
-                f"team_id={team_id} "
-                f"existing={existing_canonical_for_id} "
-                f"new={canonical}"
-            )
-
-        existing_id_for_canonical = (
-            canonical_to_team_id.get(
-                canonical
-            )
+        _validate_team_map_ids(
+            team_id_to_canonical=(
+                team_id_to_canonical
+            ),
+            canonical_to_team_id=(
+                canonical_to_team_id
+            ),
+            team_id=team_id,
+            canonical=canonical,
+            row_num=row_num,
         )
 
-        if (
-            existing_id_for_canonical
-            and existing_id_for_canonical != team_id
-        ):
-            fail(
-                "team_map_mlb canonical_team maps to multiple team_ids: "
-                f"csv_row={row_num} "
-                f"canonical_team={canonical} "
-                f"existing={existing_id_for_canonical} "
-                f"new={team_id}"
-            )
-
-        team_id_to_canonical[
-            team_id
-        ] = canonical
-
-        canonical_to_team_id[
-            canonical
-        ] = team_id
-
-    if not alias_map:
-        fail(
-            f"No MLB alias mappings loaded from "
-            f"{TEAM_MAP_FILE}"
-        )
-
-    if not team_id_to_canonical:
-        fail(
-            f"No MLB team_id mappings loaded from "
-            f"{TEAM_MAP_FILE}"
-        )
+    _ensure_team_maps_loaded(
+        alias_map,
+        team_id_to_canonical,
+    )
 
     log(
         f"Team map loaded from {TEAM_MAP_FILE}: "
         f"aliases={len(alias_map)} "
         f"team_ids={len(team_id_to_canonical)} "
-        f"canonical_teams={len(canonical_to_team_id)} "
+        f"canonical_teams="
+        f"{len(canonical_to_team_id)} "
         f"duplicate_identical_alias_rows="
         f"{duplicate_identical_alias_rows}"
     )
@@ -608,7 +675,6 @@ def load_team_maps():
         team_id_to_canonical,
         canonical_to_team_id,
     )
-
 
 def normalize_team_name(
     raw_name,
