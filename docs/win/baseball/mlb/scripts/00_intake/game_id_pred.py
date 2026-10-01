@@ -218,16 +218,53 @@ def load_csv(path: Path, required_cols=None, label=None, required_file=False) ->
 
 
 def write_csv(path: Path, header: list[str], rows: list[dict]):
-    assert_no_duplicate_columns(header, f"{path} output")
+    safe_path = Path(path).resolve()
+    allowed_root = OUT_DIR.resolve()
 
-    path.parent.mkdir(parents=True, exist_ok=True)
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        raise ValueError(
+            "Refusing prediction output outside "
+            f"trusted directory: {path}"
+        )
 
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=header, extrasaction="ignore")
+    if not (
+        safe_path.name.endswith(".csv")
+        or safe_path.name.endswith(".csv.tmp")
+    ):
+        raise ValueError(
+            f"Refusing unexpected prediction output: {path}"
+        )
+
+    path = safe_path
+
+    assert_no_duplicate_columns(
+        header,
+        f"{path} output",
+    )
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with path.open(
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=header,
+            extrasaction="ignore",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
-    log(f"WROTE: {path} | rows={len(rows)}")
+    log(
+        f"WROTE: {path} | rows={len(rows)}"
+    )
 
 
 def write_output_csv(date_str: str, header: list[str], rows: list[dict], summary: dict) -> Path:

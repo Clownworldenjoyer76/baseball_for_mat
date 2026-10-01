@@ -1336,10 +1336,38 @@ def write_csv(path, header, rows, files_written, label):
 
 
 def write_audit_csv(path, header, rows, label):
-    path.parent.mkdir(parents=True, exist_ok=True)
+    safe_path = Path(path).resolve()
+    allowed_root = AUDIT_DIR.resolve()
 
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=header)
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        fail(
+            "Refusing final-score audit output "
+            f"outside trusted directory: {path}"
+        )
+
+    if safe_path.suffix.lower() != ".csv":
+        fail(
+            f"Refusing non-CSV audit output: {path}"
+        )
+
+    path = safe_path
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with path.open(
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=header,
+        )
         writer.writeheader()
 
         for row in rows:
@@ -1348,7 +1376,10 @@ def write_audit_csv(path, header, rows, label):
                 for col in header
             })
 
-    log(f"WROTE {label} -> {path} ({len(rows)} rows)")
+    log(
+        f"WROTE {label} -> {path} "
+        f"({len(rows)} rows)"
+    )
 
 
 def raw_row_text(row):
@@ -3348,10 +3379,33 @@ def process_file(
     parse_error_rows,
     unresolved_completed_rows,
 ):
+    safe_file_path = Path(
+        file_path
+    ).resolve()
+
+    allowed_root = RAW_DIR.resolve()
+
+    if not safe_file_path.is_relative_to(
+        allowed_root
+    ):
+        fail(
+            "Refusing DRatings input outside "
+            f"trusted directory: {file_path}"
+        )
+
+    if not safe_file_path.name.endswith(
+        "_mlb_raw.json"
+    ):
+        fail(
+            "Refusing unexpected DRatings "
+            f"input file: {file_path}"
+        )
+
+    file_path = safe_file_path
+
     log(f"Processing {file_path.name}")
 
-    with open(
-        file_path,
+    with file_path.open(
         "r",
         encoding="utf-8",
     ) as handle:
@@ -3638,8 +3692,28 @@ def _migrate_legacy_final_score_file(
     files_written,
     unresolved_completed_rows,
 ):
-    with open(
-        path,
+    safe_path = Path(path).resolve()
+    allowed_root = FINAL_DIR.resolve()
+
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        fail(
+            "Refusing legacy final-score file "
+            f"outside trusted directory: {path}"
+        )
+
+    if not safe_path.name.endswith(
+        "_final_scores_MLB.csv"
+    ):
+        fail(
+            "Refusing unexpected legacy "
+            f"final-score file: {path}"
+        )
+
+    path = safe_path
+
+    with path.open(
         newline="",
         encoding="utf-8-sig",
     ) as handle:

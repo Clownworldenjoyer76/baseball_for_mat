@@ -29,11 +29,40 @@ def utc_now() -> str:
 
 
 def make_logger(log_file: Path) -> Callable[[str, str], None]:
-    def log(msg: str, level: str = "INFO") -> None:
-        with open(log_file, "a", encoding="utf-8") as handle:
+    allowed_root = Path(
+        "docs/win/baseball/mlb/errors/02_juice"
+    ).resolve()
+
+    safe_log_file = Path(
+        log_file
+    ).resolve()
+
+    if not safe_log_file.is_relative_to(
+        allowed_root
+    ):
+        raise ValueError(
+            "Refusing juice log path outside "
+            f"trusted directory: {log_file}"
+        )
+
+    if safe_log_file.suffix.lower() != ".txt":
+        raise ValueError(
+            f"Refusing unexpected juice log file: {log_file}"
+        )
+
+    def log(
+        msg: str,
+        level: str = "INFO",
+    ) -> None:
+        with safe_log_file.open(
+            "a",
+            encoding="utf-8",
+        ) as handle:
             handle.write(
-                f"{utc_now()} | {level:<5} | {msg.rstrip()}\n"
+                f"{utc_now()} | {level:<5} | "
+                f"{msg.rstrip()}\n"
             )
+
     return log
 
 

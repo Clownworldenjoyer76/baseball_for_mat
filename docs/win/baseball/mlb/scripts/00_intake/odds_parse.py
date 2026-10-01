@@ -133,8 +133,35 @@ def _write_grouped_odds_rows(grouped_rows, files_written):
 
 
 def process_file(file_path, files_written):
+    allowed_root = Path(
+        "docs/win/baseball/mlb/odds"
+    ).resolve()
+
+    safe_file_path = Path(
+        file_path
+    ).resolve()
+
+    if not safe_file_path.is_relative_to(
+        allowed_root
+    ):
+        raise ValueError(
+            "Refusing odds input outside trusted "
+            f"directory: {file_path}"
+        )
+
+    if safe_file_path.suffix.lower() != ".json":
+        raise ValueError(
+            f"Refusing non-JSON odds input: {file_path}"
+        )
+
+    file_path = safe_file_path
+
     log(f"Processing {file_path.name}")
-    with open(file_path, "r") as handle:
+
+    with file_path.open(
+        "r",
+        encoding="utf-8",
+    ) as handle:
         data = json.load(handle)
     grouped_rows = {}
     games_parsed = 0

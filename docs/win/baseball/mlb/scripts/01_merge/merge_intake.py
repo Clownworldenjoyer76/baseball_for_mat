@@ -265,6 +265,24 @@ def load_csv(
 
 
 def write_csv(path, header, rows):
+    safe_path = Path(path).resolve()
+    allowed_root = OUT_DIR.resolve()
+
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        fail(
+            "Refusing merge output outside "
+            f"trusted directory: {path}"
+        )
+
+    if safe_path.suffix.lower() != ".csv":
+        fail(
+            f"Refusing non-CSV merge output: {path}"
+        )
+
+    path = safe_path
+
     assert_no_duplicate_columns(
         header,
         f"{path} output",
@@ -297,13 +315,12 @@ def write_csv(path, header, rows):
         exist_ok=True,
     )
 
-    with open(
-        path,
+    with path.open(
         "w",
         newline="",
         encoding="utf-8",
-    ) as f:
-        writer = csv.writer(f)
+    ) as handle:
+        writer = csv.writer(handle)
         writer.writerow(header)
         writer.writerows(rows)
 

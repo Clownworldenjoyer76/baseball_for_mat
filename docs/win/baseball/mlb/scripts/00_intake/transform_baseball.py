@@ -70,15 +70,46 @@ def is_summary_row(row):
 # -------------------------
 
 def write_csv(path, header, rows, files_written, label):
-    path.parent.mkdir(parents=True, exist_ok=True)
+    safe_path = Path(path).resolve()
+    allowed_root = PRED_DIR.resolve()
 
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        raise ValueError(
+            "Refusing transformed prediction "
+            f"output outside trusted directory: {path}"
+        )
+
+    if safe_path.suffix.lower() != ".csv":
+        raise ValueError(
+            f"Refusing non-CSV prediction output: {path}"
+        )
+
+    path = safe_path
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with path.open(
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as handle:
+        writer = csv.writer(handle)
         writer.writerow(header)
         writer.writerows(rows)
 
-    files_written.append((str(path), len(rows)))
-    log(f"WROTE {label} -> {path} ({len(rows)} rows)")
+    files_written.append(
+        (str(path), len(rows))
+    )
+
+    log(
+        f"WROTE {label} -> {path} "
+        f"({len(rows)} rows)"
+    )
 
 
 # -------------------------
@@ -86,10 +117,37 @@ def write_csv(path, header, rows, files_written, label):
 # -------------------------
 
 def process_file(file_path, files_written):
+    safe_file_path = Path(
+        file_path
+    ).resolve()
+
+    allowed_root = RAW_DIR.resolve()
+
+    if not safe_file_path.is_relative_to(
+        allowed_root
+    ):
+        raise ValueError(
+            "Refusing DRatings input outside "
+            f"trusted directory: {file_path}"
+        )
+
+    if not safe_file_path.name.endswith(
+        "_mlb_raw.json"
+    ):
+        raise ValueError(
+            "Refusing unexpected DRatings "
+            f"input file: {file_path}"
+        )
+
+    file_path = safe_file_path
+
     log(f"Processing {file_path.name}")
 
-    with open(file_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    with file_path.open(
+        "r",
+        encoding="utf-8",
+    ) as handle:
+        data = json.load(handle)
 
     predictions_by_date = {}
 

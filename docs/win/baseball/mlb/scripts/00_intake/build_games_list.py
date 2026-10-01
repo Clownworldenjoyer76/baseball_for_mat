@@ -205,11 +205,39 @@ def write_games_file(
     out_path: Path,
     output_rows: list,
 ) -> None:
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    safe_path = Path(
+        out_path
+    ).resolve()
 
-    with open(out_path, "w", newline="", encoding="utf-8") as f:
+    allowed_root = OUT_DIR.resolve()
+
+    if not safe_path.is_relative_to(
+        allowed_root
+    ):
+        raise ValueError(
+            "Refusing games output outside "
+            f"trusted directory: {out_path}"
+        )
+
+    if safe_path.suffix.lower() != ".csv":
+        raise ValueError(
+            f"Refusing non-CSV games output: {out_path}"
+        )
+
+    out_path = safe_path
+
+    out_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with out_path.open(
+        "w",
+        newline="",
+        encoding="utf-8",
+    ) as handle:
         writer = csv.DictWriter(
-            f,
+            handle,
             fieldnames=OUTPUT_HEADER,
         )
         writer.writeheader()
