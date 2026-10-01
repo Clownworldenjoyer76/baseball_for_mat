@@ -165,9 +165,14 @@ def _make_training_log_helpers(log_file: Path):
 
 _log, fail = _make_training_log_helpers(LOG_FILE)
 
+
+def _disabled_log(*_args, **_kwargs) -> None:
+    return None
+
+
 def disable_logging() -> None:
     global _log
-    _log = lambda *args, **kwargs: None
+    _log = _disabled_log
 
 
 def duplicate_columns(columns) -> list[str]:
