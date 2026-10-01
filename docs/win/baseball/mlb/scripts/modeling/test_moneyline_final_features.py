@@ -2872,9 +2872,6 @@ if __name__ == "__main__":
             main()
         )
 
-    except SystemExit:
-        raise
-
     except Exception as main_error:
         print(
             f"ERROR: {main_error}",

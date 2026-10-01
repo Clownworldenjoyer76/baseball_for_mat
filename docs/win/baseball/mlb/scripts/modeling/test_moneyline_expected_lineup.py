@@ -1876,9 +1876,6 @@ if __name__ == "__main__":
             main()
         )
 
-    except SystemExit:
-        raise
-
     except Exception as exc:
         print(
             f"ERROR: {exc}",
