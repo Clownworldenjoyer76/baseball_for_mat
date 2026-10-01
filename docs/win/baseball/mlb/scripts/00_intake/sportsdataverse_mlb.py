@@ -662,100 +662,77 @@ def _fetch_statcast(
     return _as_polars(raw)
 
 
-def ensure_season_cache(
-    season: int,
-    pitcher_ids: list[int],
-    required_through_date: date,
-    summary: dict,
-) -> pl.DataFrame:
-    """Ensure the season cache covers requested pitchers through the cutoff.
-
-    The cache is allowed to contain rows after a later historical target. Those
-    rows are harmless because ``build_pitcher_features`` always applies the
-    strict ``pitch.game_date < target_game_date`` filter before aggregation.
-    """
-    cache = _read_cache(season)
-    season_start = date(season, 3, 1)
-
-    if required_through_date < season_start or not pitcher_ids:
-        return cache
-
-    max_dates = _pitcher_cache_max_dates(cache)
-
-    missing_ids = [
-        pitcher_id
-        for pitcher_id in pitcher_ids
-        if pitcher_id not in max_dates
+def _season_cache_missing_and_stale(pitcher_ids, max_dates, required_through_date):
+    missing = [pitcher_id for pitcher_id in pitcher_ids if pitcher_id not in max_dates]
+    stale = [
+        pitcher_id for pitcher_id in pitcher_ids
+        if pitcher_id in max_dates and max_dates[pitcher_id] < required_through_date
     ]
+    return missing, stale
 
-    stale_ids = [
-        pitcher_id
-        for pitcher_id in pitcher_ids
-        if (
-            pitcher_id in max_dates
-            and max_dates[pitcher_id] < required_through_date
-        )
-    ]
 
-    fetched_frames: list[pl.DataFrame] = []
-
-    # Pitchers absent from cache need their full season-to-cutoff history.
+def _fetch_season_cache_updates(
+    season, season_start, required_through_date, missing_ids, stale_ids, max_dates
+):
+    frames = []
     if missing_ids:
         fetched = _fetch_statcast(
-            season,
-            season_start,
-            required_through_date,
-            missing_ids,
+            season, season_start, required_through_date, missing_ids
         )
         if fetched.height:
-            fetched_frames.append(fetched)
-
-    # Existing pitchers are incrementally refreshed from the earliest missing
-    # day among the stale requested pitchers. Duplicate rows are removed later.
+            frames.append(fetched)
     if stale_ids:
         earliest_refresh = min(
             max_dates[pitcher_id] + timedelta(days=1)
             for pitcher_id in stale_ids
         )
         fetched = _fetch_statcast(
-            season,
-            earliest_refresh,
-            required_through_date,
-            stale_ids,
+            season, earliest_refresh, required_through_date, stale_ids
         )
         if fetched.height:
-            fetched_frames.append(fetched)
+            frames.append(fetched)
+    return frames
 
-    if fetched_frames:
-        pieces = [cache] if cache.height else []
-        pieces.extend(fetched_frames)
 
-        cache = pl.concat(
-            pieces,
-            how="diagonal_relaxed",
-        )
-        cache = _dedupe_raw_statcast(cache)
-        _write_cache_atomic(season, cache)
-
-        fetched_rows = sum(frame.height for frame in fetched_frames)
-        summary["statcast_pitches_fetched"] += fetched_rows
-        summary["cache_writes"] += 1
-
-        _log(
-            f"CACHE WROTE {_cache_path(season)} "
-            f"rows={cache.height} fetched_rows={fetched_rows}"
-        )
-    elif cache.height:
-        _log(
-            f"CACHE HIT {_cache_path(season)} rows={cache.height}"
-        )
-
+def _write_refreshed_season_cache(season, cache, fetched_frames, summary):
+    pieces = [cache] if cache.height else []
+    pieces.extend(fetched_frames)
+    cache = pl.concat(pieces, how="diagonal_relaxed")
+    cache = _dedupe_raw_statcast(cache)
+    _write_cache_atomic(season, cache)
+    fetched_rows = sum(frame.height for frame in fetched_frames)
+    summary["statcast_pitches_fetched"] += fetched_rows
+    summary["cache_writes"] += 1
+    _log(
+        f"CACHE WROTE {_cache_path(season)} rows={cache.height} "
+        f"fetched_rows={fetched_rows}"
+    )
     return cache
 
 
-# =========================
-# LEAGUE STATCAST CACHE FOR BULLPEN FEATURES
-# =========================
+def ensure_season_cache(
+    season: int,
+    pitcher_ids: list[int],
+    required_through_date: date,
+    summary: dict,
+) -> pl.DataFrame:
+    """Ensure the season cache covers requested pitchers through the cutoff."""
+    cache = _read_cache(season)
+    season_start = date(season, 3, 1)
+    if required_through_date < season_start or not pitcher_ids:
+        return cache
+    max_dates = _pitcher_cache_max_dates(cache)
+    missing_ids, stale_ids = _season_cache_missing_and_stale(
+        pitcher_ids, max_dates, required_through_date
+    )
+    fetched_frames = _fetch_season_cache_updates(
+        season, season_start, required_through_date, missing_ids, stale_ids, max_dates
+    )
+    if fetched_frames:
+        return _write_refreshed_season_cache(season, cache, fetched_frames, summary)
+    if cache.height:
+        _log(f"CACHE HIT {_cache_path(season)} rows={cache.height}")
+    return cache
 
 def _team_cache_path(season: int) -> Path:
     return CACHE_DIR / f"{season}_team_statcast.parquet"

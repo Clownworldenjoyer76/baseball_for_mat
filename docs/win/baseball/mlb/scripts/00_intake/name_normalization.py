@@ -72,90 +72,75 @@ def key_text(value) -> str:
     return clean(value).lower()
 
 
+def _parse_name_map_row(row, line_num):
+    league = key_text(row.get("league"))
+    team_id = clean(row.get("team_id"))
+    alias = clean(row.get("alias"))
+    alias_key = key_text(alias)
+    canonical = clean(row.get("canonical_team"))
+    if not all((league, team_id, alias, canonical)):
+        raise ValueError(
+            f"{MAP_FILE}:{line_num} has blank required value: "
+            f"league={league!r}, team_id={team_id!r}, "
+            f"alias={alias!r}, canonical_team={canonical!r}"
+        )
+    return league, team_id, alias, alias_key, canonical
+
+
+def _add_name_map_row(team_map, canonical_to_ids, parsed, line_num):
+    league, team_id, alias, alias_key, canonical = parsed
+    map_key = (league, alias_key)
+    map_value = {"team_id": team_id, "canonical_team": canonical}
+    existing = team_map.get(map_key)
+    if existing is not None:
+        if existing != map_value:
+            raise ValueError(
+                f"{MAP_FILE}:{line_num} ambiguous alias mapping for "
+                f"league={league!r}, alias={alias!r}: existing={existing}, new={map_value}"
+            )
+        return 1
+    team_map[map_key] = map_value
+    canonical_to_ids.setdefault((league, canonical), set()).add(team_id)
+    return 0
+
+
+def _validate_name_map_canonicals(canonical_to_ids):
+    bad = {key: ids for key, ids in canonical_to_ids.items() if len(ids) > 1}
+    if not bad:
+        return
+    details = "; ".join(
+        f"league={league} canonical_team={canonical} team_ids={sorted(ids)}"
+        for (league, canonical), ids in sorted(bad.items())
+    )
+    raise ValueError(f"Canonical team maps to multiple team_ids: {details}")
+
+
 def load_team_map() -> dict:
-    """
-    Returns:
-        dict[(league, alias_lower)] = {
-            "team_id": team_id,
-            "canonical_team": canonical_team,
-        }
-    """
     if not MAP_FILE.exists():
         raise FileNotFoundError(f"Missing required map file: {MAP_FILE}")
-
     team_map = {}
     canonical_to_ids = {}
     duplicate_same_rows = 0
-
-    with open(MAP_FILE, newline="", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        fieldnames = set(reader.fieldnames or [])
-
-        missing_columns = REQUIRED_MAP_COLUMNS - fieldnames
+    with open(MAP_FILE, newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        missing_columns = REQUIRED_MAP_COLUMNS - set(reader.fieldnames or [])
         if missing_columns:
             raise ValueError(
                 f"{MAP_FILE} is missing required column(s): {sorted(missing_columns)}"
             )
-
         for line_num, row in enumerate(reader, start=2):
-            league = key_text(row.get("league"))
-            team_id = clean(row.get("team_id"))
-            alias = clean(row.get("alias"))
-            alias_key = key_text(alias)
-            canonical = clean(row.get("canonical_team"))
-
-            if not league or not team_id or not alias or not canonical:
-                raise ValueError(
-                    f"{MAP_FILE}:{line_num} has blank required value: "
-                    f"league={league!r}, team_id={team_id!r}, "
-                    f"alias={alias!r}, canonical_team={canonical!r}"
-                )
-
-            map_key = (league, alias_key)
-            map_value = {
-                "team_id": team_id,
-                "canonical_team": canonical,
-            }
-
-            if map_key in team_map:
-                existing = team_map[map_key]
-                if existing != map_value:
-                    raise ValueError(
-                        f"{MAP_FILE}:{line_num} ambiguous alias mapping for "
-                        f"league={league!r}, alias={alias!r}: "
-                        f"existing={existing}, new={map_value}"
-                    )
-                duplicate_same_rows += 1
-                continue
-
-            team_map[map_key] = map_value
-            canonical_to_ids.setdefault((league, canonical), set()).add(team_id)
-
-    bad_canonicals = {
-        key: ids
-        for key, ids in canonical_to_ids.items()
-        if len(ids) > 1
-    }
-
-    if bad_canonicals:
-        details = "; ".join(
-            [
-                f"league={league} canonical_team={canonical} team_ids={sorted(ids)}"
-                for (league, canonical), ids in sorted(bad_canonicals.items())
-            ]
-        )
-        raise ValueError(f"Canonical team maps to multiple team_ids: {details}")
-
+            parsed = _parse_name_map_row(row, line_num)
+            duplicate_same_rows += _add_name_map_row(
+                team_map, canonical_to_ids, parsed, line_num
+            )
+    _validate_name_map_canonicals(canonical_to_ids)
     if not team_map:
         raise ValueError(f"No valid rows loaded from {MAP_FILE}")
-
     log(
-        f"Team map loaded: {len(team_map)} alias entries "
-        f"from {MAP_FILE} | duplicate identical rows skipped: {duplicate_same_rows}"
+        f"Team map loaded: {len(team_map)} alias entries from {MAP_FILE} | "
+        f"duplicate identical rows skipped: {duplicate_same_rows}"
     )
-
     return team_map
-
 
 def collect_target_files() -> list:
     target_files = []

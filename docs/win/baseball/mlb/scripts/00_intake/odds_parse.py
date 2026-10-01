@@ -52,111 +52,102 @@ def decimal_to_american(decimal_odds):
 # -----------------------
 # PROCESS ONE FILE
 # -----------------------
-def process_file(file_path, files_written):
-    log(f"Processing {file_path.name}")
-    games_parsed  = 0
-    games_skipped = 0
+def _parse_game_markets(game, away_team, home_team):
+    values = {
+        "away_run_line": None, "home_run_line": None, "total": None,
+        "away_rl_dec": None, "home_rl_dec": None,
+        "over_dec": None, "under_dec": None,
+        "away_ml_dec": None, "home_ml_dec": None,
+    }
+    markets = game["bookmakers"][0].get("markets", [])
+    for market in markets:
+        key = market["key"]
+        outcomes = market.get("outcomes", [])
+        if key == "h2h":
+            for outcome in outcomes:
+                if outcome["name"] == away_team:
+                    values["away_ml_dec"] = outcome["price"]
+                elif outcome["name"] == home_team:
+                    values["home_ml_dec"] = outcome["price"]
+        elif key == "spreads":
+            for outcome in outcomes:
+                if outcome["name"] == away_team:
+                    values["away_run_line"] = outcome["point"]
+                    values["away_rl_dec"] = outcome["price"]
+                elif outcome["name"] == home_team:
+                    values["home_run_line"] = outcome["point"]
+                    values["home_rl_dec"] = outcome["price"]
+        elif key == "totals":
+            if outcomes:
+                values["total"] = outcomes[0]["point"]
+            for outcome in outcomes:
+                if outcome["name"] == "Over":
+                    values["over_dec"] = outcome["price"]
+                elif outcome["name"] == "Under":
+                    values["under_dec"] = outcome["price"]
+    return values
 
-    with open(file_path, "r") as f:
-        data = json.load(f)
 
-    grouped_rows = {}
+def _parsed_odds_game_row(game):
+    game_date, game_time = utc_to_est(game["commence_time"])
+    away_team = game["away_team"]
+    home_team = game["home_team"]
+    values = _parse_game_markets(game, away_team, home_team)
+    return game_date, [
+        game.get("id"), "baseball", "mlb", game_date, game_time,
+        home_team, away_team,
+        values["away_run_line"], values["home_run_line"], values["total"],
+        decimal_to_american(values["away_rl_dec"]),
+        decimal_to_american(values["home_rl_dec"]),
+        decimal_to_american(values["over_dec"]),
+        decimal_to_american(values["under_dec"]),
+        decimal_to_american(values["away_ml_dec"]),
+        decimal_to_american(values["home_ml_dec"]),
+        values["away_rl_dec"], values["home_rl_dec"],
+        values["over_dec"], values["under_dec"],
+        values["away_ml_dec"], values["home_ml_dec"],
+    ]
 
-    for game in data:
-        game_id = game.get("id")
 
-        sport  = "baseball"
-        league = "mlb"
-
-        game_date, game_time = utc_to_est(game["commence_time"])
-
-        away_team = game["away_team"]
-        home_team = game["home_team"]
-
-        away_run_line = home_run_line = total = None
-        away_rl_dec = home_rl_dec = over_dec = under_dec = None
-        away_ml_dec = home_ml_dec = None
-
-        if not game.get("bookmakers"):
-            games_skipped += 1
-            continue
-
-        markets = game["bookmakers"][0].get("markets", [])
-
-        for market in markets:
-            key = market["key"]
-
-            if key == "h2h":
-                for o in market["outcomes"]:
-                    if o["name"] == away_team:
-                        away_ml_dec = o["price"]
-                    elif o["name"] == home_team:
-                        home_ml_dec = o["price"]
-
-            elif key == "spreads":
-                for o in market["outcomes"]:
-                    if o["name"] == away_team:
-                        away_run_line = o["point"]
-                        away_rl_dec   = o["price"]
-                    elif o["name"] == home_team:
-                        home_run_line = o["point"]
-                        home_rl_dec   = o["price"]
-
-            elif key == "totals":
-                if market["outcomes"]:
-                    total = market["outcomes"][0]["point"]
-                for o in market["outcomes"]:
-                    if o["name"] == "Over":
-                        over_dec = o["price"]
-                    elif o["name"] == "Under":
-                        under_dec = o["price"]
-
-        row = [
-            game_id, sport, league, game_date, game_time,
-            home_team, away_team,
-            away_run_line, home_run_line, total,
-            decimal_to_american(away_rl_dec),
-            decimal_to_american(home_rl_dec),
-            decimal_to_american(over_dec),
-            decimal_to_american(under_dec),
-            decimal_to_american(away_ml_dec),
-            decimal_to_american(home_ml_dec),
-            away_rl_dec, home_rl_dec,
-            over_dec, under_dec,
-            away_ml_dec, home_ml_dec
-        ]
-
-        grouped_rows.setdefault(game_date, []).append(row)
-        games_parsed += 1
-
+def _write_grouped_odds_rows(grouped_rows, files_written):
+    header = [
+        "game_id","sport","league","game_date","game_time","home_team","away_team",
+        "away_run_line","home_run_line","total",
+        "away_dk_run_line_american","home_dk_run_line_american",
+        "dk_total_over_american","dk_total_under_american",
+        "away_dk_moneyline_american","home_dk_moneyline_american",
+        "away_dk_run_line_decimal","home_dk_run_line_decimal",
+        "dk_total_over_decimal","dk_total_under_decimal",
+        "away_dk_moneyline_decimal","home_dk_moneyline_decimal",
+    ]
     base_output_dir = Path("docs/win/baseball/mlb/00_intake/sportsbook")
     base_output_dir.mkdir(parents=True, exist_ok=True)
-
     for game_date, rows in grouped_rows.items():
         output_path = base_output_dir / f"{game_date}_MLB.csv"
-
-        with open(output_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([
-                "game_id","sport","league","game_date","game_time","home_team","away_team",
-                "away_run_line","home_run_line","total",
-                "away_dk_run_line_american","home_dk_run_line_american",
-                "dk_total_over_american","dk_total_under_american",
-                "away_dk_moneyline_american","home_dk_moneyline_american",
-                "away_dk_run_line_decimal","home_dk_run_line_decimal",
-                "dk_total_over_decimal","dk_total_under_decimal",
-                "away_dk_moneyline_decimal","home_dk_moneyline_decimal"
-            ])
+        with open(output_path, "w", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(header)
             writer.writerows(rows)
-
         files_written.append((str(output_path), len(rows)))
         log(f"  WROTE {output_path} ({len(rows)} games)")
 
-    log(f"  games_parsed={games_parsed}, games_skipped={games_skipped}")
 
-# -----------------------
-# ENTRY
-# -----------------------
+def process_file(file_path, files_written):
+    log(f"Processing {file_path.name}")
+    with open(file_path, "r") as handle:
+        data = json.load(handle)
+    grouped_rows = {}
+    games_parsed = 0
+    games_skipped = 0
+    for game in data:
+        if not game.get("bookmakers"):
+            games_skipped += 1
+            continue
+        game_date, row = _parsed_odds_game_row(game)
+        grouped_rows.setdefault(game_date, []).append(row)
+        games_parsed += 1
+    _write_grouped_odds_rows(grouped_rows, files_written)
+    log(f"  games_parsed={games_parsed}, games_skipped={games_skipped}")
 
 def main():
     files_written = []

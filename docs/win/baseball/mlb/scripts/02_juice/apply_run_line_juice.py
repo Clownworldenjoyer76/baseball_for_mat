@@ -202,307 +202,235 @@ def append_audit_rows(audit_rows: list, row: pd.Series, side: str, status: str, 
 # ROW PROCESSOR
 # =========================
 
-def process_row(df, juice_df, idx, row, audit_rows):
-    missing_dk = False
-    for col in DK_ODDS_COLUMNS:
-        if pd.isna(row[col]):
-            missing_dk = True
-
-    if missing_dk:
-        append_audit_rows(audit_rows, row, "home", "missing_dk_odds")
-        append_audit_rows(audit_rows, row, "away", "missing_dk_odds")
-        _log(f"row={idx} reason=missing_dk_odds", "SKIP")
-        return df, "bad"
-
-    try:
-        home_base = float(row["home_prob_run_line"])
-        away_base = float(row["away_prob_run_line"])
-        home_odds = float(row["home_dk_run_line_american"])
-        away_odds = float(row["away_dk_run_line_american"])
-        home_dk_decimal = float(row["home_dk_run_line_decimal"])
-        away_dk_decimal = float(row["away_dk_run_line_decimal"])
-    except (TypeError, ValueError, KeyError):
-        append_audit_rows(audit_rows, row, "home", "bad_parse")
-        append_audit_rows(audit_rows, row, "away", "bad_parse")
-        _log(f"row={idx} reason=conversion_failed", "SKIP")
-        return df, "bad"
-
-    for label, value in [
-        ("home_base", home_base),
-        ("away_base", away_base),
-        ("home_odds", home_odds),
-        ("away_odds", away_odds),
-        ("home_dk_decimal", home_dk_decimal),
-        ("away_dk_decimal", away_dk_decimal),
-    ]:
-        if not math.isfinite(value):
-            append_audit_rows(audit_rows, row, "home", "invalid_numeric")
-            append_audit_rows(audit_rows, row, "away", "invalid_numeric")
-            _log(f"row={idx} reason=invalid_numeric {label}={value}", "SKIP")
-            return df, "bad"
-
-    if home_base < 0 or away_base < 0 or home_dk_decimal <= 1 or away_dk_decimal <= 1:
-        append_audit_rows(audit_rows, row, "home", "invalid_decimal")
-        append_audit_rows(audit_rows, row, "away", "invalid_decimal")
-        _log(f"row={idx} reason=invalid_run_line_inputs", "SKIP")
-        return df, "bad"
-
-    home_type = "favorite" if home_odds < 0 else "underdog"
-    away_type = "favorite" if away_odds < 0 else "underdog"
-
-    home_extra = find_band(juice_df, home_odds, "home", home_type)
-    away_extra = find_band(juice_df, away_odds, "away", away_type)
-
-    if home_extra is None or away_extra is None:
-        append_audit_rows(audit_rows, row, "home", "missing_band", {
-            "dk_american": home_odds,
-            "dk_decimal": home_dk_decimal,
-            "fair_decimal": pd.NA,
-        })
-        append_audit_rows(audit_rows, row, "away", "missing_band", {
-            "dk_american": away_odds,
-            "dk_decimal": away_dk_decimal,
-            "fair_decimal": pd.NA,
-        })
-        _log(f"row={idx} reason=no_band home_odds={home_odds} away_odds={away_odds}", "SKIP")
-        return df, "noband"
-
-    home_juiced_prob = max(min(home_base + home_extra, 0.95), 0.01)
-    away_juiced_prob = max(min(away_base + away_extra, 0.95), 0.01)
-    total = home_juiced_prob + away_juiced_prob
-
-    if not math.isfinite(total) or total <= 0:
-        append_audit_rows(audit_rows, row, "home", "invalid_normalization_total")
-        append_audit_rows(audit_rows, row, "away", "invalid_normalization_total")
-        _log(f"row={idx} reason=invalid_normalization_total total={total}", "SKIP")
-        return df, "bad"
-
-    home_normalized = home_juiced_prob / total
-    away_normalized = away_juiced_prob / total
-
-    df.at[idx, "home_juiced_prob_run_line"] = home_juiced_prob
-    df.at[idx, "away_juiced_prob_run_line"] = away_juiced_prob
-    df.at[idx, "home_normalized_prob_run_line"] = home_normalized
-    df.at[idx, "away_normalized_prob_run_line"] = away_normalized
-
-    append_audit_rows(audit_rows, row, "home", "juiced", {
-        "dk_american": home_odds,
-        "dk_decimal": home_dk_decimal,
-        "fair_decimal": pd.NA,
-        "juiced_decimal": pd.NA,
-        "juiced_prob": home_juiced_prob,
-        "normalized_prob": home_normalized,
-    })
-    append_audit_rows(audit_rows, row, "away", "juiced", {
-        "dk_american": away_odds,
-        "dk_decimal": away_dk_decimal,
-        "fair_decimal": pd.NA,
-        "juiced_decimal": pd.NA,
-        "juiced_prob": away_juiced_prob,
-        "normalized_prob": away_normalized,
-    })
-
-    return df, "ok"
+def _audit_run_line_both(audit_rows, row, reason, home_extra=None, away_extra=None):
+    append_audit_rows(audit_rows, row, "home", reason, home_extra or {})
+    append_audit_rows(audit_rows, row, "away", reason, away_extra or {})
 
 
-# =========================
-# MAIN
-# =========================
-
-def main():
-    with open(LOG_FILE, "w", encoding="utf-8") as f:
-        f.write(f"=== apply_run_line_juice RUN {_now()} ===\n")
-
-    summary = {
-        "files_found": 0,
-        "files_written": 0,
-        "total_rows": 0,
-        "applied": 0,
-        "skipped_bad": 0,
-        "skipped_noband": 0,
-        "missing_home_run_line_dk": 0,
-        "missing_away_run_line_dk": 0,
-        "missing_home_run_line_price_dk": 0,
-        "missing_away_run_line_price_dk": 0,
-        "missing_any_run_line_dk": 0,
-        "stale_input_errors": 0,
-        "normalization_errors": 0,
-        "schema_errors": 0,
-        "errors": 0,
+def _parse_run_line_row(row):
+    return {
+        "home_base": float(row["home_prob_run_line"]),
+        "away_base": float(row["away_prob_run_line"]),
+        "home_odds": float(row["home_dk_run_line_american"]),
+        "away_odds": float(row["away_dk_run_line_american"]),
+        "home_decimal": float(row["home_dk_run_line_decimal"]),
+        "away_decimal": float(row["away_dk_run_line_decimal"]),
     }
 
+
+def _invalid_run_line_numeric(values):
+    for label, value in values.items():
+        if not math.isfinite(value):
+            return label, value
+    return None
+
+
+def process_row(df, juice_df, idx, row, audit_rows):
+    if any(pd.isna(row[col]) for col in DK_ODDS_COLUMNS):
+        _audit_run_line_both(audit_rows, row, "missing_dk_odds")
+        _log(f"row={idx} reason=missing_dk_odds", "SKIP")
+        return df, "bad"
+    try:
+        values = _parse_run_line_row(row)
+    except (TypeError, ValueError, KeyError):
+        _audit_run_line_both(audit_rows, row, "bad_parse")
+        _log(f"row={idx} reason=conversion_failed", "SKIP")
+        return df, "bad"
+    invalid = _invalid_run_line_numeric(values)
+    if invalid is not None:
+        label, value = invalid
+        _audit_run_line_both(audit_rows, row, "invalid_numeric")
+        _log(f"row={idx} reason=invalid_numeric {label}={value}", "SKIP")
+        return df, "bad"
+    home_base = values["home_base"]
+    away_base = values["away_base"]
+    home_odds = values["home_odds"]
+    away_odds = values["away_odds"]
+    home_decimal = values["home_decimal"]
+    away_decimal = values["away_decimal"]
+    if home_base < 0 or away_base < 0 or home_decimal <= 1 or away_decimal <= 1:
+        _audit_run_line_both(audit_rows, row, "invalid_decimal")
+        _log(f"row={idx} reason=invalid_run_line_inputs", "SKIP")
+        return df, "bad"
+    home_type = "favorite" if home_odds < 0 else "underdog"
+    away_type = "favorite" if away_odds < 0 else "underdog"
+    home_extra = find_band(juice_df, home_odds, "home", home_type)
+    away_extra = find_band(juice_df, away_odds, "away", away_type)
+    if home_extra is None or away_extra is None:
+        _audit_run_line_both(
+            audit_rows,
+            row,
+            "missing_band",
+            {"dk_american": home_odds, "dk_decimal": home_decimal, "fair_decimal": pd.NA},
+            {"dk_american": away_odds, "dk_decimal": away_decimal, "fair_decimal": pd.NA},
+        )
+        _log(f"row={idx} reason=no_band home_odds={home_odds} away_odds={away_odds}", "SKIP")
+        return df, "noband"
+    home_juiced = max(min(home_base + home_extra, 0.95), 0.01)
+    away_juiced = max(min(away_base + away_extra, 0.95), 0.01)
+    total = home_juiced + away_juiced
+    if not math.isfinite(total) or total <= 0:
+        _audit_run_line_both(audit_rows, row, "invalid_normalization_total")
+        _log(f"row={idx} reason=invalid_normalization_total total={total}", "SKIP")
+        return df, "bad"
+    home_normalized = home_juiced / total
+    away_normalized = away_juiced / total
+    df.at[idx, "home_juiced_prob_run_line"] = home_juiced
+    df.at[idx, "away_juiced_prob_run_line"] = away_juiced
+    df.at[idx, "home_normalized_prob_run_line"] = home_normalized
+    df.at[idx, "away_normalized_prob_run_line"] = away_normalized
+    append_audit_rows(audit_rows, row, "home", "juiced", {
+        "dk_american": home_odds, "dk_decimal": home_decimal,
+        "fair_decimal": pd.NA, "juiced_decimal": pd.NA,
+        "juiced_prob": home_juiced, "normalized_prob": home_normalized,
+    })
+    append_audit_rows(audit_rows, row, "away", "juiced", {
+        "dk_american": away_odds, "dk_decimal": away_decimal,
+        "fair_decimal": pd.NA, "juiced_decimal": pd.NA,
+        "juiced_prob": away_juiced, "normalized_prob": away_normalized,
+    })
+    return df, "ok"
+
+def _new_run_line_summary():
+    return {
+        "files_found": 0, "files_written": 0, "total_rows": 0,
+        "applied": 0, "skipped_bad": 0, "skipped_noband": 0,
+        "missing_home_run_line_dk": 0, "missing_away_run_line_dk": 0,
+        "missing_home_run_line_price_dk": 0, "missing_away_run_line_price_dk": 0,
+        "missing_any_run_line_dk": 0, "stale_input_errors": 0,
+        "normalization_errors": 0, "schema_errors": 0, "errors": 0,
+    }
+
+
+def _new_run_line_file_summary(name):
+    return {
+        "name": name, "rows": 0, "applied": 0, "skipped_bad": 0,
+        "skipped_noband": 0, "missing_home_run_line_dk": 0,
+        "missing_away_run_line_dk": 0, "missing_home_run_line_price_dk": 0,
+        "missing_away_run_line_price_dk": 0, "missing_any_run_line_dk": 0,
+        "schema_errors": 0,
+    }
+
+
+def _process_run_line_file(in_path, juice_df, audit_rows, summary):
+    out_path = OUTPUT_DIR / in_path.name
+    pf = _new_run_line_file_summary(in_path.name)
+    _log(f"--- FILE: {in_path.name}")
+    validate_stale_source(in_path, SOURCE_MERGE_DIR, _log)
+    df = read_csv_validated(
+        in_path, REQUIRED_RUN_LINE_COLUMNS, f"run-line input {in_path.name}"
+    )
+    validate_forbidden_columns(
+        df, FORBIDDEN_RUN_LINE_COLUMNS, f"run-line input {in_path.name}"
+    )
+    require_nonempty_columns(df, DK_ODDS_COLUMNS, f"run-line input {in_path.name}")
+    if df.empty:
+        _log(f"{in_path.name} empty ??? skipping")
+        return pf
+    numeric_cols = [
+        "home_prob_run_line", "away_prob_run_line",
+        "home_dk_run_line_american", "away_dk_run_line_american",
+        "home_dk_run_line_decimal", "away_dk_run_line_decimal",
+    ]
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+    pf["missing_home_run_line_dk"] = int(df["home_dk_run_line_american"].isna().sum())
+    pf["missing_away_run_line_dk"] = int(df["away_dk_run_line_american"].isna().sum())
+    pf["missing_home_run_line_price_dk"] = int(df["home_dk_run_line_decimal"].isna().sum())
+    pf["missing_away_run_line_price_dk"] = int(df["away_dk_run_line_decimal"].isna().sum())
+    pf["missing_any_run_line_dk"] = int(df[DK_ODDS_COLUMNS].isna().any(axis=1).sum())
+    for col in OUTPUT_PROB_COLUMNS:
+        df[col] = pd.NA
+    pf["rows"] = len(df)
+    summary["total_rows"] += len(df)
+    for key in (
+        "missing_home_run_line_dk", "missing_away_run_line_dk",
+        "missing_home_run_line_price_dk", "missing_away_run_line_price_dk",
+        "missing_any_run_line_dk",
+    ):
+        summary[key] += pf[key]
+    result_key = {"ok": "applied", "noband": "skipped_noband"}
+    for idx, row in df.iterrows():
+        df, result = process_row(df, juice_df, idx, row, audit_rows)
+        pf[result_key.get(result, "skipped_bad")] += 1
+    norm_bad = validate_normalized_probability_pair(
+        df,
+        "home_normalized_prob_run_line",
+        "away_normalized_prob_run_line",
+        f"{in_path.name} run_line",
+        NORMALIZATION_TOLERANCE,
+        _log,
+    )
+    if norm_bad:
+        summary["normalization_errors"] += norm_bad
+        raise ValueError(
+            f"{in_path.name} has {norm_bad} invalid normalized run-line probability rows"
+        )
+    write_csv_validated(df, out_path, f"run-line output {out_path.name}")
+    summary["files_written"] += 1
+    for key in ("applied", "skipped_bad", "skipped_noband"):
+        summary[key] += pf[key]
+    _log(
+        f"{in_path.name} | rows={pf['rows']} applied={pf['applied']} "
+        f"skipped_bad={pf['skipped_bad']} skipped_noband={pf['skipped_noband']} "
+        f"missing_any_run_line_dk={pf['missing_any_run_line_dk']}"
+    )
+    _log(f"WROTE: {out_path}")
+    return pf
+
+
+def main():
+    with open(LOG_FILE, "w", encoding="utf-8") as handle:
+        handle.write(f"=== apply_run_line_juice RUN {_now()} ===\n")
+    summary = _new_run_line_summary()
     per_file = []
     audit_rows = []
-
-    for f in OUTPUT_DIR.glob("*run_line.csv"):
-        f.unlink()
-    for f in AUDIT_DIR.glob("*run_line*post_juice_audit.csv"):
-        f.unlink()
-
+    for old in OUTPUT_DIR.glob("*run_line.csv"):
+        old.unlink()
+    for old in AUDIT_DIR.glob("*run_line*post_juice_audit.csv"):
+        old.unlink()
     try:
-        log_stage_inputs(
-            _log,
-            INPUT_DIR,
-            SOURCE_MERGE_DIR,
-            JUICE_FILE,
-        )
+        log_stage_inputs(_log, INPUT_DIR, SOURCE_MERGE_DIR, JUICE_FILE)
         juice_df = load_juice_config(
-            JUICE_FILE,
-            REQUIRED_JUICE_COLUMNS,
-            categorical_columns=("venue", "fav_ud"),
+            JUICE_FILE, REQUIRED_JUICE_COLUMNS, categorical_columns=("venue", "fav_ud")
         )
-        validate_fav_ud_venue_juice_config(
-            juice_df,
-            "run-line",
-        )
-
+        validate_fav_ud_venue_juice_config(juice_df, "run-line")
         files = sorted(glob.glob(str(INPUT_DIR / "*_mlb_run_line.csv")))
         summary["files_found"] = len(files)
         _log(f"Files found: {len(files)}")
-
         if not files:
-            _log("No run-line files found — exiting", "WARN")
+            _log("No run-line files found ??? exiting", "WARN")
             _write_summary(summary, per_file)
             return
-
         for file_path in files:
             in_path = Path(file_path)
-            out_path = OUTPUT_DIR / in_path.name
-
-            pf = {
-                "name": in_path.name,
-                "rows": 0,
-                "applied": 0,
-                "skipped_bad": 0,
-                "skipped_noband": 0,
-                "missing_home_run_line_dk": 0,
-                "missing_away_run_line_dk": 0,
-                "missing_home_run_line_price_dk": 0,
-                "missing_away_run_line_price_dk": 0,
-                "missing_any_run_line_dk": 0,
-                "schema_errors": 0,
-            }
-
-            _log(f"--- FILE: {in_path.name}")
-
             try:
-                validate_stale_source(
-                    in_path,
-                    SOURCE_MERGE_DIR,
-                    _log,
-                )
-
-                df = read_csv_validated(in_path, REQUIRED_RUN_LINE_COLUMNS, f"run-line input {in_path.name}")
-                validate_forbidden_columns(df, FORBIDDEN_RUN_LINE_COLUMNS, f"run-line input {in_path.name}")
-                require_nonempty_columns(df, DK_ODDS_COLUMNS, f"run-line input {in_path.name}")
-
-                if df.empty:
-                    _log(f"{in_path.name} empty — skipping")
-                    per_file.append(pf)
-                    continue
-
-                numeric_cols = [
-                    "home_prob_run_line",
-                    "away_prob_run_line",
-                    "home_dk_run_line_american",
-                    "away_dk_run_line_american",
-                    "home_dk_run_line_decimal",
-                    "away_dk_run_line_decimal",
-                ]
-
-                for c in numeric_cols:
-                    df[c] = pd.to_numeric(df[c], errors="coerce")
-
-                pf["missing_home_run_line_dk"] = int(df["home_dk_run_line_american"].isna().sum())
-                pf["missing_away_run_line_dk"] = int(df["away_dk_run_line_american"].isna().sum())
-                pf["missing_home_run_line_price_dk"] = int(df["home_dk_run_line_decimal"].isna().sum())
-                pf["missing_away_run_line_price_dk"] = int(df["away_dk_run_line_decimal"].isna().sum())
-                pf["missing_any_run_line_dk"] = int(df[DK_ODDS_COLUMNS].isna().any(axis=1).sum())
-
-                for c in OUTPUT_PROB_COLUMNS:
-                    df[c] = pd.NA
-
-                pf["rows"] = len(df)
-                summary["total_rows"] += len(df)
-                summary["missing_home_run_line_dk"] += pf["missing_home_run_line_dk"]
-                summary["missing_away_run_line_dk"] += pf["missing_away_run_line_dk"]
-                summary["missing_home_run_line_price_dk"] += pf["missing_home_run_line_price_dk"]
-                summary["missing_away_run_line_price_dk"] += pf["missing_away_run_line_price_dk"]
-                summary["missing_any_run_line_dk"] += pf["missing_any_run_line_dk"]
-
-                for idx, row in df.iterrows():
-                    df, result = process_row(df, juice_df, idx, row, audit_rows)
-
-                    if result == "ok":
-                        pf["applied"] += 1
-                    elif result == "noband":
-                        pf["skipped_noband"] += 1
-                    else:
-                        pf["skipped_bad"] += 1
-
-                norm_bad = validate_normalized_probability_pair(
-                    df,
-                    "home_normalized_prob_run_line",
-                    "away_normalized_prob_run_line",
-                    f"{in_path.name} run_line",
-                    NORMALIZATION_TOLERANCE,
-                    _log,
-                )
-                if norm_bad:
-                    summary["normalization_errors"] += norm_bad
-                    raise ValueError(f"{in_path.name} has {norm_bad} invalid normalized run-line probability rows")
-
-                write_csv_validated(df, out_path, f"run-line output {out_path.name}")
-
-                summary["files_written"] += 1
-                summary["applied"] += pf["applied"]
-                summary["skipped_bad"] += pf["skipped_bad"]
-                summary["skipped_noband"] += pf["skipped_noband"]
-
-                _log(
-                    f"{in_path.name} | rows={pf['rows']} applied={pf['applied']} "
-                    f"skipped_bad={pf['skipped_bad']} skipped_noband={pf['skipped_noband']} "
-                    f"missing_any_run_line_dk={pf['missing_any_run_line_dk']}"
-                )
-                _log(f"WROTE: {out_path}")
-
-            except ValueError as e:
-                if "stale 01_merguiced input" in str(e):
+                pf = _process_run_line_file(in_path, juice_df, audit_rows, summary)
+            except ValueError as exc:
+                pf = _new_run_line_file_summary(in_path.name)
+                if "stale 01_merguiced input" in str(exc):
                     summary["stale_input_errors"] += 1
                 pf["schema_errors"] += 1
                 summary["schema_errors"] += 1
                 summary["errors"] += 1
-                _log(f"{in_path.name} SCHEMA FAILED: {e}\n{traceback.format_exc()}", "ERROR")
-
-            except Exception as e:
+                _log(f"{in_path.name} SCHEMA FAILED: {exc}\n{traceback.format_exc()}", "ERROR")
+            except Exception as exc:
+                pf = _new_run_line_file_summary(in_path.name)
                 summary["errors"] += 1
-                _log(f"{in_path.name} FAILED: {e}\n{traceback.format_exc()}", "ERROR")
-
+                _log(f"{in_path.name} FAILED: {exc}\n{traceback.format_exc()}", "ERROR")
             per_file.append(pf)
-
-    except Exception as e:
-        _log(f"FATAL: {e}\n{traceback.format_exc()}", "ERROR")
+    except Exception as exc:
+        _log(f"FATAL: {exc}\n{traceback.format_exc()}", "ERROR")
         summary["errors"] += 1
         _write_summary(summary, per_file)
         sys.exit(1)
-
     audit_path = AUDIT_DIR / "run_line_post_juice_audit.csv"
     write_audit(audit_rows, audit_path, _log)
     _write_summary(summary, per_file)
     fail_on_summary_errors(summary, "apply_run_line_juice")
-
     print(
-        f"apply_run_line_juice complete. "
-        f"files_written={summary['files_written']} "
-        f"applied={summary['applied']} "
-        f"missing_any_run_line_dk={summary['missing_any_run_line_dk']} "
-        f"skipped_bad={summary['skipped_bad']} "
-        f"skipped_noband={summary['skipped_noband']} "
-        f"schema_errors={summary['schema_errors']} "
-        f"errors={summary['errors']} "
-        f"STATUS: SUCCESS"
+        f"apply_run_line_juice complete. files_written={summary['files_written']} "
+        f"applied={summary['applied']} missing_any_run_line_dk={summary['missing_any_run_line_dk']} "
+        f"skipped_bad={summary['skipped_bad']} skipped_noband={summary['skipped_noband']} "
+        f"schema_errors={summary['schema_errors']} errors={summary['errors']} STATUS: SUCCESS"
     )
-
-
-if __name__ == "__main__":
-    main()

@@ -244,6 +244,53 @@ def build_markets(odds, home_team, away_team, pulled_at):
     return markets
 
 
+def _convert_espn_event(entry, target_et_date, now_utc, team_cache, pulled_at):
+    event_ref = https_ref((entry or {}).get("$ref"))
+    if not event_ref:
+        return None, "incomplete"
+    event = get_json(event_ref)
+    competitions = event.get("competitions") or []
+    if not competitions:
+        return None, "incomplete"
+    competition = competitions[0]
+    commence_time = event.get("date") or competition.get("date")
+    event_for_time = {"commence_time": commence_time}
+    if not is_target_et_date(event_for_time, target_et_date):
+        return None, "non_target"
+    if has_started(event_for_time, now_utc):
+        return None, "started"
+    event_id = str(event.get("id") or competition.get("id") or "").strip()
+    competition_id = str(competition.get("id") or event_id).strip()
+    if not event_id or not competition_id:
+        return None, "incomplete"
+    home_team, away_team = competition_sides(competition, team_cache)
+    if not home_team or not away_team:
+        return None, "incomplete"
+    odds_payload = get_json(
+        f"{ESPN_BASE}/events/{event_id}/competitions/{competition_id}/odds"
+    )
+    odds = draftkings_odds_item(odds_payload)
+    if not odds:
+        return None, "no_odds"
+    markets = build_markets(odds, home_team, away_team, pulled_at)
+    if not markets:
+        return None, "no_odds"
+    return {
+        "id": event_id,
+        "sport_key": "baseball_mlb",
+        "sport_title": "MLB",
+        "commence_time": commence_time,
+        "home_team": home_team,
+        "away_team": away_team,
+        "bookmakers": [{
+            "key": "draftkings",
+            "title": DRAFTKINGS_PROVIDER_NAME,
+            "last_update": pulled_at,
+            "markets": markets,
+        }],
+    }, "converted"
+
+
 def fetch_espn_events(target_et_date, now_utc):
     target_compact = target_et_date.strftime("%Y%m%d")
     payload = get_json(
@@ -255,87 +302,26 @@ def fetch_espn_events(target_et_date, now_utc):
         print("Unexpected ESPN events response: missing items list")
         print(json.dumps(payload, indent=2)[:5000])
         raise SystemExit(1)
-
     team_cache = {}
     converted = []
-    skipped_non_target = 0
-    skipped_started = 0
-    skipped_no_odds = 0
-    skipped_incomplete = 0
+    counts = {"non_target": 0, "started": 0, "no_odds": 0, "incomplete": 0}
     pulled_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
     for entry in refs:
-        event_ref = https_ref((entry or {}).get("$ref"))
-        if not event_ref:
-            skipped_incomplete += 1
-            continue
-        event = get_json(event_ref)
-        competitions = event.get("competitions") or []
-        if not competitions:
-            skipped_incomplete += 1
-            continue
-        competition = competitions[0]
-        commence_time = event.get("date") or competition.get("date")
-        event_for_time = {"commence_time": commence_time}
-        if not is_target_et_date(event_for_time, target_et_date):
-            skipped_non_target += 1
-            continue
-        if has_started(event_for_time, now_utc):
-            skipped_started += 1
-            continue
-
-        event_id = str(event.get("id") or competition.get("id") or "").strip()
-        competition_id = str(competition.get("id") or event_id).strip()
-        if not event_id or not competition_id:
-            skipped_incomplete += 1
-            continue
-
-        home_team, away_team = competition_sides(competition, team_cache)
-        if not home_team or not away_team:
-            skipped_incomplete += 1
-            continue
-
-        odds_payload = get_json(
-            f"{ESPN_BASE}/events/{event_id}/competitions/{competition_id}/odds"
+        record, status = _convert_espn_event(
+            entry, target_et_date, now_utc, team_cache, pulled_at
         )
-        odds = draftkings_odds_item(odds_payload)
-        if not odds:
-            skipped_no_odds += 1
-            continue
-
-        markets = build_markets(odds, home_team, away_team, pulled_at)
-        if not markets:
-            skipped_no_odds += 1
-            continue
-
-        converted.append(
-            {
-                "id": event_id,
-                "sport_key": "baseball_mlb",
-                "sport_title": "MLB",
-                "commence_time": commence_time,
-                "home_team": home_team,
-                "away_team": away_team,
-                "bookmakers": [
-                    {
-                        "key": "draftkings",
-                        "title": DRAFTKINGS_PROVIDER_NAME,
-                        "last_update": pulled_at,
-                        "markets": markets,
-                    }
-                ],
-            }
-        )
-
+        if record is not None:
+            converted.append(record)
+        else:
+            counts[status] += 1
     return (
         converted,
         len(refs),
-        skipped_non_target,
-        skipped_started,
-        skipped_no_odds,
-        skipped_incomplete,
+        counts["non_target"],
+        counts["started"],
+        counts["no_odds"],
+        counts["incomplete"],
     )
-
 
 def read_json_list(path):
     if not path.exists():
