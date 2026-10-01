@@ -2310,6 +2310,274 @@ def extract_mlb_final_score(feed):
     }
 
 
+def _new_mlb_backfill_counts():
+    return {
+        "games_files_seen": 0,
+        "games_rows_seen": 0,
+        "skipped_already_present": 0,
+        "skipped_missing_ids": 0,
+        "api_checked": 0,
+        "api_errors": 0,
+        "api_not_final": 0,
+        "api_score_missing": 0,
+        "api_team_mismatch": 0,
+        "added": 0,
+        "duplicate_collapsed": 0,
+    }
+
+
+def _log_mlb_backfill_nonfinal(
+    *,
+    games_path,
+    row_index,
+    game_id,
+    game_pk,
+    away_team,
+    home_team,
+    result,
+    counts,
+):
+    if result.get("score_missing"):
+        counts["api_score_missing"] += 1
+
+        log(
+            "MLB FALLBACK FINAL SCORE MISSING | "
+            f"games_file={games_path.name} | "
+            f"row={row_index} | "
+            f"game_id={game_id} | "
+            f"gamePk={game_pk} | "
+            f"away_team={away_team} | "
+            f"home_team={home_team}"
+        )
+        return
+
+    counts["api_not_final"] += 1
+
+    log(
+        "MLB FALLBACK NOT FINAL | "
+        f"games_file={games_path.name} | "
+        f"row={row_index} | "
+        f"game_id={game_id} | "
+        f"gamePk={game_pk} | "
+        f"status={result.get('raw_status', '')}"
+    )
+
+
+def _mlb_backfill_team_mismatch(
+    *,
+    result,
+    home_team,
+    away_team,
+):
+    api_away_team = str(
+        result.get("api_away_team", "") or ""
+    ).strip()
+
+    api_home_team = str(
+        result.get("api_home_team", "") or ""
+    ).strip()
+
+    mismatch = (
+        api_away_team
+        and api_home_team
+        and matchup_key(
+            api_home_team,
+            api_away_team,
+        )
+        != matchup_key(
+            home_team,
+            away_team,
+        )
+    )
+
+    return (
+        bool(mismatch),
+        api_away_team,
+        api_home_team,
+    )
+
+
+def _process_mlb_backfill_row(
+    *,
+    row,
+    row_index,
+    games_path,
+    date,
+    sportsbook_lookup,
+    feed_cache,
+    counts,
+    final_records_by_date,
+    seen_by_game_id,
+    seen_by_fallback_key,
+    status_audit_rows,
+    key_audit_rows,
+):
+    (
+        game_id,
+        game_pk,
+        game_number,
+        game_time,
+    ) = identity_fields(row)
+
+    home_team = str(
+        row.get("home_team", "") or ""
+    ).strip()
+
+    away_team = str(
+        row.get("away_team", "") or ""
+    ).strip()
+
+    if not game_id or not game_pk:
+        counts["skipped_missing_ids"] += 1
+        return
+
+    if game_id in seen_by_game_id:
+        counts["skipped_already_present"] += 1
+        return
+
+    counts["api_checked"] += 1
+
+    feed = fetch_mlb_game_feed(
+        game_pk,
+        feed_cache,
+    )
+
+    if feed is None:
+        counts["api_errors"] += 1
+        return
+
+    result = extract_mlb_final_score(feed)
+
+    if not result.get("is_final"):
+        _log_mlb_backfill_nonfinal(
+            games_path=games_path,
+            row_index=row_index,
+            game_id=game_id,
+            game_pk=game_pk,
+            away_team=away_team,
+            home_team=home_team,
+            result=result,
+            counts=counts,
+        )
+        return
+
+    (
+        team_mismatch,
+        api_away_team,
+        api_home_team,
+    ) = _mlb_backfill_team_mismatch(
+        result=result,
+        home_team=home_team,
+        away_team=away_team,
+    )
+
+    if team_mismatch:
+        counts["api_team_mismatch"] += 1
+
+        log(
+            "MLB FALLBACK TEAM MISMATCH; SKIPPED | "
+            f"games_file={games_path.name} | "
+            f"row={row_index} | "
+            f"game_id={game_id} | "
+            f"gamePk={game_pk} | "
+            f"local={away_team} @ {home_team} | "
+            f"mlb={api_away_team} @ {api_home_team}"
+        )
+        return
+
+    away_score = int(result["away_score"])
+    home_score = int(result["home_score"])
+    final_total = str(
+        away_score + home_score
+    )
+
+    book = closest_time_book_match(
+        sportsbook_lookup.get(
+            matchup_key(
+                home_team,
+                away_team,
+            ),
+            [],
+        ),
+        game_time,
+        correction_minutes=0,
+        prefer_correction=False,
+    )
+
+    record = {
+        "sport": "baseball",
+        "league": "mlb",
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
+        "game_date": date,
+        "game_time": game_time,
+        "home_team": home_team,
+        "away_team": away_team,
+        "final_away_score": str(away_score),
+        "final_home_score": str(home_score),
+        "final_total": final_total,
+        "away_run_line": book.get("away_run_line"),
+        "home_run_line": book.get("home_run_line"),
+        "total": book.get("total"),
+        "game_status": "final",
+        "final_scores_generated_at": RUN_TS,
+    }
+
+    action = add_final_record(
+        record=record,
+        source_file=(
+            "MLB_STATSAPI_"
+            f"gamePk_{game_pk}"
+        ),
+        final_records_by_date=final_records_by_date,
+        seen_by_game_id=seen_by_game_id,
+        seen_by_fallback_key=seen_by_fallback_key,
+        key_audit_rows=key_audit_rows,
+    )
+
+    if action in {
+        "duplicate_collapsed",
+        "blank_game_id_duplicate_collapsed",
+    }:
+        counts["duplicate_collapsed"] += 1
+    else:
+        counts["added"] += 1
+
+    status_audit_rows.append({
+        "game_date": date,
+        "game_id": game_id,
+        "gamePk": game_pk,
+        "gameNumber": game_number,
+        "away_team": away_team,
+        "home_team": home_team,
+        "final_away_score": str(away_score),
+        "final_home_score": str(home_score),
+        "game_status": "final",
+        "status_source": (
+            "MLB StatsAPI gamePk fallback"
+        ),
+        "status_available": "True",
+        "status_notes": (
+            "DRatings/existing finals did not contain "
+            "this game; official MLB final score added "
+            f"using gamePk={game_pk}"
+        ),
+    })
+
+    log(
+        "MLB FALLBACK ADDED | "
+        f"game_date={date} | "
+        f"game_id={game_id} | "
+        f"gamePk={game_pk} | "
+        f"gameNumber={game_number} | "
+        f"game_time={game_time} | "
+        f"away_team={away_team} | "
+        f"home_team={home_team} | "
+        f"final={away_score}-{home_score}"
+    )
+
+
 def backfill_missing_finals_from_mlb(
     *,
     final_records_by_date,
@@ -2320,262 +2588,76 @@ def backfill_missing_finals_from_mlb(
 ):
     feed_cache = {}
     sportsbook_cache = {}
+    counts = _new_mlb_backfill_counts()
 
-    games_files_seen = 0
-    games_rows_seen = 0
-    skipped_already_present = 0
-    skipped_missing_ids = 0
-    api_checked = 0
-    api_errors = 0
-    api_not_final = 0
-    api_score_missing = 0
-    api_team_mismatch = 0
-    added = 0
-    duplicate_collapsed = 0
-
-    for games_path in sorted(GAMES_DIR.glob("*_games.csv")):
-        date = games_date_from_path(games_path)
+    for games_path in sorted(
+        GAMES_DIR.glob("*_games.csv")
+    ):
+        date = games_date_from_path(
+            games_path
+        )
 
         if not date:
             continue
 
-        games_files_seen += 1
+        counts["games_files_seen"] += 1
 
         if date not in sportsbook_cache:
-            sportsbook_cache[date] = load_sportsbook_lookup(date)
-
-        sportsbook_lookup = sportsbook_cache[date]
+            sportsbook_cache[date] = (
+                load_sportsbook_lookup(date)
+            )
 
         with open(
             games_path,
             newline="",
             encoding="utf-8-sig",
-        ) as f:
-            reader = csv.DictReader(f)
+        ) as handle:
+            reader = csv.DictReader(handle)
 
-            for row_index, row in enumerate(reader, start=2):
-                games_rows_seen += 1
+            for row_index, row in enumerate(
+                reader,
+                start=2,
+            ):
+                counts["games_rows_seen"] += 1
 
-                (
-                    game_id,
-                    game_pk,
-                    game_number,
-                    game_time,
-                ) = identity_fields(row)
-
-                home_team = str(
-                    row.get("home_team", "") or ""
-                ).strip()
-
-                away_team = str(
-                    row.get("away_team", "") or ""
-                ).strip()
-
-                if not game_id or not game_pk:
-                    skipped_missing_ids += 1
-                    continue
-
-                if game_id in seen_by_game_id:
-                    skipped_already_present += 1
-                    continue
-
-                api_checked += 1
-
-                feed = fetch_mlb_game_feed(
-                    game_pk,
-                    feed_cache,
-                )
-
-                if feed is None:
-                    api_errors += 1
-                    continue
-
-                result = extract_mlb_final_score(feed)
-
-                if not result.get("is_final"):
-                    if result.get("score_missing"):
-                        api_score_missing += 1
-
-                        log(
-                            "MLB FALLBACK FINAL SCORE MISSING | "
-                            f"games_file={games_path.name} | "
-                            f"row={row_index} | "
-                            f"game_id={game_id} | "
-                            f"gamePk={game_pk} | "
-                            f"away_team={away_team} | "
-                            f"home_team={home_team}"
-                        )
-                    else:
-                        api_not_final += 1
-
-                        log(
-                            "MLB FALLBACK NOT FINAL | "
-                            f"games_file={games_path.name} | "
-                            f"row={row_index} | "
-                            f"game_id={game_id} | "
-                            f"gamePk={game_pk} | "
-                            f"status={result.get('raw_status', '')}"
-                        )
-
-                    continue
-
-                api_away_team = str(
-                    result.get("api_away_team", "") or ""
-                ).strip()
-
-                api_home_team = str(
-                    result.get("api_home_team", "") or ""
-                ).strip()
-
-                if (
-                    api_away_team
-                    and api_home_team
-                    and matchup_key(
-                        api_home_team,
-                        api_away_team,
-                    )
-                    != matchup_key(
-                        home_team,
-                        away_team,
-                    )
-                ):
-                    api_team_mismatch += 1
-
-                    log(
-                        "MLB FALLBACK TEAM MISMATCH; SKIPPED | "
-                        f"games_file={games_path.name} | "
-                        f"row={row_index} | "
-                        f"game_id={game_id} | "
-                        f"gamePk={game_pk} | "
-                        f"local={away_team} @ {home_team} | "
-                        f"mlb={api_away_team} @ {api_home_team}"
-                    )
-
-                    continue
-
-                away_score = int(result["away_score"])
-                home_score = int(result["home_score"])
-                final_total = str(away_score + home_score)
-
-                key = matchup_key(
-                    home_team,
-                    away_team,
-                )
-
-                book_candidates = sportsbook_lookup.get(
-                    key,
-                    [],
-                )
-
-                book = closest_time_book_match(
-                    book_candidates,
-                    game_time,
-                    correction_minutes=0,
-                    prefer_correction=False,
-                )
-
-                record = {
-                    "sport": "baseball",
-                    "league": "mlb",
-                    "game_id": game_id,
-                    "gamePk": game_pk,
-                    "gameNumber": game_number,
-                    "game_date": date,
-                    "game_time": game_time,
-                    "home_team": home_team,
-                    "away_team": away_team,
-                    "final_away_score": str(away_score),
-                    "final_home_score": str(home_score),
-                    "final_total": final_total,
-                    "away_run_line": book.get("away_run_line"),
-                    "home_run_line": book.get("home_run_line"),
-                    "total": book.get("total"),
-                    "game_status": "final",
-                    "final_scores_generated_at": RUN_TS,
-                }
-
-                action = add_final_record(
-                    record=record,
-                    source_file=(
-                        "MLB_STATSAPI_"
-                        f"gamePk_{game_pk}"
+                _process_mlb_backfill_row(
+                    row=row,
+                    row_index=row_index,
+                    games_path=games_path,
+                    date=date,
+                    sportsbook_lookup=(
+                        sportsbook_cache[date]
                     ),
+                    feed_cache=feed_cache,
+                    counts=counts,
                     final_records_by_date=final_records_by_date,
                     seen_by_game_id=seen_by_game_id,
                     seen_by_fallback_key=seen_by_fallback_key,
+                    status_audit_rows=status_audit_rows,
                     key_audit_rows=key_audit_rows,
-                )
-
-                if action in {
-                    "duplicate_collapsed",
-                    "blank_game_id_duplicate_collapsed",
-                }:
-                    duplicate_collapsed += 1
-                else:
-                    added += 1
-
-                status_audit_rows.append({
-                    "game_date": date,
-                    "game_id": game_id,
-                    "gamePk": game_pk,
-                    "gameNumber": game_number,
-                    "away_team": away_team,
-                    "home_team": home_team,
-                    "final_away_score": str(away_score),
-                    "final_home_score": str(home_score),
-                    "game_status": "final",
-                    "status_source": (
-                        "MLB StatsAPI gamePk fallback"
-                    ),
-                    "status_available": "True",
-                    "status_notes": (
-                        "DRatings/existing finals did not contain "
-                        "this game; official MLB final score added "
-                        f"using gamePk={game_pk}"
-                    ),
-                })
-
-                log(
-                    "MLB FALLBACK ADDED | "
-                    f"game_date={date} | "
-                    f"game_id={game_id} | "
-                    f"gamePk={game_pk} | "
-                    f"gameNumber={game_number} | "
-                    f"game_time={game_time} | "
-                    f"away_team={away_team} | "
-                    f"home_team={home_team} | "
-                    f"final={away_score}-{home_score}"
                 )
 
     log(
         "MLB FALLBACK SUMMARY | "
-        f"games_files_seen={games_files_seen} | "
-        f"games_rows_seen={games_rows_seen} | "
-        f"skipped_already_present={skipped_already_present} | "
-        f"skipped_missing_ids={skipped_missing_ids} | "
-        f"api_checked={api_checked} | "
-        f"api_errors={api_errors} | "
-        f"api_not_final={api_not_final} | "
-        f"api_score_missing={api_score_missing} | "
-        f"api_team_mismatch={api_team_mismatch} | "
-        f"added={added} | "
-        f"duplicate_collapsed={duplicate_collapsed}"
+        f"games_files_seen={counts['games_files_seen']} | "
+        f"games_rows_seen={counts['games_rows_seen']} | "
+        f"skipped_already_present="
+        f"{counts['skipped_already_present']} | "
+        f"skipped_missing_ids="
+        f"{counts['skipped_missing_ids']} | "
+        f"api_checked={counts['api_checked']} | "
+        f"api_errors={counts['api_errors']} | "
+        f"api_not_final={counts['api_not_final']} | "
+        f"api_score_missing="
+        f"{counts['api_score_missing']} | "
+        f"api_team_mismatch="
+        f"{counts['api_team_mismatch']} | "
+        f"added={counts['added']} | "
+        f"duplicate_collapsed="
+        f"{counts['duplicate_collapsed']}"
     )
 
-    return {
-        "games_files_seen": games_files_seen,
-        "games_rows_seen": games_rows_seen,
-        "skipped_already_present": skipped_already_present,
-        "skipped_missing_ids": skipped_missing_ids,
-        "api_checked": api_checked,
-        "api_errors": api_errors,
-        "api_not_final": api_not_final,
-        "api_score_missing": api_score_missing,
-        "api_team_mismatch": api_team_mismatch,
-        "added": added,
-        "duplicate_collapsed": duplicate_collapsed,
-    }
-
+    return counts
 
 def process_file(
     file_path,
