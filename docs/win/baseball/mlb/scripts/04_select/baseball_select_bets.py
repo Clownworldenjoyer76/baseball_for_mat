@@ -736,9 +736,8 @@ def violates_exclude_rules(ev, kelly, odds, line, prob, rules):
         if "prob_max" in r and (prob is None or prob > r["prob_max"]):
             continue
 
-        if "prob_bands" in r:
-            if prob is None or not in_range(prob, r["prob_bands"]):
-                continue
+        if "prob_bands" in r and (prob is None or not in_range(prob, r["prob_bands"])):
+            continue
 
         return True
 
