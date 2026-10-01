@@ -1244,36 +1244,32 @@ def make_key_audit_row(
     }
 
 
-def add_final_record(
+def _add_record_with_game_id(
     *,
     record,
     source_file,
     final_records_by_date,
     seen_by_game_id,
-    seen_by_fallback_key,
     key_audit_rows,
+    game_id,
+    game_pk,
+    game_number,
+    game_date,
+    game_time,
+    home_team,
+    away_team,
 ):
-    game_id = str(record.get("game_id", "") or "").strip()
-    game_pk = str(record.get("gamePk", "") or "").strip()
-    game_number = str(record.get("gameNumber", "") or "").strip()
-    game_date = str(record.get("game_date", "") or "").strip()
-    game_time = str(record.get("game_time", "") or "").strip()
-    home_team = str(record.get("home_team", "") or "").strip()
-    away_team = str(record.get("away_team", "") or "").strip()
+    existing = seen_by_game_id.get(game_id)
 
-    record["_source_file"] = source_file
+    if existing is None:
+        seen_by_game_id[game_id] = record
+        final_records_by_date.setdefault(
+            game_date,
+            [],
+        ).append(record)
 
-    if game_id:
-        existing = seen_by_game_id.get(game_id)
-
-        if existing is None:
-            seen_by_game_id[game_id] = record
-            final_records_by_date.setdefault(
-                game_date,
-                [],
-            ).append(record)
-
-            key_audit_rows.append(make_key_audit_row(
+        key_audit_rows.append(
+            make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
                 game_pk=game_pk,
@@ -1283,17 +1279,19 @@ def add_final_record(
                 duplicate_count=1,
                 status="unique_game_id",
                 notes="accepted; primary key game_id",
-            ))
-
-            return "accepted"
-
-        identity_conflict = game_identity_conflict_reason(
-            existing,
-            record,
+            )
         )
 
-        if identity_conflict:
-            key_audit_rows.append(make_key_audit_row(
+        return "accepted"
+
+    identity_conflict = game_identity_conflict_reason(
+        existing,
+        record,
+    )
+
+    if identity_conflict:
+        key_audit_rows.append(
+            make_key_audit_row(
                 game_date=game_date,
                 game_id=game_id,
                 game_pk=game_pk,
@@ -1303,61 +1301,8 @@ def add_final_record(
                 duplicate_count=2,
                 status="conflicting_duplicate_game_identity",
                 notes=identity_conflict,
-            ))
-
-            context = failure_context(
-                source_file=source_file,
-                game_date=game_date,
-                game_time=game_time,
-                away_team=away_team,
-                home_team=home_team,
-                game_id=game_id,
-                game_pk=game_pk,
             )
-
-            existing_source_file = str(
-                existing.get("_source_file", "") or ""
-            ).strip()
-
-            fail_conflict(
-                "Conflicting final-score game identity found | "
-                f"{context} | "
-                f"gameNumber={game_number} | "
-                f"reason={identity_conflict} | "
-                f"existing_source_file={existing_source_file}"
-            )
-
-        if final_row_signature(existing) == final_row_signature(record):
-            merge_duplicate_metadata(existing, record)
-
-            key_audit_rows.append(make_key_audit_row(
-                game_date=game_date,
-                game_id=game_id,
-                game_pk=game_pk,
-                game_number=game_number,
-                away_team=away_team,
-                home_team=home_team,
-                duplicate_count=2,
-                status="identical_duplicate_collapsed",
-                notes=(
-                    "duplicate game_id row was identical "
-                    "and had compatible gamePk/gameNumber/time"
-                ),
-            ))
-
-            return "duplicate_collapsed"
-
-        key_audit_rows.append(make_key_audit_row(
-            game_date=game_date,
-            game_id=game_id,
-            game_pk=game_pk,
-            game_number=game_number,
-            away_team=away_team,
-            home_team=home_team,
-            duplicate_count=2,
-            status="conflicting_duplicate_game_id",
-            notes="same game_id had conflicting final-score fields",
-        ))
+        )
 
         context = failure_context(
             source_file=source_file,
@@ -1374,12 +1319,94 @@ def add_final_record(
         ).strip()
 
         fail_conflict(
-            "Conflicting final-score duplicate game_id found | "
+            "Conflicting final-score game identity found | "
             f"{context} | "
             f"gameNumber={game_number} | "
+            f"reason={identity_conflict} | "
             f"existing_source_file={existing_source_file}"
         )
 
+    if (
+        final_row_signature(existing)
+        == final_row_signature(record)
+    ):
+        merge_duplicate_metadata(
+            existing,
+            record,
+        )
+
+        key_audit_rows.append(
+            make_key_audit_row(
+                game_date=game_date,
+                game_id=game_id,
+                game_pk=game_pk,
+                game_number=game_number,
+                away_team=away_team,
+                home_team=home_team,
+                duplicate_count=2,
+                status="identical_duplicate_collapsed",
+                notes=(
+                    "duplicate game_id row was identical "
+                    "and had compatible gamePk/gameNumber/time"
+                ),
+            )
+        )
+
+        return "duplicate_collapsed"
+
+    key_audit_rows.append(
+        make_key_audit_row(
+            game_date=game_date,
+            game_id=game_id,
+            game_pk=game_pk,
+            game_number=game_number,
+            away_team=away_team,
+            home_team=home_team,
+            duplicate_count=2,
+            status="conflicting_duplicate_game_id",
+            notes=(
+                "same game_id had conflicting "
+                "final-score fields"
+            ),
+        )
+    )
+
+    context = failure_context(
+        source_file=source_file,
+        game_date=game_date,
+        game_time=game_time,
+        away_team=away_team,
+        home_team=home_team,
+        game_id=game_id,
+        game_pk=game_pk,
+    )
+
+    existing_source_file = str(
+        existing.get("_source_file", "") or ""
+    ).strip()
+
+    fail_conflict(
+        "Conflicting final-score duplicate game_id found | "
+        f"{context} | "
+        f"gameNumber={game_number} | "
+        f"existing_source_file={existing_source_file}"
+    )
+
+
+def _add_record_without_game_id(
+    *,
+    record,
+    source_file,
+    final_records_by_date,
+    seen_by_fallback_key,
+    key_audit_rows,
+    game_pk,
+    game_number,
+    game_date,
+    game_time,
+    home_team,
+    away_team,
+):
     fallback_key = (
         game_date,
         normalize_team_key(home_team),
@@ -1394,39 +1421,67 @@ def add_final_record(
         "key used so same-team doubleheaders cannot collapse"
     )
 
-    existing_fallback = seen_by_fallback_key.get(fallback_key)
+    existing = seen_by_fallback_key.get(
+        fallback_key
+    )
 
-    if existing_fallback is None:
+    if existing is None:
         seen_by_fallback_key[fallback_key] = record
         final_records_by_date.setdefault(
             game_date,
             [],
         ).append(record)
 
-        key_audit_rows.append(make_key_audit_row(
-            game_date=game_date,
-            game_id="",
-            game_pk=game_pk,
-            game_number=game_number,
-            away_team=away_team,
-            home_team=home_team,
-            duplicate_count=1,
-            status="blank_game_id_written_for_downstream_audit",
-            notes=fallback_notes,
-        ))
+        key_audit_rows.append(
+            make_key_audit_row(
+                game_date=game_date,
+                game_id="",
+                game_pk=game_pk,
+                game_number=game_number,
+                away_team=away_team,
+                home_team=home_team,
+                duplicate_count=1,
+                status=(
+                    "blank_game_id_written_for_downstream_audit"
+                ),
+                notes=fallback_notes,
+            )
+        )
 
         return "accepted_blank_game_id"
 
     if (
-        final_row_signature(existing_fallback)
+        final_row_signature(existing)
         == final_row_signature(record)
     ):
         merge_duplicate_metadata(
-            existing_fallback,
+            existing,
             record,
         )
 
-        key_audit_rows.append(make_key_audit_row(
+        key_audit_rows.append(
+            make_key_audit_row(
+                game_date=game_date,
+                game_id="",
+                game_pk=game_pk,
+                game_number=game_number,
+                away_team=away_team,
+                home_team=home_team,
+                duplicate_count=2,
+                status=(
+                    "blank_game_id_identical_duplicate_collapsed"
+                ),
+                notes=(
+                    "blank-game_id duplicate had matching "
+                    "gamePk/gameNumber/time and was not written twice"
+                ),
+            )
+        )
+
+        return "blank_game_id_duplicate_collapsed"
+
+    key_audit_rows.append(
+        make_key_audit_row(
             game_date=game_date,
             game_id="",
             game_pk=game_pk,
@@ -1434,29 +1489,13 @@ def add_final_record(
             away_team=away_team,
             home_team=home_team,
             duplicate_count=2,
-            status="blank_game_id_identical_duplicate_collapsed",
+            status="blank_game_id_conflicting_duplicate",
             notes=(
-                "blank-game_id duplicate had matching "
-                "gamePk/gameNumber/time and was not written twice"
+                "blank-game_id duplicate fallback identity had "
+                "conflicting final-score fields"
             ),
-        ))
-
-        return "blank_game_id_duplicate_collapsed"
-
-    key_audit_rows.append(make_key_audit_row(
-        game_date=game_date,
-        game_id="",
-        game_pk=game_pk,
-        game_number=game_number,
-        away_team=away_team,
-        home_team=home_team,
-        duplicate_count=2,
-        status="blank_game_id_conflicting_duplicate",
-        notes=(
-            "blank-game_id duplicate fallback identity had "
-            "conflicting final-score fields"
-        ),
-    ))
+        )
+    )
 
     context = failure_context(
         source_file=source_file,
@@ -1469,7 +1508,7 @@ def add_final_record(
     )
 
     existing_source_file = str(
-        existing_fallback.get("_source_file", "") or ""
+        existing.get("_source_file", "") or ""
     ).strip()
 
     fail_conflict(
@@ -1481,6 +1520,64 @@ def add_final_record(
 
     return "failed"
 
+
+def add_final_record(
+    *,
+    record,
+    source_file,
+    final_records_by_date,
+    seen_by_game_id,
+    seen_by_fallback_key,
+    key_audit_rows,
+):
+    game_id = str(
+        record.get("game_id", "") or ""
+    ).strip()
+    game_pk = str(
+        record.get("gamePk", "") or ""
+    ).strip()
+    game_number = str(
+        record.get("gameNumber", "") or ""
+    ).strip()
+    game_date = str(
+        record.get("game_date", "") or ""
+    ).strip()
+    game_time = str(
+        record.get("game_time", "") or ""
+    ).strip()
+    home_team = str(
+        record.get("home_team", "") or ""
+    ).strip()
+    away_team = str(
+        record.get("away_team", "") or ""
+    ).strip()
+
+    record["_source_file"] = source_file
+
+    common = {
+        "record": record,
+        "source_file": source_file,
+        "final_records_by_date": final_records_by_date,
+        "key_audit_rows": key_audit_rows,
+        "game_pk": game_pk,
+        "game_number": game_number,
+        "game_date": game_date,
+        "game_time": game_time,
+        "home_team": home_team,
+        "away_team": away_team,
+    }
+
+    if game_id:
+        return _add_record_with_game_id(
+            **common,
+            seen_by_game_id=seen_by_game_id,
+            game_id=game_id,
+        )
+
+    return _add_record_without_game_id(
+        **common,
+        seen_by_fallback_key=seen_by_fallback_key,
+    )
 
 def legacy_final_date_from_path(path):
     suffix = "_final_scores_MLB.csv"
