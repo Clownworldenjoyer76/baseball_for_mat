@@ -9,6 +9,7 @@ import traceback
 from urllib.parse import urlsplit
 from datetime import datetime, UTC
 from pathlib import Path
+from typing import Never
 from zoneinfo import ZoneInfo
 
 ERROR_DIR = Path("docs/win/baseball/mlb/errors/05_final_scores")
@@ -63,7 +64,7 @@ def fail(msg: str) -> None:
     raise RuntimeError(msg)
 
 
-def fail_conflict(msg: str) -> None:
+def fail_conflict(msg: str) -> Never:
     log(f"FATAL: {msg}")
     raise FinalScoreConflictError(msg)
 

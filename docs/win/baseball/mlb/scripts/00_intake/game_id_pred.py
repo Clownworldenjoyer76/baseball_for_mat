@@ -49,6 +49,7 @@ import sys
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Never
 from zoneinfo import ZoneInfo
 
 
@@ -159,7 +160,7 @@ def print_block(title: str, lines: list[str]):
     print("")
 
 
-def fail(msg: str):
+def fail(msg: str) -> Never:
     log(f"FATAL VALIDATION ERROR: {msg}", "ERROR")
     print_block("FATAL VALIDATION ERROR IN game_id_pred.py", [msg])
     raise RuntimeError(msg)
