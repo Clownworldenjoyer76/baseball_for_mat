@@ -33,6 +33,16 @@ jobs:
             docs/win/baseball/mlb/requirements.txt
             docs/win/baseball/mlb/vendor/sportsdataverse/pyproject.toml
 
+      - name: Install Qodana Python dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r docs/win/baseball/mlb/requirements.txt
+          python -m pip install docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
+          python -m pip check
+          python -c "from sportsdataverse.mlb import mlb_statcast_search; assert callable(mlb_statcast_search)"
+          echo "SPORTSDATAVERSE_IMPORT: PASS"
+
       - name: Select Qodana Python interpreter
         shell: bash
         run: echo "QODANA_PYTHON_PATH=$(command -v python)" >> "$GITHUB_ENV"

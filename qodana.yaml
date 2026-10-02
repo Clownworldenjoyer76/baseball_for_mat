@@ -9,9 +9,11 @@ bootstrap: 'python -m pip install --upgrade pip
 
   python -m pip install playwright
 
-  python -m pip install -e docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
+  python -m pip install docs/win/baseball/mlb/vendor/sportsdataverse -c docs/win/baseball/mlb/requirements.txt
 
   python -m pip check
+
+  python -c "from sportsdataverse.mlb import mlb_statcast_search; assert callable(mlb_statcast_search)"
 
   '
 include:
