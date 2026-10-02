@@ -334,51 +334,17 @@ def write_dict_csv(
     fieldnames,
     rows,
 ):
-    safe_path = Path(path).resolve()
-    allowed_root = OUT_DIR.resolve()
-
-    if not safe_path.is_relative_to(
-        allowed_root
-    ):
-        fail(
-            "Refusing merge dictionary output outside "
-            f"trusted directory: {path}"
-        )
-
-    if safe_path.suffix.lower() != ".csv":
-        fail(
-            "Refusing non-CSV merge dictionary "
-            f"output: {path}"
-        )
-
-    path = safe_path
-
-    assert_no_duplicate_columns(
+    projected_rows = [
+        [
+            row.get(fieldname, "")
+            for fieldname in fieldnames
+        ]
+        for row in rows
+    ]
+    write_csv(
+        path,
         fieldnames,
-        f"{path} output",
-    )
-
-    path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    with path.open(
-        "w",
-        newline="",
-        encoding="utf-8",
-    ) as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=fieldnames,
-            extrasaction="ignore",
-        )
-
-        writer.writeheader()
-        writer.writerows(rows)
-
-    log(
-        f"WROTE {path} ({len(rows)} rows)"
+        projected_rows,
     )
 
 
@@ -1706,6 +1672,35 @@ def validate_cross_source_teams(
             )
 
 
+def _lookup_merge_source_rows(
+    game_id,
+    pred_index,
+    book_index,
+    games_index,
+    context_index,
+):
+    pred_row = pred_index.get(game_id)
+    book_row = book_index.get(game_id)
+    games_row = games_index.get(game_id)
+    game_pk = (
+        _clean(games_row.get("gamePk"))
+        if games_row
+        else ""
+    )
+    context_row = (
+        context_index.get(game_pk)
+        if game_pk
+        else None
+    )
+    return (
+        pred_row,
+        book_row,
+        games_row,
+        game_pk,
+        context_row,
+    )
+
+
 def log_dropped_game_investigation(
     date,
     pred_idx,
@@ -1724,32 +1719,18 @@ def log_dropped_game_investigation(
     if date != target_date:
         return
 
-    pred_row = pred_idx.get(
-        target_game_id
-    )
-
-    book_row = book_idx.get(
-        target_game_id
-    )
-
-    games_row = games_idx.get(
-        target_game_id
-    )
-
-    game_pk = (
-        _clean(
-            games_row.get("gamePk")
-        )
-        if games_row
-        else ""
-    )
-
-    context_row = (
-        context_idx.get(
-            game_pk
-        )
-        if game_pk
-        else None
+    (
+        pred_row,
+        book_row,
+        games_row,
+        game_pk,
+        context_row,
+    ) = _lookup_merge_source_rows(
+        target_game_id,
+        pred_idx,
+        book_idx,
+        games_idx,
+        context_idx,
     )
 
     log(
@@ -2043,28 +2024,18 @@ def _build_merge_audit(
     )
 
     for game_id in all_ids:
-        pred_row = pred_source_index.get(
-            game_id
-        )
-        book_row = book_index.get(
-            game_id
-        )
-        games_row = games_index.get(
-            game_id
-        )
-
-        game_pk = (
-            _clean(
-                games_row.get("gamePk")
-            )
-            if games_row
-            else ""
-        )
-
-        context_row = (
-            context_index.get(game_pk)
-            if game_pk
-            else None
+        (
+            pred_row,
+            book_row,
+            games_row,
+            game_pk,
+            context_row,
+        ) = _lookup_merge_source_rows(
+            game_id,
+            pred_source_index,
+            book_index,
+            games_index,
+            context_index,
         )
 
         if games_row and not game_pk:

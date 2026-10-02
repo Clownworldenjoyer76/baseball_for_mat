@@ -698,22 +698,41 @@ def _initialize_sportsbook_presence(presence, preds):
         presence[pred_entry["index"]] = {"present": False, "detail": ""}
 
 
-def _sportsbook_one_to_one(date_str, label, preds, unused_books, presence):
-    if len(preds) != 1 or len(unused_books) != 1:
-        return False
-    pred_entry = preds[0]
-    book_entry = unused_books[0]
+def _record_sportsbook_match(
+    date_str, label, pred_entry, book_entry, presence, match_kind,
+):
     book_entry["used"] = True
     presence[pred_entry["index"]] = {
         "present": True,
         "detail": describe_book_entry(book_entry),
     }
-    diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
-    diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
+    diff = minutes_between(
+        pred_entry.get("dt"),
+        book_entry.get("dt"),
+    )
+    diff_text = (
+        ""
+        if diff is None
+        else f" diff_minutes={round(diff, 1)}"
+    )
     log(
-        f"{date_str} | SPORTSBOOK MATCH one-to-one: {label} "
+        f"{date_str} | SPORTSBOOK MATCH {match_kind}: {label} "
         f"pred_time={pred_entry['row'].get('game_time', '')} "
         f"book_time={book_entry['row'].get('game_time', '')}{diff_text}"
+    )
+
+
+def _sportsbook_one_to_one(date_str, label, preds, unused_books, presence):
+    if len(preds) != 1 or len(unused_books) != 1:
+        return False
+
+    _record_sportsbook_match(
+        date_str,
+        label,
+        preds[0],
+        unused_books[0],
+        presence,
+        "one-to-one",
     )
     return True
 
@@ -721,6 +740,7 @@ def _sportsbook_one_to_one(date_str, label, preds, unused_books, presence):
 def _sportsbook_order_match(date_str, label, preds, unused_books, presence):
     if not (1 < len(preds) == len(unused_books)):
         return False
+
     sorted_preds = sorted(
         preds, key=lambda item: (dt_sort_value(item.get("dt")), item["index"])
     )
@@ -731,19 +751,17 @@ def _sportsbook_order_match(date_str, label, preds, unused_books, presence):
         f"{date_str} | SPORTSBOOK ORDER MATCH duplicate matchup: {label} "
         f"pred_count={len(sorted_preds)} book_count={len(sorted_books)}"
     )
+
     for pred_entry, book_entry in zip(sorted_preds, sorted_books):
-        book_entry["used"] = True
-        presence[pred_entry["index"]] = {
-            "present": True,
-            "detail": describe_book_entry(book_entry),
-        }
-        diff = minutes_between(pred_entry.get("dt"), book_entry.get("dt"))
-        diff_text = "" if diff is None else f" diff_minutes={round(diff, 1)}"
-        log(
-            f"{date_str} | SPORTSBOOK MATCH order: {label} "
-            f"pred_time={pred_entry['row'].get('game_time', '')} "
-            f"book_time={book_entry['row'].get('game_time', '')}{diff_text}"
+        _record_sportsbook_match(
+            date_str,
+            label,
+            pred_entry,
+            book_entry,
+            presence,
+            "order",
         )
+
     return True
 
 
@@ -1412,18 +1430,47 @@ def _reject_prediction_group_without_games(
     return len(preds)
 
 
+def _claim_matched_game_id(
+    date_str,
+    label,
+    pred_entry,
+    game_entry,
+    sportsbook_presence,
+    rejection_rows,
+):
+    game_entry["used"] = True
+    game_id = (
+        game_entry["row"].get("game_id")
+        or ""
+    ).strip()
+
+    if game_id:
+        return game_id
+
+    reject_blank_matched_game_id(
+        date_str=date_str,
+        label=label,
+        pred_entry=pred_entry,
+        game_entry=game_entry,
+        sportsbook_presence=sportsbook_presence,
+        rejection_rows=rejection_rows,
+    )
+    return None
+
+
 def _match_single_prediction_game(
     date_str, label, pred_entry, game_entry, sportsbook_presence,
     rejection_rows, output_by_pred_index,
 ):
-    game_entry["used"] = True
-    game_id = (game_entry["row"].get("game_id") or "").strip()
-    if not game_id:
-        reject_blank_matched_game_id(
-            date_str=date_str, label=label, pred_entry=pred_entry,
-            game_entry=game_entry, sportsbook_presence=sportsbook_presence,
-            rejection_rows=rejection_rows,
-        )
+    game_id = _claim_matched_game_id(
+        date_str,
+        label,
+        pred_entry,
+        game_entry,
+        sportsbook_presence,
+        rejection_rows,
+    )
+    if game_id is None:
         return 0, 1
     diff, diff_text, level = record_output_match(
         output_by_pred_index, pred_entry, game_entry, game_id
@@ -1462,14 +1509,15 @@ def _match_ordered_prediction_games(
     matched = 0
     fatal = 0
     for pred_entry, game_entry in zip(sorted_preds, sorted_games):
-        game_entry["used"] = True
-        game_id = (game_entry["row"].get("game_id") or "").strip()
-        if not game_id:
-            reject_blank_matched_game_id(
-                date_str=date_str, label=label, pred_entry=pred_entry,
-                game_entry=game_entry, sportsbook_presence=sportsbook_presence,
-                rejection_rows=rejection_rows,
-            )
+        game_id = _claim_matched_game_id(
+            date_str,
+            label,
+            pred_entry,
+            game_entry,
+            sportsbook_presence,
+            rejection_rows,
+        )
+        if game_id is None:
             fatal += 1
             continue
         diff, diff_text, level = record_output_match(
@@ -1546,14 +1594,15 @@ def _match_closest_prediction_games(
                 f"candidate_games={candidates}", "ERROR"
             )
             continue
-        selected["used"] = True
-        game_id = (selected["row"].get("game_id") or "").strip()
-        if not game_id:
-            reject_blank_matched_game_id(
-                date_str=date_str, label=label, pred_entry=pred_entry,
-                game_entry=selected, sportsbook_presence=sportsbook_presence,
-                rejection_rows=rejection_rows,
-            )
+        game_id = _claim_matched_game_id(
+            date_str,
+            label,
+            pred_entry,
+            selected,
+            sportsbook_presence,
+            rejection_rows,
+        )
+        if game_id is None:
             fatal += 1
             continue
         output_by_pred_index[pred_entry["index"]] = make_output_row(pred_entry, game_id)

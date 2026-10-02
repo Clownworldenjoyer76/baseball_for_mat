@@ -406,15 +406,31 @@ def _match_raw_game_group(date_str, raws, books, output_rows):
     return _match_closest_raw_games(date_str, label, raws, books, output_rows)
 
 
+def _unused_book_entries(book_groups):
+    for entries in book_groups.values():
+        yield from (
+            entry
+            for entry in entries
+            if not entry["used"]
+        )
+
+
 def _log_unused_book_rows(date_str, book_groups):
-    for books in book_groups.values():
-        for book_entry in [book for book in books if not book["used"]]:
-            row = book_entry["row"]
-            log(
-                f"{date_str} | UNUSED sportsbook row: {row.get('away_team', '')} @ "
-                f"{row.get('home_team', '')} game_id={row.get('game_id', '')} "
-                f"game_time={row.get('game_time', '')}", "WARN"
-            )
+    for book_entry in _unused_book_entries(book_groups):
+        row = book_entry["row"]
+        matchup = (
+            f"{row.get('away_team', '')} @ "
+            f"{row.get('home_team', '')}"
+        )
+        identifiers = (
+            f"game_id={row.get('game_id', '')} "
+            f"game_time={row.get('game_time', '')}"
+        )
+        log(
+            f"{date_str} | UNUSED sportsbook row: "
+            f"{matchup} {identifiers}",
+            "WARN",
+        )
 
 
 def _duplicate_output_game_ids(date_str, output_rows):
