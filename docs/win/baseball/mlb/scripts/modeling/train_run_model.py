@@ -163,16 +163,17 @@ def _make_training_log_helpers(log_file: Path):
     return emit, abort
 
 
-_log, fail = _make_training_log_helpers(LOG_FILE)
+_emit_log, fail = _make_training_log_helpers(LOG_FILE)
+_LOGGING_STATE = {"enabled": True}
 
 
-def _disabled_log(*_args, **_kwargs) -> None:
-    return None
+def _log(*args, **kwargs) -> None:
+    if _LOGGING_STATE["enabled"]:
+        _emit_log(*args, **kwargs)
 
 
 def disable_logging() -> None:
-    global _log
-    _log = _disabled_log
+    _LOGGING_STATE["enabled"] = False
 
 
 def duplicate_columns(columns) -> list[str]:
